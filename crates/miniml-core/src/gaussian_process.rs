@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 // ============================================================
 // Structs
@@ -10,8 +10,8 @@ use crate::error::MlError;
 pub struct GPModel {
     x_train: Vec<f64>,
     _y_train: Vec<f64>,
-    alpha: Vec<f64>,     // (K + noise*I)^{-1} * y
-    l_matrix: Vec<f64>,  // Cholesky of (K + noise*I)
+    alpha: Vec<f64>,    // (K + noise*I)^{-1} * y
+    l_matrix: Vec<f64>, // Cholesky of (K + noise*I)
     n_features: usize,
     n_train: usize,
     kernel_type: String,
@@ -22,19 +22,24 @@ pub struct GPModel {
 #[wasm_bindgen]
 impl GPModel {
     #[wasm_bindgen(getter, js_name = "nTrain")]
-    pub fn n_train(&self) -> usize { self.n_train }
+    pub fn n_train(&self) -> usize {
+        self.n_train
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "kernelType")]
-    pub fn kernel_type(&self) -> String { self.kernel_type.clone() }
+    pub fn kernel_type(&self) -> String {
+        self.kernel_type.clone()
+    }
 
     /// Predict using the GP model. Returns mean, std, lower CI, upper CI.
     #[wasm_bindgen]
     pub fn predict(&self, x_test: &[f64]) -> Result<GPPrediction, JsValue> {
-        gp_predict_impl(self, x_test)
-            .map_err(|e| JsValue::from_str(&e.message))
+        gp_predict_impl(self, x_test).map_err(|e| JsValue::from_str(&e.message))
     }
 }
 
@@ -50,19 +55,29 @@ pub struct GPPrediction {
 #[wasm_bindgen]
 impl GPPrediction {
     #[wasm_bindgen(getter)]
-    pub fn mean(&self) -> Vec<f64> { self.mean.clone() }
+    pub fn mean(&self) -> Vec<f64> {
+        self.mean.clone()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn std(&self) -> Vec<f64> { self.std.clone() }
+    pub fn std(&self) -> Vec<f64> {
+        self.std.clone()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn lower(&self) -> Vec<f64> { self.lower.clone() }
+    pub fn lower(&self) -> Vec<f64> {
+        self.lower.clone()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn upper(&self) -> Vec<f64> { self.upper.clone() }
+    pub fn upper(&self) -> Vec<f64> {
+        self.upper.clone()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn n_test(&self) -> usize { self.mean.len() }
+    pub fn n_test(&self) -> usize {
+        self.mean.len()
+    }
 }
 
 // ============================================================
@@ -106,7 +121,8 @@ pub fn gp_fit_impl(
             let k = compute_kernel(
                 &data[i * n_features..(i + 1) * n_features],
                 &data[j * n_features..(j + 1) * n_features],
-                kernel_type, gamma,
+                kernel_type,
+                gamma,
             );
             k_matrix[i * n + j] = k;
             k_matrix[j * n + i] = k;
@@ -140,10 +156,7 @@ pub fn gp_fit_impl(
 /// Predict using a fitted GP model.
 ///
 /// Returns predictive mean, standard deviation, and 95% confidence interval.
-pub fn gp_predict_impl(
-    model: &GPModel,
-    x_test: &[f64],
-) -> Result<GPPrediction, MlError> {
+pub fn gp_predict_impl(model: &GPModel, x_test: &[f64]) -> Result<GPPrediction, MlError> {
     let n_test = x_test.len() / model.n_features;
     if n_test == 0 {
         return Err(MlError::new("x_test must not be empty"));
@@ -159,7 +172,8 @@ pub fn gp_predict_impl(
             k_star[i * n + j] = compute_kernel(
                 &x_test[i * model.n_features..(i + 1) * model.n_features],
                 &model.x_train[j * model.n_features..(j + 1) * model.n_features],
-                &model.kernel_type, gamma,
+                &model.kernel_type,
+                gamma,
             );
         }
     }
@@ -180,7 +194,8 @@ pub fn gp_predict_impl(
         let k_self = compute_kernel(
             &x_test[i * model.n_features..(i + 1) * model.n_features],
             &x_test[i * model.n_features..(i + 1) * model.n_features],
-            &model.kernel_type, gamma,
+            &model.kernel_type,
+            gamma,
         ) + model.noise;
 
         // Solve K^{-1} * k_star[:,i] via Cholesky
@@ -210,7 +225,12 @@ pub fn gp_predict_impl(
         upper[i] = mean[i] + z * std[i];
     }
 
-    Ok(GPPrediction { mean, std, lower, upper })
+    Ok(GPPrediction {
+        mean,
+        std,
+        lower,
+        upper,
+    })
 }
 
 // ============================================================
@@ -338,13 +358,22 @@ mod tests {
         // Predict on training data
         let pred = gp_predict_impl(&model, &data).unwrap();
         for i in 0..5 {
-            assert!((pred.mean[i] - targets[i]).abs() < 0.5,
-                "GP should interpolate training data: pred[{}] = {}, expected {}", i, pred.mean[i], targets[i]);
+            assert!(
+                (pred.mean[i] - targets[i]).abs() < 0.5,
+                "GP should interpolate training data: pred[{}] = {}, expected {}",
+                i,
+                pred.mean[i],
+                targets[i]
+            );
         }
         // Standard deviation on training data should be ~0
         for i in 0..5 {
-            assert!(pred.std[i] < 1.0,
-                "GP std on training data should be small: std[{}] = {}", i, pred.std[i]);
+            assert!(
+                pred.std[i] < 1.0,
+                "GP std on training data should be small: std[{}] = {}",
+                i,
+                pred.std[i]
+            );
         }
     }
 
@@ -359,9 +388,12 @@ mod tests {
         let near_pred = gp_predict_impl(&model, &[0.5]).unwrap();
         let far_pred = gp_predict_impl(&model, &[10.0]).unwrap();
 
-        assert!(far_pred.std[0] > near_pred.std[0],
+        assert!(
+            far_pred.std[0] > near_pred.std[0],
             "far prediction should have higher uncertainty: far_std={}, near_std={}",
-            far_pred.std[0], near_pred.std[0]);
+            far_pred.std[0],
+            near_pred.std[0]
+        );
     }
 
     #[test]
@@ -373,31 +405,31 @@ mod tests {
         let model = gp_fit_impl(&data, 1, &targets, "linear", &[], 1e-6).unwrap();
         let pred = gp_predict_impl(&model, &[2.5]).unwrap();
 
-        assert!((pred.mean[0] - 6.0).abs() < 1.0,
-            "linear kernel predict(2.5) should be ~6, got {}", pred.mean[0]);
+        assert!(
+            (pred.mean[0] - 6.0).abs() < 1.0,
+            "linear kernel predict(2.5) should be ~6, got {}",
+            pred.mean[0]
+        );
     }
 
     #[test]
     fn test_gp_multidimensional() {
         // y = x1 + x2
-        let data = vec![
-            1.0, 0.0,
-            0.0, 1.0,
-            1.0, 1.0,
-            2.0, 1.0,
-            3.0, 2.0,
-        ];
+        let data = vec![1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 1.0, 3.0, 2.0];
         let targets = vec![1.0, 1.0, 2.0, 3.0, 5.0];
 
         let model = gp_fit_impl(&data, 2, &targets, "rbf", &[0.5], 1e-6).unwrap();
         let pred = gp_predict_impl(&model, &[2.0, 3.0]).unwrap();
 
-        assert!((pred.mean[0] - 5.0).abs() < 3.5,
-            "predict(2,3) should be ~5, got {}", pred.mean[0]);
+        assert!(
+            (pred.mean[0] - 5.0).abs() < 3.5,
+            "predict(2,3) should be ~5, got {}",
+            pred.mean[0]
+        );
     }
 
     #[test]
- fn test_gp_errors() {
+    fn test_gp_errors() {
         // Empty data
         assert!(gp_fit_impl(&[], 1, &[], "rbf", &[], 0.1).is_err());
         // Mismatched lengths

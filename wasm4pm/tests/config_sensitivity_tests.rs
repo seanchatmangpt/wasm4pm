@@ -242,8 +242,15 @@ fn test_reward_remains_bounded_under_extreme_inputs() {
             for &alerts in &spc_alerts {
                 for &circuit in &circuit_allowed {
                     for &guard in &guard_pass {
-                        let reward =
-                            compute_reward(prev_health, curr_health, alerts, guard, circuit, false, 0);
+                        let reward = compute_reward(
+                            prev_health,
+                            curr_health,
+                            alerts,
+                            guard,
+                            circuit,
+                            false,
+                            0,
+                        );
 
                         // Must be finite
                         assert!(

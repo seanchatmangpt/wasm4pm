@@ -14,16 +14,17 @@
 use prolog8::{
     admit_atom, admit_rule,
     catalog::{Catalog, PredicateMeta, PredicateProofPolicy},
-    hash::{combine_roots, DOMAIN_PROLOG8_CATALOG, DOMAIN_PROLOG8_FACT, DOMAIN_PROLOG8_INPUT,
-           DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT, DOMAIN_PROLOG8_RULES},
-    kernel::{Decision, Kernel, QueryResult},
-    replay, ReplayStatus,
-    types::{
-        Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, PlanId,
-        PredicateId, ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId,
-        BODY_CAP,
+    hash::{
+        combine_roots, DOMAIN_PROLOG8_CATALOG, DOMAIN_PROLOG8_FACT, DOMAIN_PROLOG8_INPUT,
+        DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT, DOMAIN_PROLOG8_RULES,
     },
-    RejectionCode,
+    kernel::{Decision, Kernel, QueryResult},
+    replay,
+    types::{
+        Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, PlanId, PredicateId,
+        ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId, BODY_CAP,
+    },
+    RejectionCode, ReplayStatus,
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -499,7 +500,8 @@ fn cf3_rule_derivation_includes_rule_proof_node() {
 
     for node in &decision.proof {
         assert_ne!(
-            node.kind, ProofKind::MissingFact,
+            node.kind,
+            ProofKind::MissingFact,
             "Allow should not have MissingFact nodes"
         );
     }
@@ -572,7 +574,10 @@ fn cf4_deny_receipt_is_deterministic() {
         _ => panic!("expected Denied"),
     };
 
-    assert_eq!(decision1.receipt.receipt_hash, decision2.receipt.receipt_hash);
+    assert_eq!(
+        decision1.receipt.receipt_hash,
+        decision2.receipt.receipt_hash
+    );
 }
 
 /// **Contract:** Deny proof is non-empty.

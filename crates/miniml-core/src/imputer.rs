@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 /// Uses NaN as missing value indicator
 #[wasm_bindgen]
 pub struct SimpleImputer {
-    strategy: String,  // "mean", "median", "most_frequent", "constant"
+    strategy: String, // "mean", "median", "most_frequent", "constant"
     fill_value: f64,
     statistics: Vec<f64>,
     n_features: usize,
@@ -14,10 +14,14 @@ pub struct SimpleImputer {
 #[wasm_bindgen]
 impl SimpleImputer {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "strategy")]
-    pub fn strategy_js(&self) -> String { self.strategy.clone() }
+    pub fn strategy_js(&self) -> String {
+        self.strategy.clone()
+    }
 
     /// Fit imputer to data (compute imputation values per feature)
     #[wasm_bindgen]
@@ -32,12 +36,16 @@ impl SimpleImputer {
 
             let stat = match self.strategy.as_str() {
                 "mean" => {
-                    if values.is_empty() { 0.0 }
-                    else { values.iter().sum::<f64>() / values.len() as f64 }
+                    if values.is_empty() {
+                        0.0
+                    } else {
+                        values.iter().sum::<f64>() / values.len() as f64
+                    }
                 }
                 "median" => {
-                    if values.is_empty() { 0.0 }
-                    else {
+                    if values.is_empty() {
+                        0.0
+                    } else {
                         let mut sorted = values.clone();
                         sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
                         if sorted.len().is_multiple_of(2) {
@@ -48,11 +56,14 @@ impl SimpleImputer {
                     }
                 }
                 "most_frequent" => {
-                    if values.is_empty() { 0.0 }
-                    else {
+                    if values.is_empty() {
+                        0.0
+                    } else {
                         let mut counts: Vec<(f64, usize)> = Vec::new();
                         for &v in &values {
-                            if let Some(entry) = counts.iter_mut().find(|(val, _)| (*val - v).abs() < 1e-10) {
+                            if let Some(entry) =
+                                counts.iter_mut().find(|(val, _)| (*val - v).abs() < 1e-10)
+                            {
                                 entry.1 += 1;
                             } else {
                                 counts.push((v, 1));
@@ -106,7 +117,10 @@ impl SimpleImputer {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("SimpleImputer(strategy={}, fitted={})", self.strategy, self.fitted)
+        format!(
+            "SimpleImputer(strategy={}, fitted={})",
+            self.strategy, self.fitted
+        )
     }
 }
 
@@ -132,34 +146,26 @@ mod tests {
 
     #[test]
     fn test_mean_imputation() {
-        let data = vec![
-            1.0, f64::NAN,
-            2.0, 4.0,
-            3.0, 6.0,
-        ];
+        let data = vec![1.0, f64::NAN, 2.0, 4.0, 3.0, 6.0];
         let mut imputer = simple_imputer(2, "mean".to_string(), 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 mean = 2, Feature 1 mean = 5
         assert_eq!(result[0], 1.0);
-        assert_eq!(result[1], 5.0);  // NaN replaced with 5
+        assert_eq!(result[1], 5.0); // NaN replaced with 5
         assert_eq!(result[2], 2.0);
         assert_eq!(result[3], 4.0);
     }
 
     #[test]
     fn test_median_imputation() {
-        let data = vec![
-            1.0, f64::NAN,
-            2.0, 2.0,
-            100.0, 8.0,
-        ];
+        let data = vec![1.0, f64::NAN, 2.0, 2.0, 100.0, 8.0];
         let mut imputer = simple_imputer(2, "median".to_string(), 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 median = 2, Feature 1 median = 5
         assert_eq!(result[0], 1.0);
-        assert_eq!(result[1], 5.0);  // NaN replaced with median 5
+        assert_eq!(result[1], 5.0); // NaN replaced with median 5
     }
 
     #[test]
@@ -169,22 +175,18 @@ mod tests {
         let result = imputer.fit_transform(&data).unwrap();
 
         assert_eq!(result[0], 1.0);
-        assert_eq!(result[1], -1.0);  // NaN replaced with -1
+        assert_eq!(result[1], -1.0); // NaN replaced with -1
         assert_eq!(result[2], 3.0);
     }
 
     #[test]
     fn test_most_frequent_imputation() {
-        let data = vec![
-            1.0, f64::NAN,
-            1.0, 2.0,
-            2.0, 2.0,
-        ];
+        let data = vec![1.0, f64::NAN, 1.0, 2.0, 2.0, 2.0];
         let mut imputer = simple_imputer(2, "most_frequent".to_string(), 0.0);
         let result = imputer.fit_transform(&data).unwrap();
 
         // Feature 0 most frequent = 1, Feature 1 most frequent = 2
         assert_eq!(result[0], 1.0);
-        assert_eq!(result[1], 2.0);  // NaN replaced with 2
+        assert_eq!(result[1], 2.0); // NaN replaced with 2
     }
 }

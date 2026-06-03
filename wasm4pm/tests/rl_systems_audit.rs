@@ -14,7 +14,7 @@
 
 use wasm4pm::reinforcement::QLearning;
 use wasm4pm::rl_orchestrator::{
-    compute_reward, compute_health_state, learning_rate_schedule, RlOrchestrator,
+    compute_health_state, compute_reward, learning_rate_schedule, RlOrchestrator,
 };
 use wasm4pm::{create_rl_state, RlAction};
 
@@ -100,7 +100,10 @@ fn gap2_linucb_action_selection_is_valid() {
 
     // Verify action selection is deterministic
     let action1_again = orchestrator.linucb_bounded_select(&valid_features);
-    assert_eq!(action1, action1_again, "LinUCB selection must be deterministic");
+    assert_eq!(
+        action1, action1_again,
+        "LinUCB selection must be deterministic"
+    );
 }
 
 #[test]
@@ -118,7 +121,10 @@ fn gap2_linucb_context_binding_validates_features() {
     let action1 = orchestrator.linucb_bounded_select(&features1);
     let action2 = orchestrator.linucb_bounded_select(&features2);
 
-    assert!(action1 < 5 && action2 < 5, "Both feature contexts should yield valid actions");
+    assert!(
+        action1 < 5 && action2 < 5,
+        "Both feature contexts should yield valid actions"
+    );
 
     // Different contexts should generally produce different decisions
     // (though not guaranteed, it's expected for distinct feature vectors)
@@ -386,7 +392,8 @@ fn integration_rl_cycle_reward_bounds() {
             ((cycle + 7) % 100) as f32 / 100.0,
         ];
 
-        let (_, reward) = orchestrator.run_cycle(&features, &state, &next_state, 0, true, true, false);
+        let (_, reward) =
+            orchestrator.run_cycle(&features, &state, &next_state, 0, true, true, false);
 
         assert!(
             reward.is_finite(),

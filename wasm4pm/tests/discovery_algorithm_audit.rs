@@ -115,7 +115,10 @@ fn rare_char_log() -> EventLog {
     // Test with non-ASCII characters, emoji, special symbols
     for act in &["Café", "データ処理", "🔧", "A|B"] {
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(act.to_string()),
+        );
         trace.events.push(Event { attributes: attrs });
     }
     log.traces.push(trace);
@@ -238,10 +241,10 @@ fn ga_iterations_monotonicity() {
     // More generations → Fitness never decreases (monotonic property)
     let log = standard_log();
 
-    let (_, f1) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 5)
-        .expect("GA must succeed");
-    let (_, f50) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("GA must succeed");
+    let (_, f1) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 5).expect("GA must succeed");
+    let (_, f50) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50).expect("GA must succeed");
 
     assert!(
         f50 >= f1 - 1e-9,
@@ -257,10 +260,10 @@ fn pso_iterations_monotonicity() {
     // More iterations → Fitness never decreases
     let log = standard_log();
 
-    let (_, f5) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 5)
-        .expect("PSO must succeed");
-    let (_, f50) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("PSO must succeed");
+    let (_, f5) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 5).expect("PSO must succeed");
+    let (_, f50) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 50).expect("PSO must succeed");
 
     assert!(
         f50 >= f5 - 1e-9,
@@ -310,7 +313,10 @@ fn inductive_miner_empty_log_returns_flower() {
     let log = empty_log();
     let result = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     // Should not panic; should return some string (flower or error)
-    assert!(!result.is_empty(), "Inductive Miner should return non-empty result");
+    assert!(
+        !result.is_empty(),
+        "Inductive Miner should return non-empty result"
+    );
 }
 
 // ============================================================================
@@ -376,7 +382,10 @@ fn heuristic_miner_rare_chars_no_panic() {
 fn inductive_miner_rare_chars_no_panic() {
     let log = rare_char_log();
     let result = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
-    assert!(!result.is_empty(), "Inductive Miner should handle UTF-8 activity names");
+    assert!(
+        !result.is_empty(),
+        "Inductive Miner should handle UTF-8 activity names"
+    );
 }
 
 // ============================================================================
@@ -435,10 +444,10 @@ fn ga_seed_is_hardcoded() {
     // Impact: All GA runs are deterministic (good), but users cannot seed for reproducibility.
     // Recommendation: Add optional seed parameter to discover_genetic_algorithm_from_log().
     let log = standard_log();
-    let (dfg1, _) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30)
-        .expect("GA must succeed");
-    let (dfg2, _) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30)
-        .expect("GA must succeed");
+    let (dfg1, _) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30).expect("GA must succeed");
+    let (dfg2, _) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30).expect("GA must succeed");
 
     // Both runs use same seed, so results are identical
     assert_eq!(
@@ -448,7 +457,12 @@ fn ga_seed_is_hardcoded() {
     );
 }
 
-
-fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
     wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

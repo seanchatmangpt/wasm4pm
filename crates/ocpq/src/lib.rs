@@ -369,10 +369,7 @@ impl BindingBox {
     /// `Var(self) ⊆ Var(other) ∧ Pred(self) ⊆ Pred(other)`.
     #[must_use]
     pub fn refines(&self, other: &BindingBox) -> bool {
-        let vars_sub = self
-            .vars
-            .iter()
-            .all(|v| other.vars.iter().any(|w| w == v));
+        let vars_sub = self.vars.iter().all(|v| other.vars.iter().any(|w| w == v));
         let preds_sub = self
             .preds
             .iter()
@@ -554,13 +551,12 @@ pub struct ConstraintResult {
 /// [`evaluate_node_constraint`] generalizes this to any node id.)
 #[must_use]
 pub fn evaluate_constraint(tree: &QueryTree, log: &OCEL) -> ConstraintResult {
-    evaluate_node_constraint(tree, &tree.root.clone(), log)
-        .unwrap_or_else(|| ConstraintResult {
-            node: tree.root.clone(),
-            satisfied: 0,
-            violated: 0,
-            verdicts: Vec::new(),
-        })
+    evaluate_node_constraint(tree, &tree.root.clone(), log).unwrap_or_else(|| ConstraintResult {
+        node: tree.root.clone(),
+        satisfied: 0,
+        violated: 0,
+        verdicts: Vec::new(),
+    })
 }
 
 /// Evaluate `constr` of an arbitrary node `node_id` (Fig. 6 generalized).

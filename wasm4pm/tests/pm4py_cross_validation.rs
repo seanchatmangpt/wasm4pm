@@ -29,7 +29,10 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
             if let Some(t) = current_trace.take() {
@@ -37,7 +40,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
@@ -47,7 +52,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -56,7 +63,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 }
@@ -161,15 +170,27 @@ const ROADTRAFFIC_DFG_ORACLE: &[(&str, &str, usize)] = &[
     ("Create Fine", "Send Fine", 77),
     ("Insert Date Appeal to Prefecture", "Add penalty", 1),
     ("Insert Fine Notification", "Add penalty", 52),
-    ("Insert Fine Notification", "Insert Date Appeal to Prefecture", 1),
+    (
+        "Insert Fine Notification",
+        "Insert Date Appeal to Prefecture",
+        1,
+    ),
     ("Insert Fine Notification", "Payment", 4),
     ("Notify Result Appeal to Offender", "Payment", 1),
     ("Payment", "Add penalty", 4),
     ("Payment", "Insert Fine Notification", 1),
     ("Payment", "Payment", 5),
     ("Payment", "Send Fine", 1),
-    ("Receive Result Appeal from Prefecture", "Notify Result Appeal to Offender", 1),
-    ("Send Appeal to Prefecture", "Receive Result Appeal from Prefecture", 1),
+    (
+        "Receive Result Appeal from Prefecture",
+        "Notify Result Appeal to Offender",
+        1,
+    ),
+    (
+        "Send Appeal to Prefecture",
+        "Receive Result Appeal from Prefecture",
+        1,
+    ),
     ("Send Fine", "Insert Fine Notification", 56),
     ("Send Fine", "Payment", 5),
 ];
@@ -185,8 +206,13 @@ const ROADTRAFFIC_END_ORACLE: &[(&str, usize)] = &[
 // Helpers
 // ---------------------------------------------------------------------------
 
-fn dfg_to_edge_freq_map(dfg: &wasm4pm::models::DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
-    dfg.edges.iter().map(|e| ((e.from.clone(), e.to.clone()), e.frequency)).collect()
+fn dfg_to_edge_freq_map(
+    dfg: &wasm4pm::models::DirectlyFollowsGraph,
+) -> HashMap<(String, String), usize> {
+    dfg.edges
+        .iter()
+        .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -197,7 +223,10 @@ fn dfg_to_edge_freq_map(dfg: &wasm4pm::models::DirectlyFollowsGraph) -> HashMap<
 fn dfg_running_example_exact_edge_set_matches_pm4py() {
     let log = match load_xes(RUNNING_EXAMPLE_PATHS) {
         Some(l) => l,
-        None => { eprintln!("SKIP: running-example.xes not found"); return; }
+        None => {
+            eprintln!("SKIP: running-example.xes not found");
+            return;
+        }
     };
 
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
@@ -226,7 +255,10 @@ fn dfg_running_example_exact_edge_set_matches_pm4py() {
 fn dfg_running_example_start_end_activities_match_pm4py() {
     let log = match load_xes(RUNNING_EXAMPLE_PATHS) {
         Some(l) => l,
-        None => { eprintln!("SKIP: running-example.xes not found"); return; }
+        None => {
+            eprintln!("SKIP: running-example.xes not found");
+            return;
+        }
     };
 
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
@@ -234,26 +266,45 @@ fn dfg_running_example_start_end_activities_match_pm4py() {
     // Start: {register request: 6}
     assert_eq!(dfg.start_activities.len(), 1, "Expected 1 start activity");
     assert_eq!(
-        dfg.start_activities.get("register request").copied().unwrap_or(0),
+        dfg.start_activities
+            .get("register request")
+            .copied()
+            .unwrap_or(0),
         6,
         "Start activity 'register request' must have frequency 6"
     );
 
     // End: {pay compensation: 3, reject request: 3}
     assert_eq!(dfg.end_activities.len(), 2, "Expected 2 end activities");
-    assert_eq!(dfg.end_activities.get("pay compensation").copied().unwrap_or(0), 3);
-    assert_eq!(dfg.end_activities.get("reject request").copied().unwrap_or(0), 3);
+    assert_eq!(
+        dfg.end_activities
+            .get("pay compensation")
+            .copied()
+            .unwrap_or(0),
+        3
+    );
+    assert_eq!(
+        dfg.end_activities
+            .get("reject request")
+            .copied()
+            .unwrap_or(0),
+        3
+    );
 }
 
 #[test]
 fn heuristic_miner_running_example_edge_set_matches_pm4py() {
     let log = match load_xes(RUNNING_EXAMPLE_PATHS) {
         Some(l) => l,
-        None => { eprintln!("SKIP: running-example.xes not found"); return; }
+        None => {
+            eprintln!("SKIP: running-example.xes not found");
+            return;
+        }
     };
 
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
-    let actual_edges: HashSet<(String, String)> = dfg.edges
+    let actual_edges: HashSet<(String, String)> = dfg
+        .edges
         .iter()
         .map(|e| (e.from.clone(), e.to.clone()))
         .collect();
@@ -269,7 +320,8 @@ fn heuristic_miner_running_example_edge_set_matches_pm4py() {
     assert!(
         missing.is_empty() && extra.is_empty(),
         "Heuristic miner edge mismatch vs pm4py oracle.\n  Missing: {:?}\n  Extra: {:?}",
-        missing, extra
+        missing,
+        extra
     );
 }
 
@@ -277,7 +329,10 @@ fn heuristic_miner_running_example_edge_set_matches_pm4py() {
 fn dfg_roadtraffic_exact_edge_set_matches_pm4py() {
     let log = match load_xes(ROADTRAFFIC_PATHS) {
         Some(l) => l,
-        None => { eprintln!("SKIP: roadtraffic100traces.xes not found"); return; }
+        None => {
+            eprintln!("SKIP: roadtraffic100traces.xes not found");
+            return;
+        }
     };
 
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
@@ -306,7 +361,10 @@ fn dfg_roadtraffic_exact_edge_set_matches_pm4py() {
 fn dfg_roadtraffic_start_end_activities_match_pm4py() {
     let log = match load_xes(ROADTRAFFIC_PATHS) {
         Some(l) => l,
-        None => { eprintln!("SKIP: roadtraffic100traces.xes not found"); return; }
+        None => {
+            eprintln!("SKIP: roadtraffic100traces.xes not found");
+            return;
+        }
     };
 
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
@@ -334,7 +392,12 @@ fn dfg_roadtraffic_start_end_activities_match_pm4py() {
     }
 }
 
-
-fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
     wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

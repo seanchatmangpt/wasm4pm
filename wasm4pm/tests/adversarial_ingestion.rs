@@ -1,8 +1,8 @@
 #![cfg(feature = "miniml")]
-use wasm4pm::drift_manager::{StreamCircuitBreaker, TraceSnapshot, CircuitState};
-use wasm4pm_types::import::xes::{XESParsingTraceStream, XESImportOptions};
 use fake::Fake;
 use proptest::prelude::*;
+use wasm4pm::drift_manager::{CircuitState, StreamCircuitBreaker, TraceSnapshot};
+use wasm4pm_types::import::xes::{XESImportOptions, XESParsingTraceStream};
 
 #[cfg(test)]
 mod tests {
@@ -13,14 +13,15 @@ mod tests {
     #[test]
     fn test_adversarial_drift_circuit_trip() {
         let mut cb = StreamCircuitBreaker::new(10);
-        
+
         // 1. Establish baseline (10 events with small noise)
         for i in 0..10 {
             cb.check_drift(TraceSnapshot {
                 timestamp_ms: i * 1000,
                 event_count: 5,
                 duration_ms: 100.0 + (i as f64), // Small variance
-            }).unwrap();
+            })
+            .unwrap();
         }
         assert_eq!(cb.state, CircuitState::Closed);
 
@@ -34,35 +35,41 @@ mod tests {
         }
 
         // Post-condition: Circuit must be OPEN
-        assert_eq!(cb.state, CircuitState::Open, "Circuit Breaker failed to trip after 3 outliers");
+        assert_eq!(
+            cb.state,
+            CircuitState::Open,
+            "Circuit Breaker failed to trip after 3 outliers"
+        );
     }
 
     /// Contract: The parser must handle arbitrary attribute keys/values without panicking.
     /// Adversarial: Inject extremely long and "noisy" strings using 'fake'.
     #[test]
     fn test_adversarial_xes_parser_robustness() {
-        use std::io::BufReader;
         use quick_xml::Reader;
+        use std::io::BufReader;
 
         for _ in 0..10 {
             let key: String = (10..1000).fake();
             let val: String = (10..1000).fake();
-            
+
             let xes_content = format!(
                 r#"<log><trace><event><string key="{}" value="{}"/></event></trace></log>"#,
-                key.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;"), 
-                val.replace("\"", "&quot;").replace("<", "&lt;").replace(">", "&gt;")
+                key.replace("\"", "&quot;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;"),
+                val.replace("\"", "&quot;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
             );
 
             let reader = BufReader::new(xes_content.as_bytes());
             let parser = Reader::from_reader(Box::new(reader) as Box<dyn std::io::BufRead>);
-            
+
             // Use XESParsingTraceStream::try_new
-            let stream_result = XESParsingTraceStream::try_new(
-                Box::new(parser),
-                XESImportOptions::default()
-            );
-            
+            let stream_result =
+                XESParsingTraceStream::try_new(Box::new(parser), XESImportOptions::default());
+
             if let Ok((mut stream, _)) = stream_result {
                 for trace in &mut stream {
                     assert!(trace.events.len() > 0);
@@ -76,7 +83,7 @@ mod tests {
     #[test]
     fn test_adversarial_ocel_density_bounds() {
         use wasm4pm::oc_orchestrator::OntologyDiscoveryAgent;
-        use wasm4pm_types::ocel::{OCEL, OCELObject, OCELRelationship};
+        use wasm4pm_types::ocel::{OCELObject, OCELRelationship, OCEL};
 
         let mut agent = OntologyDiscoveryAgent::new();
         let mut objects = Vec::new();
@@ -111,7 +118,11 @@ mod tests {
         let reward = agent.reward_subgraph_density(&adversarial_ocel);
 
         // Post-condition: Reward must be exactly 1.0 (capped) and not NaN or Infinity
-        assert!(reward >= 0.0 && reward <= 1.0, "Reward {} out of bounds [0, 1]", reward);
+        assert!(
+            reward >= 0.0 && reward <= 1.0,
+            "Reward {} out of bounds [0, 1]",
+            reward
+        );
     }
 
     /// Counterfactual: What if time flows backward in a trace?
@@ -119,14 +130,15 @@ mod tests {
     #[test]
     fn test_adversarial_timestamp_paradox() {
         let mut cb = StreamCircuitBreaker::new(10);
-        
+
         // Baseline
         for i in 0..10 {
             cb.check_drift(TraceSnapshot {
                 timestamp_ms: i * 1000,
                 event_count: 5,
                 duration_ms: 100.0,
-            }).unwrap();
+            })
+            .unwrap();
         }
 
         // Paradox: negative duration
@@ -138,7 +150,13 @@ mod tests {
 
         // Post-condition: Should either error or handle it, but not panic.
         // Rule 1 violation (MAD based) likely trips because -5000 is an outlier.
-        assert!(result.is_ok() || matches!(result, Err(wasm4pm::drift_manager::DriftError::SevereDriftDetected)));
+        assert!(
+            result.is_ok()
+                || matches!(
+                    result,
+                    Err(wasm4pm::drift_manager::DriftError::SevereDriftDetected)
+                )
+        );
     }
 
     /// Counterfactual: What if the knowledge base has conflicting/poisoned date formats?
@@ -148,33 +166,39 @@ mod tests {
         use wasm4pm_types::import::timestamp_utils::parse_timestamp;
 
         let mut kb = IngestionKnowledgeBase::new();
-        kb.learn_date_format("time:timestamp".to_string(), "INVALID_FORMAT_STRING".to_string());
+        kb.learn_date_format(
+            "time:timestamp".to_string(),
+            "INVALID_FORMAT_STRING".to_string(),
+        );
 
         let result = parse_timestamp(
             "2023-01-01T10:00:00Z",
-            kb.learned_date_formats.get("time:timestamp").map(|s| s.as_str()),
-            false
+            kb.learned_date_formats
+                .get("time:timestamp")
+                .map(|s| s.as_str()),
+            false,
         );
 
         // Post-condition: Should fallback to RFC3339 if custom format fails, ensuring robustness.
-        assert!(result.is_ok(), "Parser should have fallen back to default RFC3339 despite poisoned custom format");
+        assert!(
+            result.is_ok(),
+            "Parser should have fallen back to default RFC3339 despite poisoned custom format"
+        );
     }
 
     /// Counterfactual: malformed OCEL object mapping.
     #[test]
     fn test_adversarial_malformed_ocel_mapping() {
         use wasm4pm::oc_orchestrator::OntologyDiscoveryAgent;
-        use wasm4pm_types::ocel::{OCEL, OCELObject};
+        use wasm4pm_types::ocel::{OCELObject, OCEL};
 
         let mut agent = OntologyDiscoveryAgent::new();
-        let objects = vec![
-            OCELObject {
-                id: "obj_1".to_string(),
-                object_type: "UNKNOWN_TYPE".to_string(), // Type not in header
-                attributes: Vec::new(),
-                relationships: Vec::new(),
-            }
-        ];
+        let objects = vec![OCELObject {
+            id: "obj_1".to_string(),
+            object_type: "UNKNOWN_TYPE".to_string(), // Type not in header
+            attributes: Vec::new(),
+            relationships: Vec::new(),
+        }];
 
         let adversarial_ocel = OCEL {
             event_types: Vec::new(),
@@ -184,7 +208,7 @@ mod tests {
         };
 
         agent.analyze_ocel(&adversarial_ocel);
-        
+
         // Post-condition: Agent must record the type despite it being missing from header.
         assert!(agent.object_type_density.contains_key("UNKNOWN_TYPE"));
     }
@@ -198,13 +222,13 @@ mod tests {
         ) {
             use miniml::StreamingFeatureExtractor;
             let mut extractor = StreamingFeatureExtractor::new();
-            
+
             // Update twice to establish some baseline
             extractor.update_from_trace(&activities, duration);
             extractor.update_from_trace(&activities, duration + 10.0);
 
             let vec = extractor.extract_vector(&activities, duration);
-            
+
             // Post-conditions
             assert_eq!(vec.len(), 2, "Feature vector must have 2 dimensions");
             for val in vec {

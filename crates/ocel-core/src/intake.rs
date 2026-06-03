@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::io::BufRead;
-use serde::{Deserialize, Serialize};
 
 use crate::{OCELEvent, OCELObject};
 
@@ -82,7 +82,7 @@ impl<R: BufRead> Iterator for NDJsonStream<R> {
                             if !self.plan.is_event_allowed(&evt.event_type) {
                                 continue;
                             }
-                            
+
                             // Enforce referential integrity and qualifier filters
                             evt.relationships.retain(|rel| {
                                 let qual_allowed = self.plan.is_qualifier_allowed(&rel.qualifier);
@@ -93,11 +93,14 @@ impl<R: BufRead> Iterator for NDJsonStream<R> {
                                 };
                                 qual_allowed && obj_allowed
                             });
-                            
+
                             return Some(Ok(OCELRecord::Event(evt)));
                         }
                         Err(e) => {
-                            return Some(Err(format!("Failed to parse line: {} - {}", e, line_trim)));
+                            return Some(Err(format!(
+                                "Failed to parse line: {} - {}",
+                                e, line_trim
+                            )));
                         }
                     }
                 }
@@ -115,7 +118,7 @@ mod tests {
     fn test_extraction_plan_filters() {
         let mut target_events = HashSet::new();
         target_events.insert("order_placed".to_string());
-        
+
         let mut target_objects = HashSet::new();
         target_objects.insert("order".to_string());
 
@@ -127,7 +130,7 @@ mod tests {
 
         assert!(plan.is_event_allowed("order_placed"));
         assert!(!plan.is_event_allowed("item_shipped"));
-        
+
         assert!(plan.is_object_allowed("order"));
         assert!(!plan.is_object_allowed("item"));
     }
@@ -141,7 +144,7 @@ mod tests {
 
         let mut target_events = HashSet::new();
         target_events.insert("order_placed".to_string());
-        
+
         let mut target_objects = HashSet::new();
         target_objects.insert("order".to_string());
 
@@ -153,7 +156,7 @@ mod tests {
 
         let stream = NDJsonStream::new(ndjson.as_bytes(), plan);
         let results: Vec<Result<OCELRecord, String>> = stream.collect();
-        
+
         // We expect:
         // 1. o1 object (allowed)
         // 2. o2 object (ignored, type "item" not allowed)
@@ -161,7 +164,7 @@ mod tests {
         // 4. e2 event (ignored, type "item_shipped" not allowed)
 
         assert_eq!(results.len(), 2);
-        
+
         match &results[0] {
             Ok(OCELRecord::Object(obj)) => {
                 assert_eq!(obj.id, "o1");

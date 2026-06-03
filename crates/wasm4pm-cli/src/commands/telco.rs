@@ -55,10 +55,7 @@ fn status() -> Result<()> {
         "Architecture:".bold()
     );
     println!("{:<25} Branchless PDPO", "Kernel Mode:".bold());
-    println!(
-        "{:<25} Deterministic Stack-Only",
-        "Memory Bounding:".bold()
-    );
+    println!("{:<25} Deterministic Stack-Only", "Memory Bounding:".bold());
     println!("{}\n", "----------------------------------".bold().cyan());
     Ok(())
 }

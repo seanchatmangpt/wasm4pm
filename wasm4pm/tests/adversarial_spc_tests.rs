@@ -63,7 +63,11 @@ fn c1_rule1_fires_at_exactly_the_outlier_point() {
     // Build 10 stable points (within control limits), then the outlier.
     let mut data: Vec<ChartData> = (0..10)
         .map(|i| {
-            let offset = if i % 2 == 0 { 0.3 * sigma } else { -0.3 * sigma };
+            let offset = if i % 2 == 0 {
+                0.3 * sigma
+            } else {
+                -0.3 * sigma
+            };
             spc_point(&format!("stable-{}", i), cl + offset, cl, sigma)
         })
         .collect();
@@ -123,7 +127,11 @@ fn c1_rule1_does_not_fire_on_point_exactly_at_3sigma() {
 
     let mut data: Vec<ChartData> = (0..10)
         .map(|i| {
-            let offset = if i % 2 == 0 { 0.3 * sigma } else { -0.3 * sigma };
+            let offset = if i % 2 == 0 {
+                0.3 * sigma
+            } else {
+                -0.3 * sigma
+            };
             spc_point(&format!("stable-{}", i), cl + offset, cl, sigma)
         })
         .collect();
@@ -171,7 +179,9 @@ fn c2_rule2_fires_at_exactly_ninth_consecutive_above_cl() {
     for window_end in 9..=16 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Shift { .. })),
             "C2 FAILED: Rule 2 must NOT fire at window_end={} \
              (9-point window still has below-CL points)",
             window_end
@@ -279,7 +289,9 @@ fn c3_rule3_fires_at_exactly_sixth_consecutive_increasing() {
     for window_end in 9..=10 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Trend { .. })),
             "C3 FAILED: Rule 3 must NOT fire at window_end={} \
              (not yet 6 consecutive increasing points)",
             window_end
@@ -327,7 +339,12 @@ fn c3_rule3_fires_at_sixth_consecutive_decreasing() {
 
     // 5 increasing points to prevent premature decreasing-trend detection.
     for i in 0..5 {
-        data.push(spc_point(&format!("inc-{}", i), cl + i as f64 + 1.0, cl, sigma));
+        data.push(spc_point(
+            &format!("inc-{}", i),
+            cl + i as f64 + 1.0,
+            cl,
+            sigma,
+        ));
     }
 
     // 6 strictly decreasing points.
@@ -341,7 +358,9 @@ fn c3_rule3_fires_at_sixth_consecutive_decreasing() {
     }
 
     let alerts = check_western_electric_rules(&data[..11]);
-    let trend = alerts.iter().find(|a| matches!(a, SpecialCause::Trend { .. }));
+    let trend = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Trend { .. }));
     assert!(
         trend.is_some(),
         "C3 FAILED: Rule 3 must fire for 6 consecutive decreasing points"
@@ -487,7 +506,9 @@ fn c5_sp1_regression_rule2_fires_after_buffer_accumulation() {
 
     // After 29 total points, trailing 9 = indices 20-28 (all above CL).
     let alerts = check_western_electric_rules(&chart_data);
-    let shift = alerts.iter().find(|a| matches!(a, SpecialCause::Shift { .. }));
+    let shift = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Shift { .. }));
 
     assert!(
         shift.is_some(),
@@ -496,7 +517,11 @@ fn c5_sp1_regression_rule2_fires_after_buffer_accumulation() {
     );
 
     if let Some(SpecialCause::Shift { direction, count }) = shift {
-        assert_eq!(*direction, ShiftDirection::Above, "C5: Rule 2 shift direction must be Above");
+        assert_eq!(
+            *direction,
+            ShiftDirection::Above,
+            "C5: Rule 2 shift direction must be Above"
+        );
         assert_eq!(*count, 9, "C5: Rule 2 count must be 9");
     }
 }
@@ -535,7 +560,9 @@ fn c5_sp1_regression_rule3_fires_after_buffer_accumulation() {
     }
 
     let alerts = check_western_electric_rules(&chart_data);
-    let trend = alerts.iter().find(|a| matches!(a, SpecialCause::Trend { .. }));
+    let trend = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::Trend { .. }));
 
     assert!(
         trend.is_some(),
@@ -590,8 +617,16 @@ fn c5_sp1_regression_spc_history_retains_data_across_record_calls() {
     let count_5: usize = rates.iter().filter(|&&r| (r - 5.0).abs() < 1e-10).count();
     let count_8: usize = rates.iter().filter(|&&r| (r - 8.0).abs() < 1e-10).count();
 
-    assert_eq!(count_5, 30, "C5: History must retain 30 snapshots with event_rate=5.0. Got {}", count_5);
-    assert_eq!(count_8, 70, "C5: History must retain 70 snapshots with event_rate=8.0. Got {}", count_8);
+    assert_eq!(
+        count_5, 30,
+        "C5: History must retain 30 snapshots with event_rate=5.0. Got {}",
+        count_5
+    );
+    assert_eq!(
+        count_8, 70,
+        "C5: History must retain 70 snapshots with event_rate=8.0. Got {}",
+        count_8
+    );
 }
 
 // ===========================================================================
@@ -662,7 +697,9 @@ fn c6_rule4_fires_when_2_of_3_beyond_2sigma_above() {
 
     let alerts = check_western_electric_rules(&data);
 
-    let two_of_three = alerts.iter().find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    let two_of_three = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
     assert!(
         two_of_three.is_some(),
         "C6 FAILED: Rule 4 must fire when 2 of last 3 points ({}) exceed 2σ above CL ({}). \
@@ -730,7 +767,9 @@ fn c6_rule4_fires_when_2_of_3_beyond_2sigma_below() {
 
     let alerts = check_western_electric_rules(&data);
 
-    let two_of_three = alerts.iter().find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    let two_of_three = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
     assert!(
         two_of_three.is_some(),
         "C6 FAILED: Rule 4 must fire when 2 of last 3 points are beyond 2σ below CL. \
@@ -796,7 +835,9 @@ fn c6_rule4_does_not_fire_when_only_1_of_3_beyond_2sigma() {
 
     let alerts = check_western_electric_rules(&data);
 
-    let two_of_three = alerts.iter().find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    let two_of_three = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
     assert!(
         two_of_three.is_none(),
         "C6 boundary: Rule 4 must NOT fire when only 1 of last 3 points is beyond 2σ. \
@@ -856,7 +897,9 @@ fn c6_rule4_does_not_fire_when_2_of_3_on_opposite_sides() {
 
     let alerts = check_western_electric_rules(&data);
 
-    let two_of_three = alerts.iter().find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    let two_of_three = alerts
+        .iter()
+        .find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
     assert!(
         two_of_three.is_none(),
         "C6 side-check: Rule 4 must NOT fire when 2 of 3 beyond 2σ are on OPPOSITE sides. \
@@ -890,7 +933,9 @@ fn c6_rule4_fires_at_exact_third_point_in_window() {
     // Rule 4 must NOT fire on this 9-stable baseline.
     let alerts_before = check_western_electric_rules(&data);
     assert!(
-        !alerts_before.iter().any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
+        !alerts_before
+            .iter()
+            .any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
         "C6-e: Rule 4 must NOT fire on 9 stable in-control points. Got: {:?}",
         alerts_before
     );
@@ -907,7 +952,9 @@ fn c6_rule4_fires_at_exact_third_point_in_window() {
     });
     let alerts_after_10 = check_western_electric_rules(&data);
     assert!(
-        !alerts_after_10.iter().any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
+        !alerts_after_10
+            .iter()
+            .any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
         "C6-e: Rule 4 must NOT fire with only 1 of last 3 beyond 2σ (10 points). Got: {:?}",
         alerts_after_10
     );
@@ -922,7 +969,9 @@ fn c6_rule4_fires_at_exact_third_point_in_window() {
         subgroup_data: None,
     });
     let alerts_after_11 = check_western_electric_rules(&data);
-    let two_of_three = alerts_after_11.iter().find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    let two_of_three = alerts_after_11
+        .iter()
+        .find(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
     assert!(
         two_of_three.is_some(),
         "C6-e: Rule 4 must fire exactly when 2 of last 3 are beyond 2σ (11 points). Got: {:?}",

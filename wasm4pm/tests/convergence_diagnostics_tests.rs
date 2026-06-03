@@ -16,10 +16,10 @@
 //! Chicago TDD Rank-1 oracle: Bellman convergence theorem
 //! Chicago TDD Rank-2 oracle: SPC→rule type domain contract; Circuit FSM contract
 
-use wasm4pm::{RlState};
-use wasm4pm::rl_orchestrator::{RlOrchestrator, learning_rate_schedule};
+use wasm4pm::rl_orchestrator::{learning_rate_schedule, RlOrchestrator};
 use wasm4pm::self_healing::CircuitBreaker;
 use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause};
+use wasm4pm::RlState;
 
 /// Helper: build a default healthy RlState for testing.
 fn healthy_state() -> RlState {
@@ -72,13 +72,18 @@ fn test_convergence_span_fires_at_10_cycle_boundaries_only() {
     }
 
     // Only cycles 10 and 20 should have triggered the span
-    assert_eq!(emission_cycles, vec![10, 20],
+    assert_eq!(
+        emission_cycles,
+        vec![10, 20],
         "Convergence diagnostics should fire at cycles 10 and 20 only in 25-cycle run, got: {:?}",
         emission_cycles
     );
 
     // Cycle 0 must NOT trigger (> 0 check)
-    assert!(!emission_cycles.contains(&0), "Cycle 0 must not trigger convergence span");
+    assert!(
+        !emission_cycles.contains(&0),
+        "Cycle 0 must not trigger convergence span"
+    );
 }
 
 // ============================================================================
@@ -119,34 +124,61 @@ fn test_td_error_sign_positive_when_q_underestimates() {
     // On cycle 0: Q-table is zero-initialized; reward for health improvement is +1.0
     // TD error (via linucb): reward - ucb_score_before ≈ 1.0 - 0 = 1.0 (positive)
     let (_, reward) = orch.run_cycle(
-        &features, &state_degraded, &state_improved, 0, true, true, false
+        &features,
+        &state_degraded,
+        &state_improved,
+        0,
+        true,
+        true,
+        false,
     );
 
     // Reward must be positive for health improvement (domain contract)
-    assert!(reward > 0.0,
-        "Reward should be positive when health improves 2→1, got: {}", reward);
+    assert!(
+        reward > 0.0,
+        "Reward should be positive when health improves 2→1, got: {}",
+        reward
+    );
 
     // After 50 cycles with same positive pattern, the agent accumulates reward
     // and Q-values grow — verifying learning occurred
     let initial_reward = reward;
     for _ in 0..50 {
         let (_, _) = orch.run_cycle(
-            &features, &state_degraded, &state_improved, 0, true, true, false
+            &features,
+            &state_degraded,
+            &state_improved,
+            0,
+            true,
+            true,
+            false,
         );
     }
 
     // Weight norms should have grown from the initial zero (gradient updates happened)
     let norms = orch.weight_norms();
     let max_norm: f32 = norms.iter().cloned().fold(0.0_f32, f32::max);
-    assert!(max_norm >= 0.0,
-        "Weight norms must be non-negative: {:?}", norms);
+    assert!(
+        max_norm >= 0.0,
+        "Weight norms must be non-negative: {:?}",
+        norms
+    );
 
     // The reward pattern should remain consistent (domain contract: health improvement → positive)
     let (_, final_reward) = orch.run_cycle(
-        &features, &state_degraded, &state_improved, 0, true, true, false
+        &features,
+        &state_degraded,
+        &state_improved,
+        0,
+        true,
+        true,
+        false,
     );
-    assert!(final_reward > 0.0,
-        "Reward for health improvement should remain positive, got: {}", final_reward);
+    assert!(
+        final_reward > 0.0,
+        "Reward for health improvement should remain positive, got: {}",
+        final_reward
+    );
 
     // Ensure initial_reward is used in assertion to prevent dead-code lint
     let _ = initial_reward;
@@ -178,7 +210,11 @@ fn test_circuit_state_transitions_produce_trackable_sequence() {
     cb.record_failure();
 
     // Now circuit should be Open
-    assert_eq!(cb.state() as u8, 2, "After 5 failures, circuit should be Open (2)");
+    assert_eq!(
+        cb.state() as u8,
+        2,
+        "After 5 failures, circuit should be Open (2)"
+    );
 
     // Open circuit blocks requests
     let allowed_open = cb.allow_request();
@@ -188,8 +224,11 @@ fn test_circuit_state_transitions_produce_trackable_sequence() {
     // but the state_before must have been Open
     let state_after_open_request = cb.state() as u8;
     // State must be either still Open (2) or HalfOpen (1)
-    assert!(state_after_open_request <= 2,
-        "Circuit state must be valid (0=Closed, 1=HalfOpen, 2=Open), got: {}", state_after_open_request);
+    assert!(
+        state_after_open_request <= 2,
+        "Circuit state must be valid (0=Closed, 1=HalfOpen, 2=Open), got: {}",
+        state_after_open_request
+    );
 
     // Verify that the allow_request function ran without panic (the named span was entered)
     // This is a structural test: if the info_span! in allow_request panics, this test fails
@@ -199,8 +238,11 @@ fn test_circuit_state_transitions_produce_trackable_sequence() {
     cb.record_success();
     let _state_post_success = cb.state() as u8;
     // State should be valid after success recording
-    assert!(_state_post_success <= 2,
-        "State after success must be valid, got: {}", _state_post_success);
+    assert!(
+        _state_post_success <= 2,
+        "State after success must be valid, got: {}",
+        _state_post_success
+    );
 }
 
 // ============================================================================
@@ -225,14 +267,16 @@ fn test_spc_rule_classification_maps_to_string_field() {
     let lcl = mean - 3.0 * std;
 
     // Tight normal data + one extreme outlier
-    let tight: Vec<ChartData> = (0..8).map(|i| ChartData {
-        timestamp: i.to_string(),
-        value: mean + (i as f64 * 0.01 - 0.04), // slight variation
-        ucl,
-        cl: mean,
-        lcl,
-        subgroup_data: None,
-    }).collect();
+    let tight: Vec<ChartData> = (0..8)
+        .map(|i| ChartData {
+            timestamp: i.to_string(),
+            value: mean + (i as f64 * 0.01 - 0.04), // slight variation
+            ucl,
+            cl: mean,
+            lcl,
+            subgroup_data: None,
+        })
+        .collect();
 
     // Outlier: 5σ above mean — must trigger Rule 1
     let outlier = ChartData {
@@ -243,11 +287,17 @@ fn test_spc_rule_classification_maps_to_string_field() {
         lcl,
         subgroup_data: None,
     };
-    let data_rule1: Vec<ChartData> = tight.iter().cloned().chain(std::iter::once(outlier)).collect();
+    let data_rule1: Vec<ChartData> = tight
+        .iter()
+        .cloned()
+        .chain(std::iter::once(outlier))
+        .collect();
     let causes_rule1 = check_western_electric_rules(&data_rule1);
 
     // Verify the cause is OutOfControl and maps to rule_1_outlier string
-    let has_rule1 = causes_rule1.iter().any(|c| matches!(c, SpecialCause::OutOfControl { .. }));
+    let has_rule1 = causes_rule1
+        .iter()
+        .any(|c| matches!(c, SpecialCause::OutOfControl { .. }));
     if has_rule1 {
         for c in &causes_rule1 {
             let rule_str = match c {
@@ -258,29 +308,42 @@ fn test_spc_rule_classification_maps_to_string_field() {
             };
             // Must produce a non-empty, valid rule type string
             assert!(!rule_str.is_empty(), "Rule type string must not be empty");
-            assert!(rule_str.starts_with("rule_"), "Rule type must start with 'rule_': {}", rule_str);
+            assert!(
+                rule_str.starts_with("rule_"),
+                "Rule type must start with 'rule_': {}",
+                rule_str
+            );
             // The rule number in the string must be 1-4
-            let rule_num: u8 = rule_str.chars()
+            let rule_num: u8 = rule_str
+                .chars()
                 .nth(5)
                 .and_then(|c| c.to_digit(10))
                 .map(|d| d as u8)
                 .unwrap_or(0);
-            assert!(rule_num >= 1 && rule_num <= 4,
-                "Rule number must be 1-4, got {} from '{}'", rule_num, rule_str);
+            assert!(
+                rule_num >= 1 && rule_num <= 4,
+                "Rule number must be 1-4, got {} from '{}'",
+                rule_num,
+                rule_str
+            );
         }
     }
 
     // Test Rule 2: 9 consecutive points on same side (Shift)
-    let shift_data: Vec<ChartData> = (0..10).map(|i| ChartData {
-        timestamp: i.to_string(),
-        value: mean + 1.5 * std, // all above CL (but below UCL, so no Rule 1)
-        ucl,
-        cl: mean,
-        lcl,
-        subgroup_data: None,
-    }).collect();
+    let shift_data: Vec<ChartData> = (0..10)
+        .map(|i| ChartData {
+            timestamp: i.to_string(),
+            value: mean + 1.5 * std, // all above CL (but below UCL, so no Rule 1)
+            ucl,
+            cl: mean,
+            lcl,
+            subgroup_data: None,
+        })
+        .collect();
     let causes_shift = check_western_electric_rules(&shift_data);
-    let has_shift = causes_shift.iter().any(|c| matches!(c, SpecialCause::Shift { .. }));
+    let has_shift = causes_shift
+        .iter()
+        .any(|c| matches!(c, SpecialCause::Shift { .. }));
     if has_shift {
         // Verify shift direction maps correctly
         for c in &causes_shift {
@@ -290,27 +353,42 @@ fn test_spc_rule_classification_maps_to_string_field() {
                     ShiftDirection::Above => "above",
                     ShiftDirection::Below => "below",
                 };
-                assert!(*count >= 9, "Rule 2 shift count must be >= 9, got {}", count);
-                assert!(!direction_str.is_empty(), "Shift direction must not be empty");
+                assert!(
+                    *count >= 9,
+                    "Rule 2 shift count must be >= 9, got {}",
+                    count
+                );
+                assert!(
+                    !direction_str.is_empty(),
+                    "Shift direction must not be empty"
+                );
             }
         }
     }
 
     // Test Rule 3: 6 consecutive monotonic points (Trend)
-    let trend_data: Vec<ChartData> = (0..7).map(|i| ChartData {
-        timestamp: i.to_string(),
-        value: mean + i as f64 * 0.5 * std, // strictly increasing
-        ucl,
-        cl: mean,
-        lcl,
-        subgroup_data: None,
-    }).collect();
+    let trend_data: Vec<ChartData> = (0..7)
+        .map(|i| ChartData {
+            timestamp: i.to_string(),
+            value: mean + i as f64 * 0.5 * std, // strictly increasing
+            ucl,
+            cl: mean,
+            lcl,
+            subgroup_data: None,
+        })
+        .collect();
     let causes_trend = check_western_electric_rules(&trend_data);
-    let has_trend = causes_trend.iter().any(|c| matches!(c, SpecialCause::Trend { .. }));
+    let has_trend = causes_trend
+        .iter()
+        .any(|c| matches!(c, SpecialCause::Trend { .. }));
     if has_trend {
         for c in &causes_trend {
             if let SpecialCause::Trend { count, .. } = c {
-                assert!(*count >= 6, "Rule 3 trend count must be >= 6, got {}", count);
+                assert!(
+                    *count >= 6,
+                    "Rule 3 trend count must be >= 6, got {}",
+                    count
+                );
             }
         }
     }
@@ -329,14 +407,26 @@ fn test_spc_rule_classification_maps_to_string_field() {
 fn test_convergence_status_threshold_at_0_1() {
     // Verify the threshold logic directly (the exact code used in run_cycle)
     let classify = |td_error: f32| -> &'static str {
-        if td_error.abs() > 0.1 { "learning" } else { "converged" }
+        if td_error.abs() > 0.1 {
+            "learning"
+        } else {
+            "converged"
+        }
     };
 
     // Cases exactly from the schema design document
     assert_eq!(classify(0.047), "converged", "|0.047| < 0.1 → converged");
     assert_eq!(classify(-0.047), "converged", "|-0.047| < 0.1 → converged");
-    assert_eq!(classify(0.1), "converged", "|0.1| == 0.1 → converged (boundary, not >)");
-    assert_eq!(classify(-0.1), "converged", "|-0.1| == 0.1 → converged (boundary)");
+    assert_eq!(
+        classify(0.1),
+        "converged",
+        "|0.1| == 0.1 → converged (boundary, not >)"
+    );
+    assert_eq!(
+        classify(-0.1),
+        "converged",
+        "|-0.1| == 0.1 → converged (boundary)"
+    );
     assert_eq!(classify(0.101), "learning", "|0.101| > 0.1 → learning");
     assert_eq!(classify(-0.421), "learning", "|-0.421| > 0.1 → learning");
     assert_eq!(classify(0.0), "converged", "|0.0| < 0.1 → converged");
@@ -344,7 +434,10 @@ fn test_convergence_status_threshold_at_0_1() {
     // Verify that early learning cycles produce "learning" status in practice
     let mut orch = RlOrchestrator::new_with_seed(42);
     let state = healthy_state();
-    let next_state = RlState { health_level: 0, ..state }; // max improvement
+    let next_state = RlState {
+        health_level: 0,
+        ..state
+    }; // max improvement
     let features = standard_features();
 
     // Run to cycle 10 to trigger the convergence span
@@ -404,13 +497,32 @@ fn test_convergence_span_agent_matches_active_agent() {
     // Learning rate at cycle 11 should be decayed from initial 0.1
     let alpha_0 = 0.1_f32;
     let alpha_11 = learning_rate_schedule(alpha_0, 11);
-    assert!(alpha_11 < alpha_0, "Learning rate must decay: α(11)={} < α(0)={}", alpha_11, alpha_0);
-    assert!(alpha_11 > 0.0, "Learning rate must remain positive: {}", alpha_11);
+    assert!(
+        alpha_11 < alpha_0,
+        "Learning rate must decay: α(11)={} < α(0)={}",
+        alpha_11,
+        alpha_0
+    );
+    assert!(
+        alpha_11 > 0.0,
+        "Learning rate must remain positive: {}",
+        alpha_11
+    );
 
     // Weight norms must all be finite (LinUCB updates happened)
     let norms = orch.weight_norms();
     for (i, &norm) in norms.iter().enumerate() {
-        assert!(norm.is_finite(), "Weight norm[{}] must be finite, got {}", i, norm);
-        assert!(norm >= 0.0, "Weight norm[{}] must be non-negative, got {}", i, norm);
+        assert!(
+            norm.is_finite(),
+            "Weight norm[{}] must be finite, got {}",
+            i,
+            norm
+        );
+        assert!(
+            norm >= 0.0,
+            "Weight norm[{}] must be non-negative, got {}",
+            i,
+            norm
+        );
     }
 }

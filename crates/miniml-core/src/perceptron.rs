@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct PerceptronModel {
@@ -14,16 +14,24 @@ pub struct PerceptronModel {
 #[wasm_bindgen]
 impl PerceptronModel {
     #[wasm_bindgen(getter)]
-    pub fn bias(&self) -> f64 { self.bias }
+    pub fn bias(&self) -> f64 {
+        self.bias
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn iterations(&self) -> usize { self.iterations }
+    pub fn iterations(&self) -> usize {
+        self.iterations
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn converged(&self) -> bool { self.converged }
+    pub fn converged(&self) -> bool {
+        self.converged
+    }
 
     #[wasm_bindgen(js_name = "getWeights")]
-    pub fn get_weights(&self) -> Vec<f64> { self.weights.clone() }
+    pub fn get_weights(&self) -> Vec<f64> {
+        self.weights.clone()
+    }
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<u32> {
@@ -41,18 +49,30 @@ impl PerceptronModel {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("Perceptron(converged={}, iterations={})", self.converged, self.iterations)
+        format!(
+            "Perceptron(converged={}, iterations={})",
+            self.converged, self.iterations
+        )
     }
 }
 
-pub fn perceptron_impl(data: &[f64], n_features: usize, labels: &[f64], lr: f64, max_iter: usize) -> Result<PerceptronModel, MlError> {
+pub fn perceptron_impl(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    lr: f64,
+    max_iter: usize,
+) -> Result<PerceptronModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if labels.len() != n {
         return Err(MlError::new("labels length must match number of samples"));
     }
 
     // Convert 0/1 labels to -1/+1
-    let y: Vec<f64> = labels.iter().map(|&l| if l > 0.5 { 1.0 } else { -1.0 }).collect();
+    let y: Vec<f64> = labels
+        .iter()
+        .map(|&l| if l > 0.5 { 1.0 } else { -1.0 })
+        .collect();
 
     let mut weights = vec![0.0; n_features];
     let mut bias = 0.0;
@@ -85,11 +105,23 @@ pub fn perceptron_impl(data: &[f64], n_features: usize, labels: &[f64], lr: f64,
         }
     }
 
-    Ok(PerceptronModel { n_features, weights, bias, iterations, converged })
+    Ok(PerceptronModel {
+        n_features,
+        weights,
+        bias,
+        iterations,
+        converged,
+    })
 }
 
 #[wasm_bindgen(js_name = "perceptron")]
-pub fn perceptron(data: &[f64], n_features: usize, labels: &[f64], lr: f64, max_iter: usize) -> Result<PerceptronModel, JsError> {
+pub fn perceptron(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    lr: f64,
+    max_iter: usize,
+) -> Result<PerceptronModel, JsError> {
     perceptron_impl(data, n_features, labels, lr, max_iter).map_err(|e| JsError::new(&e.message))
 }
 
@@ -100,8 +132,8 @@ mod tests {
     #[test]
     fn test_linearly_separable() {
         let data = vec![
-            0.0, 0.0,  0.5, 0.5,  1.0, 0.0,  // class 0
-            3.0, 3.0,  3.5, 3.5,  4.0, 3.0,  // class 1
+            0.0, 0.0, 0.5, 0.5, 1.0, 0.0, // class 0
+            3.0, 3.0, 3.5, 3.5, 4.0, 3.0, // class 1
         ];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let model = perceptron_impl(&data, 2, &labels, 0.1, 1000).unwrap();

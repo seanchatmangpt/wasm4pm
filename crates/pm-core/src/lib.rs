@@ -107,13 +107,13 @@ pub mod social_network;
 pub mod prelude {
     // Core vocabulary from primitives
     pub use crate::primitives::{
-        ActivityName, CaseId, DurationNs, Frequency, ObjectId, ObjectType,
-        PlaceId, ResourceName, TimestampNs, TransitionId,
+        ActivityName, CaseId, DurationNs, Frequency, ObjectId, ObjectType, PlaceId, ResourceName,
+        TimestampNs, TransitionId,
     };
     // Quality dimensions (bounded constructors)
     pub use crate::quality::{
-        FitnessScore, GeneralizationScore, PrecisionScore, QualityDimensions,
-        SimplicityScore, TokenReplayStats,
+        FitnessScore, GeneralizationScore, PrecisionScore, QualityDimensions, SimplicityScore,
+        TokenReplayStats,
     };
     // Core process model structures
     pub use crate::dfg::DirectlyFollowsGraph;

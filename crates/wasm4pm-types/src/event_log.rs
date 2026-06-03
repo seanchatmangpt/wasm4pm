@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, FixedOffset};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Possible attribute values according to the XES Standard
@@ -104,7 +104,10 @@ impl Event {
 
     pub fn with_activity(activity: &str) -> Self {
         let mut attributes = Vec::new();
-        attributes.add_to_attributes("concept:name".to_string(), AttributeValue::String(activity.to_string()));
+        attributes.add_to_attributes(
+            "concept:name".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
         Event { attributes }
     }
 
@@ -126,10 +129,7 @@ impl Trace {
     pub fn new(case_id: String, events: Vec<Event>) -> Self {
         let mut attributes = Vec::new();
         attributes.add_to_attributes("concept:name".to_string(), AttributeValue::String(case_id));
-        Trace {
-            attributes,
-            events,
-        }
+        Trace { attributes, events }
     }
 
     pub fn len(&self) -> usize {

@@ -1,7 +1,7 @@
 #![cfg(feature = "poc_gate_validator")]
 use wasm4pm::autoprocess::AutoProcessAgent;
-use wasm4pm::pattern_dispatch::{PatternDispatcher, PatternContext, PatternType};
 use wasm4pm::gate_validator::{UnverifiedRun, VerifiedRun};
+use wasm4pm::pattern_dispatch::{PatternContext, PatternDispatcher, PatternType};
 use wasm4pm::proof_gate_registry::ProofGate;
 
 #[cfg(test)]
@@ -48,15 +48,18 @@ mod red_team {
     #[test]
     fn test_red_team_gate_typestate_enforcement() {
         let run = UnverifiedRun::new();
-        
+
         // This fails to compile if uncommented, proving the typestate works:
-        // let verified: VerifiedRun = run; 
-        
+        // let verified: VerifiedRun = run;
+
         // This also fails because VerifiedRun has no public constructor:
         // let verified = VerifiedRun { passed_gates: HashSet::new() };
 
         let result = run.verify();
-        assert!(result.is_err(), "Should not be able to verify without required gates");
+        assert!(
+            result.is_err(),
+            "Should not be able to verify without required gates"
+        );
     }
 
     /// RED TEAM SIMULATION: Successful passage after fulfilling requirements.
@@ -64,8 +67,10 @@ mod red_team {
     fn test_red_team_lawful_passage() {
         let mut run = UnverifiedRun::new();
         run.mark_gate_passed(ProofGate::gate_test_suite_passes);
-        
-        let verified = run.verify().expect("Should pass after fulfilling requirements");
+
+        let verified = run
+            .verify()
+            .expect("Should pass after fulfilling requirements");
         let output = verified.export_results();
         assert!(output.contains("Exporting results verified with 1 gates"));
     }

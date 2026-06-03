@@ -478,27 +478,39 @@ mod tests {
 
     #[test]
     fn test_g3_truth_all_pass() {
-        let result = check_quality_threshold_gate(Some(0.97), Some(0.85), Some((100, 5)), &Default::default());
+        let result = check_quality_threshold_gate(
+            Some(0.97),
+            Some(0.85),
+            Some((100, 5)),
+            &Default::default(),
+        );
         assert!(result.passed);
     }
 
     #[test]
     fn test_g3_truth_fitness_fail() {
-        let result = check_quality_threshold_gate(Some(0.90), Some(0.85), None, &Default::default());
+        let result =
+            check_quality_threshold_gate(Some(0.90), Some(0.85), None, &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("fitness"));
     }
 
     #[test]
     fn test_g3_truth_precision_fail() {
-        let result = check_quality_threshold_gate(Some(0.97), Some(0.70), None, &Default::default());
+        let result =
+            check_quality_threshold_gate(Some(0.97), Some(0.70), None, &Default::default());
         assert!(!result.passed);
         assert!(result.reason.contains("precision"));
     }
 
     #[test]
     fn test_g3_truth_temporal_fail() {
-        let result = check_quality_threshold_gate(Some(0.97), Some(0.85), Some((50, 200)), &Default::default());
+        let result = check_quality_threshold_gate(
+            Some(0.97),
+            Some(0.85),
+            Some((50, 200)),
+            &Default::default(),
+        );
         assert!(!result.passed);
         assert!(result.reason.contains("temporal"));
     }

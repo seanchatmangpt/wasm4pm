@@ -11,10 +11,8 @@
 //! All assertions use real OCEL data (no mocks) and verify mathematical properties.
 
 use std::collections::{HashMap, HashSet};
-use wasm4pm::models::{
-    AttributeValue, OCELEvent, OCELEventObjectRef, OCELObject, OCEL,
-};
 use wasm4pm::discovery::discover_ocel_dfg_pure;
+use wasm4pm::models::{AttributeValue, OCELEvent, OCELEventObjectRef, OCELObject, OCEL};
 use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
 
 // =============================================================================
@@ -41,7 +39,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 attributes: {
                     let mut m = HashMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(1000.0));
-                    m.insert("customer".to_string(), AttributeValue::String("Alice".to_string()));
+                    m.insert(
+                        "customer".to_string(),
+                        AttributeValue::String("Alice".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order1".to_string()],
@@ -56,7 +57,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 timestamp: "2024-01-01T10:05:00Z".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("status".to_string(), AttributeValue::String("verified".to_string()));
+                    m.insert(
+                        "status".to_string(),
+                        AttributeValue::String("verified".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order1".to_string()],
@@ -68,7 +72,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 timestamp: "2024-01-01T10:10:00Z".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("approver".to_string(), AttributeValue::String("Manager1".to_string()));
+                    m.insert(
+                        "approver".to_string(),
+                        AttributeValue::String("Manager1".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order1".to_string()],
@@ -102,7 +109,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 timestamp: "2024-01-01T10:20:00Z".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("carrier".to_string(), AttributeValue::String("UPS".to_string()));
+                    m.insert(
+                        "carrier".to_string(),
+                        AttributeValue::String("UPS".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order1".to_string()],
@@ -116,7 +126,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 attributes: {
                     let mut m = HashMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(500.0));
-                    m.insert("customer".to_string(), AttributeValue::String("Bob".to_string()));
+                    m.insert(
+                        "customer".to_string(),
+                        AttributeValue::String("Bob".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order2".to_string()],
@@ -128,7 +141,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 timestamp: "2024-01-01T11:05:00Z".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("status".to_string(), AttributeValue::String("rejected".to_string()));
+                    m.insert(
+                        "status".to_string(),
+                        AttributeValue::String("rejected".to_string()),
+                    );
                     m
                 },
                 object_ids: vec!["order2".to_string()],
@@ -141,7 +157,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 object_type: "Order".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("status".to_string(), AttributeValue::String("completed".to_string()));
+                    m.insert(
+                        "status".to_string(),
+                        AttributeValue::String("completed".to_string()),
+                    );
                     m.insert("amount".to_string(), AttributeValue::Float(1000.0));
                     m
                 },
@@ -153,7 +172,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 object_type: "Order".to_string(),
                 attributes: {
                     let mut m = HashMap::new();
-                    m.insert("status".to_string(), AttributeValue::String("rejected".to_string()));
+                    m.insert(
+                        "status".to_string(),
+                        AttributeValue::String("rejected".to_string()),
+                    );
                     m.insert("amount".to_string(), AttributeValue::Float(500.0));
                     m
                 },
@@ -166,7 +188,10 @@ fn create_order_invoice_ocel() -> OCEL {
                 attributes: {
                     let mut m = HashMap::new();
                     m.insert("amount".to_string(), AttributeValue::Float(1000.0));
-                    m.insert("date".to_string(), AttributeValue::String("2024-01-01".to_string()));
+                    m.insert(
+                        "date".to_string(),
+                        AttributeValue::String("2024-01-01".to_string()),
+                    );
                     m
                 },
                 changes: vec![],
@@ -270,10 +295,14 @@ fn test_discover_ocel_dfg_edges() {
     assert!(!dfg.edges.is_empty(), "DFG should have edges");
 
     // Verify order1 path: Create Order → Check Payment exists
-    let create_to_check = dfg.edges
+    let create_to_check = dfg
+        .edges
         .iter()
         .find(|e| e.from == "Create Order" && e.to == "Check Payment");
-    assert!(create_to_check.is_some(), "Should have Create Order → Check Payment edge");
+    assert!(
+        create_to_check.is_some(),
+        "Should have Create Order → Check Payment edge"
+    );
     assert_eq!(
         create_to_check.unwrap().frequency,
         2,
@@ -424,15 +453,13 @@ fn test_object_lifecycle_creation_violation() {
                 object_refs: vec![],
             },
         ],
-        objects: vec![
-            OCELObject {
-                id: "item1".to_string(),
-                object_type: "Item".to_string(),
-                attributes: HashMap::new(),
-                changes: vec![],
-                embedded_relations: vec![],
-            },
-        ],
+        objects: vec![OCELObject {
+            id: "item1".to_string(),
+            object_type: "Item".to_string(),
+            attributes: HashMap::new(),
+            changes: vec![],
+            embedded_relations: vec![],
+        }],
         object_relations: vec![],
     };
 
@@ -446,18 +473,15 @@ fn test_object_lifecycle_creation_violation() {
         "Should detect lifecycle violation: timestamp inversion (e1 at 10:05, e2 at 10:00)"
     );
     assert_eq!(
-        violations[0].object_id,
-        "item1",
+        violations[0].object_id, "item1",
         "Violation should be on item1"
     );
     assert_eq!(
-        violations[0].event_a_id,
-        "e1",
+        violations[0].event_a_id, "e1",
         "First event (chronologically) should be e1"
     );
     assert_eq!(
-        violations[0].event_b_id,
-        "e2",
+        violations[0].event_b_id, "e2",
         "Second event in log should be e2"
     );
 }
@@ -526,8 +550,14 @@ fn test_object_lifecycle_multiple_violations() {
 
     let violations = validate_ocel_object_lifecycles(&ocel);
     assert!(!violations.is_empty(), "Should detect multiple violations");
-    assert!(violations.iter().any(|v| v.object_id == "obj1"), "Should have obj1 violation");
-    assert!(violations.iter().any(|v| v.object_id == "obj2"), "Should have obj2 violation");
+    assert!(
+        violations.iter().any(|v| v.object_id == "obj1"),
+        "Should have obj1 violation"
+    );
+    assert!(
+        violations.iter().any(|v| v.object_id == "obj2"),
+        "Should have obj2 violation"
+    );
 }
 
 #[test]
@@ -555,15 +585,13 @@ fn test_object_lifecycle_concurrent_events() {
                 object_refs: vec![],
             },
         ],
-        objects: vec![
-            OCELObject {
-                id: "order1".to_string(),
-                object_type: "Order".to_string(),
-                attributes: HashMap::new(),
-                changes: vec![],
-                embedded_relations: vec![],
-            },
-        ],
+        objects: vec![OCELObject {
+            id: "order1".to_string(),
+            object_type: "Order".to_string(),
+            attributes: HashMap::new(),
+            changes: vec![],
+            embedded_relations: vec![],
+        }],
         object_relations: vec![],
     };
 

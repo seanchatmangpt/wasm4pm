@@ -12,7 +12,7 @@
 
 use wasm4pm::prediction_additions::{calculate_rework_score, extract_prefix_features};
 use wasm4pm::prediction_resource::{
-    BanditArm, BanditState, compute_queue_delay, compute_ucb1_selection,
+    compute_queue_delay, compute_ucb1_selection, BanditArm, BanditState,
 };
 
 // ---------------------------------------------------------------------------
@@ -69,8 +69,8 @@ fn unique_activities_in_prefix_bounded_by_prefix_length() {
         &["A"],
         &["A", "B"],
         &["A", "B", "C", "D"],
-        &["A", "B", "A", "C"],   // repeated A — still ≤ len
-        &["A", "A", "A", "A"],   // all same
+        &["A", "B", "A", "C"], // repeated A — still ≤ len
+        &["A", "A", "A", "A"], // all same
     ];
 
     for &activities in cases {
@@ -145,7 +145,7 @@ fn entropy_of_prefix_in_zero_one_range() {
         &["A", "B", "C"],
         &["A", "A", "B", "B"],
         &["A", "B", "C", "D", "E"],
-        &["A", "A", "A", "A"],   // certain — entropy near 0
+        &["A", "A", "A", "A"], // certain — entropy near 0
     ];
 
     for &activities in cases {
@@ -177,10 +177,7 @@ fn entropy_of_prefix_in_zero_one_range() {
 fn mm1_queue_approaches_infinity_at_full_utilization() {
     // Stable: λ < μ
     let stable = compute_queue_delay(0.5, 1.0).unwrap();
-    assert!(
-        stable.is_stable,
-        "queue with ρ=0.5 must be stable"
-    );
+    assert!(stable.is_stable, "queue with ρ=0.5 must be stable");
     assert!(
         stable.wait_time.is_finite() && stable.wait_time >= 0.0,
         "stable queue must have finite non-negative wait time, got {}",
@@ -189,10 +186,7 @@ fn mm1_queue_approaches_infinity_at_full_utilization() {
 
     // Unstable: λ = μ  (ρ = 1.0)
     let at_capacity = compute_queue_delay(1.0, 1.0).unwrap();
-    assert!(
-        !at_capacity.is_stable,
-        "queue with ρ=1.0 must be unstable"
-    );
+    assert!(!at_capacity.is_stable, "queue with ρ=1.0 must be unstable");
     assert!(
         at_capacity.wait_time.is_infinite(),
         "unstable queue (ρ=1) must have infinite wait time, got {}",
@@ -201,10 +195,7 @@ fn mm1_queue_approaches_infinity_at_full_utilization() {
 
     // Overloaded: λ > μ  (ρ > 1.0)
     let overloaded = compute_queue_delay(2.0, 1.0).unwrap();
-    assert!(
-        !overloaded.is_stable,
-        "queue with ρ=2.0 must be unstable"
-    );
+    assert!(!overloaded.is_stable, "queue with ρ=2.0 must be unstable");
     assert!(
         overloaded.wait_time.is_infinite(),
         "overloaded queue (ρ>1) must have infinite wait time, got {}",

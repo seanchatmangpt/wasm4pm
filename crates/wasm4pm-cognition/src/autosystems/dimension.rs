@@ -66,10 +66,10 @@ pub struct Quantity<U: UnitMarker> {
 
 impl<U: UnitMarker> Quantity<U> {
     /// Wrap a raw scalar in a unit.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new(value: f64) -> Self {
         Self {
             value,
@@ -78,28 +78,28 @@ impl<U: UnitMarker> Quantity<U> {
     }
 
     /// Underlying scalar.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn value(self) -> f64 {
         self.value
     }
 
     /// Unit identifier.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn unit(&self) -> &'static str {
         U::ID
     }
 
     /// Finiteness query.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn is_finite(&self) -> bool {
         self.value.is_finite()
     }
@@ -158,10 +158,10 @@ pub struct DimensionSpec {
 
 impl DimensionSpec {
     /// Validate that `value` lies within declared bounds and is finite.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn validate(&self, value: f64) -> Result<(), String> {
         if !value.is_finite() {
             return Err(format!("dimension {}: value not finite", self.key));

@@ -19,9 +19,7 @@
 //! 5. If exactly one remains, select it. Otherwise, declare an impasse
 //!    and fall back to the highest-score survivor.
 
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
-};
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
 use std::collections::HashSet;
 
 /// SOAR breed.
@@ -155,8 +153,7 @@ impl CognitionBreed for Soar {
                 for c in candidates.iter_mut() {
                     if &c.id == worse && !c.eliminated {
                         c.eliminated = true;
-                        c.elimination_reason =
-                            Some(format!("dominated by {}", better));
+                        c.elimination_reason = Some(format!("dominated by {}", better));
                         trace.push(TraceStep {
                             step: trace.len(),
                             kind: "dominate".to_string(),
@@ -223,7 +220,8 @@ impl CognitionBreed for Soar {
             }
         };
 
-        let explanation = format!(
+        let explanation =
+            format!(
             "SOAR {} selected {:?} (best={}, worst={}, require={}, prohibit={}, better-pairs={})",
             if impasse { "impasse-resolved" } else { "decisive" },
             selected,
@@ -358,9 +356,7 @@ mod tests {
         // With a tie-resolution, the highest-score (b) is the impasse pick.
         assert_eq!(out.selected.as_deref(), Some("b"));
         assert!(
-            out.inference_trace
-                .iter()
-                .all(|t| t.kind != "dominate"),
+            out.inference_trace.iter().all(|t| t.kind != "dominate"),
             "malformed better MUST NOT produce a 'dominate' trace step"
         );
     }

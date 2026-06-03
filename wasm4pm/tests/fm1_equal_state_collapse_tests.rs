@@ -142,7 +142,7 @@ fn fm1b_orchestrator_equal_state_run_cycle_does_not_diverge() {
     let cycles = 50_u64;
     for _ in 0..cycles {
         let (_action, reward) = orch.run_cycle(
-            &features, &s, &s_eq, 0,    // spc_alert_count
+            &features, &s, &s_eq, 0,     // spc_alert_count
             true,  // guard_pass  (FM-1 trigger)
             true,  // circuit_allowed (FM-1 trigger)
             false, // latency_budget_exceeded
@@ -160,7 +160,8 @@ fn fm1b_orchestrator_equal_state_run_cycle_does_not_diverge() {
     }
 
     assert_eq!(
-        orch.telemetry().cycle_count, cycles,
+        orch.telemetry().cycle_count,
+        cycles,
         "FM1-B: orchestrator must complete all {cycles} cycles"
     );
     // Cumulative reward cannot exceed cycles * max_per_cycle_reward; a diverging

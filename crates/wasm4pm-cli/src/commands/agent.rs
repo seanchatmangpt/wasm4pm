@@ -1,9 +1,9 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use colored::*;
-use wasm4pm_cli::io::{Io, Table};
 use wasm4pm::rl_orchestrator::AgentType;
 use wasm4pm::RL_ORCHESTRATOR;
+use wasm4pm_cli::io::{Io, Table};
 
 #[derive(Args, Debug)]
 pub struct AgentArgs {

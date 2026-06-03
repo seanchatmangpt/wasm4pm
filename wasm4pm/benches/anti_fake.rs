@@ -33,46 +33,38 @@ fn bench_complete_activity(c: &mut Criterion) {
 
     for &num_objs in &objects_counts {
         group.throughput(Throughput::Elements(num_objs as u64));
-        group.bench_with_input(
-            BenchmarkId::new("outputs", num_objs),
-            &num_objs,
-            |b, &n| {
-                b.iter(|| {
-                    let mut h = PowlTestHarness::new("bench-route");
-                    let outputs: Vec<ObjectEvidence> = (0..n)
-                        .map(|i| ObjectEvidence::new(format!("obj_{}", i), bh(&format!("data_{}", i))))
-                        .collect();
-                    let evidence = ActivityEvidence::new("A").with_outputs(outputs);
-                    black_box(h.complete_activity(evidence).unwrap());
-                });
-            },
-        );
-    }
-
-    for &num_objs in &objects_counts {
-        group.throughput(Throughput::Elements(num_objs as u64));
-        group.bench_with_input(
-            BenchmarkId::new("inputs", num_objs),
-            &num_objs,
-            |b, &n| {
-                // Setup harness with registered outputs
+        group.bench_with_input(BenchmarkId::new("outputs", num_objs), &num_objs, |b, &n| {
+            b.iter(|| {
                 let mut h = PowlTestHarness::new("bench-route");
                 let outputs: Vec<ObjectEvidence> = (0..n)
                     .map(|i| ObjectEvidence::new(format!("obj_{}", i), bh(&format!("data_{}", i))))
                     .collect();
-                let evidence_out = ActivityEvidence::new("A").with_outputs(outputs.clone());
-                h.complete_activity(evidence_out).unwrap();
+                let evidence = ActivityEvidence::new("A").with_outputs(outputs);
+                black_box(h.complete_activity(evidence).unwrap());
+            });
+        });
+    }
 
-                b.iter(|| {
-                    let mut h_inner = h.clone(); // We need a way to reset or clone the harness
-                    let inputs: Vec<ObjectEvidence> = (0..n)
-                        .map(|i| ObjectEvidence::new(format!("obj_{}", i), bh(&format!("data_{}", i))))
-                        .collect();
-                    let evidence_in = ActivityEvidence::new("B").with_inputs(inputs);
-                    black_box(h_inner.complete_activity(evidence_in).unwrap());
-                });
-            },
-        );
+    for &num_objs in &objects_counts {
+        group.throughput(Throughput::Elements(num_objs as u64));
+        group.bench_with_input(BenchmarkId::new("inputs", num_objs), &num_objs, |b, &n| {
+            // Setup harness with registered outputs
+            let mut h = PowlTestHarness::new("bench-route");
+            let outputs: Vec<ObjectEvidence> = (0..n)
+                .map(|i| ObjectEvidence::new(format!("obj_{}", i), bh(&format!("data_{}", i))))
+                .collect();
+            let evidence_out = ActivityEvidence::new("A").with_outputs(outputs.clone());
+            h.complete_activity(evidence_out).unwrap();
+
+            b.iter(|| {
+                let mut h_inner = h.clone(); // We need a way to reset or clone the harness
+                let inputs: Vec<ObjectEvidence> = (0..n)
+                    .map(|i| ObjectEvidence::new(format!("obj_{}", i), bh(&format!("data_{}", i))))
+                    .collect();
+                let evidence_in = ActivityEvidence::new("B").with_inputs(inputs);
+                black_box(h_inner.complete_activity(evidence_in).unwrap());
+            });
+        });
     }
 
     group.finish();
@@ -112,9 +104,12 @@ fn bench_finish(c: &mut Criterion) {
                 for i in 0..l {
                     let act = if i % 2 == 0 { "A" } else { "B" };
                     h.complete_activity(
-                        ActivityEvidence::new(act)
-                            .with_outputs(vec![ObjectEvidence::new(format!("out_{}", i), bh("val"))])
-                    ).unwrap();
+                        ActivityEvidence::new(act).with_outputs(vec![ObjectEvidence::new(
+                            format!("out_{}", i),
+                            bh("val"),
+                        )]),
+                    )
+                    .unwrap();
                 }
                 b.iter(|| {
                     black_box(h.finish());
@@ -141,8 +136,9 @@ fn bench_tamper_detection(c: &mut Criterion) {
         let mut h = PowlTestHarness::new("bench-route");
         h.complete_activity(
             ActivityEvidence::new("A")
-                .with_outputs(vec![ObjectEvidence::new("obj", bh("original"))])
-        ).unwrap();
+                .with_outputs(vec![ObjectEvidence::new("obj", bh("original"))]),
+        )
+        .unwrap();
 
         b.iter(|| {
             let mut h_inner = h.clone();
@@ -159,5 +155,10 @@ fn bench_tamper_detection(c: &mut Criterion) {
 // I need to implement clone_for_bench or just Clone for PowlTestHarness.
 // Let's check harness.rs again to see if I can add Clone.
 
-criterion_group!(anti_fake_benches, bench_complete_activity, bench_finish, bench_tamper_detection);
+criterion_group!(
+    anti_fake_benches,
+    bench_complete_activity,
+    bench_finish,
+    bench_tamper_detection
+);
 criterion_main!(anti_fake_benches);

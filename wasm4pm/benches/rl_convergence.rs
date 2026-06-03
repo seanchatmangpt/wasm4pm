@@ -11,9 +11,9 @@
 //! 5. State space coverage: % of 460K states explored
 //! 6. Reward sensitivity: scaling and perturbation analysis
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
-use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward};
-use wasm4pm::{RlState, RlAction};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use wasm4pm::rl_orchestrator::{compute_reward, AgentType, RlOrchestrator};
+use wasm4pm::{RlAction, RlState};
 
 #[path = "helpers.rs"]
 mod helpers;
@@ -54,17 +54,10 @@ fn generate_features(seed: u64, index: usize) -> [f32; 8] {
 }
 
 /// Run a single RL cycle and return reward.
-fn run_cycle(
-    orchestrator: &mut RlOrchestrator,
-    state: &RlState,
-    next_state: &RlState,
-) -> f32 {
+fn run_cycle(orchestrator: &mut RlOrchestrator, state: &RlState, next_state: &RlState) -> f32 {
     let features = [0.5; 8]; // Neutral features
     let (_action_label, reward) = orchestrator.run_cycle(
-        &features,
-        state,
-        next_state,
-        0,     // spc_alert_count
+        &features, state, next_state, 0,     // spc_alert_count
         true,  // guard_pass
         true,  // circuit_allowed
         false, // latency_budget_exceeded
@@ -121,7 +114,11 @@ fn compute_ewma(rewards: &[f32], alpha: f32) -> Vec<f32> {
 fn rl_convergence_curves(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_convergence");
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // 10 samples (5 seeds each)
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // 10 samples (5 seeds each)
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -159,7 +156,11 @@ fn rl_convergence_curves(c: &mut Criterion) {
 fn rl_sample_efficiency(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_sample_efficiency");
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -197,7 +198,11 @@ fn rl_sample_efficiency(c: &mut Criterion) {
 fn rl_action_selection_latency(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_action_selection");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // High sample count for latency measurement
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // High sample count for latency measurement
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -214,9 +219,7 @@ fn rl_action_selection_latency(c: &mut Criterion) {
 
             let state = generate_test_state(42, 0);
 
-            b.iter(|| {
-                black_box(orchestrator.select_action(black_box(&state)))
-            });
+            b.iter(|| black_box(orchestrator.select_action(black_box(&state))));
         });
     }
 
@@ -227,7 +230,11 @@ fn rl_action_selection_latency(c: &mut Criterion) {
 fn rl_update_latency(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_update_latency");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -358,7 +365,11 @@ fn rl_linucb_regret(c: &mut Criterion) {
 fn rl_state_space_coverage(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_state_space");
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // 10 samples for consistency
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // 10 samples for consistency
 
     let agents = vec![
         ("QLearning", AgentType::QLearning),
@@ -439,7 +450,13 @@ fn rl_reward_scaling_sensitivity(c: &mut Criterion) {
                     );
 
                     let scaled_reward = base_reward * scale;
-                    orchestrator.update(&state, &RlAction::Continue, scaled_reward, &next_state, false);
+                    orchestrator.update(
+                        &state,
+                        &RlAction::Continue,
+                        scaled_reward,
+                        &next_state,
+                        false,
+                    );
 
                     total_reward += scaled_reward;
                 }
@@ -456,7 +473,11 @@ fn rl_reward_scaling_sensitivity(c: &mut Criterion) {
 fn rl_health_scenario_convergence(c: &mut Criterion) {
     let mut group = c.benchmark_group("rl_health_scenarios");
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let scenarios = vec![
         ("health_normal", 0u8),

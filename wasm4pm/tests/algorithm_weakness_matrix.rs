@@ -274,7 +274,10 @@ fn alpha_fails_on_short_loops() {
         .get(&("A".to_string(), "B".to_string()))
         .copied()
         .unwrap_or(0);
-    assert_eq!(a_to_b, 3, "A→B must appear 3× (once per trace after the loop)");
+    assert_eq!(
+        a_to_b, 3,
+        "A→B must appear 3× (once per trace after the loop)"
+    );
 
     // DOCUMENTED CONSEQUENCE: Alpha Miner would fail to generate a Petri net
     // with a self-loop transition for A. DFG proves the self-loop exists in the data.
@@ -365,7 +368,10 @@ fn streaming_dfg_order_independent_for_same_traces() {
     );
 
     for ((from, to), count) in &edges1 {
-        let count2 = edges2.get(&(from.clone(), to.clone())).copied().unwrap_or(0);
+        let count2 = edges2
+            .get(&(from.clone(), to.clone()))
+            .copied()
+            .unwrap_or(0);
         assert_eq!(
             *count, count2,
             "Edge {}→{} must have identical frequency regardless of trace order",
@@ -411,7 +417,10 @@ fn dfg_noise_inflation_documented() {
         .get(&("A".to_string(), "X".to_string()))
         .copied()
         .unwrap_or(0);
-    assert_eq!(noise_freq, 1, "Noise edge A→X must have frequency exactly 1");
+    assert_eq!(
+        noise_freq, 1,
+        "Noise edge A→X must have frequency exactly 1"
+    );
 
     // Total traces = 101; noise ratio < 2%
     let total_a_out: usize = edges

@@ -1,8 +1,8 @@
 use crate::event_log::AttributeValue;
 
 pub use ocel_core::{
-    OCEL, OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELObjectAttribute,
-    OCELRelationship, OCELType, OCELTypeAttribute,
+    OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELObjectAttribute,
+    OCELRelationship, OCELType, OCELTypeAttribute, OCEL,
 };
 
 impl From<AttributeValue> for OCELAttributeValue {

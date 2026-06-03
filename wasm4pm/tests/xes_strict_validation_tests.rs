@@ -102,7 +102,10 @@ fn test_string_tag_not_self_closing_rejected() {
     let content = include_str!("fixtures/dirty_data/invalid_string_not_closed.xes");
     let result = validate_and_parse_xes(content);
 
-    assert!(result.is_err(), "Non-self-closing <string> tag should be rejected");
+    assert!(
+        result.is_err(),
+        "Non-self-closing <string> tag should be rejected"
+    );
     let err = result.unwrap_err();
     assert!(
         err.contains("string") || err.contains("self-closing"),
@@ -120,7 +123,10 @@ fn test_missing_required_attribute_rejected() {
     let content = include_str!("fixtures/dirty_data/missing_attribute.xes");
     let result = validate_and_parse_xes(content);
 
-    assert!(result.is_err(), "Missing 'value' attribute should be rejected");
+    assert!(
+        result.is_err(),
+        "Missing 'value' attribute should be rejected"
+    );
     let err = result.unwrap_err();
     assert!(
         err.contains("string") && (err.contains("missing") || err.contains("required")),
@@ -145,7 +151,10 @@ fn test_unexpected_closing_tag_rejected() {
 
     let result = validate_and_parse_xes(content);
 
-    assert!(result.is_err(), "Unexpected closing </event> should be rejected");
+    assert!(
+        result.is_err(),
+        "Unexpected closing </event> should be rejected"
+    );
     let err = result.unwrap_err();
     assert!(
         err.contains("Mismatched") || err.contains("Unexpected") || err.contains("matching"),
@@ -217,7 +226,10 @@ fn test_valid_xes_multiple_traces_parses() {
 </log>"#;
 
     let result = validate_and_parse_xes(content);
-    assert!(result.is_ok(), "Valid XES with multiple traces should parse");
+    assert!(
+        result.is_ok(),
+        "Valid XES with multiple traces should parse"
+    );
 
     let log = result.unwrap();
     assert_eq!(log.traces.len(), 2, "Expected 2 traces");

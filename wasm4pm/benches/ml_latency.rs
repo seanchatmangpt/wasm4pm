@@ -8,9 +8,9 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::time::Duration;
-use wasm4pm::models::{EventLog, Trace, Event, AttributeValue};
-use wasm4pm::state::{get_or_init_state, StoredObject};
 use wasm4pm::ml_algorithms::*;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
+use wasm4pm::state::{get_or_init_state, StoredObject};
 
 fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
     let mut log = EventLog {
@@ -25,22 +25,33 @@ fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
         for j in 0..events_per_trace {
             let mut event = Event::new();
             // Real timestamps for regression/forecasting
-            let ts = format!("2024-01-01T10:{:02}:{:02}Z", (i * events_per_trace + j) / 60, (i * events_per_trace + j) % 60);
-            event.attributes.insert("time:timestamp".to_string(), AttributeValue::Date(ts));
-            event.attributes.insert("concept:name".to_string(), AttributeValue::String(format!("Act{}", j % 5)));
+            let ts = format!(
+                "2024-01-01T10:{:02}:{:02}Z",
+                (i * events_per_trace + j) / 60,
+                (i * events_per_trace + j) % 60
+            );
+            event
+                .attributes
+                .insert("time:timestamp".to_string(), AttributeValue::Date(ts));
+            event.attributes.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(format!("Act{}", j % 5)),
+            );
             trace.events.push(event);
         }
         log.traces.push(trace);
     }
 
-    let handle = get_or_init_state().store_object(StoredObject::EventLog(log)).unwrap();
+    let handle = get_or_init_state()
+        .store_object(StoredObject::EventLog(log))
+        .unwrap();
     handle
 }
 
 fn bench_ml_regression(c: &mut Criterion) {
     let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/regression");
-    
+
     group.bench_function("discover_ml_regress_100_traces", |b| {
         b.iter(|| discover_ml_regress(black_box(&handle), black_box("concept:name")))
     });
@@ -50,7 +61,7 @@ fn bench_ml_regression(c: &mut Criterion) {
 fn bench_ml_forecasting(c: &mut Criterion) {
     let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/forecasting");
-    
+
     group.bench_function("discover_ml_forecast_100_traces", |b| {
         b.iter(|| discover_ml_forecast(black_box(&handle), black_box("concept:name")))
     });
@@ -60,7 +71,7 @@ fn bench_ml_forecasting(c: &mut Criterion) {
 fn bench_ml_classification(c: &mut Criterion) {
     let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/classification");
-    
+
     group.bench_function("discover_ml_classify_100_traces", |b| {
         b.iter(|| discover_ml_classify(black_box(&handle), black_box("concept:name")))
     });
@@ -70,7 +81,7 @@ fn bench_ml_classification(c: &mut Criterion) {
 fn bench_ml_pca(c: &mut Criterion) {
     let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/pca");
-    
+
     group.bench_function("discover_ml_pca_100_traces", |b| {
         b.iter(|| discover_ml_pca(black_box(&handle), black_box("concept:name")))
     });
@@ -80,7 +91,7 @@ fn bench_ml_pca(c: &mut Criterion) {
 fn bench_ml_automl(c: &mut Criterion) {
     let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/automl");
-    
+
     group.bench_function("discover_automl_forecast_100_traces", |b| {
         b.iter(|| discover_automl_forecast(black_box(&handle), black_box("concept:name")))
     });

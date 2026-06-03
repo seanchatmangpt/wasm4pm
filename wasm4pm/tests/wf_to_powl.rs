@@ -123,13 +123,7 @@ fn concurrent_sound_net() -> PetriNet {
 fn long_term_dependency_net() -> PetriNet {
     net(
         &["i", "pC", "pD", "pE", "pC2", "o"],
-        &[
-            ("a", "a"),
-            ("b", "b"),
-            ("c", "c"),
-            ("d", "d"),
-            ("e", "e"),
-        ],
+        &[("a", "a"), ("b", "b"), ("c", "c"), ("d", "d"), ("e", "e")],
         &[
             ("i", "a"),
             ("a", "pC"),
@@ -283,7 +277,12 @@ fn theorem1_nested_sequence_of_choice_language_preserved() {
     // Expected language: { ⟨Start,B,End⟩, ⟨Start,C,End⟩ }.
     let n = net(
         &["src", "p1", "p2", "sink"],
-        &[("tStart", "Start"), ("tB", "B"), ("tC", "C"), ("tEnd", "End")],
+        &[
+            ("tStart", "Start"),
+            ("tB", "B"),
+            ("tC", "C"),
+            ("tEnd", "End"),
+        ],
         &[
             ("src", "tStart"),
             ("tStart", "p1"),
@@ -375,7 +374,9 @@ fn theorem1_nested_concurrency_in_choice_language_preserved() {
 /// at the e-split / d-join). Its *language*, however, IS POWL-2.0-expressible.
 fn fig2_net() -> PetriNet {
     net(
-        &["i", "p_a1", "p_a2", "p_e1", "p_e2", "p_b", "p_c", "p_d", "o"],
+        &[
+            "i", "p_a1", "p_a2", "p_e1", "p_e2", "p_b", "p_c", "p_d", "o",
+        ],
         &[
             ("a", "a"),
             ("b", "b"),
@@ -462,11 +463,7 @@ fn def_4_3_partial_order_carries_transitive_order() {
     // Whatever the nesting, the language is the single sequence ⟨A,B,C⟩.
     assert_eq!(
         wf_net_language(&n).unwrap(),
-        BTreeSet::from([vec![
-            "A".to_string(),
-            "B".to_string(),
-            "C".to_string()
-        ]])
+        BTreeSet::from([vec!["A".to_string(), "B".to_string(), "C".to_string()]])
     );
     // The top-level must be a partial order (Def 4.3), not a choice.
     assert!(

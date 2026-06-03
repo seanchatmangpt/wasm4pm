@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::mat_get;
+use wasm_bindgen::prelude::*;
 
 /// Davies-Bouldin Index - lower is better (cluster separation vs compactness)
 #[wasm_bindgen(js_name = "daviesBouldinScore")]
@@ -9,8 +9,7 @@ pub fn davies_bouldin_score(
     n_features: usize,
     labels: &[f64],
 ) -> Result<f64, JsError> {
-    davies_bouldin_impl(data, n_features, labels)
-        .map_err(|e| JsError::new(&e.message))
+    davies_bouldin_impl(data, n_features, labels).map_err(|e| JsError::new(&e.message))
 }
 
 pub fn davies_bouldin_impl(
@@ -30,7 +29,7 @@ pub fn davies_bouldin_impl(
     let n_clusters = cluster_ids.len();
 
     if n_clusters < 2 {
-        return Ok(0.0);  // Single cluster has DB = 0
+        return Ok(0.0); // Single cluster has DB = 0
     }
 
     // Compute cluster centroids and average distances
@@ -87,7 +86,11 @@ pub fn davies_bouldin_impl(
 
             // Distance between centroids
             let mut dist_sq = 0.0;
-            for (&c1, &c2) in centroids[i].iter().zip(centroids[j].iter()).take(n_features) {
+            for (&c1, &c2) in centroids[i]
+                .iter()
+                .zip(centroids[j].iter())
+                .take(n_features)
+            {
                 let diff = c1 - c2;
                 dist_sq += diff * diff;
             }
@@ -113,8 +116,7 @@ pub fn calinski_harabasz_score(
     n_features: usize,
     labels: &[f64],
 ) -> Result<f64, JsError> {
-    calinski_harabasz_impl(data, n_features, labels)
-        .map_err(|e| JsError::new(&e.message))
+    calinski_harabasz_impl(data, n_features, labels).map_err(|e| JsError::new(&e.message))
 }
 
 pub fn calinski_harabasz_impl(
@@ -177,7 +179,11 @@ pub fn calinski_harabasz_impl(
 
         // Between-cluster: cluster size * distance from cluster centroid to global centroid
         let mut dist_to_global_sq = 0.0;
-        for (&c_val, &g_val) in cluster_centroid.iter().zip(global_centroid.iter()).take(n_features) {
+        for (&c_val, &g_val) in cluster_centroid
+            .iter()
+            .zip(global_centroid.iter())
+            .take(n_features)
+        {
             let diff = c_val - g_val;
             dist_to_global_sq += diff * diff;
         }
@@ -195,7 +201,7 @@ pub fn calinski_harabasz_impl(
     }
 
     if wgss < 1e-12 {
-        return Ok(f64::INFINITY);  // Perfect clustering
+        return Ok(f64::INFINITY); // Perfect clustering
     }
 
     let ch_index = (bgss / (n_clusters - 1) as f64) / (wgss / (n - n_clusters) as f64);
@@ -209,9 +215,8 @@ mod tests {
     #[test]
     fn test_davies_bouldin_well_separated() {
         let data = vec![
-            0.0, 0.0,  // Cluster 0
-            0.1, 0.1,
-            10.0, 10.0,  // Cluster 1
+            0.0, 0.0, // Cluster 0
+            0.1, 0.1, 10.0, 10.0, // Cluster 1
             10.1, 10.1,
         ];
         let labels = vec![0.0, 0.0, 1.0, 1.0];
@@ -225,9 +230,8 @@ mod tests {
     #[test]
     fn test_calinski_harabasz_well_separated() {
         let data = vec![
-            0.0, 0.0,  // Cluster 0
-            0.1, 0.1,
-            10.0, 10.0,  // Cluster 1
+            0.0, 0.0, // Cluster 0
+            0.1, 0.1, 10.0, 10.0, // Cluster 1
             10.1, 10.1,
         ];
         let labels = vec![0.0, 0.0, 1.0, 1.0];

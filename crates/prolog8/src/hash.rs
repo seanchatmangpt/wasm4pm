@@ -89,7 +89,6 @@ pub fn link_hash(step: u64, input: &Hash, output: &Hash, prev: &Hash) -> Hash {
     hasher.finalize().into()
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

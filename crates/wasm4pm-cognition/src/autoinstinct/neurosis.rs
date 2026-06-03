@@ -1,7 +1,7 @@
 //! Artificial Neurosis / Ideology Machines
 //! Belief systems and personality simulation (PARRY/Colby/Abelson lineage).
 //!
-//! This implements a belief network that reacts defensively or neurotically 
+//! This implements a belief network that reacts defensively or neurotically
 //! based on incoming symbolic assertions, tracking paranoia/affect levels.
 
 use std::collections::HashMap;
@@ -21,20 +21,20 @@ pub struct NeuroticState {
 
 impl NeuroticState {
     /// Creates a new default `NeuroticState` with all levels at zero.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Process a new semantic input. If it conflicts with strongly held beliefs,
     /// mistrust and anger increase. If it aligns, they decrease.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> String {
         let incoming_clamped = if incoming_strength.is_finite() {
             incoming_strength.clamp(0.0, 1.0)
@@ -98,9 +98,21 @@ mod tests {
         for _ in 0..1000 {
             sys.process_input("authority", 0.0); // Maximum conflict each iter.
         }
-        assert!(sys.fear <= 1.0, "fear={} exceeded 1.0 (docs claim [0,1])", sys.fear);
-        assert!(sys.anger <= 1.0, "anger={} exceeded 1.0 (docs claim [0,1])", sys.anger);
-        assert!(sys.mistrust <= 1.0, "mistrust={} exceeded 1.0 (docs claim [0,1])", sys.mistrust);
+        assert!(
+            sys.fear <= 1.0,
+            "fear={} exceeded 1.0 (docs claim [0,1])",
+            sys.fear
+        );
+        assert!(
+            sys.anger <= 1.0,
+            "anger={} exceeded 1.0 (docs claim [0,1])",
+            sys.anger
+        );
+        assert!(
+            sys.mistrust <= 1.0,
+            "mistrust={} exceeded 1.0 (docs claim [0,1])",
+            sys.mistrust
+        );
         assert!(sys.fear >= 0.0);
         assert!(sys.anger >= 0.0);
         assert!(sys.mistrust >= 0.0);

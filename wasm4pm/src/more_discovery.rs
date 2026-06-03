@@ -1,3 +1,4 @@
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::{evaluate_edges_fitness, to_js_str};
@@ -200,7 +201,7 @@ fn convert_powl_node_recursive(
             let mut cg_node_ids = Vec::new();
             for n in &cg.graph.nodes {
                 match n {
-                    wasm4pm_types::ChoiceGraphNode::Start => {
+                    ChoiceGraphNode::Start => {
                         let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
                         powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
                             id,
@@ -208,7 +209,7 @@ fn convert_powl_node_recursive(
                         ));
                         cg_node_ids.push(id);
                     }
-                    wasm4pm_types::ChoiceGraphNode::End => {
+                    ChoiceGraphNode::End => {
                         let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
                         powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
                             id,
@@ -216,7 +217,7 @@ fn convert_powl_node_recursive(
                         ));
                         cg_node_ids.push(id);
                     }
-                    wasm4pm_types::ChoiceGraphNode::Activity(lbl) => {
+                    ChoiceGraphNode::Activity(lbl) => {
                         let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
                         powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
                             id,
@@ -224,7 +225,7 @@ fn convert_powl_node_recursive(
                         ));
                         cg_node_ids.push(id);
                     }
-                    wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx) => {
+                    ChoiceGraphNode::SubModel(sub_idx) => {
                         let child_id = convert_powl_node_recursive(*sub_idx, arena, powl);
                         cg_node_ids.push(child_id);
                     }

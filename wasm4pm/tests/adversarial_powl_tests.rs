@@ -71,10 +71,7 @@ impl SimpleDfg {
         let mut cycles = Vec::new();
         for a1 in &self.activities {
             for a2 in &self.activities {
-                if a1 != a2
-                    && self.is_reachable(a1, a2)
-                    && self.is_reachable(a2, a1)
-                {
+                if a1 != a2 && self.is_reachable(a1, a2) && self.is_reachable(a2, a1) {
                     cycles.push((a1.clone(), a2.clone()));
                 }
             }
@@ -90,10 +87,7 @@ struct UnionFind {
 
 impl UnionFind {
     fn new(activities: &HashSet<String>) -> Self {
-        let parent = activities
-            .iter()
-            .map(|a| (a.clone(), a.clone()))
-            .collect();
+        let parent = activities.iter().map(|a| (a.clone(), a.clone())).collect();
         UnionFind { parent }
     }
 
@@ -434,7 +428,11 @@ fn category_c_spc_rule3_violation() {
     for i in 0..5 {
         let value = 100.0 + (i as f64) * 3.0;
         let alert = detector.process_value(value);
-        assert!(alert.is_none(), "No Rule 3 before 6 increasing points (i={})", i);
+        assert!(
+            alert.is_none(),
+            "No Rule 3 before 6 increasing points (i={})",
+            i
+        );
     }
 
     // 6th strictly increasing point should trigger Rule 3
@@ -455,33 +453,44 @@ fn category_c_spc_rule3_violation() {
 #[test]
 fn category_d_circuit_breaker_fsm() {
     let mut cb = CircuitBreaker::new(5); // timeout after 5 steps
-    assert_eq!(cb.state, CircuitState::Closed, "Initial state must be Closed");
+    assert_eq!(
+        cb.state,
+        CircuitState::Closed,
+        "Initial state must be Closed"
+    );
 
     // Record 3 failures → Open
     for i in 0..3 {
         cb.record_failure();
         if i < 2 {
             assert_eq!(
-                cb.state, CircuitState::Closed,
+                cb.state,
+                CircuitState::Closed,
                 "State must stay Closed before 3 failures"
             );
         }
     }
-    assert_eq!(cb.state, CircuitState::Open, "State must be Open after 3 failures");
+    assert_eq!(
+        cb.state,
+        CircuitState::Open,
+        "State must be Open after 3 failures"
+    );
 
     // Advance clock by timeout threshold (3 * 5 = 15 steps)
     for _ in 0..15 {
         cb.advance_clock();
     }
     assert_eq!(
-        cb.state, CircuitState::HalfOpen,
+        cb.state,
+        CircuitState::HalfOpen,
         "State must be HalfOpen after timeout"
     );
 
     // Record success in HalfOpen → Closed
     cb.record_success();
     assert_eq!(
-        cb.state, CircuitState::Closed,
+        cb.state,
+        CircuitState::Closed,
         "State must be Closed after HalfOpen success"
     );
 
@@ -647,7 +656,9 @@ fn category_g_integration_retail_discovery() {
         let mut trace_valid = true;
         for activity in trace {
             if !last_activity.is_empty()
-                && !dfg.edges.contains(&(last_activity.to_string(), activity.to_string()))
+                && !dfg
+                    .edges
+                    .contains(&(last_activity.to_string(), activity.to_string()))
             {
                 trace_valid = false;
             }
@@ -664,7 +675,10 @@ fn category_g_integration_retail_discovery() {
             contains_unknown = true;
         }
     }
-    assert!(contains_unknown, "Impossible trace must contain unknown activity");
+    assert!(
+        contains_unknown,
+        "Impossible trace must contain unknown activity"
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -726,7 +740,10 @@ fn category_h_counterfactual_backward_timestamp() {
             backward_detected = true;
         }
     }
-    assert!(backward_detected, "Impossible backward timestamp must be detected");
+    assert!(
+        backward_detected,
+        "Impossible backward timestamp must be detected"
+    );
 }
 
 /// Test rejection of impossible logs: cycles violating model structure.
@@ -751,10 +768,7 @@ fn category_h_counterfactual_cycle_violation() {
     impossible_log.add_edge("B", "A"); // Cycle!
 
     let log_cycles = impossible_log.find_cycles();
-    assert!(
-        !log_cycles.is_empty(),
-        "Impossible log must contain cycles"
-    );
+    assert!(!log_cycles.is_empty(), "Impossible log must contain cycles");
 
     // Fitness calculation: log has edge (B → A) not in model
     let illegal_edge = ("B".to_string(), "A".to_string());
@@ -788,7 +802,11 @@ fn category_h_counterfactual_invalid_start() {
 
     // Postcondition: Model rejects this trace
     // (In real conformance: fitness would be 0)
-    let fitness = if valid_starts.contains(&impossible_start) { 1.0 } else { 0.0 };
+    let fitness = if valid_starts.contains(&impossible_start) {
+        1.0
+    } else {
+        0.0
+    };
     assert_eq!(fitness, 0.0, "Model must reject invalid start activity");
 }
 

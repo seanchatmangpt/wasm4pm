@@ -70,7 +70,10 @@ fn a1_q_learning_nonterminal_update_moves_toward_target() {
     );
 
     let q_before = agent.get_q_value(&s, &action);
-    assert!((q_before).abs() < 1e-6, "A1: Q(s,a) must start at 0.0 (unvisited)");
+    assert!(
+        (q_before).abs() < 1e-6,
+        "A1: Q(s,a) must start at 0.0 (unvisited)"
+    );
 
     // Positive reward, non-terminal: target = r + γ * max Q(s', a') > Q_old = 0
     // → Q_new must increase.
@@ -151,7 +154,8 @@ fn a1_double_q_nonterminal_update_moves_toward_target() {
     let chosen = Agent::select_action(&agent, &s);
     // DoubleQ with only one action seeded must prefer Continue.
     assert_eq!(
-        chosen, RlAction::Continue,
+        chosen,
+        RlAction::Continue,
         "A1 FAILED: DoubleQ greedy action inconsistent after 64 positive updates"
     );
 }
@@ -197,8 +201,7 @@ fn a1_expected_sarsa_nonterminal_update_moves_toward_target() {
 #[test]
 fn a2_terminal_update_ignores_next_state_q_value() {
     // Two agents, identical hyperparams, identical seeding.
-    let agent_terminal: QLearning<RlState, RlAction> =
-        QLearning::with_hyperparams(0.1, 0.99, 0.0);
+    let agent_terminal: QLearning<RlState, RlAction> = QLearning::with_hyperparams(0.1, 0.99, 0.0);
     let agent_nonterminal: QLearning<RlState, RlAction> =
         QLearning::with_hyperparams(0.1, 0.99, 0.0);
 
@@ -356,10 +359,7 @@ fn a3_fm1_regression_via_orchestrator_run_cycle() {
     // The orchestrator must internally pass (s, s_next) to the agent update,
     // NOT (s, s) (the FM-1 bug).
     let (_action_label, reward) = orch.run_cycle(
-        &features,
-        &s,
-        &s_next,
-        0,    // spc_alert_count
+        &features, &s, &s_next, 0,    // spc_alert_count
         true, // guard_pass (FM-1 trigger)
         true, // circuit_allowed (FM-1 trigger)
         false,
@@ -399,8 +399,7 @@ fn a4_higher_discount_factor_produces_larger_q_update() {
     // Two agents: one with γ=0.99, one with γ=0.50. Same α=1.0 for simplicity.
     let agent_high_gamma: QLearning<RlState, RlAction> =
         QLearning::with_hyperparams(1.0, 0.99, 0.0);
-    let agent_low_gamma: QLearning<RlState, RlAction> =
-        QLearning::with_hyperparams(1.0, 0.50, 0.0);
+    let agent_low_gamma: QLearning<RlState, RlAction> = QLearning::with_hyperparams(1.0, 0.50, 0.0);
 
     let s = state_at(2);
     let s_next = state_at(1);

@@ -38,7 +38,10 @@ pub struct DfgEdge {
 
 impl DfgEdge {
     pub fn new(from: impl Into<ActivityName>, to: impl Into<ActivityName>) -> Self {
-        DfgEdge { from: from.into(), to: to.into() }
+        DfgEdge {
+            from: from.into(),
+            to: to.into(),
+        }
     }
 }
 
@@ -110,7 +113,13 @@ impl DirectlyFollowsGraph {
     /// Frequency of the directly-follows relation (from → to), or 0 if absent.
     #[inline]
     pub fn edge_frequency(&self, from: &ActivityName, to: &ActivityName) -> Frequency {
-        self.edges.get(&DfgEdge { from: from.clone(), to: to.clone() }).copied().unwrap_or(0)
+        self.edges
+            .get(&DfgEdge {
+                from: from.clone(),
+                to: to.clone(),
+            })
+            .copied()
+            .unwrap_or(0)
     }
 }
 

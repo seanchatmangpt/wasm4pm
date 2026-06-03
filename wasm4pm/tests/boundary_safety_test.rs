@@ -90,7 +90,10 @@ fn test_dfg_single_event() {
     let log = build_log_with_activities(&[vec!["Activity"]]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Should have at least 1 node for the single activity
-    assert!(!dfg.nodes.is_empty(), "DFG must contain the single activity node");
+    assert!(
+        !dfg.nodes.is_empty(),
+        "DFG must contain the single activity node"
+    );
     assert_eq!(
         dfg.nodes.len(),
         1,
@@ -115,7 +118,10 @@ fn test_dfg_all_identical_traces() {
     assert_eq!(dfg.edges.len(), 2, "DFG must have 2 edges: A→B, B→C");
     // Check edge frequencies are consistent
     for edge in &dfg.edges {
-        assert_eq!(edge.frequency, 4, "Each edge should have frequency 4 (4 identical traces)");
+        assert_eq!(
+            edge.frequency, 4,
+            "Each edge should have frequency 4 (4 identical traces)"
+        );
     }
 }
 
@@ -123,16 +129,23 @@ fn test_dfg_all_identical_traces() {
 #[test]
 fn test_dfg_unicode_activity_names() {
     let log = build_log_with_activities(&[
-        vec!["开始", "审批", "完成"],           // Chinese: Start, Approve, Finish
-        vec!["开始", "拒绝", "完成"],           // Chinese: Start, Reject, Finish
-        vec!["ابدأ", "موافقة", "إنهاء"],       // Arabic: Start, Approve, Finish
-        vec!["🚀", "✅", "🏁"],                 // Emoji: Rocket, Check, Flag
+        vec!["开始", "审批", "完成"],    // Chinese: Start, Approve, Finish
+        vec!["开始", "拒绝", "完成"],    // Chinese: Start, Reject, Finish
+        vec!["ابدأ", "موافقة", "إنهاء"], // Arabic: Start, Approve, Finish
+        vec!["🚀", "✅", "🏁"],          // Emoji: Rocket, Check, Flag
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // All Unicode activities should be preserved
     let vocab = log_vocabulary(&log);
-    assert_eq!(vocab.len(), 10, "Should have 10 unique Unicode activities (3 Chinese + 3 Arabic + 3 Emoji, no overlap)");
-    assert!(dfg.nodes.len() > 0, "DFG must have nodes from Unicode activities");
+    assert_eq!(
+        vocab.len(),
+        10,
+        "Should have 10 unique Unicode activities (3 Chinese + 3 Arabic + 3 Emoji, no overlap)"
+    );
+    assert!(
+        dfg.nodes.len() > 0,
+        "DFG must have nodes from Unicode activities"
+    );
 }
 
 /// Test 5: Special characters in activity names
@@ -144,9 +157,15 @@ fn test_dfg_special_characters() {
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Special characters should be handled without panic
-    assert!(dfg.nodes.len() > 0, "DFG must handle special character activities");
+    assert!(
+        dfg.nodes.len() > 0,
+        "DFG must handle special character activities"
+    );
     let vocab = log_vocabulary(&log);
-    assert!(vocab.len() >= 4, "DFG should preserve all activities with special chars");
+    assert!(
+        vocab.len() >= 4,
+        "DFG should preserve all activities with special chars"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -156,11 +175,7 @@ fn test_dfg_special_characters() {
 /// Test 6: DFG with single activity repeated
 #[test]
 fn test_dfg_single_activity_repeated() {
-    let log = build_log_with_activities(&[
-        vec!["A", "A", "A"],
-        vec!["A", "A"],
-        vec!["A"],
-    ]);
+    let log = build_log_with_activities(&[vec!["A", "A", "A"], vec!["A", "A"], vec!["A"]]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 1, "Single activity must yield 1 node");
     // Self-loop from A→A
@@ -174,9 +189,7 @@ fn test_dfg_single_activity_repeated() {
 /// Test 7: DFG with many parallel activities (no ordering)
 #[test]
 fn test_dfg_many_unordered_activities() {
-    let log = build_log_with_activities(&[
-        vec!["A", "B", "C", "D", "E", "F", "G", "H"],
-    ]);
+    let log = build_log_with_activities(&[vec!["A", "B", "C", "D", "E", "F", "G", "H"]]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 8, "Must have all 8 nodes");
     assert_eq!(dfg.edges.len(), 7, "Linear sequence yields 7 edges");
@@ -191,21 +204,34 @@ fn test_dfg_branching_structure() {
         vec!["Start", "PathC", "End"],
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
-    assert_eq!(dfg.nodes.len(), 5, "Must have Start, PathA, PathB, PathC, End");
+    assert_eq!(
+        dfg.nodes.len(),
+        5,
+        "Must have Start, PathA, PathB, PathC, End"
+    );
     // 3 edges from Start, 3 edges to End
-    assert!(dfg.edges.len() >= 6, "Branching structure must have multiple edges");
+    assert!(
+        dfg.edges.len() >= 6,
+        "Branching structure must have multiple edges"
+    );
 }
 
 /// Test 9: DFG with loops (repeated activities)
 #[test]
 fn test_dfg_loop_structure() {
-    let log = build_log_with_activities(&[
-        vec!["Start", "Process", "Validate", "Process", "Process", "Done"],
-    ]);
+    let log = build_log_with_activities(&[vec![
+        "Start", "Process", "Validate", "Process", "Process", "Done",
+    ]]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
-    assert!(dfg.nodes.len() >= 4, "Must have Start, Process, Validate, Done");
+    assert!(
+        dfg.nodes.len() >= 4,
+        "Must have Start, Process, Validate, Done"
+    );
     // Should have at least a self-loop or back-edge on Process
-    assert!(dfg.edges.len() >= 5, "Loop structure must have multiple edges");
+    assert!(
+        dfg.edges.len() >= 5,
+        "Loop structure must have multiple edges"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -260,11 +286,12 @@ fn test_heuristic_unicode_activities() {
 /// Test 14: Heuristic Miner with special characters
 #[test]
 fn test_heuristic_special_characters() {
-    let log = build_log_with_activities(&[
-        vec!["Start|Action", "Mid[Index]", "End{Bracket}"],
-    ]);
+    let log = build_log_with_activities(&[vec!["Start|Action", "Mid[Index]", "End{Bracket}"]]);
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
-    assert!(dfg.nodes.len() > 0, "Must preserve activities with special chars");
+    assert!(
+        dfg.nodes.len() > 0,
+        "Must preserve activities with special chars"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -306,8 +333,8 @@ fn test_genetic_all_identical() {
         vec!["X", "Y", "Z"],
         vec!["X", "Y", "Z"],
     ]);
-    let (dfg, fitness) = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20)
-        .expect("GA must succeed");
+    let (dfg, fitness) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20).expect("GA must succeed");
     assert_eq!(dfg.nodes.len(), 3, "Must have 3 unique nodes");
     assert!(
         (0.0..=1.0).contains(&fitness),
@@ -319,8 +346,8 @@ fn test_genetic_all_identical() {
 #[test]
 fn test_genetic_unicode_activities() {
     let log = build_log_with_activities(&[
-        vec!["시작", "검토", "종료"],     // Korean: Start, Review, End
-        vec!["시작", "거부", "종료"],     // Korean: Start, Reject, End
+        vec!["시작", "검토", "종료"], // Korean: Start, Review, End
+        vec!["시작", "거부", "종료"], // Korean: Start, Reject, End
         vec!["시작", "검토", "종료"],
     ]);
     let (dfg, _fitness) = discover_genetic_algorithm_from_log(&log, "concept:name", 5, 15)
@@ -360,7 +387,10 @@ fn test_ilp_empty_log() {
 fn test_ilp_single_event() {
     let log = build_log_with_activities(&[vec!["Single"]]);
     let (pn, fitness, _precision) = discover_ilp_petri_net_from_log(&log, "concept:name");
-    assert!(pn.transitions.len() > 0, "ILP must include the single activity");
+    assert!(
+        pn.transitions.len() > 0,
+        "ILP must include the single activity"
+    );
     assert!(
         (0.0..=1.0).contains(&fitness),
         "ILP fitness must be in [0, 1]"
@@ -390,8 +420,8 @@ fn test_ilp_all_identical() {
 #[test]
 fn test_ilp_unicode_activities() {
     let log = build_log_with_activities(&[
-        vec!["início", "processado", "fim"],   // Portuguese: start, processed, end
-        vec!["início", "rejeitado", "fim"],    // Portuguese: start, rejected, end
+        vec!["início", "processado", "fim"], // Portuguese: start, processed, end
+        vec!["início", "rejeitado", "fim"],  // Portuguese: start, rejected, end
     ]);
     let (pn, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
     assert!(
@@ -447,12 +477,17 @@ fn test_all_algorithms_complex_log() {
     ]);
 
     let dfg_result = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
-    assert!(dfg_result.nodes.len() >= 4, "DFG must have at least core nodes");
+    assert!(
+        dfg_result.nodes.len() >= 4,
+        "DFG must have at least core nodes"
+    );
 
     let hm_result = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
     assert!(hm_result.nodes.len() > 0, "HM result valid");
 
-    if let Some((ga_dfg, ga_fitness)) = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20) {
+    if let Some((ga_dfg, ga_fitness)) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20)
+    {
         assert!((0.0..=1.0).contains(&ga_fitness), "GA fitness in range");
     }
 
@@ -473,7 +508,11 @@ fn test_mixed_scripts_single_log() {
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let vocab = log_vocabulary(&log);
-    assert_eq!(vocab.len(), 7, "All 7 distinct activities must be recognized");
+    assert_eq!(
+        vocab.len(),
+        7,
+        "All 7 distinct activities must be recognized"
+    );
     assert!(dfg.nodes.len() > 0, "DFG must include all activities");
 }
 
@@ -482,19 +521,14 @@ fn test_mixed_scripts_single_log() {
 fn test_very_long_activity_names() {
     let long_name_1 =
         "VeryLongActivityNameThatConsistsOfManyWordsAndCharactersToTestStringHandling";
-    let long_name_2 =
-        "AnotherExtremelyLongActivityNameWithEvenMoreCharactersThanTheFirstOne";
+    let long_name_2 = "AnotherExtremelyLongActivityNameWithEvenMoreCharactersThanTheFirstOne";
 
     let log = build_log_with_activities(&[
         vec![long_name_1, long_name_2],
         vec![long_name_1, long_name_2],
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
-    assert_eq!(
-        dfg.nodes.len(),
-        2,
-        "DFG must handle long activity names"
-    );
+    assert_eq!(dfg.nodes.len(), 2, "DFG must handle long activity names");
 }
 
 // ---------------------------------------------------------------------------
@@ -510,7 +544,10 @@ fn test_control_characters() {
     ]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Algorithm should handle or reject control chars gracefully
-    assert!(dfg.nodes.len() >= 2, "DFG must process control char activities");
+    assert!(
+        dfg.nodes.len() >= 2,
+        "DFG must process control char activities"
+    );
 }
 
 /// Test 30: Whitespace-only activity names
@@ -519,7 +556,10 @@ fn test_whitespace_activities() {
     let log = build_log_with_activities(&[vec!["   ", "\t", "\n"]]);
     let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Should not panic; may have empty activity representation
-    assert!(dfg.nodes.len() >= 1, "DFG must handle whitespace activities");
+    assert!(
+        dfg.nodes.len() >= 1,
+        "DFG must handle whitespace activities"
+    );
 }
 
 /// Test 31: Activities with quotes and escapes
@@ -626,11 +666,7 @@ fn test_dfg_numeric_activities() {
 /// Test 37: Heuristic Miner with near-zero dependency threshold
 #[test]
 fn test_heuristic_minimal_threshold() {
-    let log = build_log_with_activities(&[
-        vec!["A", "B"],
-        vec!["A", "C"],
-        vec!["A", "B"],
-    ]);
+    let log = build_log_with_activities(&[vec!["A", "B"], vec!["A", "C"], vec!["A", "B"]]);
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.01);
     assert!(
         dfg.nodes.len() > 0,
@@ -705,7 +741,8 @@ fn test_vocabulary_consistency_across_algorithms() {
     }
 
     if let Some((ga_dfg, _)) = ga {
-        let ga_vocab: std::collections::HashSet<_> = ga_dfg.nodes.iter().map(|n| n.id.clone()).collect();
+        let ga_vocab: std::collections::HashSet<_> =
+            ga_dfg.nodes.iter().map(|n| n.id.clone()).collect();
         for activity in &log_vocab {
             assert!(
                 ga_vocab.contains(activity),
@@ -762,7 +799,10 @@ fn test_genetic_algorithm_population_minimum_valid() {
     );
     if let Some((dfg, fitness)) = result {
         assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
-        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+        assert!(
+            (0.0..=1.0).contains(&fitness),
+            "Fitness must be in valid range"
+        );
     }
 }
 
@@ -772,22 +812,15 @@ fn test_genetic_algorithm_generations_zero() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
     let result = discover_genetic_algorithm_from_log(&log, "concept:name", 5, 0);
     // Should return None (at least 1 generation required), not panic
-    assert!(
-        result.is_none(),
-        "GA with generations=0 must return None"
-    );
+    assert!(result.is_none(), "GA with generations=0 must return None");
 }
 
 /// Test 45: PSO with swarm_size = 0 (should return None, not panic)
 #[test]
 fn test_pso_algorithm_swarm_zero() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
-    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
-        &log,
-        "concept:name",
-        0,
-        10,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 0, 10);
     // Should return None gracefully, not panic
     assert!(
         result.is_none(),
@@ -799,12 +832,8 @@ fn test_pso_algorithm_swarm_zero() {
 #[test]
 fn test_pso_algorithm_swarm_minimum_valid() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
-    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
-        &log,
-        "concept:name",
-        1,
-        1,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 1, 1);
     // Should succeed (swarm_size=1 is valid)
     assert!(
         result.is_some(),
@@ -812,7 +841,10 @@ fn test_pso_algorithm_swarm_minimum_valid() {
     );
     if let Some((dfg, fitness)) = result {
         assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
-        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+        assert!(
+            (0.0..=1.0).contains(&fitness),
+            "Fitness must be in valid range"
+        );
     }
 }
 
@@ -820,29 +852,18 @@ fn test_pso_algorithm_swarm_minimum_valid() {
 #[test]
 fn test_pso_algorithm_iterations_zero() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
-    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
-        &log,
-        "concept:name",
-        5,
-        0,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 5, 0);
     // Should return None (at least 1 iteration required), not panic
-    assert!(
-        result.is_none(),
-        "PSO with iterations=0 must return None"
-    );
+    assert!(result.is_none(), "PSO with iterations=0 must return None");
 }
 
 /// Test 48: ACO with ant_count = 0 (should return None, not panic)
 #[test]
 fn test_aco_algorithm_ant_count_zero() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
-    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
-        &log,
-        "concept:name",
-        0,
-        10,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 0, 10);
     // Should return None gracefully, not panic
     assert!(
         result.is_none(),
@@ -854,12 +875,8 @@ fn test_aco_algorithm_ant_count_zero() {
 #[test]
 fn test_aco_algorithm_ant_count_minimum_valid() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
-    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
-        &log,
-        "concept:name",
-        1,
-        1,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 1, 1);
     // Should succeed (ant_count=1 is valid)
     assert!(
         result.is_some(),
@@ -867,7 +884,10 @@ fn test_aco_algorithm_ant_count_minimum_valid() {
     );
     if let Some((dfg, fitness)) = result {
         assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
-        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+        assert!(
+            (0.0..=1.0).contains(&fitness),
+            "Fitness must be in valid range"
+        );
     }
 }
 
@@ -875,17 +895,10 @@ fn test_aco_algorithm_ant_count_minimum_valid() {
 #[test]
 fn test_aco_algorithm_iterations_zero() {
     let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
-    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
-        &log,
-        "concept:name",
-        5,
-        0,
-    );
+    let result =
+        wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 5, 0);
     // Should return None (at least 1 iteration required), not panic
-    assert!(
-        result.is_none(),
-        "ACO with iterations=0 must return None"
-    );
+    assert!(result.is_none(), "ACO with iterations=0 must return None");
 }
 
 /// Test 51: Simulated Annealing with invalid temperature (should return empty DFG)
@@ -959,7 +972,12 @@ fn test_simulated_annealing_valid_parameters() {
     );
 }
 
-
-fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
     wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

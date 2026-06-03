@@ -9,12 +9,12 @@
 
 #![cfg(feature = "miniml")]
 
-use wasm4pm::actor_envelope::{ActorEnvelope, ActorProfile, score_actor_motion_from_envelope};
+use wasm4pm::actor_envelope::{score_actor_motion_from_envelope, ActorEnvelope, ActorProfile};
 use wasm4pm::automembrane::{
-    LayerVerdict, RequestMotion, Verdict,
-    classify_motion_internal, compose_verdicts, evaluate_custody_layer,
+    classify_motion_internal, compose_verdicts, evaluate_custody_layer, LayerVerdict,
+    RequestMotion, Verdict,
 };
-use wasm4pm::route_envelope::{RouteEnvelope, RouteVariant, score_route_motion_from_envelope};
+use wasm4pm::route_envelope::{score_route_motion_from_envelope, RouteEnvelope, RouteVariant};
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
@@ -216,7 +216,11 @@ fn test_compose_stop_line_overrides_all_allow() {
         make_allow_lv("route"),
     ];
     let (final_v, _) = compose_verdicts(&verdicts);
-    assert_eq!(final_v, Verdict::StopLine, "StopLine must override all Allow verdicts");
+    assert_eq!(
+        final_v,
+        Verdict::StopLine,
+        "StopLine must override all Allow verdicts"
+    );
 }
 
 #[test]
@@ -262,10 +266,7 @@ fn test_compose_require_evidence_beats_warn() {
 
 #[test]
 fn test_compose_deny_beats_require_evidence() {
-    let verdicts = vec![
-        make_require_evidence_lv("custody"),
-        make_deny_lv("actor"),
-    ];
+    let verdicts = vec![make_require_evidence_lv("custody"), make_deny_lv("actor")];
     let (final_v, _) = compose_verdicts(&verdicts);
     assert_eq!(final_v, Verdict::Deny, "Deny must beat RequireEvidence");
 }
@@ -331,7 +332,10 @@ fn test_custody_transfer_with_evidence_allows() {
     let motion = make_motion("alice", "transfer", vec!["CUSTODY-PROOF-XYZ".to_string()]);
     let verdict = evaluate_custody_layer(&motion);
     assert!(
-        matches!(verdict.verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn),
+        matches!(
+            verdict.verdict,
+            Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn
+        ),
         "'transfer' with evidence should Allow or Warn, got: {:?}",
         verdict.verdict
     );
@@ -342,12 +346,18 @@ fn test_custody_approve_with_evidence_allows() {
     let motion = make_motion("alice", "approve", vec!["approval-token-001".to_string()]);
     let verdict = evaluate_custody_layer(&motion);
     assert!(
-        matches!(verdict.verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn),
+        matches!(
+            verdict.verdict,
+            Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn
+        ),
         "'approve' with evidence should Allow or Warn, got: {:?}",
         verdict.verdict
     );
     // High-stakes action with evidence has high confidence
-    assert!(verdict.confidence > 0.5, "Confidence must be > 0.5 for evidenced high-stakes action");
+    assert!(
+        verdict.confidence > 0.5,
+        "Confidence must be > 0.5 for evidenced high-stakes action"
+    );
 }
 
 // ===========================================================================
@@ -401,7 +411,9 @@ fn test_unknown_actor_requires_evidence_or_worse() {
         "Actor with no history in envelope must receive RequireEvidence"
     );
     assert!(
-        verdict.missing_evidence.contains(&"actor_history".to_string()),
+        verdict
+            .missing_evidence
+            .contains(&"actor_history".to_string()),
         "Missing evidence must reference 'actor_history'"
     );
 }
@@ -459,7 +471,11 @@ fn test_route_empty_action_allows_vacuously() {
     };
     let verdict = score_route_motion_from_envelope(&envelope, &motion);
     // Empty prefix matches vacuously
-    assert_eq!(verdict.verdict, Verdict::Allow, "Empty prefix must Allow vacuously");
+    assert_eq!(
+        verdict.verdict,
+        Verdict::Allow,
+        "Empty prefix must Allow vacuously"
+    );
 }
 
 // ===========================================================================
@@ -473,7 +489,11 @@ fn test_benchmark_runner_deterministic() {
     let traces1 = builtin_benchmarks();
     let traces2 = builtin_benchmarks();
 
-    assert_eq!(traces1.len(), traces2.len(), "Benchmark count must be deterministic");
+    assert_eq!(
+        traces1.len(),
+        traces2.len(),
+        "Benchmark count must be deterministic"
+    );
     assert!(
         traces1.len() >= 5,
         "Must have at least 5 built-in benchmarks, got: {}",
@@ -637,13 +657,35 @@ fn test_verdict_receipt_has_required_fields() {
     let motion = make_motion("alice", "view_report", vec![]);
     let receipt = classify_motion_internal(&motion);
 
-    assert!(!receipt.request_id.is_empty(), "request_id must not be empty");
-    assert!(!receipt.decisive_layer.is_empty(), "decisive_layer must not be empty");
-    assert!(!receipt.model_version.is_empty(), "model_version must not be empty");
-    assert!(!receipt.state_snapshot.is_empty(), "state_snapshot must not be empty");
-    assert_eq!(receipt.state_snapshot.len(), 16, "state_snapshot must be 16 hex chars");
-    assert!(!receipt.layer_verdicts.is_empty(), "layer_verdicts must not be empty");
-    assert!(!receipt.explanation.is_empty(), "explanation must not be empty");
+    assert!(
+        !receipt.request_id.is_empty(),
+        "request_id must not be empty"
+    );
+    assert!(
+        !receipt.decisive_layer.is_empty(),
+        "decisive_layer must not be empty"
+    );
+    assert!(
+        !receipt.model_version.is_empty(),
+        "model_version must not be empty"
+    );
+    assert!(
+        !receipt.state_snapshot.is_empty(),
+        "state_snapshot must not be empty"
+    );
+    assert_eq!(
+        receipt.state_snapshot.len(),
+        16,
+        "state_snapshot must be 16 hex chars"
+    );
+    assert!(
+        !receipt.layer_verdicts.is_empty(),
+        "layer_verdicts must not be empty"
+    );
+    assert!(
+        !receipt.explanation.is_empty(),
+        "explanation must not be empty"
+    );
 }
 
 #[test]

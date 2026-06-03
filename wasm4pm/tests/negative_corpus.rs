@@ -212,8 +212,7 @@ fn n09_nonconforming_powl_route_is_refused() {
         "{file}: a trace with the undeclared 'Cancel Order' move must NOT be in the field POWL language"
     );
     // The undeclared activity is genuinely absent from the model alphabet.
-    let alphabet: std::collections::BTreeSet<String> =
-        lang.iter().flatten().cloned().collect();
+    let alphabet: std::collections::BTreeSet<String> = lang.iter().flatten().cloned().collect();
     assert!(
         !alphabet.contains("Cancel Order"),
         "{file}: 'Cancel Order' must not appear anywhere in the field POWL language"
@@ -278,7 +277,10 @@ fn n13_duplicate_object_id_is_refused() {
 
 #[test]
 fn n14_undeclared_event_type_is_refused() {
-    assert_validate_fails_with("n14-undeclared-event-type.ocel.json", "UNDECLARED_EVENT_TYPE");
+    assert_validate_fails_with(
+        "n14-undeclared-event-type.ocel.json",
+        "UNDECLARED_EVENT_TYPE",
+    );
 }
 
 // ── N06: OCEL flattening loss (convergence + divergence) ─────────────────────
@@ -443,11 +445,15 @@ fn n11_lifecycle_not_terminated_is_refused() {
     );
 
     let flat = flatten(&ocel, object_type).expect("flatten to the lifecycle type");
-    assert!(!flat.cases.is_empty(), "{file}: must have at least one case");
+    assert!(
+        !flat.cases.is_empty(),
+        "{file}: must have at least one case"
+    );
     for case in &flat.cases {
-        let last = case.trace.last().unwrap_or_else(|| {
-            panic!("{file}: case {} has an empty trace", case.case_id)
-        });
+        let last = case
+            .trace
+            .last()
+            .unwrap_or_else(|| panic!("{file}: case {} has an empty trace", case.case_id));
         assert!(
             !terminators.contains(last),
             "{file}: case {} ends in '{last}' which IS a terminator — fixture must leave the lifecycle open",
@@ -468,7 +474,10 @@ fn n11_lifecycle_not_terminated_is_refused() {
     // The fixture declares the mcpp code "LifecycleNotTerminated", which maps onto
     // the route harness's lifecycle/object violation taxonomy.
     assert_eq!(declared_andon(file), AndonPull::ObjectLifecycleViolation);
-    assert_eq!(map_andon("LifecycleNotTerminated"), AndonPull::ObjectLifecycleViolation);
+    assert_eq!(
+        map_andon("LifecycleNotTerminated"),
+        AndonPull::ObjectLifecycleViolation
+    );
 }
 
 // ── Corpus-wide invariant: every fixture has a manifest entry that refuses ───
@@ -495,9 +504,11 @@ fn manifest_is_complete_and_every_entry_declares_a_refusal() {
         let path = negative_dir().join(file);
         assert!(path.exists(), "{id}: manifest names missing fixture {file}");
         // Every entry declares a known refusal reason …
-        let code = entry["expected_refusal"].as_str().expect("expected_refusal");
+        let code = entry["expected_refusal"]
+            .as_str()
+            .expect("expected_refusal");
         let _ = map_andon(code); // panics on unknown code
-        // … names the rejecting primitive …
+                                 // … names the rejecting primitive …
         assert!(
             entry["rejecting_primitive"].as_str().is_some(),
             "{id}: must name the rejecting primitive"

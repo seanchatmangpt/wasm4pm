@@ -29,13 +29,11 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
     // Cast to i64 before subtraction to avoid usize underflow when the
     // classifier is worse than random (fp*fn_count > tp*tn).
     let numerator = (tp as i64 * tn as i64 - fp as i64 * fn_count as i64) as f64;
-    let denominator = (tp + fp) as f64
-        * (tp + fn_count) as f64
-        * (tn + fp) as f64
-        * (tn + fn_count) as f64 ;
+    let denominator =
+        (tp + fp) as f64 * (tp + fn_count) as f64 * (tn + fp) as f64 * (tn + fn_count) as f64;
 
     if denominator == 0.0 {
-        return Ok(0.0);  // Undefined case
+        return Ok(0.0); // Undefined case
     }
 
     Ok(numerator / denominator.sqrt())
@@ -64,7 +62,10 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
     let mut observed = vec![0usize; n_classes * n_classes];
 
     for (&t, &p) in y_true.iter().zip(y_pred.iter()) {
-        let t_idx = unique_true.iter().position(|&v| (v - t).abs() < 1e-10).unwrap();
+        let t_idx = unique_true
+            .iter()
+            .position(|&v| (v - t).abs() < 1e-10)
+            .unwrap();
         let p_idx = unique_true.iter().position(|&v| (v - p).abs() < 1e-10);
         if let Some(pi) = p_idx {
             observed[t_idx * n_classes + pi] += 1;
@@ -84,15 +85,13 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
         let row_sum: usize = (i * n_classes..(i + 1) * n_classes)
             .map(|j| observed[j])
             .sum();
-        let col_sum: usize = (0..n_classes)
-            .map(|j| observed[j * n_classes + i])
-            .sum();
+        let col_sum: usize = (0..n_classes).map(|j| observed[j * n_classes + i]).sum();
 
         pe += (row_sum * col_sum) as f64 / (n * n) as f64;
     }
 
     if pe >= 1.0 {
-        return Ok(1.0);  // Perfect agreement
+        return Ok(1.0); // Perfect agreement
     }
 
     Ok((po - pe) / (1.0 - pe))
@@ -183,7 +182,7 @@ mod tests {
         let y_pred = vec![0.0, 0.0, 1.0, 1.0, 1.0, 0.0];
         // Class 0: 2/3 correct, Class 1: 2/3 correct
         let ba = balanced_accuracy_impl(&y_true, &y_pred).unwrap();
-        assert!((ba - 2.0/3.0).abs() < 1e-10);
+        assert!((ba - 2.0 / 3.0).abs() < 1e-10);
     }
 
     // Rank-1 (mathematical theorem): the MCC numerator is tp*tn - fp*fn
@@ -200,8 +199,11 @@ mod tests {
         let y_pred = vec![1.0, 1.0, 0.0, 0.0];
         // Should not panic.
         let mcc = matthews_corrcoef_impl(&y_true, &y_pred).unwrap();
-        assert!((mcc - (-1.0)).abs() < 1e-10,
-            "Inverted prediction MCC must equal -1.0 (got {})", mcc);
+        assert!(
+            (mcc - (-1.0)).abs() < 1e-10,
+            "Inverted prediction MCC must equal -1.0 (got {})",
+            mcc
+        );
     }
 
     // Rank-1 (symmetry / sign theorem): swapping y_pred with its inverse
@@ -214,8 +216,12 @@ mod tests {
         let y_pred_inv: Vec<f64> = y_pred.iter().map(|&p| 1.0 - p).collect();
         let mcc_inv = matthews_corrcoef_impl(&y_true, &y_pred_inv).unwrap();
         // For non-degenerate binary classification, MCC(y, ~p) = -MCC(y, p).
-        assert!((mcc_orig + mcc_inv).abs() < 1e-10,
+        assert!(
+            (mcc_orig + mcc_inv).abs() < 1e-10,
             "MCC sign-symmetry violated: orig={}, inv={}, sum={}",
-            mcc_orig, mcc_inv, mcc_orig + mcc_inv);
+            mcc_orig,
+            mcc_inv,
+            mcc_orig + mcc_inv
+        );
     }
 }

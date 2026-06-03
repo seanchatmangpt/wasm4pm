@@ -3,7 +3,6 @@
 //! This test suite analyzes drift detection accuracy across various thresholds
 //! and provides ROC curves (precision vs. recall) for tuning decisions.
 
-
 /// A drift event with expected detection properties.
 #[derive(Debug, Clone)]
 struct DriftPoint {
@@ -78,10 +77,7 @@ fn generate_drift_sequence() -> Vec<DriftPoint> {
 }
 
 /// Compute detection metrics for a given threshold.
-fn compute_metrics(
-    sequence: &[DriftPoint],
-    threshold: f64,
-) -> (usize, usize, usize, usize) {
+fn compute_metrics(sequence: &[DriftPoint], threshold: f64) -> (usize, usize, usize, usize) {
     let mut tp = 0; // True positives: drift detected when present
     let mut fp = 0; // False positives: drift detected when absent
     let mut tn = 0; // True negatives: no drift detected when absent
@@ -130,8 +126,10 @@ fn test_threshold_sweep_0_to_1() {
     let sequence = generate_drift_sequence();
 
     println!("\n=== Threshold Sweep Analysis ===");
-    println!("{:<8} {:<4} {:<4} {:<4} {:<5} {:<8} {:<8} {:<8}",
-             "Threshold", "TP", "FP", "FN", "TN", "Precision", "Recall", "F1");
+    println!(
+        "{:<8} {:<4} {:<4} {:<4} {:<5} {:<8} {:<8} {:<8}",
+        "Threshold", "TP", "FP", "FN", "TN", "Precision", "Recall", "F1"
+    );
     println!("{}", "-".repeat(70));
 
     let mut best_f1 = 0.0;
@@ -154,7 +152,10 @@ fn test_threshold_sweep_0_to_1() {
     }
 
     println!("\n=== Summary ===");
-    println!("Best threshold (max F1): {:.2} (F1={:.3})", best_threshold, best_f1);
+    println!(
+        "Best threshold (max F1): {:.2} (F1={:.3})",
+        best_threshold, best_f1
+    );
     println!("Default threshold: 0.30");
 
     // Verify that threshold 0.3 is near optimal
@@ -165,7 +166,10 @@ fn test_threshold_sweep_0_to_1() {
         compute_metrics(&sequence, 0.3).3,
     );
 
-    assert!(f1_at_default > 0.7, "Default threshold should achieve F1 > 0.7");
+    assert!(
+        f1_at_default > 0.7,
+        "Default threshold should achieve F1 > 0.7"
+    );
 }
 
 #[test]
@@ -184,10 +188,7 @@ fn test_threshold_0_1_low_sensitivity() {
         5,
         "Should have 5 true drift points in sequence"
     );
-    assert_eq!(
-        tp, 5,
-        "At threshold 0.1, all drifts should be detected"
-    );
+    assert_eq!(tp, 5, "At threshold 0.1, all drifts should be detected");
     // May have false positives from variation
 }
 
@@ -223,10 +224,7 @@ fn test_threshold_0_5_high_specificity() {
     println!("Precision: {:.3}", precision);
     println!("Recall: {:.3}", recall);
 
-    assert_eq!(
-        fp, 0,
-        "High threshold should have zero false positives"
-    );
+    assert_eq!(fp, 0, "High threshold should have zero false positives");
     // But may miss some gradual drifts
     assert!(fn_count > 0, "Should miss some weaker drift signals");
 }
@@ -247,7 +245,10 @@ fn test_detection_rate_by_drift_magnitude() {
     ];
 
     println!("\n=== Detection Rate by Drift Magnitude ===");
-    println!("{:<20} {:<10} {:<10} {:<15}", "Magnitude", "Distance", "Expected", "Detected@0.3");
+    println!(
+        "{:<20} {:<10} {:<10} {:<15}",
+        "Magnitude", "Distance", "Expected", "Detected@0.3"
+    );
 
     for (label, distance, expected_drift) in test_cases {
         let sequence = vec![
@@ -290,7 +291,10 @@ fn test_threshold_stability_across_sequence_lengths() {
     let full_sequence = generate_drift_sequence();
 
     println!("\n=== Threshold Stability ===");
-    println!("{:<15} {:<10} {:<10} {:<8}", "Sequence Length", "Best Threshold", "F1-score", "Status");
+    println!(
+        "{:<15} {:<10} {:<10} {:<8}",
+        "Sequence Length", "Best Threshold", "F1-score", "Status"
+    );
 
     for end_idx in [3, 5, 7, 10] {
         let sequence = full_sequence[..end_idx].to_vec();
@@ -368,7 +372,10 @@ fn test_false_positive_rate_in_stable_period() {
 
         // At default threshold 0.3, expect zero false positives in truly stable period
         if threshold == 0.3 {
-            assert_eq!(fp, 0, "Default threshold should have zero FP in stable period");
+            assert_eq!(
+                fp, 0,
+                "Default threshold should have zero FP in stable period"
+            );
         }
     }
 }
@@ -508,7 +515,7 @@ fn test_recommend_threshold_for_process_type() {
     #[derive(Debug)]
     struct ProcessProfile {
         name: &'static str,
-        volatility: f64,   // 0.0 = stable, 1.0 = chaotic
+        volatility: f64,      // 0.0 = stable, 1.0 = chaotic
         drift_magnitude: f64, // Expected size of drifts
         recommended_threshold: f64,
     }

@@ -150,7 +150,11 @@ impl CognitionBreed for Gps {
         // needed to be done" (Some("")) from "no plan exists" (None).
         let mut all_presatisfied = !input.goals.is_empty();
         for goal in &input.goals {
-            if input.state.iter().any(|s| s.predicate == goal.predicate && s.value == goal.value) {
+            if input
+                .state
+                .iter()
+                .any(|s| s.predicate == goal.predicate && s.value == goal.value)
+            {
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "check-presatisfied".into(),
@@ -168,10 +172,7 @@ impl CognitionBreed for Gps {
             if gap_count >= last_gap_count {
                 return Err(BreedError {
                     breed: BreedId::Gps,
-                    message: format!(
-                        "gap not strictly decreasing on iteration for {}",
-                        gap
-                    ),
+                    message: format!("gap not strictly decreasing on iteration for {}", gap),
                 });
             }
             last_gap_count = gap_count;
@@ -192,11 +193,7 @@ impl CognitionBreed for Gps {
             }
         }
 
-        let explanation = format!(
-            "GPS plan ({} ops): {}",
-            plan.len(),
-            plan.join(" → ")
-        );
+        let explanation = format!("GPS plan ({} ops): {}", plan.len(), plan.join(" → "));
         // Semantic contract for `selected`:
         //   Some("op1,op2")  — non-empty plan that achieves the goals
         //   Some("")         — pre-satisfied goals: the empty plan IS the plan
@@ -294,12 +291,26 @@ mod tests {
                 certainty: 1.0,
             }],
             goals: vec![
-                Goal { id: "g1".into(), predicate: "a".into(), value: "1".into() },
-                Goal { id: "g2".into(), predicate: "b".into(), value: "2".into() },
+                Goal {
+                    id: "g1".into(),
+                    predicate: "a".into(),
+                    value: "1".into(),
+                },
+                Goal {
+                    id: "g2".into(),
+                    predicate: "b".into(),
+                    value: "2".into(),
+                },
             ],
             state: vec![
-                StateAtom { predicate: "a".into(), value: "1".into() },
-                StateAtom { predicate: "b".into(), value: "2".into() },
+                StateAtom {
+                    predicate: "a".into(),
+                    value: "1".into(),
+                },
+                StateAtom {
+                    predicate: "b".into(),
+                    value: "2".into(),
+                },
             ],
         };
         let out = Gps.run(&input).expect("run ok");
@@ -309,5 +320,4 @@ mod tests {
             .iter()
             .any(|t| t.kind == "apply-operator"));
     }
-
 }

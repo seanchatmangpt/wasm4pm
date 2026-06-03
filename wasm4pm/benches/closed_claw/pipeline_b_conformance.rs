@@ -280,15 +280,11 @@ fn bench_simd_token_replay(c: &mut Criterion) {
         let col = log.to_columnar(ACTIVITY_KEY);
         let total_events: usize = col.events.len();
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &col,
-            |_b, col| {
-                let result = net.replay_log(black_box(col));
-                let hash = blake3::hash(format!("{:?}", result).as_bytes());
-                black_box(hash);
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &col, |_b, col| {
+            let result = net.replay_log(black_box(col));
+            let hash = blake3::hash(format!("{:?}", result).as_bytes());
+            black_box(hash);
+        });
     }
     group.finish();
 }

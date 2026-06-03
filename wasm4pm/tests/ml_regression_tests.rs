@@ -4,9 +4,9 @@ use wasm4pm::ml::regression::regression_internal;
 fn test_regression_internal_basic() {
     let x = [1.0, 2.0, 3.0, 4.0, 5.0];
     let y = [2.0, 4.0, 6.0, 8.0, 10.0];
-    
+
     let result = regression_internal(&x, &y);
-    
+
     assert!((result.slope - 2.0).abs() < 1e-10);
     assert!(result.intercept.abs() < 1e-10);
     assert!((result.r_squared - 1.0).abs() < 1e-10);
@@ -16,9 +16,9 @@ fn test_regression_internal_basic() {
 fn test_regression_internal_with_intercept() {
     let x = [1.0, 2.0, 3.0, 4.0, 5.0];
     let y = [3.0, 5.0, 7.0, 9.0, 11.0];
-    
+
     let result = regression_internal(&x, &y);
-    
+
     assert!((result.slope - 2.0).abs() < 1e-10);
     assert!((result.intercept - 1.0).abs() < 1e-10);
     assert!((result.r_squared - 1.0).abs() < 1e-10);
@@ -29,9 +29,9 @@ fn test_regression_internal_unrolled() {
     // 6 points to test unrolling + remainder
     let x = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
     let y = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-    
+
     let result = regression_internal(&x, &y);
-    
+
     assert!((result.slope - 1.0).abs() < 1e-10);
     assert!(result.intercept.abs() < 1e-10);
     assert!((result.r_squared - 1.0).abs() < 1e-10);
@@ -65,10 +65,21 @@ fn perfect_fit_has_zero_error_metrics() {
     let y = [2.0, 4.0, 6.0, 8.0, 10.0]; // y = 2x
     let result = regression_internal(&x, &y);
 
-    assert!(result.mae < 1e-12, "perfect fit MAE should be 0, got {}", result.mae);
-    assert!(result.rmse < 1e-12, "perfect fit RMSE should be 0, got {}", result.rmse);
-    assert!(result.residual_std < 1e-12,
-        "perfect fit residual_std should be 0, got {}", result.residual_std);
+    assert!(
+        result.mae < 1e-12,
+        "perfect fit MAE should be 0, got {}",
+        result.mae
+    );
+    assert!(
+        result.rmse < 1e-12,
+        "perfect fit RMSE should be 0, got {}",
+        result.rmse
+    );
+    assert!(
+        result.residual_std < 1e-12,
+        "perfect fit residual_std should be 0, got {}",
+        result.residual_std
+    );
 }
 
 /// Domain contract (Jensen's inequality): for any sample of residuals,
@@ -79,8 +90,12 @@ fn rmse_dominates_mae_for_noisy_fit() {
     let y = [2.5, 3.6, 6.4, 7.5, 10.6, 11.2, 14.3, 15.9];
     let result = regression_internal(&x, &y);
     assert!(result.mae > 0.0, "noisy fit must have nonzero MAE");
-    assert!(result.rmse >= result.mae - 1e-12,
-        "Jensen's inequality violated: rmse={} < mae={}", result.rmse, result.mae);
+    assert!(
+        result.rmse >= result.mae - 1e-12,
+        "Jensen's inequality violated: rmse={} < mae={}",
+        result.rmse,
+        result.mae
+    );
 }
 
 /// Domain contract: residual_std uses the n-2 denominator (degrees of freedom
@@ -95,8 +110,12 @@ fn residual_std_uses_unbiased_denominator() {
     // residual_std^2 * (n - 2) = rmse^2 * n  →  ratio = sqrt(n / (n-2))
     let expected_ratio = (4.0_f64 / 2.0).sqrt();
     let actual_ratio = result.residual_std / result.rmse;
-    assert!((actual_ratio - expected_ratio).abs() < 1e-9,
-        "residual_std/rmse should equal sqrt(n/(n-2))={}, got {}", expected_ratio, actual_ratio);
+    assert!(
+        (actual_ratio - expected_ratio).abs() < 1e-9,
+        "residual_std/rmse should equal sqrt(n/(n-2))={}, got {}",
+        expected_ratio,
+        actual_ratio
+    );
 }
 
 /// Edge case: n <= 2 leaves residual_std undefined (0 dof), so it returns 0.0.
@@ -111,9 +130,9 @@ fn residual_std_returns_zero_for_underdetermined_fit() {
 fn test_regression_internal_noisy() {
     let x = [1.0, 2.0, 3.0, 4.0, 5.0];
     let y = [2.1, 3.9, 6.2, 7.8, 10.1];
-    
+
     let result = regression_internal(&x, &y);
-    
+
     // Roughly slope 2.0
     assert!((result.slope - 2.0).abs() < 0.1);
     assert!(result.r_squared > 0.9);

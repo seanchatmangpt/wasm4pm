@@ -27,21 +27,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -50,7 +61,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -95,7 +108,10 @@ const ROADTRAFFIC: &[&str] = &[
 macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
-            None => { eprintln!("SKIP: {} not found", $label); return; }
+            None => {
+                eprintln!("SKIP: {} not found", $label);
+                return;
+            }
             Some(l) => l,
         }
     };
@@ -121,10 +137,16 @@ fn powl_discovery_running_example_decision_graph_cyclic_succeeds() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let config = powl_config(DiscoveryVariant::DecisionGraphCyclic);
     let result = discover_powl(&log, &config);
-    assert!(result.is_ok(),
-        "POWL DecisionGraphCyclic must succeed on running-example: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "POWL DecisionGraphCyclic must succeed on running-example: {:?}",
+        result.err()
+    );
     let (arena, root) = result.unwrap();
-    assert!(arena.get(root).is_some(), "Root handle must resolve in arena");
+    assert!(
+        arena.get(root).is_some(),
+        "Root handle must resolve in arena"
+    );
 }
 
 #[test]
@@ -132,8 +154,11 @@ fn powl_discovery_running_example_decision_graph_max_succeeds() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let config = powl_config(DiscoveryVariant::DecisionGraphMax);
     let result = discover_powl(&log, &config);
-    assert!(result.is_ok(),
-        "POWL DecisionGraphMax must succeed on running-example: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "POWL DecisionGraphMax must succeed on running-example: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -141,8 +166,11 @@ fn powl_discovery_running_example_maximal_succeeds() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let config = powl_config(DiscoveryVariant::Maximal);
     let result = discover_powl(&log, &config);
-    assert!(result.is_ok(),
-        "POWL Maximal must succeed on running-example: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "POWL Maximal must succeed on running-example: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -150,8 +178,11 @@ fn powl_discovery_running_example_tree_succeeds() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let config = powl_config(DiscoveryVariant::Tree);
     let result = discover_powl(&log, &config);
-    assert!(result.is_ok(),
-        "POWL Tree must succeed on running-example: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "POWL Tree must succeed on running-example: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -159,10 +190,16 @@ fn powl_discovery_roadtraffic_decision_graph_cyclic_succeeds() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let config = powl_config(DiscoveryVariant::DecisionGraphCyclic);
     let result = discover_powl(&log, &config);
-    assert!(result.is_ok(),
-        "POWL DecisionGraphCyclic must succeed on roadtraffic: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "POWL DecisionGraphCyclic must succeed on roadtraffic: {:?}",
+        result.err()
+    );
     let (arena, root) = result.unwrap();
-    assert!(arena.get(root).is_some(), "Root handle must resolve in arena");
+    assert!(
+        arena.get(root).is_some(),
+        "Root handle must resolve in arena"
+    );
 }
 
 #[test]
@@ -183,9 +220,12 @@ fn powl_discovery_roadtraffic_all_variants_succeed() {
     for variant in variants {
         let config = powl_config(variant);
         let result = discover_powl(&log, &config);
-        assert!(result.is_ok(),
+        assert!(
+            result.is_ok(),
             "POWL variant {:?} must succeed on roadtraffic: {:?}",
-            variant, result.err());
+            variant,
+            result.err()
+        );
     }
 }
 
@@ -196,15 +236,29 @@ fn powl_discovery_roadtraffic_all_variants_succeed() {
 fn build_ngram(log: &EventLog, n: usize) -> NGramPredictor {
     let mut predictor = NGramPredictor::new(n);
     for trace in &log.traces {
-        let acts: Vec<String> = trace.events.iter()
-            .filter_map(|e| e.attributes.get("concept:name")?.as_string().map(|s| s.to_string()))
+        let acts: Vec<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get("concept:name")?
+                    .as_string()
+                    .map(|s| s.to_string())
+            })
             .collect();
-        if acts.len() < 2 { continue; }
+        if acts.len() < 2 {
+            continue;
+        }
         for i in 0..acts.len() - 1 {
             let context_len = (n - 1).min(i + 1);
             let prefix: Vec<String> = acts[i + 1 - context_len..=i].to_vec();
             let next = acts[i + 1].clone();
-            *predictor.counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
+            *predictor
+                .counts
+                .entry(prefix)
+                .or_default()
+                .entry(next)
+                .or_insert(0) += 1;
         }
     }
     predictor
@@ -220,8 +274,10 @@ fn ngram_predictor_roadtraffic_bigram_top1_after_create_fine_is_send_fine() {
     let prefix = vec!["Create Fine".to_string()];
     let predictions = predictor.predict(&prefix);
 
-    assert!(!predictions.is_empty(),
-        "Bigram predictor must produce predictions for prefix [Create Fine]");
+    assert!(
+        !predictions.is_empty(),
+        "Bigram predictor must produce predictions for prefix [Create Fine]"
+    );
 
     let (top1_act, top1_prob) = &predictions[0];
     assert_eq!(top1_act, "Send Fine",
@@ -229,8 +285,11 @@ fn ngram_predictor_roadtraffic_bigram_top1_after_create_fine_is_send_fine() {
         top1_act, top1_prob);
 
     // Probability must be approximately 77/100 = 0.77
-    assert!(*top1_prob > 0.70 && *top1_prob < 0.85,
-        "P(Send Fine | Create Fine) ≈ 0.77, got {:.3}", top1_prob);
+    assert!(
+        *top1_prob > 0.70 && *top1_prob < 0.85,
+        "P(Send Fine | Create Fine) ≈ 0.77, got {:.3}",
+        top1_prob
+    );
 }
 
 #[test]
@@ -242,8 +301,11 @@ fn ngram_predictor_roadtraffic_predictions_sum_to_one() {
     let predictions = predictor.predict(&prefix);
 
     let total: f64 = predictions.iter().map(|(_, p)| p).sum();
-    assert!((total - 1.0).abs() < 1e-9,
-        "Prediction probabilities must sum to 1.0, got {}", total);
+    assert!(
+        (total - 1.0).abs() < 1e-9,
+        "Prediction probabilities must sum to 1.0, got {}",
+        total
+    );
 }
 
 #[test]
@@ -253,16 +315,24 @@ fn ngram_predictor_roadtraffic_trigram_refines_bigram() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let predictor = build_ngram(&log, 3);
 
-    let prefix = vec!["Insert Fine Notification".to_string(), "Add penalty".to_string()];
+    let prefix = vec![
+        "Insert Fine Notification".to_string(),
+        "Add penalty".to_string(),
+    ];
     let predictions = predictor.predict(&prefix);
 
-    assert!(!predictions.is_empty(),
-        "Trigram predictor must handle known bigram prefix");
+    assert!(
+        !predictions.is_empty(),
+        "Trigram predictor must handle known bigram prefix"
+    );
 
     let (top1, top1_prob) = &predictions[0];
-    assert_eq!(top1, "Send for Credit Collection",
+    assert_eq!(
+        top1, "Send for Credit Collection",
         "After [Insert Fine Notification, Add penalty], top-1 must be \
-         'Send for Credit Collection', got '{}' ({:.2})", top1, top1_prob);
+         'Send for Credit Collection', got '{}' ({:.2})",
+        top1, top1_prob
+    );
 }
 
 #[test]
@@ -275,10 +345,15 @@ fn ngram_predictor_running_example_bigram_after_register_request() {
     let prefix = vec!["register request".to_string()];
     let predictions = predictor.predict(&prefix);
 
-    assert!(!predictions.is_empty(),
-        "Bigram predictor must produce predictions after [register request]");
+    assert!(
+        !predictions.is_empty(),
+        "Bigram predictor must produce predictions after [register request]"
+    );
 
     let (top1, _) = &predictions[0];
-    assert_eq!(top1, "examine casually",
-        "Top-1 after [register request] must be 'examine casually' (3/6 freq), got '{}'", top1);
+    assert_eq!(
+        top1, "examine casually",
+        "Top-1 after [register request] must be 'examine casually' (3/6 freq), got '{}'",
+        top1
+    );
 }

@@ -443,10 +443,10 @@ mod tests {
             ActivityName::new("A"),
             ActivityName::new("B"),
             Frequency::new(10),
-            DurationNs::new(1_000_000),      // 1 ms min
-            DurationNs::new(5_000_000),      // 5 ms max
-            DurationNs::new(3_000_000),      // 3 ms mean
-            DurationNs::new(2_500_000),      // 2.5 ms median
+            DurationNs::new(1_000_000), // 1 ms min
+            DurationNs::new(5_000_000), // 5 ms max
+            DurationNs::new(3_000_000), // 3 ms mean
+            DurationNs::new(2_500_000), // 2.5 ms median
         );
 
         assert_eq!(ap.from_activity.0, "A");
@@ -501,10 +501,7 @@ mod tests {
             DurationNs::new(275),
             DurationNs::new(250),
         );
-        let ps = PerformanceSpectrum::new(
-            ActivityName::new("Start"),
-            alloc::vec![seg_a, seg_b],
-        );
+        let ps = PerformanceSpectrum::new(ActivityName::new("Start"), alloc::vec![seg_a, seg_b]);
 
         assert_eq!(ps.segment_count(), 2);
         assert_eq!(ps.total_observations(), 10); // 3 + 7

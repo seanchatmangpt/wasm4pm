@@ -3,17 +3,21 @@ use wasm_bindgen::prelude::*;
 /// Normalizer - Scale samples to unit norm (L1, L2, or Max)
 #[wasm_bindgen]
 pub struct Normalizer {
-    norm: String,  // "l1", "l2", or "max"
+    norm: String, // "l1", "l2", or "max"
     n_features: usize,
 }
 
 #[wasm_bindgen]
 impl Normalizer {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "norm")]
-    pub fn norm_type(&self) -> String { self.norm.clone() }
+    pub fn norm_type(&self) -> String {
+        self.norm.clone()
+    }
 
     /// Transform data to unit norm
     #[wasm_bindgen]
@@ -49,7 +53,7 @@ impl Normalizer {
             "l1" => row.iter().map(|&v| v.abs()).sum::<f64>(),
             "l2" => row.iter().map(|&v| v * v).sum::<f64>().sqrt(),
             "max" => row.iter().map(|&v| v.abs()).fold(0.0f64, f64::max),
-            _ => row.iter().map(|&v| v * v).sum::<f64>().sqrt(),  // Default to L2
+            _ => row.iter().map(|&v| v * v).sum::<f64>().sqrt(), // Default to L2
         }
     }
 
@@ -65,7 +69,7 @@ pub fn normalizer(n_features: usize, norm: String) -> Normalizer {
     let norm_valid = if norm_lower == "l1" || norm_lower == "l2" || norm_lower == "max" {
         norm_lower
     } else {
-        "l2".to_string()  // Default
+        "l2".to_string() // Default
     };
 
     Normalizer {
@@ -81,8 +85,8 @@ mod tests {
     #[test]
     fn test_l2_norm() {
         let data = vec![
-            3.0, 4.0,  // L2 norm = 5
-            1.0, 0.0,  // L2 norm = 1
+            3.0, 4.0, // L2 norm = 5
+            1.0, 0.0, // L2 norm = 1
         ];
         let norm = normalizer(2, "l2".to_string());
         let transformed = norm.transform(&data);
@@ -98,21 +102,21 @@ mod tests {
     #[test]
     fn test_l1_norm() {
         let data = vec![
-            1.0, 2.0, 3.0,  // L1 norm = 6
+            1.0, 2.0, 3.0, // L1 norm = 6
         ];
         let norm = normalizer(3, "l1".to_string());
         let transformed = norm.transform(&data);
 
         // [1, 2, 3] -> [1/6, 2/6, 3/6]
-        assert!((transformed[0] - 1.0/6.0).abs() < 1e-10);
-        assert!((transformed[1] - 2.0/6.0).abs() < 1e-10);
-        assert!((transformed[2] - 3.0/6.0).abs() < 1e-10);
+        assert!((transformed[0] - 1.0 / 6.0).abs() < 1e-10);
+        assert!((transformed[1] - 2.0 / 6.0).abs() < 1e-10);
+        assert!((transformed[2] - 3.0 / 6.0).abs() < 1e-10);
     }
 
     #[test]
     fn test_max_norm() {
         let data = vec![
-            2.0, 4.0, 1.0,  // Max norm = 4
+            2.0, 4.0, 1.0, // Max norm = 4
         ];
         let norm = normalizer(3, "max".to_string());
         let transformed = norm.transform(&data);

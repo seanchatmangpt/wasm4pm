@@ -425,7 +425,10 @@ mod tests {
     #[test]
     fn test_calculate_health_score_poor() {
         let score = calculate_health_score(50.0, false, 50.0, 10, 10);
-        assert!(score < 50, "poor inputs should give score < 50, got {score}");
+        assert!(
+            score < 50,
+            "poor inputs should give score < 50, got {score}"
+        );
     }
 
     // ── Rank-1: score is always in [0, 100] — saturation must not panic ──

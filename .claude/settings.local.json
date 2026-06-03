@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(git push:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cargo test *)"
     ]
   }
 }

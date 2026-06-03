@@ -19,9 +19,15 @@ use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::alignment_fitness::{compute_alignment_fitness, AlignmentFitnessConfig};
 
 #[cfg(feature = "align_etconformance")]
-use wasm4pm::align_etconformance::{compute_align_etconformance_precision, AlignETConformanceConfig};
+use wasm4pm::align_etconformance::{
+    compute_align_etconformance_precision, AlignETConformanceConfig,
+};
 
-#[cfg(any(feature = "alignment_fitness", feature = "align_etconformance", feature = "discovery_advanced"))]
+#[cfg(any(
+    feature = "alignment_fitness",
+    feature = "align_etconformance",
+    feature = "discovery_advanced"
+))]
 use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 
 // ---------------------------------------------------------------------------
@@ -36,21 +42,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -59,7 +76,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -82,7 +101,11 @@ fn load_xes(candidates: &[&str]) -> Option<EventLog> {
             if content.len() > 200 {
                 let log = parse_xes(&content);
                 if !log.traces.is_empty() {
-                    eprintln!("Conformance tests: loaded {} traces from {}", log.traces.len(), path);
+                    eprintln!(
+                        "Conformance tests: loaded {} traces from {}",
+                        log.traces.len(),
+                        path
+                    );
                     return Some(log);
                 }
             }
@@ -104,7 +127,10 @@ const ROADTRAFFIC: &[&str] = &[
 macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
-            None => { eprintln!("SKIP: {} not found", $label); return; }
+            None => {
+                eprintln!("SKIP: {} not found", $label);
+                return;
+            }
             Some(l) => l,
         }
     };
@@ -127,11 +153,16 @@ fn token_replay_running_example_ilp_net_has_high_fitness() {
         let report = token_replay_pure(&log, &petri_net, "concept:name");
 
         // ILP net discovered from the same log should have near-perfect fitness
-        assert!(report.avg_fitness >= 0.80,
+        assert!(
+            report.avg_fitness >= 0.80,
             "Token replay fitness on running-example ILP net must be >= 0.80, got {:.3}",
-            report.avg_fitness);
-        assert!(report.avg_fitness <= 1.0,
-            "Fitness must be <= 1.0, got {:.3}", report.avg_fitness);
+            report.avg_fitness
+        );
+        assert!(
+            report.avg_fitness <= 1.0,
+            "Fitness must be <= 1.0, got {:.3}",
+            report.avg_fitness
+        );
     }
 
     #[cfg(not(feature = "discovery_advanced"))]
@@ -150,12 +181,21 @@ fn token_replay_roadtraffic_ilp_net_fitness_is_non_degenerate() {
         let report = token_replay_pure(&log, &petri_net, "concept:name");
 
         // Real-world log: fitness should be positive and bounded
-        assert!(report.avg_fitness > 0.0,
-            "Token replay fitness must be > 0 on roadtraffic, got {:.3}", report.avg_fitness);
-        assert!(report.avg_fitness <= 1.0,
-            "Token replay fitness must be <= 1.0, got {:.3}", report.avg_fitness);
+        assert!(
+            report.avg_fitness > 0.0,
+            "Token replay fitness must be > 0 on roadtraffic, got {:.3}",
+            report.avg_fitness
+        );
+        assert!(
+            report.avg_fitness <= 1.0,
+            "Token replay fitness must be <= 1.0, got {:.3}",
+            report.avg_fitness
+        );
 
-        eprintln!("roadtraffic token replay fitness: {:.3}", report.avg_fitness);
+        eprintln!(
+            "roadtraffic token replay fitness: {:.3}",
+            report.avg_fitness
+        );
     }
 
     #[cfg(not(feature = "discovery_advanced"))]
@@ -177,16 +217,27 @@ fn alignment_fitness_running_example_self_conformance() {
         let config = AlignmentFitnessConfig::default();
 
         let result = compute_alignment_fitness(&log, &petri_net, &config);
-        assert!(result.is_ok(),
-            "Alignment fitness on running-example must succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Alignment fitness on running-example must succeed: {:?}",
+            result.err()
+        );
 
         let report = result.unwrap();
-        assert!(report.fitness >= 0.0 && report.fitness <= 1.0,
-            "Alignment fitness must be in [0,1], got {:.3}", report.fitness);
-        assert_eq!(report.total_traces, log.traces.len(),
-            "total_traces in report must equal log size");
-        assert!(report.aligned_traces <= report.total_traces,
-            "aligned_traces must not exceed total_traces");
+        assert!(
+            report.fitness >= 0.0 && report.fitness <= 1.0,
+            "Alignment fitness must be in [0,1], got {:.3}",
+            report.fitness
+        );
+        assert_eq!(
+            report.total_traces,
+            log.traces.len(),
+            "total_traces in report must equal log size"
+        );
+        assert!(
+            report.aligned_traces <= report.total_traces,
+            "aligned_traces must not exceed total_traces"
+        );
 
         eprintln!("running-example alignment fitness: {:.3}", report.fitness);
     }
@@ -206,12 +257,18 @@ fn alignment_fitness_roadtraffic_is_non_degenerate() {
         let config = AlignmentFitnessConfig::default();
 
         let result = compute_alignment_fitness(&log, &petri_net, &config);
-        assert!(result.is_ok(),
-            "Alignment fitness on roadtraffic must succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Alignment fitness on roadtraffic must succeed: {:?}",
+            result.err()
+        );
 
         let report = result.unwrap();
-        assert!(report.fitness > 0.0,
-            "roadtraffic alignment fitness must be > 0, got {:.3}", report.fitness);
+        assert!(
+            report.fitness > 0.0,
+            "roadtraffic alignment fitness must be > 0, got {:.3}",
+            report.fitness
+        );
 
         eprintln!("roadtraffic alignment fitness: {:.3}", report.fitness);
     }
@@ -235,14 +292,23 @@ fn et_conformance_running_example_precision_non_degenerate() {
         let config = AlignETConformanceConfig::default();
 
         let result = compute_align_etconformance_precision(&log, &petri_net, &config);
-        assert!(result.is_ok(),
-            "ET conformance on running-example must succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ET conformance on running-example must succeed: {:?}",
+            result.err()
+        );
 
         let report = result.unwrap();
-        assert!(report.precision >= 0.0 && report.precision <= 1.0,
-            "ET precision must be in [0,1], got {:.3}", report.precision);
+        assert!(
+            report.precision >= 0.0 && report.precision <= 1.0,
+            "ET precision must be in [0,1], got {:.3}",
+            report.precision
+        );
 
-        eprintln!("running-example ET conformance precision: {:.3}", report.precision);
+        eprintln!(
+            "running-example ET conformance precision: {:.3}",
+            report.precision
+        );
     }
 
     #[cfg(not(feature = "discovery_advanced"))]
@@ -260,14 +326,23 @@ fn et_conformance_roadtraffic_precision_non_degenerate() {
         let config = AlignETConformanceConfig::default();
 
         let result = compute_align_etconformance_precision(&log, &petri_net, &config);
-        assert!(result.is_ok(),
-            "ET conformance on roadtraffic must succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ET conformance on roadtraffic must succeed: {:?}",
+            result.err()
+        );
 
         let report = result.unwrap();
-        assert!(report.precision > 0.0,
-            "roadtraffic ET precision must be > 0, got {:.3}", report.precision);
+        assert!(
+            report.precision > 0.0,
+            "roadtraffic ET precision must be > 0, got {:.3}",
+            report.precision
+        );
 
-        eprintln!("roadtraffic ET conformance precision: {:.3}", report.precision);
+        eprintln!(
+            "roadtraffic ET conformance precision: {:.3}",
+            report.precision
+        );
     }
 
     #[cfg(not(feature = "discovery_advanced"))]

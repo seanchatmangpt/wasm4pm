@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// Linear SVM Classifier (using PEGASOS algorithm for WASM compatibility)
 /// Subgradient descent with hinge loss
@@ -9,13 +9,15 @@ pub struct LinearSVM {
     weights: Vec<f64>,
     bias: f64,
     n_features: usize,
-    lambda: f64,  // Regularization parameter
+    lambda: f64, // Regularization parameter
 }
 
 #[wasm_bindgen]
 impl LinearSVM {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     /// Predict class labels
     #[wasm_bindgen]
@@ -53,7 +55,10 @@ impl LinearSVM {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("LinearSVM(n_features={}, lambda={})", self.n_features, self.lambda)
+        format!(
+            "LinearSVM(n_features={}, lambda={})",
+            self.n_features, self.lambda
+        )
     }
 }
 
@@ -72,7 +77,10 @@ pub fn linear_svm_impl(
     }
 
     // Convert labels to -1/1
-    let y: Vec<f64> = labels.iter().map(|&l| if l > 0.5 { 1.0 } else { -1.0 }).collect();
+    let y: Vec<f64> = labels
+        .iter()
+        .map(|&l| if l > 0.5 { 1.0 } else { -1.0 })
+        .collect();
 
     // Initialize weights and bias
     let mut weights = vec![0.0f64; n_features];
@@ -84,7 +92,7 @@ pub fn linear_svm_impl(
         let eta = learning_rate / (1.0 + (iter as f64) * learning_rate * lambda);
 
         // Select random sample
-        let idx = iter % n ;
+        let idx = iter % n;
         let x = &data[idx * n_features..(idx + 1) * n_features];
         let label = y[idx];
 
@@ -138,12 +146,12 @@ mod tests {
     fn test_linearly_separable() {
         // Simple linearly separable data
         let data = vec![
-            0.0, 0.0,  // Class 0
-            1.0, 0.0,  // Class 0
-            0.0, 1.0,  // Class 0
-            10.0, 10.0,  // Class 1
-            11.0, 10.0,  // Class 1
-            10.0, 11.0,  // Class 1
+            0.0, 0.0, // Class 0
+            1.0, 0.0, // Class 0
+            0.0, 1.0, // Class 0
+            10.0, 10.0, // Class 1
+            11.0, 10.0, // Class 1
+            10.0, 11.0, // Class 1
         ];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
 
@@ -161,10 +169,7 @@ mod tests {
 
     #[test]
     fn test_decision_function() {
-        let data = vec![
-            0.0, 0.0,
-            10.0, 10.0,
-        ];
+        let data = vec![0.0, 0.0, 10.0, 10.0];
         let labels = vec![0.0, 1.0];
 
         let model = linear_svm_impl(&data, 2, &labels, 0.01, 500, 0.01).unwrap();
@@ -178,11 +183,7 @@ mod tests {
 
     #[test]
     fn test_convergence() {
-        let data = vec![
-            1.0, 2.0,
-            2.0, 3.0,
-            5.0, 6.0,
-        ];
+        let data = vec![1.0, 2.0, 2.0, 3.0, 5.0, 6.0];
         let labels = vec![0.0, 0.0, 1.0];
 
         // With more iterations, should converge

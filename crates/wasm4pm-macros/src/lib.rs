@@ -1,4 +1,3 @@
-
 //! Proc-macro companion for Route-Driven TDD.
 //!
 //! # Usage
@@ -66,7 +65,10 @@ impl Parse for PowlTestArgs {
                     input.parse::<LitBool>()?;
                 }
                 other => {
-                    return Err(syn::Error::new(key.span(), format!("unknown attribute '{other}'")));
+                    return Err(syn::Error::new(
+                        key.span(),
+                        format!("unknown attribute '{other}'"),
+                    ));
                 }
             }
 
@@ -96,7 +98,9 @@ impl Parse for PowlActivityArgs {
             return Err(syn::Error::new(key.span(), "expected 'activity = \"...\"'"));
         }
         input.parse::<Token![=]>()?;
-        Ok(Self { activity: input.parse()? })
+        Ok(Self {
+            activity: input.parse()?,
+        })
     }
 }
 

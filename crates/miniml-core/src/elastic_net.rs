@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// Elastic Net Regression - Combined L1 (Lasso) and L2 (Ridge) regularization
 /// Loss: (1/(2n)) * ||y - Xw||^2 + alpha * l1_ratio * ||w||_1 + 0.5 * alpha * (1-l1_ratio) * ||w||_2^2
@@ -16,19 +16,29 @@ pub struct ElasticNetModel {
 #[wasm_bindgen]
 impl ElasticNetModel {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "coefficients")]
-    pub fn coef_js(&self) -> Vec<f64> { self.coefficients.clone() }
+    pub fn coef_js(&self) -> Vec<f64> {
+        self.coefficients.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "intercept")]
-    pub fn intercept_js(&self) -> f64 { self.intercept }
+    pub fn intercept_js(&self) -> f64 {
+        self.intercept
+    }
 
     #[wasm_bindgen(getter, js_name = "alpha")]
-    pub fn alpha_js(&self) -> f64 { self.alpha }
+    pub fn alpha_js(&self) -> f64 {
+        self.alpha
+    }
 
     #[wasm_bindgen(getter, js_name = "l1Ratio")]
-    pub fn l1_ratio_js(&self) -> f64 { self.l1_ratio }
+    pub fn l1_ratio_js(&self) -> f64 {
+        self.l1_ratio
+    }
 
     /// Predict target values
     #[wasm_bindgen]
@@ -155,8 +165,7 @@ pub fn elastic_net_impl(
             // Compute feature norm squared
             let mut norm_sq = 0.0;
             for i in 0..n {
-                norm_sq += centered_data[i * n_features + f]
-                    * centered_data[i * n_features + f];
+                norm_sq += centered_data[i * n_features + f] * centered_data[i * n_features + f];
             }
             norm_sq /= n as f64;
 
@@ -217,17 +226,11 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let targets = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
-        let model =
-            elastic_net_impl(&data, 1, &targets, 0.001, 0.5, 5000, 1e-8).unwrap();
+        let model = elastic_net_impl(&data, 1, &targets, 0.001, 0.5, 5000, 1e-8).unwrap();
         let preds = model.predict(&data);
 
         for (p, &t) in preds.iter().zip(&targets) {
-            assert!(
-                (p - t).abs() < 0.1,
-                "prediction {} vs target {}",
-                p,
-                t
-            );
+            assert!((p - t).abs() < 0.1, "prediction {} vs target {}", p, t);
         }
     }
 
@@ -235,16 +238,11 @@ mod tests {
     fn test_l1_ratio_zero_ridge_like() {
         // l1_ratio = 0 should behave like Ridge (no sparsity, all coefficients non-zero)
         let data = vec![
-            1.0, 0.5, 0.1,
-            2.0, 0.3, 0.2,
-            3.0, 0.7, 0.3,
-            4.0, 0.2, 0.4,
-            5.0, 0.8, 0.5,
+            1.0, 0.5, 0.1, 2.0, 0.3, 0.2, 3.0, 0.7, 0.3, 4.0, 0.2, 0.4, 5.0, 0.8, 0.5,
         ];
         let targets = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let model =
-            elastic_net_impl(&data, 3, &targets, 0.1, 0.0, 5000, 1e-8).unwrap();
+        let model = elastic_net_impl(&data, 3, &targets, 0.1, 0.0, 5000, 1e-8).unwrap();
 
         // With l1_ratio=0 (pure Ridge), coefficients should generally be non-zero
         let non_zero = model
@@ -263,17 +261,12 @@ mod tests {
     fn test_l1_ratio_one_lasso_like() {
         // l1_ratio = 1 should behave like Lasso (sparsity on irrelevant features)
         let data = vec![
-            1.0, 0.0, 0.0,
-            2.0, 0.0, 0.0,
-            3.0, 0.0, 0.0,
-            4.0, 0.0, 0.0,
-            5.0, 0.0, 0.0,
+            1.0, 0.0, 0.0, 2.0, 0.0, 0.0, 3.0, 0.0, 0.0, 4.0, 0.0, 0.0, 5.0, 0.0, 0.0,
         ];
         let targets = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
         // High alpha with l1_ratio=1 should force sparsity
-        let model =
-            elastic_net_impl(&data, 3, &targets, 5.0, 1.0, 5000, 1e-8).unwrap();
+        let model = elastic_net_impl(&data, 3, &targets, 5.0, 1.0, 5000, 1e-8).unwrap();
 
         // Irrelevant features (columns 1 and 2) should be zero
         assert!(
@@ -291,24 +284,14 @@ mod tests {
     #[test]
     fn test_elastic_net_predictions_sensible() {
         // Multi-feature data with known relationship: y = x0 + x1
-        let data = vec![
-            1.0, 2.0,
-            2.0, 4.0,
-            3.0, 6.0,
-        ];
+        let data = vec![1.0, 2.0, 2.0, 4.0, 3.0, 6.0];
         let targets = vec![3.0, 6.0, 9.0];
 
-        let model =
-            elastic_net_impl(&data, 2, &targets, 0.01, 0.5, 5000, 1e-8).unwrap();
+        let model = elastic_net_impl(&data, 2, &targets, 0.01, 0.5, 5000, 1e-8).unwrap();
         let preds = model.predict(&data);
 
         for (p, &t) in preds.iter().zip(&targets) {
-            assert!(
-                (p - t).abs() < 0.5,
-                "prediction {} vs target {}",
-                p,
-                t
-            );
+            assert!((p - t).abs() < 0.5, "prediction {} vs target {}", p, t);
         }
     }
 }

@@ -3,9 +3,9 @@
 //! Minimal neural network implementation with dense layers, activations, and optimizers.
 
 use crate::error::MlError;
-use serde::{Deserialize, Serialize};
 #[cfg(target_arch = "wasm32")]
 use js_sys;
+use serde::{Deserialize, Serialize};
 
 /// Layer types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -104,9 +104,7 @@ impl ActivationType {
                 let s = 1.0 / (1.0 + (-x).exp());
                 s * (1.0 - s)
             }
-            Self::Tanh => {
-                1.0 - x.tanh().powi(2)
-            }
+            Self::Tanh => 1.0 - x.tanh().powi(2),
             Self::LeakyReLU { alpha } => {
                 if x > 0.0 {
                     1.0
@@ -141,9 +139,7 @@ pub enum Optimizer {
 impl Optimizer {
     /// Create SGD optimizer
     pub fn sgd(learning_rate: f64) -> Self {
-        Optimizer::SGD {
-            learning_rate,
-        }
+        Optimizer::SGD { learning_rate }
     }
 
     /// Create Adam optimizer
@@ -164,9 +160,14 @@ impl Optimizer {
                 // Simple SGD: weight = weight - learning_rate * gradient
                 let mut grad_idx = 0;
                 for layer in layers.iter_mut() {
-                    if let Layer::Dense { ref mut weights, .. } = layer {
+                    if let Layer::Dense {
+                        ref mut weights, ..
+                    } = layer
+                    {
                         if grad_idx < gradients.len() {
-                            for (neuron_weights, grad_vec) in weights.iter_mut().zip(gradients[grad_idx..].iter()) {
+                            for (neuron_weights, grad_vec) in
+                                weights.iter_mut().zip(gradients[grad_idx..].iter())
+                            {
                                 for (weight, g) in neuron_weights.iter_mut().zip(grad_vec.iter()) {
                                     *weight -= *learning_rate * g;
                                 }
@@ -187,9 +188,14 @@ impl Optimizer {
                 // Simplified Adam update
                 let mut grad_idx = 0;
                 for layer in layers.iter_mut() {
-                    if let Layer::Dense { ref mut weights, .. } = layer {
+                    if let Layer::Dense {
+                        ref mut weights, ..
+                    } = layer
+                    {
                         if grad_idx < gradients.len() {
-                            for (neuron_weights, grad_vec) in weights.iter_mut().zip(gradients[grad_idx..].iter()) {
+                            for (neuron_weights, grad_vec) in
+                                weights.iter_mut().zip(gradients[grad_idx..].iter())
+                            {
                                 for (weight, g) in neuron_weights.iter_mut().zip(grad_vec.iter()) {
                                     *weight -= *learning_rate * g;
                                 }
@@ -207,9 +213,14 @@ impl Optimizer {
                 // Simplified RMSProp update
                 let mut grad_idx = 0;
                 for layer in layers.iter_mut() {
-                    if let Layer::Dense { ref mut weights, .. } = layer {
+                    if let Layer::Dense {
+                        ref mut weights, ..
+                    } = layer
+                    {
                         if grad_idx < gradients.len() {
-                            for (neuron_weights, grad_vec) in weights.iter_mut().zip(gradients[grad_idx..].iter()) {
+                            for (neuron_weights, grad_vec) in
+                                weights.iter_mut().zip(gradients[grad_idx..].iter())
+                            {
                                 for (weight, g) in neuron_weights.iter_mut().zip(grad_vec.iter()) {
                                     *weight -= *learning_rate * g / (g * g + *epsilon).sqrt();
                                 }
@@ -280,13 +291,13 @@ impl NeuralNet {
                     }
                 }
                 Layer::BatchNorm {
-                    gamma, beta, epsilon, ..
+                    gamma,
+                    beta,
+                    epsilon,
+                    ..
                 } => {
                     let mean: f64 = current.iter().sum::<f64>() / current.len() as f64;
-                    let variance = current
-                        .iter()
-                        .map(|x| (x - mean).powi(2))
-                        .sum::<f64>()
+                    let variance = current.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
                         / current.len() as f64;
                     let std = (variance + epsilon).sqrt();
 
@@ -298,10 +309,7 @@ impl NeuralNet {
         }
 
         // Apply activation function to final output
-        current
-            .iter()
-            .map(|&x| self.activation.apply(x))
-            .collect()
+        current.iter().map(|&x| self.activation.apply(x)).collect()
     }
 
     /// Train the network
@@ -323,7 +331,8 @@ impl NeuralNet {
                 let batch_end = (batch_start + batch_size).min(n_samples);
 
                 // Compute gradients (backpropagation)
-                let gradients = self.compute_batch_gradients(x, y, batch_start, batch_end, n_features);
+                let gradients =
+                    self.compute_batch_gradients(x, y, batch_start, batch_end, n_features);
 
                 // Update weights
                 if let Some(ref mut optimizer) = self.optimizer {
@@ -368,7 +377,10 @@ impl NeuralNet {
             let mut current = input.to_vec();
 
             for layer in &self.layers {
-                if let Layer::Dense { weights, biases, .. } = layer {
+                if let Layer::Dense {
+                    weights, biases, ..
+                } = layer
+                {
                     let mut output = vec![0.0; weights.len()];
                     for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
                         let mut sum = biases[neuron_idx];
@@ -383,10 +395,7 @@ impl NeuralNet {
             }
 
             // Apply activation to get prediction
-            let prediction: Vec<f64> = current
-                .iter()
-                .map(|&x| self.activation.apply(x))
-                .collect();
+            let prediction: Vec<f64> = current.iter().map(|&x| self.activation.apply(x)).collect();
 
             // Compute output error (MSE loss derivative)
             let output_error: Vec<f64> = prediction
@@ -486,7 +495,13 @@ mod tests {
 
         assert_eq!(layer.output_size(), Some(2));
 
-        if let Layer::Dense { input_size, output_size, weights, biases } = layer {
+        if let Layer::Dense {
+            input_size,
+            output_size,
+            weights,
+            biases,
+        } = layer
+        {
             assert_eq!(input_size, 3);
             assert_eq!(output_size, 2);
             assert_eq!(weights.len(), 2);

@@ -14,7 +14,10 @@ pub struct ProjectConfig {
 }
 
 pub fn run() -> anyhow::Result<()> {
-    println!("{}", "Welcome to the wasm4pm (wpm) project wizard!".bold().cyan());
+    println!(
+        "{}",
+        "Welcome to the wasm4pm (wpm) project wizard!".bold().cyan()
+    );
     println!("This will help you set up your process mining project metadata.\n");
 
     let theme = ColorfulTheme::default();

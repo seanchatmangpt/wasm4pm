@@ -11,6 +11,7 @@
 //! | `halstead`         | Information-theoretic volume/effort   |
 //! | `nesting_depth`    | Maximum nesting depth                 |
 //! | `branching_factor` | Average children per operator node    |
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use crate::powl_arena::{PowlArena, PowlNode};
 use serde::{Deserialize, Serialize};
@@ -204,7 +205,7 @@ fn visit(arena: &PowlArena, idx: u32, depth: usize, col: &mut Collector) -> usiz
             // CG: like DG, recurse into SubModel children for CFC.
             let mut sub_indices: Vec<u32> = Vec::new();
             for n in &cg.graph.nodes {
-                if let wasm4pm_types::ChoiceGraphNode::SubModel(idx) = n {
+                if let ChoiceGraphNode::SubModel(idx) = n {
                     sub_indices.push(*idx);
                 }
             }

@@ -21,8 +21,16 @@ fn bh(data: &str) -> String {
     model = "routes/test-harness/sequential-two-step.powl.json"
 )]
 fn macro_sequential_trace_passes() {
-    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
-    h.complete_activity(ActivityEvidence::new("B").with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]).with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    )
+    .unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    )
+    .unwrap();
 }
 
 #[powl_test(
@@ -30,9 +38,22 @@ fn macro_sequential_trace_passes() {
     model = "routes/test-harness/sequential-three-step.powl.json"
 )]
 fn macro_three_step_trace_passes() {
-    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
-    h.complete_activity(ActivityEvidence::new("B").with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]).with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
-    h.complete_activity(ActivityEvidence::new("C").with_inputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]).with_outputs(vec![ObjectEvidence::new("c-out", bh("C:output"))])).unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    )
+    .unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    )
+    .unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("C")
+            .with_inputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])
+            .with_outputs(vec![ObjectEvidence::new("c-out", bh("C:output"))]),
+    )
+    .unwrap();
 }
 
 #[powl_test(
@@ -40,8 +61,14 @@ fn macro_three_step_trace_passes() {
     model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
 fn macro_concurrent_ab_passes() {
-    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
-    h.complete_activity(ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    )
+    .unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    )
+    .unwrap();
 }
 
 #[powl_test(
@@ -49,8 +76,14 @@ fn macro_concurrent_ab_passes() {
     model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
 fn macro_concurrent_ba_passes() {
-    h.complete_activity(ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
-    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    )
+    .unwrap();
+    h.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    )
+    .unwrap();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,7 +134,10 @@ fn run_assertion(value: bool) -> bool {
 #[test]
 fn powl_activity_calls_through_to_body() {
     let result = create_test_fixture(41);
-    assert_eq!(result, 42, "#[powl_activity] must not alter the return value");
+    assert_eq!(
+        result, 42,
+        "#[powl_activity] must not alter the return value"
+    );
 }
 
 #[test]

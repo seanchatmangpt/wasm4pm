@@ -55,7 +55,10 @@ fn test_simd_streaming_dfg_vocab_oob_no_panic() {
     }
 
     // Verify system processed the first valid trace
-    assert!(activity_count == 3, "Should have processed first valid trace (3 activities)");
+    assert!(
+        activity_count == 3,
+        "Should have processed first valid trace (3 activities)"
+    );
 }
 
 #[test]
@@ -138,7 +141,10 @@ fn test_ilp_discovery_vocab_oob_activity_loop() {
     }
 
     // Should complete without panic
-    assert!(loop_activities.len() > 0, "Should have processed input safely");
+    assert!(
+        loop_activities.len() > 0,
+        "Should have processed input safely"
+    );
 }
 
 #[test]

@@ -18,8 +18,8 @@ use std::time::Duration;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation,
-    Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
+    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation, Event,
+    EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
@@ -108,14 +108,15 @@ fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
             .or_insert(0) += 1;
     }
 
-    dfg.edges
-        .extend(edge_counts.into_iter().map(|((f, t), freq)| {
-            DirectlyFollowsRelation {
+    dfg.edges.extend(
+        edge_counts
+            .into_iter()
+            .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
                 to: col.vocab[t as usize].to_owned(),
                 frequency: freq,
-            }
-        }));
+            }),
+    );
 
     dfg
 }
@@ -209,7 +210,11 @@ fn bench_dfg_edge_map_comparison(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Only use the smallest size — oracle cost benchmarks are about overhead, not scalability
     let shape = bench_sizes().remove(0);
@@ -217,21 +222,17 @@ fn bench_dfg_edge_map_comparison(c: &mut Criterion) {
     let events = log.event_count();
 
     group.throughput(Throughput::Elements(events as u64));
-    group.bench_with_input(
-        BenchmarkId::new("cases", shape.num_cases),
-        &log,
-        |b, l| {
-            b.iter(|| {
-                // Build two edge maps and compare — this is exactly what the oracle does
-                let batch = batch_dfg(l, ACTIVITY_KEY);
-                let streaming = streaming_dfg(l, ACTIVITY_KEY);
-                let batch_map = edges_to_map(&batch);
-                let streaming_map = edges_to_map(&streaming);
-                let _equal = batch_map == streaming_map;
-                batch_map.len() + streaming_map.len()
-            })
-        },
-    );
+    group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
+        b.iter(|| {
+            // Build two edge maps and compare — this is exactly what the oracle does
+            let batch = batch_dfg(l, ACTIVITY_KEY);
+            let streaming = streaming_dfg(l, ACTIVITY_KEY);
+            let batch_map = edges_to_map(&batch);
+            let streaming_map = edges_to_map(&streaming);
+            let _equal = batch_map == streaming_map;
+            batch_map.len() + streaming_map.len()
+        })
+    });
     group.finish();
 }
 
@@ -244,7 +245,11 @@ fn bench_jaccard_distance(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = bench_sizes().remove(0);
     let log = generate_event_log(&shape);
@@ -279,7 +284,11 @@ fn bench_fitness_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let activities = ["Register", "Validate", "Approve", "Archive"];
     let log = make_conforming_log(&activities, 100);
@@ -302,7 +311,11 @@ fn bench_heuristic_threshold_sweep(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = bench_sizes().remove(0);
     let (handle, events) = make_handle(&shape);

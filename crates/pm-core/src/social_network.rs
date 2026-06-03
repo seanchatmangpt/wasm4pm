@@ -12,8 +12,8 @@
 
 extern crate alloc;
 
-use alloc::collections::{BTreeMap, BTreeSet};
 use crate::primitives::ResourceName;
+use alloc::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -28,7 +28,10 @@ pub struct ResourceEdge {
 
 impl ResourceEdge {
     pub fn new(from: impl Into<ResourceName>, to: impl Into<ResourceName>) -> Self {
-        ResourceEdge { from: from.into(), to: to.into() }
+        ResourceEdge {
+            from: from.into(),
+            to: to.into(),
+        }
     }
 }
 
@@ -48,7 +51,10 @@ pub struct HandoverNetwork {
 
 impl HandoverNetwork {
     pub fn new() -> Self {
-        HandoverNetwork { resources: BTreeSet::new(), edges: BTreeMap::new() }
+        HandoverNetwork {
+            resources: BTreeSet::new(),
+            edges: BTreeMap::new(),
+        }
     }
 
     /// Record a handoff from `from` to `to`.
@@ -60,11 +66,21 @@ impl HandoverNetwork {
     }
 
     pub fn edge_weight(&self, from: &ResourceName, to: &ResourceName) -> u64 {
-        self.edges.get(&ResourceEdge { from: from.clone(), to: to.clone() }).copied().unwrap_or(0)
+        self.edges
+            .get(&ResourceEdge {
+                from: from.clone(),
+                to: to.clone(),
+            })
+            .copied()
+            .unwrap_or(0)
     }
 }
 
-impl Default for HandoverNetwork { fn default() -> Self { Self::new() } }
+impl Default for HandoverNetwork {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Working-together social network: T = (R, E_T, W_T).
 ///
@@ -84,7 +100,10 @@ pub struct WorkingTogetherNetwork {
 
 impl WorkingTogetherNetwork {
     pub fn new() -> Self {
-        WorkingTogetherNetwork { resources: BTreeSet::new(), edges: BTreeMap::new() }
+        WorkingTogetherNetwork {
+            resources: BTreeSet::new(),
+            edges: BTreeMap::new(),
+        }
     }
 
     /// Record co-participation of `a` and `b` in the same case.
@@ -97,9 +116,20 @@ impl WorkingTogetherNetwork {
     }
 
     pub fn edge_weight(&self, a: &ResourceName, b: &ResourceName) -> u64 {
-        let (from, to) = if a <= b { (a.clone(), b.clone()) } else { (b.clone(), a.clone()) };
-        self.edges.get(&ResourceEdge { from, to }).copied().unwrap_or(0)
+        let (from, to) = if a <= b {
+            (a.clone(), b.clone())
+        } else {
+            (b.clone(), a.clone())
+        };
+        self.edges
+            .get(&ResourceEdge { from, to })
+            .copied()
+            .unwrap_or(0)
     }
 }
 
-impl Default for WorkingTogetherNetwork { fn default() -> Self { Self::new() } }
+impl Default for WorkingTogetherNetwork {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -4,10 +4,10 @@
 // No std — all collections from alloc.
 extern crate alloc;
 
-use alloc::string::String;
-use alloc::vec::Vec;
 use alloc::collections::BTreeMap;
 use alloc::collections::BTreeSet;
+use alloc::string::String;
+use alloc::vec::Vec;
 use core::fmt;
 use core::ops::Deref;
 
@@ -40,7 +40,10 @@ impl PrecisionScore {
     ///
     /// Panics in debug mode if `value` is not finite.
     pub fn new(value: f64) -> Self {
-        debug_assert!(value.is_finite(), "PrecisionScore must be finite, got {value}");
+        debug_assert!(
+            value.is_finite(),
+            "PrecisionScore must be finite, got {value}"
+        );
         PrecisionScore(value.clamp(0.0, 1.0))
     }
 
@@ -212,19 +215,30 @@ impl<'de> serde::Deserialize<'de> for EtcPrecisionResult {
                         "total_escaping" => total_escaping = Some(map.next_value()?),
                         "total_consumed" => total_consumed = Some(map.next_value()?),
                         "total_traces" => total_traces = Some(map.next_value()?),
-                        _ => { let _ = map.next_value::<serde::de::IgnoredAny>()?; }
+                        _ => {
+                            let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                        }
                     }
                 }
 
-                let total_escaping = total_escaping.ok_or_else(|| de::Error::missing_field("total_escaping"))?;
-                let total_consumed = total_consumed.ok_or_else(|| de::Error::missing_field("total_consumed"))?;
-                let total_traces = total_traces.ok_or_else(|| de::Error::missing_field("total_traces"))?;
+                let total_escaping =
+                    total_escaping.ok_or_else(|| de::Error::missing_field("total_escaping"))?;
+                let total_consumed =
+                    total_consumed.ok_or_else(|| de::Error::missing_field("total_consumed"))?;
+                let total_traces =
+                    total_traces.ok_or_else(|| de::Error::missing_field("total_traces"))?;
                 // If precision is present in the payload, use it; otherwise recompute.
                 let precision = precision.unwrap_or_else(|| {
-                    EtcPrecisionResult::from_counters(total_escaping, total_consumed, total_traces).precision
+                    EtcPrecisionResult::from_counters(total_escaping, total_consumed, total_traces)
+                        .precision
                 });
 
-                Ok(EtcPrecisionResult { precision, total_escaping, total_consumed, total_traces })
+                Ok(EtcPrecisionResult {
+                    precision,
+                    total_escaping,
+                    total_consumed,
+                    total_traces,
+                })
             }
         }
 
@@ -578,7 +592,8 @@ impl PrecisionDiagnostics {
             trace_summaries.insert(summary.trace_index, summary);
         }
 
-        let result = EtcPrecisionResult::from_counters(total_escaping, total_consumed, total_traces);
+        let result =
+            EtcPrecisionResult::from_counters(total_escaping, total_consumed, total_traces);
 
         PrecisionDiagnostics {
             result,
@@ -663,8 +678,10 @@ mod tests {
     fn etc_result_precision_in_range() {
         for (e, c) in [(0u64, 0), (5, 5), (10, 90), (99, 1), (0, 50)] {
             let r = EtcPrecisionResult::from_counters(e, c, 1);
-            assert!(r.precision_f64() >= 0.0 && r.precision_f64() <= 1.0,
-                "out of range for e={e}, c={c}");
+            assert!(
+                r.precision_f64() >= 0.0 && r.precision_f64() <= 1.0,
+                "out of range for e={e}, c={c}"
+            );
         }
     }
 
@@ -785,15 +802,12 @@ mod tests {
 
     #[test]
     fn precision_diagnostics_aggregates_summaries() {
-        let s0 = TraceEscapingEdgeSummary::from_counters(
-            0, 4, 16, ["A".into()].into_iter().collect()
-        );
-        let s1 = TraceEscapingEdgeSummary::from_counters(
-            1, 6, 24, ["B".into()].into_iter().collect()
-        );
-        let diag = PrecisionDiagnostics::from_trace_summaries(
-            alloc::vec![s0, s1], PrecisionMode::Full
-        );
+        let s0 =
+            TraceEscapingEdgeSummary::from_counters(0, 4, 16, ["A".into()].into_iter().collect());
+        let s1 =
+            TraceEscapingEdgeSummary::from_counters(1, 6, 24, ["B".into()].into_iter().collect());
+        let diag =
+            PrecisionDiagnostics::from_trace_summaries(alloc::vec![s0, s1], PrecisionMode::Full);
 
         assert_eq!(diag.result.total_escaping, 10);
         assert_eq!(diag.result.total_consumed, 40);
@@ -806,9 +820,7 @@ mod tests {
 
     #[test]
     fn precision_diagnostics_empty_yields_full_precision() {
-        let diag = PrecisionDiagnostics::from_trace_summaries(
-            alloc::vec![], PrecisionMode::Fast
-        );
+        let diag = PrecisionDiagnostics::from_trace_summaries(alloc::vec![], PrecisionMode::Fast);
         assert!((diag.result.precision_f64() - 1.0).abs() < f64::EPSILON);
         assert_eq!(diag.result.total_traces, 0);
     }

@@ -120,14 +120,15 @@ fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
             .or_insert(0) += 1;
     }
 
-    dfg.edges
-        .extend(edge_counts.into_iter().map(|((f, t), freq)| {
-            DirectlyFollowsRelation {
+    dfg.edges.extend(
+        edge_counts
+            .into_iter()
+            .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
                 to: col.vocab[t as usize].to_owned(),
                 frequency: freq,
-            }
-        }));
+            }),
+    );
 
     dfg
 }
@@ -191,8 +192,14 @@ fn dfg_deterministic_across_multiple_runs() {
     let nodes1 = nodes_to_map(&run1);
     let nodes2 = nodes_to_map(&run2);
     let nodes3 = nodes_to_map(&run3);
-    assert_eq!(nodes1, nodes2, "Node frequencies must be stable across runs");
-    assert_eq!(nodes1, nodes3, "Node frequencies must be stable across runs");
+    assert_eq!(
+        nodes1, nodes2,
+        "Node frequencies must be stable across runs"
+    );
+    assert_eq!(
+        nodes1, nodes3,
+        "Node frequencies must be stable across runs"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -291,7 +298,10 @@ fn heuristic_builder_deterministic_with_same_log() {
     let filtered1: Vec<_> = freq_map1
         .iter()
         .filter(|((from, to), &fwd)| {
-            let rev = freq_map1.get(&(to.clone(), from.clone())).copied().unwrap_or(0);
+            let rev = freq_map1
+                .get(&(to.clone(), from.clone()))
+                .copied()
+                .unwrap_or(0);
             let dep = (fwd as f64 - rev as f64) / (fwd as f64 + rev as f64 + 1.0);
             dep >= threshold
         })
@@ -301,7 +311,10 @@ fn heuristic_builder_deterministic_with_same_log() {
     let filtered2: Vec<_> = freq_map2
         .iter()
         .filter(|((from, to), &fwd)| {
-            let rev = freq_map2.get(&(to.clone(), from.clone())).copied().unwrap_or(0);
+            let rev = freq_map2
+                .get(&(to.clone(), from.clone()))
+                .copied()
+                .unwrap_or(0);
             let dep = (fwd as f64 - rev as f64) / (fwd as f64 + rev as f64 + 1.0);
             dep >= threshold
         })

@@ -13,8 +13,8 @@
 use std::collections::HashMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, DirectlyFollowsGraph, Event, EventLog,
-    PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
+    AttributeValue, DirectlyFollowsGraph, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
+    PetriNetTransition, Trace,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
@@ -131,7 +131,11 @@ fn quality_gate_rejects_fitness_below_threshold() {
     let result = token_replay_pure(&log, &net, "concept:name");
 
     // Aggregate fitness across all traces
-    let avg_fitness: f64 = result.case_fitness.iter().map(|cf| cf.trace_fitness).sum::<f64>()
+    let avg_fitness: f64 = result
+        .case_fitness
+        .iter()
+        .map(|cf| cf.trace_fitness)
+        .sum::<f64>()
         / result.case_fitness.len() as f64;
 
     assert!(
@@ -282,7 +286,11 @@ fn dfg_on_single_activity_has_no_edges() {
     // Activity "A" must still be recognised as a node (it appears 3 times).
     let a_node = dfg.nodes.iter().find(|n| n.id == "A");
     assert!(a_node.is_some(), "Activity A must be in the DFG nodes");
-    assert_eq!(a_node.unwrap().frequency, 3, "Activity A must appear 3 times");
+    assert_eq!(
+        a_node.unwrap().frequency,
+        3,
+        "Activity A must appear 3 times"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -388,11 +396,7 @@ fn precision_metamorphic_more_paths_lower_precision() {
     let dfg1 = dfg_from_log(&log1, "concept:name");
 
     // Log 2: multiple variants — A→B→C, A→C→B, A→B→B→C
-    let log2 = make_log(&[
-        &["A", "B", "C"],
-        &["A", "C", "B"],
-        &["A", "B", "B", "C"],
-    ]);
+    let log2 = make_log(&[&["A", "B", "C"], &["A", "C", "B"], &["A", "B", "B", "C"]]);
     let dfg2 = dfg_from_log(&log2, "concept:name");
 
     assert!(

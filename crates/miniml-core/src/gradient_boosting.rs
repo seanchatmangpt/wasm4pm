@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
+use crate::decision_tree::{decision_tree_impl, DecisionTreeModel};
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
-use crate::decision_tree::{decision_tree_impl, DecisionTreeModel};
+use wasm_bindgen::prelude::*;
 
 /// Gradient Boosting Classifier (XGBoost/LightGBM-style)
 /// Sequential ensemble of weak learners (decision stumps) correcting previous errors
@@ -16,13 +16,19 @@ pub struct GradientBoostingClassifier {
 #[wasm_bindgen]
 impl GradientBoostingClassifier {
     #[wasm_bindgen(getter, js_name = "nTrees")]
-    pub fn n_trees(&self) -> usize { self.trees.len() }
+    pub fn n_trees(&self) -> usize {
+        self.trees.len()
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "learningRate")]
-    pub fn learning_rate(&self) -> f64 { self.learning_rate }
+    pub fn learning_rate(&self) -> f64 {
+        self.learning_rate
+    }
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<f64> {
@@ -33,13 +39,17 @@ impl GradientBoostingClassifier {
             // Sum predictions from all trees (using predict_single to avoid allocation)
             let mut scores = vec![0.0f64; self.n_classes];
             for tree in &self.trees {
-                let pred = tree.predict_single(&data[i * self.n_features..(i + 1) * self.n_features]) as usize;
+                let pred = tree
+                    .predict_single(&data[i * self.n_features..(i + 1) * self.n_features])
+                    as usize;
                 if pred < self.n_classes {
                     scores[pred] += 1.0;
                 }
             }
             // Find class with max votes
-            let (best_class, _) = scores.iter().enumerate()
+            let (best_class, _) = scores
+                .iter()
+                .enumerate()
                 .max_by_key(|(_, &s)| s.to_bits())
                 .unwrap();
             result.push(best_class as f64);
@@ -56,7 +66,9 @@ impl GradientBoostingClassifier {
         for i in 0..n {
             let mut scores = vec![0.0f64; self.n_classes];
             for tree in &self.trees {
-                let pred = tree.predict_single(&data[i * self.n_features..(i + 1) * self.n_features]) as usize;
+                let pred = tree
+                    .predict_single(&data[i * self.n_features..(i + 1) * self.n_features])
+                    as usize;
                 if pred < self.n_classes {
                     scores[pred] += 1.0;
                 }
@@ -74,8 +86,12 @@ impl GradientBoostingClassifier {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("GradientBoostingClassifier(trees={}, features={}, lr={})",
-            self.trees.len(), self.n_features, self.learning_rate)
+        format!(
+            "GradientBoostingClassifier(trees={}, features={}, lr={})",
+            self.trees.len(),
+            self.n_features,
+            self.learning_rate
+        )
     }
 }
 
@@ -164,10 +180,7 @@ mod tests {
 
     #[test]
     fn test_gradient_boosting_binary() {
-        let data = vec![
-            0.0, 0.0,  1.0, 1.0,
-            0.0, 1.0,  1.0, 0.0,
-        ];
+        let data = vec![0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0];
         let labels = vec![0.0, 1.0, 0.0, 1.0];
         let model = gradient_boosting_impl(&data, 2, &labels, 10, 2, 0.1).unwrap();
 
@@ -192,8 +205,8 @@ mod tests {
         // so that `as usize` casts in subsequent iterations don't alias class indices.
         // With 10 trees and lr=0.1, old code drifted labels to negatives → wrong predictions.
         let data = vec![
-            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  // XOR-ish pattern
-            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  // duplicated for stability
+            0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, // XOR-ish pattern
+            0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, // duplicated for stability
         ];
         let labels = vec![0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0];
         let model = gradient_boosting_impl(&data, 2, &labels, 20, 3, 0.1).unwrap();
@@ -201,10 +214,22 @@ mod tests {
         let preds = model.predict(&data);
         // All predictions must be valid class indices (0 or 1)
         for p in &preds {
-            assert!(*p == 0.0 || *p == 1.0, "Prediction {} is not a valid class index", p);
+            assert!(
+                *p == 0.0 || *p == 1.0,
+                "Prediction {} is not a valid class index",
+                p
+            );
         }
         // The model should get at least half correct (better than random)
-        let correct = preds.iter().zip(labels.iter()).filter(|(p, l)| (*p - *l).abs() < 1e-10).count();
-        assert!(correct >= 4, "Expected at least 4/8 correct, got {}", correct);
+        let correct = preds
+            .iter()
+            .zip(labels.iter())
+            .filter(|(p, l)| (*p - *l).abs() < 1e-10)
+            .count();
+        assert!(
+            correct >= 4,
+            "Expected at least 4/8 correct, got {}",
+            correct
+        );
     }
 }

@@ -14,8 +14,8 @@
 
 extern crate alloc;
 
-use alloc::collections::{BTreeMap, BTreeSet};
 use crate::primitives::ActivityName;
+use alloc::collections::{BTreeMap, BTreeSet};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -30,7 +30,10 @@ pub struct ActivityPair {
 
 impl ActivityPair {
     pub fn new(from: impl Into<ActivityName>, to: impl Into<ActivityName>) -> Self {
-        ActivityPair { from: from.into(), to: to.into() }
+        ActivityPair {
+            from: from.into(),
+            to: to.into(),
+        }
     }
 }
 
@@ -87,12 +90,20 @@ impl LogSkeleton {
 
     /// Check whether a given (a, b) pair satisfies the always_before constraint.
     pub fn is_always_before(&self, from: &ActivityName, to: &ActivityName) -> bool {
-        self.always_before.contains(&ActivityPair { from: from.clone(), to: to.clone() })
+        self.always_before.contains(&ActivityPair {
+            from: from.clone(),
+            to: to.clone(),
+        })
     }
 
     /// Check whether two activities are declared never_together.
     pub fn is_never_together(&self, a: &ActivityName, b: &ActivityName) -> bool {
-        self.never_together.contains(&ActivityPair { from: a.clone(), to: b.clone() })
-            || self.never_together.contains(&ActivityPair { from: b.clone(), to: a.clone() })
+        self.never_together.contains(&ActivityPair {
+            from: a.clone(),
+            to: b.clone(),
+        }) || self.never_together.contains(&ActivityPair {
+            from: b.clone(),
+            to: a.clone(),
+        })
     }
 }

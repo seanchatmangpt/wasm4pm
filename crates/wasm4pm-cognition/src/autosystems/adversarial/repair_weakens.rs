@@ -25,10 +25,7 @@ impl Detector for RepairWeakensDetector {
             // infallible: guarded by `if history.len() < 2 { continue }` above.
             let current = *history.last().expect("history.len() >= 2");
             let prior = &history[..history.len() - 1];
-            let max_prior = prior
-                .iter()
-                .copied()
-                .fold(f64::MIN, f64::max);
+            let max_prior = prior.iter().copied().fold(f64::MIN, f64::max);
             if current < max_prior {
                 findings.push(
                     Finding::new(

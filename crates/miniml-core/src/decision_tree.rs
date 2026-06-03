@@ -1,13 +1,13 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
 use std::collections::{HashMap, HashSet};
+use wasm_bindgen::prelude::*;
 
 #[derive(Clone)]
 struct Node {
     feature: usize,
     threshold: f64,
-    left: usize,   // index into nodes vec (0 = none)
+    left: usize, // index into nodes vec (0 = none)
     right: usize,
     prediction: f64,
     is_leaf: bool,
@@ -23,12 +23,17 @@ pub struct TreeArena {
 #[derive(Clone)]
 pub enum TreeNode {
     Leaf(f64),
-    Internal { feature: usize, threshold: f64, left: u32, right: u32 },
+    Internal {
+        feature: usize,
+        threshold: f64,
+        left: u32,
+        right: u32,
+    },
 }
 
 /// Flat tree node (stored in Vec instead of Box)
 pub struct FlatTreeNode {
-    pub node_type: u8,  // 0=Leaf, 1=Internal
+    pub node_type: u8, // 0=Leaf, 1=Internal
     pub feature_idx: u32,
     pub threshold: f64,
     pub left_idx: Option<u32>,
@@ -67,9 +72,18 @@ impl TreeArena {
             let node = &self.nodes[idx as usize];
             match node {
                 TreeNode::Leaf(value) => return *value,
-                TreeNode::Internal { feature, threshold, left, right } => {
+                TreeNode::Internal {
+                    feature,
+                    threshold,
+                    left,
+                    right,
+                } => {
                     let feature_val = features[*feature];
-                    idx = if feature_val <= *threshold { *left } else { *right };
+                    idx = if feature_val <= *threshold {
+                        *left
+                    } else {
+                        *right
+                    };
                 }
             }
         }
@@ -86,13 +100,19 @@ pub struct DecisionTreeModel {
 #[wasm_bindgen]
 impl DecisionTreeModel {
     #[wasm_bindgen(getter)]
-    pub fn depth(&self) -> usize { self.depth }
+    pub fn depth(&self) -> usize {
+        self.depth
+    }
 
     /// Number of features (public for use by other algorithms like feature importance)
-    pub fn n_features_val(&self) -> usize { self.n_features }
+    pub fn n_features_val(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "nNodes")]
-    pub fn n_nodes(&self) -> usize { self.nodes.len() }
+    pub fn n_nodes(&self) -> usize {
+        self.nodes.len()
+    }
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<f64> {
@@ -107,7 +127,11 @@ impl DecisionTreeModel {
                     break;
                 }
                 let val = data[i * self.n_features + node.feature];
-                node_idx = if val <= node.threshold { node.left } else { node.right };
+                node_idx = if val <= node.threshold {
+                    node.left
+                } else {
+                    node.right
+                };
             }
         }
         result
@@ -167,7 +191,11 @@ impl DecisionTreeModel {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("DecisionTree(depth={}, nodes={})", self.depth, self.nodes.len())
+        format!(
+            "DecisionTree(depth={}, nodes={})",
+            self.depth,
+            self.nodes.len()
+        )
     }
 }
 
@@ -208,15 +236,31 @@ struct TreeBuilder<'a> {
 
 impl<'a> TreeBuilder<'a> {
     fn build(&mut self, indices: &[usize], depth: usize) -> usize {
-        if depth > self.max_depth_reached { self.max_depth_reached = depth; }
+        if depth > self.max_depth_reached {
+            self.max_depth_reached = depth;
+        }
 
         let targets: Vec<f64> = indices.iter().map(|&i| self.targets[i]).collect();
 
         // Leaf conditions
-        if indices.len() < self.min_samples_split || depth >= self.max_depth || self.is_pure(&targets) {
-            let pred = if self.is_classifier { majority_class(&targets) } else { mean_value(&targets) };
+        if indices.len() < self.min_samples_split
+            || depth >= self.max_depth
+            || self.is_pure(&targets)
+        {
+            let pred = if self.is_classifier {
+                majority_class(&targets)
+            } else {
+                mean_value(&targets)
+            };
             let idx = self.nodes.len();
-            self.nodes.push(Node { feature: 0, threshold: 0.0, left: 0, right: 0, prediction: pred, is_leaf: true });
+            self.nodes.push(Node {
+                feature: 0,
+                threshold: 0.0,
+                left: 0,
+                right: 0,
+                prediction: pred,
+                is_leaf: true,
+            });
             return idx;
         }
 
@@ -224,26 +268,56 @@ impl<'a> TreeBuilder<'a> {
         let (best_feature, best_threshold, best_score) = self.find_best_split(indices, &targets);
 
         if best_score < 0.0 {
-            let pred = if self.is_classifier { majority_class(&targets) } else { mean_value(&targets) };
+            let pred = if self.is_classifier {
+                majority_class(&targets)
+            } else {
+                mean_value(&targets)
+            };
             let idx = self.nodes.len();
-            self.nodes.push(Node { feature: 0, threshold: 0.0, left: 0, right: 0, prediction: pred, is_leaf: true });
+            self.nodes.push(Node {
+                feature: 0,
+                threshold: 0.0,
+                left: 0,
+                right: 0,
+                prediction: pred,
+                is_leaf: true,
+            });
             return idx;
         }
 
         // Split
-        let (left_idx, right_idx): (Vec<usize>, Vec<usize>) = indices.iter()
-            .partition(|&&i| mat_get(self.data, self.n_features, i, best_feature) <= best_threshold);
+        let (left_idx, right_idx): (Vec<usize>, Vec<usize>) = indices.iter().partition(|&&i| {
+            mat_get(self.data, self.n_features, i, best_feature) <= best_threshold
+        });
 
         if left_idx.is_empty() || right_idx.is_empty() {
-            let pred = if self.is_classifier { majority_class(&targets) } else { mean_value(&targets) };
+            let pred = if self.is_classifier {
+                majority_class(&targets)
+            } else {
+                mean_value(&targets)
+            };
             let idx = self.nodes.len();
-            self.nodes.push(Node { feature: 0, threshold: 0.0, left: 0, right: 0, prediction: pred, is_leaf: true });
+            self.nodes.push(Node {
+                feature: 0,
+                threshold: 0.0,
+                left: 0,
+                right: 0,
+                prediction: pred,
+                is_leaf: true,
+            });
             return idx;
         }
 
         // Placeholder node
         let node_idx = self.nodes.len();
-        self.nodes.push(Node { feature: best_feature, threshold: best_threshold, left: 0, right: 0, prediction: 0.0, is_leaf: false });
+        self.nodes.push(Node {
+            feature: best_feature,
+            threshold: best_threshold,
+            left: 0,
+            right: 0,
+            prediction: 0.0,
+            is_leaf: false,
+        });
 
         let left = self.build(&left_idx, depth + 1);
         let right = self.build(&right_idx, depth + 1);
@@ -275,7 +349,10 @@ impl<'a> TreeBuilder<'a> {
             let counts = label_counts(targets);
             let parent_gini = {
                 let mut g = 1.0;
-                for &(_, c) in &counts { let p = c as f64 / nf; g -= p * p; }
+                for &(_, c) in &counts {
+                    let p = c as f64 / nf;
+                    g -= p * p;
+                }
                 g
             };
 
@@ -289,7 +366,8 @@ impl<'a> TreeBuilder<'a> {
                 });
 
                 // Running left counts, right counts start as parent counts
-                let mut left_counts: Vec<(u32, usize)> = counts.iter().map(|&(k, _)| (k, 0)).collect();
+                let mut left_counts: Vec<(u32, usize)> =
+                    counts.iter().map(|&(k, _)| (k, 0)).collect();
                 let mut right_counts = counts.clone();
                 let mut left_n = 0usize;
 
@@ -308,23 +386,36 @@ impl<'a> TreeBuilder<'a> {
                     // Skip if same feature value as next
                     let v_cur = mat_get(self.data, self.n_features, indices[sorted[si]], f);
                     let v_next = mat_get(self.data, self.n_features, indices[sorted[si + 1]], f);
-                    if (v_cur - v_next).abs() < 1e-12 { continue; }
+                    if (v_cur - v_next).abs() < 1e-12 {
+                        continue;
+                    }
 
                     // Compute Gini from counts
                     let left_gini = {
                         let mut g = 1.0;
                         let ln = left_n as f64;
-                        for &(_, c) in &left_counts { if c > 0 { let p = c as f64 / ln; g -= p * p; } }
+                        for &(_, c) in &left_counts {
+                            if c > 0 {
+                                let p = c as f64 / ln;
+                                g -= p * p;
+                            }
+                        }
                         g
                     };
                     let right_gini = {
                         let mut g = 1.0;
                         let rn = right_n as f64;
-                        for &(_, c) in &right_counts { if c > 0 { let p = c as f64 / rn; g -= p * p; } }
+                        for &(_, c) in &right_counts {
+                            if c > 0 {
+                                let p = c as f64 / rn;
+                                g -= p * p;
+                            }
+                        }
                         g
                     };
 
-                    let weighted = (left_n as f64 / nf) * left_gini + (right_n as f64 / nf) * right_gini;
+                    let weighted =
+                        (left_n as f64 / nf) * left_gini + (right_n as f64 / nf) * right_gini;
                     let gain = parent_gini - weighted;
 
                     if gain > best_score {
@@ -360,7 +451,9 @@ impl<'a> TreeBuilder<'a> {
 
                     let v_cur = mat_get(self.data, self.n_features, indices[sorted[si]], f);
                     let v_next = mat_get(self.data, self.n_features, indices[sorted[si + 1]], f);
-                    if (v_cur - v_next).abs() < 1e-12 { continue; }
+                    if (v_cur - v_next).abs() < 1e-12 {
+                        continue;
+                    }
 
                     let right_sum = total_sum - left_sum;
                     let right_sq = total_sq - left_sq;
@@ -383,7 +476,14 @@ impl<'a> TreeBuilder<'a> {
     }
 }
 
-pub fn decision_tree_impl(data: &[f64], n_features: usize, targets: &[f64], max_depth: usize, min_samples_split: usize, is_classifier: bool) -> Result<DecisionTreeModel, MlError> {
+pub fn decision_tree_impl(
+    data: &[f64],
+    n_features: usize,
+    targets: &[f64],
+    max_depth: usize,
+    min_samples_split: usize,
+    is_classifier: bool,
+) -> Result<DecisionTreeModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if targets.len() != n {
         return Err(MlError::new("targets length must match number of samples"));
@@ -394,8 +494,14 @@ pub fn decision_tree_impl(data: &[f64], n_features: usize, targets: &[f64], max_
 
     let indices: Vec<usize> = (0..n).collect();
     let mut builder = TreeBuilder {
-        data, targets, n_features, max_depth, min_samples_split, is_classifier,
-        nodes: Vec::new(), max_depth_reached: 0,
+        data,
+        targets,
+        n_features,
+        max_depth,
+        min_samples_split,
+        is_classifier,
+        nodes: Vec::new(),
+        max_depth_reached: 0,
     };
     builder.build(&indices, 0);
 
@@ -407,13 +513,34 @@ pub fn decision_tree_impl(data: &[f64], n_features: usize, targets: &[f64], max_
 }
 
 #[wasm_bindgen(js_name = "decisionTreeClassify")]
-pub fn decision_tree_classify(data: &[f64], n_features: usize, labels: &[f64], max_depth: usize, min_samples_split: usize) -> Result<DecisionTreeModel, JsError> {
-    decision_tree_impl(data, n_features, labels, max_depth, min_samples_split, true).map_err(|e| JsError::new(&e.message))
+pub fn decision_tree_classify(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    max_depth: usize,
+    min_samples_split: usize,
+) -> Result<DecisionTreeModel, JsError> {
+    decision_tree_impl(data, n_features, labels, max_depth, min_samples_split, true)
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "decisionTreeRegress")]
-pub fn decision_tree_regress(data: &[f64], n_features: usize, targets: &[f64], max_depth: usize, min_samples_split: usize) -> Result<DecisionTreeModel, JsError> {
-    decision_tree_impl(data, n_features, targets, max_depth, min_samples_split, false).map_err(|e| JsError::new(&e.message))
+pub fn decision_tree_regress(
+    data: &[f64],
+    n_features: usize,
+    targets: &[f64],
+    max_depth: usize,
+    min_samples_split: usize,
+) -> Result<DecisionTreeModel, JsError> {
+    decision_tree_impl(
+        data,
+        n_features,
+        targets,
+        max_depth,
+        min_samples_split,
+        false,
+    )
+    .map_err(|e| JsError::new(&e.message))
 }
 
 #[cfg(test)]
@@ -422,10 +549,7 @@ mod tests {
 
     #[test]
     fn test_classification() {
-        let data = vec![
-            0.0, 0.0,  1.0, 0.0,
-            0.0, 1.0,  1.0, 1.0,
-        ];
+        let data = vec![0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let labels = vec![0.0, 1.0, 0.0, 1.0]; // class depends on feature 0
         let model = decision_tree_impl(&data, 2, &labels, 10, 2, true).unwrap();
         let preds = model.predict(&data);

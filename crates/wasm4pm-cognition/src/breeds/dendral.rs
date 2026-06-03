@@ -222,9 +222,7 @@ mod tests {
     #[test]
     fn unknown_constraint_prefix_is_rejected() {
         let input = input_with(vec![cand("alpha", 0.7)], vec!["weird:foo"]);
-        let err = Dendral
-            .run(&input)
-            .expect_err("unknown prefix should fail");
+        let err = Dendral.run(&input).expect_err("unknown prefix should fail");
         assert_eq!(err.breed, BreedId::Dendral);
         assert!(
             err.message.contains("unknown constraint prefix"),
@@ -237,10 +235,7 @@ mod tests {
     // not silently let high-score candidates through.
     #[test]
     fn malformed_max_score_threshold_is_rejected() {
-        let input = input_with(
-            vec![cand("alpha", 99.0)],
-            vec!["max-score:not-a-number"],
-        );
+        let input = input_with(vec![cand("alpha", 99.0)], vec!["max-score:not-a-number"]);
         let err = Dendral
             .run(&input)
             .expect_err("malformed threshold should fail");

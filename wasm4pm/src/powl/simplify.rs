@@ -1,4 +1,5 @@
 //! Simplification algorithms for POWL models.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 
@@ -20,18 +21,18 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
         // ChoiceGraph: simplify each SubModel sub-tree in place; the graph
         // structure (Definition 1 invariants) is preserved.
         Some(PowlNode::ChoiceGraph(cg)) => {
-            let new_nodes: Vec<wasm4pm_types::ChoiceGraphNode> = cg
+            let new_nodes: Vec<ChoiceGraphNode> = cg
                 .graph
                 .nodes
                 .into_iter()
                 .map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::SubModel(c) => {
-                        wasm4pm_types::ChoiceGraphNode::SubModel(simplify(arena, c))
+                    ChoiceGraphNode::SubModel(c) => {
+                        ChoiceGraphNode::SubModel(simplify(arena, c))
                     }
                     other => other,
                 })
                 .collect();
-            let new_graph = wasm4pm_types::ChoiceGraph {
+            let new_graph = ChoiceGraph {
                 nodes: new_nodes,
                 edges: cg.graph.edges,
                 start_idx: cg.graph.start_idx,

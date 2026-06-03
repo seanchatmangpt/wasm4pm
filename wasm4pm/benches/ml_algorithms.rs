@@ -103,7 +103,10 @@ fn score_trace_pure(activities: &[usize], freq_map: &[u32], vocab: usize) -> f64
         let from = activities[i];
         let to = activities[i + 1];
         // total outgoing from `from`
-        let from_total: u32 = (0..vocab).map(|t| freq_map[from * vocab + t]).sum::<u32>().max(1);
+        let from_total: u32 = (0..vocab)
+            .map(|t| freq_map[from * vocab + t])
+            .sum::<u32>()
+            .max(1);
         let freq = freq_map[from * vocab + to];
         cost += if freq == 0 {
             MISSING
@@ -140,7 +143,11 @@ fn bench_ml_classify(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let (features, labels) = make_classify_data(n);
@@ -152,21 +159,17 @@ fn bench_ml_classify(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(n as u64));
         for k in [3_usize, 5, 10] {
-            group.bench_with_input(
-                BenchmarkId::new(format!("k{}", k), n),
-                &k,
-                |b, &k| {
-                    b.iter(|| {
-                        black_box(knn_internal(
-                            black_box(&train_x),
-                            black_box(&train_y),
-                            black_box(&test_x),
-                            black_box(&test_y),
-                            k,
-                        ))
-                    })
-                },
-            );
+            group.bench_with_input(BenchmarkId::new(format!("k{}", k), n), &k, |b, &k| {
+                b.iter(|| {
+                    black_box(knn_internal(
+                        black_box(&train_x),
+                        black_box(&train_y),
+                        black_box(&test_x),
+                        black_box(&test_y),
+                        k,
+                    ))
+                })
+            });
         }
     }
 
@@ -185,7 +188,15 @@ fn bench_ml_classify(c: &mut Criterion) {
     group.bench_function("single_row", |b| {
         let f = vec![[5.0_f64, 3.0]];
         let l = vec![0u8];
-        b.iter(|| black_box(knn_internal(black_box(&f), black_box(&l), black_box(&f), black_box(&l), 1)))
+        b.iter(|| {
+            black_box(knn_internal(
+                black_box(&f),
+                black_box(&l),
+                black_box(&f),
+                black_box(&l),
+                1,
+            ))
+        })
     });
 
     group.finish();
@@ -200,7 +211,11 @@ fn bench_ml_cluster(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes_slow() {
         let (handle, events) = make_handle(&shape);
@@ -226,7 +241,11 @@ fn bench_ml_forecast(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let data = make_forecast_data(n);
@@ -261,27 +280,41 @@ fn bench_ml_anomaly(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &n in &[100_usize, 1_000, 10_000] {
         group.throughput(Throughput::Elements(n as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(n),
-            &n,
-            |b, &n| b.iter(|| black_box(bench_anomaly_pure(n))),
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, &n| {
+            b.iter(|| black_box(bench_anomaly_pure(n)))
+        });
     }
 
     // Edge cases
     group.bench_function("empty_trace", |b| {
         let vocab = 5usize;
         let freq_map = vec![1u32; vocab * vocab];
-        b.iter(|| black_box(score_trace_pure(black_box(&[]), black_box(&freq_map), vocab)))
+        b.iter(|| {
+            black_box(score_trace_pure(
+                black_box(&[]),
+                black_box(&freq_map),
+                vocab,
+            ))
+        })
     });
     group.bench_function("single_activity_trace", |b| {
         let vocab = 5usize;
         let freq_map = vec![1u32; vocab * vocab];
-        b.iter(|| black_box(score_trace_pure(black_box(&[2usize]), black_box(&freq_map), vocab)))
+        b.iter(|| {
+            black_box(score_trace_pure(
+                black_box(&[2usize]),
+                black_box(&freq_map),
+                vocab,
+            ))
+        })
     });
 
     group.finish();
@@ -296,16 +329,18 @@ fn bench_ml_regress(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let (x, y) = make_regression_data(n);
         group.throughput(Throughput::Elements(n as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(n),
-            &n,
-            |b, _| b.iter(|| black_box(regression_internal(black_box(&x), black_box(&y)))),
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, _| {
+            b.iter(|| black_box(regression_internal(black_box(&x), black_box(&y))))
+        });
     }
 
     // Edge cases
@@ -328,16 +363,18 @@ fn bench_ml_pca(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &n in &[100_usize, 1_000, 10_000] {
         let features = make_pca_data(n);
         group.throughput(Throughput::Elements(n as u64));
-        group.bench_with_input(
-            BenchmarkId::from_parameter(n),
-            &n,
-            |b, _| b.iter(|| black_box(pca_internal(black_box(&features)))),
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(n), &n, |b, _| {
+            b.iter(|| black_box(pca_internal(black_box(&features))))
+        });
     }
 
     // Edge cases

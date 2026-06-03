@@ -17,10 +17,11 @@ impl Blake3Hash {
         if hex.len() != 64 {
             return Err(format!("Invalid hash length: {} (expected 64)", hex.len()));
         }
-        if !hex.chars().all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c)) {
-            return Err(
-                "Hash must be lowercase hex (digits 0-9, letters a-f only)".to_string(),
-            );
+        if !hex
+            .chars()
+            .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+        {
+            return Err("Hash must be lowercase hex (digits 0-9, letters a-f only)".to_string());
         }
         Ok(Blake3Hash(hex))
     }
@@ -236,9 +237,7 @@ mod tests {
         let mut map = serde_json::Map::new();
         map.insert(
             "x".to_string(),
-            serde_json::Value::Number(
-                serde_json::Number::from_f64(1.5).expect("finite number"),
-            ),
+            serde_json::Value::Number(serde_json::Number::from_f64(1.5).expect("finite number")),
         );
         let v = serde_json::Value::Object(map);
         assert!(canonical_json(&v).is_ok());

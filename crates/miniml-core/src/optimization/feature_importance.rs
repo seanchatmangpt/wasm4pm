@@ -5,8 +5,8 @@
 //! Provides permutation-based feature importance analysis.
 //! Answers: "Which features matter most for prediction?"
 
-use crate::optimization::types::*;
 use crate::optimization::fitness::*;
+use crate::optimization::types::*;
 use wasm_bindgen::prelude::*;
 
 /// Feature importance result for a single feature
@@ -187,7 +187,11 @@ pub fn compute_classification_importance(
         .map(|i| {
             let features = &feature_matrix[i * n_features..(i + 1) * n_features];
             let pred = if predict_fn(features) > 0.5 { 1.0 } else { 0.0 };
-            if pred == true_labels[i] { 1.0 } else { 0.0 }
+            if pred == true_labels[i] {
+                1.0
+            } else {
+                0.0
+            }
         })
         .sum::<f64>()
         / n_samples as f64;
@@ -219,7 +223,11 @@ pub fn compute_classification_importance(
                 ablated[feat] = 0.0;
 
                 let pred = if predict_fn(&ablated) > 0.5 { 1.0 } else { 0.0 };
-                if pred == true_labels[i] { 1.0 } else { 0.0 }
+                if pred == true_labels[i] {
+                    1.0
+                } else {
+                    0.0
+                }
             })
             .sum::<f64>()
             / n_samples as f64;
@@ -260,8 +268,8 @@ pub fn compute_classification_importance(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::genetic::seed_rng;
+    use super::*;
 
     // Simple linear model that works with variable dimension
     // y = sum of genes (each feature contributes equally)
@@ -309,7 +317,11 @@ mod tests {
 
         // Simple AND-like model: predict 1 if both features are > 0.5
         let predict_fn = |features: &[f64]| -> f64 {
-            if features[0] > 0.5 && features[1] > 0.5 { 1.0 } else { 0.0 }
+            if features[0] > 0.5 && features[1] > 0.5 {
+                1.0
+            } else {
+                0.0
+            }
         };
 
         let feature_matrix = vec![
@@ -320,13 +332,7 @@ mod tests {
         ];
         let labels = vec![1.0, 0.0, 0.0, 0.0];
 
-        let result = compute_classification_importance(
-            &predict_fn,
-            &feature_matrix,
-            &labels,
-            4,
-            2
-        );
+        let result = compute_classification_importance(&predict_fn, &feature_matrix, &labels, 4, 2);
 
         // Both features should be important
         assert_eq!(result.importances.len(), 2);

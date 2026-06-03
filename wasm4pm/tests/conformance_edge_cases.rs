@@ -13,7 +13,10 @@
 
 use std::collections::HashMap;
 use wasm4pm::conformance::token_replay_pure;
-use wasm4pm::models::{AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace};
+use wasm4pm::models::{
+    AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
+    Trace,
+};
 
 // Helpers
 fn make_log(traces: &[&[&str]]) -> EventLog {
@@ -173,16 +176,14 @@ fn ec_single_activity_net() {
 
     // Trace that matches perfectly
     let log_perfect = make_log(&[&["A"]]);
-    let result_perfect = token_replay_pure(&log_perfect, &net, "concept:name")
-        ;
+    let result_perfect = token_replay_pure(&log_perfect, &net, "concept:name");
 
     assert!(result_perfect.avg_fitness >= 0.0 && result_perfect.avg_fitness <= 1.0);
     assert!(!result_perfect.avg_fitness.is_nan());
 
     // Trace with extra event (not in model)
     let log_extra = make_log(&[&["A", "A"]]);
-    let result_extra = token_replay_pure(&log_extra, &net, "concept:name")
-        ;
+    let result_extra = token_replay_pure(&log_extra, &net, "concept:name");
 
     assert!(result_extra.avg_fitness >= 0.0 && result_extra.avg_fitness <= 1.0);
     assert!(!result_extra.avg_fitness.is_nan());
@@ -209,8 +210,7 @@ fn ec_all_unknown_activities() {
     };
 
     let log = make_log(&[&["X", "Y", "Z"]]);
-    let result = token_replay_pure(&log, &net, "concept:name")
-        ;
+    let result = token_replay_pure(&log, &net, "concept:name");
 
     // Guard: fitness must be in [0.0, 1.0] even with all missing activities
     assert!(
@@ -248,8 +248,7 @@ fn ec_empty_trace_in_log() {
 
     let log = make_log(&[&[]]);
 
-    let result = token_replay_pure(&log, &net, "concept:name")
-        ;
+    let result = token_replay_pure(&log, &net, "concept:name");
 
     // Guard: fitness must be in [0.0, 1.0]
     assert!(
@@ -287,8 +286,7 @@ fn ec_heavy_deviations_clamped() {
 
     // Many unknown activities to force high missing count
     let log = make_log(&[&["X", "Y", "Z", "W", "V", "U"]]);
-    let result = token_replay_pure(&log, &net, "concept:name")
-        ;
+    let result = token_replay_pure(&log, &net, "concept:name");
 
     // Guard: despite high missing count, fitness must be clamped to [0.0, 1.0]
     assert!(
@@ -319,8 +317,7 @@ fn ec_mixed_traces_with_empty() {
     };
 
     let log = make_log(&[&["A", "B"], &[], &["X"]]);
-    let result = token_replay_pure(&log, &net, "concept:name")
-        ;
+    let result = token_replay_pure(&log, &net, "concept:name");
 
     // Guard: avg_fitness must be in [0.0, 1.0]
     assert!(
@@ -368,12 +365,7 @@ fn ec_fitness_never_nan_or_inf() {
         ("single_event", vec![vec!["A"]]),
         ("all_unknown", vec![vec!["X", "Y"]]),
     ] {
-        let log = make_log(
-            &traces
-                .iter()
-                .map(|t| t.as_slice())
-                .collect::<Vec<_>>(),
-        );
+        let log = make_log(&traces.iter().map(|t| t.as_slice()).collect::<Vec<_>>());
 
         let result = token_replay_pure(&log, &net, "concept:name");
 
@@ -418,8 +410,7 @@ fn ec_fitness_1_0_only_for_perfect_traces() {
 
     // Perfect trace: A, B
     let log_perfect = make_log(&[&["A", "B"]]);
-    let result_perfect = token_replay_pure(&log_perfect, &net, "concept:name")
-        ;
+    let result_perfect = token_replay_pure(&log_perfect, &net, "concept:name");
 
     // Note: Due to remaining tokens in sink, fitness may not be exactly 1.0
     // Per ground_truth_conformance_tests.rs, perfect execution yields 0.75
@@ -431,8 +422,7 @@ fn ec_fitness_1_0_only_for_perfect_traces() {
 
     // Imperfect trace: just A
     let log_imperfect = make_log(&[&["A"]]);
-    let result_imperfect = token_replay_pure(&log_imperfect, &net, "concept:name")
-        ;
+    let result_imperfect = token_replay_pure(&log_imperfect, &net, "concept:name");
 
     assert!(
         result_perfect.avg_fitness > result_imperfect.avg_fitness,
@@ -464,13 +454,11 @@ fn ec_monotonic_fitness_with_added_events() {
 
     // Trace A
     let log_a = make_log(&[&["A"]]);
-    let result_a = token_replay_pure(&log_a, &net, "concept:name")
-        ;
+    let result_a = token_replay_pure(&log_a, &net, "concept:name");
 
     // Trace A, B (more complete)
     let log_ab = make_log(&[&["A", "B"]]);
-    let result_ab = token_replay_pure(&log_ab, &net, "concept:name")
-        ;
+    let result_ab = token_replay_pure(&log_ab, &net, "concept:name");
 
     // Guard: A, B should not be worse than A alone
     assert!(

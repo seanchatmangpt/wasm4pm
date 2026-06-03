@@ -10,7 +10,7 @@ use std::collections::HashMap;
 
 use ocel_core::flatten::flatten;
 use ocel_core::validate::validate;
-use ocel_core::{ObjectTypeCardinality, OCELAttributeValue, OCEL};
+use ocel_core::{OCELAttributeValue, ObjectTypeCardinality, OCEL};
 
 /// A small but complete Order-to-Cash OCEL-v2 log:
 /// objects: Customer c1, Order o1, Items i1/i2, Package p1, Invoice inv1,
@@ -190,7 +190,10 @@ fn object_attr_timeline_is_the_temporal_support() {
     // Oracle: timeline = distinct change stamps, ascending. o1 changes @09:00,10:00.
     let log = order_to_cash();
     let tl = log.object_attr_timeline("o1");
-    assert_eq!(tl, vec![ts("2024-01-02T09:00:00Z"), ts("2024-01-02T10:00:00Z")]);
+    assert_eq!(
+        tl,
+        vec![ts("2024-01-02T09:00:00Z"), ts("2024-01-02T10:00:00Z")]
+    );
 }
 
 #[test]
@@ -215,7 +218,11 @@ fn lawful_order_to_cash_validates() {
     // Positive proof: the well-formed story passes with no cardinality limits.
     let log = order_to_cash();
     let report = validate(&log, &HashMap::new());
-    assert!(report.valid, "lawful O2C must validate: {:?}", report.errors);
+    assert!(
+        report.valid,
+        "lawful O2C must validate: {:?}",
+        report.errors
+    );
 }
 
 #[test]
@@ -312,7 +319,10 @@ fn undeclared_object_type_refuses() {
     let mut log = order_to_cash();
     log.objects[0].object_type = "Alien".to_string();
     let report = validate(&log, &HashMap::new());
-    assert!(report.errors.iter().any(|e| e.code == "UNDECLARED_OBJECT_TYPE"));
+    assert!(report
+        .errors
+        .iter()
+        .any(|e| e.code == "UNDECLARED_OBJECT_TYPE"));
 }
 
 // ---------------------------------------------------------------------------

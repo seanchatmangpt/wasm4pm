@@ -76,8 +76,8 @@ pub fn export_onnx(model: JsValue) -> Result<Vec<u8>, JsError> {
 #[wasm_bindgen]
 pub fn import_onnx(bytes: &[u8]) -> Result<JsValue, JsError> {
     // Deserialize ONNX model
-    let onnx_model: OnnxModel =
-        bincode::deserialize(bytes).map_err(|e| JsError::new(&format!("Failed to deserialize ONNX model: {}", e)))?;
+    let onnx_model: OnnxModel = bincode::deserialize(bytes)
+        .map_err(|e| JsError::new(&format!("Failed to deserialize ONNX model: {}", e)))?;
 
     // Convert ONNX model to miniml format
     let persistent_model = convert_from_onnx(&onnx_model)?;
@@ -100,7 +100,12 @@ pub struct FineTuneConfig {
 impl FineTuneConfig {
     #[wasm_bindgen(constructor)]
     pub fn new(learning_rate: f64, epochs: usize, n_samples: usize, n_features: usize) -> Self {
-        Self { learning_rate, epochs, n_samples, n_features }
+        Self {
+            learning_rate,
+            epochs,
+            n_samples,
+            n_features,
+        }
     }
 }
 
@@ -121,8 +126,8 @@ pub fn fine_tune(
     config: &FineTuneConfig,
 ) -> Result<Vec<u8>, JsError> {
     // Load pretrained model
-    let model: PersistentModel =
-        bincode::deserialize(pretrained_model).map_err(|e| JsError::new(&format!("Failed to load pretrained model: {}", e)))?;
+    let model: PersistentModel = bincode::deserialize(pretrained_model)
+        .map_err(|e| JsError::new(&format!("Failed to load pretrained model: {}", e)))?;
 
     // Fine-tune the model
     let fine_tuned_model = fine_tune_model(&model, x_new, y_new, layers_to_freeze, config)?;
@@ -155,11 +160,12 @@ pub fn extract_features(
 ) -> Result<Vec<f64>, JsError> {
     // Load model — use serde_json, not bincode, because PersistentModel.parameters
     // is a serde_json::Value and bincode requires all sequences to have a known length.
-    let persistent_model: PersistentModel =
-        serde_json::from_slice(model).map_err(|e| JsError::new(&format!("Failed to load model: {}", e)))?;
+    let persistent_model: PersistentModel = serde_json::from_slice(model)
+        .map_err(|e| JsError::new(&format!("Failed to load model: {}", e)))?;
 
     // Extract features from specified layer
-    let features = extract_layer_features(&persistent_model, x, layer_index, n_samples, n_features)?;
+    let features =
+        extract_layer_features(&persistent_model, x, layer_index, n_samples, n_features)?;
 
     Ok(features)
 }
@@ -216,7 +222,14 @@ fn fine_tune_model(
         }
         "RandomForest" | "GradientBoosting" => {
             // Fine-tune ensemble models (update leaf nodes)
-            fine_tune_ensemble_model(&mut fine_tuned, x_new, y_new, layers_to_freeze, config.n_samples, config.n_features)?;
+            fine_tune_ensemble_model(
+                &mut fine_tuned,
+                x_new,
+                y_new,
+                layers_to_freeze,
+                config.n_samples,
+                config.n_features,
+            )?;
         }
         "NeuralNet" => {
             // Fine-tune neural network
@@ -271,12 +284,11 @@ fn fine_tune_linear_model(
 ) -> Result<(), MlError> {
     // Extract current weights
     let weights = if let Some(w) = model.parameters.get("weights") {
-        w.as_array().ok_or_else(|| {
-            MlError::new("Weights must be an array".to_string())
-        })?
-        .iter()
-        .map(|v| v.as_f64().unwrap_or(0.0))
-        .collect::<Vec<_>>()
+        w.as_array()
+            .ok_or_else(|| MlError::new("Weights must be an array".to_string()))?
+            .iter()
+            .map(|v| v.as_f64().unwrap_or(0.0))
+            .collect::<Vec<_>>()
     } else {
         return Err(MlError::new("Model missing weights".to_string()));
     };
@@ -368,7 +380,9 @@ fn fine_tune_neural_network(
 }
 
 /// Extract neural network from model parameters
-fn extract_neural_network_from_model(model: &PersistentModel) -> Result<serde_json::Value, MlError> {
+fn extract_neural_network_from_model(
+    model: &PersistentModel,
+) -> Result<serde_json::Value, MlError> {
     model
         .parameters
         .get("network")
@@ -429,12 +443,11 @@ fn predict_model(
     match model.model_type.as_str() {
         "LogisticRegression" | "LinearRegression" => {
             let weights = if let Some(w) = model.parameters.get("weights") {
-                w.as_array().ok_or_else(|| {
-                    MlError::new("Weights must be an array".to_string())
-                })?
-                .iter()
-                .map(|v| v.as_f64().unwrap_or(0.0))
-                .collect::<Vec<_>>()
+                w.as_array()
+                    .ok_or_else(|| MlError::new("Weights must be an array".to_string()))?
+                    .iter()
+                    .map(|v| v.as_f64().unwrap_or(0.0))
+                    .collect::<Vec<_>>()
             } else {
                 return Err(MlError::new("Model missing weights".to_string()));
             };
@@ -507,7 +520,8 @@ fn predict_model(
 
             let mut predictions = Vec::with_capacity(n_samples);
             for i in 0..n_samples {
-                let x = &x_input[i * n_features..(i + 1).saturating_mul(n_features).min(x_input.len())];
+                let x =
+                    &x_input[i * n_features..(i + 1).saturating_mul(n_features).min(x_input.len())];
                 let mut activations: Vec<f64> = x.to_vec();
 
                 if let Some(ref layers_arr) = layers {
@@ -518,10 +532,7 @@ fn predict_model(
                             .map(|arr| arr.iter().map(|v| v.as_f64().unwrap_or(0.0)).collect())
                             .unwrap_or_default();
 
-                        let bias = layer
-                            .get("bias")
-                            .and_then(|v| v.as_f64())
-                            .unwrap_or(0.0);
+                        let bias = layer.get("bias").and_then(|v| v.as_f64()).unwrap_or(0.0);
 
                         let activation = layer
                             .get("activation")
@@ -615,10 +626,7 @@ fn extract_parameters_from_onnx(onnx_model: &OnnxModel) -> Result<serde_json::Va
             let mut parameters = serde_json::Map::new();
 
             for (i, layer) in layers.iter().enumerate() {
-                parameters.insert(
-                    format!("layer_{}", i),
-                    layer.parameters.clone(),
-                );
+                parameters.insert(format!("layer_{}", i), layer.parameters.clone());
             }
 
             Ok(serde_json::Value::Object(parameters))
@@ -627,10 +635,7 @@ fn extract_parameters_from_onnx(onnx_model: &OnnxModel) -> Result<serde_json::Va
             let mut parameters = serde_json::Map::new();
 
             for (i, op) in operations.iter().enumerate() {
-                parameters.insert(
-                    format!("op_{}", i),
-                    op.attributes.clone(),
-                );
+                parameters.insert(format!("op_{}", i), op.attributes.clone());
             }
 
             Ok(serde_json::Value::Object(parameters))
@@ -682,15 +687,16 @@ mod tests {
         // bincode cannot serialize serde_json::Value arrays without length hints,
         // so we test the inner extract_layer_features directly, bypassing the
         // bincode serialization path that the #[wasm_bindgen] public wrapper uses.
-        let model = PersistentModel::new(
-            "NeuralNet",
-            serde_json::json!({"layers": [1, 2, 3]}),
-        );
+        let model = PersistentModel::new("NeuralNet", serde_json::json!({"layers": [1, 2, 3]}));
 
         let x_data = vec![1.0, 2.0, 3.0, 4.0];
         let features = extract_layer_features(&model, &x_data, 0, 1, 4);
 
-        assert!(features.is_ok(), "Expected Ok from extract_layer_features, got {:?}", features);
+        assert!(
+            features.is_ok(),
+            "Expected Ok from extract_layer_features, got {:?}",
+            features
+        );
         let feats = features.unwrap();
         // NeuralNet path returns the input data unchanged (passthrough implementation)
         assert_eq!(feats.len(), 4);
@@ -718,33 +724,42 @@ mod tests {
     #[test]
     fn test_predict_model_random_forest_fallback_weights() {
         // No tree_predictions → fallback to weight dot-product
-        let model = PersistentModel::new(
-            "RandomForest",
-            serde_json::json!({"weights": [1.0, 2.0]}),
-        );
-        let x_input = vec![3.0, 4.0,  // sample 0: 3*1 + 4*2 = 11
-                     1.0, 0.5]; // sample 1: 1*1 + 0.5*2 = 2
+        let model =
+            PersistentModel::new("RandomForest", serde_json::json!({"weights": [1.0, 2.0]}));
+        let x_input = vec![
+            3.0, 4.0, // sample 0: 3*1 + 4*2 = 11
+            1.0, 0.5,
+        ]; // sample 1: 1*1 + 0.5*2 = 2
         let result = predict_model(&model, &x_input, 2, 2);
         assert!(result.is_ok());
         let preds = result.unwrap();
         assert_eq!(preds.len(), 2);
-        assert!((preds[0] - 11.0).abs() < 1e-9, "expected 11.0 got {}", preds[0]);
-        assert!((preds[1] - 2.0).abs() < 1e-9, "expected 2.0 got {}", preds[1]);
+        assert!(
+            (preds[0] - 11.0).abs() < 1e-9,
+            "expected 11.0 got {}",
+            preds[0]
+        );
+        assert!(
+            (preds[1] - 2.0).abs() < 1e-9,
+            "expected 2.0 got {}",
+            preds[1]
+        );
     }
 
     #[test]
     fn test_predict_model_gradient_boosting_fallback_uniform_weights() {
         // No weights or tree_predictions → uniform weights (1/n_features per feature)
-        let model = PersistentModel::new(
-            "GradientBoosting",
-            serde_json::json!({}),
-        );
+        let model = PersistentModel::new("GradientBoosting", serde_json::json!({}));
         let x_input = vec![4.0, 4.0]; // sample 0: 4 * 0.5 + 4 * 0.5 = 4.0
         let result = predict_model(&model, &x_input, 1, 2);
         assert!(result.is_ok());
         let preds = result.unwrap();
         assert_eq!(preds.len(), 1);
-        assert!((preds[0] - 4.0).abs() < 1e-9, "expected 4.0 got {}", preds[0]);
+        assert!(
+            (preds[0] - 4.0).abs() < 1e-9,
+            "expected 4.0 got {}",
+            preds[0]
+        );
     }
 
     #[test]
@@ -772,7 +787,11 @@ mod tests {
         assert!(result.is_ok(), "NeuralNet predict should succeed");
         let preds = result.unwrap();
         assert_eq!(preds.len(), 1);
-        assert!((preds[0] - 6.0).abs() < 1e-9, "expected 6.0, got {}", preds[0]);
+        assert!(
+            (preds[0] - 6.0).abs() < 1e-9,
+            "expected 6.0, got {}",
+            preds[0]
+        );
     }
 
     #[test]
@@ -801,6 +820,10 @@ mod tests {
         let result = predict_model(&model, &x_input, 1, 2);
         assert!(result.is_ok());
         let preds = result.unwrap();
-        assert!((preds[0] - 5.0).abs() < 1e-9, "expected mean 5.0, got {}", preds[0]);
+        assert!(
+            (preds[0] - 5.0).abs() < 1e-9,
+            "expected mean 5.0, got {}",
+            preds[0]
+        );
     }
 }

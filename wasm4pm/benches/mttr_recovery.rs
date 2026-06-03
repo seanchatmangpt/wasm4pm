@@ -10,7 +10,6 @@
  *
  * Criterion benchmarks: 100 runs per path, reports p50/p95/p99 latencies
  */
-
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::sync::Arc;
 use std::sync::Mutex;
@@ -228,16 +227,12 @@ fn mttr_latency_percentiles(c: &mut Criterion) {
     ];
 
     for (name, recovery_fn) in recovery_paths {
-        group.bench_with_input(
-            BenchmarkId::from_parameter(name),
-            &name,
-            |b, _name| {
-                b.iter(|| {
-                    let duration = recovery_fn();
-                    black_box(duration)
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::from_parameter(name), &name, |b, _name| {
+            b.iter(|| {
+                let duration = recovery_fn();
+                black_box(duration)
+            })
+        });
     }
 
     group.finish();

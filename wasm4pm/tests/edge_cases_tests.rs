@@ -438,7 +438,15 @@ fn test_rework_ratio_does_not_cause_nan() {
         let state = RlState::from_features(&features, 1, rework);
         // health_level is u8, so just verify state is created successfully
         assert_eq!(state.health_level, 1);
-        let reward = compute_reward(state.health_level, state.health_level, 0, true, true, false, 0);
+        let reward = compute_reward(
+            state.health_level,
+            state.health_level,
+            0,
+            true,
+            true,
+            false,
+            0,
+        );
         assert!(
             !reward.is_nan() && !reward.is_infinite(),
             "Reward with rework_ratio={} caused NaN/Inf",
@@ -523,4 +531,3 @@ fn test_all_edge_cases_no_panic_summary() {
     // D. SPC history overflow: Ring buffer wraps at 100 items
     // E. Health score extremes: All boundary values handled correctly
 }
-

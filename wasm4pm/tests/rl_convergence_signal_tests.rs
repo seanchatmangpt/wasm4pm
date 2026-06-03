@@ -137,7 +137,10 @@ fn state_coverage_duplicate_states_not_double_counted() {
     coverage.track_state(&s);
     let count_after_2nd = coverage.unique_states_visited();
 
-    assert_eq!(count_after_1st, count_after_2nd, "Duplicate states should not increase count");
+    assert_eq!(
+        count_after_1st, count_after_2nd,
+        "Duplicate states should not increase count"
+    );
 }
 
 #[test]
@@ -155,7 +158,11 @@ fn dimension_coverage_breakdown_valid() {
 
     let dim_coverage = coverage.get_dimension_coverage();
 
-    assert_eq!(dim_coverage.len(), 8, "Should have 8 dimension coverage values");
+    assert_eq!(
+        dim_coverage.len(),
+        8,
+        "Should have 8 dimension coverage values"
+    );
     for (i, &cov) in dim_coverage.iter().enumerate() {
         assert!(
             0.0 <= cov && cov <= 100.0,

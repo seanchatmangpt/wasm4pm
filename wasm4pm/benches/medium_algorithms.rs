@@ -19,7 +19,11 @@ fn bench_astar(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 10_000 {
             continue;
@@ -40,7 +44,11 @@ fn bench_simulated_annealing(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(20));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 5_000 {
             continue;
@@ -68,7 +76,11 @@ fn bench_ant_colony(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(20));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 5_000 {
             continue;
@@ -89,7 +101,11 @@ fn bench_dfg_filtered(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
@@ -112,7 +128,11 @@ fn bench_optimized_dfg(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
@@ -130,7 +150,11 @@ fn bench_trace_variants(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));
@@ -148,7 +172,11 @@ fn bench_sequential_patterns(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 10_000 {
             continue;
@@ -169,7 +197,11 @@ fn bench_concept_drift(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 10_000 {
             continue;
@@ -190,7 +222,11 @@ fn bench_cluster_traces(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes() {
         if shape.num_cases > 10_000 {
             continue;

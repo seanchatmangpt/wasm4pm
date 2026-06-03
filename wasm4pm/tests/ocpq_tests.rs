@@ -1,11 +1,11 @@
 #[cfg(feature = "ocel")]
+use std::collections::HashMap;
+#[cfg(feature = "ocel")]
+use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
+#[cfg(feature = "ocel")]
 use wasm4pm::ocpq_parser::{parse, OcpqClause, OcpqRelation, OcpqScope};
 #[cfg(feature = "ocel")]
 use wasm4pm::ocpq_runtime::evaluate;
-#[cfg(feature = "ocel")]
-use wasm4pm::models::{OCEL, OCELEvent, OCELObject};
-#[cfg(feature = "ocel")]
-use std::collections::HashMap;
 
 #[test]
 #[cfg(feature = "ocel")]
@@ -13,7 +13,12 @@ fn test_parser_basic() {
     let q = parse("REQUIRE DiagnosticRaised BEFORE RouteSelected").unwrap();
     assert_eq!(q.clauses.len(), 1);
     match &q.clauses[0] {
-        OcpqClause::Require { left, relation, right, scope } => {
+        OcpqClause::Require {
+            left,
+            relation,
+            right,
+            scope,
+        } => {
             assert_eq!(left, "DiagnosticRaised");
             assert_eq!(*relation, OcpqRelation::Before);
             assert_eq!(right, "RouteSelected");
@@ -44,11 +49,18 @@ fn test_parser_scope() {
         _ => panic!("Expected Require clause"),
     }
 
-    let q2 = parse("REQUIRE DiagnosticRaised BEFORE RouteSelected ON SAME OBJECT OF TYPE diagnostic").unwrap();
+    let q2 =
+        parse("REQUIRE DiagnosticRaised BEFORE RouteSelected ON SAME OBJECT OF TYPE diagnostic")
+            .unwrap();
     assert_eq!(q2.clauses.len(), 1);
     match &q2.clauses[0] {
         OcpqClause::Require { scope, .. } => {
-            assert_eq!(*scope, OcpqScope::SameObject { object_type: Some("diagnostic".to_string()) });
+            assert_eq!(
+                *scope,
+                OcpqScope::SameObject {
+                    object_type: Some("diagnostic".to_string())
+                }
+            );
         }
         _ => panic!("Expected Require clause"),
     }
@@ -70,10 +82,17 @@ fn test_parser_quoted_strings() {
     let q = parse("REQUIRE \"Diagnostic Raised\" BEFORE \"Route Selected\" ON SAME OBJECT OF TYPE \"diag-type\"").unwrap();
     assert_eq!(q.clauses.len(), 1);
     match &q.clauses[0] {
-        OcpqClause::Require { left, right, scope, .. } => {
+        OcpqClause::Require {
+            left, right, scope, ..
+        } => {
             assert_eq!(left, "Diagnostic Raised");
             assert_eq!(right, "Route Selected");
-            assert_eq!(*scope, OcpqScope::SameObject { object_type: Some("diag-type".to_string()) });
+            assert_eq!(
+                *scope,
+                OcpqScope::SameObject {
+                    object_type: Some("diag-type".to_string())
+                }
+            );
         }
         _ => panic!("Expected Require clause"),
     }
@@ -89,7 +108,7 @@ fn test_runtime_evaluation() {
     // e3: RouteSelected (obj: d1, r1), time: 2026-05-30T00:02:00Z
     // e4: RouteExecuted (obj: r1), time: 2026-05-30T00:03:00Z
     let mut ocel = OCEL::new();
-    
+
     ocel.objects.push(OCELObject {
         id: "d1".to_string(),
         object_type: "diagnostic".to_string(),
@@ -139,7 +158,9 @@ fn test_runtime_evaluation() {
     });
 
     // 1. Check Allow precedence
-    let q1 = parse("REQUIRE DiagnosticRaised BEFORE RouteSelected ON SAME OBJECT OF TYPE diagnostic").unwrap();
+    let q1 =
+        parse("REQUIRE DiagnosticRaised BEFORE RouteSelected ON SAME OBJECT OF TYPE diagnostic")
+            .unwrap();
     let v1 = evaluate(&ocel, &q1);
     assert_eq!(v1.status, "Allow");
     assert!(v1.violations.is_empty());
@@ -186,7 +207,10 @@ fn test_runtime_evaluation() {
 #[cfg(feature = "ocel")]
 fn test_ocpq_evaluator_compat() {
     use wasm4pm::ocpq_runtime::OcpqEvaluator;
-    use wasm4pm_compat::ocpq::{OcpqQuery, ObjectScope, Predicate, PredicateKind, OcpqQueryConst, ObjectScopeConst, OcpqScopeKind};
+    use wasm4pm_compat::ocpq::{
+        ObjectScope, ObjectScopeConst, OcpqQuery, OcpqQueryConst, OcpqScopeKind, Predicate,
+        PredicateKind,
+    };
 
     // Build OCEL
     let mut ocel = OCEL::new();
@@ -217,13 +241,11 @@ fn test_ocpq_evaluator_compat() {
     // 1. E2ORelation predicate
     let query_e2o = OcpqQuery {
         scope: ObjectScope::new(["diagnostic"]),
-        predicates: vec![
-            Predicate::new(PredicateKind::E2ORelation {
-                event_var: "DiagnosticStarted".to_string(),
-                object_var: "diagnostic".to_string(),
-                qualifier: None,
-            })
-        ],
+        predicates: vec![Predicate::new(PredicateKind::E2ORelation {
+            event_var: "DiagnosticStarted".to_string(),
+            object_var: "diagnostic".to_string(),
+            qualifier: None,
+        })],
         sub_queries: Vec::new(),
     };
     let v_e2o = OcpqEvaluator::evaluate_compat(&ocel, &query_e2o);
@@ -232,14 +254,12 @@ fn test_ocpq_evaluator_compat() {
     // 2. TimeBetweenEvents predicate
     let query_tbe = OcpqQuery {
         scope: ObjectScope::new(["diagnostic"]),
-        predicates: vec![
-            Predicate::new(PredicateKind::TimeBetweenEvents {
-                event_var1: "DiagnosticStarted".to_string(),
-                event_var2: "DiagnosticRaised".to_string(),
-                t_min: 0,
-                t_max: 120000, // 2 minutes (it's 1 minute in log, so it should allow)
-            })
-        ],
+        predicates: vec![Predicate::new(PredicateKind::TimeBetweenEvents {
+            event_var1: "DiagnosticStarted".to_string(),
+            event_var2: "DiagnosticRaised".to_string(),
+            t_min: 0,
+            t_max: 120000, // 2 minutes (it's 1 minute in log, so it should allow)
+        })],
         sub_queries: Vec::new(),
     };
     let v_tbe = OcpqEvaluator::evaluate_compat(&ocel, &query_tbe);
@@ -248,30 +268,25 @@ fn test_ocpq_evaluator_compat() {
     // 3. TimeBetweenEvents predicate (should deny)
     let query_tbe_deny = OcpqQuery {
         scope: ObjectScope::new(["diagnostic"]),
-        predicates: vec![
-            Predicate::new(PredicateKind::TimeBetweenEvents {
-                event_var1: "DiagnosticStarted".to_string(),
-                event_var2: "DiagnosticRaised".to_string(),
-                t_min: 0,
-                t_max: 30000, // 30s
-            })
-        ],
+        predicates: vec![Predicate::new(PredicateKind::TimeBetweenEvents {
+            event_var1: "DiagnosticStarted".to_string(),
+            event_var2: "DiagnosticRaised".to_string(),
+            t_min: 0,
+            t_max: 30000, // 30s
+        })],
         sub_queries: Vec::new(),
     };
     let v_tbe_deny = OcpqEvaluator::evaluate_compat(&ocel, &query_tbe_deny);
     assert_eq!(v_tbe_deny.status, "Deny");
 
     // 4. evaluate_compat_const
-    let query_const = OcpqQueryConst::<{ OcpqScopeKind::Closed }>::new(
-        ObjectScopeConst::new(["diagnostic"]),
-    ).with_predicate(
-        Predicate::new(PredicateKind::E2ORelation {
-            event_var: "DiagnosticStarted".to_string(),
-            object_var: "diagnostic".to_string(),
-            qualifier: None,
-        })
-    );
+    let query_const =
+        OcpqQueryConst::<{ OcpqScopeKind::Closed }>::new(ObjectScopeConst::new(["diagnostic"]))
+            .with_predicate(Predicate::new(PredicateKind::E2ORelation {
+                event_var: "DiagnosticStarted".to_string(),
+                object_var: "diagnostic".to_string(),
+                qualifier: None,
+            }));
     let v_const = OcpqEvaluator::evaluate_compat_const(&ocel, &query_const);
     assert_eq!(v_const.status, "Allow");
 }
-

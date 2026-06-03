@@ -104,7 +104,10 @@ fn def5_e2o_holds_iff_event_references_object_with_qualifier() {
         object: "o1".into(),
         qualifier: None,
     };
-    assert!(e2o_star.holds(&b_hit, &log), "* matches the 'order' qualifier");
+    assert!(
+        e2o_star.holds(&b_hit, &log),
+        "* matches the 'order' qualifier"
+    );
 
     // Wrong qualifier must fail (the arc exists, but as 'order', not 'foo').
     let e2o_wrongq = BasicPredicate::E2O {
@@ -112,7 +115,10 @@ fn def5_e2o_holds_iff_event_references_object_with_qualifier() {
         object: "o1".into(),
         qualifier: Some("foo".into()),
     };
-    assert!(!e2o_wrongq.holds(&b_hit, &log), "qualifier 'foo' does not exist");
+    assert!(
+        !e2o_wrongq.holds(&b_hit, &log),
+        "qualifier 'foo' does not exist"
+    );
 }
 
 #[test]
@@ -139,12 +145,19 @@ fn def5_o2o_holds_iff_object_references_object_with_qualifier() {
         to: "customer".into(),
         qualifier: Some("placed_by".into()),
     };
-    let b = Binding::empty().with("order", "o_a").with("customer", "cust");
+    let b = Binding::empty()
+        .with("order", "o_a")
+        .with("customer", "cust");
     assert!(o2o.holds(&b, &log));
 
     // Reverse direction is NOT an O2O arc in the data (customer has no refs).
-    let rev = Binding::empty().with("order", "cust").with("customer", "o_a");
-    assert!(!o2o.holds(&rev, &log), "no placed_by arc from customer to order");
+    let rev = Binding::empty()
+        .with("order", "cust")
+        .with("customer", "o_a");
+    assert!(
+        !o2o.holds(&rev, &log),
+        "no placed_by arc from customer to order"
+    );
 }
 
 #[test]
@@ -174,11 +187,17 @@ fn def5_tbe_respects_time_window_inclusive() {
         tmin_secs: seven_days,
         tmax_secs: seven_days,
     };
-    assert!(exact.holds(&b_pa, &log), "boundary is inclusive (gap == tmin == tmax)");
+    assert!(
+        exact.holds(&b_pa, &log),
+        "boundary is inclusive (gap == tmin == tmax)"
+    );
 
     // Negative gap (later confirm vs earlier pay) must fail a [0,*] window.
     let reversed = Binding::empty().with("e1", "ev_pa").with("e2", "ev_ca");
-    assert!(!in_window.holds(&reversed, &log), "negative gap is below tmin=0");
+    assert!(
+        !in_window.holds(&reversed, &log),
+        "negative gap is below tmin=0"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -213,8 +232,16 @@ fn def6_box_output_enumerates_typed_predicate_satisfying_bindings() {
     let log = order_to_cash_fig6();
     let bbox = BindingBox {
         vars: vec![
-            VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-            VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["confirm order".into()] },
+            VarDecl {
+                name: "o1".into(),
+                kind: VarKind::Object,
+                types: vec!["orders".into()],
+            },
+            VarDecl {
+                name: "e1".into(),
+                kind: VarKind::Event,
+                types: vec!["confirm order".into()],
+            },
         ],
         preds: vec![BasicPredicate::E2O {
             event: "e1".into(),
@@ -227,8 +254,9 @@ fn def6_box_output_enumerates_typed_predicate_satisfying_bindings() {
     assert_eq!(out.len(), 3, "three confirmed orders ⇒ three bindings");
 
     // Each binding must pair the confirm event with ITS order, never another.
-    let expected: BTreeMap<&str, &str> =
-        [("ev_ca", "o_a"), ("ev_cb", "o_b"), ("ev_cc", "o_c")].into_iter().collect();
+    let expected: BTreeMap<&str, &str> = [("ev_ca", "o_a"), ("ev_cb", "o_b"), ("ev_cc", "o_c")]
+        .into_iter()
+        .collect();
     for b in &out {
         let e = b.get("e1").unwrap();
         let o = b.get("o1").unwrap();
@@ -243,8 +271,16 @@ fn def6_box_output_empty_when_predicate_unsatisfiable() {
     let log = order_to_cash_fig6();
     let bbox = BindingBox {
         vars: vec![
-            VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-            VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["pay order".into()] },
+            VarDecl {
+                name: "o1".into(),
+                kind: VarKind::Object,
+                types: vec!["orders".into()],
+            },
+            VarDecl {
+                name: "e1".into(),
+                kind: VarKind::Event,
+                types: vec!["pay order".into()],
+            },
         ],
         preds: vec![BasicPredicate::E2O {
             event: "e1".into(),
@@ -264,13 +300,25 @@ fn def6_box_output_empty_when_predicate_unsatisfiable() {
 fn def7_refines_iff_vars_and_preds_are_subsets() {
     // Oracle: Def. 7  a ⪯_L b ⇔ Var(a)⊆Var(b) ∧ Pred(a)⊆Pred(b).
     let a = BindingBox {
-        vars: vec![VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] }],
+        vars: vec![VarDecl {
+            name: "o1".into(),
+            kind: VarKind::Object,
+            types: vec!["orders".into()],
+        }],
         preds: vec![],
     };
     let b = BindingBox {
         vars: vec![
-            VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-            VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["confirm order".into()] },
+            VarDecl {
+                name: "o1".into(),
+                kind: VarKind::Object,
+                types: vec!["orders".into()],
+            },
+            VarDecl {
+                name: "e1".into(),
+                kind: VarKind::Event,
+                types: vec!["confirm order".into()],
+            },
         ],
         preds: vec![BasicPredicate::E2O {
             event: "e1".into(),
@@ -297,8 +345,16 @@ fn fig6_constraint_tree() -> QueryTree {
         id: "v0".into(),
         bbox: BindingBox {
             vars: vec![
-                VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-                VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["confirm order".into()] },
+                VarDecl {
+                    name: "o1".into(),
+                    kind: VarKind::Object,
+                    types: vec!["orders".into()],
+                },
+                VarDecl {
+                    name: "e1".into(),
+                    kind: VarKind::Event,
+                    types: vec!["confirm order".into()],
+                },
             ],
             preds: vec![BasicPredicate::E2O {
                 event: "e1".into(),
@@ -306,7 +362,10 @@ fn fig6_constraint_tree() -> QueryTree {
                 qualifier: None,
             }],
         },
-        children: vec![Edge { label: "A".into(), child: "v1".into() }],
+        children: vec![Edge {
+            label: "A".into(),
+            child: "v1".into(),
+        }],
         // exactly-once: the child set (paid-within-4w confirm/pay pairs) must
         // have size in [1, 1].
         constr: vec![ConstraintPredicate::ChildSet(ChildSet {
@@ -319,13 +378,33 @@ fn fig6_constraint_tree() -> QueryTree {
         id: "v1".into(),
         bbox: BindingBox {
             vars: vec![
-                VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-                VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["confirm order".into()] },
-                VarDecl { name: "e2".into(), kind: VarKind::Event, types: vec!["pay order".into()] },
+                VarDecl {
+                    name: "o1".into(),
+                    kind: VarKind::Object,
+                    types: vec!["orders".into()],
+                },
+                VarDecl {
+                    name: "e1".into(),
+                    kind: VarKind::Event,
+                    types: vec!["confirm order".into()],
+                },
+                VarDecl {
+                    name: "e2".into(),
+                    kind: VarKind::Event,
+                    types: vec!["pay order".into()],
+                },
             ],
             preds: vec![
-                BasicPredicate::E2O { event: "e1".into(), object: "o1".into(), qualifier: None },
-                BasicPredicate::E2O { event: "e2".into(), object: "o1".into(), qualifier: None },
+                BasicPredicate::E2O {
+                    event: "e1".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
+                BasicPredicate::E2O {
+                    event: "e2".into(),
+                    object: "o1".into(),
+                    qualifier: None,
+                },
                 BasicPredicate::Tbe {
                     from: "e1".into(),
                     to: "e2".into(),
@@ -337,7 +416,10 @@ fn fig6_constraint_tree() -> QueryTree {
         children: vec![],
         constr: vec![],
     };
-    QueryTree { root: "v0".into(), nodes: vec![v0, v1] }
+    QueryTree {
+        root: "v0".into(),
+        nodes: vec![v0, v1],
+    }
 }
 
 #[test]
@@ -403,7 +485,10 @@ fn confirmed_exactly_once_tree() -> QueryTree {
             }],
             preds: vec![],
         },
-        children: vec![Edge { label: "A".into(), child: "v1".into() }],
+        children: vec![Edge {
+            label: "A".into(),
+            child: "v1".into(),
+        }],
         constr: vec![ConstraintPredicate::ChildSet(ChildSet {
             edge: "A".into(),
             n_min: 1,
@@ -414,8 +499,16 @@ fn confirmed_exactly_once_tree() -> QueryTree {
         id: "v1".into(),
         bbox: BindingBox {
             vars: vec![
-                VarDecl { name: "o1".into(), kind: VarKind::Object, types: vec!["orders".into()] },
-                VarDecl { name: "e1".into(), kind: VarKind::Event, types: vec!["confirm order".into()] },
+                VarDecl {
+                    name: "o1".into(),
+                    kind: VarKind::Object,
+                    types: vec!["orders".into()],
+                },
+                VarDecl {
+                    name: "e1".into(),
+                    kind: VarKind::Event,
+                    types: vec!["confirm order".into()],
+                },
             ],
             preds: vec![BasicPredicate::E2O {
                 event: "e1".into(),
@@ -426,7 +519,10 @@ fn confirmed_exactly_once_tree() -> QueryTree {
         children: vec![],
         constr: vec![],
     };
-    QueryTree { root: "v0".into(), nodes: vec![v0, v1] }
+    QueryTree {
+        root: "v0".into(),
+        nodes: vec![v0, v1],
+    }
 }
 
 #[test]

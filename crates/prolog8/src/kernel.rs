@@ -7,7 +7,10 @@
 
 use crate::admission::{admit_atom, admit_rule, RejectionCode};
 use crate::catalog::Catalog;
-use crate::hash::{combine_roots, Hash, DOMAIN_PROLOG8_INPUT, DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT, DOMAIN_PROLOG8_RULES};
+use crate::hash::{
+    combine_roots, Hash, DOMAIN_PROLOG8_INPUT, DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT,
+    DOMAIN_PROLOG8_RULES,
+};
 use crate::types::{
     Atom8, DecisionKind, EpochId, FactBlock8, FactRow8, ProofKind, ProofMode, ProofNode,
     ProofNodeId, QueryAtom8, Receipt, Rule8, SubstitutionId, TermId, ARITY_CAP,
@@ -134,10 +137,9 @@ impl Kernel {
             return false;
         }
         for i in 0..row.arity as usize {
-            if query.is_bound(i as u8)
-                && row.args[i] != query.args[i] {
-                    return false;
-                }
+            if query.is_bound(i as u8) && row.args[i] != query.args[i] {
+                return false;
+            }
         }
         true
     }
@@ -157,14 +159,22 @@ impl Kernel {
             // For MVP: only support rules whose head is fully ground from facts.
             let mut bindings = [TermId::sentinel(); ARITY_CAP as usize];
             let mut ok = true;
-            for (i, b) in bindings.iter_mut().enumerate().take(rule.head.arity as usize) {
+            for (i, b) in bindings
+                .iter_mut()
+                .enumerate()
+                .take(rule.head.arity as usize)
+            {
                 let q_arg = q.atom.args[i];
                 let h_arg = rule.head.args[i];
                 if q.atom.is_bound(i as u8) && !h_arg.is_sentinel() && q_arg != h_arg {
                     ok = false;
                     break;
                 }
-                *b = if q.atom.is_bound(i as u8) { q_arg } else { h_arg };
+                *b = if q.atom.is_bound(i as u8) {
+                    q_arg
+                } else {
+                    h_arg
+                };
             }
             if !ok {
                 continue;
@@ -326,7 +336,12 @@ impl Kernel {
         proof
     }
 
-    fn assemble_receipt(&self, q: &QueryAtom8, proof: &[ProofNode], decision: DecisionKind) -> Receipt {
+    fn assemble_receipt(
+        &self,
+        q: &QueryAtom8,
+        proof: &[ProofNode],
+        decision: DecisionKind,
+    ) -> Receipt {
         let catalog_root = self.catalog.catalog_root();
         let rule_root = self.rule_root();
         let fact_root = self.fact_root();
@@ -410,8 +425,8 @@ mod tests {
     use super::*;
     use crate::catalog::{PredicateMeta, PredicateProofPolicy};
     use crate::types::{
-        Atom8, CatalogId, EpochId, FactBlock8, FactRow8, PlanId, PredicateId, QueryAtom8, RuleId,
-        SourceId, FeatureBit,
+        Atom8, CatalogId, EpochId, FactBlock8, FactRow8, FeatureBit, PlanId, PredicateId,
+        QueryAtom8, RuleId, SourceId,
     };
 
     fn build_kernel() -> Kernel {
@@ -441,7 +456,8 @@ mod tests {
             FactRow8::new(PredicateId(1), 2, &[alice, bob], SourceId(0)),
             FactRow8::new(PredicateId(1), 2, &[bob, carol], SourceId(0)),
         ];
-        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows)).unwrap();
+        k.load_facts(FactBlock8::new(PredicateId(1), 2, rows))
+            .unwrap();
         k
     }
 
@@ -619,8 +635,7 @@ mod tests {
             QueryResult::Denied(d) => {
                 assert_eq!(d.kind, DecisionKind::Deny);
                 assert_ne!(
-                    d.receipt.receipt_hash,
-                    [0u8; 32],
+                    d.receipt.receipt_hash, [0u8; 32],
                     "Deny receipt_hash must be non-zero (BLAKE3 preimage resistance)"
                 );
             }

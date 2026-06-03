@@ -1,16 +1,12 @@
-use crate::import::xes::import_xes::{XESImportOptions, XESParseError};
 use crate::event_log::{
     Attribute, AttributeValue, Attributes, Event, EventLogClassifier, EventLogExtension, Trace,
     XESEditableAttribute,
 };
 use crate::import::timestamp_utils::parse_timestamp;
+use crate::import::xes::import_xes::{XESImportOptions, XESParseError};
 use quick_xml::{escape::unescape, events::BytesStart, Reader};
 use serde::{Deserialize, Serialize};
-use std::{
-    fmt::Debug,
-    io::BufRead,
-    str::FromStr,
-};
+use std::{fmt::Debug, io::BufRead, str::FromStr};
 use uuid::Uuid;
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
@@ -100,7 +96,9 @@ impl StreamingXESParser<'_> {
                                 });
                                 if !self.log_data_emitted {
                                     self.log_data_emitted = true;
-                                    return Some(XESNextStreamElement::LogData(self.log_data.clone()));
+                                    return Some(XESNextStreamElement::LogData(
+                                        self.log_data.clone(),
+                                    ));
                                 }
                             }
                             b"event" => {
@@ -115,10 +113,15 @@ impl StreamingXESParser<'_> {
                                 Ok(Some(a)) => match a.value.as_ref() {
                                     b"trace" => self.current_mode = Mode::GlobalTraceAttributes,
                                     b"event" => self.current_mode = Mode::GlobalEventAttributes,
-                                    _ => return self.error(XESParseError::InvalidKeyValue("scope")),
+                                    _ => {
+                                        return self.error(XESParseError::InvalidKeyValue("scope"))
+                                    }
                                 },
                                 Ok(None) => return self.error(XESParseError::MissingKey("scope")),
-                                Err(e) => return self.error(XESParseError::XMLParsingError(e.to_string())),
+                                Err(e) => {
+                                    return self
+                                        .error(XESParseError::XMLParsingError(e.to_string()))
+                                }
                             },
                             b"log" => {
                                 self.log_data.xes_version = get_attribute_string(&t, "xes.version");
@@ -158,11 +161,13 @@ impl StreamingXESParser<'_> {
                             }
                         },
                         quick_xml::events::Event::Empty(t) => match t.name().as_ref() {
-                            b"extension" | b"classifier" => { /* handled in Start if needed, but Empty is common */
+                            b"extension" | b"classifier" => {
+                                /* handled in Start if needed, but Empty is common */
                                 if t.name().as_ref() == b"extension" {
                                     self.log_data.extensions.push(EventLogExtension {
                                         name: get_attribute_string(&t, "name").unwrap_or_default(),
-                                        prefix: get_attribute_string(&t, "prefix").unwrap_or_default(),
+                                        prefix: get_attribute_string(&t, "prefix")
+                                            .unwrap_or_default(),
                                         uri: get_attribute_string(&t, "uri").unwrap_or_default(),
                                     });
                                 } else {
@@ -179,7 +184,9 @@ impl StreamingXESParser<'_> {
                                 self.encountered_log = true;
                                 if !self.log_data_emitted {
                                     self.log_data_emitted = true;
-                                    return Some(XESNextStreamElement::LogData(self.log_data.clone()));
+                                    return Some(XESNextStreamElement::LogData(
+                                        self.log_data.clone(),
+                                    ));
                                 }
                             }
                             b"trace" => {
@@ -203,54 +210,65 @@ impl StreamingXESParser<'_> {
                                 }
                             }
                         },
-                        quick_xml::events::Event::End(t) => {
-                            match t.as_ref() {
-                                b"event" => self.current_mode = Mode::Trace,
-                                b"trace" => {
-                                    self.current_mode = Mode::Log;
-                                    return self.emit_trace();
-                                }
-                                b"log" => self.current_mode = Mode::None,
-                                b"global" => self.current_mode = Mode::Log,
-                                _ => {
-                                    if matches!(self.current_mode, Mode::Attribute) {
-                                        if let Some(attr) = self.current_nested_attributes.pop() {
-                                            if let Some(parent) = self.current_nested_attributes.last_mut() {
-                                                match &mut parent.value {
-                                                    AttributeValue::List(l) | AttributeValue::Container(l) => l.push(attr),
-                                                    _ => {
-                                                        if parent.own_attributes.is_none() {
-                                                            parent.own_attributes = Some(Vec::new());
-                                                        }
-                                                        parent.own_attributes.as_mut().unwrap().push(attr);
+                        quick_xml::events::Event::End(t) => match t.as_ref() {
+                            b"event" => self.current_mode = Mode::Trace,
+                            b"trace" => {
+                                self.current_mode = Mode::Log;
+                                return self.emit_trace();
+                            }
+                            b"log" => self.current_mode = Mode::None,
+                            b"global" => self.current_mode = Mode::Log,
+                            _ => {
+                                if matches!(self.current_mode, Mode::Attribute) {
+                                    if let Some(attr) = self.current_nested_attributes.pop() {
+                                        if let Some(parent) =
+                                            self.current_nested_attributes.last_mut()
+                                        {
+                                            match &mut parent.value {
+                                                AttributeValue::List(l)
+                                                | AttributeValue::Container(l) => l.push(attr),
+                                                _ => {
+                                                    if parent.own_attributes.is_none() {
+                                                        parent.own_attributes = Some(Vec::new());
                                                     }
+                                                    parent
+                                                        .own_attributes
+                                                        .as_mut()
+                                                        .unwrap()
+                                                        .push(attr);
                                                 }
-                                            } else {
-                                                match self.last_mode_before_attr {
-                                                    Mode::Trace => {
-                                                        if let Some(tr) = &mut self.current_trace {
-                                                            tr.attributes.push(attr);
-                                                        }
-                                                    }
-                                                    Mode::Event => {
-                                                        if let Some(tr) = &mut self.current_trace {
-                                                            if let Some(ev) = tr.events.last_mut() {
-                                                                ev.attributes.push(attr);
-                                                            }
-                                                        }
-                                                    }
-                                                    Mode::Log => self.log_data.log_attributes.push(attr),
-                                                    Mode::GlobalTraceAttributes => self.log_data.global_trace_attrs.push(attr),
-                                                    Mode::GlobalEventAttributes => self.log_data.global_event_attrs.push(attr),
-                                                    _ => {}
-                                                }
-                                                self.current_mode = self.last_mode_before_attr;
                                             }
+                                        } else {
+                                            match self.last_mode_before_attr {
+                                                Mode::Trace => {
+                                                    if let Some(tr) = &mut self.current_trace {
+                                                        tr.attributes.push(attr);
+                                                    }
+                                                }
+                                                Mode::Event => {
+                                                    if let Some(tr) = &mut self.current_trace {
+                                                        if let Some(ev) = tr.events.last_mut() {
+                                                            ev.attributes.push(attr);
+                                                        }
+                                                    }
+                                                }
+                                                Mode::Log => {
+                                                    self.log_data.log_attributes.push(attr)
+                                                }
+                                                Mode::GlobalTraceAttributes => {
+                                                    self.log_data.global_trace_attrs.push(attr)
+                                                }
+                                                Mode::GlobalEventAttributes => {
+                                                    self.log_data.global_event_attrs.push(attr)
+                                                }
+                                                _ => {}
+                                            }
+                                            self.current_mode = self.last_mode_before_attr;
                                         }
                                     }
                                 }
                             }
-                        }
+                        },
                         quick_xml::events::Event::Eof => {
                             if !self.encountered_log {
                                 return self.error(XESParseError::NoTopLevelLog);
@@ -281,10 +299,12 @@ impl StreamingXESParser<'_> {
             // Sort events if requested
             if let Some(ts_key) = &self.options.sort_events_with_timestamp_key {
                 trace.events.sort_by_key(|e| {
-                    e.attributes.get_by_key(ts_key).and_then(|a| match &a.value {
-                        AttributeValue::Date(d) => Some(*d),
-                        _ => None,
-                    })
+                    e.attributes
+                        .get_by_key(ts_key)
+                        .and_then(|a| match &a.value {
+                            AttributeValue::Date(d) => Some(*d),
+                            _ => None,
+                        })
                 });
             }
             return Some(XESNextStreamElement::Trace(trace));
@@ -310,10 +330,7 @@ impl StreamingXESParser<'_> {
         }
     }
 
-    fn add_attribute_from_tag(
-        ctx: &mut XESAttributeContext<'_>,
-        t: &BytesStart<'_>,
-    ) -> bool {
+    fn add_attribute_from_tag(ctx: &mut XESAttributeContext<'_>, t: &BytesStart<'_>) -> bool {
         let key = get_attribute_string(t, "key").unwrap_or_default();
         if should_ignore_attribute(ctx.options, ctx.knowledge_base, ctx.current_mode, &key) {
             return true;
@@ -333,17 +350,27 @@ impl StreamingXESParser<'_> {
                 }
             }
             Mode::Log => ctx.log_data.log_attributes.add_to_attributes(key, val),
-            Mode::GlobalTraceAttributes => ctx.log_data.global_trace_attrs.add_to_attributes(key, val),
-            Mode::GlobalEventAttributes => ctx.log_data.global_event_attrs.add_to_attributes(key, val),
+            Mode::GlobalTraceAttributes => {
+                ctx.log_data.global_trace_attrs.add_to_attributes(key, val)
+            }
+            Mode::GlobalEventAttributes => {
+                ctx.log_data.global_event_attrs.add_to_attributes(key, val)
+            }
             Mode::Attribute => {
                 if let Some(parent) = ctx.current_nested_attributes.last_mut() {
                     match &mut parent.value {
-                        AttributeValue::List(l) | AttributeValue::Container(l) => l.push(Attribute::new(key, val)),
+                        AttributeValue::List(l) | AttributeValue::Container(l) => {
+                            l.push(Attribute::new(key, val))
+                        }
                         _ => {
                             if parent.own_attributes.is_none() {
                                 parent.own_attributes = Some(Vec::new());
                             }
-                            parent.own_attributes.as_mut().unwrap().push(Attribute::new(key, val));
+                            parent
+                                .own_attributes
+                                .as_mut()
+                                .unwrap()
+                                .push(Attribute::new(key, val));
                         }
                     }
                 }
@@ -362,7 +389,9 @@ pub struct XESParsingTraceStream<'a> {
 impl Iterator for &mut XESParsingTraceStream<'_> {
     type Item = Trace;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.error.is_some() { return None; }
+        if self.error.is_some() {
+            return None;
+        }
         match self.inner.next_trace() {
             Some(XESNextStreamElement::Trace(t)) => Some(t),
             Some(XESNextStreamElement::Error(e)) => {
@@ -394,7 +423,13 @@ impl XESParsingTraceStream<'_> {
             knowledge_base: IngestionKnowledgeBase::default(),
         };
         match s.next_trace() {
-            Some(XESNextStreamElement::LogData(d)) => Ok((XESParsingTraceStream { inner: s, error: None }, d)),
+            Some(XESNextStreamElement::LogData(d)) => Ok((
+                XESParsingTraceStream {
+                    inner: s,
+                    error: None,
+                },
+                d,
+            )),
             Some(XESNextStreamElement::Error(e)) => Err(e),
             _ => Err(XESParseError::ExpectedLogData),
         }
@@ -403,11 +438,17 @@ impl XESParsingTraceStream<'_> {
 
 fn get_attribute_string(t: &BytesStart<'_>, key: &str) -> Option<String> {
     t.try_get_attribute(key).ok().flatten().map(|a| {
-        unescape(&String::from_utf8_lossy(&a.value)).unwrap_or_else(|_| String::from_utf8_lossy(&a.value)).into_owned()
+        unescape(&String::from_utf8_lossy(&a.value))
+            .unwrap_or_else(|_| String::from_utf8_lossy(&a.value))
+            .into_owned()
     })
 }
 
-fn parse_attribute_value_from_tag(t: &BytesStart<'_>, _mode: &Mode, options: &XESImportOptions) -> AttributeValue {
+fn parse_attribute_value_from_tag(
+    t: &BytesStart<'_>,
+    _mode: &Mode,
+    options: &XESImportOptions,
+) -> AttributeValue {
     match t.name().as_ref() {
         b"container" => AttributeValue::Container(Vec::new()),
         b"list" => AttributeValue::List(Vec::new()),
@@ -415,7 +456,11 @@ fn parse_attribute_value_from_tag(t: &BytesStart<'_>, _mode: &Mode, options: &XE
             if let Some(value) = get_attribute_string(t, "value") {
                 match t.name().as_ref() {
                     b"string" => AttributeValue::String(value),
-                    b"date" => match parse_timestamp(&value, options.date_format.as_deref(), options.verbose) {
+                    b"date" => match parse_timestamp(
+                        &value,
+                        options.date_format.as_deref(),
+                        options.verbose,
+                    ) {
                         Ok(dt) => AttributeValue::Date(dt),
                         Err(_) => AttributeValue::None(),
                     },

@@ -9,7 +9,6 @@
 ///
 /// Rank-1 Oracle: Self-referential tests cannot prove correctness (tautology).
 /// Solution: Expected value must be derived from external source (theorem, contract, or independently-computed oracle).
-
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -68,7 +67,10 @@ impl FM5Detector {
         // Detects: assert_eq!(actual, impl_var) or assert!(impl_var ==)
         patterns.insert(
             "impl_var_in_assert",
-            Regex::new(r"assert_eq!\([^,]+,\s*[a-z_]*impl[a-z_]*\)|assert!\([^)]*[a-z_]*impl[a-z_]*").unwrap(),
+            Regex::new(
+                r"assert_eq!\([^,]+,\s*[a-z_]*impl[a-z_]*\)|assert!\([^)]*[a-z_]*impl[a-z_]*",
+            )
+            .unwrap(),
         );
 
         FM5Detector { patterns }
@@ -130,8 +132,14 @@ impl FM5Detector {
     }
 
     /// Filter violations by confidence level (keeps violations >= threshold)
-    pub fn filter_by_confidence(violations: Vec<Violation>, min_confidence: Confidence) -> Vec<Violation> {
-        violations.into_iter().filter(|v| v.confidence >= min_confidence).collect()
+    pub fn filter_by_confidence(
+        violations: Vec<Violation>,
+        min_confidence: Confidence,
+    ) -> Vec<Violation> {
+        violations
+            .into_iter()
+            .filter(|v| v.confidence >= min_confidence)
+            .collect()
     }
 
     /// Report violations in human-readable format
@@ -167,7 +175,8 @@ mod tests {
     #[test]
     fn test_detects_unseeded_double_call() {
         let detector = FM5Detector::new();
-        let test_code = "let result1 = algorithm(); let result2 = algorithm(); assert_eq!(result1, result2);";
+        let test_code =
+            "let result1 = algorithm(); let result2 = algorithm(); assert_eq!(result1, result2);";
         let violations = detector.detect_violations(test_code);
         assert!(!violations.is_empty());
         assert_eq!(violations[0].pattern, "unseeded_double_call");
@@ -201,16 +210,29 @@ mod tests {
             let result2 = algorithm(&mut rng);
             assert_eq!(result1, result2);
         "#;
-        let violations = FM5Detector::filter_by_confidence(detector.detect_violations(test_code), Confidence::High);
-        assert!(violations.is_empty(), "Seeded RNG should not trigger FM-5 warnings");
+        let violations = FM5Detector::filter_by_confidence(
+            detector.detect_violations(test_code),
+            Confidence::High,
+        );
+        assert!(
+            violations.is_empty(),
+            "Seeded RNG should not trigger FM-5 warnings"
+        );
     }
 
     #[test]
     fn test_allows_external_oracle_assertions() {
         let detector = FM5Detector::new();
-        let test_code = "assert!(result >= 0.0 && result <= 1.0); // Oracle: probability distribution";
-        let violations = FM5Detector::filter_by_confidence(detector.detect_violations(test_code), Confidence::High);
-        assert!(violations.is_empty(), "External oracle assertions should pass");
+        let test_code =
+            "assert!(result >= 0.0 && result <= 1.0); // Oracle: probability distribution";
+        let violations = FM5Detector::filter_by_confidence(
+            detector.detect_violations(test_code),
+            Confidence::High,
+        );
+        assert!(
+            violations.is_empty(),
+            "External oracle assertions should pass"
+        );
     }
 
     #[test]
@@ -240,7 +262,10 @@ mod tests {
     fn test_empty_report() {
         let detector = FM5Detector::new();
         let test_code = "assert!(is_finite(result)); // Oracle: numerical stability";
-        let violations = FM5Detector::filter_by_confidence(detector.detect_violations(test_code), Confidence::High);
+        let violations = FM5Detector::filter_by_confidence(
+            detector.detect_violations(test_code),
+            Confidence::High,
+        );
         let report = FM5Detector::report(&violations);
         assert!(report.contains("No FM-5 violations"));
     }

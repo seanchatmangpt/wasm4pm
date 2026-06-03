@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq_raw};
-use std::collections::BinaryHeap;
+use crate::matrix::{euclidean_dist_sq_raw, validate_matrix};
 use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+use wasm_bindgen::prelude::*;
 
 #[derive(Clone, Debug)]
 struct MergeCandidate {
@@ -28,7 +28,10 @@ impl PartialOrd for MergeCandidate {
 impl Ord for MergeCandidate {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse for min-heap behavior
-        other.dist_sq.partial_cmp(&self.dist_sq).unwrap_or(Ordering::Equal)
+        other
+            .dist_sq
+            .partial_cmp(&self.dist_sq)
+            .unwrap_or(Ordering::Equal)
     }
 }
 
@@ -40,8 +43,7 @@ pub fn hierarchical_clustering(
     n_features: usize,
     n_clusters: usize,
 ) -> Result<Vec<f64>, JsError> {
-    hierarchical_impl(data, n_features, n_clusters)
-        .map_err(|e| JsError::new(&e.message))
+    hierarchical_impl(data, n_features, n_clusters).map_err(|e| JsError::new(&e.message))
 }
 
 /// Agglomerative hierarchical clustering with single linkage
@@ -91,12 +93,7 @@ pub fn hierarchical_impl(
     Ok(labels)
 }
 
-fn cluster_distance_sq(
-    data: &[f64],
-    n_features: usize,
-    c1: &[usize],
-    c2: &[usize],
-) -> f64 {
+fn cluster_distance_sq(data: &[f64], n_features: usize, c1: &[usize], c2: &[usize]) -> f64 {
     let mut min_dist_sq = f64::INFINITY;
     for &i in c1 {
         for &j in c2 {
@@ -120,9 +117,8 @@ mod tests {
     #[test]
     fn test_hierarchical_two_clusters() {
         let data = vec![
-            0.0, 0.0,  // Cluster 0
-            0.1, 0.1,
-            10.0, 10.0,  // Cluster 1
+            0.0, 0.0, // Cluster 0
+            0.1, 0.1, 10.0, 10.0, // Cluster 1
             10.1, 10.1,
         ];
         let labels = hierarchical_impl(&data, 2, 2).unwrap();

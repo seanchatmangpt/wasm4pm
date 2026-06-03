@@ -29,12 +29,16 @@ pub fn handle_oracle_command(command: &OracleCommands) -> Result<()> {
         OracleCommands::Check { tape, law, format } => {
             // Read law
             let law_content = std::fs::read_to_string(law)?;
-            let _law_model: wasm4pm_algos::prefix_conformance::law::OrderingLaw = serde_json::from_str(&law_content)?;
-            
-            // Re-use logic to parse NDJSON. 
+            let _law_model: wasm4pm_algos::prefix_conformance::law::OrderingLaw =
+                serde_json::from_str(&law_content)?;
+
+            // Re-use logic to parse NDJSON.
             // In a real implementation we would stream it.
             // For now, assume a placeholder logic as we coordinate with others.
-            println!("Checked tape {} against law {} format {}", tape, law, format);
+            println!(
+                "Checked tape {} against law {} format {}",
+                tape, law, format
+            );
         }
         OracleCommands::Watch { tape, law } => {
             println!("Watching tape {} against law {}", tape, law);

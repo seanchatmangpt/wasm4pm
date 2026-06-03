@@ -12,8 +12,8 @@ pub mod dendral;
 pub mod frame;
 pub mod gps;
 pub mod hearsay;
-pub mod prolog;
 pub mod production_rules;
+pub mod prolog;
 pub mod soar;
 pub mod strips;
 
@@ -285,21 +285,39 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
     use crate::breeds::frame::Eliza;
     use crate::breeds::gps::Gps;
     use crate::breeds::hearsay::Hearsay;
-    use crate::breeds::prolog::Prolog;
     use crate::breeds::production_rules::Mycin;
+    use crate::breeds::prolog::Prolog;
     use crate::breeds::soar::Soar;
     use crate::breeds::strips::Strips;
 
     match breed {
-        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "eliza" => Eliza
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "cbr" => Cbr
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "dendral" => Dendral
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "strips" => Strips
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "prolog" => Prolog
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "mycin" => Mycin
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "gps" => Gps
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "soar" => Soar
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "hearsay" => Hearsay
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
         other => Err(format!("unknown breed: {}", other)),
     }
 }

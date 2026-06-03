@@ -14,7 +14,11 @@ fn bench_genetic_algorithm(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(60));
     group.warm_up_time(Duration::from_secs(5));
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Parameter sweep: (population, generations) at 500 cases
     let fixed_shape = helpers::LogShape {
@@ -50,7 +54,11 @@ fn bench_pso(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(60));
     group.warm_up_time(Duration::from_secs(5));
     group.sample_size(10);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Parameter sweep at 500 cases
     let fixed_shape = helpers::LogShape {
@@ -86,7 +94,11 @@ fn bench_ilp(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(30));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for shape in bench_sizes_slow() {
         let (handle, events) = make_handle(&shape);
         group.throughput(Throughput::Elements(events as u64));

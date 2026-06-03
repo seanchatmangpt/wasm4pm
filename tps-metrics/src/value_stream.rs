@@ -317,9 +317,9 @@ mod tests {
     #[test]
     fn test_bottleneck_is_non_empty() {
         for (coding, wait, expected_contains) in [
-            (1.0, 10.0, "Wait"),    // wait dominates: 10 > 1*2
-            (5.0, 0.0, "Coding"),   // coding dominates
-            (3.0, 3.0, "Coding"),   // wait NOT > 2*coding: bottleneck is coding
+            (1.0, 10.0, "Wait"),  // wait dominates: 10 > 1*2
+            (5.0, 0.0, "Coding"), // coding dominates
+            (3.0, 3.0, "Coding"), // wait NOT > 2*coding: bottleneck is coding
         ] {
             let bottleneck = if wait > coding * 2.0 {
                 "Wait time (review/deploy)".to_string()
@@ -374,9 +374,7 @@ mod tests {
     fn test_coding_time_maximum_cap() {
         // 100 files changed → 25h naively, but capped at 4h
         let files_changed = 100usize;
-        let coding_hours = (files_changed as f64 * 0.25)
-            .max(0.05_f64)
-            .min(4.0_f64);
+        let coding_hours = (files_changed as f64 * 0.25).max(0.05_f64).min(4.0_f64);
         assert_eq!(coding_hours, 4.0, "large commit should cap at 4.0h");
     }
 

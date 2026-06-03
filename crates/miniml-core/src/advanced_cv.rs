@@ -3,8 +3,8 @@
 //! Provides stratified K-fold, group K-fold, time series CV, nested CV, LOOCV, and bootstrapping.
 
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Cross-validation split indices
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -502,9 +502,7 @@ pub fn compute_cv_result(scores: Vec<f64>) -> Result<JsValue, JsError> {
     let n = scores.len();
     let mean = scores.iter().sum::<f64>() / n as f64;
 
-    let variance = scores.iter()
-        .map(|&s| (s - mean).powi(2))
-        .sum::<f64>() / n as f64;
+    let variance = scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / n as f64;
 
     let std_score = variance.sqrt();
 
@@ -541,9 +539,7 @@ pub fn compute_bootstrap_result(
     let mean = scores.iter().sum::<f64>() / n as f64;
 
     // Standard error
-    let variance = scores.iter()
-        .map(|&s| (s - mean).powi(2))
-        .sum::<f64>() / n as f64;
+    let variance = scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / n as f64;
 
     let std_error = variance.sqrt();
 

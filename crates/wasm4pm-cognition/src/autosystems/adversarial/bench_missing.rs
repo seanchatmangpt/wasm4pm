@@ -22,10 +22,10 @@ impl Default for BenchMissingDetector {
 
 impl BenchMissingDetector {
     /// Construct with explicit target list.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn for_targets(targets: Vec<String>) -> Self {
         Self { targets }
     }
@@ -44,10 +44,7 @@ impl Detector for BenchMissingDetector {
                     Finding::new(
                         self.code(),
                         Severity::Warning,
-                        format!(
-                            "No machine-readable benchmark verdict for target '{}'",
-                            t
-                        ),
+                        format!("No machine-readable benchmark verdict for target '{}'", t),
                     )
                     .with_evidence(vec![format!("benchmark.target={}", t)]),
                 );

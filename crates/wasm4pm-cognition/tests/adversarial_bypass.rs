@@ -172,7 +172,10 @@ fn central_firehose_fires_on_bus_kind_attribute() {
     ev.central_bus = true;
     let det = CentralFirehoseDetector;
     let f = det.run(&ev);
-    assert!(!f.is_empty(), "CentralFirehose must fire on bus.kind=central");
+    assert!(
+        !f.is_empty(),
+        "CentralFirehose must fire on bus.kind=central"
+    );
     assert_eq!(f[0].code, "CENTRAL_EVENT_FIREHOSE_REINTRODUCED");
 }
 
@@ -228,7 +231,10 @@ fn repair_weakens_fires_on_non_adjacent_drop() {
         .push(("primary".into(), vec![0.5, 0.9, 0.7]));
     let det = RepairWeakensDetector;
     let f = det.run(&ev);
-    assert!(!f.is_empty(), "RepairWeakens must fire when current<max_prior");
+    assert!(
+        !f.is_empty(),
+        "RepairWeakens must fire when current<max_prior"
+    );
     assert_eq!(f[0].code, "REPAIR_WEAKENS_GATE");
 }
 

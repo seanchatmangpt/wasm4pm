@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// Result of a linear regression fit: y = slope * x + intercept
 #[derive(Clone)]
@@ -68,7 +68,9 @@ pub fn linear_regression_impl(x: &[f64], y: &[f64]) -> Result<LinearModel, MlErr
 
     let n = x.len();
     if n < 2 {
-        return Err(MlError::new("Need at least 2 data points for linear regression"));
+        return Err(MlError::new(
+            "Need at least 2 data points for linear regression",
+        ));
     }
 
     // Single pass: collect all sums at once
@@ -91,7 +93,9 @@ pub fn linear_regression_impl(x: &[f64], y: &[f64]) -> Result<LinearModel, MlErr
     // slope = (n*Σxy - Σx*Σy) / (n*Σx² - (Σx)²)
     let denominator = n_f * sum_xx - sum_x * sum_x;
     if denominator == 0.0 {
-        return Err(MlError::new("Cannot fit regression: all x values are identical"));
+        return Err(MlError::new(
+            "Cannot fit regression: all x values are identical",
+        ));
     }
 
     let slope = (n_f * sum_xy - sum_x * sum_y) / denominator;
@@ -127,7 +131,9 @@ pub fn linear_regression(x: &[f64], y: &[f64]) -> Result<LinearModel, JsError> {
 pub fn linear_regression_simple(y: &[f64]) -> Result<LinearModel, JsError> {
     let n = y.len();
     if n < 2 {
-        return Err(JsError::new("Need at least 2 data points for linear regression"));
+        return Err(JsError::new(
+            "Need at least 2 data points for linear regression",
+        ));
     }
 
     let n_f = n as f64;
@@ -152,7 +158,9 @@ pub fn linear_regression_simple(y: &[f64]) -> Result<LinearModel, JsError> {
 
     let denominator = n_f * sum_xx - sum_x * sum_x;
     if denominator == 0.0 {
-        return Err(JsError::new("Cannot fit regression: insufficient data variance"));
+        return Err(JsError::new(
+            "Cannot fit regression: insufficient data variance",
+        ));
     }
 
     let slope = (n_f * sum_xy - sum_x * sum_y) / denominator;

@@ -54,10 +54,7 @@ fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> HashMap<String, FrameAxi
             let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
             if parts.len() > 1 {
                 let atom = parts[0].to_string();
-                let actions: HashSet<String> = parts[1..]
-                    .iter()
-                    .map(|s| s.to_string())
-                    .collect();
+                let actions: HashSet<String> = parts[1..].iter().map(|s| s.to_string()).collect();
                 axioms.insert(atom, FrameAxiom { actions });
             }
         }
@@ -74,7 +71,11 @@ struct ActionEffect {
 fn parse_effect(conclusion: &str) -> ActionEffect {
     let mut adds = Vec::new();
     let mut dels = Vec::new();
-    for tok in conclusion.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+    for tok in conclusion
+        .split(';')
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty())
+    {
         if let Some(rest) = tok.strip_prefix('!') {
             dels.push(rest.to_string());
         } else {
@@ -268,11 +269,7 @@ impl CognitionBreed for Strips {
             });
         }
 
-        let explanation = format!(
-            "STRIPS plan ({} steps): {}",
-            plan.len(),
-            plan.join(" → ")
-        );
+        let explanation = format!("STRIPS plan ({} steps): {}", plan.len(), plan.join(" → "));
         // Semantic contract for `selected` (mirrors GPS contract in
         // `breeds/gps.rs`):
         //   Some("op1,op2")  — non-empty plan that achieves the goals
@@ -402,25 +399,33 @@ mod tests {
                 certainty: 1.0,
             }],
             goals: vec![
-                Goal { id: "g1".into(), predicate: "a".into(), value: "1".into() },
-                Goal { id: "g2".into(), predicate: "b".into(), value: "2".into() },
+                Goal {
+                    id: "g1".into(),
+                    predicate: "a".into(),
+                    value: "1".into(),
+                },
+                Goal {
+                    id: "g2".into(),
+                    predicate: "b".into(),
+                    value: "2".into(),
+                },
             ],
             state: vec![
-                StateAtom { predicate: "a".into(), value: "1".into() },
-                StateAtom { predicate: "b".into(), value: "2".into() },
+                StateAtom {
+                    predicate: "a".into(),
+                    value: "1".into(),
+                },
+                StateAtom {
+                    predicate: "b".into(),
+                    value: "2".into(),
+                },
             ],
         };
         let out = Strips.run(&input).expect("run ok");
         assert_eq!(out.selected.as_deref(), Some(""));
         // No action should have been executed since goals were already met.
-        assert!(!out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "execute"));
-        assert!(!out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "try-action"));
+        assert!(!out.inference_trace.iter().any(|t| t.kind == "execute"));
+        assert!(!out.inference_trace.iter().any(|t| t.kind == "try-action"));
     }
 
     /// Rank-2: a non-pre-satisfied, achievable goal must return a non-empty

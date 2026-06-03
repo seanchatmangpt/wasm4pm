@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// AdaBoost Classifier - Adaptive Boosting
 /// Ensemble of weighted weak learners (decision stumps)
@@ -8,7 +8,7 @@ use crate::matrix::validate_matrix;
 pub struct AdaBoostClassifier {
     stump_features: Vec<usize>,
     stump_thresholds: Vec<f64>,
-    stump_predictions: Vec<f64>,  // -1 or 1 for left/right
+    stump_predictions: Vec<f64>, // -1 or 1 for left/right
     alphas: Vec<f64>,
     n_features: usize,
 }
@@ -16,10 +16,14 @@ pub struct AdaBoostClassifier {
 #[wasm_bindgen]
 impl AdaBoostClassifier {
     #[wasm_bindgen(getter, js_name = "nEstimators")]
-    pub fn n_estimators(&self) -> usize { self.stump_features.len() }
+    pub fn n_estimators(&self) -> usize {
+        self.stump_features.len()
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     /// Predict class labels
     #[wasm_bindgen]
@@ -84,8 +88,11 @@ impl AdaBoostClassifier {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("AdaBoostClassifier(estimators={}, features={})",
-                self.stump_features.len(), self.n_features)
+        format!(
+            "AdaBoostClassifier(estimators={}, features={})",
+            self.stump_features.len(),
+            self.n_features
+        )
     }
 }
 
@@ -106,7 +113,10 @@ pub fn adaboost_impl(
     }
 
     // Convert labels to -1/1
-    let y: Vec<f64> = labels.iter().map(|&l| if l > 0.5 { 1.0 } else { -1.0 }).collect();
+    let y: Vec<f64> = labels
+        .iter()
+        .map(|&l| if l > 0.5 { 1.0 } else { -1.0 })
+        .collect();
 
     // Initialize sample weights uniformly
     let mut weights = vec![1.0 / n as f64; n];
@@ -122,7 +132,7 @@ pub fn adaboost_impl(
             find_best_stump(data, n_features, &y, &weights);
 
         if min_error >= 0.5 {
-            break;  // Can't improve further
+            break; // Can't improve further
         }
 
         // Compute stump weight (alpha)
@@ -137,7 +147,11 @@ pub fn adaboost_impl(
         let mut sum_weights = 0.0;
         for i in 0..n {
             let val = data[i * n_features + best_feature];
-            let prediction = if val <= best_threshold { best_pred } else { -best_pred };
+            let prediction = if val <= best_threshold {
+                best_pred
+            } else {
+                -best_pred
+            };
             let exponent = alpha * y[i] * prediction;
             weights[i] *= exponent.exp();
             sum_weights += weights[i];
@@ -199,19 +213,24 @@ fn find_best_stump(
                 min_error = error_pos;
                 best_feature = f;
                 best_threshold = threshold;
-                best_pred = -1.0;  // Left predicts -1
+                best_pred = -1.0; // Left predicts -1
             }
 
             if error_neg < min_error {
                 min_error = error_neg;
                 best_feature = f;
                 best_threshold = threshold;
-                best_pred = 1.0;  // Left predicts 1
+                best_pred = 1.0; // Left predicts 1
             }
         }
     }
 
-    (best_feature, best_threshold, best_pred, min_error / total_weight)
+    (
+        best_feature,
+        best_threshold,
+        best_pred,
+        min_error / total_weight,
+    )
 }
 
 #[wasm_bindgen(js_name = "adaboostClassify")]
@@ -232,12 +251,7 @@ mod tests {
 
     #[test]
     fn test_adaboost_binary() {
-        let data = vec![
-            0.0, 0.0,
-            1.0, 0.0,
-            0.0, 1.0,
-            10.0, 10.0,
-        ];
+        let data = vec![0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 10.0, 10.0];
         let labels = vec![0.0, 0.0, 0.0, 1.0];
 
         let model = adaboost_impl(&data, 2, &labels, 50, 1.0).unwrap();

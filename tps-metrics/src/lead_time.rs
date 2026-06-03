@@ -302,7 +302,10 @@ mod tests {
         );
 
         // At least one commit is in the "middle" (neither fast nor slow)
-        assert!(fast + slow < total, "expected some commits in neither category");
+        assert!(
+            fast + slow < total,
+            "expected some commits in neither category"
+        );
     }
 
     // ── Rank-2 domain contract: average is bounded by min/max ──
@@ -396,8 +399,14 @@ mod tests {
         for (_, total, fast, slow) in cases {
             let fast_pct = (fast as f64 / total as f64) * 100.0;
             let slow_pct = (slow as f64 / total as f64) * 100.0;
-            assert!((0.0..=100.0).contains(&fast_pct), "fast% {fast_pct} out of [0,100]");
-            assert!((0.0..=100.0).contains(&slow_pct), "slow% {slow_pct} out of [0,100]");
+            assert!(
+                (0.0..=100.0).contains(&fast_pct),
+                "fast% {fast_pct} out of [0,100]"
+            );
+            assert!(
+                (0.0..=100.0).contains(&slow_pct),
+                "slow% {slow_pct} out of [0,100]"
+            );
         }
     }
 

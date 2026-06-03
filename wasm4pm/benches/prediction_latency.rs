@@ -89,16 +89,11 @@ impl LatencyProfile {
 
 /// Benchmark next-activity prediction inference latency.
 /// Measures time to predict from a given prefix.
-fn benchmark_next_activity_latency(
-    c: &mut Criterion,
-    shape: &LogShape,
-    label: &str,
-) {
+fn benchmark_next_activity_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
     let log = generate_event_log(shape);
 
     // Build predictor
-    let mut bigram_counts: HashMap<Vec<String>, HashMap<String, usize>> =
-        HashMap::new();
+    let mut bigram_counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
     for trace in &log.traces {
         let activities: Vec<String> = trace
             .events
@@ -123,8 +118,7 @@ fn benchmark_next_activity_latency(
     }
 
     // Normalize to probabilities
-    let mut probabilities: HashMap<Vec<String>, Vec<(String, f64)>> =
-        HashMap::new();
+    let mut probabilities: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
     for (prefix, counts) in &bigram_counts {
         let total: usize = counts.values().sum();
         let mut preds: Vec<_> = counts
@@ -135,11 +129,8 @@ fn benchmark_next_activity_latency(
         probabilities.insert(prefix.clone(), preds);
     }
 
-    let test_prefixes: Vec<Vec<String>> = probabilities
-        .keys()
-        .take(100)
-        .map(|p| p.clone())
-        .collect();
+    let test_prefixes: Vec<Vec<String>> =
+        probabilities.keys().take(100).map(|p| p.clone()).collect();
 
     c.bench_with_input(
         BenchmarkId::new("prediction_next_activity/inference", label),
@@ -158,11 +149,7 @@ fn benchmark_next_activity_latency(
 // REMAINING-TIME PREDICTION LATENCY
 // ============================================================================
 
-fn benchmark_remaining_time_latency(
-    c: &mut Criterion,
-    shape: &LogShape,
-    label: &str,
-) {
+fn benchmark_remaining_time_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
     let log = generate_event_log(shape);
 
     // Build model: bucket stats
@@ -223,11 +210,7 @@ fn benchmark_outcome_latency(c: &mut Criterion, shape: &LogShape, label: &str) {
     let log = generate_event_log(shape);
 
     let train_median_events = {
-        let mut event_counts: Vec<usize> = log
-            .traces
-            .iter()
-            .map(|t| t.events.len())
-            .collect();
+        let mut event_counts: Vec<usize> = log.traces.iter().map(|t| t.events.len()).collect();
         event_counts.sort();
         event_counts[event_counts.len() / 2]
     };
@@ -356,8 +339,7 @@ fn benchmark_resource_latency(c: &mut Criterion, shape: &LogShape, label: &str) 
         .map(|t| t.events.len())
         .collect();
 
-    let mean_trace_len: f64 =
-        test_traces.iter().sum::<usize>() as f64 / test_traces.len() as f64;
+    let mean_trace_len: f64 = test_traces.iter().sum::<usize>() as f64 / test_traces.len() as f64;
 
     c.bench_with_input(
         BenchmarkId::new("prediction_resource/inference", label),
@@ -379,7 +361,11 @@ fn benchmark_resource_latency(c: &mut Criterion, shape: &LogShape, label: &str) 
 fn bench_end_to_end_breakdown(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_e2e_breakdown");
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // Smaller sample size for slower operations
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // Smaller sample size for slower operations
 
     let shape = LogShape {
         num_cases: 1000,
@@ -393,8 +379,7 @@ fn bench_end_to_end_breakdown(c: &mut Criterion) {
     // Model building (training)
     group.bench_function("model_building", |b| {
         b.iter(|| {
-            let mut counts: HashMap<Vec<String>, HashMap<String, usize>> =
-                HashMap::new();
+            let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
             for trace in black_box(&log.traces) {
                 let acts: Vec<String> = trace
                     .events
@@ -487,7 +472,11 @@ fn bench_end_to_end_breakdown(c: &mut Criterion) {
 fn bench_batch_throughput(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_batch_throughput");
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1000,
@@ -563,7 +552,11 @@ fn bench_batch_throughput(c: &mut Criterion) {
 fn bench_scaling_by_trace_length(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_scaling_trace_length");
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for trace_len in [10, 50, 100, 500].iter() {
         let shape = LogShape {
@@ -603,8 +596,7 @@ fn bench_scaling_by_trace_length(c: &mut Criterion) {
             &trace_len,
             |b, _| {
                 b.iter(|| {
-                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> =
-                        HashMap::new();
+                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
                     for trace in black_box(&log.traces) {
                         let acts: Vec<String> = trace
                             .events
@@ -620,8 +612,7 @@ fn bench_scaling_by_trace_length(c: &mut Criterion) {
                         for i in 0..acts.len().saturating_sub(1) {
                             let prefix = vec![acts[i].clone()];
                             let next = acts[i + 1].clone();
-                            *counts.entry(prefix).or_default().entry(next).or_insert(0) +=
-                                1;
+                            *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
                         }
                     }
                     counts.len()
@@ -636,7 +627,11 @@ fn bench_scaling_by_trace_length(c: &mut Criterion) {
 fn bench_scaling_by_log_size(c: &mut Criterion) {
     let mut group = c.benchmark_group("prediction_scaling_log_size");
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_cases in [100, 500, 1000, 5000].iter() {
         let shape = LogShape {
@@ -653,8 +648,7 @@ fn bench_scaling_by_log_size(c: &mut Criterion) {
             &num_cases,
             |b, _| {
                 b.iter(|| {
-                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> =
-                        HashMap::new();
+                    let mut counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
                     for trace in black_box(&log.traces) {
                         let acts: Vec<String> = trace
                             .events
@@ -670,8 +664,7 @@ fn bench_scaling_by_log_size(c: &mut Criterion) {
                         for i in 0..acts.len().saturating_sub(1) {
                             let prefix = vec![acts[i].clone()];
                             let next = acts[i + 1].clone();
-                            *counts.entry(prefix).or_default().entry(next).or_insert(0) +=
-                                1;
+                            *counts.entry(prefix).or_default().entry(next).or_insert(0) += 1;
                         }
                     }
                     counts.len()

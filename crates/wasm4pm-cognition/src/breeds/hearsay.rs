@@ -51,10 +51,7 @@ impl CognitionBreed for Hearsay {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec![
-            "blackboard".to_string(),
-            "consensus_fusion".to_string(),
-        ]
+        vec!["blackboard".to_string(), "consensus_fusion".to_string()]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
@@ -101,20 +98,14 @@ impl CognitionBreed for Hearsay {
                     None => continue,
                 };
                 let posted_cf = trigger_cf * ks.certainty.clamp(0.0, 1.0);
-                let prev = blackboard
-                    .get(&ks.conclusion)
-                    .copied()
-                    .unwrap_or(0.0);
+                let prev = blackboard.get(&ks.conclusion).copied().unwrap_or(0.0);
                 let fused = noisy_or(prev, posted_cf);
                 if (fused - prev).abs() > 1e-6 {
                     blackboard.insert(ks.conclusion.clone(), fused);
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "post-hypothesis".to_string(),
-                        detail: format!(
-                            "{} ⇒ {} (cf={:.3})",
-                            ks.id, ks.conclusion, fused
-                        ),
+                        detail: format!("{} ⇒ {} (cf={:.3})", ks.id, ks.conclusion, fused),
                         depth: 0,
                     });
                     changed = true;
@@ -147,10 +138,11 @@ impl CognitionBreed for Hearsay {
             })
             .map(|(k, _)| (*k).clone());
 
-        let mut new_facts: Vec<Fact> = blackboard.keys().filter_map(|k| {
+        let mut new_facts: Vec<Fact> = blackboard
+            .keys()
+            .filter_map(|k| {
                 let (kk, vv) = k.split_once(':')?;
-                
-                
+
                 Some(Fact {
                     key: kk.to_string(),
                     value: vv.to_string(),

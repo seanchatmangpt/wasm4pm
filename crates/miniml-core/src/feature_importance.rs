@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::decision_tree::DecisionTreeModel;
+use wasm_bindgen::prelude::*;
 
 /// Compute feature importance from a trained decision tree.
 /// Uses mean decrease in impurity (Gini importance) across all splits.
@@ -103,12 +103,7 @@ mod tests {
 
     #[test]
     fn test_importance_sums_to_one() {
-        let data = vec![
-            0.0, 5.0, 2.0,
-            1.0, 5.0, 3.0,
-            5.0, 1.0, 4.0,
-            6.0, 0.0, 5.0,
-        ];
+        let data = vec![0.0, 5.0, 2.0, 1.0, 5.0, 3.0, 5.0, 1.0, 4.0, 6.0, 0.0, 5.0];
         let labels = vec![0.0, 0.0, 1.0, 1.0];
         let tree = decision_tree_impl(&data, 3, &labels, 5, 2, true).unwrap();
 
@@ -123,10 +118,7 @@ mod tests {
 
     #[test]
     fn test_importance_length() {
-        let data = vec![
-            0.0, 1.0, 0.0, 1.0,
-            1.0, 0.0, 1.0, 0.0,
-        ];
+        let data = vec![0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0];
         let labels = vec![0.0, 0.0, 1.0, 1.0];
         let tree = decision_tree_impl(&data, 2, &labels, 5, 2, true).unwrap();
 
@@ -137,12 +129,7 @@ mod tests {
     #[test]
     fn test_single_feature_used() {
         // Data where only feature 0 separates classes
-        let data = vec![
-            0.0, 5.0,
-            0.0, 3.0,
-            1.0, 7.0,
-            1.0, 2.0,
-        ];
+        let data = vec![0.0, 5.0, 0.0, 3.0, 1.0, 7.0, 1.0, 2.0];
         let labels = vec![0.0, 0.0, 1.0, 1.0];
         let tree = decision_tree_impl(&data, 2, &labels, 5, 2, true).unwrap();
 

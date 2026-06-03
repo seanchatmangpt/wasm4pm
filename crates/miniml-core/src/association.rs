@@ -2,9 +2,9 @@
 //!
 //! Discovers frequent itemsets and generates association rules from transactional data.
 
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use std::collections::{HashMap, HashSet};
+use wasm_bindgen::prelude::*;
 
 // ============================================================
 // Structs
@@ -124,7 +124,9 @@ pub fn apriori_impl(
     let n_transactions = transaction_lengths.len();
     let expected_len: usize = transaction_lengths.iter().sum();
     if transactions.len() != expected_len {
-        return Err(MlError::new("transactions length must equal sum of transaction_lengths"));
+        return Err(MlError::new(
+            "transactions length must equal sum of transaction_lengths",
+        ));
     }
 
     // Parse flat transactions into Vec<Vec<usize>> for internal computation
@@ -137,9 +139,16 @@ pub fn apriori_impl(
         }
         let end = offset + len;
         if end > transactions.len() {
-            return Err(MlError::new("transaction_lengths exceed transactions array bounds"));
+            return Err(MlError::new(
+                "transaction_lengths exceed transactions array bounds",
+            ));
         }
-        txns.push(transactions[offset..end].iter().map(|&v| v as usize).collect());
+        txns.push(
+            transactions[offset..end]
+                .iter()
+                .map(|&v| v as usize)
+                .collect(),
+        );
         offset = end;
     }
 
@@ -177,9 +186,7 @@ pub fn apriori_impl(
     }
 
     // Build transaction sets for efficient subset checking
-    let txn_sets: Vec<HashSet<usize>> = txns.iter()
-        .map(|t| t.iter().copied().collect())
-        .collect();
+    let txn_sets: Vec<HashSet<usize>> = txns.iter().map(|t| t.iter().copied().collect()).collect();
 
     // Step 2: Iteratively generate larger candidate itemsets (limit to size 3 for WASM performance)
     let max_itemset_size = 3;
@@ -283,10 +290,15 @@ pub fn apriori_impl(
     }
 
     // Sort rules by confidence descending
-    rules.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal));
+    rules.sort_by(|a, b| {
+        b.confidence
+            .partial_cmp(&a.confidence)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
 
     // Convert frequent_itemsets to Vec<Vec<f64>>
-    let fi_vecs: Vec<Vec<f64>> = frequent_itemsets.iter()
+    let fi_vecs: Vec<Vec<f64>> = frequent_itemsets
+        .iter()
         .map(|hs| {
             let mut v: Vec<usize> = hs.iter().copied().collect();
             v.sort();
@@ -308,8 +320,13 @@ pub fn apriori(
     min_support: f64,
     min_confidence: f64,
 ) -> Result<AssociationResult, JsValue> {
-    apriori_impl(transactions, transaction_lengths, min_support, min_confidence)
-        .map_err(|e| JsValue::from_str(&e.message))
+    apriori_impl(
+        transactions,
+        transaction_lengths,
+        min_support,
+        min_confidence,
+    )
+    .map_err(|e| JsValue::from_str(&e.message))
 }
 
 // ============================================================
@@ -321,16 +338,19 @@ fn generate_candidates(frequent: &[HashSet<usize>], k: usize) -> Vec<HashSet<usi
     for i in 0..frequent.len() {
         for j in (i + 1)..frequent.len() {
             let union: HashSet<usize> = frequent[i].union(&frequent[j]).copied().collect();
-            if union.len() == k
-                && all_subsets_frequent(&union, frequent, k - 1) {
-                    candidates.push(union);
-                }
+            if union.len() == k && all_subsets_frequent(&union, frequent, k - 1) {
+                candidates.push(union);
+            }
         }
     }
     candidates
 }
 
-fn all_subsets_frequent(candidate: &HashSet<usize>, frequent: &[HashSet<usize>], subset_size: usize) -> bool {
+fn all_subsets_frequent(
+    candidate: &HashSet<usize>,
+    frequent: &[HashSet<usize>],
+    subset_size: usize,
+) -> bool {
     let items: Vec<usize> = candidate.iter().copied().collect();
     let n = items.len();
     if subset_size == 0 || subset_size > n {
@@ -373,7 +393,13 @@ fn combinations(items: &[usize], k: usize) -> Vec<Vec<usize>> {
     let mut result = Vec::new();
     let mut current = Vec::with_capacity(k);
 
-    fn backtrack(items: &[usize], k: usize, start: usize, current: &mut Vec<usize>, result: &mut Vec<Vec<usize>>) {
+    fn backtrack(
+        items: &[usize],
+        k: usize,
+        start: usize,
+        current: &mut Vec<usize>,
+        result: &mut Vec<Vec<usize>>,
+    ) {
         if current.len() == k {
             result.push(current.clone());
             return;
@@ -401,23 +427,28 @@ mod tests {
     fn test_apriori_basic() {
         // 5 transactions: [[1,2,3],[2,3,4],[1,2,4],[1,3,4],[2,3,4]]
         let transactions: Vec<f64> = vec![
-            1.0, 2.0, 3.0,
-            2.0, 3.0, 4.0,
-            1.0, 2.0, 4.0,
-            1.0, 3.0, 4.0,
-            2.0, 3.0, 4.0,
+            1.0, 2.0, 3.0, 2.0, 3.0, 4.0, 1.0, 2.0, 4.0, 1.0, 3.0, 4.0, 2.0, 3.0, 4.0,
         ];
         let transaction_lengths = vec![3, 3, 3, 3, 3];
 
         let result = apriori_impl(&transactions, &transaction_lengths, 0.3, 0.5).unwrap();
 
         assert_eq!(result.n_transactions, 5);
-        assert!(!result.frequent_itemsets.is_empty(), "Should find frequent itemsets");
-        assert!(!result.rules.is_empty(), "Should discover at least one association rule");
+        assert!(
+            !result.frequent_itemsets.is_empty(),
+            "Should find frequent itemsets"
+        );
+        assert!(
+            !result.rules.is_empty(),
+            "Should discover at least one association rule"
+        );
 
         for rule in &result.rules {
             assert!(rule.support >= 0.0 && rule.support <= 1.0);
-            assert!(rule.confidence >= 0.5, "Confidence should meet min_confidence");
+            assert!(
+                rule.confidence >= 0.5,
+                "Confidence should meet min_confidence"
+            );
             assert!(!rule.antecedent.is_empty());
             assert!(!rule.consequent.is_empty());
             assert!(rule.lift >= 0.0);
@@ -427,33 +458,40 @@ mod tests {
     #[test]
     fn test_apriori_single_item() {
         // 5 transactions: item 1 appears in 4 of them
-        let transactions: Vec<f64> = vec![
-            1.0, 1.0, 1.0, 2.0, 1.0,
-        ];
+        let transactions: Vec<f64> = vec![1.0, 1.0, 1.0, 2.0, 1.0];
         let transaction_lengths = vec![1, 1, 1, 1, 1];
 
         let result = apriori_impl(&transactions, &transaction_lengths, 0.5, 0.5).unwrap();
 
         assert_eq!(result.n_transactions, 5);
-        assert!(result.frequent_itemsets.iter().any(|fi| fi.len() == 1 && fi.contains(&1.0)),
-            "Should find item 1 as a frequent 1-itemset");
+        assert!(
+            result
+                .frequent_itemsets
+                .iter()
+                .any(|fi| fi.len() == 1 && fi.contains(&1.0)),
+            "Should find item 1 as a frequent 1-itemset"
+        );
     }
 
     #[test]
     fn test_apriori_min_support_filter() {
         // 5 transactions: item 1 appears in 2, item 2 appears in 5
-        let transactions: Vec<f64> = vec![
-            2.0, 2.0, 1.0, 2.0, 2.0, 1.0, 2.0,
-        ];
+        let transactions: Vec<f64> = vec![2.0, 2.0, 1.0, 2.0, 2.0, 1.0, 2.0];
         let transaction_lengths = vec![1, 1, 2, 1, 2];
 
         // High min_support = 0.8 -> only item 2 qualifies (5/5 = 1.0)
         let result = apriori_impl(&transactions, &transaction_lengths, 0.8, 0.5).unwrap();
 
-        let singletons: Vec<_> = result.frequent_itemsets.iter()
+        let singletons: Vec<_> = result
+            .frequent_itemsets
+            .iter()
             .filter(|fi| fi.len() == 1)
             .collect();
-        assert_eq!(singletons.len(), 1, "High min_support should filter to only item 2");
+        assert_eq!(
+            singletons.len(),
+            1,
+            "High min_support should filter to only item 2"
+        );
         assert!(singletons[0].contains(&2.0));
     }
 
@@ -481,9 +519,7 @@ mod tests {
 
     #[test]
     fn test_apriori_rule_metrics() {
-        let transactions: Vec<f64> = vec![
-            1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 3.0, 2.0, 3.0,
-        ];
+        let transactions: Vec<f64> = vec![1.0, 2.0, 1.0, 2.0, 1.0, 2.0, 1.0, 3.0, 2.0, 3.0];
         let transaction_lengths = vec![2, 2, 2, 2, 2];
 
         let result = apriori_impl(&transactions, &transaction_lengths, 0.3, 0.5).unwrap();

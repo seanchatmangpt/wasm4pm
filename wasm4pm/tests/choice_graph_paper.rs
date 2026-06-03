@@ -138,15 +138,7 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
         Activity("Cancel".into()),
         End,
     ];
-    let edges = vec![
-        (0, 1),
-        (1, 2),
-        (1, 3),
-        (1, 4),
-        (2, 5),
-        (3, 5),
-        (4, 5),
-    ];
+    let edges = vec![(0, 1), (1, 2), (1, 3), (1, 4), (2, 5), (3, 5), (4, 5)];
     let cg = ChoiceGraph::new(nodes, edges).unwrap();
 
     let mut arena = PowlArena::new();
@@ -167,12 +159,7 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
 fn cyclic_graph_rejected() {
     use ChoiceGraphNode::*;
     // Start → a → b → a is a cycle that also reaches End.
-    let nodes = vec![
-        Start,
-        Activity("a".into()),
-        Activity("b".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("a".into()), Activity("b".into()), End];
     let edges = vec![
         (0, 1), // Start → a
         (1, 2), // a → b
@@ -188,19 +175,13 @@ fn cyclic_graph_rejected() {
 fn disconnected_node_rejected() {
     use ChoiceGraphNode::*;
     // n2 (Activity "orphan") is unreachable from Start.
-    let nodes = vec![
-        Start,
-        Activity("a".into()),
-        Activity("orphan".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("a".into()), Activity("orphan".into()), End];
     let edges = vec![
         (0, 1), // Start → a
         (1, 3), // a → End
         (2, 3), // orphan → End  (orphan not reachable from Start)
     ];
-    let err = ChoiceGraph::new(nodes, edges)
-        .expect_err("orphan node must be rejected");
+    let err = ChoiceGraph::new(nodes, edges).expect_err("orphan node must be rejected");
     assert_eq!(err, ChoiceGraphError::NodeNotOnStartEndPath);
 }
 

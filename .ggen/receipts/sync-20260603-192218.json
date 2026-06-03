@@ -1,0 +1,12 @@
+{
+  "operation_id": "37d6219a-916d-4d0a-987a-882306550457",
+  "timestamp": "2026-06-03T19:22:18.975037Z",
+  "input_hashes": [
+    "ggen.toml:ead9d4dca7a0433d05c867f1c6c6657292890fa08193f5b31894180d2969c308"
+  ],
+  "output_hashes": [
+    "./wasm4pm/src/generated/witnesses.rs:15bd460a9cfaca0f41eb6ce375374c847c5cc3e10a4566914523ca74f9b20287"
+  ],
+  "signature": "6f6923265d245cfaf6eb1b9e85185dfa63b8d46a83e316925b5746ab9c4a7ab60a9704aef0259c8d3d313cdb61295bd3019aaa66535f21d767168499a92ded09",
+  "previous_receipt_hash": "28960a45a3378eb8a59fe2cfc5e5efa67d7b10cbb3d244f97de14a2f620d9102"
+}

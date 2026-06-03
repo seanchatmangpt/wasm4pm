@@ -43,7 +43,7 @@ mod tests {
     </event>
   </trace>
 </log>"#
-        .to_string()
+            .to_string()
     }
 
     #[test]
@@ -102,15 +102,15 @@ mod tests {
             "output_type": "dfg"
         });
 
-        assert_eq!(metadata["name"], "dfg", "Should have correct algorithm name");
+        assert_eq!(
+            metadata["name"], "dfg",
+            "Should have correct algorithm name"
+        );
         assert_eq!(
             metadata["category"], "discovery",
             "Should have correct category"
         );
-        assert_eq!(
-            metadata["speed_score"], 5,
-            "DFG should have speed score 5"
-        );
+        assert_eq!(metadata["speed_score"], 5, "DFG should have speed score 5");
         assert_eq!(
             metadata["quality_score"], 30,
             "DFG should have quality score 30"
@@ -136,7 +136,10 @@ mod tests {
         });
 
         assert_eq!(metadata["speed_score"], 75, "Genetic should be slower");
-        assert_eq!(metadata["quality_score"], 80, "Genetic should have high quality");
+        assert_eq!(
+            metadata["quality_score"], 80,
+            "Genetic should have high quality"
+        );
         assert_eq!(
             metadata["output_type"], "petrinet",
             "Genetic outputs Petri nets"
@@ -163,7 +166,10 @@ mod tests {
         let dfg_complexity = dfg["time_complexity"].as_str().unwrap();
         let genetic_complexity = genetic["time_complexity"].as_str().unwrap();
 
-        assert!(dfg_complexity.contains("n"), "DFG should have linear/log complexity");
+        assert!(
+            dfg_complexity.contains("n"),
+            "DFG should have linear/log complexity"
+        );
         assert!(
             genetic_complexity.contains("population"),
             "Genetic should include population"
@@ -292,7 +298,11 @@ mod tests {
                 "space_complexity": "O(m)",
             });
 
-            assert!(metadata["name"].is_string(), "Should have name for {}", algo);
+            assert!(
+                metadata["name"].is_string(),
+                "Should have name for {}",
+                algo
+            );
             assert!(
                 metadata["category"].as_str().unwrap() == "discovery",
                 "Discovery algorithms should have category 'discovery'"
@@ -350,7 +360,10 @@ mod tests {
         let hashes = vec![hash1, hash2, hash3];
         let all_identical = hashes.iter().all(|h| h == &hashes[0]);
 
-        assert!(all_identical, "All hashes should be identical for deterministic run");
+        assert!(
+            all_identical,
+            "All hashes should be identical for deterministic run"
+        );
     }
 
     #[test]
@@ -389,14 +402,18 @@ mod tests {
         let metrics = vec![0.0, 0.25, 0.5, 0.75, 1.0];
 
         for metric in metrics {
-            assert!(metric >= 0.0 && metric <= 1.0, "Metric {} out of bounds", metric);
+            assert!(
+                metric >= 0.0 && metric <= 1.0,
+                "Metric {} out of bounds",
+                metric
+            );
         }
     }
 
     #[test]
     fn test_speed_quality_tradeoff() {
         // Faster algorithms should generally have lower quality scores
-        let dfg = (5, 30);     // speed=5, quality=30
+        let dfg = (5, 30); // speed=5, quality=30
         let genetic = (75, 80); // speed=75, quality=80
 
         // Genetic is slower but higher quality

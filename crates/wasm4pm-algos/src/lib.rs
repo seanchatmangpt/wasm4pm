@@ -16,6 +16,7 @@ pub mod prefix_conformance;
 pub mod streaming;
 pub mod truex;
 
-pub use wasm4pm_types;
+// wasm4pm-compat is the canonical type foundation — re-exported for consumers
+pub use wasm4pm_compat;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

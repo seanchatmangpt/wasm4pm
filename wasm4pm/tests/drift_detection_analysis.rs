@@ -25,15 +25,16 @@ use wasm4pm::prediction_drift::{classify_trend, ewma_series, jaccard_distance};
 fn test_jaccard_empty_sets() {
     let a: HashSet<String> = HashSet::new();
     let b: HashSet<String> = HashSet::new();
-    assert_eq!(jaccard_distance(&a, &b), 0.0, "Empty sets should have distance 0.0");
+    assert_eq!(
+        jaccard_distance(&a, &b),
+        0.0,
+        "Empty sets should have distance 0.0"
+    );
 }
 
 #[test]
 fn test_jaccard_identical_sets() {
-    let a: HashSet<String> = ["A", "B", "C"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let a: HashSet<String> = ["A", "B", "C"].iter().map(|s| s.to_string()).collect();
     assert_eq!(
         jaccard_distance(&a, &a),
         0.0,
@@ -43,14 +44,8 @@ fn test_jaccard_identical_sets() {
 
 #[test]
 fn test_jaccard_disjoint_sets() {
-    let a: HashSet<String> = ["A", "B", "C"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-    let b: HashSet<String> = ["X", "Y", "Z"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let a: HashSet<String> = ["A", "B", "C"].iter().map(|s| s.to_string()).collect();
+    let b: HashSet<String> = ["X", "Y", "Z"].iter().map(|s| s.to_string()).collect();
     assert_eq!(
         jaccard_distance(&a, &b),
         1.0,
@@ -64,16 +59,13 @@ fn test_jaccard_partial_overlap() {
     // Intersection = {B} (1 element)
     // Union = {A, B, C} (3 elements)
     // Similarity = 1/3, Distance = 2/3
-    let a: HashSet<String> = ["A", "B"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-    let b: HashSet<String> = ["B", "C"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let a: HashSet<String> = ["A", "B"].iter().map(|s| s.to_string()).collect();
+    let b: HashSet<String> = ["B", "C"].iter().map(|s| s.to_string()).collect();
     let distance = jaccard_distance(&a, &b);
-    assert!((distance - 2.0 / 3.0).abs() < 1e-12, "Distance should be 2/3");
+    assert!(
+        (distance - 2.0 / 3.0).abs() < 1e-12,
+        "Distance should be 2/3"
+    );
 }
 
 #[test]
@@ -92,19 +84,16 @@ fn test_jaccard_50_percent_overlap() {
 
 #[test]
 fn test_jaccard_symmetry() {
-    let a: HashSet<String> = ["A", "B", "C", "D"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-    let b: HashSet<String> = ["C", "D", "E"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
+    let a: HashSet<String> = ["A", "B", "C", "D"].iter().map(|s| s.to_string()).collect();
+    let b: HashSet<String> = ["C", "D", "E"].iter().map(|s| s.to_string()).collect();
 
     let d_ab = jaccard_distance(&a, &b);
     let d_ba = jaccard_distance(&b, &a);
 
-    assert!((d_ab - d_ba).abs() < 1e-12, "Jaccard distance should be symmetric");
+    assert!(
+        (d_ab - d_ba).abs() < 1e-12,
+        "Jaccard distance should be symmetric"
+    );
 }
 
 // ===========================================================================
@@ -164,7 +153,10 @@ fn test_ewma_alpha_clamping() {
 
     // Alpha = 5.0 should be clamped to 1.0
     let result_high = ewma_series(&series, 5.0);
-    assert_eq!(result_high, series, "Alpha=5.0 clamped to 1.0 should track input");
+    assert_eq!(
+        result_high, series,
+        "Alpha=5.0 clamped to 1.0 should track input"
+    );
 }
 
 #[test]
@@ -185,9 +177,7 @@ fn test_ewma_convergence_to_constant() {
 
 #[test]
 fn test_ewma_responsiveness_alpha_comparison() {
-    let series: Vec<f64> = (0..100)
-        .map(|i| if i < 50 { 1.0 } else { 10.0 })
-        .collect();
+    let series: Vec<f64> = (0..100).map(|i| if i < 50 { 1.0 } else { 10.0 }).collect();
 
     let result_low_alpha = ewma_series(&series, 0.1); // Sluggish
     let result_high_alpha = ewma_series(&series, 0.9); // Responsive
@@ -257,7 +247,10 @@ fn test_window_size_zero_becomes_one() {
     for n in [0, 1, 5, 10, 50, 100] {
         let set: HashSet<String> = (0..n).map(|i| format!("act_{}", i)).collect();
         let distance = jaccard_distance(&set, &set);
-        assert_eq!(distance, 0.0, "Identical sets should always have distance 0");
+        assert_eq!(
+            distance, 0.0,
+            "Identical sets should always have distance 0"
+        );
     }
 }
 
@@ -317,9 +310,7 @@ fn test_alpha_parameter_effects() {
 #[test]
 fn test_alpha_default_choice() {
     // Default alpha = 0.2 should provide good smoothing without excessive lag
-    let series: Vec<f64> = (0..100)
-        .map(|i| 10.0 + ((i as f64) * 0.1).sin())
-        .collect();
+    let series: Vec<f64> = (0..100).map(|i| 10.0 + ((i as f64) * 0.1).sin()).collect();
 
     let smoothed = ewma_series(&series, 0.2);
 
@@ -505,10 +496,7 @@ fn test_threshold_effects_on_detection() {
 
 #[test]
 fn test_edge_case_single_activity() {
-    let single = ["A"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<HashSet<_>>();
+    let single = ["A"].iter().map(|s| s.to_string()).collect::<HashSet<_>>();
     let distance = jaccard_distance(&single, &single);
     assert_eq!(distance, 0.0);
 }
@@ -624,7 +612,6 @@ fn compute_variance(values: &[f64]) -> f64 {
         return 0.0;
     }
     let mean = values.iter().sum::<f64>() / values.len() as f64;
-    let variance =
-        values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
+    let variance = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
     variance
 }

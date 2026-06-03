@@ -1,12 +1,12 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// Result of an exponential regression fit: y = a * e^(b*x)
 #[derive(Clone)]
 #[wasm_bindgen]
 pub struct ExponentialModel {
-    a: f64,      // Initial value / amplitude
-    b: f64,      // Growth rate
+    a: f64, // Initial value / amplitude
+    b: f64, // Growth rate
     r_squared: f64,
     n: usize,
 }
@@ -73,7 +73,9 @@ pub fn exponential_regression_impl(x: &[f64], y: &[f64]) -> Result<ExponentialMo
 
     let n = x.len();
     if n < 2 {
-        return Err(MlError::new("Need at least 2 data points for exponential regression"));
+        return Err(MlError::new(
+            "Need at least 2 data points for exponential regression",
+        ));
     }
 
     // Check for non-positive y values
@@ -105,7 +107,9 @@ pub fn exponential_regression_impl(x: &[f64], y: &[f64]) -> Result<ExponentialMo
     }
 
     if denominator == 0.0 {
-        return Err(MlError::new("Cannot fit regression: all x values are identical"));
+        return Err(MlError::new(
+            "Cannot fit regression: all x values are identical",
+        ));
     }
 
     let b = numerator / denominator;
@@ -123,14 +127,13 @@ pub fn exponential_regression_impl(x: &[f64], y: &[f64]) -> Result<ExponentialMo
         ss_tot += (y[i] - y_mean).powi(2);
     }
 
-    let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };
+    let r_squared = if ss_tot == 0.0 {
+        1.0
+    } else {
+        1.0 - (ss_res / ss_tot)
+    };
 
-    Ok(ExponentialModel {
-        a,
-        b,
-        r_squared,
-        n,
-    })
+    Ok(ExponentialModel { a, b, r_squared, n })
 }
 
 /// Fit an exponential regression model: y = a * e^(bx)
@@ -147,13 +150,12 @@ pub fn exponential_regression_simple(y: &[f64]) -> Result<ExponentialModel, JsEr
     exponential_regression(&x, y)
 }
 
-
 /// Result of a logarithmic regression fit: y = a + b * ln(x)
 #[derive(Clone)]
 #[wasm_bindgen]
 pub struct LogarithmicModel {
-    a: f64,      // Intercept
-    b: f64,      // Coefficient
+    a: f64, // Intercept
+    b: f64, // Coefficient
     r_squared: f64,
     n: usize,
 }
@@ -214,7 +216,9 @@ pub fn logarithmic_regression_impl(x: &[f64], y: &[f64]) -> Result<LogarithmicMo
 
     let n = x.len();
     if n < 2 {
-        return Err(MlError::new("Need at least 2 data points for logarithmic regression"));
+        return Err(MlError::new(
+            "Need at least 2 data points for logarithmic regression",
+        ));
     }
 
     // Check for non-positive x values
@@ -246,7 +250,9 @@ pub fn logarithmic_regression_impl(x: &[f64], y: &[f64]) -> Result<LogarithmicMo
     }
 
     if denominator == 0.0 {
-        return Err(MlError::new("Cannot fit regression: all x values are identical"));
+        return Err(MlError::new(
+            "Cannot fit regression: all x values are identical",
+        ));
     }
 
     let b = numerator / denominator;
@@ -262,14 +268,13 @@ pub fn logarithmic_regression_impl(x: &[f64], y: &[f64]) -> Result<LogarithmicMo
         ss_tot += (y[i] - y_mean).powi(2);
     }
 
-    let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };
+    let r_squared = if ss_tot == 0.0 {
+        1.0
+    } else {
+        1.0 - (ss_res / ss_tot)
+    };
 
-    Ok(LogarithmicModel {
-        a,
-        b,
-        r_squared,
-        n,
-    })
+    Ok(LogarithmicModel { a, b, r_squared, n })
 }
 
 #[wasm_bindgen(js_name = "logarithmicRegression")]
@@ -277,13 +282,12 @@ pub fn logarithmic_regression(x: &[f64], y: &[f64]) -> Result<LogarithmicModel, 
     logarithmic_regression_impl(x, y).map_err(|e| JsError::new(&e.message))
 }
 
-
 /// Result of a power regression fit: y = a * x^b
 #[derive(Clone)]
 #[wasm_bindgen]
 pub struct PowerModel {
-    a: f64,      // Coefficient
-    b: f64,      // Exponent
+    a: f64, // Coefficient
+    b: f64, // Exponent
     r_squared: f64,
     n: usize,
 }
@@ -341,7 +345,9 @@ pub fn power_regression_impl(x: &[f64], y: &[f64]) -> Result<PowerModel, MlError
 
     let n = x.len();
     if n < 2 {
-        return Err(MlError::new("Need at least 2 data points for power regression"));
+        return Err(MlError::new(
+            "Need at least 2 data points for power regression",
+        ));
     }
 
     // Check for non-positive values
@@ -380,7 +386,9 @@ pub fn power_regression_impl(x: &[f64], y: &[f64]) -> Result<PowerModel, MlError
     }
 
     if denominator == 0.0 {
-        return Err(MlError::new("Cannot fit regression: all x values are identical"));
+        return Err(MlError::new(
+            "Cannot fit regression: all x values are identical",
+        ));
     }
 
     let b = numerator / denominator;
@@ -398,14 +406,13 @@ pub fn power_regression_impl(x: &[f64], y: &[f64]) -> Result<PowerModel, MlError
         ss_tot += (y[i] - y_mean).powi(2);
     }
 
-    let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };
+    let r_squared = if ss_tot == 0.0 {
+        1.0
+    } else {
+        1.0 - (ss_res / ss_tot)
+    };
 
-    Ok(PowerModel {
-        a,
-        b,
-        r_squared,
-        n,
-    })
+    Ok(PowerModel { a, b, r_squared, n })
 }
 
 #[wasm_bindgen(js_name = "powerRegression")]

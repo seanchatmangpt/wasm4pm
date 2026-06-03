@@ -69,8 +69,7 @@ fn extract_unigram_prefixes(log: &EventLog, activity_key: &str) -> Vec<Vec<Strin
 
 /// Extract all unique length-2 prefixes (bigram context) from a log.
 fn extract_bigram_prefixes(log: &EventLog, activity_key: &str) -> Vec<Vec<String>> {
-    let mut seen: std::collections::HashSet<(String, String)> =
-        std::collections::HashSet::new();
+    let mut seen: std::collections::HashSet<(String, String)> = std::collections::HashSet::new();
     for trace in &log.traces {
         let acts: Vec<String> = trace
             .events
@@ -86,9 +85,7 @@ fn extract_bigram_prefixes(log: &EventLog, activity_key: &str) -> Vec<Vec<String
             seen.insert((window[0].clone(), window[1].clone()));
         }
     }
-    seen.into_iter()
-        .map(|(a, b)| vec![a, b])
-        .collect()
+    seen.into_iter().map(|(a, b)| vec![a, b]).collect()
 }
 
 /// Build a vocabulary (sorted unique activities) from a log.
@@ -113,7 +110,11 @@ fn bench_ngram_build_unigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Fixed: 1K-trace log (as specified in the task description)
     let shape = LogShape {
@@ -142,7 +143,11 @@ fn bench_ngram_build_bigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -169,7 +174,11 @@ fn bench_ngram_predict_unigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -208,7 +217,11 @@ fn bench_ngram_predict_bigram(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -251,7 +264,11 @@ fn bench_uniform_random_baseline(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1_000,

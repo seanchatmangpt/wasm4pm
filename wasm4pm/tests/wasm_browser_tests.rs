@@ -20,7 +20,10 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[wasm_bindgen_test]
 fn browser_get_version_returns_non_empty() {
     let version = wasm4pm::get_version();
-    assert!(!version.is_empty(), "get_version() must return a non-empty string in browser");
+    assert!(
+        !version.is_empty(),
+        "get_version() must return a non-empty string in browser"
+    );
 }
 
 #[wasm_bindgen_test]
@@ -71,10 +74,7 @@ fn browser_load_xes_and_discover_dfg() {
     assert!(!handle.is_empty(), "Handle must be non-empty");
 
     let dfg_json = wasm4pm::discover_dfg(&handle, "concept:name");
-    assert!(
-        dfg_json.is_ok(),
-        "discover_dfg() must succeed in browser"
-    );
+    assert!(dfg_json.is_ok(), "discover_dfg() must succeed in browser");
     let dfg_str = format!("{:?}", dfg_json.unwrap());
     assert!(
         dfg_str.contains("nodes") || dfg_str.contains("edges"),
@@ -99,8 +99,5 @@ fn browser_load_xes_delete_then_reject() {
 
     // After deletion, further use of the handle must fail gracefully
     let dfg = wasm4pm::discover_dfg(&handle, "concept:name");
-    assert!(
-        dfg.is_err(),
-        "Using a deleted handle must return an error"
-    );
+    assert!(dfg.is_err(), "Using a deleted handle must return an error");
 }

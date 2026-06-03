@@ -656,13 +656,14 @@ pub mod ml;
 #[cfg(feature = "cognition")]
 pub use wasm4pm_cognition as cognition;
 
-// Types substrate re-export — surfaces `wasm4pm_types` (hash, BLAKE3 helpers,
-// canonical JSON) as `wasm4pm::data_types`. Downstream crates that need
+// Types substrate re-export — surfaces `wasm4pm_compat` (the canonical type
+// foundation: hash, BLAKE3 helpers, canonical JSON, and cross-crate
+// compatibility layer) as `wasm4pm::data_types`. Downstream crates that need
 // canonical receipt serialization can reach
 // `wasm4pm::data_types::hash::canonical_json` via the single wasm4pm
 // dependency. (The name `types` is already taken by an internal WASM bindings
 // module at this crate root.)
-pub use wasm4pm_types as data_types;
+pub use wasm4pm_compat as data_types;
 
 // GPU-accelerated LinUCB contextual bandit for algorithm selection
 // (van der Aalst: resource/intervention prediction perspective)

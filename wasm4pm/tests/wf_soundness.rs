@@ -68,12 +68,7 @@ fn seq_sound_net() -> PetriNet {
     net(
         &["src", "p1", "sink"],
         &[("tA", "A"), ("tB", "B")],
-        &[
-            ("src", "tA"),
-            ("tA", "p1"),
-            ("p1", "tB"),
-            ("tB", "sink"),
-        ],
+        &[("src", "tA"), ("tA", "p1"), ("p1", "tB"), ("tB", "sink")],
         "src",
     )
 }
@@ -85,12 +80,7 @@ fn choice_sound_net() -> PetriNet {
     net(
         &["src", "sink"],
         &[("tA", "A"), ("tB", "B")],
-        &[
-            ("src", "tA"),
-            ("tA", "sink"),
-            ("src", "tB"),
-            ("tB", "sink"),
-        ],
+        &[("src", "tA"), ("tA", "sink"), ("src", "tB"), ("tB", "sink")],
         "src",
     )
 }
@@ -135,12 +125,7 @@ fn concurrent_sound_net() -> PetriNet {
 fn unsafe_net() -> PetriNet {
     net(
         &["src", "pA", "pB", "p", "sink"],
-        &[
-            ("tFork", "Fork"),
-            ("tA", "A"),
-            ("tB", "B"),
-            ("tC", "C"),
-        ],
+        &[("tFork", "Fork"), ("tA", "A"), ("tB", "B"), ("tC", "C")],
         &[
             ("src", "tFork"),
             ("tFork", "pA"),
@@ -203,11 +188,7 @@ fn dead_transition_net() -> PetriNet {
 fn non_free_choice_net() -> PetriNet {
     net(
         &["src", "pShared", "pExtra", "sink"],
-        &[
-            ("tSplit", "Split"),
-            ("t1", "T1"),
-            ("t2", "T2"),
-        ],
+        &[("tSplit", "Split"), ("t1", "T1"), ("t2", "T2")],
         &[
             ("src", "tSplit"),
             ("tSplit", "pShared"),
@@ -243,7 +224,9 @@ fn non_free_choice_net() -> PetriNet {
 /// separability (paper §3.4) while preserving free-choiceness and soundness.
 fn fig2_non_separable_net() -> PetriNet {
     net(
-        &["i", "p_a1", "p_a2", "p_e1", "p_e2", "p_b", "p_c", "p_d", "o"],
+        &[
+            "i", "p_a1", "p_a2", "p_e1", "p_e2", "p_b", "p_c", "p_d", "o",
+        ],
         &[
             ("a", "a"),
             ("b", "b"),
@@ -426,7 +409,11 @@ fn def_3_5_concurrent_is_sound_and_safe() {
     // interleaving of A and B yields several intermediate markings, all safe,
     // and [sink] is the unique completing marking.
     let r = analyze_petri_net(&concurrent_sound_net());
-    assert!(r.is_sound, "AND-split/join is sound (Def 3.5): {}", r.reason);
+    assert!(
+        r.is_sound,
+        "AND-split/join is sound (Def 3.5): {}",
+        r.reason
+    );
     assert!(r.is_safe, "marked graph is safe");
     assert!(r.is_marked_graph);
     assert!(r.no_dead_transitions);
@@ -441,7 +428,11 @@ fn def_3_5_unsafe_net_is_unsound() {
     // Expected: NOT safe (p reaches 2 tokens) AND improper completion (a marking
     // with [p,sink] is reachable, not just [sink]). Either way: unsound.
     let r = analyze_petri_net(&unsafe_net());
-    assert!(!r.is_safe, "place p accumulates 2 tokens ⇒ unsafe: {}", r.reason);
+    assert!(
+        !r.is_safe,
+        "place p accumulates 2 tokens ⇒ unsafe: {}",
+        r.reason
+    );
     assert!(!r.is_sound, "unsafe/improper net is unsound (Def 3.5)");
     assert!(
         !r.proper_completion,
@@ -463,7 +454,10 @@ fn def_3_5_dead_transition_net_is_unsound() {
         "report must name the dead transition; got {:?}",
         r.dead_transitions
     );
-    assert!(!r.is_sound, "a net with a dead transition is unsound (Def 3.5)");
+    assert!(
+        !r.is_sound,
+        "a net with a dead transition is unsound (Def 3.5)"
+    );
 }
 
 #[test]

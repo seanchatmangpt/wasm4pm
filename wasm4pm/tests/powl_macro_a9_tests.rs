@@ -51,7 +51,11 @@ fn build_value(seed: u32) -> u32 {
 #[test]
 fn powl_activity_preserves_return_value() {
     // The macro must be transparent to the function's contract.
-    assert_eq!(build_value(20), 41, "#[powl_activity] must not alter behavior");
+    assert_eq!(
+        build_value(20),
+        41,
+        "#[powl_activity] must not alter behavior"
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -109,7 +113,10 @@ fn c7_exact_conformance_admits_only_at_one() {
     );
 
     // 0.999 fitness refuses with the route-conformance gap AndonPull.
-    let gap = ReplayReport { fitness: ProofDimension::Measured(0.999), ..exact };
+    let gap = ReplayReport {
+        fitness: ProofDimension::Measured(0.999),
+        ..exact
+    };
     assert_eq!(
         classify_conformance(&gap, expected),
         ConformanceVerdict::Andon(AndonPull::RouteConformanceGap),

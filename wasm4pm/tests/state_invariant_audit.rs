@@ -13,8 +13,8 @@
 //!
 //! Identifies 5 critical invalid state transition patterns that could occur due to bugs.
 
+use wasm4pm::self_healing::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
 use wasm4pm::RlState;
-use wasm4pm::self_healing::{CircuitBreaker, CircuitState, CircuitBreakerConfig};
 
 // ============================================================================
 // INVALID STATE TRANSITION PATTERNS (5 Critical Bugs)
@@ -33,15 +33,15 @@ use wasm4pm::self_healing::{CircuitBreaker, CircuitState, CircuitBreakerConfig};
 fn test_invalid_p1_health_non_monotonic_jump() {
     // Valid transitions: only ±1 or 0
     let cases = vec![
-        (0, 1, true),   // 0→1 degrade: valid
-        (0, 0, true),   // 0→0 stable: valid
-        (1, 2, true),   // 1→2 degrade: valid
-        (2, 1, true),   // 2→1 improve: valid
-        (4, 4, true),   // 4→4 terminal: valid
+        (0, 1, true), // 0→1 degrade: valid
+        (0, 0, true), // 0→0 stable: valid
+        (1, 2, true), // 1→2 degrade: valid
+        (2, 1, true), // 2→1 improve: valid
+        (4, 4, true), // 4→4 terminal: valid
         // INVALID cases
-        (1, 3, false),  // 1→3 jump +2: INVALID
-        (3, 0, false),  // 3→0 jump -3: INVALID
-        (0, 4, false),  // 0→4 jump +4: INVALID
+        (1, 3, false), // 1→3 jump +2: INVALID
+        (3, 0, false), // 3→0 jump -3: INVALID
+        (0, 4, false), // 0→4 jump +4: INVALID
     ];
 
     for (before, after, should_be_valid) in cases {
@@ -68,18 +68,18 @@ fn test_invalid_p1_health_non_monotonic_jump() {
 fn test_invalid_p2_circuit_breaker_state_skip() {
     // Valid state machine transitions:
     let valid_transitions = vec![
-        (CircuitState::Closed, CircuitState::Closed),     // stay
-        (CircuitState::Closed, CircuitState::Open),       // failure threshold hit
-        (CircuitState::Open, CircuitState::HalfOpen),     // timeout expired
-        (CircuitState::HalfOpen, CircuitState::Closed),   // success threshold hit
-        (CircuitState::HalfOpen, CircuitState::Open),     // timeout expired (recovery failed)
-        (CircuitState::Open, CircuitState::Open),         // stay (waiting for timeout)
+        (CircuitState::Closed, CircuitState::Closed),   // stay
+        (CircuitState::Closed, CircuitState::Open),     // failure threshold hit
+        (CircuitState::Open, CircuitState::HalfOpen),   // timeout expired
+        (CircuitState::HalfOpen, CircuitState::Closed), // success threshold hit
+        (CircuitState::HalfOpen, CircuitState::Open),   // timeout expired (recovery failed)
+        (CircuitState::Open, CircuitState::Open),       // stay (waiting for timeout)
     ];
 
     // INVALID transitions (direct jumps, self-loops from other states, etc.)
     let invalid_transitions = vec![
-        (CircuitState::Closed, CircuitState::HalfOpen),   // should go Closed→Open first
-        (CircuitState::Open, CircuitState::Closed),       // must go Open→HalfOpen first
+        (CircuitState::Closed, CircuitState::HalfOpen), // should go Closed→Open first
+        (CircuitState::Open, CircuitState::Closed),     // must go Open→HalfOpen first
         (CircuitState::HalfOpen, CircuitState::HalfOpen), // not a valid self-loop
     ];
 
@@ -87,12 +87,12 @@ fn test_invalid_p2_circuit_breaker_state_skip() {
     for (from, to) in &valid_transitions {
         let is_valid = matches!(
             (from, to),
-            (CircuitState::Closed, CircuitState::Closed) |
-            (CircuitState::Closed, CircuitState::Open) |
-            (CircuitState::Open, CircuitState::HalfOpen) |
-            (CircuitState::HalfOpen, CircuitState::Closed) |
-            (CircuitState::HalfOpen, CircuitState::Open) |
-            (CircuitState::Open, CircuitState::Open)
+            (CircuitState::Closed, CircuitState::Closed)
+                | (CircuitState::Closed, CircuitState::Open)
+                | (CircuitState::Open, CircuitState::HalfOpen)
+                | (CircuitState::HalfOpen, CircuitState::Closed)
+                | (CircuitState::HalfOpen, CircuitState::Open)
+                | (CircuitState::Open, CircuitState::Open)
         );
         assert!(is_valid, "Expected valid transition {:?} → {:?}", from, to);
     }
@@ -101,14 +101,18 @@ fn test_invalid_p2_circuit_breaker_state_skip() {
     for (from, to) in &invalid_transitions {
         let is_valid = matches!(
             (from, to),
-            (CircuitState::Closed, CircuitState::Closed) |
-            (CircuitState::Closed, CircuitState::Open) |
-            (CircuitState::Open, CircuitState::HalfOpen) |
-            (CircuitState::HalfOpen, CircuitState::Closed) |
-            (CircuitState::HalfOpen, CircuitState::Open) |
-            (CircuitState::Open, CircuitState::Open)
+            (CircuitState::Closed, CircuitState::Closed)
+                | (CircuitState::Closed, CircuitState::Open)
+                | (CircuitState::Open, CircuitState::HalfOpen)
+                | (CircuitState::HalfOpen, CircuitState::Closed)
+                | (CircuitState::HalfOpen, CircuitState::Open)
+                | (CircuitState::Open, CircuitState::Open)
         );
-        assert!(!is_valid, "Expected INVALID transition {:?} → {:?}", from, to);
+        assert!(
+            !is_valid,
+            "Expected INVALID transition {:?} → {:?}",
+            from, to
+        );
     }
 }
 
@@ -150,9 +154,9 @@ fn test_invalid_p3_spc_alert_out_of_bounds() {
 #[test]
 fn test_invalid_p4_health_exceeds_max_bound() {
     let test_cases = vec![
-        (0, 1, true),   // 0+1 capped at 4 = 1: valid
-        (3, 4, true),   // 3+1 capped at 4 = 4: valid
-        (4, 4, true),   // 4+1 capped at 4 = 4: valid (terminal)
+        (0, 1, true), // 0+1 capped at 4 = 1: valid
+        (3, 4, true), // 3+1 capped at 4 = 4: valid
+        (4, 4, true), // 4+1 capped at 4 = 4: valid (terminal)
     ];
 
     for (before, expected_after, _should_be_valid) in test_cases {
@@ -169,7 +173,10 @@ fn test_invalid_p4_health_exceeds_max_bound() {
 
         // Buggy version would exceed 4
         if before == 4 {
-            assert_eq!(after_buggy, 5, "Buggy version with .min(5) would exceed bound");
+            assert_eq!(
+                after_buggy, 5,
+                "Buggy version with .min(5) would exceed bound"
+            );
         }
     }
 }
@@ -185,7 +192,7 @@ fn test_invalid_p4_health_exceeds_max_bound() {
 /// **Detection:** Verify Open state rejects requests until timeout expires
 #[test]
 fn test_invalid_p5_circuit_open_allows_without_timeout() {
-    use wasm4pm::self_healing::{reset_clock, advance_clock};
+    use wasm4pm::self_healing::{advance_clock, reset_clock};
 
     reset_clock();
 
@@ -200,7 +207,11 @@ fn test_invalid_p5_circuit_open_allows_without_timeout() {
 
     // Record a failure to open the circuit
     cb.record_failure();
-    assert_eq!(cb.state(), CircuitState::Open, "Circuit should be open after failure");
+    assert_eq!(
+        cb.state(),
+        CircuitState::Open,
+        "Circuit should be open after failure"
+    );
 
     // IMMEDIATELY check allow_request (no timeout)
     let allow_now = cb.allow_request();
@@ -309,7 +320,9 @@ pub fn assert_health_transition_valid(
         assert!(
             delta <= 0,
             "Success should improve or maintain health, not degrade. {} → {} (delta={})",
-            prev_health, next_health, delta
+            prev_health,
+            next_health,
+            delta
         );
     } else {
         // On failure: health degrades (delta should be +1 or 0 if already terminal)
@@ -380,12 +393,12 @@ fn test_all_rl_state_fields_in_bounds() {
 fn test_health_transitions_respect_monotonicity() {
     // Test all valid improvement transitions (success case)
     let success_transitions = vec![
-        (4, 4, true),   // Terminal: stable
-        (3, 3, true),   // Sufficient successes: improve by 1 → but shows as stable until threshold
-        (3, 2, true),   // After threshold: improve
-        (2, 1, true),   // Continue improving
-        (1, 0, true),   // Reach normal
-        (0, 0, true),   // Already normal
+        (4, 4, true), // Terminal: stable
+        (3, 3, true), // Sufficient successes: improve by 1 → but shows as stable until threshold
+        (3, 2, true), // After threshold: improve
+        (2, 1, true), // Continue improving
+        (1, 0, true), // Reach normal
+        (0, 0, true), // Already normal
     ];
 
     for (prev, next, guard_pass) in success_transitions {
@@ -398,7 +411,7 @@ fn test_health_transitions_respect_monotonicity() {
         (1, 2, false),
         (2, 3, false),
         (3, 4, false),
-        (4, 4, false),  // Terminal stays terminal
+        (4, 4, false), // Terminal stays terminal
     ];
 
     for (prev, next, guard_fail) in failure_transitions {
@@ -408,7 +421,7 @@ fn test_health_transitions_respect_monotonicity() {
 
 #[test]
 fn test_circuit_breaker_timeout_logic_integrity() {
-    use wasm4pm::self_healing::{reset_clock, advance_clock};
+    use wasm4pm::self_healing::{advance_clock, reset_clock};
 
     reset_clock();
 
@@ -484,7 +497,9 @@ fn test_no_invalid_health_jumps_possible() {
         assert!(
             degrade_delta >= 0 && degrade_delta <= 1,
             "Degradation from {} → {} (delta={}) violates monotonicity",
-            health, degraded, degrade_delta
+            health,
+            degraded,
+            degrade_delta
         );
 
         // Improvement (success): health → health.saturating_sub(1)
@@ -493,7 +508,9 @@ fn test_no_invalid_health_jumps_possible() {
         assert!(
             improve_delta <= 0,
             "Improvement from {} → {} (delta={}) violates monotonicity",
-            health, improved, improve_delta
+            health,
+            improved,
+            improve_delta
         );
     }
 }

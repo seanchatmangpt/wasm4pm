@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct NaiveBayesModel {
@@ -15,10 +15,14 @@ pub struct NaiveBayesModel {
 #[wasm_bindgen]
 impl NaiveBayesModel {
     #[wasm_bindgen(getter, js_name = "nClasses")]
-    pub fn n_classes(&self) -> usize { self.n_classes }
+    pub fn n_classes(&self) -> usize {
+        self.n_classes
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<u32> {
@@ -36,7 +40,11 @@ impl NaiveBayesModel {
                     let mean = self.means[c * self.n_features + j];
                     let var = self.variances[c * self.n_features + j];
                     // Gaussian log-likelihood
-                    log_prob += -0.5 * ((x - mean).powi(2) / var + var.ln() + std::f64::consts::LN_2 + std::f64::consts::PI.ln());
+                    log_prob += -0.5
+                        * ((x - mean).powi(2) / var
+                            + var.ln()
+                            + std::f64::consts::LN_2
+                            + std::f64::consts::PI.ln());
                 }
                 if log_prob > best_log_prob {
                     best_log_prob = log_prob;
@@ -61,7 +69,11 @@ impl NaiveBayesModel {
                     let x = data[i * self.n_features + j];
                     let mean = self.means[c * self.n_features + j];
                     let var = self.variances[c * self.n_features + j];
-                    log_prob += -0.5 * ((x - mean).powi(2) / var + var.ln() + std::f64::consts::LN_2 + std::f64::consts::PI.ln());
+                    log_prob += -0.5
+                        * ((x - mean).powi(2) / var
+                            + var.ln()
+                            + std::f64::consts::LN_2
+                            + std::f64::consts::PI.ln());
                 }
                 log_probs.push(log_prob);
             }
@@ -77,11 +89,18 @@ impl NaiveBayesModel {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("NaiveBayes(classes={}, features={})", self.n_classes, self.n_features)
+        format!(
+            "NaiveBayes(classes={}, features={})",
+            self.n_classes, self.n_features
+        )
     }
 }
 
-pub fn naive_bayes_impl(data: &[f64], n_features: usize, labels: &[f64]) -> Result<NaiveBayesModel, MlError> {
+pub fn naive_bayes_impl(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+) -> Result<NaiveBayesModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if labels.len() != n {
         return Err(MlError::new("labels length must match number of samples"));
@@ -127,11 +146,22 @@ pub fn naive_bayes_impl(data: &[f64], n_features: usize, labels: &[f64]) -> Resu
 
     let class_priors: Vec<f64> = counts.iter().map(|&c| c as f64 / n as f64).collect();
 
-    Ok(NaiveBayesModel { n_classes, n_features, means, variances, class_priors, classes })
+    Ok(NaiveBayesModel {
+        n_classes,
+        n_features,
+        means,
+        variances,
+        class_priors,
+        classes,
+    })
 }
 
 #[wasm_bindgen(js_name = "naiveBayesFit")]
-pub fn naive_bayes_fit(data: &[f64], n_features: usize, labels: &[f64]) -> Result<NaiveBayesModel, JsError> {
+pub fn naive_bayes_fit(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+) -> Result<NaiveBayesModel, JsError> {
     naive_bayes_impl(data, n_features, labels).map_err(|e| JsError::new(&e.message))
 }
 
@@ -142,10 +172,7 @@ mod tests {
     #[test]
     fn test_gaussian_classes() {
         // Class 0 centered at (0,0), class 1 centered at (5,5)
-        let data = vec![
-            0.1, 0.2,  -0.1, 0.1,  0.2, -0.1,
-            5.1, 5.2,  4.9, 5.1,  5.2, 4.9,
-        ];
+        let data = vec![0.1, 0.2, -0.1, 0.1, 0.2, -0.1, 5.1, 5.2, 4.9, 5.1, 5.2, 4.9];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let model = naive_bayes_impl(&data, 2, &labels).unwrap();
 
@@ -156,11 +183,7 @@ mod tests {
 
     #[test]
     fn test_three_classes() {
-        let data = vec![
-            0.0, 0.0,  0.1, 0.1,
-            5.0, 0.0,  5.1, 0.1,
-            0.0, 5.0,  0.1, 5.1,
-        ];
+        let data = vec![0.0, 0.0, 0.1, 0.1, 5.0, 0.0, 5.1, 0.1, 0.0, 5.0, 0.1, 5.1];
         let labels = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0];
         let model = naive_bayes_impl(&data, 2, &labels).unwrap();
         assert_eq!(model.n_classes, 3);

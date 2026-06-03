@@ -1,4 +1,4 @@
-use crate::ocel::{OCEL, OCELEvent, OCELObject, OCELType};
+use crate::ocel::{OCELEvent, OCELObject, OCELType, OCEL};
 use hashbrown::HashSet;
 use serde_json;
 
@@ -11,7 +11,7 @@ pub fn import_ocel_json_slice(slice: &[u8]) -> Result<OCEL, serde_json::Error> {
 }
 
 /// Parses an NDJSON stream of OCEL events and objects.
-/// 
+///
 /// Tolerates partial final lines (for crash-safe append-only files).
 /// Synthesizes `event_types` and `object_types` from the observed events and objects.
 pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
@@ -62,7 +62,9 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                             if s.contains(' ') {
                                 s = s.replacen(' ', "T", 1);
                             }
-                            let has_offset = s.ends_with('Z') || (s.len() > 10 && (s[10..].contains('+') || s[10..].contains('-')));
+                            let has_offset = s.ends_with('Z')
+                                || (s.len() > 10
+                                    && (s[10..].contains('+') || s[10..].contains('-')));
                             if !has_offset {
                                 s.push('Z');
                             }
@@ -71,7 +73,9 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                     }
 
                     // Convert objects (if present as an array of objects) to relationships array:
-                    let mut relationships = if let Some(serde_json::Value::Array(rels)) = val_map.get("relationships") {
+                    let mut relationships = if let Some(serde_json::Value::Array(rels)) =
+                        val_map.get("relationships")
+                    {
                         rels.clone()
                     } else {
                         Vec::new()
@@ -80,11 +84,13 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                     if let Some(serde_json::Value::Array(objects_arr)) = val_map.get("objects") {
                         for obj_val in objects_arr {
                             if let Some(obj_map) = obj_val.as_object() {
-                                let obj_id = obj_map.get("id")
+                                let obj_id = obj_map
+                                    .get("id")
                                     .or_else(|| obj_map.get("objectId"))
                                     .and_then(|v| v.as_str())
                                     .map(|s| s.to_string());
-                                let obj_type = obj_map.get("type")
+                                let obj_type = obj_map
+                                    .get("type")
                                     .or_else(|| obj_map.get("qualifier"))
                                     .and_then(|v| v.as_str())
                                     .map(|s| s.to_string());
@@ -108,13 +114,18 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                             }
                         }
                     }
-                    val_map.insert("relationships".to_string(), serde_json::Value::Array(relationships));
+                    val_map.insert(
+                        "relationships".to_string(),
+                        serde_json::Value::Array(relationships),
+                    );
 
                     // For all other flat properties (keys not standard for event), map them to attributes
                     let mut attributes = Vec::new();
                     if let Some(serde_json::Value::Array(attrs)) = val_map.get("attributes") {
                         attributes.extend(attrs.clone());
-                    } else if let Some(serde_json::Value::Object(attrs_map)) = val_map.get("attributes") {
+                    } else if let Some(serde_json::Value::Object(attrs_map)) =
+                        val_map.get("attributes")
+                    {
                         for (k, v) in attrs_map {
                             attributes.push(serde_json::json!({
                                 "name": k,
@@ -124,10 +135,22 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                     }
 
                     let standard_event_keys: HashSet<&str> = [
-                        "id", "event_id", "type", "activity", "time", "timestamp", "attributes", "relationships", "objects"
-                    ].iter().cloned().collect();
+                        "id",
+                        "event_id",
+                        "type",
+                        "activity",
+                        "time",
+                        "timestamp",
+                        "attributes",
+                        "relationships",
+                        "objects",
+                    ]
+                    .iter()
+                    .cloned()
+                    .collect();
 
-                    let keys_to_remove: Vec<String> = val_map.keys()
+                    let keys_to_remove: Vec<String> = val_map
+                        .keys()
                         .filter(|k| !standard_event_keys.contains(k.as_str()))
                         .cloned()
                         .collect();
@@ -140,7 +163,10 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                             }));
                         }
                     }
-                    val_map.insert("attributes".to_string(), serde_json::Value::Array(attributes));
+                    val_map.insert(
+                        "attributes".to_string(),
+                        serde_json::Value::Array(attributes),
+                    );
                 }
 
                 if let Ok(event) = serde_json::from_value::<OCELEvent>(val) {
@@ -160,7 +186,9 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                     let mut attributes = Vec::new();
                     if let Some(serde_json::Value::Array(attrs)) = val_map.get("attributes") {
                         attributes.extend(attrs.clone());
-                    } else if let Some(serde_json::Value::Object(attrs_map)) = val_map.get("attributes") {
+                    } else if let Some(serde_json::Value::Object(attrs_map)) =
+                        val_map.get("attributes")
+                    {
                         for (k, v) in attrs_map {
                             attributes.push(serde_json::json!({
                                 "name": k,
@@ -170,11 +198,14 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                         }
                     }
 
-                    let standard_obj_keys: HashSet<&str> = [
-                        "id", "type", "object_type", "attributes", "relationships"
-                    ].iter().cloned().collect();
+                    let standard_obj_keys: HashSet<&str> =
+                        ["id", "type", "object_type", "attributes", "relationships"]
+                            .iter()
+                            .cloned()
+                            .collect();
 
-                    let keys_to_remove: Vec<String> = val_map.keys()
+                    let keys_to_remove: Vec<String> = val_map
+                        .keys()
                         .filter(|k| !standard_obj_keys.contains(k.as_str()))
                         .cloned()
                         .collect();
@@ -188,7 +219,10 @@ pub fn import_ocel_ndjson(ndjson: &str) -> Result<OCEL, String> {
                             }));
                         }
                     }
-                    val_map.insert("attributes".to_string(), serde_json::Value::Array(attributes));
+                    val_map.insert(
+                        "attributes".to_string(),
+                        serde_json::Value::Array(attributes),
+                    );
                 }
 
                 if let Ok(object) = serde_json::from_value::<OCELObject>(val) {
@@ -240,7 +274,7 @@ mod tests {
 {"id":"o1","type":"File","attributes":[],"relationships":[]}
 {"id":"e2","type":"RouteSelected","time":"2026-05-30T12:05:00Z","attributes":[],"relationships":[{"objectId":"o1","qualifier":"subject"}]}
 {"id":"e3","type":"RouteSelected","time":"2026-05-30T12:05:00Z"#;
-        
+
         let ocel = import_ocel_ndjson(ndjson).unwrap();
         assert_eq!(ocel.events.len(), 2);
         assert_eq!(ocel.objects.len(), 1);
@@ -257,7 +291,7 @@ mod tests {
         let ocel = import_ocel_ndjson(ndjson).unwrap();
         assert_eq!(ocel.events.len(), 1);
         assert_eq!(ocel.objects.len(), 1);
-        
+
         let e = &ocel.events[0];
         assert_eq!(e.id, "e1");
         assert_eq!(e.event_type, "DiagnosticRaised");
@@ -267,15 +301,24 @@ mod tests {
         assert_eq!(e.relationships[0].qualifier, "File");
         assert_eq!(e.attributes.len(), 1);
         assert_eq!(e.attributes[0].name, "custom_event_prop");
-        assert_eq!(e.attributes[0].value, crate::ocel::OCELAttributeValue::String("hello".to_string()));
+        assert_eq!(
+            e.attributes[0].value,
+            crate::ocel::OCELAttributeValue::String("hello".to_string())
+        );
 
         let o = &ocel.objects[0];
         assert_eq!(o.id, "o1");
         assert_eq!(o.object_type, "File");
         assert_eq!(o.attributes.len(), 1);
         assert_eq!(o.attributes[0].name, "custom_obj_prop");
-        assert_eq!(o.attributes[0].value, crate::ocel::OCELAttributeValue::String("world".to_string()));
-        assert_eq!(o.attributes[0].time.to_rfc3339(), "1970-01-01T00:00:00+00:00");
+        assert_eq!(
+            o.attributes[0].value,
+            crate::ocel::OCELAttributeValue::String("world".to_string())
+        );
+        assert_eq!(
+            o.attributes[0].time.to_rfc3339(),
+            "1970-01-01T00:00:00+00:00"
+        );
     }
 
     #[test]
@@ -287,15 +330,21 @@ mod tests {
         let ocel = import_ocel_ndjson(ndjson).unwrap();
         assert_eq!(ocel.events.len(), 1);
         assert_eq!(ocel.objects.len(), 1);
-        
+
         let e = &ocel.events[0];
         assert_eq!(e.attributes.len(), 1);
         assert_eq!(e.attributes[0].name, "custom_event_prop");
-        assert_eq!(e.attributes[0].value, crate::ocel::OCELAttributeValue::String("hello".to_string()));
+        assert_eq!(
+            e.attributes[0].value,
+            crate::ocel::OCELAttributeValue::String("hello".to_string())
+        );
 
         let o = &ocel.objects[0];
         assert_eq!(o.attributes.len(), 1);
         assert_eq!(o.attributes[0].name, "custom_obj_prop");
-        assert_eq!(o.attributes[0].value, crate::ocel::OCELAttributeValue::String("world".to_string()));
+        assert_eq!(
+            o.attributes[0].value,
+            crate::ocel::OCELAttributeValue::String("world".to_string())
+        );
     }
 }

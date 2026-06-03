@@ -22,7 +22,10 @@
 
 use std::collections::HashMap;
 use wasm4pm::conformance::token_replay_pure;
-use wasm4pm::models::{AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace};
+use wasm4pm::models::{
+    AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
+    Trace,
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -137,10 +140,7 @@ fn test_sequence_perfect_trace_fitness_is_0_75() {
     let result = token_replay_pure(&log, &net, "concept:name");
     assert_eq!(result.case_fitness.len(), 1);
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.75).abs() < 1e-10,
-        "expected 0.75, got {f:.10}"
-    );
+    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert_eq!(result.case_fitness[0].tokens_remaining, 1);
     assert!(result.case_fitness[0].is_conforming);
@@ -154,10 +154,7 @@ fn test_sequence_incomplete_trace_fitness_is_0_50() {
     let net = sequence_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.50).abs() < 1e-10,
-        "expected 0.50, got {f:.10}"
-    );
+    assert!((f - 0.50).abs() < 1e-10, "expected 0.50, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert_eq!(result.case_fitness[0].tokens_remaining, 1);
     assert!(!result.case_fitness[0].is_conforming);
@@ -186,11 +183,7 @@ fn test_sequence_incomplete_trace_fitness_is_0_50() {
 fn choice_net() -> PetriNet {
     let mut net = PetriNet::new();
     net.places = vec![place("i"), place("p_choice"), place("f")];
-    net.transitions = vec![
-        trans("tA", "A"),
-        trans("tB", "B"),
-        trans("tC", "C"),
-    ];
+    net.transitions = vec![trans("tA", "A"), trans("tB", "B"), trans("tC", "C")];
     net.arcs = vec![
         arc("i", "tA"),
         arc("tA", "p_choice"),
@@ -213,10 +206,7 @@ fn test_choice_left_path_fitness_is_0_75() {
     let net = choice_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.75).abs() < 1e-10,
-        "expected 0.75, got {f:.10}"
-    );
+    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -228,10 +218,7 @@ fn test_choice_right_path_fitness_is_0_75() {
     let net = choice_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.75).abs() < 1e-10,
-        "expected 0.75, got {f:.10}"
-    );
+    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -314,10 +301,7 @@ fn test_parallel_perfect_trace_fitness_is_0_90() {
     let net = parallel_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.90).abs() < 1e-10,
-        "expected 0.90, got {f:.10}"
-    );
+    assert!((f - 0.90).abs() < 1e-10, "expected 0.90, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert_eq!(result.case_fitness[0].tokens_remaining, 1);
     assert!(result.case_fitness[0].is_conforming);
@@ -370,11 +354,7 @@ fn test_parallel_missing_branch_fitness_is_0_5833() {
 fn loop_net() -> PetriNet {
     let mut net = PetriNet::new();
     net.places = vec![place("i"), place("p_loop"), place("f")];
-    net.transitions = vec![
-        trans("tA", "A"),
-        trans("tB", "B"),
-        trans("tC", "C"),
-    ];
+    net.transitions = vec![trans("tA", "A"), trans("tB", "B"), trans("tC", "C")];
     net.arcs = vec![
         arc("i", "tA"),
         arc("tA", "p_loop"),
@@ -400,10 +380,7 @@ fn test_loop_zero_iterations_fitness_is_0_75() {
     let net = loop_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.75).abs() < 1e-10,
-        "expected 0.75, got {f:.10}"
-    );
+    assert!((f - 0.75).abs() < 1e-10, "expected 0.75, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -416,10 +393,7 @@ fn test_loop_two_iterations_fitness_is_0_875() {
     let net = loop_net();
     let result = token_replay_pure(&log, &net, "concept:name");
     let f = result.case_fitness[0].trace_fitness;
-    assert!(
-        (f - 0.875).abs() < 1e-10,
-        "expected 0.875, got {f:.10}"
-    );
+    assert!((f - 0.875).abs() < 1e-10, "expected 0.875, got {f:.10}");
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
     assert!(result.case_fitness[0].is_conforming);
 }
@@ -460,11 +434,7 @@ fn test_loop_two_iterations_fitness_is_0_875() {
 fn silent_transition_net() -> PetriNet {
     let mut net = PetriNet::new();
     net.places = vec![place("i"), place("p1"), place("p2"), place("f")];
-    net.transitions = vec![
-        trans("tA", "A"),
-        silent("tau"),
-        trans("tB", "B"),
-    ];
+    net.transitions = vec![trans("tA", "A"), silent("tau"), trans("tB", "B")];
     net.arcs = vec![
         arc("i", "tA"),
         arc("tA", "p1"),
@@ -578,11 +548,7 @@ fn duplicate_label_net() -> PetriNet {
     let mut net = PetriNet::new();
     net.places = vec![place("i"), place("p1"), place("p2"), place("f")];
     // Both transitions share label "A" — A1 has idx=0, A2 has idx=1
-    net.transitions = vec![
-        trans("tA1", "A"),
-        trans("tA2", "A"),
-        trans("tB", "B"),
-    ];
+    net.transitions = vec![trans("tA1", "A"), trans("tA2", "A"), trans("tB", "B")];
     net.arcs = vec![
         arc("i", "tA1"),
         arc("tA1", "p1"),
@@ -658,7 +624,10 @@ fn test_empty_trace_fitness_is_0_50() {
         "expected 0.50 for empty trace, got {f:.10}"
     );
     assert_eq!(result.case_fitness[0].tokens_missing, 0);
-    assert!(!result.case_fitness[0].is_conforming, "empty trace should not be conforming");
+    assert!(
+        !result.case_fitness[0].is_conforming,
+        "empty trace should not be conforming"
+    );
 }
 
 #[test]

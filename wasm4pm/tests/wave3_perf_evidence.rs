@@ -27,7 +27,9 @@ use wasm4pm::fast_discovery::discover_hill_climbing_from_log;
 use wasm4pm::genetic_discovery::discover_genetic_algorithm_from_log;
 use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
-use wasm4pm::more_discovery::{discover_inductive_miner_from_log, discover_simulated_annealing_from_log};
+use wasm4pm::more_discovery::{
+    discover_inductive_miner_from_log, discover_simulated_annealing_from_log,
+};
 
 const ACTIVITY_KEY: &str = "concept:name";
 #[allow(dead_code)]
@@ -49,21 +51,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -72,7 +85,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -118,38 +133,47 @@ fn load_datasets() -> Vec<Dataset> {
     let mut out = Vec::new();
 
     let roadtraffic_paths = [
-        "../bench_data/roadtraffic100traces.xes",       // from wasm4pm/ package dir
-        "bench_data/roadtraffic100traces.xes",           // from workspace root
+        "../bench_data/roadtraffic100traces.xes", // from wasm4pm/ package dir
+        "bench_data/roadtraffic100traces.xes",    // from workspace root
         "../../bench_data/roadtraffic100traces.xes",
         "~/chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes",
     ];
     if let Some(log) = resolve_xes(&roadtraffic_paths) {
-        out.push(Dataset { label: "roadtraffic_100", log });
+        out.push(Dataset {
+            label: "roadtraffic_100",
+            log,
+        });
     } else {
         eprintln!("WARN: roadtraffic100traces.xes not found — skipping");
     }
 
     let sepsis_paths = [
-        "../bench_data/sepsis.xes",         // from wasm4pm/ package dir
+        "../bench_data/sepsis.xes", // from wasm4pm/ package dir
         "bench_data/sepsis.xes",
         "../../bench_data/sepsis.xes",
         "~/chatmangpt/wasm4pm/bench_data/sepsis.xes",
         "~/chatmangpt/wasm4pm/data/Sepsis Cases - Event Log.xes",
     ];
     if let Some(log) = resolve_xes(&sepsis_paths) {
-        out.push(Dataset { label: "sepsis_1050", log });
+        out.push(Dataset {
+            label: "sepsis_1050",
+            log,
+        });
     } else {
         eprintln!("WARN: sepsis.xes not found — skipping");
     }
 
     let bpi2020_paths = [
-        "../bench_data/bpi2020_travel.xes",    // from wasm4pm/ package dir
+        "../bench_data/bpi2020_travel.xes", // from wasm4pm/ package dir
         "bench_data/bpi2020_travel.xes",
         "../../bench_data/bpi2020_travel.xes",
         "~/chatmangpt/wasm4pm/bench_data/bpi2020_travel.xes",
     ];
     if let Some(log) = resolve_xes(&bpi2020_paths) {
-        out.push(Dataset { label: "bpi2020_7065", log });
+        out.push(Dataset {
+            label: "bpi2020_7065",
+            log,
+        });
     } else {
         eprintln!("WARN: bpi2020_travel.xes not found — skipping");
     }
@@ -180,7 +204,10 @@ fn event_count(log: &EventLog) -> usize {
 
 fn print_header() {
     println!("\n{:-<90}", "");
-    println!("Wave-3 Performance Evidence  (median of {} reps each, release build)", N_REPS);
+    println!(
+        "Wave-3 Performance Evidence  (median of {} reps each, release build)",
+        N_REPS
+    );
     println!("{:-<90}", "");
     println!(
         "{:<35} {:<20} {:>8} {:>10} {:>10} {:>12}",
@@ -192,7 +219,11 @@ fn print_header() {
 fn print_row(algo: &str, ds: &Dataset, ms: f64) {
     let cases = ds.log.traces.len();
     let events = event_count(&ds.log);
-    let evts_per_ms = if ms > 0.0 { events as f64 / ms } else { f64::INFINITY };
+    let evts_per_ms = if ms > 0.0 {
+        events as f64 / ms
+    } else {
+        f64::INFINITY
+    };
     println!(
         "{:<35} {:<20} {:>8} {:>10} {:>10.1} {:>12.0}",
         algo, ds.label, cases, events, ms, evts_per_ms
@@ -222,8 +253,11 @@ fn wave3_performance_table() {
     // Wave-3: models.rs Cow<[T]> (no clone on to_columnar_owned),
     //         discovery.rs OCEL &str→&str edge map
     for ds in &datasets {
-        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
-        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY); });
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| {
+            let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+        });
         print_row("dfg", ds, ms);
     }
     print_separator();
@@ -231,7 +265,9 @@ fn wave3_performance_table() {
     // ── 2. Heuristic miner ────────────────────────────────────────────────────
     // Wave-3: models.rs Cow<[T]>
     for ds in &datasets {
-        let ms = time_median_ms(|| { let _ = discover_heuristic_miner_from_log(&ds.log, ACTIVITY_KEY, 0.3); });
+        let ms = time_median_ms(|| {
+            let _ = discover_heuristic_miner_from_log(&ds.log, ACTIVITY_KEY, 0.3);
+        });
         print_row("heuristic_miner(t=0.3)", ds, ms);
     }
     print_separator();
@@ -240,9 +276,14 @@ fn wave3_performance_table() {
     // Wave-3: find_parallel_cut O(n²) String clone → integer-pair FxHashSet
     for ds in &datasets {
         // Skip bpi2020 for inductive miner — 87K events makes it slow
-        if ds.label.starts_with("bpi2020") { continue; }
-        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
-        let ms = time_median_ms(|| { let _ = discover_inductive_miner_from_log(&admitted, ACTIVITY_KEY); });
+        if ds.label.starts_with("bpi2020") {
+            continue;
+        }
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| {
+            let _ = discover_inductive_miner_from_log(&admitted, ACTIVITY_KEY);
+        });
         print_row("inductive_miner", ds, ms);
     }
     print_separator();
@@ -251,7 +292,9 @@ fn wave3_performance_table() {
     // Wave-3: clone-per-step → in-place mutate+undo
     for ds in &datasets {
         // Use modest parameters to keep runtime < 30s
-        let ms = time_median_ms(|| { let _ = discover_simulated_annealing_from_log(&ds.log, ACTIVITY_KEY, 50.0, 0.95); });
+        let ms = time_median_ms(|| {
+            let _ = discover_simulated_annealing_from_log(&ds.log, ACTIVITY_KEY, 50.0, 0.95);
+        });
         print_row("simulated_annealing(T=50,c=0.95)", ds, ms);
     }
     print_separator();
@@ -259,7 +302,9 @@ fn wave3_performance_table() {
     // ── 5. Hill climbing ─────────────────────────────────────────────────────
     // Wave-3: clone-per-trial → in-place remove+restore
     for ds in &datasets {
-        let ms = time_median_ms(|| { let _ = discover_hill_climbing_from_log(&ds.log, ACTIVITY_KEY); });
+        let ms = time_median_ms(|| {
+            let _ = discover_hill_climbing_from_log(&ds.log, ACTIVITY_KEY);
+        });
         print_row("hill_climbing", ds, ms);
     }
     print_separator();
@@ -267,8 +312,12 @@ fn wave3_performance_table() {
     // ── 6. ILP ────────────────────────────────────────────────────────────────
     // Wave-3: models.rs Cow<[T]> (columnar log construction)
     for ds in &datasets {
-        if ds.label.starts_with("bpi2020") { continue; } // very slow on 87K
-        let ms = time_median_ms(|| { let _ = discover_ilp_petri_net_from_log(&ds.log, ACTIVITY_KEY); });
+        if ds.label.starts_with("bpi2020") {
+            continue;
+        } // very slow on 87K
+        let ms = time_median_ms(|| {
+            let _ = discover_ilp_petri_net_from_log(&ds.log, ACTIVITY_KEY);
+        });
         print_row("ilp", ds, ms);
     }
     print_separator();
@@ -276,8 +325,12 @@ fn wave3_performance_table() {
     // ── 7. Genetic algorithm ─────────────────────────────────────────────────
     // Wave-3: models.rs Cow<[T]>; population build no longer clones columnar data
     for ds in &datasets {
-        if ds.label.starts_with("bpi2020") { continue; } // very slow on 87K
-        let ms = time_median_ms(|| { let _ = discover_genetic_algorithm_from_log(&ds.log, ACTIVITY_KEY, 10, 5); });
+        if ds.label.starts_with("bpi2020") {
+            continue;
+        } // very slow on 87K
+        let ms = time_median_ms(|| {
+            let _ = discover_genetic_algorithm_from_log(&ds.log, ACTIVITY_KEY, 10, 5);
+        });
         print_row("genetic_algorithm(pop=10,gen=5)", ds, ms);
     }
     print_separator();
@@ -287,8 +340,11 @@ fn wave3_performance_table() {
     // made an algorithm grossly incorrect (e.g. 0 ms = early return / panic recovery).
     println!("\nSanity assertions:");
     for ds in &datasets {
-        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
-        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY); });
+        let admitted =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| {
+            let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+        });
         println!("  dfg/{}: {:.1} ms > 0", ds.label, ms);
         assert!(ms > 0.0, "DFG completed in 0ms — likely a no-op or panic");
     }

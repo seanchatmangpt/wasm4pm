@@ -431,8 +431,8 @@ impl serde::Serialize for ArcEndpoint {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for ArcEndpoint {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use core::fmt;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct ArcEndpointVisitor;
 
@@ -544,8 +544,8 @@ impl serde::Serialize for PetriArc {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PetriArc {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use core::fmt;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct PetriArcVisitor;
 
@@ -635,8 +635,8 @@ impl serde::Serialize for PetriPlace {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PetriPlace {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use core::fmt;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct PetriPlaceVisitor;
 
@@ -661,9 +661,7 @@ impl<'de> serde::Deserialize<'de> for PetriPlace {
                 }
                 Ok(PetriPlace {
                     id: PlaceId(id.ok_or_else(|| de::Error::missing_field("id"))?),
-                    label: label
-                        .unwrap_or(None)
-                        .map(ActivityName),
+                    label: label.unwrap_or(None).map(ActivityName),
                 })
             }
         }
@@ -744,8 +742,8 @@ impl serde::Serialize for PetriTransition {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PetriTransition {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use core::fmt;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct PetriTransitionVisitor;
 
@@ -869,9 +867,7 @@ impl PetriNet {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.from, &arc.to) {
-                (ArcEndpoint::Place(p), ArcEndpoint::Transition(tr)) if tr == t => {
-                    Some(p.clone())
-                }
+                (ArcEndpoint::Place(p), ArcEndpoint::Transition(tr)) if tr == t => Some(p.clone()),
                 _ => None,
             })
             .collect()
@@ -882,9 +878,7 @@ impl PetriNet {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.from, &arc.to) {
-                (ArcEndpoint::Transition(tr), ArcEndpoint::Place(p)) if tr == t => {
-                    Some(p.clone())
-                }
+                (ArcEndpoint::Transition(tr), ArcEndpoint::Place(p)) if tr == t => Some(p.clone()),
                 _ => None,
             })
             .collect()
@@ -895,9 +889,7 @@ impl PetriNet {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.from, &arc.to) {
-                (ArcEndpoint::Transition(t), ArcEndpoint::Place(pl)) if pl == p => {
-                    Some(t.clone())
-                }
+                (ArcEndpoint::Transition(t), ArcEndpoint::Place(pl)) if pl == p => Some(t.clone()),
                 _ => None,
             })
             .collect()
@@ -908,9 +900,7 @@ impl PetriNet {
         self.arcs
             .iter()
             .filter_map(|arc| match (&arc.from, &arc.to) {
-                (ArcEndpoint::Place(pl), ArcEndpoint::Transition(t)) if pl == p => {
-                    Some(t.clone())
-                }
+                (ArcEndpoint::Place(pl), ArcEndpoint::Transition(t)) if pl == p => Some(t.clone()),
                 _ => None,
             })
             .collect()
@@ -1066,8 +1056,8 @@ impl serde::Serialize for SoundnessProperties {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for SoundnessProperties {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use core::fmt;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct Props;
 
@@ -1112,8 +1102,8 @@ impl<'de> serde::Deserialize<'de> for SoundnessProperties {
 
                 macro_rules! require {
                     ($field:ident) => {
-                        let $field = $field
-                            .ok_or_else(|| de::Error::missing_field(stringify!($field)))?;
+                        let $field =
+                            $field.ok_or_else(|| de::Error::missing_field(stringify!($field)))?;
                     };
                 }
                 require!(is_wf_net);
@@ -1164,8 +1154,7 @@ mod tests {
         net.add_arc(PetriArc::place_to_transition(src.clone(), t1.clone()));
         net.add_arc(PetriArc::transition_to_place(t1.clone(), snk.clone()));
 
-        net.initial_marking
-            .insert(src.clone(), TokenCount::ONE);
+        net.initial_marking.insert(src.clone(), TokenCount::ONE);
 
         net.final_markings.push({
             let mut m = BTreeMap::new();
@@ -1246,14 +1235,8 @@ mod tests {
     #[test]
     fn initial_tokens_absent_is_zero() {
         let net = make_wf_net();
-        assert_eq!(
-            net.initial_tokens(&PlaceId::new("o")),
-            TokenCount::ZERO
-        );
-        assert_eq!(
-            net.initial_tokens(&PlaceId::new("i")),
-            TokenCount::ONE
-        );
+        assert_eq!(net.initial_tokens(&PlaceId::new("o")), TokenCount::ZERO);
+        assert_eq!(net.initial_tokens(&PlaceId::new("i")), TokenCount::ONE);
     }
 
     #[test]

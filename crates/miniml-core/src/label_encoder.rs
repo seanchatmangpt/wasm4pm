@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// Label Encoder - Encode categorical labels as integers
 #[wasm_bindgen]
@@ -64,10 +64,14 @@ impl LabelEncoder {
 #[wasm_bindgen]
 impl LabelEncoder {
     #[wasm_bindgen(getter, js_name = "nClasses")]
-    pub fn n_classes(&self) -> usize { self.classes.len() }
+    pub fn n_classes(&self) -> usize {
+        self.classes.len()
+    }
 
     #[wasm_bindgen(getter, js_name = "classes")]
-    pub fn classes_js(&self) -> Vec<f64> { self.classes.clone() }
+    pub fn classes_js(&self) -> Vec<f64> {
+        self.classes.clone()
+    }
 
     /// Fit encoder to labels (discover unique classes)
     #[wasm_bindgen]
@@ -78,7 +82,8 @@ impl LabelEncoder {
     /// Transform labels to encoded integers
     #[wasm_bindgen]
     pub fn transform(&self, labels: &[f64]) -> Result<Vec<f64>, JsError> {
-        self.transform_impl(labels).map_err(|e| JsError::new(&e.message))
+        self.transform_impl(labels)
+            .map_err(|e| JsError::new(&e.message))
     }
 
     /// Fit and transform in one operation
@@ -91,12 +96,17 @@ impl LabelEncoder {
     /// Inverse transform encoded integers back to labels
     #[wasm_bindgen(js_name = "inverseTransform")]
     pub fn inverse_transform(&self, encoded: &[f64]) -> Result<Vec<f64>, JsError> {
-        self.inverse_transform_impl(encoded).map_err(|e| JsError::new(&e.message))
+        self.inverse_transform_impl(encoded)
+            .map_err(|e| JsError::new(&e.message))
     }
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("LabelEncoder(n_classes={}, fitted={})", self.classes.len(), self.fitted)
+        format!(
+            "LabelEncoder(n_classes={}, fitted={})",
+            self.classes.len(),
+            self.fitted
+        )
     }
 }
 
@@ -129,7 +139,7 @@ mod tests {
         encoder.fit_impl(&labels_numeric).unwrap();
 
         let transformed = encoder.transform_impl(&labels_numeric).unwrap();
-        assert_eq!(transformed, vec![0.0, 1.0, 0.0]);  // 10 -> 0, 20 -> 1
+        assert_eq!(transformed, vec![0.0, 1.0, 0.0]); // 10 -> 0, 20 -> 1
     }
 
     #[test]

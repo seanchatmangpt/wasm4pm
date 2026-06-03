@@ -11,7 +11,9 @@ pub struct OneHotEncoder {
 #[wasm_bindgen]
 impl OneHotEncoder {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "nCategories")]
     pub fn n_categories(&self) -> usize {
@@ -28,7 +30,8 @@ impl OneHotEncoder {
         self.categories = Vec::with_capacity(self.n_features);
 
         for f in 0..self.n_features {
-            let mut feature_values: Vec<f64> = data.iter()
+            let mut feature_values: Vec<f64> = data
+                .iter()
                 .enumerate()
                 .filter(|(i, _)| i % self.n_features == f)
                 .map(|(_, &v)| v)
@@ -79,8 +82,10 @@ impl OneHotEncoder {
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
         let cats: Vec<usize> = self.categories.iter().map(|c| c.len()).collect();
-        format!("OneHotEncoder(n_features={}, categories_per_feature={:?})",
-                self.n_features, cats)
+        format!(
+            "OneHotEncoder(n_features={}, categories_per_feature={:?})",
+            self.n_features, cats
+        )
     }
 }
 
@@ -121,11 +126,7 @@ mod tests {
     fn test_one_hot_multi_feature() {
         // 2 features: feature 0 has categories [0,1] (2 values), feature 1 has [10,20,30] (3 values).
         // Each sample encodes to 2+3 = 5 values.
-        let data = vec![
-            0.0, 10.0,
-            1.0, 20.0,
-            0.0, 30.0,
-        ];
+        let data = vec![0.0, 10.0, 1.0, 20.0, 0.0, 30.0];
         let mut encoder = one_hot_encoder(2);
         let transformed = encoder.fit_transform(&data).unwrap();
 
@@ -143,7 +144,7 @@ mod tests {
     #[test]
     fn test_n_categories() {
         let data = vec![
-            0.0, 10.0,  // Feature 0: [0,1], Feature 1: [10,20]
+            0.0, 10.0, // Feature 0: [0,1], Feature 1: [10,20]
             1.0, 20.0,
         ];
         let mut encoder = one_hot_encoder(2);

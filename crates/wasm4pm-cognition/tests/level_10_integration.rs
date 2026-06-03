@@ -96,7 +96,11 @@ fn level_10_mycin_production_scale() {
     }
 
     let input = build_large_mycin_input();
-    assert_eq!(input.rules.len(), 110, "expected 110 rules at production scale");
+    assert_eq!(
+        input.rules.len(),
+        110,
+        "expected 110 rules at production scale"
+    );
 
     let breed = production_rules::Mycin;
     assert!(breed.preconditions(&input).is_ok());
@@ -104,7 +108,14 @@ fn level_10_mycin_production_scale() {
     let output = breed.run(&input).expect("MYCIN production scale run");
     assert_eq!(output.breed, BreedId::Mycin);
     assert!(!output.inference_trace.is_empty());
-    assert!(output.inference_trace.iter().filter(|t| t.kind == "fire-rule").count() > 50);
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "fire-rule")
+            .count()
+            > 50
+    );
     assert!(breed.postconditions(&output).is_ok());
 }
 
@@ -142,14 +153,12 @@ fn level_10_cbr_case_scale() {
 
         BreedInput {
             intent: "architecture_selection".to_string(),
-            candidates: vec![
-                Candidate {
-                    id: "centralized-cloud".to_string(),
-                    score: 0.7,
-                    eliminated: false,
-                    elimination_reason: None,
-                },
-            ],
+            candidates: vec![Candidate {
+                id: "centralized-cloud".to_string(),
+                score: 0.7,
+                eliminated: false,
+                elimination_reason: None,
+            }],
             facts,
             cases,
             rules: vec![],
@@ -209,10 +218,7 @@ fn level_10_mycin_meningitis_original_paper() {
             },
             Rule {
                 id: "r3".to_string(),
-                premise: vec![
-                    "streptococcus".to_string(),
-                    "habitat=csf".to_string(),
-                ],
+                premise: vec!["streptococcus".to_string(), "habitat=csf".to_string()],
                 conclusion: "meningitis".to_string(),
                 certainty: 0.95,
             },
@@ -226,8 +232,14 @@ fn level_10_mycin_meningitis_original_paper() {
 
     let output = breed.run(&input).expect("MYCIN meningitis diagnosis");
     assert_eq!(output.breed, BreedId::Mycin);
-    assert!(output.inference_trace.iter().any(|t| t.detail.contains("streptococcus")));
-    assert!(output.inference_trace.iter().any(|t| t.detail.contains("meningitis")));
+    assert!(output
+        .inference_trace
+        .iter()
+        .any(|t| t.detail.contains("streptococcus")));
+    assert!(output
+        .inference_trace
+        .iter()
+        .any(|t| t.detail.contains("meningitis")));
     assert!(breed.postconditions(&output).is_ok());
 }
 
@@ -298,7 +310,14 @@ fn level_10_mycin_belief_update_semantics() {
 
     let output = breed.run(&input).expect("MYCIN CF test");
     assert_eq!(output.breed, BreedId::Mycin);
-    assert!(output.inference_trace.iter().filter(|t| t.kind == "fire-rule").count() >= 2);
+    assert!(
+        output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "fire-rule")
+            .count()
+            >= 2
+    );
     assert!(breed.postconditions(&output).is_ok());
 }
 
@@ -317,15 +336,13 @@ fn level_10_cbr_jaccard_symmetry() {
                 value: "v2".to_string(),
             },
         ],
-        cases: vec![
-            Case {
-                id: "case_a".to_string(),
-                intent: "test".to_string(),
-                architecture: "arch_a".to_string(),
-                outcome_score: 0.8,
-                facts: vec![],
-            },
-        ],
+        cases: vec![Case {
+            id: "case_a".to_string(),
+            intent: "test".to_string(),
+            architecture: "arch_a".to_string(),
+            outcome_score: 0.8,
+            facts: vec![],
+        }],
         rules: vec![],
         goals: vec![],
         state: vec![],
@@ -353,14 +370,12 @@ fn level_10_prolog_unification_correctness() {
             },
         ],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "r_ancestor".to_string(),
-                premise: vec!["parent".to_string()],
-                conclusion: "ancestor".to_string(),
-                certainty: 1.0,
-            },
-        ],
+        rules: vec![Rule {
+            id: "r_ancestor".to_string(),
+            premise: vec!["parent".to_string()],
+            conclusion: "ancestor".to_string(),
+            certainty: 1.0,
+        }],
         goals: vec![Goal {
             id: "g_ancestor".to_string(),
             predicate: "ancestor".to_string(),
@@ -395,12 +410,10 @@ fn level_10_soar_preference_ordering() {
                 elimination_reason: None,
             },
         ],
-        facts: vec![
-            Fact {
-                key: "prefer".to_string(),
-                value: "op_a > op_b".to_string(),
-            },
-        ],
+        facts: vec![Fact {
+            key: "prefer".to_string(),
+            value: "op_a > op_b".to_string(),
+        }],
         cases: vec![],
         rules: vec![],
         goals: vec![],

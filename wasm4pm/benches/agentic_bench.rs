@@ -60,7 +60,11 @@ fn bench_role_selector(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let selector = DefaultRoleSelector;
     let task = make_task_context(
@@ -79,7 +83,11 @@ fn bench_task_decomposer(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let decomposer = DefaultTaskDecomposer;
     let task = make_task_context(
@@ -100,7 +108,11 @@ fn bench_evidence_sufficiency(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let checker = DefaultEvidenceSufficiencyChecker;
     let task = make_task_context(
@@ -123,7 +135,11 @@ fn bench_escalation_engine(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let engine = DefaultEscalationEngine;
     let task = make_task_context(
@@ -144,7 +160,11 @@ fn bench_artifact_dispatcher(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let dispatcher = DefaultArtifactDispatcher;
     let request = ArtifactRequest {
@@ -170,7 +190,11 @@ fn bench_handoff_validator(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let validator = DefaultHandoffValidator;
     let req = HandoffRequest {
@@ -204,7 +228,11 @@ fn bench_prompt_binding_compiler(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(500);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // Slightly higher cost due to internal selector/decomposer calls
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // Slightly higher cost due to internal selector/decomposer calls
 
     let compiler = DefaultPromptBindingCompiler;
     let task = make_task_context(
@@ -225,7 +253,11 @@ fn bench_counterfactual_evaluator(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(500);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let evaluator = DefaultCounterfactualEvaluator;
     let task = make_task_context(
@@ -246,7 +278,11 @@ fn bench_jtbd_runner(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); } // Lower sample size due to multiple trait calls per case
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    } // Lower sample size due to multiple trait calls per case
 
     let runner = DefaultJtbdRunner;
     let case = JtbdCase {

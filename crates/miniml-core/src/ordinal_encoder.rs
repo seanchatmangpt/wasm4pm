@@ -11,7 +11,9 @@ pub struct OrdinalEncoder {
 #[wasm_bindgen]
 impl OrdinalEncoder {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     /// Fit encoder to data (discover unique categories per feature)
     #[wasm_bindgen]
@@ -23,7 +25,8 @@ impl OrdinalEncoder {
         self.categories = Vec::with_capacity(self.n_features);
 
         for f in 0..self.n_features {
-            let mut feature_values: Vec<f64> = data.iter()
+            let mut feature_values: Vec<f64> = data
+                .iter()
                 .enumerate()
                 .filter(|(i, _)| i % self.n_features == f)
                 .map(|(_, &v)| v)
@@ -57,7 +60,12 @@ impl OrdinalEncoder {
                 let pos = categories.iter().position(|&c| (c - val).abs() < 1e-10);
                 match pos {
                     Some(idx) => result.push(idx as f64),
-                    None => return Err(JsError::new(&format!("unseen value in feature {}: {}", f, val))),
+                    None => {
+                        return Err(JsError::new(&format!(
+                            "unseen value in feature {}: {}",
+                            f, val
+                        )))
+                    }
                 }
             }
         }
@@ -74,7 +82,10 @@ impl OrdinalEncoder {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("OrdinalEncoder(n_features={}, fitted={})", self.n_features, self.fitted)
+        format!(
+            "OrdinalEncoder(n_features={}, fitted={})",
+            self.n_features, self.fitted
+        )
     }
 }
 
@@ -94,9 +105,8 @@ mod tests {
     #[test]
     fn test_ordinal_encoding() {
         let data = vec![
-            2.0, 10.0,  // Feature 0: [1,2,3], Feature 1: [10,20,30]
-            1.0, 20.0,
-            3.0, 30.0,
+            2.0, 10.0, // Feature 0: [1,2,3], Feature 1: [10,20,30]
+            1.0, 20.0, 3.0, 30.0,
         ];
         let mut encoder = ordinal_encoder(2);
         encoder.fit(&data).unwrap();
@@ -111,18 +121,14 @@ mod tests {
         // Training data must include all categories that appear during transform.
         // Feature 0 has values [1,2,3] → sorted categories [1,2,3]
         // Feature 1 has values [10,20,30] → sorted categories [10,20,30]
-        let fit_data = vec![
-            1.0, 10.0,
-            2.0, 20.0,
-            3.0, 30.0,
-        ];
+        let fit_data = vec![1.0, 10.0, 2.0, 20.0, 3.0, 30.0];
         let mut encoder = ordinal_encoder(2);
         encoder.fit(&fit_data).unwrap();
 
         // Transform rows [1, 30] and [2, 20]
         let transform_data = vec![
-            1.0, 30.0,  // feat0: 1→0, feat1: 30→2
-            2.0, 20.0,  // feat0: 2→1, feat1: 20→1
+            1.0, 30.0, // feat0: 1→0, feat1: 30→2
+            2.0, 20.0, // feat0: 2→1, feat1: 20→1
         ];
         let transformed = encoder.transform(&transform_data).unwrap();
 

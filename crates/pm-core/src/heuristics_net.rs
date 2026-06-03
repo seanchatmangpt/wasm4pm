@@ -369,8 +369,8 @@ impl serde::Serialize for InputOutputBinding {
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for InputOutputBinding {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        use serde::de::{self, MapAccess, Visitor};
         use alloc::string::ToString;
+        use serde::de::{self, MapAccess, Visitor};
 
         struct BindingVisitor;
 
@@ -378,7 +378,9 @@ impl<'de> serde::Deserialize<'de> for InputOutputBinding {
             type Value = InputOutputBinding;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("a Heuristics Net InputOutputBinding object with 'kind' and 'members' fields")
+                formatter.write_str(
+                    "a Heuristics Net InputOutputBinding object with 'kind' and 'members' fields",
+                )
             }
 
             fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
@@ -406,10 +408,7 @@ impl<'de> serde::Deserialize<'de> for InputOutputBinding {
                     "and" => Ok(InputOutputBinding::And(members)),
                     "or" => Ok(InputOutputBinding::Or(members)),
                     "xor" => Ok(InputOutputBinding::Xor(members)),
-                    other => Err(de::Error::unknown_variant(
-                        other,
-                        &["and", "or", "xor"],
-                    )),
+                    other => Err(de::Error::unknown_variant(other, &["and", "or", "xor"])),
                 }
             }
         }
@@ -611,11 +610,13 @@ impl HeuristicsNet {
     ) -> bool {
         debug_assert!(
             self.activities.contains(&from),
-            "Activity '{}' not in HeuristicsNet", from
+            "Activity '{}' not in HeuristicsNet",
+            from
         );
         debug_assert!(
             self.activities.contains(&to),
-            "Activity '{}' not in HeuristicsNet", to
+            "Activity '{}' not in HeuristicsNet",
+            to
         );
         if score.is_above_threshold(self.dependency_threshold) {
             self.dependency_matrix.insert((from, to), score);
@@ -632,7 +633,8 @@ impl HeuristicsNet {
     pub fn set_input_binding(&mut self, activity: ActivityName, binding: InputOutputBinding) {
         debug_assert!(
             self.activities.contains(&activity),
-            "Activity '{}' not in HeuristicsNet", activity
+            "Activity '{}' not in HeuristicsNet",
+            activity
         );
         debug_assert!(binding.is_valid(), "InputOutputBinding must be non-empty");
         self.input_bindings.insert(activity, binding);
@@ -645,7 +647,8 @@ impl HeuristicsNet {
     pub fn set_output_binding(&mut self, activity: ActivityName, binding: InputOutputBinding) {
         debug_assert!(
             self.activities.contains(&activity),
-            "Activity '{}' not in HeuristicsNet", activity
+            "Activity '{}' not in HeuristicsNet",
+            activity
         );
         debug_assert!(binding.is_valid(), "InputOutputBinding must be non-empty");
         self.output_bindings.insert(activity, binding);
@@ -657,7 +660,8 @@ impl HeuristicsNet {
     pub fn add_start_activity(&mut self, activity: ActivityName) {
         debug_assert!(
             self.activities.contains(&activity),
-            "Activity '{}' not in HeuristicsNet", activity
+            "Activity '{}' not in HeuristicsNet",
+            activity
         );
         self.start_activities.insert(activity);
     }
@@ -668,7 +672,8 @@ impl HeuristicsNet {
     pub fn add_end_activity(&mut self, activity: ActivityName) {
         debug_assert!(
             self.activities.contains(&activity),
-            "Activity '{}' not in HeuristicsNet", activity
+            "Activity '{}' not in HeuristicsNet",
+            activity
         );
         self.end_activities.insert(activity);
     }
@@ -887,8 +892,7 @@ impl<'de> serde::Deserialize<'de> for HeuristicsNet {
                 }
 
                 Ok(HeuristicsNet {
-                    activities: activities
-                        .ok_or_else(|| de::Error::missing_field("activities"))?,
+                    activities: activities.ok_or_else(|| de::Error::missing_field("activities"))?,
                     dependency_matrix: dependency_matrix
                         .ok_or_else(|| de::Error::missing_field("dependency_matrix"))?,
                     input_bindings: input_bindings
@@ -1062,10 +1066,7 @@ mod tests {
 
     #[test]
     fn test_binding_and_members() {
-        let b = InputOutputBinding::and([
-            ActivityName::new("A"),
-            ActivityName::new("B"),
-        ]);
+        let b = InputOutputBinding::and([ActivityName::new("A"), ActivityName::new("B")]);
         assert_eq!(b.len(), 2);
         assert_eq!(b.kind_str(), "and");
         assert!(b.is_valid());

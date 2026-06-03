@@ -286,7 +286,11 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
         let best_idx = remaining
             .iter()
             .copied()
-            .max_by(|&a, &b| x[a].abs().partial_cmp(&x[b].abs()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|&a, &b| {
+                x[a].abs()
+                    .partial_cmp(&x[b].abs())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .unwrap();
 
         remaining.retain(|&f| f != best_idx);
@@ -331,8 +335,7 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
 /// * `n_features` - Number of features
 #[wasm_bindgen]
 pub fn decision_path(x: &[f64], n_features: usize) -> Result<JsValue, JsError> {
-    let path = decision_path_impl(x, n_features)
-        .map_err(|e| JsError::new(&e))?;
+    let path = decision_path_impl(x, n_features).map_err(|e| JsError::new(&e))?;
 
     serde_wasm_bindgen::to_value(&path)
         .map_err(|e| JsError::new(&format!("Failed to convert path: {}", e)))
@@ -344,10 +347,7 @@ pub fn decision_path(x: &[f64], n_features: usize) -> Result<JsValue, JsError> {
 /// * `predictions` - Collection of predictions (e.g., from bootstrap)
 /// * `confidence` - Confidence level (0-1)
 #[wasm_bindgen]
-pub fn prediction_interval(
-    predictions: &[f64],
-    confidence: f64,
-) -> Result<js_sys::Array, JsError> {
+pub fn prediction_interval(predictions: &[f64], confidence: f64) -> Result<js_sys::Array, JsError> {
     if predictions.is_empty() {
         return Err(JsError::new("No predictions provided"));
     }
@@ -405,11 +405,8 @@ pub fn generate_counterfactual(
 
     let counterfactual_prediction = prediction + (max_impact * 0.1 * prediction.signum());
 
-    let feature_names_vec = feature_names.unwrap_or_else(|| {
-        (0..x.len())
-            .map(|i| format!("feature_{}", i))
-            .collect()
-    });
+    let feature_names_vec =
+        feature_names.unwrap_or_else(|| (0..x.len()).map(|i| format!("feature_{}", i)).collect());
 
     let explanation = format!(
         "Decrease {} from {:.2} to {:.2} to change prediction from {:.2} to {:.2}",
@@ -450,12 +447,7 @@ mod tests {
 
     #[test]
     fn test_counterfactual_creation() {
-        let cf = Counterfactual::new(
-            0.8,
-            0.2,
-            vec![0, 2],
-            vec![0.5, -0.3],
-        );
+        let cf = Counterfactual::new(0.8, 0.2, vec![0, 2], vec![0.5, -0.3]);
 
         assert_eq!(cf.original_prediction, 0.8);
         assert_eq!(cf.counterfactual_prediction, 0.2);
@@ -486,7 +478,10 @@ mod tests {
         // A 4-feature instance should produce at least one decision node
         let x = vec![1.0, -2.0, 0.5, -0.1];
         let nodes = decision_path_impl(&x, 4).expect("decision_path_impl should succeed");
-        assert!(!nodes.is_empty(), "should return at least one decision node");
+        assert!(
+            !nodes.is_empty(),
+            "should return at least one decision node"
+        );
     }
 
     #[test]
@@ -494,7 +489,10 @@ mod tests {
         // Feature 2 has the largest absolute value (10.0) — should appear first in path
         let x = vec![0.1, 0.2, 10.0, 0.05];
         let nodes = decision_path_impl(&x, 4).unwrap();
-        assert_eq!(nodes[0].feature_index, 2, "largest-magnitude feature should be selected first");
+        assert_eq!(
+            nodes[0].feature_index, 2,
+            "largest-magnitude feature should be selected first"
+        );
     }
 
     #[test]
@@ -503,7 +501,10 @@ mod tests {
         let x = vec![5.0];
         let nodes = decision_path_impl(&x, 1).unwrap();
         assert_eq!(nodes.len(), 1);
-        assert!(nodes[0].decision.contains('>'), "positive value should take 'goes right' branch");
+        assert!(
+            nodes[0].decision.contains('>'),
+            "positive value should take 'goes right' branch"
+        );
     }
 
     #[test]
@@ -512,7 +513,10 @@ mod tests {
         let x = vec![-3.0];
         let nodes = decision_path_impl(&x, 1).unwrap();
         assert_eq!(nodes.len(), 1);
-        assert!(nodes[0].decision.contains("<="), "negative value should take 'goes left' branch");
+        assert!(
+            nodes[0].decision.contains("<="),
+            "negative value should take 'goes left' branch"
+        );
     }
 
     #[test]

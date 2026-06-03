@@ -9,16 +9,17 @@
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
-use crate::autosystems::candidates::{CandidateManifest, CandidateDiscovery};
+use crate::authority;
 use crate::autosystems::candidates::manifest::ManifestDiscovery;
+use crate::autosystems::candidates::{CandidateDiscovery, CandidateManifest};
 use crate::autosystems::dimension::DimensionSpec;
 use crate::autosystems::dominance::{reject_dominated, DomainProfile};
 use crate::autosystems::findings::FindingRegistry;
 use crate::autosystems::receipt::ReceiptChain;
-use crate::authority;
 use crate::breeds::{
-    BreedInput, BreedOutput, BreedError, cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay,
-    prolog::Prolog, production_rules::Mycin, soar::Soar, strips::Strips, CognitionBreed,
+    cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
+    prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
+    CognitionBreed,
 };
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
@@ -31,10 +32,7 @@ fn js_val(s: &str) -> JsValue {
 }
 
 fn wasm_err(msg: &str) -> JsValue {
-    js_val(&format!(
-        "{{\"error\":\"{}\"}}",
-        msg.replace('"', "\\\"")
-    ))
+    js_val(&format!("{{\"error\":\"{}\"}}", msg.replace('"', "\\\"")))
 }
 
 fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
@@ -52,7 +50,9 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
 fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutput, String> {
     b.preconditions(input)
         .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
-    let output = b.run(input).map_err(|e| format!("{}: {}", e.breed, e.message))?;
+    let output = b
+        .run(input)
+        .map_err(|e| format!("{}: {}", e.breed, e.message))?;
     b.postconditions(&output)
         .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
     Ok(output)
@@ -105,9 +105,7 @@ impl EvidenceSource for JsonEvidenceSource {
     }
 
     fn authority_text(&self, slot: &str) -> crate::authority::AuthorityKind {
-        let text = self.inner["authority"][slot]
-            .as_str()
-            .unwrap_or("");
+        let text = self.inner["authority"][slot].as_str().unwrap_or("");
         authority::classify(text)
     }
 
@@ -116,9 +114,7 @@ impl EvidenceSource for JsonEvidenceSource {
     }
 
     fn central_bus_present(&self) -> bool {
-        self.inner["central_bus_present"]
-            .as_bool()
-            .unwrap_or(false)
+        self.inner["central_bus_present"].as_bool().unwrap_or(false)
     }
 
     fn receipt_chain(&self) -> &ReceiptChain {
@@ -174,10 +170,7 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
 /// ```
 pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     if input_json.len() > MAX_INPUT_LEN {
-        return Err(wasm_err(&format!(
-            "input exceeds {} bytes",
-            MAX_INPUT_LEN
-        )));
+        return Err(wasm_err(&format!("input exceeds {} bytes", MAX_INPUT_LEN)));
     }
     let input: ValidatedRunInput = serde_json::from_str(input_json)
         .map_err(|e| wasm_err(&format!("schema rejected: {}", e)))?;
@@ -186,8 +179,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     }
 
     // Dispatch to the breed's run() method.
-    let output = dispatch_breed(&input.breed, &input.contract)
-        .map_err(|e| wasm_err(&e))?;
+    let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
     // Compute deterministic hashes over the actual BreedOutput.
     let output_payload = serde_json::to_string(&output)
@@ -225,10 +217,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
 /// ```
 pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
     if result_json.len() > MAX_INPUT_LEN {
-        return Err(wasm_err(&format!(
-            "input exceeds {} bytes",
-            MAX_INPUT_LEN
-        )));
+        return Err(wasm_err(&format!("input exceeds {} bytes", MAX_INPUT_LEN)));
     }
     let result_value: serde_json::Value = serde_json::from_str(result_json)
         .map_err(|e| wasm_err(&format!("Failed to parse result: {}", e)))?;
@@ -284,22 +273,17 @@ pub fn cognition_replay(run_id: &str) -> Result<JsValue, JsValue> {
 /// ```
 pub fn system_build(intent_json: &str) -> Result<JsValue, JsValue> {
     if intent_json.len() > MAX_INPUT_LEN {
-        return Err(wasm_err(&format!(
-            "input exceeds {} bytes",
-            MAX_INPUT_LEN
-        )));
+        return Err(wasm_err(&format!("input exceeds {} bytes", MAX_INPUT_LEN)));
     }
-    let manifest =
-        ManifestDiscovery::from_str("<wasm-input>", intent_json)
-            .and_then(|d| d.discover())
-            .map_err(|e| wasm_err(&e))?;
+    let manifest = ManifestDiscovery::from_str("<wasm-input>", intent_json)
+        .and_then(|d| d.discover())
+        .map_err(|e| wasm_err(&e))?;
 
-    let (pareto_front, dominated) =
-        reject_dominated(
-            manifest.candidates.clone(),
-            &DomainProfile::Balanced,
-            &manifest.dimensions,
-        );
+    let (pareto_front, dominated) = reject_dominated(
+        manifest.candidates.clone(),
+        &DomainProfile::Balanced,
+        &manifest.dimensions,
+    );
 
     let pareto_json: Vec<serde_json::Value> = pareto_front
         .into_iter()
@@ -340,10 +324,7 @@ pub fn system_verify(target: &str, artifacts_json: &str) -> Result<JsValue, JsVa
         return Err(wasm_err("target exceeds 256 chars"));
     }
     if artifacts_json.len() > MAX_INPUT_LEN {
-        return Err(wasm_err(&format!(
-            "input exceeds {} bytes",
-            MAX_INPUT_LEN
-        )));
+        return Err(wasm_err(&format!("input exceeds {} bytes", MAX_INPUT_LEN)));
     }
 
     // Parse artifacts as evidence source and run all detectors.

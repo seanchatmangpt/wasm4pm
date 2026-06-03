@@ -9,17 +9,24 @@ fn test_state_coverage_initialization() {
     let orch = RlOrchestrator::new();
     let coverage = orch.get_state_coverage();
 
-    assert_eq!(coverage.states_visited, 0, "should start with no visited states");
+    assert_eq!(
+        coverage.states_visited, 0,
+        "should start with no visited states"
+    );
     assert_eq!(coverage.coverage_percentage, 0.0, "should have 0% coverage");
     for i in 0..8 {
-        assert_eq!(coverage.dimension_coverage[i], 0, "dimension {} should have 0 coverage", i);
+        assert_eq!(
+            coverage.dimension_coverage[i], 0,
+            "dimension {} should have 0 coverage",
+            i
+        );
     }
 }
 
 #[test]
 fn test_state_coverage_after_cycles() {
     let mut orch = RlOrchestrator::new_with_seed(42);
-    
+
     // Run 100 cycles with varying states
     for cycle in 0..100 {
         let state = RlState {
@@ -59,22 +66,28 @@ fn test_state_coverage_after_cycles() {
             &features,
             &state,
             &next_state,
-            cycle % 3,  // spc_alert_count
-            cycle % 2 == 0,  // guard_pass
-            cycle % 2 == 1,  // circuit_allowed
-            cycle % 5 == 0,  // latency_budget_exceeded
+            cycle % 3,      // spc_alert_count
+            cycle % 2 == 0, // guard_pass
+            cycle % 2 == 1, // circuit_allowed
+            cycle % 5 == 0, // latency_budget_exceeded
         );
     }
 
     let coverage = orch.get_state_coverage();
-    
+
     // After 100 cycles with varying states, we should have visited multiple bins
-    assert!(coverage.states_visited > 0, "should have visited at least one state");
+    assert!(
+        coverage.states_visited > 0,
+        "should have visited at least one state"
+    );
     assert!(
         coverage.coverage_percentage > 0.0,
         "coverage percentage should be > 0%"
     );
-    assert!(coverage.coverage_percentage < 100.0, "coverage should be < 100%");
+    assert!(
+        coverage.coverage_percentage < 100.0,
+        "coverage should be < 100%"
+    );
 
     // Check that multiple dimensions have coverage
     let nonzero_dims: Vec<usize> = (0..8)

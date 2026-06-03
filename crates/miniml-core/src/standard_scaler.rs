@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct StandardScaler {
@@ -13,10 +13,14 @@ pub struct StandardScaler {
 #[wasm_bindgen]
 impl StandardScaler {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "nSamples")]
-    pub fn n_samples(&self) -> usize { self.n_samples }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
 
     /// Compute mean and std per feature from data
     #[wasm_bindgen]
@@ -67,7 +71,10 @@ impl StandardScaler {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("StandardScaler(features={}, samples={})", self.n_features, self.n_samples)
+        format!(
+            "StandardScaler(features={}, samples={})",
+            self.n_features, self.n_samples
+        )
     }
 }
 

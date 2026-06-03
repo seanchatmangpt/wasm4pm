@@ -22,9 +22,9 @@ use wasm4pm::more_discovery::{
     discover_inductive_miner_from_log, discover_simulated_annealing_from_log,
 };
 use wasm4pm::social_network::discover_handover_network_from_log;
-use wasm4pm::temporal_profile::discover_temporal_profile_from_log;
 #[cfg(feature = "cloud")]
 use wasm4pm::spc::{check_western_electric_rules, ChartData};
+use wasm4pm::temporal_profile::discover_temporal_profile_from_log;
 
 // ---------------------------------------------------------------------------
 // Inline XES parser — integration tests cannot use wasm_bindgen wrappers.
@@ -40,23 +40,34 @@ fn parse_xes(content: &str) -> EventLog {
         let trimmed = line.trim();
 
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
 
         // <string key="..." value="..."/>
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -66,7 +77,9 @@ fn parse_xes(content: &str) -> EventLog {
         }
         // <date key="..." value="..."/> — stored as Date for performance DFG compatibility
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -151,9 +164,19 @@ fn dfg_running_example_has_edges_and_start_activities() {
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
     let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(!dfg.edges.is_empty(), "DFG must have edges; got 0");
-    assert!(dfg.edges.len() >= 5, "Running-example DFG ≥5 edges, got {}", dfg.edges.len());
-    assert!(!dfg.start_activities.is_empty(), "DFG must have start activities");
-    assert!(!dfg.end_activities.is_empty(), "DFG must have end activities");
+    assert!(
+        dfg.edges.len() >= 5,
+        "Running-example DFG ≥5 edges, got {}",
+        dfg.edges.len()
+    );
+    assert!(
+        !dfg.start_activities.is_empty(),
+        "DFG must have start activities"
+    );
+    assert!(
+        !dfg.end_activities.is_empty(),
+        "DFG must have end activities"
+    );
 }
 
 #[test]
@@ -163,32 +186,56 @@ fn dfg_roadtraffic_edge_frequencies_are_positive() {
 
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
     let dfg = discover_dfg_from_log(&admitted, "concept:name");
-    assert!(dfg.edges.len() >= 8, "roadtraffic DFG ≥8 edges, got {}", dfg.edges.len());
+    assert!(
+        dfg.edges.len() >= 8,
+        "roadtraffic DFG ≥8 edges, got {}",
+        dfg.edges.len()
+    );
     for rel in &dfg.edges {
-        assert!(rel.frequency > 0, "Edge {}→{} has zero frequency", rel.from, rel.to);
+        assert!(
+            rel.frequency > 0,
+            "Edge {}→{} has zero frequency",
+            rel.from,
+            rel.to
+        );
     }
 }
 
 #[test]
 fn dfg_receipt_reflects_complex_variant_structure() {
     let log = require_log!(RECEIPT, "receipt");
-    assert!(log.traces.len() >= 100, "receipt should have many traces, got {}", log.traces.len());
+    assert!(
+        log.traces.len() >= 100,
+        "receipt should have many traces, got {}",
+        log.traces.len()
+    );
 
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
     let dfg = discover_dfg_from_log(&admitted, "concept:name");
-    assert!(dfg.edges.len() >= 15,
-        "receipt DFG must be complex (many variants), got {} edges", dfg.edges.len());
+    assert!(
+        dfg.edges.len() >= 15,
+        "receipt DFG must be complex (many variants), got {} edges",
+        dfg.edges.len()
+    );
 }
 
 #[test]
 fn dfg_bpi2020_large_scale_non_degenerate() {
     let log = require_log!(BPI2020, "bpi2020-travel");
-    assert!(log.traces.len() > 1000, "BPI 2020 should have >1000 traces, got {}", log.traces.len());
+    assert!(
+        log.traces.len() > 1000,
+        "BPI 2020 should have >1000 traces, got {}",
+        log.traces.len()
+    );
 
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
     let dfg = discover_dfg_from_log(&admitted, "concept:name");
-    assert!(dfg.edges.len() >= 20,
-        "BPI 2020 DFG ≥20 edges on {} traces, got {}", log.traces.len(), dfg.edges.len());
+    assert!(
+        dfg.edges.len() >= 20,
+        "BPI 2020 DFG ≥20 edges on {} traces, got {}",
+        log.traces.len(),
+        dfg.edges.len()
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -199,14 +246,20 @@ fn dfg_bpi2020_large_scale_non_degenerate() {
 fn heuristic_miner_running_example_non_empty() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
-    assert!(!dfg.edges.is_empty(), "Heuristic miner must produce edges on running-example");
+    assert!(
+        !dfg.edges.is_empty(),
+        "Heuristic miner must produce edges on running-example"
+    );
 }
 
 #[test]
 fn heuristic_miner_bpi2020_non_degenerate() {
     let log = require_log!(BPI2020, "bpi2020-travel");
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
-    assert!(!dfg.edges.is_empty(), "Heuristic miner must produce edges on BPI 2020");
+    assert!(
+        !dfg.edges.is_empty(),
+        "Heuristic miner must produce edges on BPI 2020"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -219,11 +272,14 @@ fn inductive_miner_running_example_returns_valid_json() {
     let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
     let tree_json = discover_inductive_miner_from_log(&admitted, "concept:name");
     // Must be non-empty JSON (not an empty object or array)
-    assert!(tree_json.len() > 10,
-        "Inductive miner must return non-trivial JSON, got {:?}", &tree_json[..tree_json.len().min(50)]);
+    assert!(
+        tree_json.len() > 10,
+        "Inductive miner must return non-trivial JSON, got {:?}",
+        &tree_json[..tree_json.len().min(50)]
+    );
     // Must be valid JSON
-    let parsed: serde_json::Value = serde_json::from_str(&tree_json)
-        .expect("Inductive miner output must be valid JSON");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&tree_json).expect("Inductive miner output must be valid JSON");
     assert!(!parsed.is_null(), "Inductive miner JSON must not be null");
 }
 
@@ -235,12 +291,26 @@ fn inductive_miner_running_example_returns_valid_json() {
 fn ilp_running_example_petri_net_sound() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let (net, fitness, precision) = discover_ilp_petri_net_from_log(&log, "concept:name");
-    assert!(net.transitions.len() >= 4,
-        "ILP net ≥4 transitions on running-example, got {}", net.transitions.len());
-    assert!(net.places.len() >= 2,
-        "ILP net ≥2 places (source+sink), got {}", net.places.len());
-    assert!(fitness >= 0.0 && fitness <= 1.0, "ILP fitness ∈ [0,1], got {}", fitness);
-    assert!(precision >= 0.0 && precision <= 1.0, "ILP precision ∈ [0,1], got {}", precision);
+    assert!(
+        net.transitions.len() >= 4,
+        "ILP net ≥4 transitions on running-example, got {}",
+        net.transitions.len()
+    );
+    assert!(
+        net.places.len() >= 2,
+        "ILP net ≥2 places (source+sink), got {}",
+        net.places.len()
+    );
+    assert!(
+        fitness >= 0.0 && fitness <= 1.0,
+        "ILP fitness ∈ [0,1], got {}",
+        fitness
+    );
+    assert!(
+        precision >= 0.0 && precision <= 1.0,
+        "ILP precision ∈ [0,1], got {}",
+        precision
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -252,7 +322,11 @@ fn genetic_algorithm_running_example_fitness_in_range() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let result = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 5);
     if let Some((dfg, fitness)) = result {
-        assert!(fitness >= 0.0 && fitness <= 1.0, "GA fitness ∈ [0,1], got {}", fitness);
+        assert!(
+            fitness >= 0.0 && fitness <= 1.0,
+            "GA fitness ∈ [0,1], got {}",
+            fitness
+        );
         assert!(!dfg.edges.is_empty(), "GA must produce non-empty edge set");
     }
     // None means insufficient data — acceptable for small logs
@@ -263,7 +337,11 @@ fn aco_roadtraffic_fitness_in_range() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let result = discover_aco_algorithm_from_log(&log, "concept:name", 5, 3);
     if let Some((_dfg, fitness)) = result {
-        assert!(fitness >= 0.0 && fitness <= 1.0, "ACO fitness ∈ [0,1], got {}", fitness);
+        assert!(
+            fitness >= 0.0 && fitness <= 1.0,
+            "ACO fitness ∈ [0,1], got {}",
+            fitness
+        );
     }
 }
 
@@ -272,7 +350,11 @@ fn pso_roadtraffic_fitness_in_range() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let result = discover_pso_algorithm_from_log(&log, "concept:name", 5, 3);
     if let Some((_dfg, fitness)) = result {
-        assert!(fitness >= 0.0 && fitness <= 1.0, "PSO fitness ∈ [0,1], got {}", fitness);
+        assert!(
+            fitness >= 0.0 && fitness <= 1.0,
+            "PSO fitness ∈ [0,1], got {}",
+            fitness
+        );
     }
 }
 
@@ -284,21 +366,31 @@ fn pso_roadtraffic_fitness_in_range() {
 fn simulated_annealing_running_example_fitness_in_range() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     let (_dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 10.0, 0.8);
-    assert!(fitness >= 0.0 && fitness <= 1.0, "SA fitness ∈ [0,1], got {}", fitness);
+    assert!(
+        fitness >= 0.0 && fitness <= 1.0,
+        "SA fitness ∈ [0,1], got {}",
+        fitness
+    );
 }
 
 #[test]
 fn astar_roadtraffic_produces_dfg() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let (dfg, _iterations) = discover_astar_from_log(&log, "concept:name", 50);
-    assert!(!dfg.edges.is_empty(), "A* must produce non-empty DFG on roadtraffic");
+    assert!(
+        !dfg.edges.is_empty(),
+        "A* must produce non-empty DFG on roadtraffic"
+    );
 }
 
 #[test]
 fn hill_climbing_roadtraffic_produces_dfg() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let dfg = discover_hill_climbing_from_log(&log, "concept:name");
-    assert!(!dfg.edges.is_empty(), "Hill climbing must produce edges on roadtraffic");
+    assert!(
+        !dfg.edges.is_empty(),
+        "Hill climbing must produce edges on roadtraffic"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -310,14 +402,34 @@ fn ml_features_from_bpi2020_are_finite_and_classified() {
     let log = require_log!(BPI2020, "bpi2020-travel");
     let (features, labels) = extract_features(&log, "concept:name");
 
-    assert!(features.len() >= 100,
-        "BPI 2020 should yield ≥100 training examples, got {}", features.len());
-    assert_eq!(features.len(), labels.len(), "Feature and label counts must match");
+    assert!(
+        features.len() >= 100,
+        "BPI 2020 should yield ≥100 training examples, got {}",
+        features.len()
+    );
+    assert_eq!(
+        features.len(),
+        labels.len(),
+        "Feature and label counts must match"
+    );
 
     for (i, f) in features.iter().enumerate() {
-        assert!(f[0].is_finite(), "features[{}][0] (trace length) must be finite", i);
-        assert!(f[1].is_finite(), "features[{}][1] (unique activities) must be finite", i);
-        assert!(f[0] >= 1.0, "Trace length ≥1 for real data, got {} at index {}", f[0], i);
+        assert!(
+            f[0].is_finite(),
+            "features[{}][0] (trace length) must be finite",
+            i
+        );
+        assert!(
+            f[1].is_finite(),
+            "features[{}][1] (unique activities) must be finite",
+            i
+        );
+        assert!(
+            f[0] >= 1.0,
+            "Trace length ≥1 for real data, got {} at index {}",
+            f[0],
+            i
+        );
     }
     for &l in &labels {
         assert!(l <= 2, "Label must be in {{0,1,2}}, got {}", l);
@@ -325,10 +437,16 @@ fn ml_features_from_bpi2020_are_finite_and_classified() {
 
     // Real BPI 2020 has wide trace-length variation → multiple classes must appear
     let mut counts = [0usize; 3];
-    for &l in &labels { counts[l as usize] += 1; }
+    for &l in &labels {
+        counts[l as usize] += 1;
+    }
     let populated = counts.iter().filter(|&&c| c > 0).count();
-    assert!(populated >= 2,
-        "BPI 2020 should generate ≥2 label classes, got {} (counts: {:?})", populated, counts);
+    assert!(
+        populated >= 2,
+        "BPI 2020 should generate ≥2 label classes, got {} (counts: {:?})",
+        populated,
+        counts
+    );
 }
 
 #[test]
@@ -338,7 +456,10 @@ fn ml_features_from_roadtraffic_are_finite() {
     assert!(!features.is_empty(), "roadtraffic must yield ML features");
     assert_eq!(features.len(), labels.len());
     for f in &features {
-        assert!(f[0].is_finite() && f[1].is_finite(), "All roadtraffic features must be finite");
+        assert!(
+            f[0].is_finite() && f[1].is_finite(),
+            "All roadtraffic features must be finite"
+        );
     }
 }
 
@@ -353,10 +474,18 @@ fn knn_accuracy_on_roadtraffic_is_in_range() {
         return;
     }
     let split = (features.len() * 4) / 5;
-    let accuracy = knn_internal(&features[..split], &labels[..split],
-                                &features[split..], &labels[split..], 3);
-    assert!(accuracy >= 0.0 && accuracy <= 1.0,
-        "k-NN accuracy ∈ [0,1], got {}", accuracy);
+    let accuracy = knn_internal(
+        &features[..split],
+        &labels[..split],
+        &features[split..],
+        &labels[split..],
+        3,
+    );
+    assert!(
+        accuracy >= 0.0 && accuracy <= 1.0,
+        "k-NN accuracy ∈ [0,1], got {}",
+        accuracy
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -382,10 +511,20 @@ fn temporal_profile_roadtraffic_durations_are_non_negative() {
     let profile = discover_temporal_profile_from_log(&log, "concept:name", "time:timestamp");
     // Temporal profile is a HashMap<(String,String), (mean, std, count)>
     for ((from, to), (mean, _std, count)) in &profile.pairs {
-        assert!(*mean >= 0.0,
-            "Mean duration {}→{} must be ≥0, got {}", from, to, mean);
-        assert!(*count > 0,
-            "Count for {}→{} must be >0, got {}", from, to, count);
+        assert!(
+            *mean >= 0.0,
+            "Mean duration {}→{} must be ≥0, got {}",
+            from,
+            to,
+            mean
+        );
+        assert!(
+            *count > 0,
+            "Count for {}→{} must be >0, got {}",
+            from,
+            to,
+            count
+        );
     }
 }
 
@@ -407,21 +546,27 @@ fn spc_western_electric_runs_on_bpi2020_trace_lengths() {
         var.sqrt().max(0.001)
     };
 
-    let chart: Vec<ChartData> = lengths.iter().map(|&v| ChartData {
-        timestamp: String::new(),
-        value: v,
-        ucl: mean + 3.0 * std_dev,
-        cl: mean,
-        lcl: (mean - 3.0 * std_dev).max(0.0),
-        subgroup_data: None,
-    }).collect();
+    let chart: Vec<ChartData> = lengths
+        .iter()
+        .map(|&v| ChartData {
+            timestamp: String::new(),
+            value: v,
+            ucl: mean + 3.0 * std_dev,
+            cl: mean,
+            lcl: (mean - 3.0 * std_dev).max(0.0),
+            subgroup_data: None,
+        })
+        .collect();
 
     // Must not panic; result type is structurally valid
     let alerts = check_western_electric_rules(&chart);
     for alert in &alerts {
         // All alert variants must be printable (sanity check the enum)
         let s = format!("{:?}", alert);
-        assert!(!s.is_empty(), "Alert debug representation must be non-empty");
+        assert!(
+            !s.is_empty(),
+            "Alert debug representation must be non-empty"
+        );
     }
 }
 
@@ -436,27 +581,37 @@ fn performance_dfg_roadtraffic_produces_non_zero_durations() {
 
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let json = discover_performance_dfg_from_log(&log, "concept:name", "time:timestamp");
-    let parsed: serde_json::Value = serde_json::from_str(&json)
-        .expect("Performance DFG must return valid JSON");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&json).expect("Performance DFG must return valid JSON");
 
     // Must have edges array
     let edges = parsed.get("edges").expect("Must have 'edges' key");
     let edge_arr = edges.as_array().expect("'edges' must be an array");
 
     // pm4py oracle: 18 edges on roadtraffic100
-    assert_eq!(edge_arr.len(), 18,
-        "pm4py oracle: performance DFG must have 18 edges, got {}", edge_arr.len());
+    assert_eq!(
+        edge_arr.len(),
+        18,
+        "pm4py oracle: performance DFG must have 18 edges, got {}",
+        edge_arr.len()
+    );
 
     // At least some edges must have non-zero mean duration (field name: mean_ms)
-    let non_zero = edge_arr.iter()
-        .filter(|e| e.get("mean_ms")
-            .and_then(|v| v.as_f64())
-            .map(|d| d > 0.0)
-            .unwrap_or(false))
+    let non_zero = edge_arr
+        .iter()
+        .filter(|e| {
+            e.get("mean_ms")
+                .and_then(|v| v.as_f64())
+                .map(|d| d > 0.0)
+                .unwrap_or(false)
+        })
         .count();
-    assert!(non_zero > 0,
+    assert!(
+        non_zero > 0,
         "Performance DFG on real timestamps must produce some non-zero mean_ms durations; \
-         got JSON: {}", &json[..json.len().min(200)]);
+         got JSON: {}",
+        &json[..json.len().min(200)]
+    );
 }
 
 // ---------------------------------------------------------------------------

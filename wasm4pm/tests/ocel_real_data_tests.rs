@@ -28,8 +28,12 @@ mod ocel_tests {
                 if content.len() > 50 {
                     match serde_json::from_str::<OCEL>(&content) {
                         Ok(ocel) => {
-                            eprintln!("OCEL tests: loaded {} events, {} objects from {}",
-                                ocel.events.len(), ocel.objects.len(), path);
+                            eprintln!(
+                                "OCEL tests: loaded {} events, {} objects from {}",
+                                ocel.events.len(),
+                                ocel.objects.len(),
+                                path
+                            );
                             return Some(ocel);
                         }
                         Err(e) => {
@@ -45,7 +49,10 @@ mod ocel_tests {
     macro_rules! require_ocel {
         () => {
             match load_ocel() {
-                None => { eprintln!("SKIP: ocel20_example.jsonocel not found or parse failed"); return; }
+                None => {
+                    eprintln!("SKIP: ocel20_example.jsonocel not found or parse failed");
+                    return;
+                }
                 Some(o) => o,
             }
         };
@@ -70,8 +77,11 @@ mod ocel_tests {
             ocel.objects.iter().map(|o| o.id.as_str()).collect();
 
         for v in &violations {
-            assert!(object_ids.contains(v.object_id.as_str()),
-                "Violation references unknown object_id '{}'", v.object_id);
+            assert!(
+                object_ids.contains(v.object_id.as_str()),
+                "Violation references unknown object_id '{}'",
+                v.object_id
+            );
         }
     }
 
@@ -82,8 +92,12 @@ mod ocel_tests {
 
         // Violations can't exceed O(n^2) of events per object
         let max_possible = ocel.events.len() * ocel.events.len();
-        assert!(violations.len() <= max_possible,
-            "Violation count {} exceeds theoretical max {}", violations.len(), max_possible);
+        assert!(
+            violations.len() <= max_possible,
+            "Violation count {} exceeds theoretical max {}",
+            violations.len(),
+            max_possible
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -95,7 +109,9 @@ mod ocel_tests {
         let ocel = require_ocel!();
 
         // Find the first available object type
-        let object_type = ocel.objects.first()
+        let object_type = ocel
+            .objects
+            .first()
             .map(|o| o.object_type.as_str())
             .unwrap_or("");
 
@@ -108,19 +124,27 @@ mod ocel_tests {
         let report = measure_flattening_loss(&ocel, object_type);
 
         // Results must be non-negative
-        assert!(report.total_events_in_flattened_log >= 0,
-            "total_events_in_flattened_log must be non-negative");
-        assert!(report.unique_ocel_events_referenced >= 0,
-            "unique_ocel_events_referenced must be non-negative");
-        assert!(report.original_ocel_variant_count >= 0,
-            "original_ocel_variant_count must be non-negative");
+        assert!(
+            report.total_events_in_flattened_log >= 0,
+            "total_events_in_flattened_log must be non-negative"
+        );
+        assert!(
+            report.unique_ocel_events_referenced >= 0,
+            "unique_ocel_events_referenced must be non-negative"
+        );
+        assert!(
+            report.original_ocel_variant_count >= 0,
+            "original_ocel_variant_count must be non-negative"
+        );
     }
 
     #[test]
     fn flattening_loss_unique_ocel_events_bounded_by_total() {
         let ocel = require_ocel!();
 
-        let object_type = ocel.objects.first()
+        let object_type = ocel
+            .objects
+            .first()
             .map(|o| o.object_type.as_str())
             .unwrap_or("");
 
@@ -132,9 +156,12 @@ mod ocel_tests {
         let report = measure_flattening_loss(&ocel, object_type);
 
         // Referenced events can't exceed total events in the log
-        assert!(report.unique_ocel_events_referenced <= ocel.events.len(),
+        assert!(
+            report.unique_ocel_events_referenced <= ocel.events.len(),
             "unique_ocel_events_referenced ({}) exceeds total events ({})",
-            report.unique_ocel_events_referenced, ocel.events.len());
+            report.unique_ocel_events_referenced,
+            ocel.events.len()
+        );
     }
 
     #[test]
@@ -150,13 +177,19 @@ mod ocel_tests {
             return;
         }
 
-        eprintln!("Testing flattening loss for {} object types", object_types.len());
+        eprintln!(
+            "Testing flattening loss for {} object types",
+            object_types.len()
+        );
 
         for ot in &object_types {
             let report = measure_flattening_loss(&ocel, ot);
             // Must not panic; basic bound check
-            assert!(report.flattened_variant_count >= 0,
-                "flattened_variant_count must be non-negative for type '{}'", ot);
+            assert!(
+                report.flattened_variant_count >= 0,
+                "flattened_variant_count must be non-negative for type '{}'",
+                ot
+            );
         }
     }
 
@@ -168,10 +201,14 @@ mod ocel_tests {
     fn ocel_has_non_empty_events_and_objects() {
         let ocel = require_ocel!();
 
-        assert!(!ocel.events.is_empty(),
-            "ocel20_example must have at least one event");
-        assert!(!ocel.objects.is_empty(),
-            "ocel20_example must have at least one object");
+        assert!(
+            !ocel.events.is_empty(),
+            "ocel20_example must have at least one event"
+        );
+        assert!(
+            !ocel.objects.is_empty(),
+            "ocel20_example must have at least one object"
+        );
     }
 
     #[test]
@@ -182,17 +219,26 @@ mod ocel_tests {
         for event in &ocel.events {
             if !event.timestamp.is_empty() {
                 // Must be parseable as a date-like string
-                assert!(!event.timestamp.is_empty(),
-                    "Event '{}' has empty timestamp", event.id);
+                assert!(
+                    !event.timestamp.is_empty(),
+                    "Event '{}' has empty timestamp",
+                    event.id
+                );
                 parsed_count += 1;
             }
         }
 
-        eprintln!("Events with timestamps: {}/{}", parsed_count, ocel.events.len());
+        eprintln!(
+            "Events with timestamps: {}/{}",
+            parsed_count,
+            ocel.events.len()
+        );
         // At least some events should have timestamps
         if !ocel.events.is_empty() {
-            assert!(parsed_count > 0,
-                "At least one event must have a non-empty timestamp");
+            assert!(
+                parsed_count > 0,
+                "At least one event must have a non-empty timestamp"
+            );
         }
     }
 
@@ -205,9 +251,12 @@ mod ocel_tests {
 
         for event in &ocel.events {
             for obj_ref in &event.object_refs {
-                assert!(object_ids.contains(obj_ref.object_id.as_str()),
+                assert!(
+                    object_ids.contains(obj_ref.object_id.as_str()),
                     "Event '{}' references unknown object_id '{}'",
-                    event.id, obj_ref.object_id);
+                    event.id,
+                    obj_ref.object_id
+                );
             }
         }
     }

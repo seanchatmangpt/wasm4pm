@@ -302,7 +302,11 @@ fn bench_next_activity_prediction(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in ml_bench_sizes() {
         let log = generate_event_log_with_timestamps(&shape);
@@ -327,7 +331,11 @@ fn bench_remaining_time_build(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in ml_bench_sizes() {
         let log = generate_event_log_with_timestamps(&shape);
@@ -359,7 +367,11 @@ fn bench_anomaly_scoring(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in ml_bench_sizes() {
         let log = generate_event_log_with_timestamps(&shape);
@@ -405,7 +417,11 @@ fn bench_outcome_prediction(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 200,
@@ -485,7 +501,11 @@ fn bench_streaming_dfg_single_event(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     group.throughput(Throughput::Bytes(1));
 
     // Measure single-event ingestion throughput
@@ -523,7 +543,11 @@ fn bench_streaming_skeleton_single_event(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     group.throughput(Throughput::Bytes(1));
 
     group.bench_with_input("add_event", "test_input", |b, _| {
@@ -545,7 +569,11 @@ fn bench_streaming_dfg_throughput(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     group.throughput(Throughput::Elements(1_000_000));
 
     for shape in streaming_bench_sizes() {
@@ -585,7 +613,11 @@ fn bench_monte_carlo_simulation(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(10));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &num_cases in &[10, 50, 100, 200] {
         let shape = LogShape {
@@ -669,7 +701,11 @@ fn bench_ocel_flatten(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for &num_objects in &[10, 50, 100, 200] {
         let events_per_object = 5;

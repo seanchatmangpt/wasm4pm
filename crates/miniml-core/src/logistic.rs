@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 fn sigmoid(z: f64) -> f64 {
     1.0 / (1.0 + (-z).exp())
@@ -18,16 +18,24 @@ pub struct LogisticModel {
 #[wasm_bindgen]
 impl LogisticModel {
     #[wasm_bindgen(getter)]
-    pub fn bias(&self) -> f64 { self.bias }
+    pub fn bias(&self) -> f64 {
+        self.bias
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn iterations(&self) -> usize { self.iterations }
+    pub fn iterations(&self) -> usize {
+        self.iterations
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn loss(&self) -> f64 { self.loss }
+    pub fn loss(&self) -> f64 {
+        self.loss
+    }
 
     #[wasm_bindgen(js_name = "getWeights")]
-    pub fn get_weights(&self) -> Vec<f64> { self.weights.clone() }
+    pub fn get_weights(&self) -> Vec<f64> {
+        self.weights.clone()
+    }
 
     #[wasm_bindgen(js_name = "predictProba")]
     pub fn predict_proba(&self, data: &[f64]) -> Vec<f64> {
@@ -45,16 +53,29 @@ impl LogisticModel {
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<u32> {
-        self.predict_proba(data).iter().map(|&p| if p >= 0.5 { 1 } else { 0 }).collect()
+        self.predict_proba(data)
+            .iter()
+            .map(|&p| if p >= 0.5 { 1 } else { 0 })
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("LogisticRegression(loss={:.6}, iterations={})", self.loss, self.iterations)
+        format!(
+            "LogisticRegression(loss={:.6}, iterations={})",
+            self.loss, self.iterations
+        )
     }
 }
 
-pub fn logistic_regression_impl(data: &[f64], n_features: usize, labels: &[f64], lr: f64, max_iter: usize, lambda: f64) -> Result<LogisticModel, MlError> {
+pub fn logistic_regression_impl(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    lr: f64,
+    max_iter: usize,
+    lambda: f64,
+) -> Result<LogisticModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if labels.len() != n {
         return Err(MlError::new("labels length must match number of samples"));
@@ -100,12 +121,26 @@ pub fn logistic_regression_impl(data: &[f64], n_features: usize, labels: &[f64],
     }
     loss /= n_f;
 
-    Ok(LogisticModel { n_features, weights, bias, iterations: max_iter, loss })
+    Ok(LogisticModel {
+        n_features,
+        weights,
+        bias,
+        iterations: max_iter,
+        loss,
+    })
 }
 
 #[wasm_bindgen(js_name = "logisticRegression")]
-pub fn logistic_regression_wasm(data: &[f64], n_features: usize, labels: &[f64], lr: f64, max_iter: usize, lambda: f64) -> Result<LogisticModel, JsError> {
-    logistic_regression_impl(data, n_features, labels, lr, max_iter, lambda).map_err(|e| JsError::new(&e.message))
+pub fn logistic_regression_wasm(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    lr: f64,
+    max_iter: usize,
+    lambda: f64,
+) -> Result<LogisticModel, JsError> {
+    logistic_regression_impl(data, n_features, labels, lr, max_iter, lambda)
+        .map_err(|e| JsError::new(&e.message))
 }
 
 #[cfg(test)]
@@ -114,10 +149,7 @@ mod tests {
 
     #[test]
     fn test_linearly_separable() {
-        let data = vec![
-            0.0, 0.0,  0.5, 0.5,  1.0, 0.0,
-            5.0, 5.0,  5.5, 5.5,  6.0, 5.0,
-        ];
+        let data = vec![0.0, 0.0, 0.5, 0.5, 1.0, 0.0, 5.0, 5.0, 5.5, 5.5, 6.0, 5.0];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let model = logistic_regression_impl(&data, 2, &labels, 0.1, 1000, 0.0).unwrap();
 

@@ -20,7 +20,11 @@ fn bench_powl_from_log(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
@@ -43,7 +47,11 @@ fn bench_powl_variants(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(20));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let fixed_shape = helpers::LogShape {
         num_cases: 1000,
@@ -70,7 +78,11 @@ fn bench_powl_noise(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let num_cases = 1000;
     let avg_events_per_case = 15;
@@ -101,7 +113,11 @@ fn bench_powl_vocabulary_size(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(15));
     group.warm_up_time(Duration::from_secs(3));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let num_cases = 1000;
     let avg_events_per_case = 15;

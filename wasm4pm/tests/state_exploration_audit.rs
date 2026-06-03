@@ -20,9 +20,9 @@
 //!   6: circuit_state [0-2]
 //!   7: cycle_phase [0-3]
 
-use wasm4pm::rl_orchestrator::RlOrchestrator;
-use wasm4pm::{RlState, RlAction};
 use std::collections::{HashMap, HashSet};
+use wasm4pm::rl_orchestrator::RlOrchestrator;
+use wasm4pm::{RlAction, RlState};
 
 // ============================================================================
 // Monitor 1: Dimension Coverage Monitor
@@ -132,7 +132,7 @@ impl StateRegionAnalyzer {
     pub fn observe(&mut self, state: &RlState) {
         let region_key = (
             state.health_level,
-            state.event_rate_q >> 1,    // coarse-grain to 4 buckets
+            state.event_rate_q >> 1, // coarse-grain to 4 buckets
             state.activity_count_q >> 1,
             state.spc_alert_level >> 1,
             state.drift_status,
@@ -169,8 +169,7 @@ impl StateRegionAnalyzer {
         if self.is_stuck() {
             report.push_str("  WARNING: Agent is stuck in dominant region!\n");
         }
-        Ok::<_, ()>(())
-            .unwrap_or_else(|_| {});
+        Ok::<_, ()>(()).unwrap_or_else(|_| {});
         report
     }
 }
@@ -182,12 +181,12 @@ impl StateRegionAnalyzer {
 #[derive(Debug, Clone)]
 pub struct RareStateMonitor {
     /// Explicitly track rare states (high health levels, extreme SPC)
-    pub terminal_state_visited: bool,      // health == 4
-    pub critical_state_visited: bool,      // health == 3
-    pub high_spc_visited: bool,            // spc_alert_level == 3
-    pub zero_drift_visited: bool,          // drift_status == 0
-    pub max_rework_visited: bool,          // rework_ratio_q == 7
-    pub circuit_open_visited: bool,        // circuit_state == 2
+    pub terminal_state_visited: bool, // health == 4
+    pub critical_state_visited: bool, // health == 3
+    pub high_spc_visited: bool,       // spc_alert_level == 3
+    pub zero_drift_visited: bool,     // drift_status == 0
+    pub max_rework_visited: bool,     // rework_ratio_q == 7
+    pub circuit_open_visited: bool,   // circuit_state == 2
     /// Count of visits to each rare state
     pub rare_visits: HashMap<&'static str, usize>,
 }
@@ -250,12 +249,27 @@ impl RareStateMonitor {
     /// Report rare state reachability
     pub fn report(&self) -> String {
         let mut report = String::from("Rare State Reachability Report:\n");
-        report.push_str(&format!("  Terminal state (health=4): {}\n", self.terminal_state_visited));
-        report.push_str(&format!("  Critical state (health=3): {}\n", self.critical_state_visited));
+        report.push_str(&format!(
+            "  Terminal state (health=4): {}\n",
+            self.terminal_state_visited
+        ));
+        report.push_str(&format!(
+            "  Critical state (health=3): {}\n",
+            self.critical_state_visited
+        ));
         report.push_str(&format!("  High SPC (spc=3): {}\n", self.high_spc_visited));
-        report.push_str(&format!("  Zero drift (drift=0): {}\n", self.zero_drift_visited));
-        report.push_str(&format!("  Max rework (rework=7): {}\n", self.max_rework_visited));
-        report.push_str(&format!("  Circuit open (circuit=2): {}\n", self.circuit_open_visited));
+        report.push_str(&format!(
+            "  Zero drift (drift=0): {}\n",
+            self.zero_drift_visited
+        ));
+        report.push_str(&format!(
+            "  Max rework (rework=7): {}\n",
+            self.max_rework_visited
+        ));
+        report.push_str(&format!(
+            "  Circuit open (circuit=2): {}\n",
+            self.circuit_open_visited
+        ));
         report.push_str(&format!(
             "  Total rare states visited: {}/6\n",
             self.count_visited()
@@ -297,7 +311,10 @@ impl ActionDistributionMonitor {
             RlAction::Restart => "Restart",
         };
 
-        *self.action_counts.entry(action_name.to_string()).or_insert(0) += 1;
+        *self
+            .action_counts
+            .entry(action_name.to_string())
+            .or_insert(0) += 1;
         *self
             .action_per_health
             .entry((state.health_level, action_name.to_string()))
@@ -521,7 +538,10 @@ fn test_region_analyzer_stuck_detection() {
         analyzer.observe(&state);
     }
 
-    assert!(analyzer.is_stuck(), "Monotonic state should be detected as stuck");
+    assert!(
+        analyzer.is_stuck(),
+        "Monotonic state should be detected as stuck"
+    );
 }
 
 #[test]
@@ -546,7 +566,11 @@ fn test_rare_state_monitor_reachability() {
         "Terminal state should be marked as visited"
     );
     // count should be 1 (only terminal state)
-    assert_eq!(monitor.count_visited(), 1, "Only terminal state should be visited");
+    assert_eq!(
+        monitor.count_visited(),
+        1,
+        "Only terminal state should be visited"
+    );
 }
 
 #[test]
@@ -571,7 +595,10 @@ fn test_action_distribution_monitor() {
     monitor.observe(&state, &RlAction::Fallback);
     monitor.observe(&state, &RlAction::Restart);
 
-    assert!(!monitor.is_degenerate(), "Diverse actions should not be degenerate");
+    assert!(
+        !monitor.is_degenerate(),
+        "Diverse actions should not be degenerate"
+    );
 }
 
 #[test]
@@ -594,7 +621,10 @@ fn test_action_distribution_degenerate() {
         monitor.observe(&state, &RlAction::Continue);
     }
 
-    assert!(monitor.is_degenerate(), "Single action 100% should be degenerate");
+    assert!(
+        monitor.is_degenerate(),
+        "Single action 100% should be degenerate"
+    );
 }
 
 #[test]
@@ -659,13 +689,7 @@ fn test_orchestrator_integration_with_monitors() {
         state.activity_count_q = ((i / 40) % 8) as u8;
 
         let action = orch.select_action(&state);
-        orch.update(
-            &state,
-            &action,
-            0.1,
-            &state,
-            false,
-        );
+        orch.update(&state, &action, 0.1, &state, false);
 
         dim_monitor.observe(&state);
         region_analyzer.observe(&state);
@@ -674,10 +698,7 @@ fn test_orchestrator_integration_with_monitors() {
 
     // Verify some basic metrics
     let coverage = dim_monitor.coverage_per_dimension();
-    assert!(
-        coverage[0] > 0.0,
-        "Health dimension should have coverage"
-    );
+    assert!(coverage[0] > 0.0, "Health dimension should have coverage");
     assert!(
         region_analyzer.total_visits > 0,
         "Should have recorded visits"

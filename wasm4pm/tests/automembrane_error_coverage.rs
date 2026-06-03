@@ -74,7 +74,11 @@ fn e1_classify_motion_malformed_json_produces_actionable_error() {
     assert!(result.is_err());
     let err_msg = result.unwrap_err().to_string();
     // Error should be actionable: point to the problem
-    assert!(err_msg.contains("key must be a string") || err_msg.contains("expected") || err_msg.contains("invalid"));
+    assert!(
+        err_msg.contains("key must be a string")
+            || err_msg.contains("expected")
+            || err_msg.contains("invalid")
+    );
 }
 
 #[test]
@@ -136,15 +140,19 @@ fn e3_invalid_verdict_receipt_json() {
     let err_msg = result.unwrap_err().to_string();
     // Error should help user understand the JSON structure is wrong
     assert!(
-        err_msg.contains("field")
-            || err_msg.contains("missing")
-            || err_msg.contains("expected")
+        err_msg.contains("field") || err_msg.contains("missing") || err_msg.contains("expected")
     );
 }
 
 #[test]
 fn e3_verdict_receipt_roundtrip_preserves_all_fields() {
-    let motion = make_motion("req-1", "alice", "approve_payment", vec!["doc-1"], vec!["case-1"]);
+    let motion = make_motion(
+        "req-1",
+        "alice",
+        "approve_payment",
+        vec!["doc-1"],
+        vec!["case-1"],
+    );
     let receipt = classify_motion_internal(&motion);
 
     // Serialize and deserialize
@@ -173,10 +181,7 @@ fn e4_build_motion_invalid_log_handle_returns_error() {
     // This ensures observability of failed motion construction.
 
     // Verification: error code is consistent
-    assert_eq!(
-        wasm4pm::error::codes::INVALID_HANDLE,
-        "INVALID_HANDLE"
-    );
+    assert_eq!(wasm4pm::error::codes::INVALID_HANDLE, "INVALID_HANDLE");
 }
 
 #[test]
@@ -187,10 +192,7 @@ fn e5_build_motion_trace_index_out_of_range() {
     // OTEL span: membrane_motion_build_trace_index_oor
 
     // Verification: error code matches contract
-    assert_eq!(
-        wasm4pm::error::codes::INVALID_INPUT,
-        "INVALID_INPUT"
-    );
+    assert_eq!(wasm4pm::error::codes::INVALID_INPUT, "INVALID_INPUT");
 }
 
 #[test]
@@ -232,7 +234,8 @@ fn e7_classify_motion_with_envelopes_invalid_handles_json() {
     let invalid_handles_json = r#"{ "actor": "not-a-handle", INVALID }"#;
 
     // JSON parse should fail
-    let result: Result<serde_json::Value, serde_json::Error> = serde_json::from_str(invalid_handles_json);
+    let result: Result<serde_json::Value, serde_json::Error> =
+        serde_json::from_str(invalid_handles_json);
     assert!(result.is_err());
     let err_msg = result.unwrap_err().to_string();
     assert!(err_msg.contains("expected") || err_msg.contains("key must be a string"));
@@ -288,7 +291,13 @@ fn e9_route_envelope_parse_error_fallback() {
     // OTEL span emitted for observability of the fallback.
 
     // This is a "soft error" — not fatal, system degrades gracefully.
-    let motion = make_motion("req-1", "bob", "approve_payment", vec!["doc-1"], vec!["case-1"]);
+    let motion = make_motion(
+        "req-1",
+        "bob",
+        "approve_payment",
+        vec!["doc-1"],
+        vec!["case-1"],
+    );
 
     // In fallback mode, route layer returns Allow with standard reason
     // (not the sophisticated route-policy check from the envelope)
@@ -322,9 +331,7 @@ fn e11_approve_action_without_evidence_is_required_evidence_error() {
 
     assert_eq!(lv.verdict, Verdict::RequireEvidence);
     assert_eq!(lv.confidence, 1.0); // High confidence in the rejection
-    assert!(lv
-        .missing_evidence
-        .contains(&"approval_chain".to_string()));
+    assert!(lv.missing_evidence.contains(&"approval_chain".to_string()));
 
     // Error message should be actionable
     assert!(lv.reason.contains("evidence") || lv.reason.contains("chain"));
@@ -332,7 +339,13 @@ fn e11_approve_action_without_evidence_is_required_evidence_error() {
 
 #[test]
 fn e11_release_action_without_evidence_error() {
-    let motion = make_motion("req-1", "dave", "release_artifact", vec![], vec!["artifact-5"]);
+    let motion = make_motion(
+        "req-1",
+        "dave",
+        "release_artifact",
+        vec![],
+        vec!["artifact-5"],
+    );
 
     let lv = evaluate_custody_layer(&motion);
     assert_eq!(lv.verdict, Verdict::RequireEvidence);
@@ -495,7 +508,7 @@ fn e16_custody_decision_span_includes_evidence_diagnostics() {
         "req-custody-1",
         "alice",
         "release_payment",
-        vec!["receipt-1"],  // Only 1 evidence item
+        vec!["receipt-1"], // Only 1 evidence item
         vec!["case-1"],
     );
 
@@ -522,15 +535,15 @@ fn e16_custody_decision_span_with_sufficient_evidence() {
         "req-custody-2",
         "alice",
         "approve_payment",
-        vec!["receipt-1", "invoice-1", "po-1", "approval-1"],  // 4 evidence items
+        vec!["receipt-1", "invoice-1", "po-1", "approval-1"], // 4 evidence items
         vec!["case-1"],
     );
 
     let result = evaluate_custody_layer(&motion);
 
     // Sufficient evidence should generally result in approval
-    assert!(result.confidence >= 0.50);  // At least moderate confidence with multiple evidence items
-    // Evidence count should be reflected in the decision
+    assert!(result.confidence >= 0.50); // At least moderate confidence with multiple evidence items
+                                        // Evidence count should be reflected in the decision
     assert!(motion.claimed_evidence.len() >= 2);
 }
 

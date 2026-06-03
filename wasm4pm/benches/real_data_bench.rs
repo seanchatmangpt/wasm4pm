@@ -49,21 +49,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -72,7 +83,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -103,10 +116,15 @@ fn generate_synthetic_fallback() -> EventLog {
     let activities = ["Register", "Validate", "Assess", "Approve", "Close"];
     let mut log = EventLog::new();
     for i in 0..100usize {
-        let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
         let len = 5 + (i % 8);
         for j in 0..len {
-            let mut ev = Event { attributes: HashMap::new() };
+            let mut ev = Event {
+                attributes: HashMap::new(),
+            };
             ev.attributes.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activities[j % activities.len()].to_string()),
@@ -129,9 +147,13 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> Dataset {
         .filter_map(|p| {
             let resolved = p.replace("~", &home);
             let content = fs::read_to_string(&resolved).ok()?;
-            if content.len() < 200 { return None; }
+            if content.len() < 200 {
+                return None;
+            }
             let l = parse_xes(&content);
-            if l.traces.is_empty() { return None; }
+            if l.traces.is_empty() {
+                return None;
+            }
             Some(l)
         })
         .next()
@@ -143,7 +165,11 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> Dataset {
             )
         });
     let event_count = log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;
-    Dataset { label, log, event_count }
+    Dataset {
+        label,
+        log,
+        event_count,
+    }
 }
 
 fn real_datasets() -> Vec<Dataset> {
@@ -153,7 +179,10 @@ fn real_datasets() -> Vec<Dataset> {
             "sepsis",
         ),
         load_dataset(
-            &["bench_data/bpi2020_travel.xes", "../../bench_data/bpi2020_travel.xes"],
+            &[
+                "bench_data/bpi2020_travel.xes",
+                "../../bench_data/bpi2020_travel.xes",
+            ],
             "bpi2020",
         ),
         load_dataset(
@@ -177,11 +206,16 @@ fn bench_dfg(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
-        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let admitted_log =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
-            b.iter(|| discover_dfg_from_log(log, ACTIVITY_KEY));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &admitted_log,
+            |b, log| {
+                b.iter(|| discover_dfg_from_log(log, ACTIVITY_KEY));
+            },
+        );
     }
     group.finish();
 }
@@ -193,11 +227,16 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
-        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let admitted_log =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
-            b.iter(|| discover_alpha_plus_plus_from_log(log, ACTIVITY_KEY, 0.0));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &admitted_log,
+            |b, log| {
+                b.iter(|| discover_alpha_plus_plus_from_log(log, ACTIVITY_KEY, 0.0));
+            },
+        );
     }
     group.finish();
 }
@@ -224,11 +263,16 @@ fn bench_inductive_miner(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
-        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let admitted_log =
+            wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
-            b.iter(|| discover_inductive_miner_from_log(log, ACTIVITY_KEY));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &admitted_log,
+            |b, log| {
+                b.iter(|| discover_inductive_miner_from_log(log, ACTIVITY_KEY));
+            },
+        );
     }
     group.finish();
 }
@@ -400,7 +444,10 @@ fn bench_batches(c: &mut Criterion) {
 
 fn bench_correlation_miner(c: &mut Criterion) {
     let datasets = real_datasets();
-    let cfg = CorrelationConfig { correlation_threshold: 3600.0 * 24.0, min_edge_frequency: 2 };
+    let cfg = CorrelationConfig {
+        correlation_threshold: 3600.0 * 24.0,
+        min_edge_frequency: 2,
+    };
     let mut group = c.benchmark_group("real_data/correlation_miner");
     group.measurement_time(Duration::from_secs(8));
     group.warm_up_time(Duration::from_millis(500));
@@ -408,9 +455,13 @@ fn bench_correlation_miner(c: &mut Criterion) {
     for ds in &datasets {
         group.throughput(Throughput::Elements(ds.event_count));
         let input = (ds.log.clone(), cfg.clone());
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &input, |b, (log, cfg)| {
-            b.iter(|| mine_correlation(log, ACTIVITY_KEY, TIMESTAMP_KEY, cfg));
-        });
+        group.bench_with_input(
+            BenchmarkId::new("dataset", ds.label),
+            &input,
+            |b, (log, cfg)| {
+                b.iter(|| mine_correlation(log, ACTIVITY_KEY, TIMESTAMP_KEY, cfg));
+            },
+        );
     }
     group.finish();
 }

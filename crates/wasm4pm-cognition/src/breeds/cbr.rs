@@ -132,7 +132,11 @@ impl CognitionBreed for Cbr {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "retrieve-candidates".to_string(),
-            detail: format!("retrieved {} candidates from {} total cases", candidates.len(), input.cases.len()),
+            detail: format!(
+                "retrieved {} candidates from {} total cases",
+                candidates.len(),
+                input.cases.len()
+            ),
             depth: 0,
         });
 
@@ -218,9 +222,7 @@ mod tests {
         };
         let result = breed.preconditions(&input);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("at least one query fact"));
+        assert!(result.unwrap_err().contains("at least one query fact"));
     }
 
     #[test]
@@ -240,9 +242,7 @@ mod tests {
         };
         let result = breed.preconditions(&input);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("at least one case"));
+        assert!(result.unwrap_err().contains("at least one case"));
     }
 
     #[test]
@@ -254,8 +254,14 @@ mod tests {
             architecture: "arch1".into(),
             outcome_score: 0.9,
             facts: vec![
-                Fact { key: "k1".into(), value: "v1".into() },
-                Fact { key: "k2".into(), value: "v2".into() },
+                Fact {
+                    key: "k1".into(),
+                    value: "v1".into(),
+                },
+                Fact {
+                    key: "k2".into(),
+                    value: "v2".into(),
+                },
             ],
         };
         let case2 = Case {
@@ -264,11 +270,20 @@ mod tests {
             architecture: "arch2".into(),
             outcome_score: 0.8,
             facts: vec![
-                Fact { key: "k3".into(), value: "v3".into() },
-                Fact { key: "k4".into(), value: "v4".into() },
+                Fact {
+                    key: "k3".into(),
+                    value: "v3".into(),
+                },
+                Fact {
+                    key: "k4".into(),
+                    value: "v4".into(),
+                },
             ],
         };
-        let query_facts = vec![Fact { key: "k1".into(), value: "v1".into() }];
+        let query_facts = vec![Fact {
+            key: "k1".into(),
+            value: "v1".into(),
+        }];
 
         let input = BreedInput {
             intent: "test".into(),
@@ -282,7 +297,10 @@ mod tests {
 
         let output = breed.run(&input).expect("run ok");
         assert!(
-            output.inference_trace.iter().any(|t| t.kind == "retrieve-candidates"),
+            output
+                .inference_trace
+                .iter()
+                .any(|t| t.kind == "retrieve-candidates"),
             "Should have retrieve-candidates trace step"
         );
         let retrieve_step = output
@@ -325,8 +343,14 @@ mod tests {
         }
 
         let query_facts = vec![
-            Fact { key: "feature".into(), value: "val_5".into() },
-            Fact { key: "domain".into(), value: "test".into() },
+            Fact {
+                key: "feature".into(),
+                value: "val_5".into(),
+            },
+            Fact {
+                key: "domain".into(),
+                value: "test".into(),
+            },
         ];
 
         let input = BreedInput {
@@ -341,7 +365,10 @@ mod tests {
 
         let output = breed.run(&input).expect("run ok");
         assert!(
-            output.inference_trace.iter().any(|t| t.kind == "retrieve-candidates"),
+            output
+                .inference_trace
+                .iter()
+                .any(|t| t.kind == "retrieve-candidates"),
             "Should have retrieve-candidates trace step"
         );
         let retrieve_step = output
@@ -366,9 +393,15 @@ mod tests {
             intent: "test".into(),
             architecture: "arch1".into(),
             outcome_score: 0.9,
-            facts: vec![Fact { key: "k1".into(), value: "v1".into() }],
+            facts: vec![Fact {
+                key: "k1".into(),
+                value: "v1".into(),
+            }],
         };
-        let query_facts = vec![Fact { key: "k_nonexistent".into(), value: "v_nonexistent".into() }];
+        let query_facts = vec![Fact {
+            key: "k_nonexistent".into(),
+            value: "v_nonexistent".into(),
+        }];
 
         let input = BreedInput {
             intent: "test".into(),
@@ -390,6 +423,9 @@ mod tests {
             retrieve_step.detail.contains("retrieved 0 candidates"),
             "Should retrieve 0 candidates when no features overlap"
         );
-        assert!(output.selected.is_none(), "Should select none when no candidates found");
+        assert!(
+            output.selected.is_none(),
+            "Should select none when no candidates found"
+        );
     }
 }

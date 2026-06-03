@@ -290,7 +290,11 @@ fn bench_window_sizes(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let shape = LogShape {
         num_cases: 1_000,
@@ -324,7 +328,11 @@ fn bench_alpha_tuning(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let series: Vec<f64> = (0..1_000)
         .map(|i| ((i as f64 * 0.01).sin() + (i as f64 * 0.002).cos()).abs())
@@ -332,13 +340,9 @@ fn bench_alpha_tuning(c: &mut Criterion) {
 
     for alpha in [0.1f64, 0.2, 0.3, 0.5] {
         group.throughput(Throughput::Elements(series.len() as u64));
-        group.bench_with_input(
-            BenchmarkId::new("alpha", alpha),
-            &alpha,
-            |b, &a| {
-                b.iter(|| ewma_series(&series, a));
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("alpha", alpha), &alpha, |b, &a| {
+            b.iter(|| ewma_series(&series, a));
+        });
     }
     group.finish();
 }
@@ -352,7 +356,11 @@ fn bench_drift_scenarios(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(4));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(25);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let scenarios = [
         ("abrupt", generate_abrupt_drift_log(500, 10)),
@@ -374,15 +382,11 @@ fn bench_drift_scenarios(c: &mut Criterion) {
             .unwrap_or(0);
 
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("scenario", name),
-            &handle,
-            |b, h| {
-                b.iter(|| {
-                    let _ = wasm4pm::prediction_drift::detect_drift(h, ACTIVITY_KEY, 10);
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("scenario", name), &handle, |b, h| {
+            b.iter(|| {
+                let _ = wasm4pm::prediction_drift::detect_drift(h, ACTIVITY_KEY, 10);
+            });
+        });
     }
     group.finish();
 }
@@ -397,7 +401,11 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(3));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Use abrupt drift scenario for clear signal.
     let log = generate_abrupt_drift_log(200, 10);
@@ -408,7 +416,9 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
     // Instead of benchmarking threshold directly (API doesn't support it),
     // we benchmark the core Jaccard distance operation at varying set overlap levels.
     for overlap_percent in [0usize, 25, 50, 75, 100] {
-        let a = (0..20).map(|i| format!("act_{}", i)).collect::<HashSet<_>>();
+        let a = (0..20)
+            .map(|i| format!("act_{}", i))
+            .collect::<HashSet<_>>();
         let b = (0..(20 * overlap_percent / 100))
             .chain(20..(20 + (20 * (100 - overlap_percent) / 100)))
             .map(|i| format!("act_{}", i))
@@ -434,7 +444,11 @@ fn bench_edge_cases(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Empty sets (no activities) — Jaccard(∅, ∅) = 0.0 by convention
     let empty_a: HashSet<String> = HashSet::new();
@@ -473,7 +487,11 @@ fn bench_determinism(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(2));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let series = vec![1.0, 2.5, 3.7, 2.1, 4.9, 1.2, 3.4];
     let alpha = 0.3;

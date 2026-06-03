@@ -25,10 +25,10 @@ pub struct FilesystemDiscovery {
 
 impl FilesystemDiscovery {
     /// Construct a new discovery rooted at `root` with default depth 8.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new(root: impl Into<PathBuf>) -> Self {
         Self {
             root: root.into(),
@@ -40,8 +40,8 @@ impl FilesystemDiscovery {
         if depth > self.max_depth {
             return Ok(());
         }
-        let read = std::fs::read_dir(path)
-            .map_err(|e| format!("read_dir {}: {}", path.display(), e))?;
+        let read =
+            std::fs::read_dir(path).map_err(|e| format!("read_dir {}: {}", path.display(), e))?;
         for entry in read {
             let entry = entry.map_err(|e| format!("dir entry: {}", e))?;
             let p = entry.path();
@@ -71,10 +71,10 @@ impl CandidateDiscovery for FilesystemDiscovery {
             ..Default::default()
         };
         for p in paths {
-            let body = std::fs::read_to_string(&p)
-                .map_err(|e| format!("read {}: {}", p.display(), e))?;
-            let mut m: CandidateManifest = serde_json::from_str(&body)
-                .map_err(|e| format!("parse {}: {}", p.display(), e))?;
+            let body =
+                std::fs::read_to_string(&p).map_err(|e| format!("read {}: {}", p.display(), e))?;
+            let mut m: CandidateManifest =
+                serde_json::from_str(&body).map_err(|e| format!("parse {}: {}", p.display(), e))?;
             for c in &mut m.candidates {
                 if c.provenance.is_none() {
                     c.provenance = Some(p.display().to_string());

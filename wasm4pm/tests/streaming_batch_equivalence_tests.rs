@@ -67,9 +67,7 @@ fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollows
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);
         for event in &trace.events {
-            if let Some(AttributeValue::String(act)) =
-                event.attributes.get(activity_key)
-            {
+            if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
                 builder.add_event(&case_id, act);
             }
         }
@@ -129,14 +127,15 @@ fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGrap
             .or_insert(0) += 1;
     }
 
-    dfg.edges
-        .extend(edge_counts.into_iter().map(|((f, t), freq)| {
-            DirectlyFollowsRelation {
+    dfg.edges.extend(
+        edge_counts
+            .into_iter()
+            .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
                 to: col.vocab[t as usize].to_owned(),
                 frequency: freq,
-            }
-        }));
+            }),
+    );
 
     dfg
 }
@@ -159,11 +158,7 @@ fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> 
 /// Oracle rank: Rank 1 (100% parity documented in streaming_dfg.rs).
 #[test]
 fn streaming_dfg_full_log_equals_batch_dfg() {
-    let log = make_log(&[
-        &["A", "B", "C"],
-        &["A", "B", "C"],
-        &["A", "C"],
-    ]);
+    let log = make_log(&[&["A", "B", "C"], &["A", "B", "C"], &["A", "C"]]);
 
     let batch = batch_dfg_from_log(&log, "concept:name");
     let streaming = streaming_dfg_from_log(&log, "concept:name");
@@ -179,12 +174,21 @@ fn streaming_dfg_full_log_equals_batch_dfg() {
     );
 
     // Spot-check expected edges (2 traces A→B→C, 1 trace A→C)
-    assert_eq!(batch_edges.get(&("A".to_string(), "B".to_string())), Some(&2),
-        "A→B should appear twice");
-    assert_eq!(batch_edges.get(&("B".to_string(), "C".to_string())), Some(&2),
-        "B→C should appear twice");
-    assert_eq!(batch_edges.get(&("A".to_string(), "C".to_string())), Some(&1),
-        "A→C should appear once (direct)");
+    assert_eq!(
+        batch_edges.get(&("A".to_string(), "B".to_string())),
+        Some(&2),
+        "A→B should appear twice"
+    );
+    assert_eq!(
+        batch_edges.get(&("B".to_string(), "C".to_string())),
+        Some(&2),
+        "B→C should appear twice"
+    );
+    assert_eq!(
+        batch_edges.get(&("A".to_string(), "C".to_string())),
+        Some(&1),
+        "A→C should appear once (direct)"
+    );
 
     // Node counts must also match
     let batch_nodes: HashMap<&str, usize> = batch
@@ -213,11 +217,7 @@ fn streaming_dfg_full_log_equals_batch_dfg() {
 /// Oracle rank: Rank 1 (documented "100% parity with batch DFG" in module).
 #[test]
 fn simd_streaming_dfg_equals_scalar_streaming_dfg() {
-    let log = make_log(&[
-        &["A", "B", "C"],
-        &["A", "B", "C"],
-        &["A", "C"],
-    ]);
+    let log = make_log(&[&["A", "B", "C"], &["A", "B", "C"], &["A", "C"]]);
 
     let scalar = streaming_dfg_from_log(&log, "concept:name");
     let simd = simd_dfg_from_log(&log, "concept:name");
@@ -243,7 +243,10 @@ fn simd_streaming_dfg_equals_scalar_streaming_dfg() {
         .iter()
         .map(|n| (n.id.as_str(), n.frequency))
         .collect();
-    assert_eq!(scalar_nodes, simd_nodes, "Node frequencies must match between SIMD and scalar");
+    assert_eq!(
+        scalar_nodes, simd_nodes,
+        "Node frequencies must match between SIMD and scalar"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -274,20 +277,20 @@ fn streaming_dfg_windowed_diverges_from_batch() {
         &["X", "Y", "Z"],
     ]);
 
-    let first_window = make_log(&[
-        &["A", "B", "C"],
-        &["A", "B", "C"],
-        &["A", "B", "C"],
-    ]);
+    let first_window = make_log(&[&["A", "B", "C"], &["A", "B", "C"], &["A", "B", "C"]]);
 
     let full_edges = edges_to_map(&streaming_dfg_from_log(&full_log, "concept:name"));
     let window_edges = edges_to_map(&streaming_dfg_from_log(&first_window, "concept:name"));
 
     // Full log contains edges from both windows
-    assert!(full_edges.contains_key(&("A".to_string(), "B".to_string())),
-        "full DFG must contain A→B");
-    assert!(full_edges.contains_key(&("X".to_string(), "Y".to_string())),
-        "full DFG must contain X→Y");
+    assert!(
+        full_edges.contains_key(&("A".to_string(), "B".to_string())),
+        "full DFG must contain A→B"
+    );
+    assert!(
+        full_edges.contains_key(&("X".to_string(), "Y".to_string())),
+        "full DFG must contain X→Y"
+    );
 
     // Window-only DFG must NOT contain second-window edges
     assert!(
@@ -301,10 +304,7 @@ fn streaming_dfg_windowed_diverges_from_batch() {
 
     // Window-only DFG edge set is strictly contained in full-log edges
     for (edge, &freq) in &window_edges {
-        let full_freq = full_edges
-            .get(edge)
-            .copied()
-            .unwrap_or(0);
+        let full_freq = full_edges.get(edge).copied().unwrap_or(0);
         assert!(
             full_freq >= freq,
             "window edge {:?} (freq={}) must be present in full DFG (freq={})",
@@ -355,10 +355,7 @@ fn streaming_memory_does_not_grow_with_log_size() {
             })
             .collect();
 
-        let traces_slices: Vec<&[&str]> = traces_data
-            .iter()
-            .map(|v| v.as_slice())
-            .collect();
+        let traces_slices: Vec<&[&str]> = traces_data.iter().map(|v| v.as_slice()).collect();
 
         let log = make_log(&traces_slices);
 
@@ -396,16 +393,10 @@ fn streaming_memory_does_not_grow_with_log_size() {
 #[test]
 fn streaming_late_event_handled_deterministically() {
     // Order A: case1=[A,B,C] first, then case2=[A,C]
-    let log_order_a = make_log(&[
-        &["A", "B", "C"],
-        &["A", "C"],
-    ]);
+    let log_order_a = make_log(&[&["A", "B", "C"], &["A", "C"]]);
 
     // Order B: case2=[A,C] first, then case1=[A,B,C]
-    let log_order_b = make_log(&[
-        &["A", "C"],
-        &["A", "B", "C"],
-    ]);
+    let log_order_b = make_log(&[&["A", "C"], &["A", "B", "C"]]);
 
     let dfg_a = streaming_dfg_from_log(&log_order_a, "concept:name");
     let dfg_b = streaming_dfg_from_log(&log_order_b, "concept:name");

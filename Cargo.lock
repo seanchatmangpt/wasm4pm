@@ -2610,6 +2610,7 @@ dependencies = [
  "serde",
  "serde_json",
  "smallvec",
+ "wasm4pm-compat",
  "wasm4pm-types",
 ]
 

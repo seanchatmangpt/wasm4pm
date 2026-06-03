@@ -16,10 +16,10 @@
 
 extern crate alloc;
 
+use crate::primitives::ActivityName;
 use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::primitives::ActivityName;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -85,7 +85,9 @@ pub enum ProcessTreeNode {
 }
 
 impl ProcessTreeNode {
-    pub fn silent() -> Self { ProcessTreeNode::Silent }
+    pub fn silent() -> Self {
+        ProcessTreeNode::Silent
+    }
 
     pub fn activity(name: impl Into<ActivityName>) -> Self {
         ProcessTreeNode::Activity(name.into())
@@ -135,7 +137,13 @@ pub struct ProcessTree {
 }
 
 impl ProcessTree {
-    pub fn new(root: ProcessTreeNode) -> Self { ProcessTree { root } }
-    pub fn depth(&self) -> usize { self.root.depth() }
-    pub fn leaf_count(&self) -> usize { self.root.leaf_count() }
+    pub fn new(root: ProcessTreeNode) -> Self {
+        ProcessTree { root }
+    }
+    pub fn depth(&self) -> usize {
+        self.root.depth()
+    }
+    pub fn leaf_count(&self) -> usize {
+        self.root.leaf_count()
+    }
 }

@@ -137,8 +137,15 @@ fn test_loop_round_trip_fidelity() {
         root,
         vec![mk_trace("body", &["A"]), mk_trace("body2", &["A"])],
     );
-    assert_eq!(perfect_count, 2, "Loop: body-only traces must be perfectly fitting");
-    assert!(avg_fit >= 0.999, "Loop: body-only avg fitness must be 1.0, got {:.4}", avg_fit);
+    assert_eq!(
+        perfect_count, 2,
+        "Loop: body-only traces must be perfectly fitting"
+    );
+    assert!(
+        avg_fit >= 0.999,
+        "Loop: body-only avg fitness must be 1.0, got {:.4}",
+        avg_fit
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -217,8 +224,16 @@ fn test_choice_graph_sub_model_nesting() {
 
     // Both branches are independently reachable — the Petri net projection
     // must have visible transitions for both "P" and "Q".
-    let has_p = pn.net.transitions.iter().any(|t| t.label.as_deref() == Some("P"));
-    let has_q = pn.net.transitions.iter().any(|t| t.label.as_deref() == Some("Q"));
+    let has_p = pn
+        .net
+        .transitions
+        .iter()
+        .any(|t| t.label.as_deref() == Some("P"));
+    let has_q = pn
+        .net
+        .transitions
+        .iter()
+        .any(|t| t.label.as_deref() == Some("Q"));
     assert!(
         has_p,
         "ChoiceGraph net must contain a visible transition for P (inner model not collapsed)"
@@ -287,12 +302,7 @@ fn test_concurrency_enabling_condition_precision() {
 
     // Cross-check: A-only trace is incomplete and must score below 1.0
     let t_a_only = mk_trace("a_only", &["A"]);
-    let r_a_only = replay_trace(
-        &pn.net,
-        &pn.initial_marking,
-        &pn.final_marking,
-        &t_a_only,
-    );
+    let r_a_only = replay_trace(&pn.net, &pn.initial_marking, &pn.final_marking, &t_a_only);
     assert!(
         r_a_only.fitness < 1.0,
         "Concurrency: trace [A] (missing B) must not be perfect, got {:.4}",
@@ -407,8 +417,7 @@ fn test_xor_precision() {
     };
     let fitness_result = compute_fitness(&pn.net, &pn.initial_marking, &pn.final_marking, &log);
     assert_eq!(
-        fitness_result.perfectly_fitting_traces,
-        3,
+        fitness_result.perfectly_fitting_traces, 3,
         "XOR: all-A log must have 3 perfectly fitting traces"
     );
     assert!(
@@ -566,8 +575,7 @@ fn fitness_one_on_trivially_conforming_log() {
         ],
     );
     assert_eq!(
-        perfect_count,
-        3,
+        perfect_count, 3,
         "All three conforming traces must be perfectly fitting, got {}",
         perfect_count
     );
@@ -604,11 +612,10 @@ fn scc_reversal_affects_sequence_cut_ordering() {
     use wasm4pm::powl::discovery::DiscoveryConfig;
 
     // Five traces, all strictly A → B → C (no variation, unambiguous total order).
-    let traces: Vec<Vec<String>> = std::iter::repeat_with(|| {
-        vec!["A".to_string(), "B".to_string(), "C".to_string()]
-    })
-    .take(5)
-    .collect();
+    let traces: Vec<Vec<String>> =
+        std::iter::repeat_with(|| vec!["A".to_string(), "B".to_string(), "C".to_string()])
+            .take(5)
+            .collect();
 
     let mut arena = PowlArena::new();
     let config = DiscoveryConfig::default();
@@ -726,7 +733,6 @@ fn test_sequence_rejects_wrong_ordering() {
     assert!(
         ordering_matters,
         "Sequence net must distinguish orderings: correct={:.4}, wrong={:.4}",
-        r_ab.fitness,
-        r_ba.fitness
+        r_ab.fitness, r_ba.fitness
     );
 }

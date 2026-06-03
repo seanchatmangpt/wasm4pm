@@ -101,7 +101,10 @@ pub fn smote(
 
         // Sort by distance and select k nearest
         distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        let k_neighbors = distances.iter().take(k.min(distances.len())).collect::<Vec<_>>();
+        let k_neighbors = distances
+            .iter()
+            .take(k.min(distances.len()))
+            .collect::<Vec<_>>();
 
         // Generate synthetic sample
         let mut new_sample = vec![0.0; n_features];
@@ -293,7 +296,9 @@ pub fn inject_noise(
     n_samples: usize,
     n_features: usize,
 ) -> Vec<f64> {
-    inject_noise_impl(x, noise_level, distribution, n_samples, n_features, &|| js_sys::Math::random())
+    inject_noise_impl(x, noise_level, distribution, n_samples, n_features, &|| {
+        js_sys::Math::random()
+    })
 }
 
 /// Mixup configuration
@@ -499,7 +504,11 @@ mod tests {
         let series = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let warped = time_series_warp(&series, 1.5, 5);
 
-        assert!(warped.len() > 5, "warped length {} should be > 5", warped.len());
+        assert!(
+            warped.len() > 5,
+            "warped length {} should be > 5",
+            warped.len()
+        );
         assert_eq!(warped[0], series[0]); // First value should match
     }
 }

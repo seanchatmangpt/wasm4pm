@@ -62,9 +62,6 @@ impl DFG {
     }
 }
 
-
-
-
 use crate::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable};
 use std::hash::{Hash, Hasher};
 
@@ -584,7 +581,6 @@ impl DeclareModel {
     }
 }
 
-
 #[cfg(test)]
 mod tests_petri {
     use super::*;
@@ -594,6 +590,4 @@ mod tests_petri {
         let dfg = DFG::new();
         assert!(dfg.is_empty());
     }
-
 }
-

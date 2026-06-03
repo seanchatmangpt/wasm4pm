@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// MinMax Scaler - Transform features to [0, 1] range
 #[wasm_bindgen]
@@ -13,10 +13,14 @@ pub struct MinMaxScaler {
 #[wasm_bindgen]
 impl MinMaxScaler {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "nSamples")]
-    pub fn n_samples(&self) -> usize { self.n_samples }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
 
     /// Fit scaler to data (compute min and scale per feature)
     #[wasm_bindgen]
@@ -30,8 +34,12 @@ impl MinMaxScaler {
 
             for i in 0..n {
                 let val = data[i * self.n_features + f];
-                if val < min_val { min_val = val; }
-                if val > max_val { max_val = val; }
+                if val < min_val {
+                    min_val = val;
+                }
+                if val > max_val {
+                    max_val = val;
+                }
             }
 
             self.min[f] = min_val;
@@ -85,7 +93,10 @@ impl MinMaxScaler {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("MinMaxScaler(n_features={}, n_samples={})", self.n_features, self.n_samples)
+        format!(
+            "MinMaxScaler(n_features={}, n_samples={})",
+            self.n_features, self.n_samples
+        )
     }
 }
 
@@ -105,11 +116,7 @@ mod tests {
 
     #[test]
     fn test_minmax_range() {
-        let data = vec![
-            1.0, 10.0,
-            2.0, 20.0,
-            3.0, 30.0,
-        ];
+        let data = vec![1.0, 10.0, 2.0, 20.0, 3.0, 30.0];
         let mut scaler = minmax_scaler(2);
         let transformed = scaler.fit_transform(&data).unwrap();
 
@@ -121,10 +128,7 @@ mod tests {
 
     #[test]
     fn test_minmax_exact_range() {
-        let data = vec![
-            0.0, 100.0,
-            10.0, 200.0,
-        ];
+        let data = vec![0.0, 100.0, 10.0, 200.0];
         let mut scaler = minmax_scaler(2);
         let transformed = scaler.fit_transform(&data).unwrap();
 
@@ -151,11 +155,7 @@ mod tests {
     #[test]
     fn test_constant_feature() {
         // Feature with zero range
-        let data = vec![
-            5.0, 1.0,
-            5.0, 2.0,
-            5.0, 3.0,
-        ];
+        let data = vec![5.0, 1.0, 5.0, 2.0, 5.0, 3.0];
         let mut scaler = minmax_scaler(2);
         let transformed = scaler.fit_transform(&data).unwrap();
 

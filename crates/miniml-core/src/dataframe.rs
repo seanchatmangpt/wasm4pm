@@ -203,14 +203,16 @@ impl DataFrame {
     /// Get summary statistics (describe)
     pub fn describe(&self) -> DataFrame {
         let mut summary_data = Vec::new();
-        let _summary_cols = ["count".to_string(),
+        let _summary_cols = [
+            "count".to_string(),
             "mean".to_string(),
             "std".to_string(),
             "min".to_string(),
             "25%".to_string(),
             "50%".to_string(),
             "75%".to_string(),
-            "max".to_string()];
+            "max".to_string(),
+        ];
 
         for col_idx in 0..self.n_cols {
             let col = &self.data[col_idx];
@@ -274,7 +276,8 @@ impl DataFrame {
                         0.0
                     } else {
                         let mean = col.iter().sum::<f64>() / col.len() as f64;
-                        let variance = col.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / col.len() as f64;
+                        let variance =
+                            col.iter().map(|&x| (x - mean).powi(2)).sum::<f64>() / col.len() as f64;
                         variance.sqrt()
                     }
                 }
@@ -685,7 +688,7 @@ mod tests {
         // Row 0: right key=2.0, left a=20.0, right b=200.0
         assert_eq!(result.data[1][0], 20.0); // left "a" column
         assert_eq!(result.data[2][0], 200.0); // right "b" column
-        // Row 1: right key=3.0, no match in left → NaN
+                                              // Row 1: right key=3.0, no match in left → NaN
         assert!(result.data[0][1].is_nan()); // left "id" is NaN
         assert_eq!(result.data[2][1], 300.0); // right "b" still has value
     }

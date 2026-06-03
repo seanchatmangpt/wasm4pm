@@ -98,7 +98,9 @@ impl fmt::Display for OptimizationError {
         match self {
             Self::EmptyPopulation => write!(f, "Population cannot be empty"),
             Self::InvalidBounds => write!(f, "Invalid gene bounds specified"),
-            Self::MaxIterationsReached => write!(f, "Maximum iterations reached without convergence"),
+            Self::MaxIterationsReached => {
+                write!(f, "Maximum iterations reached without convergence")
+            }
             Self::Other(msg) => write!(f, "{}", msg),
         }
     }

@@ -12,15 +12,11 @@ fn raw_step() -> u32 {
 
 fn bench_powl_macro_overhead(c: &mut Criterion) {
     let mut group = c.benchmark_group("powl/macro");
-    
-    group.bench_function("raw_function", |b| {
-        b.iter(|| raw_step())
-    });
-    
-    group.bench_function("instrumented_function", |b| {
-        b.iter(|| instrumented_step())
-    });
-    
+
+    group.bench_function("raw_function", |b| b.iter(|| raw_step()));
+
+    group.bench_function("instrumented_function", |b| b.iter(|| instrumented_step()));
+
     group.finish();
 }
 

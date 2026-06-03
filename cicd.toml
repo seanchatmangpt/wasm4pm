@@ -1,0 +1,35 @@
+[workspace]
+name = "wasm4pm"
+toolchain = "nightly-2026-04-15-aarch64-apple-darwin"
+target_dir = "target"
+
+[state]
+dirty = true
+target_size_gb = 35.4
+changed_files = 466
+changed_tests = 135
+changed_trybuild_fixtures = 0
+
+[target]
+max_size_gb = 20
+prune_after_days = 14
+
+[test.changed]
+enabled = true
+base = "origin/main"
+
+[trybuild.changed]
+enabled = true
+snapshot_mode = "changed-only"
+
+[git.phase]
+require_clean_tree = true
+commit_after_phase = false
+
+[autonomic]
+enabled = true
+mode = "suggest"
+
+[[events]]
+kind = "status"
+verdict = "pass"

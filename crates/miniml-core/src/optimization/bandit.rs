@@ -125,10 +125,7 @@ impl Default for BanditState {
 /// // Select arm using UCB1 algorithm
 /// // Update state with observed reward
 /// ```
-pub fn select_ucb1(
-    state: &BanditState,
-    exploration_factor: f64,
-) -> Result<UCB1Selection, String> {
+pub fn select_ucb1(state: &BanditState, exploration_factor: f64) -> Result<UCB1Selection, String> {
     if state.arms.is_empty() {
         return Err("Bandit must have at least one arm".into());
     }
@@ -224,10 +221,7 @@ pub fn rank_interventions(
         })
         .collect();
 
-    scored.sort_by(|a, b| {
-        b.1.partial_cmp(&a.1)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     scored
         .into_iter()

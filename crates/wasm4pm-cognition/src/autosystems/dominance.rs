@@ -37,10 +37,10 @@ pub enum DomainProfile {
 
 impl DomainProfile {
     /// Compute the weight for a dimension key under this profile.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn weight(&self, key: &str) -> f64 {
         match self {
             DomainProfile::Balanced | DomainProfile::Default => 1.0,

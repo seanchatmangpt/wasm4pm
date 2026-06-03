@@ -28,20 +28,15 @@
 #[cfg(feature = "feature-ocel")]
 mod ocel_lifecycle_wasm_export_tests {
     use std::collections::HashMap;
+    use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
-    use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 
-    fn make_ocel_two_events(
-        obj_id: &str,
-        obj_type: &str,
-        ts_first: &str,
-        ts_second: &str,
-    ) -> OCEL {
+    fn make_ocel_two_events(obj_id: &str, obj_type: &str, ts_first: &str, ts_second: &str) -> OCEL {
         OCEL {
             event_types: vec!["A".to_string(), "B".to_string()],
             object_types: vec![obj_type.to_string()],
@@ -83,7 +78,12 @@ mod ocel_lifecycle_wasm_export_tests {
     // -------------------------------------------------------------------------
     #[test]
     fn ocdfg_discover_produces_non_empty_dfgs_map() {
-        let ocel = make_ocel_two_events("order1", "Order", "2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z");
+        let ocel = make_ocel_two_events(
+            "order1",
+            "Order",
+            "2024-01-01T09:00:00Z",
+            "2024-01-01T10:00:00Z",
+        );
         let ocdfg = OCDirectlyFollowsGraph::discover(&ocel);
 
         assert!(
@@ -112,7 +112,12 @@ mod ocel_lifecycle_wasm_export_tests {
     // -------------------------------------------------------------------------
     #[test]
     fn ocdfg_serialises_to_non_empty_json() {
-        let ocel = make_ocel_two_events("order1", "Order", "2024-01-01T09:00:00Z", "2024-01-01T10:00:00Z");
+        let ocel = make_ocel_two_events(
+            "order1",
+            "Order",
+            "2024-01-01T09:00:00Z",
+            "2024-01-01T10:00:00Z",
+        );
         let ocdfg = OCDirectlyFollowsGraph::discover(&ocel);
 
         let json_str = serde_json::to_string(&ocdfg)
@@ -234,13 +239,22 @@ mod ocel_lifecycle_wasm_export_tests {
             "JSON report `violation_count` must equal 1",
         );
         assert!(
-            report["violations"].as_array().map(|a| !a.is_empty()).unwrap_or(false),
+            report["violations"]
+                .as_array()
+                .map(|a| !a.is_empty())
+                .unwrap_or(false),
             "JSON report `violations` array must be non-empty",
         );
 
-        let json_str = serde_json::to_string(&report)
-            .expect("Lifecycle report must serialise without error");
-        assert!(json_str.contains("valid"), "Report must contain 'valid' key");
-        assert!(json_str.contains("violation_count"), "Report must contain 'violation_count' key");
+        let json_str =
+            serde_json::to_string(&report).expect("Lifecycle report must serialise without error");
+        assert!(
+            json_str.contains("valid"),
+            "Report must contain 'valid' key"
+        );
+        assert!(
+            json_str.contains("violation_count"),
+            "Report must contain 'violation_count' key"
+        );
     }
 }

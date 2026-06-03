@@ -5,10 +5,10 @@
 //! Provides a generic genetic algorithm that works with any gene type
 //! that can be cloned and compared.
 
-use crate::optimization::types::*;
 use crate::optimization::fitness::*;
-use wasm_bindgen::prelude::*;
+use crate::optimization::types::*;
 use std::cell::RefCell;
+use wasm_bindgen::prelude::*;
 
 // Thread-local XORShift64 PRNG for random number generation
 // (Deterministic, no external dependencies)
@@ -155,12 +155,8 @@ impl GeneticAlgorithm {
 
         for generation in 0..self.options.generations {
             // Selection and reproduction
-            let new_population = self.evolve_population(
-                &population,
-                fitness_fn,
-                gene_factory,
-                dimension,
-            );
+            let new_population =
+                self.evolve_population(&population, fitness_fn, gene_factory, dimension);
             evaluations += new_population.len() - self.options.elitism_count;
 
             // Replace population
@@ -373,27 +369,29 @@ impl GeneticAlgorithm {
                 child.extend_from_slice(&segment[prev..]);
                 child
             }
-            CrossoverMethod::Uniform => {
-                genes1
-                    .iter()
-                    .zip(genes2.iter())
-                    .map(|(g1, g2)| {
-                        if rand_f64() < 0.5 {
-                            g1.clone()
-                        } else {
-                            g2.clone()
-                        }
-                    })
-                    .collect()
-            }
+            CrossoverMethod::Uniform => genes1
+                .iter()
+                .zip(genes2.iter())
+                .map(|(g1, g2)| {
+                    if rand_f64() < 0.5 {
+                        g1.clone()
+                    } else {
+                        g2.clone()
+                    }
+                })
+                .collect(),
         };
 
         Individual::new(child_genes)
     }
 
     /// Mutate an individual
-    fn mutate<T>(&self, individual: &mut Individual<T>, gene_factory: &dyn Fn() -> T, _dimension: usize)
-    where
+    fn mutate<T>(
+        &self,
+        individual: &mut Individual<T>,
+        gene_factory: &dyn Fn() -> T,
+        _dimension: usize,
+    ) where
         T: Clone + PartialEq,
     {
         if rand_f64() >= self.options.mutation_rate {
@@ -435,7 +433,11 @@ mod tests {
 
         // Should find a solution near the origin (0, 0)
         // The sphere function has maximum at 0.0, so fitness should be close to 0
-        assert!(result.best.fitness > -50.0, "Fitness too low: {}", result.best.fitness);
+        assert!(
+            result.best.fitness > -50.0,
+            "Fitness too low: {}",
+            result.best.fitness
+        );
         assert!(result.iterations <= 50);
     }
 
@@ -462,8 +464,16 @@ mod tests {
         // Child should have genes from both parents
         assert!(child.genes.len() == 4);
         // Either all from parent1 or split between parents
-        let from_p1 = child.genes.iter().filter(|&&x| x == 1.0 || x == 2.0 || x == 3.0 || x == 4.0).count();
-        let from_p2 = child.genes.iter().filter(|&&x| x == 5.0 || x == 6.0 || x == 7.0 || x == 8.0).count();
+        let from_p1 = child
+            .genes
+            .iter()
+            .filter(|&&x| x == 1.0 || x == 2.0 || x == 3.0 || x == 4.0)
+            .count();
+        let from_p2 = child
+            .genes
+            .iter()
+            .filter(|&&x| x == 5.0 || x == 6.0 || x == 7.0 || x == 8.0)
+            .count();
         assert_eq!(from_p1 + from_p2, 4);
     }
 
@@ -511,7 +521,11 @@ mod tests {
         let result = ga.optimize(&fitness, &gene_factory, 2);
 
         // Should find parameters close to optimal (lr=0.1, reg=0.01)
-        assert!(result.best.fitness > -0.5, "Fitness too low: {}", result.best.fitness);
+        assert!(
+            result.best.fitness > -0.5,
+            "Fitness too low: {}",
+            result.best.fitness
+        );
     }
 
     // Integration test: Feature selection
@@ -549,7 +563,12 @@ mod tests {
         let result = ga.optimize(&fitness, &gene_factory, 5);
 
         // Should find solution with 3 features selected
-        let selected: usize = result.best.genes.iter().map(|&g| if g > 0.5 { 1 } else { 0 }).sum();
+        let selected: usize = result
+            .best
+            .genes
+            .iter()
+            .map(|&g| if g > 0.5 { 1 } else { 0 })
+            .sum();
         assert!(selected == 3 || result.best.fitness > 0.8);
     }
 }

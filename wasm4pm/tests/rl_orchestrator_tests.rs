@@ -608,14 +608,30 @@ fn rank1_rl_state_fields_in_documented_ranges() {
         for health in 0u8..=4 {
             let s = RlState::from_features(&features, health, 0.5);
 
-            assert!(s.health_level <= 4,      "health_level {} > 4", s.health_level);
-            assert!(s.event_rate_q <= 7,      "event_rate_q {} > 7", s.event_rate_q);
-            assert!(s.activity_count_q <= 7,  "activity_count_q {} > 7", s.activity_count_q);
-            assert!(s.spc_alert_level <= 3,   "spc_alert_level {} > 3", s.spc_alert_level);
-            assert!(s.drift_status <= 2,      "drift_status {} > 2", s.drift_status);
-            assert!(s.rework_ratio_q <= 7,    "rework_ratio_q {} > 7", s.rework_ratio_q);
-            assert!(s.circuit_state <= 2,     "circuit_state {} > 2", s.circuit_state);
-            assert!(s.cycle_phase <= 3,       "cycle_phase {} > 3", s.cycle_phase);
+            assert!(s.health_level <= 4, "health_level {} > 4", s.health_level);
+            assert!(s.event_rate_q <= 7, "event_rate_q {} > 7", s.event_rate_q);
+            assert!(
+                s.activity_count_q <= 7,
+                "activity_count_q {} > 7",
+                s.activity_count_q
+            );
+            assert!(
+                s.spc_alert_level <= 3,
+                "spc_alert_level {} > 3",
+                s.spc_alert_level
+            );
+            assert!(s.drift_status <= 2, "drift_status {} > 2", s.drift_status);
+            assert!(
+                s.rework_ratio_q <= 7,
+                "rework_ratio_q {} > 7",
+                s.rework_ratio_q
+            );
+            assert!(
+                s.circuit_state <= 2,
+                "circuit_state {} > 2",
+                s.circuit_state
+            );
+            assert!(s.cycle_phase <= 3, "cycle_phase {} > 3", s.cycle_phase);
         }
     }
 }
@@ -679,7 +695,10 @@ fn test_restore_all_q_tables_rejects_invalid_agent_type() {
 
     // Export and then manually corrupt agent_type to an invalid index
     let mut tables = orch.export_all_q_tables();
-    assert!(!tables.is_empty(), "Should have exported at least one table");
+    assert!(
+        !tables.is_empty(),
+        "Should have exported at least one table"
+    );
 
     // Corrupt the first table's agent_type to an out-of-bounds index
     // (valid range: 0..5, so 5+ is invalid)
@@ -693,7 +712,10 @@ fn test_restore_all_q_tables_rejects_invalid_agent_type() {
         restored, 3,
         "Only the 3 valid tables (indices 2, 3, 4) should be restored"
     );
-    assert_eq!(skipped, 2, "The 2 invalid tables should be skipped and logged");
+    assert_eq!(
+        skipped, 2,
+        "The 2 invalid tables should be skipped and logged"
+    );
 }
 
 #[cfg(feature = "cloud")]
@@ -755,7 +777,10 @@ fn test_linucb_update_emits_weight_norm_span() {
     // In a full integration test, we would use tracing-test or similar
     // to capture and assert span attributes. For this unit test,
     // lack of panic indicates span construction succeeded.
-    assert!(orch.linucb_selection_enabled(), "LinUCB should remain enabled");
+    assert!(
+        orch.linucb_selection_enabled(),
+        "LinUCB should remain enabled"
+    );
 }
 
 #[test]

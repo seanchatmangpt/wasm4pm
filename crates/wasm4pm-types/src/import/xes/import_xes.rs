@@ -1,8 +1,8 @@
 use crate::event_log::EventLog;
 use crate::import::xes::stream_xes::XESParsingTraceStream;
-use std::io::BufRead;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::io::BufRead;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct XESImportOptions {
@@ -35,11 +35,14 @@ impl From<std::io::Error> for XESParseError {
     }
 }
 
-pub fn import_xes<'a, R: BufRead + 'a>(reader: R, options: XESImportOptions) -> Result<EventLog, XESParseError> {
+pub fn import_xes<'a, R: BufRead + 'a>(
+    reader: R,
+    options: XESImportOptions,
+) -> Result<EventLog, XESParseError> {
     let buf_read: Box<dyn BufRead + 'a> = Box::new(reader);
     let reader = quick_xml::Reader::from_reader(buf_read);
     let (mut stream, log_data) = XESParsingTraceStream::try_new(Box::new(reader), options)?;
-    
+
     let mut traces = Vec::new();
     for trace in &mut stream {
         traces.push(trace);

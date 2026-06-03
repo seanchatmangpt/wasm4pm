@@ -75,18 +75,32 @@ fn run_agentic_pipeline_minimal_valid_input_does_not_panic() {
     let task: TaskContext = serde_json::from_str(&minimal_task_json("prop1")).unwrap();
 
     // Replicate the exact logic of run_agentic_pipeline (cloud-gated export)
-    let bindings = compiler.compile_bindings(&task).expect("compile_bindings must not panic");
-    let sufficient = checker.is_sufficient(&task).expect("is_sufficient must not panic");
-    let gaps = checker.summarize_gaps(&task).expect("summarize_gaps must not panic");
-    let escalation = engine.evaluate_escalation(&task).expect("evaluate_escalation must not panic");
+    let bindings = compiler
+        .compile_bindings(&task)
+        .expect("compile_bindings must not panic");
+    let sufficient = checker
+        .is_sufficient(&task)
+        .expect("is_sufficient must not panic");
+    let gaps = checker
+        .summarize_gaps(&task)
+        .expect("summarize_gaps must not panic");
+    let escalation = engine
+        .evaluate_escalation(&task)
+        .expect("evaluate_escalation must not panic");
 
     // Structural assertions
     assert!(bindings.selected_role.is_some());
     assert!(bindings.topology.is_some());
     assert!(bindings.bindings.contains_key("task_id"));
-    assert!(sufficient, "minimal task with High confidence must be sufficient");
+    assert!(
+        sufficient,
+        "minimal task with High confidence must be sufficient"
+    );
     assert!(gaps.is_empty(), "minimal task must have no evidence gaps");
-    assert!(!escalation.should_escalate, "Low risk Intake must not escalate");
+    assert!(
+        !escalation.should_escalate,
+        "Low risk Intake must not escalate"
+    );
 }
 
 /// Default (zero-value) TaskContext must not panic anywhere in the pipeline.
@@ -102,9 +116,18 @@ fn run_agentic_pipeline_default_task_context_does_not_panic() {
     let sufficient = checker.is_sufficient(&task);
     let escalation = engine.evaluate_escalation(&task);
 
-    assert!(bindings.is_ok(), "default TaskContext must not panic in compile_bindings");
-    assert!(sufficient.is_ok(), "default TaskContext must not panic in is_sufficient");
-    assert!(escalation.is_ok(), "default TaskContext must not panic in evaluate_escalation");
+    assert!(
+        bindings.is_ok(),
+        "default TaskContext must not panic in compile_bindings"
+    );
+    assert!(
+        sufficient.is_ok(),
+        "default TaskContext must not panic in is_sufficient"
+    );
+    assert!(
+        escalation.is_ok(),
+        "default TaskContext must not panic in evaluate_escalation"
+    );
 }
 
 /// Empty JTBD suite (zero cases) must return an empty result without panicking.
@@ -170,7 +193,10 @@ fn validate_agentic_handoff_delegate_not_allowed_is_rejected() {
     };
 
     let decision = validator.validate_handoff(&req).unwrap();
-    assert!(!decision.allowed, "handoff without Delegate permission must be denied");
+    assert!(
+        !decision.allowed,
+        "handoff without Delegate permission must be denied"
+    );
     assert!(decision.reason_codes.iter().any(|r| r.contains("delegate")));
 }
 
@@ -208,7 +234,10 @@ fn validate_agentic_handoff_open_policy_allows_with_transition() {
     let req: HandoffRequest = serde_json::from_str(&minimal_handoff_json("Executor")).unwrap();
     let decision = validator.validate_handoff(&req).unwrap();
     assert!(decision.allowed);
-    assert!(decision.transition.is_some(), "approved handoff must produce a transition envelope");
+    assert!(
+        decision.transition.is_some(),
+        "approved handoff must produce a transition envelope"
+    );
     let transition = decision.transition.unwrap();
     assert_eq!(transition.action_class, ActionClass::Delegate);
     assert!(transition.allowed);
@@ -293,7 +322,7 @@ fn evaluate_agentic_counterfactuals_selected_option_has_max_reward() {
     let evaluator = DefaultCounterfactualEvaluator;
     let mut allowed = BTreeSet::new();
     allowed.insert(ActionClass::Execute); // delta=-1 → improves health
-    allowed.insert(ActionClass::Read);    // delta=0 → no change
+    allowed.insert(ActionClass::Read); // delta=0 → no change
     allowed.insert(ActionClass::Escalate); // guard_pass=false → lower reward
 
     let task = TaskContext {
@@ -312,7 +341,9 @@ fn evaluate_agentic_counterfactuals_selected_option_has_max_reward() {
 
     let result = evaluator.evaluate_options(&task).unwrap();
     let selected_id = result.selected_option_id.clone().unwrap();
-    let selected_reward = result.options.iter()
+    let selected_reward = result
+        .options
+        .iter()
         .find(|o| o.option_id == selected_id)
         .and_then(|o| o.estimated_reward)
         .unwrap();

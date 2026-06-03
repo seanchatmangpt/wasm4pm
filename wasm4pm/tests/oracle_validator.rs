@@ -9,7 +9,6 @@
 /// Rank-1 > Rank-2 > Rank-3 > Rank-4. Never use Rank-5 (code-derived oracle).
 ///
 /// Doctrine: If code says it worked but event log cannot prove a lawful process happened, then it did not work.
-
 use std::collections::HashSet;
 
 /// Chicago TDD oracle rank (hierarchy from strongest to weakest)
@@ -107,7 +106,12 @@ impl OracleValidator {
     }
 
     /// Validate an oracle against Chicago TDD standards
-    pub fn validate(&self, oracle_type: Rank, assertion: &str, implementation_context: &str) -> ValidationStatus {
+    pub fn validate(
+        &self,
+        oracle_type: Rank,
+        assertion: &str,
+        implementation_context: &str,
+    ) -> ValidationStatus {
         let assertion_lower = assertion.to_lowercase();
         let context_lower = implementation_context.to_lowercase();
 
@@ -115,7 +119,10 @@ impl OracleValidator {
         for forbidden in &self.forbidden_keywords {
             if assertion_lower.contains(forbidden) {
                 return ValidationStatus::Invalid {
-                    reason: format!("FM-5 violation: oracle uses forbidden keyword '{}'", forbidden),
+                    reason: format!(
+                        "FM-5 violation: oracle uses forbidden keyword '{}'",
+                        forbidden
+                    ),
                 };
             }
         }
@@ -146,9 +153,14 @@ impl OracleValidator {
         }
 
         // Rank-1 must not be code-derived
-        if assertion.contains("=") && !assertion.contains("<=") && !assertion.contains(">=") && !assertion.contains("!=") {
+        if assertion.contains("=")
+            && !assertion.contains("<=")
+            && !assertion.contains(">=")
+            && !assertion.contains("!=")
+        {
             return ValidationStatus::Invalid {
-                reason: "Rank-1 oracle must use comparison operators (<=, >=, !=), not assignment".to_string(),
+                reason: "Rank-1 oracle must use comparison operators (<=, >=, !=), not assignment"
+                    .to_string(),
             };
         }
 
@@ -161,7 +173,8 @@ impl OracleValidator {
 
         if !has_contract_marker {
             return ValidationStatus::Invalid {
-                reason: "Rank-2 oracle must state domain contract (invariant, rule, policy)".to_string(),
+                reason: "Rank-2 oracle must state domain contract (invariant, rule, policy)"
+                    .to_string(),
             };
         }
 

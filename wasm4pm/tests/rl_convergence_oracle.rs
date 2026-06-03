@@ -9,10 +9,8 @@
 //! 3. Learning Rate Decay: α_t = α_0 × (0.9999 ^ cycle)
 //! 4. Weight Norm Learning: linucb_weight_delta > 0 during learning
 
-use wasm4pm::rl_orchestrator::{
-    RlOrchestrator, RlState, learning_rate_schedule,
-};
 use fastrand::Rng;
+use wasm4pm::rl_orchestrator::{learning_rate_schedule, RlOrchestrator, RlState};
 
 /// RANK-1 ORACLE: Bellman Convergence Theorem
 ///
@@ -80,9 +78,9 @@ fn test_td_error_converges_to_near_zero() {
             &features,
             &state,
             &next_state,
-            0, // spc_alert_count
-            true, // guard_pass
-            true, // circuit_allowed
+            0,     // spc_alert_count
+            true,  // guard_pass
+            true,  // circuit_allowed
             false, // latency_budget_exceeded
         );
 
@@ -102,10 +100,13 @@ fn test_td_error_converges_to_near_zero() {
     // Early cycles should have higher TD error magnitude than late cycles
     if td_errors.len() >= 4 {
         let early_mean = td_errors[0..2].iter().sum::<f32>() / 2.0;
-        let late_mean = td_errors[td_errors.len()-2..].iter().sum::<f32>() / 2.0;
+        let late_mean = td_errors[td_errors.len() - 2..].iter().sum::<f32>() / 2.0;
 
         // Allow for numerical noise, but trend should show convergence
-        eprintln!("Early TD error: {:.4}, Late TD error: {:.4}", early_mean, late_mean);
+        eprintln!(
+            "Early TD error: {:.4}, Late TD error: {:.4}",
+            early_mean, late_mean
+        );
     }
 }
 
@@ -324,8 +325,7 @@ fn test_weight_norms_track_learning() {
 
     eprintln!(
         "Weight norm learning signal verified: {}/{} cycles showed learning",
-        weight_delta_count_learning,
-        cycles_checked
+        weight_delta_count_learning, cycles_checked
     );
 }
 
@@ -366,10 +366,18 @@ fn test_convergence_diagnostics_integration() {
         if cycle > 0 && cycle % 10 == 0 {
             // Check that learning rate is decreasing (decay schedule working)
             let alpha = learning_rate_schedule(0.1_f32, cycle as u64);
-            assert!(alpha > 0.0 && alpha < 0.11, "Learning rate schedule working: α={:.6}", alpha);
+            assert!(
+                alpha > 0.0 && alpha < 0.11,
+                "Learning rate schedule working: α={:.6}",
+                alpha
+            );
         }
     }
 
     // Final check: convergence diagnostics span would be emitted at cycle 100
-    assert_eq!(orch.telemetry().cycle_count, 100, "Ran correct number of cycles");
+    assert_eq!(
+        orch.telemetry().cycle_count,
+        100,
+        "Ran correct number of cycles"
+    );
 }

@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// Build confusion matrix from true and predicted labels.
 /// Returns: [n_classes, class_0, class_1, ..., matrix_flat (n_classes × n_classes)]
@@ -20,8 +20,14 @@ pub fn confusion_matrix_impl(y_true: &[f64], y_pred: &[f64]) -> Result<Vec<f64>,
     // Build confusion matrix
     let mut matrix = vec![0.0f64; n_classes * n_classes];
     for i in 0..y_true.len() {
-        let true_idx = classes.iter().position(|&c| (c - y_true[i]).abs() < 1e-10).unwrap();
-        let pred_idx = classes.iter().position(|&c| (c - y_pred[i]).abs() < 1e-10).unwrap();
+        let true_idx = classes
+            .iter()
+            .position(|&c| (c - y_true[i]).abs() < 1e-10)
+            .unwrap();
+        let pred_idx = classes
+            .iter()
+            .position(|&c| (c - y_pred[i]).abs() < 1e-10)
+            .unwrap();
         matrix[true_idx * n_classes + pred_idx] += 1.0;
     }
 
@@ -49,7 +55,8 @@ pub fn accuracy(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsError> {
         return Err(JsError::new("arrays must not be empty"));
     }
 
-    let correct = y_true.iter()
+    let correct = y_true
+        .iter()
         .zip(y_pred.iter())
         .filter(|(t, p)| (**t - **p).abs() < 1e-10)
         .count();
@@ -76,19 +83,29 @@ pub fn f1_score(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsError> {
         // Column sum = all predicted as class c
         let mut fp = 0.0;
         for r in 0..n_classes {
-            if r != c { fp += cm[matrix_offset + r * n_classes + c]; }
+            if r != c {
+                fp += cm[matrix_offset + r * n_classes + c];
+            }
         }
         // Row sum = all actual class c
         let mut fn_val = 0.0;
         for p in 0..n_classes {
-            if p != c { fn_val += cm[matrix_offset + c * n_classes + p]; }
+            if p != c {
+                fn_val += cm[matrix_offset + c * n_classes + p];
+            }
         }
 
         let precision = if tp + fp > 0.0 { tp / (tp + fp) } else { 0.0 };
-        let recall = if tp + fn_val > 0.0 { tp / (tp + fn_val) } else { 0.0 };
+        let recall = if tp + fn_val > 0.0 {
+            tp / (tp + fn_val)
+        } else {
+            0.0
+        };
         let f1 = if precision + recall > 0.0 {
             2.0 * precision * recall / (precision + recall)
-        } else { 0.0 };
+        } else {
+            0.0
+        };
 
         f1_sum += f1;
     }
@@ -112,10 +129,14 @@ pub fn precision(y_true: &[f64], y_pred: &[f64], positive_class: f64) -> Result<
     let tp = cm[matrix_offset + pos_idx * n_classes + pos_idx];
     let mut fp = 0.0;
     for r in 0..n_classes {
-        if r != pos_idx { fp += cm[matrix_offset + r * n_classes + pos_idx]; }
+        if r != pos_idx {
+            fp += cm[matrix_offset + r * n_classes + pos_idx];
+        }
     }
 
-    if tp + fp == 0.0 { return Ok(0.0); }
+    if tp + fp == 0.0 {
+        return Ok(0.0);
+    }
     Ok(tp / (tp + fp))
 }
 
@@ -135,10 +156,14 @@ pub fn recall(y_true: &[f64], y_pred: &[f64], positive_class: f64) -> Result<f64
     let tp = cm[matrix_offset + pos_idx * n_classes + pos_idx];
     let mut fn_val = 0.0;
     for p in 0..n_classes {
-        if p != pos_idx { fn_val += cm[matrix_offset + pos_idx * n_classes + p]; }
+        if p != pos_idx {
+            fn_val += cm[matrix_offset + pos_idx * n_classes + p];
+        }
     }
 
-    if tp + fn_val == 0.0 { return Ok(0.0); }
+    if tp + fn_val == 0.0 {
+        return Ok(0.0);
+    }
     Ok(tp / (tp + fn_val))
 }
 

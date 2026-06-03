@@ -1,5 +1,6 @@
 #![allow(deprecated)]
 /// Convert a POWL model to a Petri net.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_models::{
     PowlCounts as Counts, PowlMarking as Marking, PowlPetriNet as PetriNet,
@@ -289,8 +290,8 @@ fn recursively_add_tree(
                 } else {
                     // SubModel(idx) (or Activity, but Activity is normalized away).
                     let sub_idx: u32 = match node {
-                        wasm4pm_types::ChoiceGraphNode::SubModel(i) => *i,
-                        wasm4pm_types::ChoiceGraphNode::Activity(_) => {
+                        ChoiceGraphNode::SubModel(i) => *i,
+                        ChoiceGraphNode::Activity(_) => {
                             // Defensive: should not occur (normalized in add_choice_graph).
                             // Skip with a silent transition to keep replay sound.
                             let p_in = new_place(net, counts);
@@ -310,8 +311,8 @@ fn recursively_add_tree(
                             }
                             continue;
                         }
-                        wasm4pm_types::ChoiceGraphNode::Start
-                        | wasm4pm_types::ChoiceGraphNode::End => unreachable!(),
+                        ChoiceGraphNode::Start
+                        | ChoiceGraphNode::End => unreachable!(),
                     };
                     let p_in = new_place(net, counts);
                     let p_out = new_place(net, counts);

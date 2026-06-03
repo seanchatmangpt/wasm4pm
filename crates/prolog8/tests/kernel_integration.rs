@@ -13,13 +13,13 @@ use prolog8::{
     admit_atom,
     catalog::{Catalog, PredicateMeta, PredicateProofPolicy},
     kernel::{Decision, Kernel, QueryResult},
-    replay, ReplayStatus,
+    replay,
     types::{
         Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, FeatureBit, PlanId,
-        PredicateId, ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId,
-        ARITY_CAP, BODY_CAP,
+        PredicateId, ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId, ARITY_CAP,
+        BODY_CAP,
     },
-    RejectionCode,
+    RejectionCode, ReplayStatus,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -90,7 +90,12 @@ fn known_fact_query_yields_allow_with_proof_and_receipt() {
     };
 
     assert_eq!(answers.len(), 1);
-    let Decision { kind, proof, receipt, .. } = &answers[0];
+    let Decision {
+        kind,
+        proof,
+        receipt,
+        ..
+    } = &answers[0];
     assert_eq!(*kind, DecisionKind::Allow);
     assert!(!proof.is_empty(), "positive proof must be present");
     assert_eq!(proof[0].kind, ProofKind::Fact);
@@ -105,7 +110,13 @@ fn known_fact_query_yields_allow_with_proof_and_receipt() {
 #[test]
 fn unknown_fact_query_yields_deny_with_negative_proof() {
     let k = build_kernel_with_facts();
-    let q = query_for(&k, PredicateId(1), "alice", "carol", ProofMode::NegativeOnly);
+    let q = query_for(
+        &k,
+        PredicateId(1),
+        "alice",
+        "carol",
+        ProofMode::NegativeOnly,
+    );
 
     let denied = match k.query(&q) {
         QueryResult::Denied(d) => d,
@@ -179,7 +190,11 @@ fn one_step_rule_chain_yields_allow_with_rule_proof_node() {
         .iter()
         .filter(|n| n.kind == ProofKind::Rule)
         .collect();
-    assert_eq!(rule_nodes.len(), 1, "exactly one Rule node expected in proof");
+    assert_eq!(
+        rule_nodes.len(),
+        1,
+        "exactly one Rule node expected in proof"
+    );
 }
 
 // ── test: replay verifies a fresh receipt ────────────────────────────────────
@@ -253,9 +268,16 @@ fn admit_atom_rejects_arity_beyond_cap() {
         materialized: false,
     });
     // Manually tamper arity after construction so admission must reject it.
-    let mut atom = Atom8::new(PredicateId(1), ARITY_CAP, &[TermId::new(1); ARITY_CAP as usize]);
+    let mut atom = Atom8::new(
+        PredicateId(1),
+        ARITY_CAP,
+        &[TermId::new(1); ARITY_CAP as usize],
+    );
     atom.arity = ARITY_CAP + 1; // exceeds cap
-    assert_eq!(admit_atom(&atom, &cat), Err(RejectionCode::ArityCapExceeded));
+    assert_eq!(
+        admit_atom(&atom, &cat),
+        Err(RejectionCode::ArityCapExceeded)
+    );
 }
 
 #[test]
@@ -359,7 +381,9 @@ fn kernel_returns_all_answers_beyond_wasm_max() {
         materialized: false,
     });
     let n_rows = 130usize;
-    let terms: Vec<TermId> = (0..n_rows).map(|i| cat.intern_term(format!("item_{}", i))).collect();
+    let terms: Vec<TermId> = (0..n_rows)
+        .map(|i| cat.intern_term(format!("item_{}", i)))
+        .collect();
 
     let rows: Vec<FactRow8> = terms
         .iter()
@@ -367,7 +391,8 @@ fn kernel_returns_all_answers_beyond_wasm_max() {
         .collect();
 
     let mut k = Kernel::new(cat);
-    k.load_facts(FactBlock8::new(PredicateId(10), 1, rows)).unwrap();
+    k.load_facts(FactBlock8::new(PredicateId(10), 1, rows))
+        .unwrap();
 
     // Query with no bindings — should match all 130 rows.
     let atom = Atom8::new(PredicateId(10), 1, &[TermId::sentinel()]);
@@ -380,9 +405,12 @@ fn kernel_returns_all_answers_beyond_wasm_max() {
 
     match k.query(&q) {
         QueryResult::Answered(answers) => {
-            assert_eq!(answers.len(), n_rows,
+            assert_eq!(
+                answers.len(),
+                n_rows,
                 "kernel must return all {n_rows} answers without truncation; \
-                 truncation to MAX_ANSWERS (128) is the WASM boundary's responsibility");
+                 truncation to MAX_ANSWERS (128) is the WASM boundary's responsibility"
+            );
         }
         other => panic!("expected Answered, got {other:?}"),
     }
@@ -401,11 +429,17 @@ fn byte_cap_guard_length_check() {
 
     // Build a string just under the cap: must NOT be rejected by length check.
     let under = "x".repeat(MAX_INPUT_LEN);
-    assert!(under.len() <= MAX_INPUT_LEN, "under-cap string passes length guard");
+    assert!(
+        under.len() <= MAX_INPUT_LEN,
+        "under-cap string passes length guard"
+    );
 
     // Build a string just over the cap.
     let over = "x".repeat(MAX_INPUT_LEN + 1);
-    assert!(over.len() > MAX_INPUT_LEN, "over-cap string triggers length guard");
+    assert!(
+        over.len() > MAX_INPUT_LEN,
+        "over-cap string triggers length guard"
+    );
 
     // Verify the boundary: exactly MAX_INPUT_LEN bytes is allowed (<=).
     let max_len_boundary = MAX_INPUT_LEN;
@@ -439,7 +473,12 @@ fn replay_with_wrong_facts_yields_mismatch_not_panic() {
     k2.load_facts(FactBlock8::new(
         PredicateId(1),
         2,
-        vec![FactRow8::new(PredicateId(1), 2, &[bob2, carol2], SourceId(0))],
+        vec![FactRow8::new(
+            PredicateId(1),
+            2,
+            &[bob2, carol2],
+            SourceId(0),
+        )],
     ))
     .unwrap();
 
@@ -461,6 +500,9 @@ fn replay_with_wrong_facts_yields_mismatch_not_panic() {
     // will either produce Denied (alice→bob not in k2) or Mismatch on the
     // fact/catalog roots; either way it must not panic.
     let status = replay(&k2, &q2, &receipt);
-    assert_ne!(status, prolog8::ReplayStatus::Verified,
-        "receipt from k cannot verify against k2 with different facts");
+    assert_ne!(
+        status,
+        prolog8::ReplayStatus::Verified,
+        "receipt from k cannot verify against k2 with different facts"
+    );
 }

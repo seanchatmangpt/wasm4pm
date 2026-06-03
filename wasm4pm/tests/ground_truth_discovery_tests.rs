@@ -337,10 +337,7 @@ fn heuristic_dfg(log: &EventLog, activity_key: &str, threshold: f64) -> Directly
 #[test]
 fn heuristic_threshold_sensitivity() {
     // Rank 2 domain contract: higher threshold → fewer or equal edges
-    let log = make_log(&[
-        (10, &["A", "B", "D"]),
-        (1, &["A", "C", "D"]),
-    ]);
+    let log = make_log(&[(10, &["A", "B", "D"]), (1, &["A", "C", "D"])]);
 
     // Low threshold — lenient, should include rare paths
     let dfg_low = heuristic_dfg(&log, "concept:name", 0.2);
@@ -433,16 +430,14 @@ fn xes_round_trip_preserves_trace_count() {
     // Sum of all start-activity frequencies must equal total trace count
     let total_starts: usize = dfg.start_activities.values().sum();
     assert_eq!(
-        total_starts,
-        5,
+        total_starts, 5,
         "Sum of start-activity frequencies must equal trace count (5)"
     );
 
     // Similarly, sum of end-activity frequencies equals trace count
     let total_ends: usize = dfg.end_activities.values().sum();
     assert_eq!(
-        total_ends,
-        5,
+        total_ends, 5,
         "Sum of end-activity frequencies must equal trace count (5)"
     );
 }
