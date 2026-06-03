@@ -36,6 +36,12 @@ pub struct TraceReplayResult {
     pub missing: u32,
     pub remaining: u32,
     pub fitness: f64,
+    /// Enabled activity count summed across all replay steps (ETC precision numerator basis).
+    pub total_enabled: u32,
+    /// Enabled activities NOT executed at each step (escaping arcs for ETC precision).
+    pub total_escaping: u32,
+    /// ETC precision for this trace: 1 - (total_escaping / total_enabled).
+    pub precision: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -46,6 +52,10 @@ pub struct LogReplayResult {
     pub total_missing: u32,
     pub total_remaining: u32,
     pub overall_fitness: f64,
+    /// ETC precision across all traces: 1 - (Σescaping / Σenabled).
+    pub overall_precision: f64,
+    pub total_enabled: u32,
+    pub total_escaping: u32,
 }
 
 impl SimdPetriNet {
@@ -138,6 +148,9 @@ impl SimdPetriNet {
         let mut consumed: u32 = 0;
         let mut produced: u32 = 0;
         let mut missing: u32 = 0;
+        // ETC precision tracking: count enabled activities and escaping activities per step.
+        let mut total_enabled: u32 = 0;
+        let mut total_escaping: u32 = 0;
 
         let max_transitions = self
             .label_to_transitions
@@ -150,6 +163,35 @@ impl SimdPetriNet {
         for activity_idx in activities {
             let activity = vocab[activity_idx as usize];
             let candidates = self.label_to_transitions.get(activity);
+
+            // --- ETC precision: count enabled activities BEFORE firing (pre-fire marking) ---
+            // enabled_count = number of distinct activities that have ≥1 enabled transition.
+            // current_enabled = true if the activity we're about to execute has an enabled transition.
+            let current_activity_enabled: bool = candidates
+                .map(|c| {
+                    c.iter().any(|&tid| {
+                        self.preset[tid as usize]
+                            .iter()
+                            .all(|&p| marking[p as usize] > 0)
+                    })
+                })
+                .unwrap_or(false);
+            let enabled_count: u32 = self
+                .label_to_transitions
+                .values()
+                .filter(|transitions| {
+                    transitions.iter().any(|&tid| {
+                        self.preset[tid as usize]
+                            .iter()
+                            .all(|&p| marking[p as usize] > 0)
+                    })
+                })
+                .count() as u32;
+            total_enabled += enabled_count;
+            // Escaping = enabled activities that were NOT executed.
+            // If current activity was enabled, one slot is "used" → escaping = enabled - 1.
+            // If force-fired (not enabled), none were executed → escaping = enabled.
+            total_escaping += enabled_count.saturating_sub(current_activity_enabled as u32);
 
             let mut fired = 0u32;
             let mut transition_idx = 0;
@@ -226,6 +268,11 @@ impl SimdPetriNet {
         let remaining: u32 = marking[..self.num_places].iter().sum();
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);
+        let precision = if total_enabled == 0 {
+            1.0
+        } else {
+            (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
+        };
 
         TraceReplayResult {
             consumed,
@@ -233,6 +280,9 @@ impl SimdPetriNet {
             missing,
             remaining,
             fitness,
+            total_enabled,
+            total_escaping,
+            precision,
         }
     }
 
@@ -251,6 +301,8 @@ impl SimdPetriNet {
         let total_produced: u32 = trace_results.iter().map(|r| r.produced).sum();
         let total_missing: u32 = trace_results.iter().map(|r| r.missing).sum();
         let total_remaining: u32 = trace_results.iter().map(|r| r.remaining).sum();
+        let total_enabled: u32 = trace_results.iter().map(|r| r.total_enabled).sum();
+        let total_escaping: u32 = trace_results.iter().map(|r| r.total_escaping).sum();
 
         let overall_fitness = compute_fitness(
             total_consumed,
@@ -258,6 +310,11 @@ impl SimdPetriNet {
             total_missing,
             total_remaining,
         );
+        let overall_precision = if total_enabled == 0 {
+            1.0
+        } else {
+            (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
+        };
 
         LogReplayResult {
             trace_results,
@@ -266,6 +323,9 @@ impl SimdPetriNet {
             total_missing,
             total_remaining,
             overall_fitness,
+            overall_precision,
+            total_enabled,
+            total_escaping,
         }
     }
 
@@ -369,12 +429,13 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
 
             Ok(serde_json::json!({
                 "overall_fitness": result.overall_fitness,
-                "precision": serde_json::Value::Null,
-                "precision_note": "simd_token_replay does not compute precision — fitness only",
+                "overall_precision": result.overall_precision,
                 "total_consumed": result.total_consumed,
                 "total_produced": result.total_produced,
                 "total_missing": result.total_missing,
                 "total_remaining": result.total_remaining,
+                "total_enabled": result.total_enabled,
+                "total_escaping": result.total_escaping,
                 "trace_count": result.trace_results.len(),
                 "trace_results": result.trace_results.iter().map(|tr| {
                     serde_json::json!({
@@ -383,6 +444,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
                         "missing": tr.missing,
                         "remaining": tr.remaining,
                         "fitness": tr.fitness,
+                        "precision": tr.precision,
                     })
                 }).collect::<Vec<_>>(),
             })
@@ -414,17 +476,15 @@ mod source_place_tests {
 
         // Build vocab and replay the exact sequence the model was built from
         // place_ids are assigned in node insertion order from make_dfg
-        let vocab: Vec<&str> = net
-            .place_ids
-            .iter()
-            .collect::<Vec<_>>()
-            .into_iter()
-            .fold(vec![""; net.num_places], |mut v, (name, &id)| {
+        let vocab: Vec<&str> = net.place_ids.iter().collect::<Vec<_>>().into_iter().fold(
+            vec![""; net.num_places],
+            |mut v, (name, &id)| {
                 if (id as usize) < v.len() {
                     v[id as usize] = name.as_str();
                 }
                 v
-            });
+            },
+        );
 
         // Find activity indices by name
         let idx_a = *net.place_ids.get("A").unwrap() as usize;
@@ -435,10 +495,12 @@ mod source_place_tests {
         let vocab_refs: Vec<&str> = vocab.clone();
         let result = net.replay_trace(trace.into_iter(), &vocab_refs);
 
-        assert_eq!(result.missing, 0, "perfect trace should have 0 missing tokens");
         assert_eq!(
-            result.remaining,
-            0,
+            result.missing, 0,
+            "perfect trace should have 0 missing tokens"
+        );
+        assert_eq!(
+            result.remaining, 0,
             "perfect trace should have 0 remaining tokens"
         );
         assert!(
@@ -456,10 +518,7 @@ mod source_place_tests {
         let sources = net.source_places();
         // A is the place with no incoming edges
         let a_id = *net.place_ids.get("A").unwrap();
-        assert!(
-            sources.contains(&a_id),
-            "A must be a source place in A→B→C"
-        );
+        assert!(sources.contains(&a_id), "A must be a source place in A→B→C");
         assert_eq!(sources.len(), 1, "exactly one source in a linear chain");
     }
 

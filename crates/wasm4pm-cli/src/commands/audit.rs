@@ -37,11 +37,12 @@ pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
 
 fn print_audit_report(result: &Value, io: &Io) {
     // Verdict schema: wpm-verdict-v1.json — reads overall_fitness (NOT fitness), trace[].missing (NOT missing_tokens)
-    // simd_token_replay emits "overall_fitness" at the top level (not "fitness").
+    // simd_token_replay emits "overall_fitness" and "overall_precision" at the top level.
     // Per-trace objects use "missing" and "remaining" (not "missing_tokens" /
     // "remaining_tokens"). There is no "trace_id" field; traces are indexed by
     // position in the "trace_results" array.
     let fitness = result["overall_fitness"].as_f64().unwrap_or(0.0);
+    let precision = result["overall_precision"].as_f64();
 
     io.header("Vision 2030 Conformance Audit Report");
 
@@ -55,7 +56,14 @@ fn print_audit_report(result: &Value, io: &Io) {
 
     println!("\n{:<25} {}", "Audit Verdict:".bold(), verdict);
     println!("{:<25} {:.4}", "Fitness Score:".bold(), fitness);
-    println!("{:<25} {}", "Precision Score:".bold(), "UNSUPPORTED (metric not computed by simd_token_replay)".dimmed());
+    match precision {
+        Some(p) => println!("{:<25} {:.4}", "Precision Score:".bold(), p),
+        None => println!(
+            "{:<25} {}",
+            "Precision Score:".bold(),
+            "UNSUPPORTED".dimmed()
+        ),
+    };
 
     if let Some(traces) = result["trace_results"].as_array() {
         println!("\n{:<25} {}", "Total Traces Audited:".bold(), traces.len());
