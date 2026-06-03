@@ -54,6 +54,9 @@ pub struct LogReplayResult {
     pub overall_fitness: f64,
     /// ETC precision across all traces: 1 - (Σescaping / Σenabled).
     pub overall_precision: f64,
+    /// Generalization proxy: 1 - (unique_fitness_paths / total_traces), clamped [0,1].
+    /// Measures diversity of execution paths observed in the log.
+    pub overall_generalization: f64,
     pub total_enabled: u32,
     pub total_escaping: u32,
 }
@@ -316,6 +319,19 @@ impl SimdPetriNet {
             (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
         };
 
+        let total_traces = trace_results.len() as f64;
+        // Generalization proxy: diverse fitness values indicate diverse execution paths.
+        // unique_paths approximated by distinct fitness values (same fitness ≈ same path shape).
+        let unique_paths: std::collections::HashSet<String> = trace_results
+            .iter()
+            .map(|t| format!("{:.6}", t.fitness))
+            .collect();
+        let overall_generalization = if total_traces == 0.0 {
+            0.0_f64
+        } else {
+            (1.0_f64 - (unique_paths.len() as f64 / total_traces)).clamp(0.0, 1.0)
+        };
+
         LogReplayResult {
             trace_results,
             total_consumed,
@@ -324,6 +340,7 @@ impl SimdPetriNet {
             total_remaining,
             overall_fitness,
             overall_precision,
+            overall_generalization,
             total_enabled,
             total_escaping,
         }
@@ -430,6 +447,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
             Ok(serde_json::json!({
                 "overall_fitness": result.overall_fitness,
                 "overall_precision": result.overall_precision,
+                "overall_generalization": result.overall_generalization,
                 "total_consumed": result.total_consumed,
                 "total_produced": result.total_produced,
                 "total_missing": result.total_missing,
