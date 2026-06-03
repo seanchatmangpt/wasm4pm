@@ -64,6 +64,10 @@ impl SimdPetriNet {
             place_ids.entry(node.id.clone()).or_insert(id);
         }
 
+        // Track which places have outgoing transitions (appear in any edge.from)
+        let mut places_with_outgoing: std::collections::HashSet<u32> =
+            std::collections::HashSet::default();
+
         for edge in &dfg.edges {
             let trans_id = transition_labels.len() as u32;
             let label = Some(edge.from.clone());
@@ -72,12 +76,33 @@ impl SimdPetriNet {
             let from_id = *place_ids.get(&edge.from).unwrap_or(&0);
             let to_id = *place_ids.get(&edge.to).unwrap_or(&0);
 
+            places_with_outgoing.insert(from_id);
+
             preset.push(vec![from_id]);
             postset.push(vec![to_id]);
 
             if let Some(ref lbl) = label {
                 label_to_transitions
                     .entry(lbl.clone())
+                    .or_default()
+                    .push(trans_id);
+            }
+        }
+
+        // Add a "consume" (sink) transition for every sink place — places that have no
+        // outgoing edge in the DFG.  Without this, the last activity in any trace has
+        // no transition to fire, which causes forced-fire / missing:+1 even for perfect
+        // traces.
+        for node in &dfg.nodes {
+            let node_id = *place_ids.get(&node.id).unwrap_or(&0);
+            if !places_with_outgoing.contains(&node_id) {
+                let trans_id = transition_labels.len() as u32;
+                transition_labels.push(Some(node.id.clone()));
+                // Preset = the sink place itself; postset = empty (token consumed)
+                preset.push(vec![node_id]);
+                postset.push(vec![]);
+                label_to_transitions
+                    .entry(node.id.clone())
                     .or_default()
                     .push(trans_id);
             }
@@ -102,6 +127,14 @@ impl SimdPetriNet {
         vocab: &[&str],
     ) -> TraceReplayResult {
         let mut marking = [0u32; 64];
+        // Seed source places with one token each — canonical token replay initialization.
+        // Without this, the first activity in a finite trace always fires as a "forced fire"
+        // (no token available), producing M:+1 even for perfectly conformant traces.
+        for &p in &self.source_places() {
+            if (p as usize) < 64 {
+                marking[p as usize] = 1;
+            }
+        }
         let mut consumed: u32 = 0;
         let mut produced: u32 = 0;
         let mut missing: u32 = 0;
@@ -236,6 +269,22 @@ impl SimdPetriNet {
         }
     }
 
+    /// Returns the indices of all source places — places that have no incoming transition.
+    /// In a DFG-derived Petri net, these are the "start" activities with no predecessor.
+    pub fn source_places(&self) -> Vec<u32> {
+        // Collect all places that appear in ANY postset (places receiving tokens from transitions)
+        let places_with_incoming: std::collections::HashSet<u32> = self
+            .postset
+            .iter()
+            .flat_map(|post| post.iter().copied())
+            .collect();
+
+        // Source places are all declared places NOT in places_with_incoming
+        (0..self.num_places as u32)
+            .filter(|p| !places_with_incoming.contains(p))
+            .collect()
+    }
+
     pub fn num_places(&self) -> usize {
         self.num_places
     }
@@ -320,6 +369,8 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
 
             Ok(serde_json::json!({
                 "overall_fitness": result.overall_fitness,
+                "precision": serde_json::Value::Null,
+                "precision_note": "simd_token_replay does not compute precision — fitness only",
                 "total_consumed": result.total_consumed,
                 "total_produced": result.total_produced,
                 "total_missing": result.total_missing,
@@ -345,6 +396,85 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
     });
 
     result.unwrap_or_else(|e| format!(r#"{{"error":"{:?}"}}"#, e))
+}
+
+#[cfg(test)]
+mod source_place_tests {
+    use super::*;
+
+    #[test]
+    fn test_perfect_sequential_trace_achieves_1_0_fitness() {
+        // Build a simple DFG: A → B → C
+        let dfg = make_dfg(&[("A", "B"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+
+        // Verify source_places() returns exactly A (index 0 — insertion order)
+        let sources = net.source_places();
+        assert!(!sources.is_empty(), "must have at least one source place");
+
+        // Build vocab and replay the exact sequence the model was built from
+        // place_ids are assigned in node insertion order from make_dfg
+        let vocab: Vec<&str> = net
+            .place_ids
+            .iter()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .fold(vec![""; net.num_places], |mut v, (name, &id)| {
+                if (id as usize) < v.len() {
+                    v[id as usize] = name.as_str();
+                }
+                v
+            });
+
+        // Find activity indices by name
+        let idx_a = *net.place_ids.get("A").unwrap() as usize;
+        let idx_b = *net.place_ids.get("B").unwrap() as usize;
+        let idx_c = *net.place_ids.get("C").unwrap() as usize;
+
+        let trace = vec![idx_a as u32, idx_b as u32, idx_c as u32];
+        let vocab_refs: Vec<&str> = vocab.clone();
+        let result = net.replay_trace(trace.into_iter(), &vocab_refs);
+
+        assert_eq!(result.missing, 0, "perfect trace should have 0 missing tokens");
+        assert_eq!(
+            result.remaining,
+            0,
+            "perfect trace should have 0 remaining tokens"
+        );
+        assert!(
+            (result.fitness - 1.0).abs() < 1e-9,
+            "perfect trace fitness should be 1.0, got {}",
+            result.fitness
+        );
+    }
+
+    #[test]
+    fn test_source_places_single_source() {
+        // A→B→C: only A has no incoming edge
+        let dfg = make_dfg(&[("A", "B"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+        let sources = net.source_places();
+        // A is the place with no incoming edges
+        let a_id = *net.place_ids.get("A").unwrap();
+        assert!(
+            sources.contains(&a_id),
+            "A must be a source place in A→B→C"
+        );
+        assert_eq!(sources.len(), 1, "exactly one source in a linear chain");
+    }
+
+    #[test]
+    fn test_source_places_parallel_start() {
+        // Two independent paths: A→C and B→C
+        let dfg = make_dfg(&[("A", "C"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+        let sources = net.source_places();
+        let a_id = *net.place_ids.get("A").unwrap();
+        let b_id = *net.place_ids.get("B").unwrap();
+        assert!(sources.contains(&a_id), "A must be source");
+        assert!(sources.contains(&b_id), "B must be source");
+        assert_eq!(sources.len(), 2, "two sources in parallel-start DFG");
+    }
 }
 
 #[cfg(test)]
