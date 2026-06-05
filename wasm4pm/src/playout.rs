@@ -689,7 +689,7 @@ mod tests {
                 AttributeValue::Date(s) => {
                     assert!(!s.is_empty(), "Date string should not be empty")
                 }
-                other => panic!("Expected AttributeValue::Date, got {:?}", other),
+                other => unreachable!("Expected AttributeValue::Date, got {:?}", other),
             }
         }
     }

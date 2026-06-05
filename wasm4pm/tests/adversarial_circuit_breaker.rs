@@ -49,7 +49,7 @@ fn d1_closed_to_open_on_failure_threshold() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Adversarial check: state must be exactly Closed for every failure
     // BEFORE the threshold fires.
@@ -102,7 +102,7 @@ fn d2_open_to_half_open_after_advance_clock() {
         open_timeout_ms,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open.
     for _ in 0..3 {
@@ -159,7 +159,7 @@ fn d3_half_open_to_closed_on_success_probe() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Navigate: Closed → Open → HalfOpen.
     for _ in 0..3 {
@@ -221,7 +221,7 @@ fn d4_half_open_to_open_on_failure_probe() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Navigate: Closed → Open → HalfOpen.
     for _ in 0..3 {
@@ -273,7 +273,7 @@ fn d5_cb1_regression_open_stays_open_without_advance_clock() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open.
     for _ in 0..3 {

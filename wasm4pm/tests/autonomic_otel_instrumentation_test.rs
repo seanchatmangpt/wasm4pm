@@ -74,7 +74,7 @@ fn test_circuit_breaker_open_timeout_expiration_emits_probe_span() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force Open by recording failures
         breaker.record_failure();
@@ -110,7 +110,7 @@ fn test_circuit_breaker_halfopen_timeout_recovery_failure_emits_span() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force to Open
         breaker.record_failure();
@@ -149,7 +149,7 @@ fn test_circuit_breaker_halfopen_to_closed_on_success() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force to Open
         breaker.record_failure();

@@ -725,7 +725,7 @@ mod tests {
                     "reason must name the partial-order generalization, got: {reason}"
                 );
             }
-            other => panic!("genuine partial order must NOT force a tree; got {other:?}"),
+            other => unreachable!("genuine partial order must NOT force a tree; got {other:?}"),
         }
     }
 
@@ -755,7 +755,7 @@ mod tests {
                     "redo-part is child 1 (B)"
                 );
             }
-            other => panic!("do/redo choice graph must project to Loop; got {other:?}"),
+            other => unreachable!("do/redo choice graph must project to Loop; got {other:?}"),
         }
         // Loop semantics show in the POWL language: A (no redo) and A·B·A (one redo).
         let pl = powl_language(&spec);
@@ -778,7 +778,7 @@ mod tests {
                 assert!(reason.contains("irreducible"), "reason names irreducibility: {reason}");
                 assert!(reason.contains('X') && reason.contains('Y'), "reason carries the labels: {reason}");
             }
-            other => panic!("irreducible POWL must refuse, got {other:?}"),
+            other => unreachable!("irreducible POWL must refuse, got {other:?}"),
         }
         assert!(
             !powl_to_process_tree(&spec).is_block_structured(),

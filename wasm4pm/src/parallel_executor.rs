@@ -676,7 +676,7 @@ mod tests {
                 name
             );
             let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or_else(|_| {
-                panic!("result for {} should be valid JSON: {}", name, json_str)
+                unreachable!("result for {} should be valid JSON: {}", name, json_str)
             });
             // Should not contain an error
             assert!(

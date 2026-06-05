@@ -1542,7 +1542,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "base64 0.21.7",
  "bincode",
@@ -1685,7 +1685,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocel-core"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "chrono",
  "serde",
@@ -1694,7 +1694,7 @@ dependencies = [
 
 [[package]]
 name = "ocpq"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "chrono",
  "ocel-core",
@@ -1846,7 +1846,7 @@ dependencies = [
 
 [[package]]
 name = "pm-core"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "serde",
  "serde_json",
@@ -1854,7 +1854,7 @@ dependencies = [
 
 [[package]]
 name = "pm4py-lsp"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "async-trait",
  "blake3",
@@ -1940,7 +1940,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "blake3",
  "js-sys",
@@ -3022,7 +3022,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tps-metrics"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3390,7 +3390,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "bcinr",
  "blake3",
@@ -3440,7 +3440,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-algos"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "bcinr",
  "blake3",
@@ -3456,7 +3456,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -3477,7 +3477,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "blake3",
  "ed25519-dalek",
@@ -3500,11 +3500,11 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-compat"
-version = "26.6.4"
+version = "26.6.5"
 
 [[package]]
 name = "wasm4pm-macros"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3513,7 +3513,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-types"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "blake3",
  "chrono",
@@ -3531,7 +3531,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-utils"
-version = "26.5.29"
+version = "26.6.5"
 dependencies = [
  "hashbrown 0.17.0",
  "itertools 0.14.0",

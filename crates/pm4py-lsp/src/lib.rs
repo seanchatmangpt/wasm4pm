@@ -1,3 +1,10 @@
+#![doc = "PM4Py Living LSP bridge using tower-lsp-max."]
+#![doc = ""]
+#![doc = "This crate provides the Language Server Protocol (LSP) implementation"]
+#![doc = "for bridging Python's PM4Py library with the wasm4pm ecosystem."]
+#![forbid(unsafe_code)]
+#![warn(clippy::all)]
+
 use async_trait::async_trait;
 use regex::Regex;
 use serde::{Deserialize, Serialize};

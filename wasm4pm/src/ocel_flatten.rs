@@ -437,7 +437,7 @@ mod tests {
                     assert_eq!(log.traces[0].events.len(), 2);
                     Ok(())
                 }
-                _ => panic!("Expected EventLog"),
+                _ => unreachable!("Expected EventLog"),
             })
             .expect("Failed to retrieve log");
     }
@@ -465,7 +465,7 @@ mod tests {
                     ));
                     Ok(())
                 }
-                _ => panic!("Expected EventLog"),
+                _ => unreachable!("Expected EventLog"),
             })
             .expect("Failed to retrieve log");
     }
@@ -500,7 +500,7 @@ mod tests {
                     assert!(trace.attributes.contains_key("value"));
                     Ok(())
                 }
-                _ => panic!("Expected EventLog"),
+                _ => unreachable!("Expected EventLog"),
             })
             .expect("Failed to retrieve log");
     }
@@ -524,7 +524,7 @@ mod tests {
                     assert_eq!(log.traces[0].events.len(), 2);
                     Ok(())
                 }
-                _ => panic!("Expected EventLog"),
+                _ => unreachable!("Expected EventLog"),
             })
             .expect("Failed to retrieve order log");
 
@@ -535,7 +535,7 @@ mod tests {
                     assert_eq!(log.traces[0].events.len(), 1);
                     Ok(())
                 }
-                _ => panic!("Expected EventLog"),
+                _ => unreachable!("Expected EventLog"),
             })
             .expect("Failed to retrieve item log");
     }

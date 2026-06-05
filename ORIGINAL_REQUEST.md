@@ -691,4 +691,55 @@ Definition of Done Checklist:
 - max purity scan PASS
 - FINAL-VERDICT.md written
 
+## Follow-up — 2026-06-05T17:54:23Z
 
+Discover all outdated documentation/reports across the monorepo and decide how to update them to accurately reflect the latest system state, verifications, and release certificate status.
+
+Working directory: /Users/sac/wasm4pm
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Documentation Discovery
+Search the monorepo (including root files, `docs/`, `.agents/`, and packages/crates) to identify all outdated documentation, release changelogs, handoff notes, or status reports that do not match the current commit state and verdict (`PM4PY-LSP-003_ALIVE`).
+
+### R2. Documentation and Status Realignment
+Update all identified files (e.g., handoffs, progress files, final verdicts, check-in reports, etc.) to capture the exact, actual system state, including latest commit hash, verification results (e.g., unit/integration/E2E test counts), and release status.
+
+### R3. Release Certificate Verification
+Ensure that release certificates or related documentation are fully consistent with the version in `package.json` (version `26.5.29`) and that no discrepancies exist between the actual artifacts and their described statuses.
+
+## Acceptance Criteria
+
+### Completeness and Accuracy
+- [ ] Every updated document or status report lists the correct commit hash (`ca8b6e1de68a1cf474445f1ec1008c524e778e66` or latest HEAD) and version (`26.5.29`).
+- [ ] Test status numbers in updated reports exactly match the output of running verification commands (e.g., 52 non-stress tests passing).
+- [ ] No placeholder terms, stubs, or "TODO" items exist in the updated files.
+- [ ] Updated documents contain no broken internal/external file links.
+
+
+
+## Follow-up — 2026-06-05T18:40:23Z
+
+Perform a complete version bump to 26.6.5 across all package.json files, Cargo.toml files, rebuild the WASM bundle, re-run tests/verification gates, and generate all required release certificates.
+
+Working directory: /Users/sac/wasm4pm
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Version Bump Realignment
+Update all version strings from `26.5.29` to `26.6.5` across all package.json files, Cargo.toml files, lock files, and documentation across the monorepo.
+
+### R2. WASM Rebuild and Cargo Check
+Rebuild the WASM bundle and verify that all crates compile successfully under the new version.
+
+### R3. Release verification and Evidence Generation
+Run the full verification suite (`npm run release:full`) to generate `RELEASE_CERTIFICATE.v26.6.5.json`, algorithm behavior/reachability evidence, and example receipts matching version `26.6.5`.
+
+## Acceptance Criteria
+
+### Verification and Consistency
+- [ ] Every package.json and Cargo.toml file in the monorepo is updated to version `26.6.5`.
+- [ ] All validation, proof, and release checks run and pass successfully for version `26.6.5`.
+- [ ] The generated `RELEASE_CERTIFICATE.v26.6.5.json` and evidence files exist on disk with correct hashes binding to the latest git HEAD commit.

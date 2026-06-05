@@ -253,7 +253,7 @@ fn circuit_breaker_closed_never_times_out() {
         open_timeout_ms: 1, // tiny
         half_open_timeout_ms: 1,
     };
-    let mut cb = CircuitBreaker::with_config(cb_cfg);
+    let mut cb = CircuitBreaker::with_config(cb_cfg).unwrap();
     advance_clock(1_000_000_000); // huge skip
     let allowed = cb.allow_request();
     assert!(

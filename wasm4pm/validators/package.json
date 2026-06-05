@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/validators",
-  "version": "26.5.29",
+  "version": "26.6.5",
   "description": "Validators for @wasm4pm/cli - CLI, HTTP, WebSocket, Observability, I/O, Performance",
   "type": "module",
   "exports": {

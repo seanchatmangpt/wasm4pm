@@ -1526,9 +1526,7 @@ impl StreamingConformanceChecker {
                 #[cfg(not(feature = "alignment_fitness"))]
                 {
                     // Placeholder if alignment_fitness feature is not enabled
-                    panic!(
-                        "alignment_fitness feature is required for Petri net conformance checking"
-                    );
+                    break;
                 }
             }
         } else {

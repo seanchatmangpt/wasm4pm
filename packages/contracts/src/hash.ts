@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 /**
  * BLAKE3 hashing module for deterministic content hashing
  * All inputs are normalized via JSON serialization with sorted keys

@@ -126,14 +126,12 @@ where
 
 impl<A> StreamingAlgorithm for StreamingHybrid<A>
 where
-    A: BatchAlgorithm,
+    A: BatchAlgorithm + Default,
 {
     type Model = A::Model;
 
     fn new() -> Self {
-        // This requires A: Default, which may not always be available
-        // Users should use StreamingHybrid::new(batch_algorithm) instead
-        panic!("StreamingHybrid::new() not supported. Use StreamingHybrid::new(batch_algorithm) instead.");
+        StreamingHybrid::new(A::default())
     }
 
     fn add_event(&mut self, case_id: &str, activity: &str) {
@@ -186,6 +184,7 @@ mod tests {
     use super::*;
 
     // Mock batch algorithm for testing
+    #[derive(Default)]
     struct MockBatchAlgorithm;
 
     impl BatchAlgorithm for MockBatchAlgorithm {

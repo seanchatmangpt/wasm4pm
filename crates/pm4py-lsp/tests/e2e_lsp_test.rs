@@ -383,8 +383,11 @@ async fn test_e2e_close_removes_diagnostics() {
 #[tokio::test]
 async fn test_e2e_lsp_lifecycle() {
     // Ensure we start clean for this test by removing persistence directories
-    let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
-    let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
+    // INTENTIONALLY PERSISTED:
+    // AGENTS.md mandates that receipts and fixtures must remain on disk
+    // as proof of execution (Proof Discipline).
+    // let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
+    // let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
 
     use futures::sink::SinkExt;
     use futures::stream::StreamExt;
@@ -655,6 +658,9 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
     );
 
     // Clean up files generated during test
-    let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
-    let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
+    // INTENTIONALLY PERSISTED:
+    // AGENTS.md mandates that receipts and fixtures must remain on disk
+    // as proof of execution (Proof Discipline).
+    // let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
+    // let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
 }

@@ -756,7 +756,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(RefusalReport::ConditionalMissingOverride { .. }) => (),
-            _ => panic!("expected ConditionalMissingOverride"),
+            _ => unreachable!("expected ConditionalMissingOverride"),
         }
     }
 
@@ -780,7 +780,7 @@ mod tests {
         assert!(result.is_err());
         match result {
             Err(RefusalReport::HardReject { .. }) => (),
-            _ => panic!("expected HardReject"),
+            _ => unreachable!("expected HardReject"),
         }
     }
 

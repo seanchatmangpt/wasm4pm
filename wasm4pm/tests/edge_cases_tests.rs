@@ -160,7 +160,7 @@ fn test_circuit_breaker_exhaustion_and_reset() {
         half_open_timeout_ms: 500,
     };
 
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Record 3 failures to trigger Open state
     breaker.record_failure();
@@ -219,7 +219,7 @@ fn test_circuit_breaker_half_open_timeout() {
         half_open_timeout_ms: 200,
     };
 
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Force Open
     breaker.record_failure();

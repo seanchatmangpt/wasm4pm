@@ -441,7 +441,7 @@ mod tests {
             assert_eq!(timeout_ms, 60000); // doubled
             assert_eq!(batch_size, 1000); // unchanged
         } else {
-            panic!("Expected Scaled outcome");
+            unreachable!("Expected Scaled outcome");
         }
     }
 
@@ -468,7 +468,7 @@ mod tests {
             assert_eq!(timeout_ms, 60000); // doubled
             assert_eq!(batch_size, 500); // halved
         } else {
-            panic!("Expected Scaled outcome");
+            unreachable!("Expected Scaled outcome");
         }
     }
 
@@ -499,7 +499,7 @@ mod tests {
                 "delay {delay_ms} must lie within [4000, 5000] (exponential + jitter bound)"
             );
         } else {
-            panic!("Expected RetryInitiated outcome");
+            unreachable!("Expected RetryInitiated outcome");
         }
     }
 
@@ -538,7 +538,7 @@ mod tests {
                     delay_ms
                 );
             } else {
-                panic!("expected RetryInitiated, got {:?}", result);
+                unreachable!("expected RetryInitiated, got {:?}", result);
             }
         }
     }
@@ -597,7 +597,7 @@ mod tests {
                     health_level
                 );
             } else {
-                panic!("Expected Scaled outcome at health_level={}", health_level);
+                unreachable!("Expected Scaled outcome at health_level={}", health_level);
             }
         }
     }

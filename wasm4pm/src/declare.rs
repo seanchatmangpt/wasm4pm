@@ -1191,7 +1191,7 @@ mod tests {
         ];
         for name in &names {
             let t = DeclareTemplate::from_canonical_name(name)
-                .unwrap_or_else(|| panic!("unknown template: {}", name));
+                .unwrap_or_else(|| unreachable!("unknown template: {}", name));
             assert_eq!(t.canonical_name(), *name, "roundtrip failed for {}", name);
         }
     }

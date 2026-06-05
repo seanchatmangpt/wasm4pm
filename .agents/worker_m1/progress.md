@@ -1,11 +1,15 @@
-# Progress — 2026-06-05T06:27:40Z
-Last visited: 2026-06-05T06:27:40Z
+# Progress Tracker
 
-- [x] Analyze codebase, identify deadlock root cause in `pm4py-lsp`
-- [x] Verify purity of `tower-lsp-max` vendor crate
-- [x] Initialize ORIGINAL_REQUEST.md and BRIEFING.md
-- [x] Update `docs/checkpoints/PM4PY-LSP-001.md` with status `PARTIAL_ALIVE` and deadlock details
-- [x] Initialize `docs/checkpoints/MAX-PURITY-FENCE.md`
-- [x] Initialize `docs/reports/pm4py-lsp-agent-reports/CHECKLIST.md`
-- [x] Initialize `docs/reports/pm4py-lsp-agent-reports/coordinator.md`
-- [x] Initialize `docs/reports/pm4py-lsp-agent-reports/boundary.md`
+Last visited: 2026-06-05T07:57:35Z
+
+## Current Status
+- [x] Initialized agent directory and logged original request.
+- [x] Created BRIEFING.md and progress.md.
+- [x] Investigate existing codebase, run cargo test to see current status.
+- [x] Implement reloading/saving fixtures (1 & 2).
+- [x] Implement ParityVerdictDecision / evaluate_parity & parity contract test assertions (3).
+- [x] Implement static analysis test for `from pm4py import ...` (4).
+- [x] Implement `check_pm4py()` unit test (5).
+- [x] Implement dataframe formatting idempotency check in execute_command (6).
+- [x] Implement capability/integration tests for conformance vector and dataframe formatting (7).
+- [x] Verify everything by running tests.

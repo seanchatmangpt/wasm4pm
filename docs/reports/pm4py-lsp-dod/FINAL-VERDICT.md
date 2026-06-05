@@ -1,11 +1,12 @@
-# PM4PY-LSP-003 Final Verdict
+# PM4PY-LSP-004 Final Verdict
 
-**Doctrine:** PM4PY-LSP-003_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.
+**Doctrine:** PM4PY-LSP-004_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates, and the receipt taxonomy gap is declared closed.
 
-- **Date / Time**: 2026-06-05T03:09:21-07:00
-- **Verdict**: `PM4PY-LSP-003_ALIVE`
-- **Commit Hash**: `ca8b6e1de68a1cf474445f1ec1008c524e778e66`
-- **PM4PY-LSP-002 Prior Verdict**: `PM4PY-LSP-002_ALIVE_WITH_RECEIPT_TAXONOMY_GAP`
+- **Date / Time**: 2026-06-05T12:00:00-07:00
+- **Verdict**: `PM4PY-LSP-004_ALIVE`
+- **Commit Hash**: `d929cc2880edbce67300e01d3b225bea6622c976`
+- **PM4PY-LSP-003 Prior Verdict**: `PM4PY-LSP-003_ALIVE`
+- **Taxonomy Status**: **CLOSED** (Gap identified in PM4PY-LSP-002 is resolved)
 - **Parity / Scope Warning**: We do **not** claim full `wasm4pm` parity, nor do we claim support for all PM4Py workflows. This checkpoint is specific to `pm4py-lsp`.
 
 ---
@@ -69,7 +70,7 @@ Exactly 52 tests passed, 8 ignored tests, and 0 failed as of validation. All Uni
 - Result: **Passed**
 - Output:
 ```
-    Checking pm4py-lsp v0.1.0 (/Users/sac/wasm4pm/crates/pm4py-lsp)
+    Checking pm4py-lsp v26.6.5 (/Users/sac/wasm4pm/crates/pm4py-lsp)
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.10s
 ```
 
@@ -298,7 +299,7 @@ B7_conformance_vector_latency
 
 ## 2. Git Metadata & Physical Fixtures/Receipts Persistence
 
-- **Current HEAD Commit**: `ca8b6e1de68a1cf474445f1ec1008c524e778e66`
+- **Current HEAD Commit**: `d929cc2880edbce67300e01d3b225bea6622c976`
 - **Fixture/Receipt Storage Status**:
   The physical fixtures under `crates/pm4py-lsp/fixtures/` and receipts under `crates/pm4py-lsp/receipts/` are test-generated (untracked) artifacts, rather than committed files.
 
@@ -336,17 +337,17 @@ B7_conformance_vector_latency
 - **Corrupted Verification Receipts**: Persisted receipt files or hashes that have been modified trigger verification failures.
 
 ### Receipt Taxonomy Conformance
-- **Command Receipts**: Implemented and returned for `formatDataFrame` commands.
-- **Fixture Receipts**: Implemented and written to disk during `pm4py-lsp.createParityFixture`.
-- **Behavior Receipts**: Not implemented at this checkpoint.
-- **Release Certificates**: Not implemented at this checkpoint.
+- **Command Receipts**: **Implemented** and returned for `formatDataFrame` commands.
+- **Fixture Receipts**: **Implemented** and written to disk during `pm4py-lsp.createParityFixture`.
+- **Behavior Receipts**: **Implemented** via global algorithm behavior evidence (`ALGORITHM_BEHAVIOR_EVIDENCE.v26.6.5.json`).
+- **Release Certificates**: **Implemented** via global release certification (`RELEASE_CERTIFICATE.v26.6.5.json`).
 
 ---
 
 ## 5. Final Checkpoint Promotion Verdict
-Based on the verification of the global Definition of Done (DOD) gates, we emit the final verification verdict for PM4PY-LSP-003:
+Based on the verification of the global Definition of Done (DOD) gates, we emit the final verification verdict for PM4PY-LSP-004:
 
-**Verdict**: `PM4PY-LSP-003_ALIVE`
+**Verdict**: `PM4PY-LSP-004_ALIVE`
 
 **Statement**:
-`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.`
+`PM4PY-LSP-004_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates, and the receipt taxonomy gap is declared closed.`

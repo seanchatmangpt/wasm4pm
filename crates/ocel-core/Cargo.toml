@@ -1,6 +1,6 @@
 [package]
 name = "ocel-core"
-version = "26.5.29"
+version.workspace = true
 edition = "2021"
 
 [dependencies]

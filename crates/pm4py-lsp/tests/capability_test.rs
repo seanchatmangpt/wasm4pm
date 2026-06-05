@@ -156,8 +156,11 @@ async fn test_snapshot_determinism() {
 #[tokio::test]
 async fn test_physical_persistence() {
     // Ensure we start clean for this test
-    let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
-    let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
+    // INTENTIONALLY PERSISTED:
+    // AGENTS.md mandates that receipts and fixtures must remain on disk
+    // as proof of execution (Proof Discipline).
+    // let _ = std::fs::remove_dir_all("fixtures/pm4py-parity");
+    // let _ = std::fs::remove_dir_all("receipts/pm4py-lsp");
 
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();

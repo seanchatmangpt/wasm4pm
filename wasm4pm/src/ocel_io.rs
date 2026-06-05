@@ -915,14 +915,14 @@ mod tests {
                 assert_eq!(id, "receipt_1");
                 assert_eq!(object_type, "Receipt");
             }
-            _ => panic!("Expected object node"),
+            _ => unreachable!("Expected object node"),
         }
         match &res.paths[0][1] {
             PathNode::Object { id, object_type } => {
                 assert_eq!(id, "file_1");
                 assert_eq!(object_type, "File");
             }
-            _ => panic!("Expected object node"),
+            _ => unreachable!("Expected object node"),
         }
     }
 

@@ -203,7 +203,7 @@ fn test_invalid_p5_circuit_open_allows_without_timeout() {
         half_open_timeout_ms: 50,
     };
 
-    let mut cb = CircuitBreaker::with_config(config);
+    let mut cb = CircuitBreaker::with_config(config).unwrap();
 
     // Record a failure to open the circuit
     cb.record_failure();
@@ -432,7 +432,7 @@ fn test_circuit_breaker_timeout_logic_integrity() {
         half_open_timeout_ms: 50,
     };
 
-    let mut cb = CircuitBreaker::with_config(config);
+    let mut cb = CircuitBreaker::with_config(config).unwrap();
 
     // Closed state: always allow
     assert!(cb.allow_request(), "Closed should allow requests");

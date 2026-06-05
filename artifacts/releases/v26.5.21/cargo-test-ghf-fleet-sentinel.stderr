@@ -1,7 +1,0 @@
-   Compiling ppv-lite86 v0.2.21
-   Compiling prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
-   Compiling rand_chacha v0.9.0
-   Compiling proptest v1.11.0
-   Compiling wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 3.53s
-     Running tests/ghf_fleet_sentinel_test.rs (target/debug/deps/ghf_fleet_sentinel_test-7d9613c6cc4403f9)

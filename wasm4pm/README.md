@@ -165,7 +165,7 @@ See [`docs/`](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs) for full
 
 ## Version
 
-26.5.29
+26.6.5
 
 ## License
 

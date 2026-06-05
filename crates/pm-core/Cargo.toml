@@ -1,6 +1,6 @@
 [package]
 name = "pm-core"
-version = "26.5.29"
+version.workspace = true
 edition = "2021"
 description = "Zero-cost process-mining types from paper formal definitions — shareable without wasm4pm"
 license = "MIT OR Apache-2.0"
