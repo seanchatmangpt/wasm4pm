@@ -32,7 +32,7 @@ To keep the vendor crate isolated, versioned, and pure:
 
 ## Validation Block
 State: Closed
-Commit: (Pending manual commit)
+Commit: 6b575a6b27b8b78f7954a3c8dfaa161a29c47591
 Package: tower-lsp-max v0.1.0
 Commands Run:
 - cargo check (Compiles successfully)

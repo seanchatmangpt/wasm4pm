@@ -2,7 +2,7 @@
 
 **All public Rust→JavaScript exports via `wasm-bindgen`. 335 total exports (verified 2026-05-29 against browser WASM build) across 100+ source modules. Source has 383 `#[wasm_bindgen]` annotations; 48 are omitted from the browser build due to feature flags (`feature-gpu`, `feature-rayon`, cloud-only features).**
 
-**Current version:** `26.5.28`
+**Current version:** `26.5.29`
 
 ## Module Index (Quick Reference)
 

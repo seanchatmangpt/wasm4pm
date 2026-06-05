@@ -1,6 +1,6 @@
 [package]
 name = "pm4py-lsp"
-version = "0.1.0"
+version = "26.5.29"
 edition = "2021"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
 description = "PM4Py Living LSP bridge using tower-lsp-max"

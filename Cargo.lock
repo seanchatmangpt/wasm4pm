@@ -1685,7 +1685,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocel-core"
-version = "26.5.30"
+version = "26.5.29"
 dependencies = [
  "chrono",
  "serde",
@@ -1694,7 +1694,7 @@ dependencies = [
 
 [[package]]
 name = "ocpq"
-version = "26.5.30"
+version = "26.5.29"
 dependencies = [
  "chrono",
  "ocel-core",
@@ -1846,7 +1846,7 @@ dependencies = [
 
 [[package]]
 name = "pm-core"
-version = "0.1.0"
+version = "26.5.29"
 dependencies = [
  "serde",
  "serde_json",
@@ -1854,7 +1854,7 @@ dependencies = [
 
 [[package]]
 name = "pm4py-lsp"
-version = "0.1.0"
+version = "26.5.29"
 dependencies = [
  "async-trait",
  "blake3",
