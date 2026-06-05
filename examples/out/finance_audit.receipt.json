@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.29",
-  "commit": "fb727d10899ca1cb4d169144192ac4fe9a05963b",
+  "commit": "94895822da3e823f67c37ac814361cd5f7cb10ff",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464",
-      "duration_ms": 58.536,
+      "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652",
+      "duration_ms": 47.467,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_classify.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464",
-                "duration_ms": 58.536
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652",
+                "duration_ms": 47.467
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464"
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464"
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "99463b87bf0f7b9d820576c775e53491a50d6ab406c026891d3a7f92705bd2b8"
+        "expected_ocel2_hash": "34506f585690a401898d0de09345ac5db1ac7a8b51ace16cc7eb057934477cf9"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_finance_audit_ml_classify_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:21.669Z",
+              "time": "2026-06-05T15:52:18.400Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -412,7 +412,7 @@
             {
               "id": "evt_finance_audit_ml_classify_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:22.085Z",
+              "time": "2026-06-05T15:52:20.470Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -426,7 +426,7 @@
             {
               "id": "evt_finance_audit_ml_classify_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:25.969Z",
+              "time": "2026-06-05T15:52:22.854Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -440,7 +440,7 @@
             {
               "id": "evt_finance_audit_ml_classify_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:24.201Z",
+              "time": "2026-06-05T15:52:19.925Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_classify",
@@ -463,7 +463,7 @@
             {
               "id": "evt_finance_audit_ml_classify_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:26.872Z",
+              "time": "2026-06-05T15:52:22.672Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_classify",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464",
-                "duration_ms": 58.536
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652",
+                "duration_ms": 47.467
               }
             },
             {
               "id": "evt_finance_audit_ml_classify_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:28.298Z",
+              "time": "2026-06-05T15:52:24.039Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_finance_audit",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464"
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652"
               }
             },
             {
               "id": "evt_finance_audit_ml_classify_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:26.485Z",
+              "time": "2026-06-05T15:52:22.897Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_finance_audit",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464"
+                "result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652"
               }
             },
             {
               "id": "evt_finance_audit_ml_classify_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:25.094Z",
+              "time": "2026-06-05T15:52:22.963Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -540,7 +540,7 @@
             {
               "id": "evt_finance_audit_ml_classify_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:28.223Z",
+              "time": "2026-06-05T15:52:23.634Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_finance_audit",
@@ -558,7 +558,7 @@
             {
               "id": "evt_finance_audit_ml_classify_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:25.872Z",
+              "time": "2026-06-05T15:52:26.974Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_finance_audit",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "0f8b06851cd4a19e5b27b2fdd792928217a485427f51d823b65c52b0b26e40c5",
-        "observed_result_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464"
+        "observed_ocel2_hash": "a5dd6266c46c45027fd5a29267159023c41f212cbfae5633690bd09a95d01c72",
+        "observed_result_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "33354b183d1cf37742fcb4c94d7f1454653ac50b6c43971734f3833af15db464",
+        "output_artifact_hash": "9a9f5c5481b1cfa9341ad6b24c71e16aba743b0b9032f1bc5fed982bd7b4b652",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5",
-      "duration_ms": 52.109,
+      "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74",
+      "duration_ms": 12.278,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_cluster.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5",
-                "duration_ms": 52.109
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74",
+                "duration_ms": 12.278
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5"
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5"
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "1100390e830574ea640227bb9012db84e7c233fe2e0b476b012d8f0926404c44"
+        "expected_ocel2_hash": "a9e872ee5db67b18012701f16645a99d32e23331b0563b7b393706bf460b9fb5"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:23.150Z",
+              "time": "2026-06-05T15:52:22.340Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:21.955Z",
+              "time": "2026-06-05T15:52:21.656Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:23.320Z",
+              "time": "2026-06-05T15:52:20.729Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:24.556Z",
+              "time": "2026-06-05T15:52:22.907Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_cluster",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:24.382Z",
+              "time": "2026-06-05T15:52:22.512Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_cluster",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5",
-                "duration_ms": 52.109
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74",
+                "duration_ms": 12.278
               }
             },
             {
               "id": "evt_finance_audit_ml_cluster_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:27.496Z",
+              "time": "2026-06-05T15:52:20.960Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_finance_audit",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5"
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74"
               }
             },
             {
               "id": "evt_finance_audit_ml_cluster_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:24.698Z",
+              "time": "2026-06-05T15:52:21.188Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_finance_audit",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5"
+                "result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74"
               }
             },
             {
               "id": "evt_finance_audit_ml_cluster_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:26.283Z",
+              "time": "2026-06-05T15:52:22.803Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:28.809Z",
+              "time": "2026-06-05T15:52:22.651Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_finance_audit",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_finance_audit_ml_cluster_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:28.243Z",
+              "time": "2026-06-05T15:52:26.283Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_finance_audit",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "7514b4d3de2bb2eaae0dcfc74ca156048c206f82cd9c1a8877248b01cbb50028",
-        "observed_result_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5"
+        "observed_ocel2_hash": "a884bba163a091447d839f6c92cd921fbe10822cd0f6d2e3dc913c3b257db441",
+        "observed_result_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "4336fca260db0fcbead2ce21c6e87d74af3fb53382a07e4c583a770471f212d5",
+        "output_artifact_hash": "d0f483abc2130e8009a13efac9c835601b6d4796c515936f2cca1f5e0a7c7e74",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c",
-      "duration_ms": 53.846,
+      "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578",
+      "duration_ms": 20.814,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_forecast.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c",
-                "duration_ms": 53.846
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578",
+                "duration_ms": 20.814
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c"
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c"
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "809694ba8c63630376ad600aad73cf1673acac48543ad175870bba7255e79d6e"
+        "expected_ocel2_hash": "a6642d42e2474f844edcd668a2552bb89492832f159e8a801604cf45eb46613b"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:24.118Z",
+              "time": "2026-06-05T15:52:19.162Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:23.086Z",
+              "time": "2026-06-05T15:52:18.846Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:24.032Z",
+              "time": "2026-06-05T15:52:20.976Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:24.243Z",
+              "time": "2026-06-05T15:52:20.617Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_forecast",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:25.897Z",
+              "time": "2026-06-05T15:52:24.388Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_forecast",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c",
-                "duration_ms": 53.846
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578",
+                "duration_ms": 20.814
               }
             },
             {
               "id": "evt_finance_audit_ml_forecast_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:25.072Z",
+              "time": "2026-06-05T15:52:24.270Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_finance_audit",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c"
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578"
               }
             },
             {
               "id": "evt_finance_audit_ml_forecast_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:27.866Z",
+              "time": "2026-06-05T15:52:21.059Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_finance_audit",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c"
+                "result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578"
               }
             },
             {
               "id": "evt_finance_audit_ml_forecast_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:27.051Z",
+              "time": "2026-06-05T15:52:24.008Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:26.447Z",
+              "time": "2026-06-05T15:52:24.977Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_finance_audit",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_finance_audit_ml_forecast_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:27.340Z",
+              "time": "2026-06-05T15:52:22.621Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_finance_audit",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "71a1246304b07ca498e2ca353de4160faedc2531e4abd79495b03fe362a8e642",
-        "observed_result_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c"
+        "observed_ocel2_hash": "974dbc6ab5bca7cfb6ce5c773816fbeac5a30c975daa553e9263b991c4e52ec1",
+        "observed_result_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "bbc8c97b2b38b048490ef0f7ac6806ec4ddfb5f5cf7b71bdc315fed20b7a405c",
+        "output_artifact_hash": "5ce015681db300d03befa0336eaed638ce2b1a88ef272f061ae97f0a2662a578",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49",
-      "duration_ms": 45.212,
+      "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e",
+      "duration_ms": 20.043,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_anomaly.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49",
-                "duration_ms": 45.212
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e",
+                "duration_ms": 20.043
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49"
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49"
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "ebcb85fd9c0554d31bea4fa20020cde532cc455900afc15e4b054330f9e71448"
+        "expected_ocel2_hash": "c8f4f5e90ac19c2b0840bbf0f721b196c6ac5e1b27937c8267037f7085c436f0"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:24.454Z",
+              "time": "2026-06-05T15:52:18.786Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:23.398Z",
+              "time": "2026-06-05T15:52:19.975Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:23.167Z",
+              "time": "2026-06-05T15:52:18.802Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:26.097Z",
+              "time": "2026-06-05T15:52:23.886Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_anomaly",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:26.818Z",
+              "time": "2026-06-05T15:52:20.667Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_anomaly",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49",
-                "duration_ms": 45.212
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e",
+                "duration_ms": 20.043
               }
             },
             {
               "id": "evt_finance_audit_ml_anomaly_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:24.985Z",
+              "time": "2026-06-05T15:52:21.600Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_finance_audit",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49"
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e"
               }
             },
             {
               "id": "evt_finance_audit_ml_anomaly_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:27.352Z",
+              "time": "2026-06-05T15:52:24.721Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_finance_audit",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49"
+                "result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e"
               }
             },
             {
               "id": "evt_finance_audit_ml_anomaly_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:25.925Z",
+              "time": "2026-06-05T15:52:23.444Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:28.947Z",
+              "time": "2026-06-05T15:52:23.680Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_finance_audit",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_finance_audit_ml_anomaly_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:27.383Z",
+              "time": "2026-06-05T15:52:23.268Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_finance_audit",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "80dbb34ddf3a30b982ec8af3c518b433f634b3b2b937a591c5e00bf7aa995c07",
-        "observed_result_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49"
+        "observed_ocel2_hash": "0973bfb7e15363a7a339f5f957fff44dd3386f06087271df06d3da06e485b7a8",
+        "observed_result_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,7 +2453,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "5136c2d436aec58f626b76881640b8b20f1aac80c0a600b9326fa8b883006b49",
+        "output_artifact_hash": "e170e1a7d3ea7b72acfcee84a5a891441706158897ae2dfcc9ee7b00384cec6e",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -2462,8 +2462,8 @@
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa",
-      "duration_ms": 25.484,
+      "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b",
+      "duration_ms": 59.689,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_regress.v1",
         "expected_ocel2": {
@@ -2623,8 +2623,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa",
-                "duration_ms": 25.484
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b",
+                "duration_ms": 59.689
               }
             },
             {
@@ -2638,7 +2638,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa"
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b"
               }
             },
             {
@@ -2652,7 +2652,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa"
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b"
               }
             },
             {
@@ -2755,7 +2755,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "ff10f3037127974171cfc2580b9a6c9d6146766a0a32336deb96608171043a1d"
+        "expected_ocel2_hash": "bf2c2e3ee173ac1f332e976a9a339ed80dd61c06b06afd89ca8a33edf84d1594"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2832,7 +2832,7 @@
             {
               "id": "evt_finance_audit_ml_regress_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:25.877Z",
+              "time": "2026-06-05T15:52:17.614Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -2852,7 +2852,7 @@
             {
               "id": "evt_finance_audit_ml_regress_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:23.817Z",
+              "time": "2026-06-05T15:52:19.654Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -2866,7 +2866,7 @@
             {
               "id": "evt_finance_audit_ml_regress_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:27.016Z",
+              "time": "2026-06-05T15:52:20.077Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -2880,7 +2880,7 @@
             {
               "id": "evt_finance_audit_ml_regress_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:27.124Z",
+              "time": "2026-06-05T15:52:23.591Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_regress",
@@ -2903,7 +2903,7 @@
             {
               "id": "evt_finance_audit_ml_regress_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:26.553Z",
+              "time": "2026-06-05T15:52:23.199Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_regress",
@@ -2915,14 +2915,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa",
-                "duration_ms": 25.484
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b",
+                "duration_ms": 59.689
               }
             },
             {
               "id": "evt_finance_audit_ml_regress_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:26.421Z",
+              "time": "2026-06-05T15:52:24.117Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_finance_audit",
@@ -2930,13 +2930,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa"
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b"
               }
             },
             {
               "id": "evt_finance_audit_ml_regress_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:28.347Z",
+              "time": "2026-06-05T15:52:22.269Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_finance_audit",
@@ -2944,13 +2944,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa"
+                "result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b"
               }
             },
             {
               "id": "evt_finance_audit_ml_regress_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:27.139Z",
+              "time": "2026-06-05T15:52:21.519Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -2980,7 +2980,7 @@
             {
               "id": "evt_finance_audit_ml_regress_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:29.525Z",
+              "time": "2026-06-05T15:52:24.713Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_finance_audit",
@@ -2998,7 +2998,7 @@
             {
               "id": "evt_finance_audit_ml_regress_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:28.488Z",
+              "time": "2026-06-05T15:52:25.532Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_finance_audit",
@@ -3047,8 +3047,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "9f4c6cc81ba4c5d72bf1f26cfacc7dc4f14cfdbcfdcb9577f06c223e0a448f08",
-        "observed_result_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa"
+        "observed_ocel2_hash": "eb2275ed444dc6c8b9fc153dd041ee5d75f7ee6c3a8a4fb11ae55d54db453504",
+        "observed_result_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -3063,7 +3063,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "f989bd052d8880d09b69cee0dab2acc49f9224e2dab187e09517731d5a32f9aa",
+        "output_artifact_hash": "30990d6469ff5b3ad06cdbbeb61992289c4384e86795f29476c96c123997a15b",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -3072,8 +3072,8 @@
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6",
-      "duration_ms": 58.124,
+      "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac",
+      "duration_ms": 26.312,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_pca.v1",
         "expected_ocel2": {
@@ -3233,8 +3233,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6",
-                "duration_ms": 58.124
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac",
+                "duration_ms": 26.312
               }
             },
             {
@@ -3248,7 +3248,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6"
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac"
               }
             },
             {
@@ -3262,7 +3262,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6"
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac"
               }
             },
             {
@@ -3365,7 +3365,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "df436bc0da338972112ce13d8e4f27eea171b8b322285ef22f0127c5ff9b81f6"
+        "expected_ocel2_hash": "a37ff119bf63838628871d5833f579c96e63768c37d1983cc58a06d4c241d525"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -3442,7 +3442,7 @@
             {
               "id": "evt_finance_audit_ml_pca_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:24.360Z",
+              "time": "2026-06-05T15:52:21.934Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -3462,7 +3462,7 @@
             {
               "id": "evt_finance_audit_ml_pca_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:22.019Z",
+              "time": "2026-06-05T15:52:20.710Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -3476,7 +3476,7 @@
             {
               "id": "evt_finance_audit_ml_pca_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:24.715Z",
+              "time": "2026-06-05T15:52:21.534Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -3490,7 +3490,7 @@
             {
               "id": "evt_finance_audit_ml_pca_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:22.985Z",
+              "time": "2026-06-05T15:52:22.461Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_pca",
@@ -3513,7 +3513,7 @@
             {
               "id": "evt_finance_audit_ml_pca_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:23.967Z",
+              "time": "2026-06-05T15:52:23.157Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_pca",
@@ -3525,14 +3525,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6",
-                "duration_ms": 58.124
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac",
+                "duration_ms": 26.312
               }
             },
             {
               "id": "evt_finance_audit_ml_pca_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:28.043Z",
+              "time": "2026-06-05T15:52:20.848Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_finance_audit",
@@ -3540,13 +3540,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6"
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac"
               }
             },
             {
               "id": "evt_finance_audit_ml_pca_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:27.659Z",
+              "time": "2026-06-05T15:52:23.972Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_finance_audit",
@@ -3554,13 +3554,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6"
+                "result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac"
               }
             },
             {
               "id": "evt_finance_audit_ml_pca_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:26.911Z",
+              "time": "2026-06-05T15:52:25.124Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -3590,7 +3590,7 @@
             {
               "id": "evt_finance_audit_ml_pca_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:29.113Z",
+              "time": "2026-06-05T15:52:24.819Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_finance_audit",
@@ -3608,7 +3608,7 @@
             {
               "id": "evt_finance_audit_ml_pca_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:26.786Z",
+              "time": "2026-06-05T15:52:24.043Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_finance_audit",
@@ -3657,8 +3657,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "5b1f064cee402c2ada002cc129865e8f06b2c526ce9a538cbc3fb44bb92b2871",
-        "observed_result_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6"
+        "observed_ocel2_hash": "37e4f98a577743f56ce362fbfdb789f9463bc11d17d5cd8925ad9066b569eec0",
+        "observed_result_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -3673,7 +3673,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "1956a3c2565c2e41fa3efc5bc34124cb3961f48d3351e238848f202ff7881fb6",
+        "output_artifact_hash": "ed1da747aa9afcb6f6222935a6fc68d04e2f4a5a3d3d7b5cea03dea9022aa4ac",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -3682,8 +3682,8 @@
       "id": "transition_system",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7",
-      "duration_ms": 24.072,
+      "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf",
+      "duration_ms": 30.834,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.transition_system.v1",
         "expected_ocel2": {
@@ -3843,8 +3843,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7",
-                "duration_ms": 24.072
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf",
+                "duration_ms": 30.834
               }
             },
             {
@@ -3858,7 +3858,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7"
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf"
               }
             },
             {
@@ -3872,7 +3872,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7"
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf"
               }
             },
             {
@@ -3975,7 +3975,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "da48eea12409b5af6f7e833d27b5d06a607e55198183134d8e25605250b35483"
+        "expected_ocel2_hash": "f7d34d8fb42047d0b82c82e43270fe4079d452ba918425f41c4e23b5e392c9bb"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -4052,7 +4052,7 @@
             {
               "id": "evt_finance_audit_transition_system_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:23.390Z",
+              "time": "2026-06-05T15:52:19.500Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -4072,7 +4072,7 @@
             {
               "id": "evt_finance_audit_transition_system_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:23.307Z",
+              "time": "2026-06-05T15:52:22.305Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -4086,7 +4086,7 @@
             {
               "id": "evt_finance_audit_transition_system_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:22.536Z",
+              "time": "2026-06-05T15:52:21.207Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -4100,7 +4100,7 @@
             {
               "id": "evt_finance_audit_transition_system_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:25.423Z",
+              "time": "2026-06-05T15:52:21.893Z",
               "relationships": [
                 {
                   "objectId": "algorithm_transition_system",
@@ -4123,7 +4123,7 @@
             {
               "id": "evt_finance_audit_transition_system_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:27.423Z",
+              "time": "2026-06-05T15:52:22.698Z",
               "relationships": [
                 {
                   "objectId": "algorithm_transition_system",
@@ -4135,14 +4135,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7",
-                "duration_ms": 24.072
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf",
+                "duration_ms": 30.834
               }
             },
             {
               "id": "evt_finance_audit_transition_system_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:27.016Z",
+              "time": "2026-06-05T15:52:21.119Z",
               "relationships": [
                 {
                   "objectId": "result_transition_system_finance_audit",
@@ -4150,13 +4150,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7"
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf"
               }
             },
             {
               "id": "evt_finance_audit_transition_system_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:28.372Z",
+              "time": "2026-06-05T15:52:24.734Z",
               "relationships": [
                 {
                   "objectId": "result_transition_system_finance_audit",
@@ -4164,13 +4164,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7"
+                "result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf"
               }
             },
             {
               "id": "evt_finance_audit_transition_system_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:27.129Z",
+              "time": "2026-06-05T15:52:26.069Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -4200,7 +4200,7 @@
             {
               "id": "evt_finance_audit_transition_system_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:25.823Z",
+              "time": "2026-06-05T15:52:24.397Z",
               "relationships": [
                 {
                   "objectId": "result_transition_system_finance_audit",
@@ -4218,7 +4218,7 @@
             {
               "id": "evt_finance_audit_transition_system_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:25.700Z",
+              "time": "2026-06-05T15:52:25.020Z",
               "relationships": [
                 {
                   "objectId": "result_transition_system_finance_audit",
@@ -4267,8 +4267,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "c10cad3d173a081cb378f1ab1367322c533261314b3f9d026da41e39b304b98e",
-        "observed_result_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7"
+        "observed_ocel2_hash": "d4d4c0ee5cd43f7cba88dd52a73b6efcb98ec8fa59ab49a9af0efbf3f080ed7d",
+        "observed_result_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -4283,7 +4283,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "41e1dd0619c35410e22379fea65e4ad505da37ff3a513091ef61027a90a2b7a7",
+        "output_artifact_hash": "07480243f37954f4a011dc8e0205e16f1d77eb72007d25616978e10fced7abcf",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -4292,8 +4292,8 @@
       "id": "log_to_trie",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305",
-      "duration_ms": 45.116,
+      "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84",
+      "duration_ms": 26.039,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.log_to_trie.v1",
         "expected_ocel2": {
@@ -4453,8 +4453,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305",
-                "duration_ms": 45.116
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84",
+                "duration_ms": 26.039
               }
             },
             {
@@ -4468,7 +4468,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305"
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84"
               }
             },
             {
@@ -4482,7 +4482,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305"
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84"
               }
             },
             {
@@ -4585,7 +4585,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "711223c568aa5fcfbe09a135371e65ccf59423f82b1c59ca18b56e0785a3c264"
+        "expected_ocel2_hash": "f3faf8db63732f437da53513c9e553eb533110e2e56a9831bd6ad51cfaae5295"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -4662,7 +4662,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T11:57:24.209Z",
+              "time": "2026-06-05T15:52:21.436Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -4682,7 +4682,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T11:57:26.072Z",
+              "time": "2026-06-05T15:52:22.875Z",
               "relationships": [
                 {
                   "objectId": "log_finance_audit",
@@ -4696,7 +4696,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T11:57:22.325Z",
+              "time": "2026-06-05T15:52:21.532Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.29",
@@ -4710,7 +4710,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T11:57:25.288Z",
+              "time": "2026-06-05T15:52:20.647Z",
               "relationships": [
                 {
                   "objectId": "algorithm_log_to_trie",
@@ -4733,7 +4733,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T11:57:25.849Z",
+              "time": "2026-06-05T15:52:21.265Z",
               "relationships": [
                 {
                   "objectId": "algorithm_log_to_trie",
@@ -4745,14 +4745,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305",
-                "duration_ms": 45.116
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84",
+                "duration_ms": 26.039
               }
             },
             {
               "id": "evt_finance_audit_log_to_trie_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T11:57:25.654Z",
+              "time": "2026-06-05T15:52:21.325Z",
               "relationships": [
                 {
                   "objectId": "result_log_to_trie_finance_audit",
@@ -4760,13 +4760,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305"
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84"
               }
             },
             {
               "id": "evt_finance_audit_log_to_trie_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T11:57:24.745Z",
+              "time": "2026-06-05T15:52:23.546Z",
               "relationships": [
                 {
                   "objectId": "result_log_to_trie_finance_audit",
@@ -4774,13 +4774,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305"
+                "result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84"
               }
             },
             {
               "id": "evt_finance_audit_log_to_trie_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T11:57:28.041Z",
+              "time": "2026-06-05T15:52:24.504Z",
               "relationships": [
                 {
                   "objectId": "example_finance_audit",
@@ -4810,7 +4810,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T11:57:28.238Z",
+              "time": "2026-06-05T15:52:23.220Z",
               "relationships": [
                 {
                   "objectId": "result_log_to_trie_finance_audit",
@@ -4828,7 +4828,7 @@
             {
               "id": "evt_finance_audit_log_to_trie_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T11:57:26.668Z",
+              "time": "2026-06-05T15:52:22.188Z",
               "relationships": [
                 {
                   "objectId": "result_log_to_trie_finance_audit",
@@ -4877,8 +4877,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "3f761e8cfe24386eb46894a828d25a3d04d866c700755ae2137c64998ad75b2b",
-        "observed_result_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305"
+        "observed_ocel2_hash": "f45f92050db6f7b91590c0441ba87fdec8d8898992e13e7ca8341af2077dfec8",
+        "observed_result_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -4893,14 +4893,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
-        "output_artifact_hash": "ebb613889758e8d7b7e703fea4480fb3fca35923dc29f3ad4790affb2be7e305",
+        "output_artifact_hash": "3e90f46902a5c29954d39494083892cb4e48a6fc35320f8938d88c2170991c84",
         "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 8,
-  "created_at": "2026-06-05T11:57:21.034Z",
+  "created_at": "2026-06-05T15:52:17.564Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "120850917a9d2435e95185790442b67eaa17e6ab37045c4cc4dda00b4a47b6d1"
+  "receipt_hash": "2a1aa8e2db50dc0e88d6733d5d1460cc4cb2619e0d1f968efede8ec8476fe7f0"
 }
