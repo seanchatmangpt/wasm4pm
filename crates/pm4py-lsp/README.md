@@ -8,11 +8,14 @@ The `pm4py-lsp` crate provides a Language Server Protocol (LSP) implementation s
 
 ## Core Capabilities
 
+- **IntelliSense & Semantic Tokens:** Provides deep semantic highlighting (e.g., distinguishing raw vs. formatted DataFrames) and contextual completions for PM4Py methods (`discover_dfg`, `conformance_diagnostics_token_based_replay`).
+- **Interactive Code Lenses:** Embeds actionable UI elements directly in the editor, allowing users to trigger `wasm4pm` Parity Fixture generation or benchmarking directly from a `pm4py.discover_` call.
+- **Process Mining Hover Profiles:** Hovering over event log strings (`.csv`, `.xes`, `.ocel`) or PM4Py methods provides immediate tooltip summaries of the file profile or the underlying mathematical mapping to `wasm4pm`.
+- **Background File Watchers:** Actively monitors the workspace for `.xes`, `.ocel`, `.bpmn`, and `.pnml` files, enabling background combinatorial maximization (e.g., streaming large XES files into Parquet caches upon creation).
 - **Pipeline Detection & Diagnostics:** Statically analyzes Python scripts for `pm4py` and `pandas` imports. It raises actionable diagnostics for standard process mining workflows that attempt to execute discovery on raw, unformatted pandas DataFrames.
 - **Code Actions & Quickfixes:** Recommends automatic insertions of formatting methods (e.g., `pm4py.format_dataframe`) when missing event log mappings are detected.
-- **Actuation Commands:** Implements LSP commands (`pm4py-lsp.formatDataFrame`, `pm4py-lsp.createParityFixture`) that mutate documents and extract deterministic receipts.
+- **Actuation Commands:** Implements LSP commands (`pm4py-lsp.formatDataFrame`, `pm4py-lsp.createParityFixture`, `pm4py-lsp.generateReceipt`) that mutate documents and extract deterministic receipts.
 - **Optional Runtime Bridge:** Incorporates PyO3 for safe, runtime GIL execution of PM4Py pipelines, falling back to a static analysis mode if the environment lacks Python dependencies.
-- **Comprehensive PM4Py Surface:** Covers process mining capabilities spanning Discovery (DFG, Alpha, Inductive, etc.), Conformance Checking (Token-based replay, Alignments), and Exports (XES, BPMN, Petri net).
 
 ## Best Practices & Proof Discipline
 

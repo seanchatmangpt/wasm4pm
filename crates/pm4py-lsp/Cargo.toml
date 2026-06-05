@@ -27,6 +27,7 @@ tempfile.workspace = true
 futures = "0.3"
 tower = "0.4"
 criterion = "0.5"
+walkdir = "2.5"
 
 [[bench]]
 name = "analysis_bench"
