@@ -118,7 +118,7 @@ test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 running 5 tests
 test test_classify_parity_gap ... ok
-test test_parity_fixture_and_vervalid_instantiation ... ok
+test test_parity_fixture_and_verdict_instantiation ... ok
 test test_evaluate_parity_decisions ... ok
 test test_run_pm4py_workflow_static ... ok
 test test_run_pm4py_workflow_runtime ... ok
