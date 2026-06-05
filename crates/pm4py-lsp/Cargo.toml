@@ -1,0 +1,47 @@
+[package]
+name = "pm4py-lsp"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sean Chatman <info@chatmangpt.com>"]
+description = "PM4Py Living LSP bridge using tower-lsp-max"
+
+[dependencies]
+tower-lsp-max = { path = "../../vendors/tower-lsp-max" }
+tower-lsp-max-protocol = { path = "../../vendors/tower-lsp-max/tower-lsp-max-protocol" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.0", features = ["full"] }
+async-trait = "0.1"
+wasm4pm-types = { path = "../wasm4pm-types" }
+tracing = "0.1"
+regex = "1.10"
+uuid = { version = "1.0", features = ["v4"] }
+blake3 = { workspace = true }
+itertools = { workspace = true }
+pyo3 = { version = "0.21", features = ["auto-initialize"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+futures = "0.3"
+tower = "0.4"
+criterion = "0.5"
+
+[[bench]]
+name = "analysis_bench"
+harness = false
+
+[[bench]]
+name = "diagnostics_bench"
+harness = false
+
+[[bench]]
+name = "receipts_bench"
+harness = false
+
+[[bench]]
+name = "lsp_flow_bench"
+harness = false
+
+[lib]
+name = "pm4py_lsp"
+path = "src/lib.rs"
