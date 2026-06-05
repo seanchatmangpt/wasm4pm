@@ -71,4 +71,3 @@ pub fn evaluate_parity(
         gap_analysis: Some(gap),
     }
 }
-

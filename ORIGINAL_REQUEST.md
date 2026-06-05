@@ -234,3 +234,461 @@ Ensure that both the Rust cargo workspace and the TypeScript monorepo testing ha
 - [ ] Running `cargo test --workspace` in `/Users/sac/wasm4pm` compiles and passes cleanly with 0 failures.
 - [ ] All tests for OCEL v2 log validation/flattening, WF-net to POWL translation, structural Petri/WF-net predicates, and Order-to-Cash process world foundry execute successfully.
 - [ ] The codebase has no compiler warnings or Clippy violations.
+
+## Follow-up — 2026-06-05T06:19:04Z
+
+# Teamwork Project Prompt — Draft
+
+> Status: Launched
+> Goal: Run implementation swarm using teamwork_preview
+
+## Project Description
+Implement pm4py-lsp as a Living LSP Gall checkpoint for wasm4pm parity, using max/tower-lsp-max only as the LSP 3.18 protocol substrate. Promote pm4py-lsp from PARTIAL_ALIVE to PM4PY-LSP-002_ALIVE.
+
+Working directory: /Users/sac/wasm4pm
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Boundary Law & Substrate Purity
+- `max/tower-lsp-max` is protocol substrate only.
+- `pm4py-lsp` owns PM4Py behavior.
+- `wasm4pm` owns future Rust/WASM parity implementation.
+- `wasm4pm-compat` owns typed evidence/admission substrate.
+- DO NOT add PM4Py, XES, OCEL, BPMN, Petri net, POWL, fitness, precision, conformance, receipt semantics, or wasm4pm parity semantics to max/tower-lsp-max core.
+
+### R2. Deterministic Snapshots & Reload Verification
+- SnapshotId is deterministic from document state and relevant config.
+- Parity fixtures and receipts must be persisted to disk under `fixtures/pm4py-parity/` and `receipts/pm4py-lsp/` respectively.
+- Persisted fixtures and receipts must be reload-tested.
+
+### R3. LSP Lifecycle Integration
+- `didOpen` publishes diagnostics through the LSP service.
+- `didChange` refreshes diagnostics through the LSP service.
+- `codeAction` returns the expected PM4Py repair.
+- `executeCommand` applies the edit and returns a receipt.
+- Malformed command arguments refuse safely.
+
+### R4. Equivalence and Conformance
+- Conformance vector shifts from Refused to Admitted only after repair.
+- PM4Py semantics remain strictly inside `crates/pm4py-lsp`.
+- The wasm4pm parity fixture contract is defined in Rust with equivalence kinds and verdict classification.
+
+### R5. Required File Tree Target
+Aim for the following codebase layout:
+```
+crates/pm4py-lsp/
+  Cargo.toml
+  src/
+    lib.rs
+    analysis.rs
+    diagnostics.rs
+    server.rs
+    actions.rs
+    commands.rs
+    receipts.rs
+    fixtures.rs
+    parity.rs
+    pm4py_bridge.rs
+  tests/
+    static_analysis_test.rs
+    diagnostics_test.rs
+    lsp_lifecycle_test.rs
+    actions_commands_test.rs
+    receipts_fixtures_test.rs
+    parity_contract_test.rs
+    pm4py_bridge_test.rs
+
+fixtures/
+  pm4py-parity/
+    .gitkeep
+
+receipts/
+  pm4py-lsp/
+    .gitkeep
+
+docs/
+  checkpoints/
+    PM4PY-LSP-001.md
+    PM4PY-LSP-002.md
+    WASM4PM-PARITY-001.md
+    MAX-PURITY-FENCE.md
+  reports/
+    pm4py-lsp-agent-reports/
+      CHECKLIST.md
+      coordinator.md
+      boundary.md
+      static_analysis.md
+      diagnostic.md
+      lsp_lifecycle.md
+      code_action_command.md
+      receipt_fixture.md
+      pm4py_runtime.md
+      wasm4pm_parity.md
+      VERIFICATION.md
+```
+
+## Agent Work Assignments & Roles
+
+### AGENT 1 — coordinator_agent
+- **Role:** Own mission coherence, checkpoint law, and final integration plan.
+- **Owned files:**
+  - `docs/reports/pm4py-lsp-agent-reports/coordinator.md`
+  - `docs/checkpoints/PM4PY-LSP-002.md` (draft only until verifier finalizes)
+- **Tasks:**
+  1. Read current pm4py-lsp code, tests, Cargo.toml, and checkpoint docs.
+  2. Build a surface map (current implemented surfaces, missing PM4PY-LSP-002 surfaces, risky overclaims, files to edit).
+  3. Create a shared checklist in `docs/reports/pm4py-lsp-agent-reports/CHECKLIST.md`.
+  4. Maintain PARTIAL_ALIVE discipline and record blockers.
+
+### AGENT 2 — boundary_agent
+- **Role:** Enforce max protocol purity and dependency discipline.
+- **Owned files:**
+  - `docs/reports/pm4py-lsp-agent-reports/boundary.md`
+  - `docs/checkpoints/MAX-PURITY-FENCE.md`
+- **Tasks:**
+  1. Inspect workspace dependencies: `vendors/tower-lsp-max`, `crates/pm4py-lsp/Cargo.toml`, root `Cargo.toml`.
+  2. Verify no PM4Py-specific code in max core.
+  3. Propose durable vendor strategy.
+  4. Add/maintain MAX-PURITY-FENCE doc.
+
+### AGENT 3 — static_analysis_agent
+- **Role:** Upgrade PM4Py/Python static detection without executing Python.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/analysis.rs`
+  - `crates/pm4py-lsp/src/lib.rs` (module registration only)
+  - `crates/pm4py-lsp/tests/static_analysis_test.rs`
+- **Tasks:**
+  1. Extract current scan into analysis module.
+  2. Support import forms (`import pm4py`, `import pm4py as pm`, `from pm4py import ...`).
+  3. Support pandas aliases (`import pandas as pd`, `import pandas`, `pd.read_csv`, `pandas.read_csv`).
+  4. Detect DataFrame variables loaded from CSV.
+  5. Detect format_dataframe calls with aliases.
+  6. Detect PM4Py discovery calls (inductive, dfg, etc.).
+  7. Return a typed `PipelineFacts` struct containing facts and aliases.
+
+### AGENT 4 — diagnostic_agent
+- **Role:** Implement diagnostic families from static facts.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/diagnostics.rs`
+  - `crates/pm4py-lsp/src/lib.rs` (module registration only)
+  - `crates/pm4py-lsp/tests/diagnostics_test.rs`
+- **Tasks:**
+  1. Implement diagnostics for: `pm4py.py.unformatted_dataframe`, `pm4py.py.missing_case_id_mapping`, `pm4py.py.missing_activity_mapping`, `pm4py.py.missing_timestamp_mapping`, `pm4py.py.discovery_before_formatting`, `pm4py.py.parity_fixture_missing`, `pm4py.py.unreceipted_output`.
+  2. Ensure payload requirements: `source = "pm4py-lsp"`, exact diagnostic code, best known source range, actionable message, severity from law axis.
+
+### AGENT 5 — lsp_lifecycle_agent
+- **Role:** Validate real LSP lifecycle: initialize, didOpen, didChange, diagnostics refresh.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/server.rs`
+  - `crates/pm4py-lsp/src/lib.rs` (module registration only)
+  - `crates/pm4py-lsp/tests/lsp_lifecycle_test.rs`
+- **Tasks:**
+  1. Ensure initialize advertises text document sync, code action provider, execute command provider, diagnostic support.
+  2. Implement `didOpen` (store document, analyze, publish diagnostics).
+  3. Implement `didChange` (update document, re-analyze, publish diagnostics).
+  4. Implement `didClose` (clear tracked state, publish empty diagnostics).
+
+### AGENT 6 — code_action_command_agent
+- **Role:** Implement actual code actions and executeCommand repairs.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/actions.rs`
+  - `crates/pm4py-lsp/src/commands.rs`
+  - `crates/pm4py-lsp/src/lib.rs` (module registration only)
+  - `crates/pm4py-lsp/tests/actions_commands_test.rs`
+- **Tasks:**
+  1. Implement `codeAction` for `pm4py.py.unformatted_dataframe`.
+  2. Implement commands: `pm4py-lsp.formatDataFrame`, `pm4py-lsp.createParityFixture`, `pm4py-lsp.generateReceipt`, `pm4py-lsp.explainPipelineState`.
+  3. Ensure command validation, workspace edit application, and receipt persistence.
+
+### AGENT 7 — receipt_fixture_agent
+- **Role:** Deterministic snapshots, persisted parity fixtures, persisted receipts, reload verification.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/receipts.rs`
+  - `crates/pm4py-lsp/src/fixtures.rs`
+  - `crates/pm4py-lsp/tests/receipts_fixtures_test.rs`
+- **Tasks:**
+  1. Replace UUID snapshot with deterministic snapshot hash (`pm4py-snap-<blake3>`).
+  2. Persist parity fixture and receipt under JSON formats to disk.
+  3. Implement reload tests for fixtures and receipts.
+  4. Implement `verify_receipt_file` function.
+
+### AGENT 8 — pm4py_runtime_agent
+- **Role:** Optional gated PM4Py execution bridge.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/pm4py_bridge.rs`
+  - `crates/pm4py-lsp/tests/pm4py_bridge_test.rs`
+  - `docs/reports/pm4py-lsp-agent-reports/pm4py_runtime.md`
+- **Tasks:**
+  1. Implement capability-gated bridge (static mode default, runtime mode explicit only).
+  2. Safely handle Python/PM4Py import unavailability without panics (return Unknown/Refused).
+
+### AGENT 9 — wasm4pm_parity_agent
+- **Role:** Define parity fixture contract for wasm4pm without implementing crown engine.
+- **Owned files:**
+  - `crates/pm4py-lsp/src/parity.rs`
+  - `crates/pm4py-lsp/tests/parity_contract_test.rs`
+  - `docs/checkpoints/WASM4PM-PARITY-001.md`
+  - `docs/reports/pm4py-lsp-agent-reports/wasm4pm_parity.md`
+- **Tasks:**
+  1. Define Rust models for equivalence contract (equivalence kinds: `exact_json`, `dfg_equivalence`, etc.; parity verdict enum).
+  2. Implement `classify_parity_gap(pm4py_artifact, wasm4pm_artifact, equivalence_kind)`.
+  3. Add parity contract tests.
+
+### AGENT 10 — verifier_agent
+- **Role:** Sole owner of cargo validation, final verdict, and checkpoint admission.
+- **Owned files:**
+  - `docs/reports/pm4py-lsp-agent-reports/VERIFICATION.md`
+  - `docs/checkpoints/PM4PY-LSP-002.md` (final)
+- **Tasks:**
+  1. Perform `cargo fmt`, `cargo check`, and `cargo test` checks.
+  2. Validate boundary and gates compliance.
+  3. Emit final verdict: `PM4PY-LSP-002_ALIVE`, `PARTIAL`, `BLOCKED`, or `BUILD_BROKEN`.
+
+## Global Swarm Rules
+- Only `verifier_agent` may run workspace-wide cargo commands.
+- Other agents may run file-local inspections, unit-test planning, grep, and targeted reads.
+- No agent may run global cargo test/check except `verifier_agent`.
+- No agent may modify max/tower-lsp-max core unless explicitly routed through `boundary_agent` and `verifier_agent`.
+- No agent may claim ALIVE. Only `verifier_agent` may emit ALIVE/PARTIAL/BLOCKED verdict.
+- All agents must leave receipts in `docs/reports/pm4py-lsp-agent-reports/`.
+- Every changed surface must have a test or an explicit refusal note.
+- Do not delete or weaken existing tests.
+- Do not silently accept Unknown as Admitted. Unknown, Refused, and Admitted remain distinct.
+
+## Combinatorial Maximalism Rule
+Cross multiply:
+Python source patterns
+× PM4Py import patterns
+× pandas aliases
+× CSV/log loading patterns
+× formatting/mapping patterns
+× discovery calls
+× conformance calls
+× export calls
+× LSP lifecycle events
+× diagnostics
+× code actions
+× executeCommand
+× persisted fixtures
+× persisted receipts
+× wasm4pm parity targets
+× docs checkpoint claims
+Then implement the smallest bounded working set that makes the cross-product visible, tested, and receipted.
+
+## Acceptance Criteria
+- [ ] G1. `cargo check -p pm4py-lsp` passes.
+- [ ] G2. `cargo test -p pm4py-lsp` passes.
+- [ ] G3. Snapshot is deterministic and covered by test.
+- [ ] G4. Fixture is persisted and reload-tested.
+- [ ] G5. Receipt is persisted and reload-tested.
+- [ ] G6. didOpen/didChange LSP lifecycle is tested.
+- [ ] G7. codeAction is tested through LSP-facing API.
+- [ ] G8. executeCommand applies edit and returns receipt.
+- [ ] G9. malformed command args refuse safely.
+- [ ] G10. conformance vector distinguishes Admitted/Refused/Unknown.
+- [ ] G11. PM4Py runtime is optional and safe if unavailable.
+- [ ] G12. wasm4pm parity fixture contract exists.
+- [ ] G13. max core remains PM4Py-free.
+- [ ] G14. PM4PY-LSP-001 is corrected to PARTIAL_ALIVE if it currently overclaims.
+- [ ] G15. PM4PY-LSP-002 doc states admitted and non-admitted surfaces exactly.
+
+## Follow-up — 2026-06-05T07:50:55Z
+
+MISSION
+You are a 10-agent Definition-of-Done swarm operating inside ~/wasm4pm.
+
+Your job is not merely to implement pm4py-lsp.
+Your job is to prove whether pm4py-lsp is DONE.
+
+Use combinatorial maximalism:
+cross-multiply every already-present surface and force each one to produce evidence.
+
+PM4PY-LSP-003 Test Doctrine:
+PM4PY-LSP-003_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates for the first bounded PM4Py workflow surface.
+
+The bounded surface is:
+Python PM4Py workflow:
+  import pm4py
+  pandas read_csv
+  format_dataframe requirement
+  discovery call
+  fixture generation
+  receipt generation
+  conformance-vector shift
+
+## 1. Unit tests
+Unit tests prove local functions are correct without LSP transport.
+Scope:
+analysis.rs, diagnostics.rs, fixtures.rs, receipts.rs, parity.rs, pm4py_bridge.rs
+Required unit gates:
+U1. detect import pm4py
+U2. detect import pm4py as pm
+U3. detect from pm4py import ...
+U4. detect pandas aliases
+U5. detect read_csv variables
+U6. detect format_dataframe variables
+U7. detect discovery calls
+U8. detect missing mappings
+U9. generate deterministic snapshot from identical input
+U10. snapshot changes when document changes
+U11. generate fixture payload
+U12. persist/reload fixture
+U13. persist/reload receipt
+U14. corrupt receipt refuses
+U15. parity exact match admits
+U16. parity mismatch refuses
+U17. unsupported parity is Unsupported, not Refused
+U18. PM4Py unavailable returns Unknown/Refused, not panic
+
+Command:
+cargo test -p pm4py-lsp --test static_analysis_test
+cargo test -p pm4py-lsp --test diagnostics_test
+cargo test -p pm4py-lsp --test receipts_fixtures_test
+cargo test -p pm4py-lsp --test parity_contract_test
+cargo test -p pm4py-lsp --test pm4py_bridge_test
+
+## 2. Integration tests
+Integration tests prove internal modules work together.
+Scope:
+analysis → diagnostics
+diagnostics → code actions
+code actions → commands
+commands → receipts
+commands → fixtures
+snapshot → conformance vector
+
+Required integration gates:
+I1. unformatted DataFrame produces diagnostic
+I2. format_dataframe repair clears only related diagnostic
+I3. missing mapping diagnostics remain after formatting
+I4. createParityFixture writes fixture
+I5. generateReceipt writes receipt
+I6. command receipt hash verifies
+I7. conformance vector moves Refused → Admitted after repair
+I8. Unknown law axis remains Unknown
+I9. malformed command args refuse safely
+I10. repeated command is idempotent or safely refused
+
+Command:
+cargo test -p pm4py-lsp --test capability_test
+cargo test -p pm4py-lsp --test actions_commands_test
+
+## 3. E2E tests
+E2E tests prove real LSP behavior, not helper calls.
+Scope:
+initialize, didOpen, publish diagnostics / diagnostic cache, codeAction, executeCommand, didChange, conformance vector, receipt lookup, didClose
+Required E2E scenario:
+1. Start pm4py-lsp through max service harness.
+2. initialize.
+3. didOpen Python file with PM4Py + unformatted read_csv.
+4. Verify diagnostic appears.
+5. Request codeAction.
+6. Execute formatDataFrame command.
+7. Verify WorkspaceEdit applied.
+8. Verify receipt returned and persisted.
+9. didChange with repaired content.
+10. Verify diagnostic clears through lifecycle.
+11. Verify conformance vector is Admitted for formatting law.
+12. didClose.
+13. Verify document state clears/deactivates.
+
+Command:
+cargo test -p pm4py-lsp --test lsp_lifecycle_test
+cargo test -p pm4py-lsp --test e2e_lsp_test
+Add: crates/pm4py-lsp/tests/e2e_lsp_test.rs
+
+## 4. Chaos tests
+Chaos tests prove refusal discipline under malformed, adversarial, partial, and corrupted state.
+Scope:
+bad Python text, partial edits, malformed JSON-RPC, missing command args, corrupted fixture, corrupted receipt, unknown PM4Py alias, file deleted mid-command, duplicate document open, concurrent didChange, receipt tampering
+Required chaos gates:
+C1. malformed Python never panics
+C2. malformed command args return error/refusal
+C3. corrupted receipt refuses
+C4. corrupted fixture refuses
+C5. missing fixture produces diagnostic, not panic
+C6. unknown import alias records Unknown
+C7. concurrent didChange does not poison state
+C8. didClose during command does not panic
+C9. duplicate command does not double-admit
+C10. PM4Py runtime unavailable does not fail tests
+C11. invalid URI refuses safely
+C12. invalid JSON-RPC request produces protocol error
+
+Command:
+cargo test -p pm4py-lsp --test chaos_test
+Add: crates/pm4py-lsp/tests/chaos_test.rs
+
+## 5. Stress tests
+Stress tests prove the system holds under scale and repetition.
+Scope:
+many documents, large Python files, many diagnostics, many receipts, many fixtures, repeated didChange, parallel requests, long-running runtime bridge refusal
+Required stress gates:
+S1. 1,000 PM4Py-like files analyzed without panic
+S2. 10,000 read_csv lines analyzed within bounded time
+S3. 1,000 receipts generated and verified
+S4. 1,000 fixtures generated and reloaded
+S5. 100 concurrent didChange events stabilize
+S6. repeated conformance queries are stable
+S7. memory does not grow unbounded after didClose
+S8. no deadlock under parallel codeAction + executeCommand
+
+Command:
+cargo test -p pm4py-lsp --test stress_test -- --ignored
+Mark expensive tests as ignored by default: #[ignore = "stress gate"]
+
+## 6. Benchmarks
+Benchmarks prove performance class.
+Benchmark dimensions:
+B1. static analysis throughput
+B2. diagnostic generation latency
+B3. snapshot hash latency
+B4. fixture write latency
+B5. receipt verify latency
+B6. codeAction latency
+B7. conformance vector latency
+B8. E2E didOpen → diagnostics latency
+
+Crate: criterion = "0.5" in dev-dependencies.
+Bench files:
+crates/pm4py-lsp/benches/analysis_bench.rs, diagnostics_bench.rs, receipts_bench.rs, lsp_flow_bench.rs
+Commands:
+cargo bench -p pm4py-lsp
+Initial targets:
+analysis small file: < 1 ms
+analysis 10k-line file: < 50 ms
+diagnostics small file: < 1 ms
+snapshot generation: < 5 ms
+receipt verify: < 5 ms
+codeAction generation: < 5 ms
+
+## 7. Final verifier gate
+The verifier must produce docs/reports/pm4py-lsp-dod/FINAL-VERDICT.md with:
+Gate | Command / Evidence | Verdict
+Clippy, Fmt, Boundary, Unit, Integration, E2E, Chaos, Stress, Bench.
+
+## 10-agent hyperprompt addendum
+Agent 01 — unit_test_agent
+Agent 02 — integration_test_agent
+Agent 03 — e2e_lsp_agent
+Agent 04 — chaos_agent
+Agent 05 — stress_agent
+Agent 06 — benchmark_agent
+Agent 07 — boundary_agent
+Agent 08 — receipt_evidence_agent
+Agent 09 — docs_checkpoint_agent
+Agent 10 — verifier_agent
+
+Definition of Done Checklist:
+- cargo fmt --check -p pm4py-lsp PASS
+- cargo clippy -p pm4py-lsp --all-targets -- -D warnings PASS
+- cargo test -p pm4py-lsp PASS
+- cargo test -p pm4py-lsp --test chaos_test PASS
+- cargo test -p pm4py-lsp --test e2e_lsp_test PASS
+- stress tests either PASS or explicitly SKIPPED with reason
+- cargo bench -p pm4py-lsp either PASS or explicitly SKIPPED with reason
+- max purity scan PASS
+- FINAL-VERDICT.md written
+
+

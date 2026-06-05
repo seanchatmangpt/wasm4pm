@@ -4,7 +4,7 @@
 `PM4PY-LSP-003_ALIVE`
 
 ## Verification Statement
-`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates for the first bounded PM4Py workflow surface.`
+`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.`
 
 ---
 

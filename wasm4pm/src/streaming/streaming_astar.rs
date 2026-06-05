@@ -118,11 +118,7 @@ impl StreamingAStarBuilder {
                 // The true reverse-direction count is the forward count of the swapped edge,
                 // which lives in `edge_counts[(to,from)]`. Fall back to 0 when the reverse
                 // edge was never observed (high-precision case).
-                let reverse = self
-                    .edge_counts
-                    .get(&(to, from))
-                    .copied()
-                    .unwrap_or(0);
+                let reverse = self.edge_counts.get(&(to, from)).copied().unwrap_or(0);
                 let precision = if count + reverse > 0 {
                     1.0 - (reverse as f64 / (count + reverse) as f64)
                 } else {

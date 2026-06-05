@@ -1858,6 +1858,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "blake3",
+ "criterion",
  "futures",
  "itertools 0.14.0",
  "pyo3",

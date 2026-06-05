@@ -91,8 +91,7 @@ impl PowlSpec {
         match self {
             PowlSpec::Irreducible { .. } => true,
             PowlSpec::Transition { .. } | PowlSpec::Silent => false,
-            PowlSpec::PartialOrder { children, .. }
-            | PowlSpec::ChoiceGraph { children, .. } => {
+            PowlSpec::PartialOrder { children, .. } | PowlSpec::ChoiceGraph { children, .. } => {
                 children.iter().any(PowlSpec::has_irreducible)
             }
         }
@@ -106,9 +105,12 @@ impl PowlSpec {
             PowlSpec::Silent => "tau".to_string(),
             PowlSpec::PartialOrder { children, order } => {
                 let kids: Vec<String> = children.iter().map(PowlSpec::repr).collect();
-                let edges: Vec<String> =
-                    order.iter().map(|(i, j)| format!("{i}->{j}")).collect();
-                format!("PO(nodes=[{}], order=[{}])", kids.join(", "), edges.join(", "))
+                let edges: Vec<String> = order.iter().map(|(i, j)| format!("{i}->{j}")).collect();
+                format!(
+                    "PO(nodes=[{}], order=[{}])",
+                    kids.join(", "),
+                    edges.join(", ")
+                )
             }
             PowlSpec::ChoiceGraph {
                 children,
@@ -117,8 +119,7 @@ impl PowlSpec {
                 end,
             } => {
                 let kids: Vec<String> = children.iter().map(PowlSpec::repr).collect();
-                let es: Vec<String> =
-                    edges.iter().map(|(i, j)| format!("{i}->{j}")).collect();
+                let es: Vec<String> = edges.iter().map(|(i, j)| format!("{i}->{j}")).collect();
                 format!(
                     "CG(nodes=[{}], edges=[{}], start={start}, end={end})",
                     kids.join(", "),
@@ -590,12 +591,26 @@ fn exit_points(net: &WorkNet, part: &BTreeSet<usize>) -> Vec<usize> {
 /// conditions 3 & 4 to require that all entry (resp. exit) places of a part feed
 /// (resp. drain) the part identically, i.e. the part is a clean SESE fragment.
 fn place_equiv_wrt(net: &WorkNet, p: usize, q: usize, part: &BTreeSet<usize>) -> bool {
-    let pre_p: BTreeSet<usize> = net.p_pre[p].iter().copied().filter(|t| part.contains(t)).collect();
-    let pre_q: BTreeSet<usize> = net.p_pre[q].iter().copied().filter(|t| part.contains(t)).collect();
-    let post_p: BTreeSet<usize> =
-        net.p_post[p].iter().copied().filter(|t| part.contains(t)).collect();
-    let post_q: BTreeSet<usize> =
-        net.p_post[q].iter().copied().filter(|t| part.contains(t)).collect();
+    let pre_p: BTreeSet<usize> = net.p_pre[p]
+        .iter()
+        .copied()
+        .filter(|t| part.contains(t))
+        .collect();
+    let pre_q: BTreeSet<usize> = net.p_pre[q]
+        .iter()
+        .copied()
+        .filter(|t| part.contains(t))
+        .collect();
+    let post_p: BTreeSet<usize> = net.p_post[p]
+        .iter()
+        .copied()
+        .filter(|t| part.contains(t))
+        .collect();
+    let post_q: BTreeSet<usize> = net.p_post[q]
+        .iter()
+        .copied()
+        .filter(|t| part.contains(t))
+        .collect();
     pre_p == pre_q && post_p == post_q
 }
 
@@ -660,9 +675,9 @@ fn is_concurrency_hiding(net: &WorkNet, parts: &[BTreeSet<usize>]) -> bool {
     if parts.len() < 2 {
         return false;
     }
-    parts.iter().all(|part| {
-        entry_points(net, part).len() == 1 && exit_points(net, part).len() == 1
-    })
+    parts
+        .iter()
+        .all(|part| entry_points(net, part).len() == 1 && exit_points(net, part).len() == 1)
 }
 
 // ===========================================================================
@@ -692,9 +707,8 @@ fn project_part(net: &WorkNet, part: &BTreeSet<usize>) -> PetriNet {
     let boundary: BTreeSet<usize> = entry_set.union(&exit_set).copied().collect();
 
     let mut places: Vec<PetriNetPlace> = Vec::new();
-    let mut place_name = |idx: usize, net: &WorkNet| -> String {
-        format!("{}__proj", net.place_ids[idx])
-    };
+    let mut place_name =
+        |idx: usize, net: &WorkNet| -> String { format!("{}__proj", net.place_ids[idx]) };
     // Interior places.
     let mut kept_places: Vec<usize> = Vec::new();
     for p in 0..net.n_places() {
@@ -965,11 +979,7 @@ fn convert_net(net: &WorkNet, depth: usize) -> PowlSpec {
         let t = 0;
         let pre = &net.t_pre[t];
         let post = &net.t_post[t];
-        if pre.len() == 1
-            && post.len() == 1
-            && pre[0] == net.source
-            && post[0] == net.sink
-        {
+        if pre.len() == 1 && post.len() == 1 && pre[0] == net.source && post[0] == net.sink {
             return match &net.t_label[t] {
                 Some(l) => PowlSpec::Transition { label: l.clone() },
                 None => PowlSpec::Silent,
@@ -992,8 +1002,7 @@ fn convert_net(net: &WorkNet, depth: usize) -> PowlSpec {
 
     // (2) Marked-graph attempt: conflict-hiding partition → partial order.
     let mg = partition_mg(net);
-    let mg_parts: Vec<BTreeSet<usize>> =
-        mg.iter().map(|g| g.iter().copied().collect()).collect();
+    let mg_parts: Vec<BTreeSet<usize>> = mg.iter().map(|g| g.iter().copied().collect()).collect();
     if mg_parts.len() > 1 && is_conflict_hiding(net, &mg_parts) {
         // Ensure structural progress: no part equals the whole transition set.
         let progress = mg_parts.iter().all(|p| p.len() < net.n_transitions());
@@ -1010,8 +1019,7 @@ fn convert_net(net: &WorkNet, depth: usize) -> PowlSpec {
 
     // (3) State-machine attempt: concurrency-hiding partition → choice graph.
     let sm = partition_sm(net);
-    let sm_parts: Vec<BTreeSet<usize>> =
-        sm.iter().map(|g| g.iter().copied().collect()).collect();
+    let sm_parts: Vec<BTreeSet<usize>> = sm.iter().map(|g| g.iter().copied().collect()).collect();
     if sm_parts.len() > 1 && is_concurrency_hiding(net, &sm_parts) {
         let progress = sm_parts.iter().all(|p| p.len() < net.n_transitions());
         if progress {
@@ -1071,11 +1079,7 @@ fn project_and_recurse(
 
 /// Build an `Irreducible` leaf carrying the visible transition labels of `net`.
 fn irreducible_leaf(net: &WorkNet) -> PowlSpec {
-    let transitions: Vec<String> = net
-        .t_label
-        .iter()
-        .filter_map(|l| l.clone())
-        .collect();
+    let transitions: Vec<String> = net.t_label.iter().filter_map(|l| l.clone()).collect();
     PowlSpec::Irreducible { transitions }
 }
 
@@ -1470,12 +1474,7 @@ mod tests {
             weight: Some(1),
         }
     }
-    fn mk(
-        places: &[&str],
-        ts: &[(&str, &str)],
-        arcs: &[(&str, &str)],
-        src: &str,
-    ) -> PetriNet {
+    fn mk(places: &[&str], ts: &[(&str, &str)], arcs: &[(&str, &str)], src: &str) -> PetriNet {
         let mut im = HashMap::new();
         im.insert(src.to_string(), 1usize);
         PetriNet {

@@ -81,14 +81,17 @@ impl PrefixOracle {
     pub fn observe(&mut self, ev: &PrefixEvent) -> (PrefixVerdict, Vec<PrefixFinding>) {
         // Implementation for observing a single event
         let mut findings = Vec::new();
-        
-        let cursor = self.cases.entry(ev.case_id.clone()).or_insert_with(|| CaseCursor {
-            case_id: ev.case_id.clone(),
-            dfa_state: self.law.q_init,
-            seen: Vec::new(),
-            last_time_ms: ev.time_ms,
-            verdict: PrefixVerdict::Alive,
-        });
+
+        let cursor = self
+            .cases
+            .entry(ev.case_id.clone())
+            .or_insert_with(|| CaseCursor {
+                case_id: ev.case_id.clone(),
+                dfa_state: self.law.q_init,
+                seen: Vec::new(),
+                last_time_ms: ev.time_ms,
+                verdict: PrefixVerdict::Alive,
+            });
 
         if cursor.verdict == PrefixVerdict::Dead {
             return (PrefixVerdict::Dead, findings);
@@ -156,19 +159,27 @@ impl PrefixOracle {
                 code: PrefixRefusal::RepairWithoutRoute,
                 severity: FindingSeverity::Deny,
                 json_path: format!("$.events[{}]", ev.tape_index),
-                message: format!("RepairApplied without RouteSelected for case {}", ev.case_id),
+                message: format!(
+                    "RepairApplied without RouteSelected for case {}",
+                    ev.case_id
+                ),
                 case_id: ev.case_id.clone(),
                 activity: ev.activity.clone(),
             });
             cursor.verdict = PrefixVerdict::Dead;
         }
 
-        if (ev.activity == "ReceiptEmitted" || ev.activity == "RefusalEmitted") && !cursor.seen.contains(&"DiagnosticRaised".to_string()) {
+        if (ev.activity == "ReceiptEmitted" || ev.activity == "RefusalEmitted")
+            && !cursor.seen.contains(&"DiagnosticRaised".to_string())
+        {
             findings.push(PrefixFinding {
                 code: PrefixRefusal::ClearWithoutDiagnostic,
                 severity: FindingSeverity::Deny,
                 json_path: format!("$.events[{}]", ev.tape_index),
-                message: format!("Clear event {} without DiagnosticRaised for case {}", ev.activity, ev.case_id),
+                message: format!(
+                    "Clear event {} without DiagnosticRaised for case {}",
+                    ev.activity, ev.case_id
+                ),
                 case_id: ev.case_id.clone(),
                 activity: ev.activity.clone(),
             });
@@ -180,19 +191,26 @@ impl PrefixOracle {
                 code: PrefixRefusal::SuggestWithoutRoute,
                 severity: FindingSeverity::Deny,
                 json_path: format!("$.events[{}]", ev.tape_index),
-                message: format!("RepairSuggested without RouteSelected for case {}", ev.case_id),
+                message: format!(
+                    "RepairSuggested without RouteSelected for case {}",
+                    ev.case_id
+                ),
                 case_id: ev.case_id.clone(),
                 activity: ev.activity.clone(),
             });
             cursor.verdict = PrefixVerdict::Dead;
         }
 
-        if ev.activity == "RouteSelected" && !cursor.seen.contains(&"DiagnosticRaised".to_string()) {
+        if ev.activity == "RouteSelected" && !cursor.seen.contains(&"DiagnosticRaised".to_string())
+        {
             findings.push(PrefixFinding {
                 code: PrefixRefusal::RouteWithoutDiagnostic,
                 severity: FindingSeverity::Deny,
                 json_path: format!("$.events[{}]", ev.tape_index),
-                message: format!("RouteSelected without DiagnosticRaised for case {}", ev.case_id),
+                message: format!(
+                    "RouteSelected without DiagnosticRaised for case {}",
+                    ev.case_id
+                ),
                 case_id: ev.case_id.clone(),
                 activity: ev.activity.clone(),
             });
@@ -204,7 +222,11 @@ impl PrefixOracle {
         }
 
         // Move the DFA state
-        if let Some(&next_state) = self.law.transitions.get(&(cursor.dfa_state, ev.activity.clone())) {
+        if let Some(&next_state) = self
+            .law
+            .transitions
+            .get(&(cursor.dfa_state, ev.activity.clone()))
+        {
             cursor.dfa_state = next_state;
             if next_state == self.law.q_dead || !self.law.completable[next_state] {
                 // If the DFA says it's dead, and it wasn't caught by D1-D5
@@ -231,7 +253,11 @@ impl PrefixOracle {
         (cursor.verdict, findings)
     }
 
-    pub fn classify_prefix(&self, case_id: &str, activities: &[String]) -> (PrefixVerdict, Vec<PrefixFinding>) {
+    pub fn classify_prefix(
+        &self,
+        case_id: &str,
+        activities: &[String],
+    ) -> (PrefixVerdict, Vec<PrefixFinding>) {
         // Implement one-shot classification by spinning up a new oracle and observing all.
         let mut temp_oracle = PrefixOracle {
             law: self.law.clone(),

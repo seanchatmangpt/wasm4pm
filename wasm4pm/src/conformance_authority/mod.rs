@@ -472,10 +472,7 @@ pub enum RefusalReport {
     ConditionalMissingOverride { fitness: f64 },
 
     /// Fitness < 0.85: Hard reject (never admissible).
-    HardReject {
-        fitness: f64,
-        policy: &'static str,
-    },
+    HardReject { fitness: f64, policy: &'static str },
 
     /// Invalid or missing Board override signature for conditional trace.
     InvalidOverrideSignature { fitness: f64 },
@@ -532,7 +529,11 @@ impl fmt::Display for RefusalReport {
                 write!(f, "conformance refusal: model '{}' missing", model_hash)
             }
             RefusalReport::BrokenChainOfCustody { context } => {
-                write!(f, "conformance refusal: chain of custody broken ({})", context)
+                write!(
+                    f,
+                    "conformance refusal: chain of custody broken ({})",
+                    context
+                )
             }
             RefusalReport::LaunderingDetected {
                 claimed_fitness,
@@ -582,12 +583,12 @@ impl ReachabilityHeuristic {
     /// Compute h_reach(M, p) for current marking and trace position.
     ///
     /// Returns the estimated remaining cost (admissible lower bound).
-    pub fn estimate(
-        &self,
-        current_marking_hash: &str,
-        remaining_trace_length: u32,
-    ) -> u32 {
-        let d_min = self.distances.get(current_marking_hash).copied().unwrap_or(0);
+    pub fn estimate(&self, current_marking_hash: &str, remaining_trace_length: u32) -> u32 {
+        let d_min = self
+            .distances
+            .get(current_marking_hash)
+            .copied()
+            .unwrap_or(0);
         ((d_min as i32) - (remaining_trace_length as i32)).max(0) as u32
     }
 }

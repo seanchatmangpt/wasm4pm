@@ -188,8 +188,7 @@ mod tests {
 
     #[test]
     fn log_event_with_case_id() {
-        let event = LogEvent::new("submit".to_string(), 1000)
-            .with_case_id("case-001".to_string());
+        let event = LogEvent::new("submit".to_string(), 1000).with_case_id("case-001".to_string());
         assert_eq!(event.case_id, Some("case-001".to_string()));
     }
 

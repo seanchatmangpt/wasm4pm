@@ -24,7 +24,11 @@ use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 /// ```
 /// `timestamp_key` defaults to `"time:timestamp"` in most XES logs.
 /// Pure-Rust performance DFG discovery without wasm-bindgen. Used by integration tests.
-pub fn discover_performance_dfg_from_log(log: &EventLog, activity_key: &str, timestamp_key: &str) -> String {
+pub fn discover_performance_dfg_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    timestamp_key: &str,
+) -> String {
     let mut edge_times: HashMap<(String, String), Vec<f64>> = HashMap::new();
     let mut node_freq: HashMap<String, usize> = HashMap::new();
     let mut start_acts: HashMap<String, usize> = HashMap::new();
@@ -59,7 +63,9 @@ pub fn discover_performance_dfg_from_log(log: &EventLog, activity_key: &str, tim
             *node_freq.entry(act.clone()).or_insert(0) += 1;
         }
         *start_acts.entry(pairs[0].0.clone()).or_insert(0) += 1;
-        *end_acts.entry(pairs[pairs.len() - 1].0.clone()).or_insert(0) += 1;
+        *end_acts
+            .entry(pairs[pairs.len() - 1].0.clone())
+            .or_insert(0) += 1;
 
         for i in 0..pairs.len() - 1 {
             let key = (pairs[i].0.clone(), pairs[i + 1].0.clone());
@@ -90,7 +96,11 @@ pub fn discover_performance_dfg_from_log(log: &EventLog, activity_key: &str, tim
             let mut sorted = valid.clone();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let p95_idx = ((sorted.len() as f64 - 1.0) * 0.95).round() as usize;
-            let p95_ms = if sorted.is_empty() { 0.0 } else { sorted[p95_idx.min(sorted.len() - 1)] };
+            let p95_ms = if sorted.is_empty() {
+                0.0
+            } else {
+                sorted[p95_idx.min(sorted.len() - 1)]
+            };
             serde_json::json!({
                 "from": key.0, "to": key.1,
                 "count": durs.len(),
@@ -105,8 +115,9 @@ pub fn discover_performance_dfg_from_log(log: &EventLog, activity_key: &str, tim
         "start_activities": start_acts,
         "end_activities": end_acts,
     });
-    serde_json::to_string(&result)
-        .unwrap_or_else(|_| r#"{"nodes":[],"edges":[],"start_activities":{},"end_activities":{}}"#.to_string())
+    serde_json::to_string(&result).unwrap_or_else(|_| {
+        r#"{"nodes":[],"edges":[],"start_activities":{},"end_activities":{}}"#.to_string()
+    })
 }
 
 #[wasm_bindgen]
@@ -121,5 +132,9 @@ pub fn discover_performance_dfg(
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
 
-    Ok(crate::error::js_val(&discover_performance_dfg_from_log(&log, activity_key, timestamp_key)))
+    Ok(crate::error::js_val(&discover_performance_dfg_from_log(
+        &log,
+        activity_key,
+        timestamp_key,
+    )))
 }

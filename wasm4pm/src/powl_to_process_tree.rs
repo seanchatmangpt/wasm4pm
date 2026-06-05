@@ -190,9 +190,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> PowlProcessTree {
                 .nodes
                 .iter()
                 .filter_map(|n| match n {
-                    ChoiceGraphNode::SubModel(idx) => {
-                        Some(apply_recursive(arena, *idx))
-                    }
+                    ChoiceGraphNode::SubModel(idx) => Some(apply_recursive(arena, *idx)),
                     _ => None,
                 })
                 .collect();

@@ -35,7 +35,9 @@ pub fn streaming_conformance_begin(model_handle: &str) -> Result<JsValue, JsValu
         Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
             Ok(StreamingConformanceChecker::from_dfg(dfg.clone()))
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet or DirectlyFollowsGraph")),
+        Some(_) => Err(crate::error::js_val(
+            "Handle is not a PetriNet or DirectlyFollowsGraph",
+        )),
         None => Err(crate::error::js_val("Model handle not found")),
     })?;
 
@@ -56,7 +58,7 @@ pub fn streaming_conformance_add_event(
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingConformanceChecker(c)) => {
             c.add_event(case_id, activity);
-            
+
             let (fitness, state_str) = if let Some(trace_state) = c.open_traces.get(case_id) {
                 if c.net.is_some() {
                     let denom = (trace_state.consumed_tokens + trace_state.missing_tokens) as f64;
@@ -81,7 +83,10 @@ pub fn streaming_conformance_add_event(
                     };
                     if let Some(ref dfg_edges) = c.dfg_edges {
                         for i in 0..total_steps {
-                            let pair = (trace_state.activities[i].clone(), trace_state.activities[i + 1].clone());
+                            let pair = (
+                                trace_state.activities[i].clone(),
+                                trace_state.activities[i + 1].clone(),
+                            );
                             if !dfg_edges.contains(&pair) {
                                 deviations += 1;
                             }
@@ -238,12 +243,12 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
     let state = get_or_init_state();
     let mut actual_handle = model_handle.to_string();
 
-    let exists = state.with_object(model_handle, |obj| {
-        match obj {
+    let exists = state
+        .with_object(model_handle, |obj| match obj {
             Some(StoredObject::PetriNet(_)) => Ok(true),
             _ => Ok(false),
-        }
-    }).unwrap_or(false);
+        })
+        .unwrap_or(false);
 
     if !exists {
         let reg = crate::model_registry::get_registry();
@@ -266,7 +271,9 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
             for (i, activity) in prefix.iter().enumerate() {
                 checker.add_event(case_id, activity);
                 if let Some(state) = checker.open_traces.get(case_id) {
-                    if state.state == crate::models::TraceState::Blocked && violation_index.is_none() {
+                    if state.state == crate::models::TraceState::Blocked
+                        && violation_index.is_none()
+                    {
                         violation_index = Some(i);
                         violating_activity = Some(activity.clone());
                     }

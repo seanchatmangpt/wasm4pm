@@ -77,7 +77,7 @@ impl StreamCircuitBreaker {
 
         let mut durations: Vec<f64> = self.spc_buffer.iter().map(|s| s.duration_ms).collect();
         let latest = *durations.last().unwrap();
-        
+
         // Use Median and MAD for robust statistics
         durations.sort_by(|a, b| a.partial_cmp(b).unwrap());
         let mid = durations.len() / 2;
@@ -87,7 +87,9 @@ impl StreamCircuitBreaker {
             durations[mid]
         };
 
-        let mut absolute_deviations: Vec<f64> = self.spc_buffer.iter()
+        let mut absolute_deviations: Vec<f64> = self
+            .spc_buffer
+            .iter()
             .map(|s| (s.duration_ms - median).abs())
             .collect();
         absolute_deviations.sort_by(|a, b| a.partial_cmp(b).unwrap());
@@ -106,7 +108,8 @@ impl StreamCircuitBreaker {
         }
 
         // Fallback to simple mean for Rule 2 (runs)
-        let mean = self.spc_buffer.iter().map(|s| s.duration_ms).sum::<f64>() / self.spc_buffer.len() as f64;
+        let mean = self.spc_buffer.iter().map(|s| s.duration_ms).sum::<f64>()
+            / self.spc_buffer.len() as f64;
         if self.spc_buffer.len() >= 9 {
             let last_9 = &self.spc_buffer.as_slices().0[self.spc_buffer.len().saturating_sub(9)..];
             // Handle wrap-around if needed, but for simplicity we assume contiguous for now
@@ -114,7 +117,7 @@ impl StreamCircuitBreaker {
             let (s1, s2) = self.spc_buffer.as_slices();
             let all: Vec<&TraceSnapshot> = s1.iter().chain(s2.iter()).collect();
             let last_9_refs = &all[all.len() - 9..];
-            
+
             let above = last_9_refs.iter().all(|s| s.duration_ms > mean);
             let below = last_9_refs.iter().all(|s| s.duration_ms < mean);
             if above || below {

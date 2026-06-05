@@ -79,7 +79,11 @@ impl CorrelationProofSpan {
             latency_ms: correlation.latency_ms,
             timestamp_correlation_error_ms: correlation.timestamp_correlation_error_ms,
             service_name: "wpm".to_string(),
-            status: if correlation.is_valid() { "ok".to_string() } else { "error".to_string() },
+            status: if correlation.is_valid() {
+                "ok".to_string()
+            } else {
+                "error".to_string()
+            },
         }
     }
 
@@ -89,7 +93,10 @@ impl CorrelationProofSpan {
         attrs.insert("parent_trace_id".to_string(), self.parent_trace_id.clone());
         attrs.insert("parent_span_id".to_string(), self.parent_span_id.clone());
         attrs.insert("child_trace_id".to_string(), self.child_trace_id.clone());
-        attrs.insert("child_parent_span_id".to_string(), self.child_parent_span_id.clone());
+        attrs.insert(
+            "child_parent_span_id".to_string(),
+            self.child_parent_span_id.clone(),
+        );
         attrs.insert("match".to_string(), self.match_result.to_string());
         attrs.insert("latency_ms".to_string(), self.latency_ms.to_string());
         attrs.insert(

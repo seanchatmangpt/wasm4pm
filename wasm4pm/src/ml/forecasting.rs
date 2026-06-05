@@ -1,6 +1,6 @@
 //! Nanosecond Forecasting Family — branchless Exponential Smoothing for process mining.
 
-use crate::models::{AttributeValue, parse_timestamp_ms};
+use crate::models::{parse_timestamp_ms, AttributeValue};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -52,7 +52,11 @@ pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
     }
 
     let denom = (n - 1).max(1) as f64;
-    let rmse = if n > 1 { (sum_sq_err / denom).sqrt() } else { 0.0 };
+    let rmse = if n > 1 {
+        (sum_sq_err / denom).sqrt()
+    } else {
+        0.0
+    };
     let mae = if n > 1 { sum_abs_err / denom } else { 0.0 };
     let mape = if mape_count > 0 {
         sum_abs_pct_err / mape_count as f64
@@ -113,7 +117,10 @@ pub(crate) fn get_windows(eventlog_handle: &str) -> Result<([f64; NUM_WINDOWS], 
 }
 
 #[wasm_bindgen]
-pub fn discover_ml_forecast(eventlog_handle: &str, _activity_key: &str) -> Result<JsValue, JsValue> {
+pub fn discover_ml_forecast(
+    eventlog_handle: &str,
+    _activity_key: &str,
+) -> Result<JsValue, JsValue> {
     let (windows, count) = get_windows(eventlog_handle)?;
 
     if count < 2 {

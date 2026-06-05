@@ -29,8 +29,14 @@ pub fn extract_case_durations(log: &EventLog, timestamp_key: &str) -> Vec<(usize
             continue;
         }
 
-        let first = trace.events.first().and_then(|e| e.attributes.get(timestamp_key));
-        let last = trace.events.last().and_then(|e| e.attributes.get(timestamp_key));
+        let first = trace
+            .events
+            .first()
+            .and_then(|e| e.attributes.get(timestamp_key));
+        let last = trace
+            .events
+            .last()
+            .and_then(|e| e.attributes.get(timestamp_key));
 
         if let (Some(start_val), Some(end_val)) = (first, last) {
             if let (Some(start_ms), Some(end_ms)) = (ts_ms(start_val), ts_ms(end_val)) {
@@ -98,8 +104,15 @@ pub fn extract_durations_by_case_attribute(
 
     for (idx, duration) in durations {
         let trace = &log.traces[idx];
-        if let Some(cohort_val) = trace.attributes.get(cohort_attribute).and_then(|v| v.as_string()) {
-            result.entry(cohort_val.to_string()).or_default().push(duration);
+        if let Some(cohort_val) = trace
+            .attributes
+            .get(cohort_attribute)
+            .and_then(|v| v.as_string())
+        {
+            result
+                .entry(cohort_val.to_string())
+                .or_default()
+                .push(duration);
         }
     }
 
@@ -136,8 +149,10 @@ pub fn extract_durations_by_event_attribute(
             let ts_b = b.attributes.get(timestamp_key).and_then(ts_ms);
 
             if let (Some(t0), Some(t1)) = (ts_a, ts_b) {
-                if let Some(group_val) =
-                    a.attributes.get(group_attribute).and_then(|v| v.as_string())
+                if let Some(group_val) = a
+                    .attributes
+                    .get(group_attribute)
+                    .and_then(|v| v.as_string())
                 {
                     result
                         .entry(group_val.to_string())
@@ -202,10 +217,8 @@ mod tests {
     #[test]
     fn case_durations_single_event_trace_skipped() {
         let mut log = empty_log();
-        log.traces.push(make_trace(vec![make_event(
-            "A",
-            "2024-01-01T10:00:00Z",
-        )]));
+        log.traces
+            .push(make_trace(vec![make_event("A", "2024-01-01T10:00:00Z")]));
         let result = extract_case_durations(&log, "time:timestamp");
         assert!(result.is_empty(), "single-event trace must be skipped");
     }
@@ -222,7 +235,11 @@ mod tests {
         let (idx, dur) = result[0];
         assert_eq!(idx, 0);
         // 1 hour = 3_600_000 ms
-        assert!((dur - 3_600_000.0).abs() < 1.0, "expected ~3600000ms, got {}", dur);
+        assert!(
+            (dur - 3_600_000.0).abs() < 1.0,
+            "expected ~3600000ms, got {}",
+            dur
+        );
     }
 
     #[test]
@@ -236,7 +253,10 @@ mod tests {
         t.events[0].attributes.remove("time:timestamp");
         log.traces.push(t);
         let result = extract_case_durations(&log, "time:timestamp");
-        assert!(result.is_empty(), "trace with missing timestamp must be skipped");
+        assert!(
+            result.is_empty(),
+            "trace with missing timestamp must be skipped"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -253,7 +273,8 @@ mod tests {
     #[test]
     fn pair_durations_single_event_trace_skipped() {
         let mut log = empty_log();
-        log.traces.push(make_trace(vec![make_event("A", "2024-01-01T10:00:00Z")]));
+        log.traces
+            .push(make_trace(vec![make_event("A", "2024-01-01T10:00:00Z")]));
         let result = extract_activity_pair_durations(&log, "concept:name", "time:timestamp");
         assert!(result.is_empty());
     }
@@ -281,8 +302,7 @@ mod tests {
     #[test]
     fn case_attr_durations_empty_log() {
         let log = empty_log();
-        let result =
-            extract_durations_by_case_attribute(&log, "region", "time:timestamp");
+        let result = extract_durations_by_case_attribute(&log, "region", "time:timestamp");
         assert!(result.is_empty());
     }
 
@@ -321,8 +341,7 @@ mod tests {
         log.traces.push(t2);
         log.traces.push(t3);
 
-        let result =
-            extract_durations_by_case_attribute(&log, "region", "time:timestamp");
+        let result = extract_durations_by_case_attribute(&log, "region", "time:timestamp");
 
         assert_eq!(result["EU"].len(), 2);
         assert_eq!(result["US"].len(), 1);

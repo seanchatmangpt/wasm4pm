@@ -53,7 +53,8 @@ impl SocialNetwork {
             return HashMap::new();
         }
 
-        let mut betweenness: HashMap<String, f64> = self.nodes.iter().map(|n| (n.id.clone(), 0.0)).collect();
+        let mut betweenness: HashMap<String, f64> =
+            self.nodes.iter().map(|n| (n.id.clone(), 0.0)).collect();
 
         // Build adjacency list
         let mut adj: HashMap<String, Vec<String>> = HashMap::new();
@@ -61,8 +62,12 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), Vec::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_default().push(edge.to.clone());
-            adj.entry(edge.to.clone()).or_default().push(edge.from.clone());
+            adj.entry(edge.from.clone())
+                .or_default()
+                .push(edge.to.clone());
+            adj.entry(edge.to.clone())
+                .or_default()
+                .push(edge.from.clone());
         }
 
         // BFS from each node
@@ -128,8 +133,12 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), Vec::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_default().push(edge.to.clone());
-            adj.entry(edge.to.clone()).or_default().push(edge.from.clone());
+            adj.entry(edge.from.clone())
+                .or_default()
+                .push(edge.to.clone());
+            adj.entry(edge.to.clone())
+                .or_default()
+                .push(edge.from.clone());
         }
 
         // BFS from each node
@@ -187,12 +196,21 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), HashSet::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_default().insert(edge.to.clone());
-            adj.entry(edge.to.clone()).or_default().insert(edge.from.clone());
+            adj.entry(edge.from.clone())
+                .or_default()
+                .insert(edge.to.clone());
+            adj.entry(edge.to.clone())
+                .or_default()
+                .insert(edge.from.clone());
         }
 
         for node in &self.nodes {
-            let neighbors: Vec<_> = adj.get(&node.id).unwrap_or(&HashSet::new()).iter().cloned().collect();
+            let neighbors: Vec<_> = adj
+                .get(&node.id)
+                .unwrap_or(&HashSet::new())
+                .iter()
+                .cloned()
+                .collect();
 
             if neighbors.len() <= 1 {
                 local_coefficients.insert(node.id.clone(), 0.0);
@@ -277,7 +295,8 @@ impl SocialNetwork {
                 }
 
                 for &candidate in &candidate_comms {
-                    let gain = self.modularity_gain(&node.id, current_comm, candidate, &adj, &communities);
+                    let gain =
+                        self.modularity_gain(&node.id, current_comm, candidate, &adj, &communities);
                     if gain > best_gain {
                         best_gain = gain;
                         best_comm = candidate;
@@ -339,7 +358,9 @@ impl SocialNetwork {
 pub fn network_to_graphml(network: &SocialNetwork) -> String {
     let mut xml = String::from("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
     xml.push_str("<graphml xmlns=\"http://graphml.graphdrawing.org/xmlns\">\n");
-    xml.push_str("  <key id=\"workload\" for=\"node\" attr.name=\"workload\" attr.type=\"long\"/>\n");
+    xml.push_str(
+        "  <key id=\"workload\" for=\"node\" attr.name=\"workload\" attr.type=\"long\"/>\n",
+    );
     xml.push_str("  <key id=\"weight\" for=\"edge\" attr.name=\"weight\" attr.type=\"long\"/>\n");
     xml.push_str("  <graph edgedefault=\"undirected\">\n");
 
@@ -350,7 +371,10 @@ pub fn network_to_graphml(network: &SocialNetwork) -> String {
         }
         xml.push_str(">\n");
         if let Some(workload) = node.workload {
-            xml.push_str(&format!("      <data key=\"workload\">{}</data>\n", workload));
+            xml.push_str(&format!(
+                "      <data key=\"workload\">{}</data>\n",
+                workload
+            ));
         }
         xml.push_str("    </node>\n");
     }
@@ -361,7 +385,10 @@ pub fn network_to_graphml(network: &SocialNetwork) -> String {
             escape_xml(&edge.from),
             escape_xml(&edge.to)
         ));
-        xml.push_str(&format!("      <data key=\"weight\">{}</data>\n", edge.weight));
+        xml.push_str(&format!(
+            "      <data key=\"weight\">{}</data>\n",
+            edge.weight
+        ));
         xml.push_str("    </edge>\n");
     }
 

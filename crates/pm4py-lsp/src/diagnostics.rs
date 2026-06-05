@@ -74,10 +74,15 @@ pub fn check_diagnostics(facts: &PipelineFacts) -> Vec<Diagnostic> {
             });
         }
 
-        if !facts.discovery_calls.is_empty() && facts.formatted_vars.is_empty() {
+        let has_any_execution = !facts.discovery_calls.is_empty()
+            || !facts.conformance_calls.is_empty()
+            || !facts.export_calls.is_empty();
+
+        if has_any_execution && facts.formatted_vars.is_empty() {
             diagnostics.push(Diagnostic {
                 code: DiagnosticCode::DiscoveryBeforeFormatting,
-                message: "Process discovery called before formatting the DataFrame.".to_string(),
+                message: "Process mining operations called before formatting the DataFrame."
+                    .to_string(),
             });
         }
     }
@@ -150,7 +155,11 @@ pub fn diagnose_pipeline(facts: &PipelineFacts) -> Vec<LspDiagnostic> {
             });
         }
 
-        if !facts.discovery_calls.is_empty() && facts.formatted_vars.is_empty() {
+        let has_any_execution = !facts.discovery_calls.is_empty()
+            || !facts.conformance_calls.is_empty()
+            || !facts.export_calls.is_empty();
+
+        if has_any_execution && facts.formatted_vars.is_empty() {
             diagnostics.push(LspDiagnostic {
                 range: Range::new(Position::new(0, 0), Position::new(0, 0)),
                 severity: Some(DiagnosticSeverity::WARNING),
@@ -159,7 +168,8 @@ pub fn diagnose_pipeline(facts: &PipelineFacts) -> Vec<LspDiagnostic> {
                     DiagnosticCode::DiscoveryBeforeFormatting.as_str()
                 ))),
                 source: Some("pm4py-lsp".to_string()),
-                message: "Process discovery called before formatting the DataFrame.".to_string(),
+                message: "Process mining operations called before formatting the DataFrame."
+                    .to_string(),
                 ..Default::default()
             });
         }

@@ -237,28 +237,24 @@ fn compute_trace_duration_ms(trace: &crate::models::Trace) -> f64 {
 /// ## Errors
 /// Returns structured error JSON when fewer than `MIN_TRACES` (10) traces are present.
 #[wasm_bindgen]
-pub fn build_automl_envelope(
-    log_handle: &str,
-    activity_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn build_automl_envelope(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
 
     let trained_at_ms: f64 = {
         #[cfg(target_arch = "wasm32")]
-        { js_sys::Date::now() }
+        {
+            js_sys::Date::now()
+        }
         #[cfg(not(target_arch = "wasm32"))]
-        { 0.0 }
+        {
+            0.0
+        }
     };
 
     let envelope_json = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    "Handle is not an EventLog",
-                ))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -281,8 +277,12 @@ pub fn build_automl_envelope(
         let (training_features, training_labels, feature_names) =
             extract_motion_features(log, activity_key);
 
-        let result =
-            miniml::auto_fit_classification(&training_features, &training_labels, n_samples, N_FEATURES);
+        let result = miniml::auto_fit_classification(
+            &training_features,
+            &training_labels,
+            n_samples,
+            N_FEATURES,
+        );
 
         let model = AutomlEnvelopeModel {
             envelope_type: AUTOML_ENVELOPE_TYPE.to_string(),
@@ -384,8 +384,8 @@ pub fn score_motion_automl(
         }
 
         // Parse the incoming motion feature object
-        let motion_map: HashMap<String, f64> = serde_json::from_str(motion_features_json)
-            .unwrap_or_default();
+        let motion_map: HashMap<String, f64> =
+            serde_json::from_str(motion_features_json).unwrap_or_default();
 
         // Build feature vector in model column order, defaulting missing keys to 0.0
         let feature_values: Vec<f64> = model
@@ -457,7 +457,8 @@ fn score_with_miniml(
             let row_start = i * n_features;
             let dist_sq: f64 = (0..n_features)
                 .map(|j| {
-                    let diff = query[j] - training_features.get(row_start + j).copied().unwrap_or(0.0);
+                    let diff =
+                        query[j] - training_features.get(row_start + j).copied().unwrap_or(0.0);
                     diff * diff
                 })
                 .sum();
@@ -469,7 +470,11 @@ fn score_with_miniml(
     distances.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
 
     // Anomaly score = fraction of k neighbours labelled 1.0
-    let anomalous_count = distances.iter().take(k).filter(|(_, label)| *label > 0.5).count();
+    let anomalous_count = distances
+        .iter()
+        .take(k)
+        .filter(|(_, label)| *label > 0.5)
+        .count();
     anomalous_count as f64 / k as f64
 }
 
@@ -525,9 +530,8 @@ pub fn inspect_automl_envelope(envelope_handle: &str) -> Result<JsValue, JsValue
         );
 
         // Serialize the model and inject the summary field
-        let mut val: serde_json::Value = serde_json::to_value(&model).map_err(|e| {
-            wasm_err(codes::INTERNAL_ERROR, format!("Serialisation failed: {e}"))
-        })?;
+        let mut val: serde_json::Value = serde_json::to_value(&model)
+            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Serialisation failed: {e}")))?;
 
         if let serde_json::Value::Object(ref mut map) = val {
             map.insert("summary".to_string(), serde_json::Value::String(summary));
@@ -558,8 +562,7 @@ pub(crate) fn score_motion_automl_from_envelope(
             layer: "automl".to_string(),
             verdict: crate::automembrane::Verdict::Quarantine,
             confidence: 1.0,
-            reason: "AutoML model quarantined due to drift; motion isolated for review"
-                .to_string(),
+            reason: "AutoML model quarantined due to drift; motion isolated for review".to_string(),
             evidence_used: vec!["automl_envelope".to_string()],
             missing_evidence: vec![],
         };
@@ -679,7 +682,10 @@ mod tests {
         let n = features.len() / N_FEATURES;
         for i in 0..n {
             let ratio = features[i * N_FEATURES + 1];
-            assert!(ratio >= 0.0 && ratio <= 1.0, "unique_activity_ratio out of range: {ratio}");
+            assert!(
+                ratio >= 0.0 && ratio <= 1.0,
+                "unique_activity_ratio out of range: {ratio}"
+            );
         }
     }
 
@@ -716,13 +722,15 @@ mod tests {
 
     #[test]
     fn labels_are_binary() {
-        let traces: Vec<Trace> = (0..15).map(|i| {
-            if i < 5 {
-                make_trace(&[&format!("Rare{i}")])
-            } else {
-                make_trace(&["A", "B", "C"])
-            }
-        }).collect();
+        let traces: Vec<Trace> = (0..15)
+            .map(|i| {
+                if i < 5 {
+                    make_trace(&[&format!("Rare{i}")])
+                } else {
+                    make_trace(&["A", "B", "C"])
+                }
+            })
+            .collect();
         let log = make_log(traces);
         let (_features, labels, _names) = extract_motion_features(&log, "concept:name");
         for l in &labels {
@@ -770,21 +778,39 @@ mod tests {
     #[test]
     fn score_above_0_9_yields_escalate() {
         let score = 0.95_f64;
-        let verdict = if score > 0.9 { "escalate" } else if score > 0.7 { "warn" } else { "allow" };
+        let verdict = if score > 0.9 {
+            "escalate"
+        } else if score > 0.7 {
+            "warn"
+        } else {
+            "allow"
+        };
         assert_eq!(verdict, "escalate");
     }
 
     #[test]
     fn score_between_0_7_and_0_9_yields_warn() {
         let score = 0.8_f64;
-        let verdict = if score > 0.9 { "escalate" } else if score > 0.7 { "warn" } else { "allow" };
+        let verdict = if score > 0.9 {
+            "escalate"
+        } else if score > 0.7 {
+            "warn"
+        } else {
+            "allow"
+        };
         assert_eq!(verdict, "warn");
     }
 
     #[test]
     fn score_below_0_7_yields_allow() {
         let score = 0.5_f64;
-        let verdict = if score > 0.9 { "escalate" } else if score > 0.7 { "warn" } else { "allow" };
+        let verdict = if score > 0.9 {
+            "escalate"
+        } else if score > 0.7 {
+            "warn"
+        } else {
+            "allow"
+        };
         assert_eq!(verdict, "allow");
     }
 
@@ -825,24 +851,39 @@ mod tests {
         AutomlEnvelopeModel {
             envelope_type: AUTOML_ENVELOPE_TYPE.to_string(),
             best_algorithm: "knn".to_string(),
-            best_score: 0.9, n_samples: 10, n_features: N_FEATURES,
-            feature_names: vec!["prefix_length_ratio".into(),
-                "unique_activity_ratio".into(), "has_rework".into(),
-                "event_density".into(), "variant_frequency".into()],
+            best_score: 0.9,
+            n_samples: 10,
+            n_features: N_FEATURES,
+            feature_names: vec![
+                "prefix_length_ratio".into(),
+                "unique_activity_ratio".into(),
+                "has_rework".into(),
+                "event_density".into(),
+                "variant_frequency".into(),
+            ],
             training_features: vec![0.0; 10 * N_FEATURES],
             training_labels: vec![1.0; 10],
-            rationale: "test".to_string(), trained_at_ms: 0.0,
+            rationale: "test".to_string(),
+            trained_at_ms: 0.0,
             data_window_size: 10,
-            validity_status: status.to_string(), drift_score: 0.0,
+            validity_status: status.to_string(),
+            drift_score: 0.0,
         }
     }
     fn mk_motion() -> crate::automembrane::RequestMotion {
         crate::automembrane::RequestMotion {
-            request_id: "r".to_string(), actor: "a".to_string(),
-            role: None, origin_system: None, target_system: None,
-            object_ids: vec![], object_types: vec![],
-            requested_action: "x".to_string(), claimed_evidence: vec![],
-            timestamp_ms: None, route_context: None, deployment_profile: None,
+            request_id: "r".to_string(),
+            actor: "a".to_string(),
+            role: None,
+            origin_system: None,
+            target_system: None,
+            object_ids: vec![],
+            object_types: vec![],
+            requested_action: "x".to_string(),
+            claimed_evidence: vec![],
+            timestamp_ms: None,
+            route_context: None,
+            deployment_profile: None,
         }
     }
 
@@ -853,13 +894,20 @@ mod tests {
     fn score_without_trace_features_refuses_with_require_evidence() {
         use crate::automembrane::Verdict;
         let verdict = score_motion_automl_from_envelope(&mk_model("valid"), &mk_motion());
-        assert!(matches!(verdict.verdict, Verdict::RequireEvidence),
-            "got {:?}", verdict.verdict);
+        assert!(
+            matches!(verdict.verdict, Verdict::RequireEvidence),
+            "got {:?}",
+            verdict.verdict
+        );
         assert_eq!(verdict.confidence, 0.0);
         assert_eq!(verdict.missing_evidence.len(), 5);
-        assert!(verdict.missing_evidence.iter()
+        assert!(verdict
+            .missing_evidence
+            .iter()
             .any(|m| m == "automl.prefix_length_ratio"));
-        assert!(verdict.missing_evidence.iter()
+        assert!(verdict
+            .missing_evidence
+            .iter()
             .any(|m| m == "automl.variant_frequency"));
     }
 
@@ -868,7 +916,11 @@ mod tests {
     fn score_quarantined_model_short_circuits_before_missing_evidence() {
         use crate::automembrane::Verdict;
         let v = score_motion_automl_from_envelope(&mk_model("quarantined"), &mk_motion());
-        assert!(matches!(v.verdict, Verdict::Quarantine), "got {:?}", v.verdict);
+        assert!(
+            matches!(v.verdict, Verdict::Quarantine),
+            "got {:?}",
+            v.verdict
+        );
     }
 
     #[test]

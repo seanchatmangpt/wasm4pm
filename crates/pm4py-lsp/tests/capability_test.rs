@@ -244,8 +244,10 @@ async fn test_integration_dataframe_formatting() {
     tokio::spawn(async move {
         while let Some(request) = request_stream.next().await {
             if let Some(id) = request.id() {
-                let response =
-                    tower_lsp_max::jsonrpc::Response::from_ok(id.clone(), serde_json::json!({"applied": true}));
+                let response = tower_lsp_max::jsonrpc::Response::from_ok(
+                    id.clone(),
+                    serde_json::json!({"applied": true}),
+                );
                 let _ = response_sink.send(response).await;
             }
         }
@@ -254,19 +256,24 @@ async fn test_integration_dataframe_formatting() {
     let uri = Url::parse("file:///test_integration.py").unwrap();
     let code_unformatted = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
 
-    backend.did_open(DidOpenTextDocumentParams {
-        text_document: TextDocumentItem {
-            uri: uri.clone(),
-            language_id: "python".to_string(),
-            version: 1,
-            text: code_unformatted.to_string(),
-        },
-    }).await;
+    backend
+        .did_open(DidOpenTextDocumentParams {
+            text_document: TextDocumentItem {
+                uri: uri.clone(),
+                language_id: "python".to_string(),
+                version: 1,
+                text: code_unformatted.to_string(),
+            },
+        })
+        .await;
 
     // b. Verifies the `pm4py.py.unformatted_dataframe` diagnostic is present.
     let diagnostics_1 = diagnose_text(&code_unformatted);
     let has_unformatted = diagnostics_1.iter().any(|d| {
-        d.code == Some(NumberOrString::String("pm4py.py.unformatted_dataframe".to_string()))
+        d.code
+            == Some(NumberOrString::String(
+                "pm4py.py.unformatted_dataframe".to_string(),
+            ))
     });
     assert!(has_unformatted);
 
@@ -276,7 +283,10 @@ async fn test_integration_dataframe_formatting() {
         arguments: vec![
             serde_json::to_value(&uri).unwrap(),
             serde_json::to_value(Range::new(Position::new(2, 0), Position::new(2, 10))).unwrap(),
-            serde_json::to_value("Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.").unwrap(),
+            serde_json::to_value(
+                "Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.",
+            )
+            .unwrap(),
         ],
         ..Default::default()
     };
@@ -285,33 +295,47 @@ async fn test_integration_dataframe_formatting() {
 
     // Update document content to simulate editor applying the edit and did_change notification
     let code_formatted = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\ndf = pm4py.format_dataframe(df)\n";
-    backend.did_change(DidChangeTextDocumentParams {
-        text_document: VersionedTextDocumentIdentifier {
-            uri: uri.clone(),
-            version: 2,
-        },
-        content_changes: vec![TextDocumentContentChangeEvent {
-            range: None,
-            range_length: None,
-            text: code_formatted.to_string(),
-        }],
-    }).await;
+    backend
+        .did_change(DidChangeTextDocumentParams {
+            text_document: VersionedTextDocumentIdentifier {
+                uri: uri.clone(),
+                version: 2,
+            },
+            content_changes: vec![TextDocumentContentChangeEvent {
+                range: None,
+                range_length: None,
+                text: code_formatted.to_string(),
+            }],
+        })
+        .await;
 
     // d. Verifies that the unformatted diagnostic is cleared but missing mapping diagnostics are present.
     let diagnostics_2 = diagnose_text(&code_formatted);
     let has_unformatted_2 = diagnostics_2.iter().any(|d| {
-        d.code == Some(NumberOrString::String("pm4py.py.unformatted_dataframe".to_string()))
+        d.code
+            == Some(NumberOrString::String(
+                "pm4py.py.unformatted_dataframe".to_string(),
+            ))
     });
     assert!(!has_unformatted_2);
 
     let has_missing_case_id = diagnostics_2.iter().any(|d| {
-        d.code == Some(NumberOrString::String("pm4py.py.missing_case_id_mapping".to_string()))
+        d.code
+            == Some(NumberOrString::String(
+                "pm4py.py.missing_case_id_mapping".to_string(),
+            ))
     });
     let has_missing_activity = diagnostics_2.iter().any(|d| {
-        d.code == Some(NumberOrString::String("pm4py.py.missing_activity_mapping".to_string()))
+        d.code
+            == Some(NumberOrString::String(
+                "pm4py.py.missing_activity_mapping".to_string(),
+            ))
     });
     let has_missing_timestamp = diagnostics_2.iter().any(|d| {
-        d.code == Some(NumberOrString::String("pm4py.py.missing_timestamp_mapping".to_string()))
+        d.code
+            == Some(NumberOrString::String(
+                "pm4py.py.missing_timestamp_mapping".to_string(),
+            ))
     });
     assert!(has_missing_case_id);
     assert!(has_missing_activity);
@@ -323,7 +347,10 @@ async fn test_integration_dataframe_formatting() {
         arguments: vec![
             serde_json::to_value(&uri).unwrap(),
             serde_json::to_value(Range::new(Position::new(2, 0), Position::new(2, 10))).unwrap(),
-            serde_json::to_value("Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.").unwrap(),
+            serde_json::to_value(
+                "Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.",
+            )
+            .unwrap(),
         ],
         ..Default::default()
     };
@@ -332,4 +359,3 @@ async fn test_integration_dataframe_formatting() {
     let err = result_again.err().unwrap();
     assert_eq!(err.message, "DataFrame is already formatted");
 }
-

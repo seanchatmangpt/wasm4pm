@@ -29,4 +29,3 @@ pub fn reload_fixture(snapshot_id: &SnapshotId, base_path: &Path) -> std::io::Re
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
     Ok(fixture)
 }
-

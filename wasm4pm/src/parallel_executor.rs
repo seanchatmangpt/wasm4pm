@@ -296,8 +296,7 @@ fn process_batch_unrolled(
     // Count edges — skip positions that cross a trace boundary.
     // `trace_starts` marks where each trace begins in the batch; the event
     // at position `trace_starts[k]` is NOT a successor of position `trace_starts[k]-1`.
-    let boundary_set: std::collections::HashSet<usize> =
-        trace_starts.iter().copied().collect();
+    let boundary_set: std::collections::HashSet<usize> = trace_starts.iter().copied().collect();
     for i in 0..events.len().saturating_sub(1) {
         // Skip if position i+1 is the start of a new trace
         if boundary_set.contains(&(i + 1)) {
@@ -369,13 +368,17 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
             serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string())
         }
         "alpha_plus_plus" => {
-            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
             match crate::algorithms::alpha_plus_plus_inner(&admitted, activity_key, 0.0) {
-                Ok(petri_net) => serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string()),
+                Ok(petri_net) => {
+                    serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string())
+                }
                 Err(_) => serde_json::json!({
                     "algorithm": "alpha_plus_plus",
                     "error": "alpha++ discovery failed"
-                }).to_string(),
+                })
+                .to_string(),
             }
         }
         "heuristic_miner" => {

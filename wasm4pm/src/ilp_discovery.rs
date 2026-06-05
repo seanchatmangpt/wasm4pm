@@ -117,7 +117,10 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
 
     // 2a. 1-to-1: one place per causal pair
     for &(a, b) in &causal_pairs {
-        candidates.push(CandidatePlace { input_acts: vec![a], output_acts: vec![b] });
+        candidates.push(CandidatePlace {
+            input_acts: vec![a],
+            output_acts: vec![b],
+        });
     }
 
     // 2b. AND-splits: ({a} → {b, c}) when a causes both b and c, and b ∥ c
@@ -133,7 +136,10 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
                 if parallel_pairs.contains(&(b, c)) {
                     let mut out = vec![b, c];
                     out.sort_unstable();
-                    candidates.push(CandidatePlace { input_acts: vec![a], output_acts: out });
+                    candidates.push(CandidatePlace {
+                        input_acts: vec![a],
+                        output_acts: out,
+                    });
                 }
             }
         }
@@ -152,7 +158,10 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
                 if parallel_pairs.contains(&(a, b)) {
                     let mut inp = vec![a, b];
                     inp.sort_unstable();
-                    candidates.push(CandidatePlace { input_acts: inp, output_acts: vec![c] });
+                    candidates.push(CandidatePlace {
+                        input_acts: inp,
+                        output_acts: vec![c],
+                    });
                 }
             }
         }
@@ -195,7 +204,15 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
     let selected = ilp_greedy_cover(valid_candidates, &causal_set);
 
     // Stage 5: Assemble Petri net and compute metrics.
-    build_ilp_petri_net(&selected, &col, log, activity_key, &start_acts, &end_acts, &loop1_acts)
+    build_ilp_petri_net(
+        &selected,
+        &col,
+        log,
+        activity_key,
+        &start_acts,
+        &end_acts,
+        &loop1_acts,
+    )
 }
 
 /// Greedy set-cover: select the minimum subset of candidate places that together
@@ -228,7 +245,9 @@ fn ilp_greedy_cover(
             let candidate = remaining.remove(idx);
             let in_set: HashSet<u32> = candidate.input_acts.iter().copied().collect();
             let out_set: HashSet<u32> = candidate.output_acts.iter().copied().collect();
-            let covers_any = uncovered.iter().any(|(a, b)| in_set.contains(a) && out_set.contains(b));
+            let covers_any = uncovered
+                .iter()
+                .any(|(a, b)| in_set.contains(a) && out_set.contains(b));
             if covers_any {
                 uncovered.retain(|(a, b)| !(in_set.contains(a) && out_set.contains(b)));
                 selected.push(candidate);
@@ -270,21 +289,39 @@ fn build_ilp_petri_net(
     // Source and sink places (required by token_replay_pure and existing tests).
     let source = "p_source".to_string();
     let sink = "p_sink".to_string();
-    petri_net.places.push(PetriNetPlace { id: source.clone(), label: "source".to_string(), marking: Some(1) });
-    petri_net.places.push(PetriNetPlace { id: sink.clone(), label: "sink".to_string(), marking: Some(0) });
+    petri_net.places.push(PetriNetPlace {
+        id: source.clone(),
+        label: "source".to_string(),
+        marking: Some(1),
+    });
+    petri_net.places.push(PetriNetPlace {
+        id: sink.clone(),
+        label: "sink".to_string(),
+        marking: Some(0),
+    });
     petri_net.initial_marking.insert(source.clone(), 1);
-    petri_net.final_markings.push(std::collections::HashMap::from([(sink.clone(), 1)]));
+    petri_net
+        .final_markings
+        .push(std::collections::HashMap::from([(sink.clone(), 1)]));
 
     // Source → start activities.
     for &sa in start_acts {
         if let Some(t) = act_to_trans.get(&sa) {
-            petri_net.arcs.push(PetriNetArc { from: source.clone(), to: t.clone(), weight: Some(1) });
+            petri_net.arcs.push(PetriNetArc {
+                from: source.clone(),
+                to: t.clone(),
+                weight: Some(1),
+            });
         }
     }
     // End activities → sink.
     for &ea in end_acts {
         if let Some(t) = act_to_trans.get(&ea) {
-            petri_net.arcs.push(PetriNetArc { from: t.clone(), to: sink.clone(), weight: Some(1) });
+            petri_net.arcs.push(PetriNetArc {
+                from: t.clone(),
+                to: sink.clone(),
+                weight: Some(1),
+            });
         }
     }
 
@@ -299,8 +336,16 @@ fn build_ilp_petri_net(
                     label: format!("loop_{}", name),
                     marking: Some(0),
                 });
-                petri_net.arcs.push(PetriNetArc { from: t.clone(), to: pid.clone(), weight: Some(1) });
-                petri_net.arcs.push(PetriNetArc { from: pid, to: t.clone(), weight: Some(1) });
+                petri_net.arcs.push(PetriNetArc {
+                    from: t.clone(),
+                    to: pid.clone(),
+                    weight: Some(1),
+                });
+                petri_net.arcs.push(PetriNetArc {
+                    from: pid,
+                    to: t.clone(),
+                    weight: Some(1),
+                });
             }
         }
     }
@@ -309,26 +354,38 @@ fn build_ilp_petri_net(
     for (idx, place) in selected.iter().enumerate() {
         let pid = format!("p{}", idx);
         // Bounds check: filter activities that have valid vocab entries
-        let input_labels: Vec<String> = place.input_acts.iter()
+        let input_labels: Vec<String> = place
+            .input_acts
+            .iter()
             .filter_map(|&a| col.vocab.get(a as usize).map(|s| s.to_string()))
             .collect();
-        let output_labels: Vec<String> = place.output_acts.iter()
+        let output_labels: Vec<String> = place
+            .output_acts
+            .iter()
             .filter_map(|&a| col.vocab.get(a as usize).map(|s| s.to_string()))
             .collect();
-        let label = format!(
-            "{}->{}",
-            input_labels.join(","),
-            output_labels.join(",")
-        );
-        petri_net.places.push(PetriNetPlace { id: pid.clone(), label, marking: Some(0) });
+        let label = format!("{}->{}", input_labels.join(","), output_labels.join(","));
+        petri_net.places.push(PetriNetPlace {
+            id: pid.clone(),
+            label,
+            marking: Some(0),
+        });
         for &in_act in &place.input_acts {
             if let Some(t) = act_to_trans.get(&in_act) {
-                petri_net.arcs.push(PetriNetArc { from: t.clone(), to: pid.clone(), weight: Some(1) });
+                petri_net.arcs.push(PetriNetArc {
+                    from: t.clone(),
+                    to: pid.clone(),
+                    weight: Some(1),
+                });
             }
         }
         for &out_act in &place.output_acts {
             if let Some(t) = act_to_trans.get(&out_act) {
-                petri_net.arcs.push(PetriNetArc { from: pid.clone(), to: t.clone(), weight: Some(1) });
+                petri_net.arcs.push(PetriNetArc {
+                    from: pid.clone(),
+                    to: t.clone(),
+                    weight: Some(1),
+                });
             }
         }
     }
@@ -411,10 +468,7 @@ pub fn discover_optimized_dfg_from_log(
             }
         }
         for window in trace.events.windows(2) {
-            if let (
-                Some(AttributeValue::String(act1)),
-                Some(AttributeValue::String(act2)),
-            ) = (
+            if let (Some(AttributeValue::String(act1)), Some(AttributeValue::String(act2))) = (
                 window[0].attributes.get(activity_key),
                 window[1].attributes.get(activity_key),
             ) {
@@ -428,7 +482,11 @@ pub fn discover_optimized_dfg_from_log(
         let normalized_freq = count as f64 / max_freq as f64;
         let score = (fitness_weight * normalized_freq) - (simplicity_weight * 0.1);
         if score > 0.1 {
-            dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: count });
+            dfg.edges.push(DirectlyFollowsRelation {
+                from,
+                to,
+                frequency: count,
+            });
         }
     }
 
@@ -439,8 +497,9 @@ pub fn discover_optimized_dfg_from_log(
             {
                 *dfg.start_activities.entry(first_act.clone()).or_insert(0) += 1;
             }
-            if let Some(AttributeValue::String(last_act)) =
-                trace.events[trace.events.len() - 1].attributes.get(activity_key)
+            if let Some(AttributeValue::String(last_act)) = trace.events[trace.events.len() - 1]
+                .attributes
+                .get(activity_key)
             {
                 *dfg.end_activities.entry(last_act.clone()).or_insert(0) += 1;
             }
@@ -465,7 +524,8 @@ pub fn discover_optimized_dfg(
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
-    let dfg = discover_optimized_dfg_from_log(&log, activity_key, fitness_weight, simplicity_weight);
+    let dfg =
+        discover_optimized_dfg_from_log(&log, activity_key, fitness_weight, simplicity_weight);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()

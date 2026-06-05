@@ -24,3 +24,14 @@ This checklist records the validation status of all 20 Definition of Done (DOD) 
 | **DOD-G18** | Max core remains PM4Py-free | **PASS** | Inspected `vendors/tower-lsp-max` showing zero pm4py references. |
 | **DOD-G19** | PM4PY-LSP-001 is corrected to PARTIAL_ALIVE if it currently overclaims | **PASS** | Corrected in `docs/checkpoints/PM4PY-LSP-001.md`. |
 | **DOD-G20** | `PM4PY-LSP-003.md` contains exact admitted, refused, unknown, and future surfaces | **PASS** | Documented in `docs/checkpoints/PM4PY-LSP-003.md`. |
+
+## PM4PY-LSP-003 Milestone Gates
+
+| Gate ID | Target / Requirement | Status | Evidence / Verification Method |
+| --- | --- | --- | --- |
+| **Unit** | Unit tests cover `pm4py-lsp` | **MISSING** | 0 unit tests (all moved to integration gates/files). |
+| **Integration** | 29 Integration tests (PASS) | **PASS** | Validated via `capability_test` (7), `diagnostics_test` (3), `diagnostic_test` (1), `actions_commands_test` (3), `parity_contract_test` (5), `pm4py_bridge_test` (2), `receipts_fixtures_test` (4), `static_analysis_test` (4). |
+| **E2E LSP** | 9 E2E LSP tests (PASS) | **PASS** | Validated via `e2e_lsp_test` (7), `lsp_lifecycle_test` (2). |
+| **Chaos** | 6 Chaos tests (PASS) | **PASS** | Validated via `chaos_test` covering inputs, concurrency, corruption. |
+| **Stress** | 8 Stress tests (PASS) | **PASS** | Validated via `stress_test` covering deadlocks, scale, memory limit. |
+| **Benchmark** | 9 Benchmark targets (PASS) | **PASS** | Checked via `benches` suites for latency and throughput metrics. |

@@ -78,10 +78,12 @@ impl PolicyCheckpoint {
     /// Compute BLAKE3 hash of policy state (deterministic, collision-resistant)
     fn compute_hash(&self) -> String {
         use std::collections::BTreeMap;
-        let sorted_q_table: BTreeMap<u64, BTreeMap<u32, f32>> = self.q_table
+        let sorted_q_table: BTreeMap<u64, BTreeMap<u32, f32>> = self
+            .q_table
             .iter()
             .map(|(k, v)| {
-                let sorted_inner: BTreeMap<u32, f32> = v.iter().map(|(&ik, &iv)| (ik, iv)).collect();
+                let sorted_inner: BTreeMap<u32, f32> =
+                    v.iter().map(|(&ik, &iv)| (ik, iv)).collect();
                 (*k, sorted_inner)
             })
             .collect();
@@ -129,10 +131,12 @@ impl PolicyCheckpoint {
         }
 
         let json = fs::read_to_string(path)?;
-        let checkpoint: PolicyCheckpoint =
-            serde_json::from_str(&json).map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidData, format!("JSON parse error: {}", e))
-            })?;
+        let checkpoint: PolicyCheckpoint = serde_json::from_str(&json).map_err(|e| {
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("JSON parse error: {}", e),
+            )
+        })?;
 
         // Verify hash integrity
         let saved_hash = checkpoint.blake3_hash.clone();
@@ -203,13 +207,8 @@ mod tests {
         metrics.td_error_mean = 0.05;
         metrics.q_max = 4.2;
 
-        let checkpoint = PolicyCheckpoint::new(
-            "SARSA".to_string(),
-            q_table,
-            linucb_weights,
-            metrics,
-            500,
-        );
+        let checkpoint =
+            PolicyCheckpoint::new("SARSA".to_string(), q_table, linucb_weights, metrics, 500);
 
         // Save
         checkpoint.save(&temp_path).unwrap();
@@ -260,10 +259,9 @@ mod tests {
         checkpoint.save(&temp_path).unwrap();
 
         // Corrupt the file
-        let mut json = serde_json::from_str::<serde_json::Value>(
-            &fs::read_to_string(&temp_path).unwrap(),
-        )
-        .unwrap();
+        let mut json =
+            serde_json::from_str::<serde_json::Value>(&fs::read_to_string(&temp_path).unwrap())
+                .unwrap();
         json["checkpoint_epoch"] = serde_json::json!(999); // Tamper with epoch
         fs::write(&temp_path, json.to_string()).unwrap();
 

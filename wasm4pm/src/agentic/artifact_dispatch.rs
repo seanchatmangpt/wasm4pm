@@ -91,33 +91,49 @@ mod tests {
     #[test]
     fn explorer_role_yields_system_and_task_prompts() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(Some(AgentRole::Explorer), WorkflowPhase::Intake)).unwrap();
-        assert!(plan.artifact_families.contains(&ArtifactFamily::SystemPrompt));
+        let plan = d
+            .plan_artifacts(&req(Some(AgentRole::Explorer), WorkflowPhase::Intake))
+            .unwrap();
+        assert!(plan
+            .artifact_families
+            .contains(&ArtifactFamily::SystemPrompt));
         assert!(plan.artifact_families.contains(&ArtifactFamily::TaskPrompt));
     }
 
     #[test]
     fn validator_role_yields_validation_prompt_and_report() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(Some(AgentRole::Validator), WorkflowPhase::Validate)).unwrap();
-        assert!(plan.artifact_families.contains(&ArtifactFamily::ValidationPrompt));
+        let plan = d
+            .plan_artifacts(&req(Some(AgentRole::Validator), WorkflowPhase::Validate))
+            .unwrap();
+        assert!(plan
+            .artifact_families
+            .contains(&ArtifactFamily::ValidationPrompt));
         assert!(plan.artifact_families.contains(&ArtifactFamily::Report));
     }
 
     #[test]
     fn escalator_role_yields_escalation_prompt_and_ticket() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(Some(AgentRole::Escalator), WorkflowPhase::Escalate)).unwrap();
-        assert!(plan.artifact_families.contains(&ArtifactFamily::EscalationPrompt));
+        let plan = d
+            .plan_artifacts(&req(Some(AgentRole::Escalator), WorkflowPhase::Escalate))
+            .unwrap();
+        assert!(plan
+            .artifact_families
+            .contains(&ArtifactFamily::EscalationPrompt));
         assert!(plan.artifact_families.contains(&ArtifactFamily::Ticket));
     }
 
     #[test]
     fn auditor_role_yields_audit_note_and_receipt_bundle() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(Some(AgentRole::Auditor), WorkflowPhase::Complete)).unwrap();
+        let plan = d
+            .plan_artifacts(&req(Some(AgentRole::Auditor), WorkflowPhase::Complete))
+            .unwrap();
         assert!(plan.artifact_families.contains(&ArtifactFamily::AuditNote));
-        assert!(plan.artifact_families.contains(&ArtifactFamily::ReceiptBundle));
+        assert!(plan
+            .artifact_families
+            .contains(&ArtifactFamily::ReceiptBundle));
     }
 
     #[test]
@@ -125,24 +141,29 @@ mod tests {
         let d = DefaultArtifactDispatcher;
         let plan = d.plan_artifacts(&req(None, WorkflowPhase::Intake)).unwrap();
         // Intake → Explorer → SystemPrompt + TaskPrompt
-        assert!(plan.artifact_families.contains(&ArtifactFamily::SystemPrompt));
+        assert!(plan
+            .artifact_families
+            .contains(&ArtifactFamily::SystemPrompt));
     }
 
     #[test]
     fn reason_codes_contain_role_name() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(Some(AgentRole::Planner), WorkflowPhase::Plan)).unwrap();
+        let plan = d
+            .plan_artifacts(&req(Some(AgentRole::Planner), WorkflowPhase::Plan))
+            .unwrap();
         assert!(plan.reason_codes.iter().any(|r| r.contains("Planner")));
     }
 
     #[test]
     fn custom_role_yields_task_prompt() {
         let d = DefaultArtifactDispatcher;
-        let plan = d.plan_artifacts(&req(
-            Some(AgentRole::Custom("unusual".to_string())),
-            WorkflowPhase::Plan,
-        ))
-        .unwrap();
+        let plan = d
+            .plan_artifacts(&req(
+                Some(AgentRole::Custom("unusual".to_string())),
+                WorkflowPhase::Plan,
+            ))
+            .unwrap();
         assert!(plan.artifact_families.contains(&ArtifactFamily::TaskPrompt));
         assert_eq!(plan.artifact_families.len(), 1);
     }
@@ -152,6 +173,9 @@ mod tests {
         // Property: empty/default input must never panic
         let d = DefaultArtifactDispatcher;
         let result = d.plan_artifacts(&ArtifactRequest::default());
-        assert!(result.is_ok(), "default ArtifactRequest must not panic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "default ArtifactRequest must not panic: {result:?}"
+        );
     }
 }

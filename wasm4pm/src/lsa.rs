@@ -15,8 +15,12 @@ pub struct OperationRequest {
 }
 
 impl OperationRequest {
-    pub fn new(kind: OperationKind) -> Self { Self { kind } }
-    pub fn kind(&self) -> &OperationKind { &self.kind }
+    pub fn new(kind: OperationKind) -> Self {
+        Self { kind }
+    }
+    pub fn kind(&self) -> &OperationKind {
+        &self.kind
+    }
 }
 
 pub struct LifecycleAuthority {
@@ -25,7 +29,9 @@ pub struct LifecycleAuthority {
 
 impl Default for LifecycleAuthority {
     fn default() -> Self {
-        Self { current_state: LifecycleState::Design }
+        Self {
+            current_state: LifecycleState::Design,
+        }
     }
 }
 
@@ -45,9 +51,15 @@ pub enum LifecycleError {
 impl std::fmt::Display for LifecycleError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LifecycleError::SimulationBlockedInDesign => write!(f, "LifecycleViolation::SimulationBlockedInDesign"),
-            LifecycleError::GovernorInterventionBlocked => write!(f, "LifecycleViolation::GovernorInterventionBlocked"),
-            LifecycleError::ArchivedModelImmutable => write!(f, "LifecycleViolation::ArchivedModelImmutable"),
+            LifecycleError::SimulationBlockedInDesign => {
+                write!(f, "LifecycleViolation::SimulationBlockedInDesign")
+            }
+            LifecycleError::GovernorInterventionBlocked => {
+                write!(f, "LifecycleViolation::GovernorInterventionBlocked")
+            }
+            LifecycleError::ArchivedModelImmutable => {
+                write!(f, "LifecycleViolation::ArchivedModelImmutable")
+            }
         }
     }
 }
@@ -57,7 +69,7 @@ pub fn enforce_lifecycle_state(
     lsa_context: &LifecycleAuthority,
 ) -> Result<(), LifecycleError> {
     let current_state = lsa_context.resolve_current_state()?;
-    
+
     match (current_state, operation.kind()) {
         (LifecycleState::Design, OperationKind::Simulate) => {
             Err(LifecycleError::SimulationBlockedInDesign)
@@ -65,9 +77,9 @@ pub fn enforce_lifecycle_state(
         (LifecycleState::Operation, OperationKind::MutateStructure) => {
             Err(LifecycleError::GovernorInterventionBlocked)
         }
-        (LifecycleState::Decommission, OperationKind::Mutate) |
-        (LifecycleState::Decommission, OperationKind::MutateStructure) |
-        (LifecycleState::Decommission, OperationKind::Simulate) => {
+        (LifecycleState::Decommission, OperationKind::Mutate)
+        | (LifecycleState::Decommission, OperationKind::MutateStructure)
+        | (LifecycleState::Decommission, OperationKind::Simulate) => {
             Err(LifecycleError::ArchivedModelImmutable)
         }
         _ => Ok(()), // Cleared for execution

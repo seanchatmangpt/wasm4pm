@@ -92,17 +92,10 @@ pub fn apply(
             let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
             for n in cg.graph.nodes.clone().into_iter() {
                 match n {
-                    ChoiceGraphNode::Start => {
-                        new_nodes.push(ChoiceGraphNode::Start)
-                    }
-                    ChoiceGraphNode::End => {
-                        new_nodes.push(ChoiceGraphNode::End)
-                    }
+                    ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
+                    ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
                     ChoiceGraphNode::Activity(l) => {
-                        let new_label = label_map
-                            .get(l.as_str())
-                            .cloned()
-                            .unwrap_or(l);
+                        let new_label = label_map.get(l.as_str()).cloned().unwrap_or(l);
                         new_nodes.push(ChoiceGraphNode::Activity(new_label))
                     }
                     ChoiceGraphNode::SubModel(child) => {

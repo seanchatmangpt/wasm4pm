@@ -227,7 +227,12 @@ impl Parser {
                 let relation = self.parse_relation()?;
                 let right = self.parse_identifier()?;
                 let scope = self.parse_scope()?;
-                Ok(OcpqClause::Require { left, relation, right, scope })
+                Ok(OcpqClause::Require {
+                    left,
+                    relation,
+                    right,
+                    scope,
+                })
             }
             Some(Token::Forbid) => {
                 self.next(); // consume FORBID
@@ -263,22 +268,27 @@ impl Parser {
         match self.next() {
             Some(Token::Before) => Ok(OcpqRelation::Before),
             Some(Token::After) => Ok(OcpqRelation::After),
-            Some(Token::Immediately) => {
-                match self.next() {
-                    Some(Token::Before) => Ok(OcpqRelation::ImmediatelyBefore),
-                    Some(Token::After) => Ok(OcpqRelation::ImmediatelyAfter),
-                    Some(t) => Err(ParseError {
-                        message: format!("Expected 'BEFORE' or 'AFTER' after 'IMMEDIATELY', found {:?}", t),
-                        position: self.peek_pos(),
-                    }),
-                    None => Err(ParseError {
-                        message: "Expected 'BEFORE' or 'AFTER' after 'IMMEDIATELY', found EOF".to_string(),
-                        position: self.peek_pos(),
-                    }),
-                }
-            }
+            Some(Token::Immediately) => match self.next() {
+                Some(Token::Before) => Ok(OcpqRelation::ImmediatelyBefore),
+                Some(Token::After) => Ok(OcpqRelation::ImmediatelyAfter),
+                Some(t) => Err(ParseError {
+                    message: format!(
+                        "Expected 'BEFORE' or 'AFTER' after 'IMMEDIATELY', found {:?}",
+                        t
+                    ),
+                    position: self.peek_pos(),
+                }),
+                None => Err(ParseError {
+                    message: "Expected 'BEFORE' or 'AFTER' after 'IMMEDIATELY', found EOF"
+                        .to_string(),
+                    position: self.peek_pos(),
+                }),
+            },
             Some(t) => Err(ParseError {
-                message: format!("Expected 'BEFORE', 'AFTER', or 'IMMEDIATELY', found {:?}", t),
+                message: format!(
+                    "Expected 'BEFORE', 'AFTER', or 'IMMEDIATELY', found {:?}",
+                    t
+                ),
                 position: self.peek_pos(),
             }),
             None => Err(ParseError {
@@ -298,7 +308,9 @@ impl Parser {
                 self.next(); // consume OF
                 self.expect(Token::Type)?;
                 let object_type = self.parse_identifier()?;
-                Ok(OcpqScope::SameObject { object_type: Some(object_type) })
+                Ok(OcpqScope::SameObject {
+                    object_type: Some(object_type),
+                })
             } else {
                 Ok(OcpqScope::SameObject { object_type: None })
             }

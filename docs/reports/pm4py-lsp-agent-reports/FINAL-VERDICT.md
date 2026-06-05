@@ -1,10 +1,11 @@
-# PM4PY-LSP-003 Definition-of-Done Verdict
+# PM4PY-LSP-003 Final Verdict
 
-**Doctrine:** PM4PY-LSP-003_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates for the first bounded PM4Py workflow surface.
+**Doctrine:** PM4PY-LSP-003_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.
 
-- **Date / Time**: 2026-06-05T01:18:43-07:00
+- **Date / Time**: 2026-06-05T01:30:19-07:00
 - **Verdict**: `PM4PY-LSP-003_ALIVE`
-- **Commit Hash**: `f50c970b9cbaf459d605c1e0bd7c23a1a487666e`
+- **Commit Hash**: `ca22cc0da410f0b98b47895f8936157483235d82`
+- **PM4PY-LSP-002 Prior Verdict**: `PM4PY-LSP-002_ALIVE_WITH_RECEIPT_TAXONOMY_GAP`
 - **Parity / Scope Warning**: We do **not** claim full `wasm4pm` parity, nor do we claim support for all PM4Py workflows. This checkpoint is specific to `pm4py-lsp`.
 
 ---
@@ -16,12 +17,12 @@
 | Fmt | `cargo fmt` | Checked via cargo formatter compliance | PASS |
 | Check | `cargo check` | Checked via compilation check | PASS |
 | Clippy | `cargo clippy` | Checked via linter compliance | PASS |
-| Unit | `src/lib.rs` | 0 unit tests (all moved/implemented in integration) | PASS |
-| Integration | `capability_test.rs` (7), `diagnostics_test.rs` (3), `diagnostic_test.rs` (1), `actions_commands_test.rs` (3), `parity_contract_test.rs` (5), `pm4py_bridge_test.rs` (2), `receipts_fixtures_test.rs` (4), `static_analysis_test.rs` (4) | 35 integration tests | PASS |
-| E2E LSP | `tests/e2e_lsp_test.rs` (7), `tests/lsp_lifecycle_test.rs` (2) | 9 E2E tests | PASS |
-| Chaos | `tests/chaos_test.rs` | 6 chaos tests | PASS |
-| Stress | `tests/stress_test.rs` | 8 stress tests (when run with `-- --ignored`) | PASS |
-| Benchmark | `benches/` | 9 benchmark metrics (analysis, diagnostics, receipts, lsp_flow, etc.) | PASS |
+| Unit | `src/lib.rs` | MISSING | MISSING |
+| Integration | `capability_test.rs` (7), `diagnostics_test.rs` (3), `diagnostic_test.rs` (1), `actions_commands_test.rs` (3), `parity_contract_test.rs` (5), `pm4py_bridge_test.rs` (2), `receipts_fixtures_test.rs` (4), `static_analysis_test.rs` (4) | 29 tests | PASS |
+| E2E LSP | `tests/e2e_lsp_test.rs` (7), `tests/lsp_lifecycle_test.rs` (2) | 9 tests | PASS |
+| Chaos | `tests/chaos_test.rs` | 6 tests | PASS |
+| Stress | `tests/stress_test.rs` | 8 tests | PASS |
+| Benchmark | `benches/` | 9 metrics | PASS |
 | Purity Fence | `vendors/tower-lsp-max` | Verified process-mining-free (0 occurrences of pm4py, xes, ocel, bpmn, petri, powl) | PASS |
 
 ---
@@ -48,7 +49,7 @@ Dimensions covered by the test suite:
 
 Exactly 44 tests passed, 8 ignored tests, and 0 failed as of validation. All Integration, E2E, Chaos, Stress, and Benchmark gates are implemented and pass/are-active.
 
-- Integration suite: 29 tests across 8 files (all `#[test]` or `#[tokio::test]`) plus E2E/Chaos (15 tests total) yielding 44 total tests.
+- Integration suite: 29 tests across 8 files (all `#[test]` or `#[tokio::test]`) plus E2E LSP/Chaos (15 tests total) yielding exactly 44 passed tests, 8 ignored.
 - E2E suite: 9 async tests across 2 files
 - Chaos suite: 6 tests in `tests/chaos_test.rs`
 - Stress suite: 8 tests in `tests/stress_test.rs` (marked as `#[ignore = "stress gate"]` but ran successfully with `-- --ignored`)
@@ -288,9 +289,9 @@ B7_conformance_vector_latency
 
 ## 2. Git Metadata & Physical Fixtures/Receipts Persistence
 
-- **Current HEAD Commit**: `f50c970b9cbaf459d605c1e0bd7c23a1a487666e`
+- **Current HEAD Commit**: `ca22cc0da410f0b98b47895f8936157483235d82`
 - **Fixture/Receipt Storage Status**:
-  The physical fixtures under `crates/pm4py-lsp/fixtures/` and receipts under `crates/pm4py-lsp/receipts/` are **not** committed/tracked artifacts in Git. They are dynamically generated at test-time (and are thus untracked files by Git).
+  The physical fixtures under `crates/pm4py-lsp/fixtures/` and receipts under `crates/pm4py-lsp/receipts/` are test-generated (untracked) artifacts, rather than committed files.
 
 ---
 
@@ -328,7 +329,8 @@ B7_conformance_vector_latency
 ### Receipt Taxonomy Conformance
 - **Command Receipts**: Implemented and returned for `formatDataFrame` commands.
 - **Fixture Receipts**: Implemented and written to disk during `pm4py-lsp.createParityFixture`.
-- **Behavior Receipts**: PM4PY-LSP-003 is validated for the first bounded PM4Py workflow surface, fulfilling all necessary requirements at this boundary.
+- **Behavior Receipts**: Not implemented at this checkpoint.
+- **Release Certificates**: Not implemented at this checkpoint.
 
 ---
 
@@ -338,4 +340,4 @@ Based on the verification of the global Definition of Done (DOD) gates, we emit 
 **Verdict**: `PM4PY-LSP-003_ALIVE`
 
 **Statement**:
-`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates for the first bounded PM4Py workflow surface.`
+`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.`

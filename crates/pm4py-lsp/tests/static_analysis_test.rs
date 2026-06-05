@@ -104,4 +104,3 @@ net, im, fm = discover_petri_net_inductive(event_log)
         .discovery_calls
         .contains(&"discover_petri_net_inductive".to_string()));
 }
-

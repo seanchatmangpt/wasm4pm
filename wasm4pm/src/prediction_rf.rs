@@ -77,7 +77,9 @@ struct RfPredictorSnapshot {
     max_case_ms: f64,
 }
 
-fn default_max_case_ms() -> f64 { 1.0 }
+fn default_max_case_ms() -> f64 {
+    1.0
+}
 
 // ---------------------------------------------------------------------------
 // Feature extraction helpers
@@ -197,9 +199,7 @@ pub fn build_rf_predictor(
     let snapshot = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog"))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -390,17 +390,10 @@ pub fn build_rf_predictor(
 /// fraction of trees voting for each class is returned as its probability.  Results
 /// are sorted by probability descending so the top prediction is first in the array.
 #[wasm_bindgen]
-pub fn predict_next_activity_rf(
-    model_handle: &str,
-    prefix_json: &str,
-) -> Result<JsValue, JsValue> {
+pub fn predict_next_activity_rf(model_handle: &str, prefix_json: &str) -> Result<JsValue, JsValue> {
     // ── 1. Parse prefix ───────────────────────────────────────────────────
-    let prefix_names: Vec<String> = serde_json::from_str(prefix_json).map_err(|e| {
-        wasm_err(
-            codes::INVALID_INPUT,
-            format!("Invalid prefix JSON: {}", e),
-        )
-    })?;
+    let prefix_names: Vec<String> = serde_json::from_str(prefix_json)
+        .map_err(|e| wasm_err(codes::INVALID_INPUT, format!("Invalid prefix JSON: {}", e)))?;
 
     // ── 2. Load snapshot ──────────────────────────────────────────────────
     let state = get_or_init_state();
@@ -422,13 +415,12 @@ pub fn predict_next_activity_rf(
             }
         };
 
-        let snapshot: RfPredictorSnapshot =
-            serde_json::from_str(json_str).map_err(|e| {
-                wasm_err(
-                    codes::INTERNAL_ERROR,
-                    format!("Snapshot deserialisation failed: {}", e),
-                )
-            })?;
+        let snapshot: RfPredictorSnapshot = serde_json::from_str(json_str).map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Snapshot deserialisation failed: {}", e),
+            )
+        })?;
 
         if snapshot.snapshot_type != RF_SNAPSHOT_TYPE {
             return Err(wasm_err(
@@ -478,8 +470,8 @@ pub fn predict_next_activity_rf(
         // documented behaviour: col6 means "we're observing the current tip".
         let query_features = build_feature_vec(
             &prefix_ids,
-            prefix_len,                              // col6 denominator
-            train_max_trace_len,                     // col0 denominator (from training)
+            prefix_len,          // col6 denominator
+            train_max_trace_len, // col0 denominator (from training)
             vocab_size,
             0.0, // temporal feature unavailable without timestamps at inference
             snapshot.max_case_ms.max(1.0),
@@ -564,8 +556,7 @@ pub fn predict_next_activity_unified(
             Some(StoredObject::NGramPredictor(_)) => Ok("ngram"),
             Some(StoredObject::JsonString(s)) => {
                 // Quick prefix check — avoid full deserialisation just to dispatch
-                if s.contains(r#""type":"rf_predictor""#)
-                    || s.contains(r#""type": "rf_predictor""#)
+                if s.contains(r#""type":"rf_predictor""#) || s.contains(r#""type": "rf_predictor""#)
                 {
                     Ok("rf")
                 } else {
@@ -645,7 +636,10 @@ mod tests {
         );
 
         // Col 5: 0 consecutive repeats / 3 = 0.0
-        assert_eq!(features[5], 0.0, "col5 should be 0 (no consecutive repeats)");
+        assert_eq!(
+            features[5], 0.0,
+            "col5 should be 0 (no consecutive repeats)"
+        );
 
         // Col 6: 3/5 = 0.6
         assert!(
@@ -661,7 +655,10 @@ mod tests {
         let features = build_feature_vec(&prefix, 4, 8, 5, 0.0, 0.0);
 
         // Col 3: second-last should be -1.0 for prefix of length 1
-        assert_eq!(features[3], -1.0, "col3 should be -1.0 for single-event prefix");
+        assert_eq!(
+            features[3], -1.0,
+            "col3 should be -1.0 for single-event prefix"
+        );
 
         // Col 4: max_case_ms = 0 → col4 = 0.0
         assert_eq!(features[4], 0.0, "col4 should be 0 when max_case_ms=0");
@@ -731,7 +728,10 @@ mod tests {
         let span = |v: &[i64]| (*v.iter().max().unwrap() - *v.iter().min().unwrap()) as f64;
         let buggy = (ts.last().unwrap() - ts.first().unwrap()) as f64;
         assert_eq!(span(&ts), 4000.0);
-        assert_eq!(buggy, -2000.0, "buggy path produces negative span on this reordering");
+        assert_eq!(
+            buggy, -2000.0,
+            "buggy path produces negative span on this reordering"
+        );
         // Metamorphic R3: permutation invariance.
         assert_eq!(span(&ts), span(&[1000, 3000, 5000]));
     }
@@ -742,8 +742,11 @@ mod tests {
     fn test_inference_col0_uses_training_max_trace_len() {
         let prefix = [0u32, 1u32];
         let f_post = build_feature_vec(&prefix, prefix.len(), 10, 3, 0.0, 1.0);
-        let f_pre  = build_feature_vec(&prefix, prefix.len(), prefix.len(), 3, 0.0, 1.0);
-        assert!((f_post[0] - 0.2).abs() < 1e-10, "post-fix col0 = 2/10 = 0.2");
+        let f_pre = build_feature_vec(&prefix, prefix.len(), prefix.len(), 3, 0.0, 1.0);
+        assert!(
+            (f_post[0] - 0.2).abs() < 1e-10,
+            "post-fix col0 = 2/10 = 0.2"
+        );
         assert_eq!(f_pre[0], 1.0, "pre-fix col0 collapses to 1.0 (drift bug)");
     }
 
@@ -752,6 +755,9 @@ mod tests {
         // elapsed > max_case_ms → col4 should clamp to 1.0
         let prefix = [0u32, 1u32];
         let features = build_feature_vec(&prefix, 3, 5, 4, 2000.0, 1000.0);
-        assert_eq!(features[4], 1.0, "col4 should clamp to 1.0 when elapsed > max");
+        assert_eq!(
+            features[4], 1.0,
+            "col4 should clamp to 1.0 when elapsed > max"
+        );
     }
 }

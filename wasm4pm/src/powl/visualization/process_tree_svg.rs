@@ -1,9 +1,9 @@
-use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 /// Process Tree SVG Visualization
 ///
 /// Renders POWL models as SVG with colored operator nodes and activity labels.
 use crate::powl_arena::PowlArena;
 use std::fmt::Write;
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 /// Color scheme for operator nodes
 const COLORS: &[&str] = &[

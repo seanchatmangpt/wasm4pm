@@ -136,7 +136,9 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     /// epsilon-greedy action selection
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
-        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.action_selection",
             epsilon = self.exploration_rate,
             algorithm = "q_learning"
         );
@@ -150,12 +152,19 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
             // Random action
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             let action = A::from_index(idx).unwrap();
-            debug!(action_idx = idx, exploitation = false, "epsilon-greedy: exploration selected");
+            debug!(
+                action_idx = idx,
+                exploitation = false,
+                "epsilon-greedy: exploration selected"
+            );
             action
         } else {
             // Greedy: select action with max Q-value
             let action = self.best_action(state);
-            debug!(exploitation = true, "epsilon-greedy: greedy action selected");
+            debug!(
+                exploitation = true,
+                "epsilon-greedy: greedy action selected"
+            );
             action
         };
 
@@ -204,7 +213,9 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         row[action_idx] = new_q;
 
         // Emit OTEL span for Bellman update
-        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.q_update",
             algorithm = "q_learning",
             old_q = current_q,
             new_q = new_q,
@@ -255,7 +266,11 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
-        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
+        debug!(
+            old_epsilon = self.exploration_rate,
+            new_epsilon = rate,
+            "exploration rate set"
+        );
         self.exploration_rate = rate;
     }
 
@@ -424,7 +439,9 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         row[action_idx] = new_q;
 
         // Emit OTEL span for on-policy SARSA update
-        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.q_update",
             algorithm = "sarsa",
             old_q = current_q,
             new_q = new_q,
@@ -447,7 +464,9 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     #[allow(dead_code)]
     pub fn epsilon_greedy_action(&self, state: &S, epsilon: f32) -> A {
-        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.action_selection",
             epsilon = epsilon,
             algorithm = "sarsa"
         );
@@ -459,11 +478,18 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         let selected_action = if is_exploration {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
             let action = A::from_index(idx).unwrap();
-            debug!(action_idx = idx, exploitation = false, "epsilon-greedy: exploration selected");
+            debug!(
+                action_idx = idx,
+                exploitation = false,
+                "epsilon-greedy: exploration selected"
+            );
             action
         } else {
             let action = self.greedy_action(state);
-            debug!(exploitation = true, "epsilon-greedy: greedy action selected");
+            debug!(
+                exploitation = true,
+                "epsilon-greedy: greedy action selected"
+            );
             action
         };
 
@@ -506,7 +532,11 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
-        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
+        debug!(
+            old_epsilon = self.exploration_rate,
+            new_epsilon = rate,
+            "exploration rate set"
+        );
         self.exploration_rate = rate;
     }
 
@@ -710,14 +740,10 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         } else if update_a_first {
             // best_next_idx from Q_A, evaluated with Q_B.
             let best_next_idx = qa.get(next_state).map(|v| argmax_f32(v)).unwrap_or(0);
-            qb.get(next_state)
-                .map(|v| v[best_next_idx])
-                .unwrap_or(0.0)
+            qb.get(next_state).map(|v| v[best_next_idx]).unwrap_or(0.0)
         } else {
             let best_next_idx = qb.get(next_state).map(|v| argmax_f32(v)).unwrap_or(0);
-            qa.get(next_state)
-                .map(|v| v[best_next_idx])
-                .unwrap_or(0.0)
+            qa.get(next_state).map(|v| v[best_next_idx]).unwrap_or(0.0)
         };
 
         let target = reward + self.discount_factor * bootstrap;
@@ -743,7 +769,9 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
         };
 
         // Emit OTEL span for Double Q-Learning update
-        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.q_update",
             algorithm = "double_q_learning",
             old_q = current,
             new_q = new_q,
@@ -779,7 +807,11 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
-        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
+        debug!(
+            old_epsilon = self.exploration_rate,
+            new_epsilon = rate,
+            "exploration rate set"
+        );
         self.exploration_rate = rate;
     }
 
@@ -990,7 +1022,9 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
         row[action_idx] = new_q;
 
         // Emit OTEL span for Expected SARSA update
-        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.q_update",
             algorithm = "expected_sarsa",
             old_q = current_q,
             new_q = new_q,
@@ -1039,7 +1073,11 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
-        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
+        debug!(
+            old_epsilon = self.exploration_rate,
+            new_epsilon = rate,
+            "exploration rate set"
+        );
         self.exploration_rate = rate;
     }
 
@@ -1176,7 +1214,9 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     /// Avoids any allocation on visited states by indexing the row in place.
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
-        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.action_selection",
             algorithm = "reinforce",
             policy_type = "softmax"
         );
@@ -1216,7 +1256,11 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             }
         }
         let selected = A::from_index(best_idx).unwrap();
-        debug!(action_idx = best_idx, gumbel_value = best_val, "softmax policy action selected");
+        debug!(
+            action_idx = best_idx,
+            gumbel_value = best_val,
+            "softmax policy action selected"
+        );
         selected
     }
 
@@ -1238,7 +1282,9 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             return;
         }
 
-        let span = span!(Level::DEBUG, "autonomic.rl.policy_gradient_update",
+        let span = span!(
+            Level::DEBUG,
+            "autonomic.rl.policy_gradient_update",
             algorithm = "reinforce",
             trajectory_length = n,
             learning_rate = self.learning_rate,

@@ -128,10 +128,7 @@ impl Default for DimensionalityAnalyzer {
 /// This function deterministically maps observed states to dimension usage statistics.
 ///
 /// **Returns:** DimensionalityAnalyzer with per-dimension reports and multi-dimensional interactions
-pub fn analyze_dimension_usage(
-    states: &[RlState],
-    cycle_count: u64,
-) -> DimensionalityAnalyzer {
+pub fn analyze_dimension_usage(states: &[RlState], cycle_count: u64) -> DimensionalityAnalyzer {
     if states.is_empty() {
         return DimensionalityAnalyzer::default();
     }
@@ -195,7 +192,12 @@ pub fn analyze_dimension_usage(
 
         // Compute gaps (missing ranges)
         let mut gaps = Vec::new();
-        let sorted_values: Vec<u8> = values.iter().copied().collect::<std::collections::BTreeSet<_>>().into_iter().collect();
+        let sorted_values: Vec<u8> = values
+            .iter()
+            .copied()
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .collect();
         if !sorted_values.is_empty() {
             let mut gap_start = 0u8;
             for &val in &sorted_values {
@@ -314,7 +316,10 @@ pub fn format_dimensionality_report(analyzer: &DimensionalityAnalyzer) -> String
             "{:2}. {} [{}]: {:.1}% coverage ({} unique / {} max){}\n",
             report_item.dimension_index,
             report_item.dimension_name,
-            format!("{:?}", &report_item.unique_values[..report_item.unique_values.len().min(5)]),
+            format!(
+                "{:?}",
+                &report_item.unique_values[..report_item.unique_values.len().min(5)]
+            ),
             report_item.coverage_percent,
             report_item.unique_count,
             DIMENSION_MAXES[report_item.dimension_index] + 1,

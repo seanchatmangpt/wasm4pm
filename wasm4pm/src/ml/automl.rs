@@ -1,8 +1,8 @@
 //! Nanosecond AutoML — automated parameter selection for ML algorithm families.
 
-use crate::state::{get_or_init_state, StoredObject};
-use crate::ml::forecasting::get_windows;
 use crate::ml::classification::{extract_features, knn_sweep_cv};
+use crate::ml::forecasting::get_windows;
+use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -13,7 +13,10 @@ use wasm_bindgen::prelude::*;
 /// the test fold), then RMSE is computed on the held-out test fold using
 /// the fitted smoothed level as the initial state.
 #[wasm_bindgen]
-pub fn discover_automl_forecast(eventlog_handle: &str, _activity_key: &str) -> Result<JsValue, JsValue> {
+pub fn discover_automl_forecast(
+    eventlog_handle: &str,
+    _activity_key: &str,
+) -> Result<JsValue, JsValue> {
     let (windows, count) = get_windows(eventlog_handle)?;
 
     if count < 10 {
@@ -123,14 +126,20 @@ pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResul
 
         for fold in 0..FOLDS {
             let test_start = fold * fold_size;
-            let test_end = if fold == FOLDS - 1 { n } else { (fold + 1) * fold_size };
+            let test_end = if fold == FOLDS - 1 {
+                n
+            } else {
+                (fold + 1) * fold_size
+            };
             let (sq, ab, nn) = eval_fold(windows, alpha, test_start, test_end);
             total_sq += sq;
             total_abs += ab;
             total_n += nn;
         }
 
-        if total_n == 0 { continue; }
+        if total_n == 0 {
+            continue;
+        }
         let cv_rmse = (total_sq / total_n as f64).sqrt();
         let cv_mae = total_abs / total_n as f64;
         if cv_rmse < min_avg_rmse {
@@ -149,16 +158,17 @@ pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResul
 }
 
 /// Automated hyperparameter tuning for k-NN Classification.
-/// 
+///
 /// Performs a 5-fold cross-validation sweep across K [1, 15].
 #[wasm_bindgen]
-pub fn discover_automl_classify(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+pub fn discover_automl_classify(
+    eventlog_handle: &str,
+    activity_key: &str,
+) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
-    
+
     let (features, labels) = state.with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            Ok(extract_features(log, activity_key))
-        }
+        Some(StoredObject::EventLog(log)) => Ok(extract_features(log, activity_key)),
         _ => Err(crate::error::js_val("not_found")),
     })?;
 
@@ -193,13 +203,16 @@ pub struct AutomlClassifyResult {
 ///
 /// Sweeps across K [1, 15] using 5-fold cross-validation.
 /// Returns the optimal K and associated accuracy.
-pub fn discover_automl_classify_internal(features: &[[f64; 2]], labels: &[u8]) -> AutomlClassifyResult {
+pub fn discover_automl_classify_internal(
+    features: &[[f64; 2]],
+    labels: &[u8],
+) -> AutomlClassifyResult {
     const FOLDS: usize = 5;
     const MAX_K: usize = 15;
 
     // Optimized Nanosecond Sweep: Multi-K CV in a single pass
     let accuracies = knn_sweep_cv(features, labels, FOLDS, MAX_K);
-    
+
     let mut best_k = 1;
     let mut max_avg_accuracy = -1.0;
 
@@ -240,15 +253,28 @@ mod cv_semantics_tests {
         let fold_size = n / FOLDS;
         for fold in 0..FOLDS {
             let test_start = fold * fold_size;
-            let test_end = if fold == FOLDS - 1 { n } else { (fold + 1) * fold_size };
+            let test_end = if fold == FOLDS - 1 {
+                n
+            } else {
+                (fold + 1) * fold_size
+            };
             let test: std::collections::HashSet<usize> = (test_start..test_end).collect();
-            let train: std::collections::HashSet<usize> = (0..test_start).chain(test_end..n).collect();
+            let train: std::collections::HashSet<usize> =
+                (0..test_start).chain(test_end..n).collect();
             // Disjoint.
-            assert!(train.is_disjoint(&test),
-                "fold {}: train ∩ test = {:?}", fold, train.intersection(&test).collect::<Vec<_>>());
+            assert!(
+                train.is_disjoint(&test),
+                "fold {}: train ∩ test = {:?}",
+                fold,
+                train.intersection(&test).collect::<Vec<_>>()
+            );
             // Together they cover the full index space.
-            assert_eq!(train.len() + test.len(), n,
-                "fold {}: train+test must partition [0,n)", fold);
+            assert_eq!(
+                train.len() + test.len(),
+                n,
+                "fold {}: train+test must partition [0,n)",
+                fold
+            );
         }
     }
 
@@ -279,13 +305,22 @@ mod cv_semantics_tests {
         // err = 8.0. Squared err on that single element alone is 64.0.
         // If the broken impl were in place (init level from test[0]=9.0),
         // the first squared error would be 0.0 and total_sq << 64.0.
-        assert_eq!(n_err, 4, "every test-fold element must contribute one residual");
-        assert!(sum_sq >= 64.0,
+        assert_eq!(
+            n_err, 4,
+            "every test-fold element must contribute one residual"
+        );
+        assert!(
+            sum_sq >= 64.0,
             "first test residual must reflect train-derived level (~1.0) vs test[0]=9.0; \
              sum_sq={} (broken chunked-eval would give sum_sq < 64.0 because it would \
-             initialize EWMA from test[0] itself)", sum_sq);
-        assert!(sum_abs >= 8.0,
-            "first |residual| must be ≥ |9 - 1| = 8; sum_abs={}", sum_abs);
+             initialize EWMA from test[0] itself)",
+            sum_sq
+        );
+        assert!(
+            sum_abs >= 8.0,
+            "first |residual| must be ≥ |9 - 1| = 8; sum_abs={}",
+            sum_abs
+        );
     }
 
     /// Property test: the test fold is forecast from a training-only level.
@@ -302,7 +337,9 @@ mod cv_semantics_tests {
         let chunked_rmse = {
             let slice = &windows[8..12];
             let n = slice.len();
-            if n == 0 { 0.0 } else {
+            if n == 0 {
+                0.0
+            } else {
                 let mut s = slice[0];
                 let mut sq = 0.0;
                 for &v in slice.iter().skip(1) {
@@ -315,9 +352,13 @@ mod cv_semantics_tests {
         };
         // The two must differ — they answer different questions.
         let diff = (proper_sq - chunked_rmse).abs();
-        assert!(diff > 1e-6,
+        assert!(
+            diff > 1e-6,
             "proper-CV sum_sq ({}) must differ from chunked-eval sum_sq ({}); diff={}",
-            proper_sq, chunked_rmse, diff);
+            proper_sq,
+            chunked_rmse,
+            diff
+        );
     }
 
     /// Domain contract: aggregated CV MAE must be reported and consistent with RMSE.
@@ -330,8 +371,12 @@ mod cv_semantics_tests {
         assert!(result.min_avg_rmse.is_finite(), "cv_rmse must be finite");
         assert!(result.min_avg_mae >= 0.0, "cv_mae must be non-negative");
         assert!(result.min_avg_rmse >= 0.0, "cv_rmse must be non-negative");
-        assert!(result.min_avg_mae <= result.min_avg_rmse + 1e-9,
-            "MAE ({}) must be <= RMSE ({})", result.min_avg_mae, result.min_avg_rmse);
+        assert!(
+            result.min_avg_mae <= result.min_avg_rmse + 1e-9,
+            "MAE ({}) must be <= RMSE ({})",
+            result.min_avg_mae,
+            result.min_avg_rmse
+        );
         assert_eq!(result.folds, 5, "folds metadata must be reported");
     }
 
@@ -344,10 +389,16 @@ mod cv_semantics_tests {
     fn flat_series_yields_near_zero_cv_rmse() {
         let windows = vec![7.0_f64; 25];
         let result = discover_automl_forecast_internal(&windows);
-        assert!(result.min_avg_rmse < 1e-9,
-            "flat series cv_rmse must be ~0, got {}", result.min_avg_rmse);
-        assert!(result.min_avg_mae < 1e-9,
-            "flat series cv_mae must be ~0, got {}", result.min_avg_mae);
+        assert!(
+            result.min_avg_rmse < 1e-9,
+            "flat series cv_rmse must be ~0, got {}",
+            result.min_avg_rmse
+        );
+        assert!(
+            result.min_avg_mae < 1e-9,
+            "flat series cv_mae must be ~0, got {}",
+            result.min_avg_mae
+        );
     }
 
     /// Domain contract: insufficient data (n < folds+1) returns an explicit
@@ -357,7 +408,10 @@ mod cv_semantics_tests {
     fn insufficient_data_returns_infinity_sentinel() {
         let windows = vec![1.0, 2.0, 3.0];
         let result = discover_automl_forecast_internal(&windows);
-        assert!(result.min_avg_rmse.is_infinite(),
-            "n < folds+1 must yield infinity sentinel, got {}", result.min_avg_rmse);
+        assert!(
+            result.min_avg_rmse.is_infinite(),
+            "n < folds+1 must yield infinity sentinel, got {}",
+            result.min_avg_rmse
+        );
     }
 }

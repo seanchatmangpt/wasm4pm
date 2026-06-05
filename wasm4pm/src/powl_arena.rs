@@ -558,18 +558,14 @@ impl PowlArena {
     /// every node references a sub-model in the arena.
     ///
     /// Returns the arena index of the new ChoiceGraph node.
-    pub fn add_choice_graph(
-        &mut self,
-        graph: &ChoiceGraph,
-    ) -> u32 {
+    pub fn add_choice_graph(&mut self, graph: &ChoiceGraph) -> u32 {
         // Normalize Activity(_) → SubModel(arena_idx_of_transition).
         let mut normalized_nodes = Vec::with_capacity(graph.nodes.len());
         for n in &graph.nodes {
             match n {
                 ChoiceGraphNode::Activity(lbl) => {
                     let t_idx = self.add_transition(Some(lbl.clone()));
-                    normalized_nodes
-                        .push(ChoiceGraphNode::SubModel(t_idx));
+                    normalized_nodes.push(ChoiceGraphNode::SubModel(t_idx));
                 }
                 other => normalized_nodes.push(other.clone()),
             }
@@ -582,8 +578,9 @@ impl PowlArena {
         };
         let idx = self.nodes.len() as u32;
         #[allow(deprecated)]
-        self.nodes
-            .push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode { graph: normalized }));
+        self.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
+            graph: normalized,
+        }));
         idx
     }
 
@@ -634,14 +631,14 @@ impl PowlArena {
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 if !spo.order.is_irreflexive() {
                     return Err(Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
-                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder
+                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder,
                     )));
                 }
                 // Check transitivity on the closure, not raw edges
                 let closure = crate::powl::transitive::transitive_closure(&spo.order);
                 if !closure.is_transitive() {
                     return Err(Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
-                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder
+                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder,
                     )));
                 }
                 for &child in &spo.children {
@@ -742,9 +739,7 @@ impl PowlArena {
                         ChoiceGraphNode::Start => node_strs.push("Start".into()),
                         ChoiceGraphNode::End => node_strs.push("End".into()),
                         ChoiceGraphNode::Activity(l) => node_strs.push(l.clone()),
-                        ChoiceGraphNode::SubModel(i) => {
-                            node_strs.push(self.to_repr(*i))
-                        }
+                        ChoiceGraphNode::SubModel(i) => node_strs.push(self.to_repr(*i)),
                     }
                 }
                 let edges_str: Vec<String> = cg
@@ -782,10 +777,11 @@ impl PowlArena {
     /// Deep-copy the subtree rooted at `idx` into a new arena.
     pub fn copy_subtree(&self, idx: u32) -> Result<(PowlArena, u32), Wasm4pmError> {
         let mut new_arena = PowlArena::new();
-        let new_root = self.copy_node_into(&mut new_arena, idx)
-            .map_err(|_| Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
-                wasm4pm_compat::powl::PowlRefusal::InvalidLoop
-            )))?;
+        let new_root = self.copy_node_into(&mut new_arena, idx).map_err(|_| {
+            Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
+                wasm4pm_compat::powl::PowlRefusal::InvalidLoop,
+            ))
+        })?;
         Ok((new_arena, new_root))
     }
 
@@ -846,14 +842,11 @@ impl PowlArena {
                 let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
                 for n in &cg.graph.nodes {
                     match n {
-                        ChoiceGraphNode::Start => {
-                            new_nodes.push(ChoiceGraphNode::Start)
+                        ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
+                        ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
+                        ChoiceGraphNode::Activity(l) => {
+                            new_nodes.push(ChoiceGraphNode::Activity(l.clone()))
                         }
-                        ChoiceGraphNode::End => {
-                            new_nodes.push(ChoiceGraphNode::End)
-                        }
-                        ChoiceGraphNode::Activity(l) => new_nodes
-                            .push(ChoiceGraphNode::Activity(l.clone())),
                         ChoiceGraphNode::SubModel(child) => {
                             let new_child = self.copy_node_into(dest, *child)?;
                             new_nodes.push(ChoiceGraphNode::SubModel(new_child));
@@ -877,18 +870,12 @@ impl PowlArena {
     }
 }
 
-fn cg_node_label(
-    nodes: &[ChoiceGraphNode],
-    i: usize,
-    arena: &PowlArena,
-) -> String {
+fn cg_node_label(nodes: &[ChoiceGraphNode], i: usize, arena: &PowlArena) -> String {
     match nodes.get(i) {
         Some(ChoiceGraphNode::Start) => "Start".to_string(),
         Some(ChoiceGraphNode::End) => "End".to_string(),
         Some(ChoiceGraphNode::Activity(l)) => l.clone(),
-        Some(ChoiceGraphNode::SubModel(idx)) => {
-            arena.node_label_or_id(*idx)
-        }
+        Some(ChoiceGraphNode::SubModel(idx)) => arena.node_label_or_id(*idx),
         None => format!("n{}", i),
     }
 }

@@ -1,12 +1,12 @@
 #![allow(deprecated)]
-/// Convert a POWL model to a Petri net.
-use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_models::{
     PowlCounts as Counts, PowlMarking as Marking, PowlPetriNet as PetriNet,
     PowlPetriNetResult as PetriNetResult,
 };
 use std::collections::HashMap;
+/// Convert a POWL model to a Petri net.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 fn new_place(net: &mut PetriNet, counts: &mut Counts) -> String {
     let n = counts.inc_places();
@@ -235,8 +235,12 @@ fn recursively_add_tree(
             // Token-replay semantics on this net = ⋃_{Π ∈ →G} L(Π_1) · … · L(Π_|Π|).
             let n_nodes = cg.graph.nodes.len();
             // Allocate one place per edge.
-            let edge_places: Vec<String> =
-                cg.graph.edges.iter().map(|_| new_place(net, counts)).collect();
+            let edge_places: Vec<String> = cg
+                .graph
+                .edges
+                .iter()
+                .map(|_| new_place(net, counts))
+                .collect();
 
             // Build per-node helpers.
             let outgoing_edges: Vec<Vec<usize>> = (0..n_nodes)
@@ -311,8 +315,7 @@ fn recursively_add_tree(
                             }
                             continue;
                         }
-                        ChoiceGraphNode::Start
-                        | ChoiceGraphNode::End => unreachable!(),
+                        ChoiceGraphNode::Start | ChoiceGraphNode::End => unreachable!(),
                     };
                     let p_in = new_place(net, counts);
                     let p_out = new_place(net, counts);
@@ -330,15 +333,7 @@ fn recursively_add_tree(
                         net.add_arc(&tau_out, &edge_places[ei]);
                     }
                     // Recurse.
-                    recursively_add_tree(
-                        arena,
-                        sub_idx,
-                        net,
-                        &p_in,
-                        Some(&p_out),
-                        counts,
-                        false,
-                    );
+                    recursively_add_tree(arena, sub_idx, net, &p_in, Some(&p_out), counts, false);
                 }
             }
         }

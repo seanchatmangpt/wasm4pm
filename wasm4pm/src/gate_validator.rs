@@ -46,7 +46,10 @@ impl UnverifiedRun {
     ///
     /// Required gate: `gate_test_suite_passes`
     pub fn verify(self) -> Result<VerifiedRun, String> {
-        if self.passed_gates.contains(&ProofGate::gate_test_suite_passes) {
+        if self
+            .passed_gates
+            .contains(&ProofGate::gate_test_suite_passes)
+        {
             Ok(VerifiedRun {
                 passed_gates: self.passed_gates,
             })

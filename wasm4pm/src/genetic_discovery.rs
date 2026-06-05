@@ -150,8 +150,12 @@ pub fn discover_genetic_algorithm_from_log(
         let elite_size = (population_size / 4).max(1);
         let mut next = population[..elite_size].to_vec();
         while next.len() < population_size {
-            let p1 = population[rand_select_seeded(&population, &mut rng)].0.clone();
-            let p2 = population[rand_select_seeded(&population, &mut rng)].0.clone();
+            let p1 = population[rand_select_seeded(&population, &mut rng)]
+                .0
+                .clone();
+            let p2 = population[rand_select_seeded(&population, &mut rng)]
+                .0
+                .clone();
             let mut child = crossover_edges_seeded(&p1, &p2, &mut rng);
             mutate_edges_seeded(&mut child, 0.1, &edge_vocab, &mut rng);
             let f = evaluate_edges_fitness(&child, &col, vocab_len);
@@ -164,7 +168,10 @@ pub fn discover_genetic_algorithm_from_log(
     population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     let best_fitness = population[0].1;
     let best_edges = population.remove(0).0;
-    Some((edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq), best_fitness))
+    Some((
+        edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq),
+        best_fitness,
+    ))
 }
 
 /// Discover a process model using Particle Swarm Optimization (PSO).
@@ -270,8 +277,12 @@ pub fn discover_pso_algorithm_from_log(
     for _ in 0..iterations {
         for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
             let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
-            let toward_global =
-                blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
+            let toward_global = blend_edges_seeded(
+                &toward_pbest,
+                &best_global.as_ref().unwrap().0,
+                0.3,
+                &mut rng,
+            );
             *edge_set = toward_global;
             mutate_edges_seeded(edge_set, 0.05, &edge_vocab, &mut rng);
             let new_fitness = evaluate_edges_fitness(edge_set, &col, vocab_len);
@@ -290,7 +301,10 @@ pub fn discover_pso_algorithm_from_log(
         }
     }
     let (edges, fitness) = best_global?;
-    Some((edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
+    Some((
+        edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq),
+        fitness,
+    ))
 }
 
 // Helper: Materialize a DirectlyFollowsGraph from edge set, vocabulary, and frequency maps.
@@ -499,8 +513,10 @@ pub fn discover_aco_algorithm_from_log(
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
     let vocab_len = edge_vocab.len();
     let total_edges = edge_freq.values().sum::<f64>().max(1.0);
-    let heuristic: FxHashMap<(u32, u32), f64> =
-        edge_freq.iter().map(|(e, &f)| (*e, f / total_edges)).collect();
+    let heuristic: FxHashMap<(u32, u32), f64> = edge_freq
+        .iter()
+        .map(|(e, &f)| (*e, f / total_edges))
+        .collect();
 
     let mut pheromone: FxHashMap<(u32, u32), f64> = FxHashMap::default();
     let tau_0 = 1.0 / edge_vocab.len().max(1) as f64;
@@ -546,7 +562,11 @@ pub fn discover_aco_algorithm_from_log(
             // (a) it cannot become the new best by virtue of `NaN > x` returning false
             //     and `partial_cmp` reordering, and (b) it cannot poison the pheromone
             //     map below.
-            let fitness = if fitness_raw.is_finite() { fitness_raw } else { 0.0 };
+            let fitness = if fitness_raw.is_finite() {
+                fitness_raw
+            } else {
+                0.0
+            };
             if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
                 best_solution = Some((ant_edges.clone(), fitness));
             }
@@ -578,7 +598,12 @@ pub fn discover_aco_algorithm_from_log(
         }
     }
 
-    best_solution.map(|(edges, fitness)| (edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
+    best_solution.map(|(edges, fitness)| {
+        (
+            edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq),
+            fitness,
+        )
+    })
 }
 
 /// Discover a process model using Ant Colony Optimization (ACO).

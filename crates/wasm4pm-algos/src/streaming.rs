@@ -1,5 +1,5 @@
-use wasm4pm_types::*;
 use std::collections::HashMap;
+use wasm4pm_types::*;
 
 /// Inductive Miner - discovers structured process models recursively
 /// Simplified single-pass version focused on core control flow discovery

@@ -5,13 +5,13 @@
 
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
-use serde::{Deserialize, Serialize};
 use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
 use std::collections::{BinaryHeap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 // Re-export types for convenience
-pub use crate::models::{AlignmentState, AlignmentMove, AlignmentFitnessConfig};
+pub use crate::models::{AlignmentFitnessConfig, AlignmentMove, AlignmentState};
 
 /// Result of alignment-based fitness computation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -136,14 +136,12 @@ pub fn compute_alignment_fitness(
     //   2. Guard against NaN/Inf in either operand (e.g. negative costs in
     //      a malformed config that overflowed prior arithmetic).
     //   3. Clamp to [0.0, 1.0] — the old code only forced .max(0.0).
-    let fitness = if !worst_case_cost.is_finite()
-        || !total_cost.is_finite()
-        || worst_case_cost <= 0.0
-    {
-        1.0
-    } else {
-        1.0 - (total_cost / worst_case_cost)
-    };
+    let fitness =
+        if !worst_case_cost.is_finite() || !total_cost.is_finite() || worst_case_cost <= 0.0 {
+            1.0
+        } else {
+            1.0 - (total_cost / worst_case_cost)
+        };
     let fitness = if fitness.is_finite() {
         fitness.clamp(0.0, 1.0)
     } else {
@@ -552,9 +550,20 @@ pub struct AlignmentConformance;
 impl AlignmentConformance {
     /// Compute conformance and check against a claimed fitness metric.
     pub fn conformance<const NUM: u64, const DEN: u64>(
-        log: &wasm4pm_compat::evidence::Evidence<EventLog, wasm4pm_compat::state::Admitted, wasm4pm_compat::witness::AlignmentPaper>,
+        log: &wasm4pm_compat::evidence::Evidence<
+            EventLog,
+            wasm4pm_compat::state::Admitted,
+            wasm4pm_compat::witness::AlignmentPaper,
+        >,
         petri_net: &PetriNet,
-    ) -> Result<wasm4pm_compat::conformance::Metric<{ wasm4pm_compat::law::QualityMetricKind::Fitness }, NUM, DEN>, String>
+    ) -> Result<
+        wasm4pm_compat::conformance::Metric<
+            { wasm4pm_compat::law::QualityMetricKind::Fitness },
+            NUM,
+            DEN,
+        >,
+        String,
+    >
     where
         wasm4pm_compat::law::Require<{ DEN > 0 }>: wasm4pm_compat::law::IsTrue,
         wasm4pm_compat::law::Require<{ NUM <= DEN }>: wasm4pm_compat::law::IsTrue,
@@ -568,7 +577,7 @@ impl AlignmentConformance {
         let report = compute_alignment_fitness(&log.value, petri_net, &config)?;
         let computed_fitness = report.fitness;
         let claimed_fitness = NUM as f64 / DEN as f64;
-        
+
         // Allow a small tolerance for floating point representation
         if (computed_fitness - claimed_fitness).abs() > 1e-5 {
             return Err(format!(
@@ -576,7 +585,7 @@ impl AlignmentConformance {
                 NUM, DEN, claimed_fitness, computed_fitness
             ));
         }
-        
+
         Ok(wasm4pm_compat::conformance::Metric::new())
     }
 }

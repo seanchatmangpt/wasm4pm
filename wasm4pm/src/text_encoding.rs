@@ -539,9 +539,7 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
                     })
                     .unwrap_or_default();
 
-                let arc_count = net_json["arcs"]
-                    .as_array()
-                    .map_or(0, |arr| arr.len());
+                let arc_count = net_json["arcs"].as_array().map_or(0, |arr| arr.len());
 
                 text.push_str(&format!("  {}:\n", obj_type));
                 text.push_str(&format!(

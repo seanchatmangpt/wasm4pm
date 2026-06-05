@@ -35,3 +35,21 @@ event_log = pm4py.format_dataframe(df)
     assert!(codes.contains(&DiagnosticCode::MissingActivityMapping));
     assert!(codes.contains(&DiagnosticCode::MissingTimestampMapping));
 }
+
+#[test]
+fn test_conformance_and_export_diagnostics() {
+    let content = r#"
+import pm4py
+import pandas as pd
+
+df = pd.read_csv('event_log.csv')
+fit = pm4py.fitness_token_based_replay(df)
+pm4py.write_xes(df, 'output.xes')
+"#;
+    let facts = PipelineFacts::extract(content);
+    let diagnostics = check_diagnostics(&facts);
+
+    let codes: Vec<DiagnosticCode> = diagnostics.into_iter().map(|d| d.code).collect();
+    assert!(codes.contains(&DiagnosticCode::UnformattedDataframe));
+    assert!(codes.contains(&DiagnosticCode::DiscoveryBeforeFormatting));
+}

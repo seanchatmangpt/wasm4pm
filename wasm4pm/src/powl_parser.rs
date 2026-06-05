@@ -391,11 +391,7 @@ fn node_label_matches(token: &str, label: &str) -> bool {
     }
     // Normalize internal whitespace around commas and parens so that
     // "X(pay, installment)" matches "X(pay,installment)" etc.
-    let normalize = |s: &str| {
-        s.chars()
-            .filter(|c| !c.is_whitespace())
-            .collect::<String>()
-    };
+    let normalize = |s: &str| s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
     normalize(t) == normalize(l)
 }
 

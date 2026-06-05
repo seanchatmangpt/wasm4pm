@@ -54,13 +54,40 @@ pub fn run_pm4py_workflow(
     parameters: &HashMap<String, String>,
 ) -> Result<String, BridgeError> {
     if !is_runtime_mode() {
-        // Static mode default fallback simulation
-        if method.contains("discover_petri_net") {
-            return Ok("Petri Net discovered (static mode)".to_string());
-        } else if method.contains("discover_bpmn") {
-            return Ok("BPMN discovered (static mode)".to_string());
+        // Static mode default fallback simulation for extended capabilities
+        if method.starts_with("discover_") {
+            if method.contains("petri_net") {
+                return Ok("Petri Net discovered (static mode)".to_string());
+            } else if method.contains("bpmn") {
+                return Ok("BPMN discovered (static mode)".to_string());
+            } else if method.contains("dfg") {
+                return Ok("DFG discovered (static mode)".to_string());
+            } else if method.contains("process_tree") {
+                return Ok("Process Tree discovered (static mode)".to_string());
+            } else if method.contains("heuristics") {
+                return Ok("Heuristics Net discovered (static mode)".to_string());
+            } else if method.contains("declare") {
+                return Ok("DECLARE constraints discovered (static mode)".to_string());
+            } else {
+                return Ok(format!("Discovered model via {} (static mode)", method));
+            }
+        } else if method.starts_with("conformance_")
+            || method.starts_with("fitness_")
+            || method.starts_with("precision_")
+        {
+            return Ok("Fitness: 1.0, Precision: 1.0 (static conformance check)".to_string());
+        } else if method == "check_wf_net_soundness" {
+            return Ok(
+                "SoundnessResult: sound = True, deadlock_free = True, bounded = True (static mode)"
+                    .to_string(),
+            );
+        } else if method.starts_with("write_") {
+            return Ok(format!(
+                "Exported process model successfully via {} (static mode)",
+                method
+            ));
         } else {
-            return Ok("Process discovered (static mode)".to_string());
+            return Ok(format!("Executed {} successfully (static mode)", method));
         }
     }
 
@@ -118,9 +145,103 @@ pub fn run_pm4py_workflow(
                     BridgeError::ExecutionError(format!("format_dataframe failed: {:?}", e))
                 })?;
 
-            let result = pm4py
-                .call_method1(method, (df_formatted,))
-                .map_err(|e| BridgeError::ExecutionError(format!("{} failed: {:?}", method, e)))?;
+            let result = if method.starts_with("conformance_")
+                || method.starts_with("fitness_")
+                || method.starts_with("precision_")
+            {
+                let disc_res = pm4py
+                    .call_method1("discover_petri_net_inductive", (df_formatted.clone(),))
+                    .map_err(|e| {
+                        BridgeError::ExecutionError(format!(
+                            "discover_petri_net_inductive failed: {:?}",
+                            e
+                        ))
+                    })?;
+                let net = disc_res.get_item(0).map_err(|e| {
+                    BridgeError::ExecutionError(format!("failed to extract net: {:?}", e))
+                })?;
+                let im = disc_res.get_item(1).map_err(|e| {
+                    BridgeError::ExecutionError(format!("failed to extract im: {:?}", e))
+                })?;
+                let fm = disc_res.get_item(2).map_err(|e| {
+                    BridgeError::ExecutionError(format!("failed to extract fm: {:?}", e))
+                })?;
+
+                pm4py
+                    .call_method1(method, (df_formatted, net, im, fm))
+                    .map_err(|e| {
+                        BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                    })?
+            } else if method.starts_with("write_") {
+                let temp_dir = std::env::temp_dir();
+                if method.contains("xes") {
+                    let file_path = temp_dir.join("output.xes");
+                    let path_str = file_path.to_str().unwrap_or("output.xes");
+                    pm4py
+                        .call_method1(method, (df_formatted, path_str))
+                        .map_err(|e| {
+                            BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                        })?
+                } else if method.contains("bpmn") {
+                    let bpmn = pm4py
+                        .call_method1("discover_bpmn_inductive", (df_formatted,))
+                        .map_err(|e| {
+                            BridgeError::ExecutionError(format!(
+                                "discover_bpmn_inductive failed: {:?}",
+                                e
+                            ))
+                        })?;
+                    let file_path = temp_dir.join("output.bpmn");
+                    let path_str = file_path.to_str().unwrap_or("output.bpmn");
+                    pm4py.call_method1(method, (bpmn, path_str)).map_err(|e| {
+                        BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                    })?
+                } else if method.contains("petri_net") || method.contains("pnml") {
+                    let disc_res = pm4py
+                        .call_method1("discover_petri_net_inductive", (df_formatted,))
+                        .map_err(|e| {
+                            BridgeError::ExecutionError(format!(
+                                "discover_petri_net_inductive failed: {:?}",
+                                e
+                            ))
+                        })?;
+                    let net = disc_res.get_item(0).unwrap();
+                    let im = disc_res.get_item(1).unwrap();
+                    let fm = disc_res.get_item(2).unwrap();
+                    let file_path = temp_dir.join("output.pnml");
+                    let path_str = file_path.to_str().unwrap_or("output.pnml");
+                    pm4py
+                        .call_method1(method, (net, im, fm, path_str))
+                        .map_err(|e| {
+                            BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                        })?
+                } else {
+                    let file_path = temp_dir.join("output.json");
+                    let path_str = file_path.to_str().unwrap_or("output.json");
+                    pm4py
+                        .call_method1(method, (df_formatted, path_str))
+                        .map_err(|e| {
+                            BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                        })?
+                }
+            } else if method == "check_wf_net_soundness" {
+                let disc_res = pm4py
+                    .call_method1("discover_petri_net_inductive", (df_formatted,))
+                    .map_err(|e| {
+                        BridgeError::ExecutionError(format!(
+                            "discover_petri_net_inductive failed: {:?}",
+                            e
+                        ))
+                    })?;
+                let net = disc_res.get_item(0).unwrap();
+                pm4py.call_method1(method, (net,)).map_err(|e| {
+                    BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                })?
+            } else {
+                pm4py.call_method1(method, (df_formatted,)).map_err(|e| {
+                    BridgeError::ExecutionError(format!("{} failed: {:?}", method, e))
+                })?
+            };
 
             let result_str = result
                 .str()

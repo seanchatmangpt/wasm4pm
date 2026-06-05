@@ -684,22 +684,19 @@ mod tests {
                 .or_insert(0) += 1;
         }
 
-        dfg.edges.extend(
-            edge_counts
-                .into_iter()
-                .filter_map(|((f, t), freq)| {
-                    // Bounds check: only include edges where both activities are valid
-                    if (f as usize) < vocab.len() && (t as usize) < vocab.len() {
-                        Some(DirectlyFollowsRelation {
-                            from: vocab[f as usize].to_owned(),
-                            to: vocab[t as usize].to_owned(),
-                            frequency: freq,
-                        })
-                    } else {
-                        None
-                    }
-                }),
-        );
+        dfg.edges
+            .extend(edge_counts.into_iter().filter_map(|((f, t), freq)| {
+                // Bounds check: only include edges where both activities are valid
+                if (f as usize) < vocab.len() && (t as usize) < vocab.len() {
+                    Some(DirectlyFollowsRelation {
+                        from: vocab[f as usize].to_owned(),
+                        to: vocab[t as usize].to_owned(),
+                        frequency: freq,
+                    })
+                } else {
+                    None
+                }
+            }));
 
         dfg
     }

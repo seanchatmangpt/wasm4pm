@@ -41,9 +41,7 @@ use chrono::{DateTime, FixedOffset, TimeZone};
 use serde::{Deserialize, Serialize};
 
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
-use crate::wf_to_powl::{
-    wf_net_language, wf_net_to_powl_spec, PowlSpec, WfToPowlResult,
-};
+use crate::wf_to_powl::{wf_net_language, wf_net_to_powl_spec, PowlSpec, WfToPowlResult};
 use ocel_core::{
     OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType,
     OCELTypeAttribute, ObjectTypeCardinality, OCEL,
@@ -288,9 +286,7 @@ fn powl_to_field_tree(spec: &PowlSpec) -> FieldTree {
         PowlSpec::ChoiceGraph { children, .. } => FieldTree::Xor {
             children: children.iter().map(powl_to_field_tree).collect(),
         },
-        PowlSpec::PartialOrder { children, order } => {
-            partial_order_to_tree(children, order)
-        }
+        PowlSpec::PartialOrder { children, order } => partial_order_to_tree(children, order),
     }
 }
 
@@ -499,7 +495,10 @@ fn layered_sequence(children: &[PowlSpec], prec: &[Vec<bool>], members: &[usize]
                 powl_to_field_tree(&children[layer[0]])
             } else {
                 FieldTree::Parallel {
-                    children: layer.iter().map(|&i| powl_to_field_tree(&children[i])).collect(),
+                    children: layer
+                        .iter()
+                        .map(|&i| powl_to_field_tree(&children[i]))
+                        .collect(),
                 }
             }
         })
@@ -864,10 +863,7 @@ pub fn field_csv() -> String {
     let rows = order_flattened_trace();
     let mut csv = String::from("case_id,activity,timestamp,event_id\n");
     for (id, ty, time) in &rows {
-        csv.push_str(&format!(
-            "order-1,{ty},{},{id}\n",
-            time.to_rfc3339()
-        ));
+        csv.push_str(&format!("order-1,{ty},{},{id}\n", time.to_rfc3339()));
     }
     csv
 }
@@ -1013,7 +1009,10 @@ mod tests {
         let traces = positive_order_traces();
         assert!(!traces.is_empty(), "positive corpus must not be empty");
         for t in &traces {
-            assert!(!t.iter().any(|a| a.starts_with('τ')), "τ leaked into a trace: {t:?}");
+            assert!(
+                !t.iter().any(|a| a.starts_with('τ')),
+                "τ leaked into a trace: {t:?}"
+            );
         }
     }
 }

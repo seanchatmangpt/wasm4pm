@@ -39,8 +39,12 @@ pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
     }
 
     // 1. Load XES
-    let xes_content = fs::read_to_string(&input)
-        .with_context(|| format!("Failed to read XES event log ({:?}). Supported formats: .xes", input))?;
+    let xes_content = fs::read_to_string(&input).with_context(|| {
+        format!(
+            "Failed to read XES event log ({:?}). Supported formats: .xes",
+            input
+        )
+    })?;
 
     // 2. Load into wasm4pm state
     let log_handle = load_eventlog_from_xes(&xes_content)

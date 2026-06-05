@@ -1,6 +1,6 @@
-use wasm4pm_types::*;
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
+use wasm4pm_types::*;
 
 /// Token replay conformance checking.
 ///
@@ -442,10 +442,7 @@ mod tests {
     #[test]
     fn test_token_replay_nonconforming_trace_fitness_less_than_1() {
         // Model: A -> B -> C, but trace has extra event D
-        let log = EventLog::new(
-            vec![make_trace("c1", &["A", "B", "D", "C"])],
-            Vec::new(),
-        );
+        let log = EventLog::new(vec![make_trace("c1", &["A", "B", "D", "C"])], Vec::new());
         let model = make_dfg(&[("A", "B"), ("B", "C")], &["A"], &["C"]);
 
         let result = check_conformance_token_replay(&log, &model, "concept:name").unwrap();
@@ -461,15 +458,45 @@ mod tests {
     fn test_alignment_conforming_trace_zero_cost() {
         // Simple linear Petri net: source -> t_A -> p1 -> t_B -> sink
         let mut net = PetriNet::default();
-        net.places.push(Place { id: "source".to_string() });
-        net.places.push(Place { id: "p1".to_string() });
-        net.places.push(Place { id: "sink".to_string() });
-        net.transitions.push(Transition { id: "t_A".to_string(), label: "A".to_string(), is_invisible: Some(false) });
-        net.transitions.push(Transition { id: "t_B".to_string(), label: "B".to_string(), is_invisible: Some(false) });
-        net.arcs.push(Arc { from: "source".to_string(), to: "t_A".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "t_A".to_string(), to: "p1".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
+        net.places.push(Place {
+            id: "source".to_string(),
+        });
+        net.places.push(Place {
+            id: "p1".to_string(),
+        });
+        net.places.push(Place {
+            id: "sink".to_string(),
+        });
+        net.transitions.push(Transition {
+            id: "t_A".to_string(),
+            label: "A".to_string(),
+            is_invisible: Some(false),
+        });
+        net.transitions.push(Transition {
+            id: "t_B".to_string(),
+            label: "B".to_string(),
+            is_invisible: Some(false),
+        });
+        net.arcs.push(Arc {
+            from: "source".to_string(),
+            to: "t_A".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "t_A".to_string(),
+            to: "p1".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "p1".to_string(),
+            to: "t_B".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "t_B".to_string(),
+            to: "sink".to_string(),
+            weight: Some(1),
+        });
 
         let log = EventLog::new(vec![make_trace("c1", &["A", "B"])], Vec::new());
 
@@ -484,15 +511,45 @@ mod tests {
     fn test_alignment_nonconforming_trace_has_cost() {
         // Same linear net: A -> B, but trace is A -> B -> C (extra C)
         let mut net = PetriNet::default();
-        net.places.push(Place { id: "source".to_string() });
-        net.places.push(Place { id: "p1".to_string() });
-        net.places.push(Place { id: "sink".to_string() });
-        net.transitions.push(Transition { id: "t_A".to_string(), label: "A".to_string(), is_invisible: Some(false) });
-        net.transitions.push(Transition { id: "t_B".to_string(), label: "B".to_string(), is_invisible: Some(false) });
-        net.arcs.push(Arc { from: "source".to_string(), to: "t_A".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "t_A".to_string(), to: "p1".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
-        net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
+        net.places.push(Place {
+            id: "source".to_string(),
+        });
+        net.places.push(Place {
+            id: "p1".to_string(),
+        });
+        net.places.push(Place {
+            id: "sink".to_string(),
+        });
+        net.transitions.push(Transition {
+            id: "t_A".to_string(),
+            label: "A".to_string(),
+            is_invisible: Some(false),
+        });
+        net.transitions.push(Transition {
+            id: "t_B".to_string(),
+            label: "B".to_string(),
+            is_invisible: Some(false),
+        });
+        net.arcs.push(Arc {
+            from: "source".to_string(),
+            to: "t_A".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "t_A".to_string(),
+            to: "p1".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "p1".to_string(),
+            to: "t_B".to_string(),
+            weight: Some(1),
+        });
+        net.arcs.push(Arc {
+            from: "t_B".to_string(),
+            to: "sink".to_string(),
+            weight: Some(1),
+        });
 
         let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], Vec::new());
 

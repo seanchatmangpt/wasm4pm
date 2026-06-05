@@ -111,10 +111,7 @@ fn load_log(path: &PathBuf) -> Result<EventLog> {
             import_xes(reader, XESImportOptions::default())
                 .map_err(|e| anyhow::anyhow!("Failed to parse XES: {:?}", e))
         }
-        other => anyhow::bail!(
-            "Unsupported log format '{}'. Supported: .xes, .json",
-            other
-        ),
+        other => anyhow::bail!("Unsupported log format '{}'. Supported: .xes, .json", other),
     }
 }
 
@@ -129,9 +126,9 @@ fn load_dfg_model(path: &PathBuf) -> Result<DFG> {
     match ext {
         "json" => serde_json::from_str(&content)
             .with_context(|| format!("Failed to deserialize DFG from {:?}", path)),
-        "pnml" => anyhow::bail!(
-            "PNML model loading not yet supported in this CLI. Use a JSON DFG model."
-        ),
+        "pnml" => {
+            anyhow::bail!("PNML model loading not yet supported in this CLI. Use a JSON DFG model.")
+        }
         other => anyhow::bail!(
             "Unsupported model format '{}'. Supported: .json (DFG)",
             other

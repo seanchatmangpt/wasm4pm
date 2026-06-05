@@ -537,13 +537,16 @@ mod tests {
             .edges
             .iter()
             .any(|e| e.from == "Register" && e.to == "Approve");
-        assert!(has_register_approve, "Expected Register→Approve edge missing");
+        assert!(
+            has_register_approve,
+            "Expected Register→Approve edge missing"
+        );
     }
 
     #[test]
     fn test_interleaved_trace_streaming() {
         let mut slog = StreamingLog::new();
-        
+
         let trace1_hash = 11111;
         let trace2_hash = 22222;
 

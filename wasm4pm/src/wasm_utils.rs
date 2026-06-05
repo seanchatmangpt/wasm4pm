@@ -174,10 +174,7 @@ pub fn identify_high_variance_activities(
                 }
 
                 for (activity, count) in trace_counts {
-                    activity_per_trace
-                        .entry(activity)
-                        .or_default()
-                        .push(count);
+                    activity_per_trace.entry(activity).or_default().push(count);
                 }
             }
 

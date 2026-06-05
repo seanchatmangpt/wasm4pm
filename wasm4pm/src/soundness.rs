@@ -257,8 +257,9 @@ impl StructuralNet {
                     sink: k.ok().map(|i| self.places[i].clone()),
                     disconnected_places: Vec::new(),
                     disconnected_transitions: Vec::new(),
-                    reason: "WF-net requires exactly one source place (•p=∅) and one sink place (p•=∅)"
-                        .to_string(),
+                    reason:
+                        "WF-net requires exactly one source place (•p=∅) and one sink place (p•=∅)"
+                            .to_string(),
                 };
             }
         };

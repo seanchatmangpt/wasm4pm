@@ -1,8 +1,8 @@
 //! Nanosecond Clustering Family — branchless K-Means for process mining.
 #![allow(clippy::needless_range_loop)] // branchless argmin: index carries centroid identity
 
-use crate::state::{get_or_init_state, StoredObject};
 use crate::ml::classification::extract_features;
+use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -150,7 +150,14 @@ pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult 
 
     let silhouette = silhouette_score(features, &assignments, k);
 
-    KmeansResult { k, centroids, assignments, inertia, silhouette, iterations }
+    KmeansResult {
+        k,
+        centroids,
+        assignments,
+        inertia,
+        silhouette,
+        iterations,
+    }
 }
 
 /// Mean silhouette score over all samples. Returns `0.0` when `k < 2` or any
@@ -226,7 +233,11 @@ fn silhouette_score(features: &[[f64; 2]], assignments: &[usize], k: usize) -> f
         counted += 1;
     }
 
-    if counted == 0 { 0.0 } else { total / counted as f64 }
+    if counted == 0 {
+        0.0
+    } else {
+        total / counted as f64
+    }
 }
 
 #[cfg(test)]
@@ -237,8 +248,14 @@ mod tests {
     fn kmeans_two_well_separated_clusters_resolved() {
         // Two tight blobs around (0,0) and (10,10).
         let features = vec![
-            [0.0, 0.0], [0.1, 0.0], [0.0, 0.1], [0.1, 0.1],
-            [10.0, 10.0], [10.1, 10.0], [10.0, 10.1], [10.1, 10.1],
+            [0.0, 0.0],
+            [0.1, 0.0],
+            [0.0, 0.1],
+            [0.1, 0.1],
+            [10.0, 10.0],
+            [10.1, 10.0],
+            [10.0, 10.1],
+            [10.1, 10.1],
         ];
         let result = kmeans_internal(&features, 2);
         assert_eq!(result.k, 2);
@@ -246,48 +263,76 @@ mod tests {
         // All first 4 must share a label distinct from the last 4.
         let a = result.assignments[0];
         let b = result.assignments[4];
-        assert_ne!(a, b, "two well-separated blobs must get different cluster labels");
+        assert_ne!(
+            a, b,
+            "two well-separated blobs must get different cluster labels"
+        );
         for i in 0..4 {
-            assert_eq!(result.assignments[i], a, "sample {i} in low blob has wrong label");
+            assert_eq!(
+                result.assignments[i], a,
+                "sample {i} in low blob has wrong label"
+            );
         }
         for i in 4..8 {
-            assert_eq!(result.assignments[i], b, "sample {i} in high blob has wrong label");
+            assert_eq!(
+                result.assignments[i], b,
+                "sample {i} in high blob has wrong label"
+            );
         }
         // Centroids must converge near the true means (not still seeded at (0,0)/(10,10)).
         let low = result.centroids[a];
         let high = result.centroids[b];
-        assert!((low[0] - 0.05).abs() < 0.1 && (low[1] - 0.05).abs() < 0.1,
-            "low-blob centroid should converge near (0.05, 0.05), got {:?}", low);
-        assert!((high[0] - 10.05).abs() < 0.1 && (high[1] - 10.05).abs() < 0.1,
-            "high-blob centroid should converge near (10.05, 10.05), got {:?}", high);
+        assert!(
+            (low[0] - 0.05).abs() < 0.1 && (low[1] - 0.05).abs() < 0.1,
+            "low-blob centroid should converge near (0.05, 0.05), got {:?}",
+            low
+        );
+        assert!(
+            (high[0] - 10.05).abs() < 0.1 && (high[1] - 10.05).abs() < 0.1,
+            "high-blob centroid should converge near (10.05, 10.05), got {:?}",
+            high
+        );
     }
 
     #[test]
     fn kmeans_inertia_is_non_negative_and_decreases_with_more_clusters() {
-        let features: Vec<[f64; 2]> = (0..30)
-            .map(|i| [(i % 6) as f64, (i / 6) as f64])
-            .collect();
+        let features: Vec<[f64; 2]> = (0..30).map(|i| [(i % 6) as f64, (i / 6) as f64]).collect();
         let r1 = kmeans_internal(&features, 1);
         let r3 = kmeans_internal(&features, 3);
         assert!(r1.inertia >= 0.0, "inertia must be non-negative");
         assert!(r3.inertia >= 0.0, "inertia must be non-negative");
-        assert!(r3.inertia <= r1.inertia + 1e-9,
+        assert!(
+            r3.inertia <= r1.inertia + 1e-9,
             "inertia should not increase as k grows: k=1 -> {}, k=3 -> {}",
-            r1.inertia, r3.inertia);
+            r1.inertia,
+            r3.inertia
+        );
     }
 
     #[test]
     fn kmeans_silhouette_in_valid_range_for_separated_clusters() {
         let features = vec![
-            [0.0, 0.0], [0.1, 0.0], [0.0, 0.1], [0.1, 0.1],
-            [10.0, 10.0], [10.1, 10.0], [10.0, 10.1], [10.1, 10.1],
+            [0.0, 0.0],
+            [0.1, 0.0],
+            [0.0, 0.1],
+            [0.1, 0.1],
+            [10.0, 10.0],
+            [10.1, 10.0],
+            [10.0, 10.1],
+            [10.1, 10.1],
         ];
         let result = kmeans_internal(&features, 2);
-        assert!(result.silhouette >= -1.0 && result.silhouette <= 1.0,
-            "silhouette must lie in [-1, 1], got {}", result.silhouette);
+        assert!(
+            result.silhouette >= -1.0 && result.silhouette <= 1.0,
+            "silhouette must lie in [-1, 1], got {}",
+            result.silhouette
+        );
         // Two tight, well-separated blobs should yield a strongly positive silhouette.
-        assert!(result.silhouette > 0.9,
-            "well-separated blobs should give silhouette > 0.9, got {}", result.silhouette);
+        assert!(
+            result.silhouette > 0.9,
+            "well-separated blobs should give silhouette > 0.9, got {}",
+            result.silhouette
+        );
     }
 
     #[test]

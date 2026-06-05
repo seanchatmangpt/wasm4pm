@@ -15,7 +15,9 @@ use wasm4pm_compat::engine_bridge::GraduationCandidate;
 /// Returns an error if the candidate is not grounded.
 pub fn intake_candidate(candidate: &GraduationCandidate) -> Result<(), String> {
     if !candidate.is_grounded() {
-        return Err("GraduationCandidate is ungrounded (missing subject or evidence reference)".to_string());
+        return Err(
+            "GraduationCandidate is ungrounded (missing subject or evidence reference)".to_string(),
+        );
     }
 
     tracing::info!(

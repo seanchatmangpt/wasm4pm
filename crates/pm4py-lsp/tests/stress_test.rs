@@ -147,11 +147,7 @@ fn test_stress_s4_fixtures_generated_reloaded() {
             "S4: snapshot_id mismatch at {}",
             i
         );
-        assert_eq!(
-            reloaded.data, fixture.data,
-            "S4: data mismatch at {}",
-            i
-        );
+        assert_eq!(reloaded.data, fixture.data, "S4: data mismatch at {}", i);
     }
 }
 
@@ -171,7 +167,7 @@ async fn test_stress_s5_concurrent_did_change() {
             if let Some(id) = req.id() {
                 let res = tower_lsp_max::jsonrpc::Response::from_ok(
                     id.clone(),
-                    serde_json::json!({"applied": true})
+                    serde_json::json!({"applied": true}),
                 );
                 let _ = response_sink.send(res).await;
             }
@@ -183,30 +179,37 @@ async fn test_stress_s5_concurrent_did_change() {
 
     for i in 0..100 {
         let uri = Url::parse(&format!("file:///doc_{}.py", i)).unwrap();
-        futures.push(async move {
-            // Call did_open first
-            backend.did_open(DidOpenTextDocumentParams {
-                text_document: TextDocumentItem {
-                    uri: uri.clone(),
-                    language_id: "python".to_string(),
-                    version: 1,
-                    text: "import pm4py\n".to_string(),
-                }
-            }).await;
+        futures.push(
+            async move {
+                // Call did_open first
+                backend
+                    .did_open(DidOpenTextDocumentParams {
+                        text_document: TextDocumentItem {
+                            uri: uri.clone(),
+                            language_id: "python".to_string(),
+                            version: 1,
+                            text: "import pm4py\n".to_string(),
+                        },
+                    })
+                    .await;
 
-            // Call did_change to update content
-            backend.did_change(DidChangeTextDocumentParams {
-                text_document: VersionedTextDocumentIdentifier {
-                    uri: uri.clone(),
-                    version: 2,
-                },
-                content_changes: vec![TextDocumentContentChangeEvent {
-                    range: None,
-                    range_length: None,
-                    text: format!("import pm4py\n# version {}\n", i),
-                }],
-            }).await;
-        }.boxed());
+                // Call did_change to update content
+                backend
+                    .did_change(DidChangeTextDocumentParams {
+                        text_document: VersionedTextDocumentIdentifier {
+                            uri: uri.clone(),
+                            version: 2,
+                        },
+                        content_changes: vec![TextDocumentContentChangeEvent {
+                            range: None,
+                            range_length: None,
+                            text: format!("import pm4py\n# version {}\n", i),
+                        }],
+                    })
+                    .await;
+            }
+            .boxed(),
+        );
     }
 
     // Run them concurrently using cooperative multitasking
@@ -214,7 +217,11 @@ async fn test_stress_s5_concurrent_did_change() {
 
     // Verify document map size has stabilized at 100
     let docs = backend.documents.lock().await;
-    assert_eq!(docs.len(), 100, "S5: Expected 100 documents to be registered");
+    assert_eq!(
+        docs.len(),
+        100,
+        "S5: Expected 100 documents to be registered"
+    );
 }
 
 /// S6. repeated conformance queries are stable.
@@ -238,14 +245,36 @@ async fn test_stress_s6_repeated_conformance_queries() {
     );
 
     let snap_id = backend.max_snapshot().await.unwrap();
-    let first = backend.max_conformance_vector(snap_id.clone()).await.unwrap();
+    let first = backend
+        .max_conformance_vector(snap_id.clone())
+        .await
+        .unwrap();
 
     for i in 0..100 {
-        let cv = backend.max_conformance_vector(snap_id.clone()).await.unwrap();
-        assert_eq!(first.score, cv.score, "S6: Score mismatch at iteration {}", i);
-        assert_eq!(first.admitted, cv.admitted, "S6: Admitted mismatch at iteration {}", i);
-        assert_eq!(first.refused, cv.refused, "S6: Refused mismatch at iteration {}", i);
-        assert_eq!(first.strict_mode, cv.strict_mode, "S6: Strict mode mismatch at iteration {}", i);
+        let cv = backend
+            .max_conformance_vector(snap_id.clone())
+            .await
+            .unwrap();
+        assert_eq!(
+            first.score, cv.score,
+            "S6: Score mismatch at iteration {}",
+            i
+        );
+        assert_eq!(
+            first.admitted, cv.admitted,
+            "S6: Admitted mismatch at iteration {}",
+            i
+        );
+        assert_eq!(
+            first.refused, cv.refused,
+            "S6: Refused mismatch at iteration {}",
+            i
+        );
+        assert_eq!(
+            first.strict_mode, cv.strict_mode,
+            "S6: Strict mode mismatch at iteration {}",
+            i
+        );
     }
 }
 
@@ -259,31 +288,43 @@ async fn test_stress_s7_memory_leakage_control() {
     let mut uris = Vec::new();
     for i in 0..100 {
         let uri = Url::parse(&format!("file:///doc_{}.py", i)).unwrap();
-        backend.did_open(DidOpenTextDocumentParams {
-            text_document: TextDocumentItem {
-                uri: uri.clone(),
-                language_id: "python".to_string(),
-                version: 1,
-                text: "import pm4py\n".to_string(),
-            }
-        }).await;
+        backend
+            .did_open(DidOpenTextDocumentParams {
+                text_document: TextDocumentItem {
+                    uri: uri.clone(),
+                    language_id: "python".to_string(),
+                    version: 1,
+                    text: "import pm4py\n".to_string(),
+                },
+            })
+            .await;
         uris.push(uri);
     }
 
     {
         let docs = backend.documents.lock().await;
-        assert_eq!(docs.len(), 100, "S7: Document map size should be 100 after did_open");
+        assert_eq!(
+            docs.len(),
+            100,
+            "S7: Document map size should be 100 after did_open"
+        );
     }
 
     for uri in uris {
-        backend.did_close(DidCloseTextDocumentParams {
-            text_document: TextDocumentIdentifier { uri }
-        }).await;
+        backend
+            .did_close(DidCloseTextDocumentParams {
+                text_document: TextDocumentIdentifier { uri },
+            })
+            .await;
     }
 
     {
         let docs = backend.documents.lock().await;
-        assert_eq!(docs.len(), 0, "S7: Document map size should return to 0 after did_close");
+        assert_eq!(
+            docs.len(),
+            0,
+            "S7: Document map size should return to 0 after did_close"
+        );
     }
 }
 
@@ -303,7 +344,7 @@ async fn test_stress_s8_deadlock_check() {
             if let Some(id) = req.id() {
                 let res = tower_lsp_max::jsonrpc::Response::from_ok(
                     id.clone(),
-                    serde_json::json!({"applied": true})
+                    serde_json::json!({"applied": true}),
                 );
                 let _ = response_sink.send(res).await;
             }
@@ -315,51 +356,66 @@ async fn test_stress_s8_deadlock_check() {
     // Pre-populate documents so we have something to query
     let uri = Url::parse("file:///deadlock_test.py").unwrap();
     let text = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
-    backend.documents.lock().await.insert(uri.clone(), text.to_string());
+    backend
+        .documents
+        .lock()
+        .await
+        .insert(uri.clone(), text.to_string());
 
     let mut futures: Vec<futures::future::BoxFuture<'_, ()>> = Vec::new();
     for _ in 0..50 {
         // code action task
         let uri_clone = uri.clone();
-        futures.push(async move {
-            let params = CodeActionParams {
-                text_document: TextDocumentIdentifier { uri: uri_clone },
-                range: Range::default(),
-                context: CodeActionContext {
-                    diagnostics: vec![Diagnostic {
-                        range: Range::default(),
-                        code: Some(NumberOrString::String("pm4py.py.unformatted_dataframe".to_string())),
-                        message: "unformatted".to_string(),
-                        code_description: None,
-                        ..Default::default()
-                    }],
-                    only: None,
-                    trigger_kind: None,
-                },
-                work_done_progress_params: WorkDoneProgressParams {
-                    work_done_token: None,
-                },
-                partial_result_params: PartialResultParams {
-                    partial_result_token: None,
-                },
-            };
-            let _ = backend.code_action(params).await;
-        }.boxed());
+        futures.push(
+            async move {
+                let params = CodeActionParams {
+                    text_document: TextDocumentIdentifier { uri: uri_clone },
+                    range: Range::default(),
+                    context: CodeActionContext {
+                        diagnostics: vec![Diagnostic {
+                            range: Range::default(),
+                            code: Some(NumberOrString::String(
+                                "pm4py.py.unformatted_dataframe".to_string(),
+                            )),
+                            message: "unformatted".to_string(),
+                            code_description: None,
+                            ..Default::default()
+                        }],
+                        only: None,
+                        trigger_kind: None,
+                    },
+                    work_done_progress_params: WorkDoneProgressParams {
+                        work_done_token: None,
+                    },
+                    partial_result_params: PartialResultParams {
+                        partial_result_token: None,
+                    },
+                };
+                let _ = backend.code_action(params).await;
+            }
+            .boxed(),
+        );
 
         // execute command task
         let uri_clone = uri.clone();
-        futures.push(async move {
-            let params = ExecuteCommandParams {
-                command: "pm4py-lsp.formatDataFrame".to_string(),
-                arguments: vec![
-                    serde_json::to_value(&uri_clone).unwrap(),
-                    serde_json::to_value(Range::default()).unwrap(),
-                    serde_json::to_value("Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.").unwrap(),
-                ],
-                ..Default::default()
-            };
-            let _ = backend.execute_command(params).await;
-        }.boxed());
+        futures.push(
+            async move {
+                let params = ExecuteCommandParams {
+                    command: "pm4py-lsp.formatDataFrame".to_string(),
+                    arguments: vec![
+                        serde_json::to_value(&uri_clone).unwrap(),
+                        serde_json::to_value(Range::default()).unwrap(),
+                        serde_json::to_value(
+                            "Variable 'df' is loaded via pd.read_csv but not formatted for PM4Py.",
+                        )
+                        .unwrap(),
+                    ],
+                    ..Default::default()
+                };
+                let _ = backend.execute_command(params).await;
+            }
+            .boxed(),
+        );
     }
 
     futures::future::join_all(futures).await;

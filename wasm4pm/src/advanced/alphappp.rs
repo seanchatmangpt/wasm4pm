@@ -1,6 +1,6 @@
-use crate::models::{EventLog, PetriNet, PetriNetArc, PetriNetTransition, PetriNetPlace};
-use std::collections::{HashMap, HashSet};
+use crate::models::{EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
 
 /// Alpha+++ Configuration
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -26,7 +26,7 @@ impl Default for AlphaPPPConfig {
 /// Reference: Wil van der Aalst et al.
 pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: &str) -> PetriNet {
     let mut net = PetriNet::new();
-    
+
     // 1. Extract activity vocabulary and frequencies
     let mut activities: HashSet<String> = HashSet::new();
     let mut df_counts: HashMap<(String, String), usize> = HashMap::new();
@@ -34,12 +34,16 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
     let mut end_activities: HashSet<String> = HashSet::new();
 
     for trace in &log.traces {
-        let trace_activities: Vec<String> = trace.events.iter()
+        let trace_activities: Vec<String> = trace
+            .events
+            .iter()
             .filter_map(|e| e.attributes.get(activity_key).and_then(|v| v.as_string()))
             .map(|s| s.to_string())
             .collect();
 
-        if trace_activities.is_empty() { continue; }
+        if trace_activities.is_empty() {
+            continue;
+        }
 
         if let Some(first) = trace_activities.first() {
             start_activities.insert(first.clone());
@@ -86,7 +90,7 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
     }
 
     // 4. Discover Maximal Sets (Places)
-    // For simplicity and correctness in this reference implementation, we use the 
+    // For simplicity and correctness in this reference implementation, we use the
     // classic Alpha expansion: (A, B) such that for all a in A, b in B: a -> b
     // and no a1, a2 in A are parallel, and no b1, b2 in B are parallel.
     let mut pairs: Vec<(HashSet<String>, HashSet<String>)> = Vec::new();
@@ -108,24 +112,39 @@ pub fn discover_alpha_ppp(log: &EventLog, config: AlphaPPPConfig, activity_key: 
     for (mut a, mut b) in pairs {
         // Expand A
         for cand_a in &sorted_activities {
-            if a.contains(cand_a) { continue; }
-            let all_causal = b.iter().all(|cand_b| causality.contains(&(cand_a.clone(), cand_b.clone())));
-            let none_parallel = a.iter().all(|ex_a| !parallel.contains(&(cand_a.clone(), ex_a.clone())));
+            if a.contains(cand_a) {
+                continue;
+            }
+            let all_causal = b
+                .iter()
+                .all(|cand_b| causality.contains(&(cand_a.clone(), cand_b.clone())));
+            let none_parallel = a
+                .iter()
+                .all(|ex_a| !parallel.contains(&(cand_a.clone(), ex_a.clone())));
             if all_causal && none_parallel {
                 a.insert(cand_a.clone());
             }
         }
         // Expand B
         for cand_b in &sorted_activities {
-            if b.contains(cand_b) { continue; }
-            let all_causal = a.iter().all(|cand_a| causality.contains(&(cand_a.clone(), cand_b.clone())));
-            let none_parallel = b.iter().all(|ex_b| !parallel.contains(&(cand_b.clone(), ex_b.clone())));
+            if b.contains(cand_b) {
+                continue;
+            }
+            let all_causal = a
+                .iter()
+                .all(|cand_a| causality.contains(&(cand_a.clone(), cand_b.clone())));
+            let none_parallel = b
+                .iter()
+                .all(|ex_b| !parallel.contains(&(cand_b.clone(), ex_b.clone())));
             if all_causal && none_parallel {
                 b.insert(cand_b.clone());
             }
         }
-        
-        if !maximal_pairs.iter().any(|(ma, mb)| a.is_subset(ma) && b.is_subset(mb)) {
+
+        if !maximal_pairs
+            .iter()
+            .any(|(ma, mb)| a.is_subset(ma) && b.is_subset(mb))
+        {
             maximal_pairs.push((a, b));
         }
     }

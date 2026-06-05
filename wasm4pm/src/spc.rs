@@ -131,7 +131,12 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
 
     // Emit warm-up event when buffer reaches critical size for rules 2-4
     if buffer_size == 9 {
-        debug!(buffer_size = buffer_size, status = "ok", service_name = "wpm", "spc.warm_up_complete");
+        debug!(
+            buffer_size = buffer_size,
+            status = "ok",
+            service_name = "wpm",
+            "spc.warm_up_complete"
+        );
     }
 
     // Rule 1: Point beyond UCL or LCL (applies to any buffer size, any single point).
@@ -190,7 +195,10 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
 
     // Rules 2, 3, and 4 require at least 9 points (Rule 4 needs 3, but we guard uniformly)
     if data.len() < 9 {
-        debug!(buffer_size, "SPC rules 2-4 not yet active, insufficient buffer");
+        debug!(
+            buffer_size,
+            "SPC rules 2-4 not yet active, insufficient buffer"
+        );
         return alerts;
     }
 
@@ -236,7 +244,10 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 "spc.rule_violation_classified"
             );
-            alerts.push(SpecialCause::Shift { direction: dir, count: 9 });
+            alerts.push(SpecialCause::Shift {
+                direction: dir,
+                count: 9,
+            });
         }
     }
 
@@ -283,7 +294,10 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 "spc.rule_violation_classified"
             );
-            alerts.push(SpecialCause::Trend { direction: dir, count: 6 });
+            alerts.push(SpecialCause::Trend {
+                direction: dir,
+                count: 6,
+            });
         }
     }
 
@@ -300,15 +314,21 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         let last_3 = &recent[recent.len() - 3..];
 
         // Count how many of the last 3 points are beyond 2σ above or below CL.
-        let beyond_2sigma_above = last_3.iter().filter(|d| {
-            let sigma = (d.ucl - d.cl) / 3.0;
-            sigma > 0.0 && d.value > d.cl + 2.0 * sigma
-        }).count();
+        let beyond_2sigma_above = last_3
+            .iter()
+            .filter(|d| {
+                let sigma = (d.ucl - d.cl) / 3.0;
+                sigma > 0.0 && d.value > d.cl + 2.0 * sigma
+            })
+            .count();
 
-        let beyond_2sigma_below = last_3.iter().filter(|d| {
-            let sigma = (d.ucl - d.cl) / 3.0;
-            sigma > 0.0 && d.value < d.cl - 2.0 * sigma
-        }).count();
+        let beyond_2sigma_below = last_3
+            .iter()
+            .filter(|d| {
+                let sigma = (d.ucl - d.cl) / 3.0;
+                sigma > 0.0 && d.value < d.cl - 2.0 * sigma
+            })
+            .count();
 
         if beyond_2sigma_above >= 2 {
             info!(
@@ -333,7 +353,9 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 "spc.rule_violation_classified"
             );
-            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Above });
+            alerts.push(SpecialCause::TwoOfThree {
+                direction: ShiftDirection::Above,
+            });
         } else if beyond_2sigma_below >= 2 {
             info!(
                 rule = 4,
@@ -357,7 +379,9 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 "spc.rule_violation_classified"
             );
-            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Below });
+            alerts.push(SpecialCause::TwoOfThree {
+                direction: ShiftDirection::Below,
+            });
         }
     }
 
@@ -438,12 +462,22 @@ impl ProcessCapability {
     #[allow(dead_code)]
     pub fn calculate(data: &[f64], usl: f64, lsl: f64) -> Result<Self, CapabilityError> {
         if data.is_empty() {
-            debug!(status = "error", service_name = "wpm", reason = "empty_data", "process_capability.calculate failed");
+            debug!(
+                status = "error",
+                service_name = "wpm",
+                reason = "empty_data",
+                "process_capability.calculate failed"
+            );
             return Err(CapabilityError::EmptyData);
         }
 
         if usl <= lsl {
-            debug!(status = "error", service_name = "wpm", reason = "invalid_limits", "process_capability.calculate failed");
+            debug!(
+                status = "error",
+                service_name = "wpm",
+                reason = "invalid_limits",
+                "process_capability.calculate failed"
+            );
             return Err(CapabilityError::InvalidLimits);
         }
 

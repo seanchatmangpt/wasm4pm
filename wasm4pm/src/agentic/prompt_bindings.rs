@@ -66,9 +66,7 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
         // Record topology policy legality in bindings so consumers can inspect it
         bindings.insert(
             "topology_policy_legal".to_string(),
-            allowed
-                .contains(topology.as_ref().unwrap())
-                .to_string(),
+            allowed.contains(topology.as_ref().unwrap()).to_string(),
         );
 
         // Extract receipts
@@ -145,7 +143,14 @@ mod tests {
         let task = make_task(WorkflowPhase::Plan, RiskLevel::Medium);
         let result = compiler.compile_bindings(&task).unwrap();
 
-        for key in &["task_id", "title", "phase", "risk_level", "confidence_band", "drift_status"] {
+        for key in &[
+            "task_id",
+            "title",
+            "phase",
+            "risk_level",
+            "confidence_band",
+            "drift_status",
+        ] {
             assert!(
                 result.bindings.contains_key(*key),
                 "missing binding key: {key}"
@@ -183,7 +188,10 @@ mod tests {
         let task = make_task(WorkflowPhase::Validate, RiskLevel::Low);
         let result = compiler.compile_bindings(&task).unwrap();
         assert_eq!(
-            result.bindings.get("topology_policy_legal").map(String::as_str),
+            result
+                .bindings
+                .get("topology_policy_legal")
+                .map(String::as_str),
             Some("true"),
             "ReviewLoop must be policy-legal for Validate phase"
         );
@@ -208,6 +216,9 @@ mod tests {
         let compiler = DefaultPromptBindingCompiler;
         let task = TaskContext::default();
         let result = compiler.compile_bindings(&task);
-        assert!(result.is_ok(), "default TaskContext must not cause panic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "default TaskContext must not cause panic: {result:?}"
+        );
     }
 }

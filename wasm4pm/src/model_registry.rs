@@ -3,14 +3,14 @@
 //! Provides the data structures, validation logic, and thread-safe in-memory cache
 //! with LRU/TTL eviction policies and variant mapping.
 
-use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::time::{SystemTime, Duration};
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
-use wasm_bindgen::prelude::*;
 use crate::error::{codes, wasm_err};
 use crate::models::PetriNet;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::sync::Mutex;
+use std::time::{Duration, SystemTime};
+use wasm_bindgen::prelude::*;
 
 fn system_time_now() -> SystemTime {
     #[cfg(target_arch = "wasm32")]
@@ -71,14 +71,18 @@ impl ConditionalGuard {
             ComparisonOp::NotEquals => value != &self.threshold,
             ComparisonOp::Contains => value.contains(&self.threshold),
             ComparisonOp::GreaterThan => {
-                if let (Ok(v_num), Ok(t_num)) = (value.parse::<f64>(), self.threshold.parse::<f64>()) {
+                if let (Ok(v_num), Ok(t_num)) =
+                    (value.parse::<f64>(), self.threshold.parse::<f64>())
+                {
                     v_num > t_num
                 } else {
                     value > &self.threshold
                 }
             }
             ComparisonOp::LessThan => {
-                if let (Ok(v_num), Ok(t_num)) = (value.parse::<f64>(), self.threshold.parse::<f64>()) {
+                if let (Ok(v_num), Ok(t_num)) =
+                    (value.parse::<f64>(), self.threshold.parse::<f64>())
+                {
                     v_num < t_num
                 } else {
                     value < &self.threshold
@@ -154,12 +158,18 @@ impl ProcessModelRegistry {
         self.models.get(id).map(|entry| entry.envelope.clone())
     }
 
-    pub fn insert(&mut self, envelope: ProcessModelEnvelope, ttl: Option<Duration>) -> Result<(), &'static str> {
+    pub fn insert(
+        &mut self,
+        envelope: ProcessModelEnvelope,
+        ttl: Option<Duration>,
+    ) -> Result<(), &'static str> {
         let now = system_time_now();
         let expires_at = ttl.map(|d| now + d);
 
         // Remove expired entries
-        let expired: Vec<String> = self.models.iter()
+        let expired: Vec<String> = self
+            .models
+            .iter()
             .filter(|(_, e)| e.expires_at.map_or(false, |exp| now > exp))
             .map(|(k, _)| k.clone())
             .collect();
@@ -169,7 +179,9 @@ impl ProcessModelRegistry {
 
         // Enforce capacity limit (max capacity entries)
         if self.models.len() >= self.capacity && !self.models.contains_key(&envelope.id) {
-            let lru_key = self.models.iter()
+            let lru_key = self
+                .models
+                .iter()
                 .min_by_key(|(_, entry)| entry.last_accessed)
                 .map(|(k, _)| k.clone());
             if let Some(k) = lru_key {
@@ -179,11 +191,14 @@ impl ProcessModelRegistry {
             }
         }
 
-        self.models.insert(envelope.id.clone(), RegistryEntry {
-            envelope,
-            last_accessed: now,
-            expires_at,
-        });
+        self.models.insert(
+            envelope.id.clone(),
+            RegistryEntry {
+                envelope,
+                last_accessed: now,
+                expires_at,
+            },
+        );
         Ok(())
     }
 
@@ -208,7 +223,7 @@ impl ProcessModelRegistry {
 
 static REGISTRY: Lazy<Mutex<ProcessModelRegistry>> = Lazy::new(|| {
     let mut registry = ProcessModelRegistry::new(512);
-    
+
     let payload = include_str!("../../fixtures/models/living_diagnostic_clear_v1.pnml").to_string();
     let envelope = ProcessModelEnvelope {
         id: "living_diagnostic_clear_v1".to_string(),
@@ -219,7 +234,7 @@ static REGISTRY: Lazy<Mutex<ProcessModelRegistry>> = Lazy::new(|| {
         metadata: std::collections::HashMap::new(),
     };
     let _ = registry.insert(envelope, None);
-    
+
     Mutex::new(registry)
 });
 
@@ -231,7 +246,13 @@ pub fn get_registry() -> std::sync::MutexGuard<'static, ProcessModelRegistry> {
 
 /// Standard SemVer 2.0.0 syntax validator.
 pub fn validate_semver(version: &str) -> bool {
-    let core = version.split('+').next().unwrap_or(version).split('-').next().unwrap_or(version);
+    let core = version
+        .split('+')
+        .next()
+        .unwrap_or(version)
+        .split('-')
+        .next()
+        .unwrap_or(version);
     let parts: Vec<&str> = core.split('.').collect();
     if parts.len() != 3 {
         return false;
@@ -288,7 +309,10 @@ pub fn validate_workflow_net(net: &PetriNet) -> Result<(), String> {
         let to = arc.to.as_str();
 
         if !all_nodes.contains(from) || !all_nodes.contains(to) {
-            return Err(format!("Arc references non-existent node: from '{}' to '{}'", from, to));
+            return Err(format!(
+                "Arc references non-existent node: from '{}' to '{}'",
+                from, to
+            ));
         }
 
         *out_degrees.entry(from).or_insert(0) += 1;
@@ -311,10 +335,16 @@ pub fn validate_workflow_net(net: &PetriNet) -> Result<(), String> {
     }
 
     if source_places.len() != 1 {
-        return Err(format!("Workflow net must have exactly 1 source place, found {}", source_places.len()));
+        return Err(format!(
+            "Workflow net must have exactly 1 source place, found {}",
+            source_places.len()
+        ));
     }
     if sink_places.len() != 1 {
-        return Err(format!("Workflow net must have exactly 1 sink place, found {}", sink_places.len()));
+        return Err(format!(
+            "Workflow net must have exactly 1 sink place, found {}",
+            sink_places.len()
+        ));
     }
 
     let source_place = source_places[0];
@@ -355,10 +385,16 @@ pub fn validate_workflow_net(net: &PetriNet) -> Result<(), String> {
     // Verify all nodes are connected
     for node in &all_nodes {
         if !visited_forward.contains(node) {
-            return Err(format!("Node '{}' is unreachable from source place '{}'", node, source_place));
+            return Err(format!(
+                "Node '{}' is unreachable from source place '{}'",
+                node, source_place
+            ));
         }
         if !visited_backward.contains(node) {
-            return Err(format!("Sink place '{}' is unreachable from node '{}'", sink_place, node));
+            return Err(format!(
+                "Sink place '{}' is unreachable from node '{}'",
+                sink_place, node
+            ));
         }
     }
 
@@ -369,27 +405,41 @@ pub fn validate_workflow_net(net: &PetriNet) -> Result<(), String> {
 
 #[wasm_bindgen]
 pub fn register_model(envelope_json: &str) -> Result<String, JsValue> {
-    let envelope: ProcessModelEnvelope = serde_json::from_str(envelope_json)
-        .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Failed to parse envelope JSON: {}", e)))?;
+    let envelope: ProcessModelEnvelope = serde_json::from_str(envelope_json).map_err(|e| {
+        wasm_err(
+            codes::INVALID_JSON,
+            format!("Failed to parse envelope JSON: {}", e),
+        )
+    })?;
 
     if !validate_semver(&envelope.version) {
-        return Err(wasm_err(codes::INVALID_INPUT, format!("Invalid SemVer version: '{}'", envelope.version)));
+        return Err(wasm_err(
+            codes::INVALID_INPUT,
+            format!("Invalid SemVer version: '{}'", envelope.version),
+        ));
     }
 
     match envelope.model_type {
         ModelType::PNML => {
-            let petri_net = crate::pnml_io::from_pnml(&envelope.payload)
-                .map_err(|e| wasm_err(codes::PARSE_ERROR, format!("Failed to parse PNML: {}", e)))?;
+            let petri_net = crate::pnml_io::from_pnml(&envelope.payload).map_err(|e| {
+                wasm_err(codes::PARSE_ERROR, format!("Failed to parse PNML: {}", e))
+            })?;
 
-            validate_workflow_net(&petri_net)
-                .map_err(|e| wasm_err("INVALID_WORKFLOW_NET", format!("Workflow net structural check failed: {}", e)))?;
+            validate_workflow_net(&petri_net).map_err(|e| {
+                wasm_err(
+                    "INVALID_WORKFLOW_NET",
+                    format!("Workflow net structural check failed: {}", e),
+                )
+            })?;
         }
         ModelType::POWL => {
             #[cfg(feature = "powl")]
             {
                 let mut arena = crate::powl_arena::PowlArena::new();
                 crate::powl_parser::parse_powl_model_string(&envelope.payload, &mut arena)
-                    .map_err(|e| wasm_err(codes::PARSE_ERROR, format!("Failed to parse POWL: {:?}", e)))?;
+                    .map_err(|e| {
+                        wasm_err(codes::PARSE_ERROR, format!("Failed to parse POWL: {:?}", e))
+                    })?;
             }
             #[cfg(not(feature = "powl"))]
             {
@@ -399,7 +449,9 @@ pub fn register_model(envelope_json: &str) -> Result<String, JsValue> {
     }
 
     // Optional TTL parsing from envelope metadata
-    let ttl = envelope.metadata.get("ttl_seconds")
+    let ttl = envelope
+        .metadata
+        .get("ttl_seconds")
         .and_then(|s| s.parse::<u64>().ok())
         .map(Duration::from_secs);
 
@@ -411,17 +463,25 @@ pub fn register_model(envelope_json: &str) -> Result<String, JsValue> {
     Ok(serde_json::json!({
         "status": "success",
         "model_id": id
-    }).to_string())
+    })
+    .to_string())
 }
 
 #[wasm_bindgen]
 pub fn get_model(model_id: &str) -> Result<String, JsValue> {
     let mut reg = get_registry();
     if let Some(envelope) = reg.get(model_id) {
-        serde_json::to_string(&envelope)
-            .map_err(|e| wasm_err(codes::INTERNAL_ERROR, format!("Failed to serialize envelope: {}", e)))
+        serde_json::to_string(&envelope).map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("Failed to serialize envelope: {}", e),
+            )
+        })
     } else {
-        Err(wasm_err("INVALID_MODEL_HANDLE", format!("Model '{}' not found or expired", model_id)))
+        Err(wasm_err(
+            "INVALID_MODEL_HANDLE",
+            format!("Model '{}' not found or expired", model_id),
+        ))
     }
 }
 
@@ -430,29 +490,38 @@ pub fn get_model(model_id: &str) -> Result<String, JsValue> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{PetriNetPlace, PetriNetTransition, PetriNetArc};
+    use crate::models::{PetriNetArc, PetriNetPlace, PetriNetTransition};
 
     fn create_test_petri_net(
         places: &[&str],
         transitions: &[&str],
-        arcs: &[(&str, &str)]
+        arcs: &[(&str, &str)],
     ) -> PetriNet {
         PetriNet {
-            places: places.iter().map(|p| PetriNetPlace {
-                id: p.to_string(),
-                label: p.to_string(),
-                marking: None,
-            }).collect(),
-            transitions: transitions.iter().map(|t| PetriNetTransition {
-                id: t.to_string(),
-                label: t.to_string(),
-                is_invisible: None,
-            }).collect(),
-            arcs: arcs.iter().map(|(f, t)| PetriNetArc {
-                from: f.to_string(),
-                to: t.to_string(),
-                weight: None,
-            }).collect(),
+            places: places
+                .iter()
+                .map(|p| PetriNetPlace {
+                    id: p.to_string(),
+                    label: p.to_string(),
+                    marking: None,
+                })
+                .collect(),
+            transitions: transitions
+                .iter()
+                .map(|t| PetriNetTransition {
+                    id: t.to_string(),
+                    label: t.to_string(),
+                    is_invisible: None,
+                })
+                .collect(),
+            arcs: arcs
+                .iter()
+                .map(|(f, t)| PetriNetArc {
+                    from: f.to_string(),
+                    to: t.to_string(),
+                    weight: None,
+                })
+                .collect(),
             initial_marking: HashMap::new(),
             final_markings: Vec::new(),
         }
@@ -469,19 +538,18 @@ mod tests {
         assert!(validate_workflow_net(&net).is_err());
 
         // Invalid: Multiple source places
-        let net = create_test_petri_net(&["P1", "P2", "P3"], &["T1"], &[("P1", "T1"), ("T1", "P3")]);
+        let net =
+            create_test_petri_net(&["P1", "P2", "P3"], &["T1"], &[("P1", "T1"), ("T1", "P3")]);
         assert!(validate_workflow_net(&net).is_err());
 
         // Invalid: Multiple sink places
-        let net = create_test_petri_net(&["P1", "P2", "P3"], &["T1"], &[("P1", "T1"), ("T1", "P2")]);
+        let net =
+            create_test_petri_net(&["P1", "P2", "P3"], &["T1"], &[("P1", "T1"), ("T1", "P2")]);
         assert!(validate_workflow_net(&net).is_err());
 
         // Invalid: Unreachable node (T2 is detached)
-        let net = create_test_petri_net(
-            &["P1", "P2"],
-            &["T1", "T2"],
-            &[("P1", "T1"), ("T1", "P2")]
-        );
+        let net =
+            create_test_petri_net(&["P1", "P2"], &["T1", "T2"], &[("P1", "T1"), ("T1", "P2")]);
         assert!(validate_workflow_net(&net).is_err());
     }
 
@@ -519,7 +587,7 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(5));
         assert!(registry.get("m1").is_some());
         std::thread::sleep(std::time::Duration::from_millis(5));
-        
+
         // Inserting m3 should evict m2 (since m2 is LRU, m1 was accessed after m2)
         assert!(registry.insert(env3.clone(), None).is_ok());
         assert!(registry.get("m1").is_some());
@@ -539,7 +607,9 @@ mod tests {
             metadata: HashMap::new(),
         };
 
-        assert!(registry.insert(env, Some(Duration::from_millis(10))).is_ok());
+        assert!(registry
+            .insert(env, Some(Duration::from_millis(10)))
+            .is_ok());
         // Get immediately
         assert!(registry.get("m1").is_some());
 
@@ -574,35 +644,29 @@ mod tests {
         // Define rules
         let rule1 = VariantRule {
             model_id: "m1".to_string(),
-            guards: vec![
-                ConditionalGuard {
-                    attribute_name: "region".to_string(),
-                    operation: ComparisonOp::Equals,
-                    threshold: "US".to_string(),
-                }
-            ],
+            guards: vec![ConditionalGuard {
+                attribute_name: "region".to_string(),
+                operation: ComparisonOp::Equals,
+                threshold: "US".to_string(),
+            }],
             priority: 1,
         };
         let rule2 = VariantRule {
             model_id: "m2".to_string(),
-            guards: vec![
-                ConditionalGuard {
-                    attribute_name: "region".to_string(),
-                    operation: ComparisonOp::Equals,
-                    threshold: "EU".to_string(),
-                }
-            ],
+            guards: vec![ConditionalGuard {
+                attribute_name: "region".to_string(),
+                operation: ComparisonOp::Equals,
+                threshold: "EU".to_string(),
+            }],
             priority: 2,
         };
         let rule3 = VariantRule {
             model_id: "m2".to_string(),
-            guards: vec![
-                ConditionalGuard {
-                    attribute_name: "value".to_string(),
-                    operation: ComparisonOp::GreaterThan,
-                    threshold: "100".to_string(),
-                }
-            ],
+            guards: vec![ConditionalGuard {
+                attribute_name: "value".to_string(),
+                operation: ComparisonOp::GreaterThan,
+                threshold: "100".to_string(),
+            }],
             priority: 3,
         };
 
@@ -638,12 +702,10 @@ mod tests {
             VariantKey { attributes }
         };
 
-        let guard = |op: ComparisonOp, thresh: &str| {
-            ConditionalGuard {
-                attribute_name: "attr".to_string(),
-                operation: op,
-                threshold: thresh.to_string(),
-            }
+        let guard = |op: ComparisonOp, thresh: &str| ConditionalGuard {
+            attribute_name: "attr".to_string(),
+            operation: op,
+            threshold: thresh.to_string(),
         };
 
         // Equals
@@ -699,17 +761,28 @@ mod tests {
         let petri_net = crate::pnml_io::from_pnml(pnml).unwrap();
         assert!(validate_workflow_net(&petri_net).is_ok());
 
-        let place_index: std::collections::HashMap<&String, usize> = petri_net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+        let place_index: std::collections::HashMap<&String, usize> = petri_net
+            .places
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (&p.id, i))
+            .collect();
         let mut place_index_fx = rustc_hash::FxHashMap::default();
         for (k, v) in place_index {
             place_index_fx.insert(k, v);
         }
         let mut marking = vec![0; petri_net.places.len()];
-        let p_source_idx = place_index_fx.get(&"p_source".to_string()).copied().unwrap();
+        let p_source_idx = place_index_fx
+            .get(&"p_source".to_string())
+            .copied()
+            .unwrap();
         marking[p_source_idx] = 1;
 
         let reachable = crate::models::is_final_reachable(&petri_net, &marking, &place_index_fx);
-        assert!(reachable, "Final marking should be reachable from p_source!");
+        assert!(
+            reachable,
+            "Final marking should be reachable from p_source!"
+        );
 
         let mut marking2 = vec![0; petri_net.places.len()];
         let p2_idx = place_index_fx.get(&"p2".to_string()).copied().unwrap();

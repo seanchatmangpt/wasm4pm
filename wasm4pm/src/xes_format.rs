@@ -118,9 +118,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                     .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
                 Ok(handle)
             }
-            Err(e) => {
-                Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)))
-            }
+            Err(e) => Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e))),
         }
     }
 
@@ -359,12 +357,11 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
             }
             b's' if tag_bytes.len() > 8 && &tag_bytes[..8] == b"<string " => {
                 let is_self_closing = tag.ends_with("/>");
-                if let (Some(key), Some(value)) = (
-                    extract_attr(tag, b"key"),
-                    extract_attr(tag, b"value"),
-                ) {
+                if let (Some(key), Some(value)) =
+                    (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
+                {
                     if !is_self_closing {
-                         return Err(format!(
+                        return Err(format!(
                             "Line {}: <string> tag must be self-closing (/>). Found: {}",
                             line_number, tag
                         ));
@@ -384,10 +381,9 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
             }
             b'd' if tag_bytes.len() > 6 && &tag_bytes[..6] == b"<date " => {
                 let is_self_closing = tag.ends_with("/>");
-                if let (Some(key), Some(value)) = (
-                    extract_attr(tag, b"key"),
-                    extract_attr(tag, b"value"),
-                ) {
+                if let (Some(key), Some(value)) =
+                    (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
+                {
                     if !is_self_closing {
                         return Err(format!(
                             "Line {}: <date> tag must be self-closing (/>). Found: {}",
@@ -408,10 +404,9 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'i' if tag_bytes.len() > 5 && &tag_bytes[..5] == b"<int " => {
-                if let (Some(key), Some(value_str)) = (
-                    extract_attr(tag, b"key"),
-                    extract_attr(tag, b"value"),
-                ) {
+                if let (Some(key), Some(value_str)) =
+                    (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
+                {
                     if let Ok(value) = value_str.parse::<i64>() {
                         insert_attr(
                             &mut current_event,
@@ -433,10 +428,9 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'f' if tag_bytes.len() > 7 && &tag_bytes[..7] == b"<float " => {
-                if let (Some(key), Some(value_str)) = (
-                    extract_attr(tag, b"key"),
-                    extract_attr(tag, b"value"),
-                ) {
+                if let (Some(key), Some(value_str)) =
+                    (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
+                {
                     if let Ok(value) = value_str.parse::<f64>() {
                         insert_attr(
                             &mut current_event,
@@ -458,10 +452,9 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'b' if tag_bytes.len() > 9 && &tag_bytes[..9] == b"<boolean " => {
-                if let (Some(key), Some(value_str)) = (
-                    extract_attr(tag, b"key"),
-                    extract_attr(tag, b"value"),
-                ) {
+                if let (Some(key), Some(value_str)) =
+                    (extract_attr(tag, b"key"), extract_attr(tag, b"value"))
+                {
                     let value = value_str == "true";
                     insert_attr(
                         &mut current_event,
@@ -701,7 +694,10 @@ mod tests {
 </log>"#;
 
         let result = validate_and_parse_xes(content);
-        assert!(result.is_err(), "Non-self-closing <string> should be rejected");
+        assert!(
+            result.is_err(),
+            "Non-self-closing <string> should be rejected"
+        );
 
         let err = result.unwrap_err();
         assert!(
@@ -722,7 +718,10 @@ mod tests {
 </log>"#;
 
         let result = validate_and_parse_xes(content);
-        assert!(result.is_err(), "Unexpected closing </event> should be rejected");
+        assert!(
+            result.is_err(),
+            "Unexpected closing </event> should be rejected"
+        );
 
         let err = result.unwrap_err();
         assert!(
@@ -820,7 +819,10 @@ mod tests {
 </log>"#;
 
         let result = validate_and_parse_xes(content);
-        assert!(result.is_ok(), "Valid XES with multiple traces should parse");
+        assert!(
+            result.is_ok(),
+            "Valid XES with multiple traces should parse"
+        );
 
         let log = result.unwrap();
         assert_eq!(log.traces.len(), 2, "Expected 2 traces");

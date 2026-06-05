@@ -26,9 +26,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                 .nodes
                 .into_iter()
                 .map(|n| match n {
-                    ChoiceGraphNode::SubModel(c) => {
-                        ChoiceGraphNode::SubModel(simplify(arena, c))
-                    }
+                    ChoiceGraphNode::SubModel(c) => ChoiceGraphNode::SubModel(simplify(arena, c)),
                     other => other,
                 })
                 .collect();
@@ -39,9 +37,8 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                 end_idx: cg.graph.end_idx,
             };
             // Replace the node in-place to keep the index stable.
-            arena.nodes[idx as usize] = PowlNode::ChoiceGraph(
-                crate::powl_arena::ChoiceGraphPowlNode { graph: new_graph },
-            );
+            arena.nodes[idx as usize] =
+                PowlNode::ChoiceGraph(crate::powl_arena::ChoiceGraphPowlNode { graph: new_graph });
             idx
         }
         Some(PowlNode::OperatorPowl(op)) => {
@@ -56,8 +53,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                 // Normalise LOOP(LOOP(A, τ), τ) → LOOP(A, τ)
                 // When the body of a loop is itself a loop with a silent redo
                 // branch, the outer silent redo makes the inner one redundant.
-                if let Some(PowlNode::OperatorPowl(inner)) = arena.nodes.get(c0 as usize).cloned()
-                {
+                if let Some(PowlNode::OperatorPowl(inner)) = arena.nodes.get(c0 as usize).cloned() {
                     if inner.operator == Operator::Loop && inner.children.len() == 2 {
                         let inner_c1 = inner.children[1];
                         let is_silent = |idx: u32| {
@@ -283,7 +279,9 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
 
                     for &sn in &src_new_indices {
                         for &tn in &tgt_new_indices {
-                            arena.add_order_edge(new_spo_idx, sn as usize, tn as usize).ok();
+                            arena
+                                .add_order_edge(new_spo_idx, sn as usize, tn as usize)
+                                .ok();
                         }
                     }
                 }
@@ -365,8 +363,7 @@ fn simplify_decision_graph(
     let empty_path = dg.empty_path;
 
     // Recursively simplify children.
-    let simplified_children: Vec<u32> =
-        children.into_iter().map(|c| simplify(arena, c)).collect();
+    let simplified_children: Vec<u32> = children.into_iter().map(|c| simplify(arena, c)).collect();
 
     let n = simplified_children.len();
 

@@ -73,7 +73,7 @@ impl UnionFind {
             }
             curr = p.clone();
         }
-        
+
         // Path compression (optional, but good)
         if curr != x {
             self.parent.insert(x.to_string(), curr.clone());
@@ -331,8 +331,7 @@ mod v2_tests {
         let starts: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
         let ends: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
         // Single-activity → 1 part. Should fall through to InsufficientPartitions.
-        let err = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, true)
-            .unwrap_err();
+        let err = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, true).unwrap_err();
         assert_eq!(err, NoCutFound::InsufficientPartitions);
     }
 }

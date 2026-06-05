@@ -8,9 +8,9 @@
 //! Ported from pm4wasm/src/conformance/soundness.rs
 
 use crate::powl_models::{PowlMarking as Marking, PowlPetriNet as PetriNet};
-use wasm4pm_compat::powl::ChoiceGraph;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use wasm4pm_compat::powl::ChoiceGraph;
 
 /// Soundness check result.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -243,9 +243,7 @@ pub struct ChoiceGraphSoundness {
 ///
 /// Re-verifies the invariants that `ChoiceGraph::new` already enforces; useful
 /// after manual mutation or deserialization.
-pub fn check_choice_graph_soundness(
-    cg: &ChoiceGraph,
-) -> ChoiceGraphSoundness {
+pub fn check_choice_graph_soundness(cg: &ChoiceGraph) -> ChoiceGraphSoundness {
     // Acyclicity: rebuild adj and run a BFS/DFS check.
     let n = cg.nodes.len();
     let mut adj: Vec<Vec<usize>> = vec![Vec::new(); n];

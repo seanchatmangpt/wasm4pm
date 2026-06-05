@@ -49,20 +49,15 @@ fn test_evaluate_parity_decisions() {
         EquivalenceKind::Exact,
     );
     assert_eq!(verdict_admitted.decision, ParityVerdictDecision::Admitted);
-    assert_eq!(
-        verdict_admitted.gap_analysis.unwrap(),
-        "No gap detected."
-    );
+    assert_eq!(verdict_admitted.gap_analysis.unwrap(), "No gap detected.");
 
     // U16: mismatch refuses
-    let verdict_refused = evaluate_parity(
-        "fixture-2",
-        "Petri Net",
-        "BPMN",
-        EquivalenceKind::Exact,
-    );
+    let verdict_refused = evaluate_parity("fixture-2", "Petri Net", "BPMN", EquivalenceKind::Exact);
     assert_eq!(verdict_refused.decision, ParityVerdictDecision::Refused);
-    assert!(verdict_refused.gap_analysis.unwrap().contains("Gap detected"));
+    assert!(verdict_refused
+        .gap_analysis
+        .unwrap()
+        .contains("Gap detected"));
 
     // U17: unsupported equivalence returns Unsupported
     let verdict_unsupported = evaluate_parity(
@@ -76,7 +71,6 @@ fn test_evaluate_parity_decisions() {
         ParityVerdictDecision::Unsupported
     );
 }
-
 
 static TEST_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 

@@ -26,15 +26,26 @@ pub fn anomaly_score_from_edge_probs(
 ) -> AnomalyScore {
     let steps = edge_probs.len();
     if steps == 0 {
-        return AnomalyScore { score: 0.0, raw_cost: 0.0, missing_edge_ratio: 0.0, steps: 0 };
+        return AnomalyScore {
+            score: 0.0,
+            raw_cost: 0.0,
+            missing_edge_ratio: 0.0,
+            steps: 0,
+        };
     }
     let mut cost_sum = 0.0_f64;
     let mut missing = 0usize;
     for p in edge_probs {
         cost_sum += match *p {
-            None => { missing += 1; missing_penalty_bits }
+            None => {
+                missing += 1;
+                missing_penalty_bits
+            }
             Some(prob) if prob > 0.0 => -prob.log2(),
-            Some(_) => { missing += 1; missing_penalty_bits }
+            Some(_) => {
+                missing += 1;
+                missing_penalty_bits
+            }
         };
     }
     let raw = cost_sum / steps as f64;

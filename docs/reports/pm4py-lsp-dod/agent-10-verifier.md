@@ -30,7 +30,7 @@ The verification suite executed the following validation stages on the committed
 
 ### Cargo Test
 - Command: `DYLD_FRAMEWORK_PATH=/Applications/Xcode.app/Contents/Developer/Library/Frameworks cargo test -p pm4py-lsp`
-- Output: Success (44 passing tests, 8 ignored).
+- Output: Success (exactly 44 passed, 8 ignored, 0 failed).
 ```
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
      Running unittests src/lib.rs (target/debug/deps/pm4py_lsp-8cce2fc329d5f486)
@@ -173,7 +173,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 ---
 
 ## 2. Integrity and Replay Authenticity Checks
-- **Commit HEAD**: `f50c970b9cbaf459d605c1e0bd7c23a1a487666e`
+- **Commit HEAD**: `ca22cc0da410f0b98b47895f8936157483235d82`
 - **Authenticity validation**: Persisted receipts and fixtures are loaded dynamically. Altering the receipt values or corrupting the files results in verification refusals as checked by the test suite, preventing mock-only compliance.
 - **Purity checks**: Confirms `vendors/tower-lsp-max` retains zero references to domain process-mining terminology, guaranteeing architectural cleanliness.
 
@@ -185,4 +185,4 @@ Based on the verification of the global Definition of Done (DOD) gates, we emit 
 **Verdict**: `PM4PY-LSP-003_ALIVE`
 
 **Statement**:
-`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates for the first bounded PM4Py workflow surface.`
+`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.`

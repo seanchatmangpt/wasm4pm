@@ -1,5 +1,5 @@
-use wasm4pm_types::*;
 use std::collections::HashMap;
+use wasm4pm_types::*;
 
 /// Branchless Directly-Follows Graph discovery with columnar optimization
 /// Time complexity: O(n) where n = total events across all traces

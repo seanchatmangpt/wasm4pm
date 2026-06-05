@@ -10,6 +10,8 @@ pub struct PipelineFacts {
     pub csv_vars: Vec<String>,
     pub formatted_vars: Vec<String>,
     pub discovery_calls: Vec<String>,
+    pub conformance_calls: Vec<String>,
+    pub export_calls: Vec<String>,
     pub missing_case_id: bool,
     pub missing_activity: bool,
     pub missing_timestamp: bool,
@@ -53,14 +55,14 @@ impl PipelineFacts {
             facts.pandas_aliases.push("pd".to_string()); // Common default
         }
 
-        // CSV loads and variables
-        let re_csv = Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?read_csv\s*\(\s*(?:filepath_or_buffer\s*=\s*)?(?:['"]([^'"]+)['"]|(\w+))"#).unwrap();
+        // CSV loads and variables (supporting read_csv, read_parquet, read_json, read_excel)
+        let re_csv = Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?(read_csv|read_parquet|read_json|read_excel)\s*\(\s*(?:filepath|filepath_or_buffer\s*=\s*)?(?:['"]([^'"]+)['"]|(\w+))"#).unwrap();
         for cap in re_csv.captures_iter(content) {
             let var_name = cap.get(1).unwrap().as_str().to_string();
             facts.csv_vars.push(var_name);
-            if let Some(path_literal) = cap.get(3) {
+            if let Some(path_literal) = cap.get(4) {
                 facts.csv_loads.push(path_literal.as_str().to_string());
-            } else if let Some(path_var) = cap.get(4) {
+            } else if let Some(path_var) = cap.get(5) {
                 facts.csv_loads.push(path_var.as_str().to_string());
             }
         }
@@ -115,18 +117,29 @@ impl PipelineFacts {
             }
         }
 
-        // Discovery and conformance calls
-        let re_discovery =
-            Regex::new(r#"\b(?:(\w+)\.)?(discover_[a-zA-Z0-9_]+|conformance_[a-zA-Z0-9_]+)\b"#)
+        // Discovery, Conformance, and Export/Write calls
+        let re_calls =
+            Regex::new(r#"\b(?:(\w+)\.)?(discover_[a-zA-Z0-9_]+|conformance_[a-zA-Z0-9_]+|fitness_[a-zA-Z0-9_]+|precision_[a-zA-Z0-9_]+|write_[a-zA-Z0-9_]+|check_wf_net_soundness)\b"#)
                 .unwrap();
-        for cap in re_discovery.captures_iter(content) {
+        for cap in re_calls.captures_iter(content) {
+            let prefix = cap.get(1).map(|m| m.as_str());
             let func = cap.get(2).unwrap().as_str();
-            if let Some(prefix) = cap.get(1) {
-                facts
-                    .discovery_calls
-                    .push(format!("{}.{}", prefix.as_str(), func));
+            let full_call = if let Some(p) = prefix {
+                format!("{}.{}", p, func)
             } else {
-                facts.discovery_calls.push(func.to_string());
+                func.to_string()
+            };
+
+            if func.starts_with("discover_") {
+                facts.discovery_calls.push(full_call);
+            } else if func.starts_with("conformance_")
+                || func.starts_with("fitness_")
+                || func.starts_with("precision_")
+                || func == "check_wf_net_soundness"
+            {
+                facts.conformance_calls.push(full_call);
+            } else if func.starts_with("write_") {
+                facts.export_calls.push(full_call);
             }
         }
 

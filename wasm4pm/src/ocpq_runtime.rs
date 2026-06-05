@@ -1,7 +1,7 @@
-use crate::models::{OCEL, OCELEvent};
-use crate::ocpq_parser::{OcpqQuery, OcpqClause, OcpqRelation, OcpqScope};
-use std::collections::HashMap;
+use crate::models::{OCELEvent, OCEL};
+use crate::ocpq_parser::{OcpqClause, OcpqQuery, OcpqRelation, OcpqScope};
 use serde::Serialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct OcpqVerdict {
@@ -90,7 +90,8 @@ pub fn check_relation(
 pub fn evaluate(ocel: &OCEL, query: &OcpqQuery) -> OcpqVerdict {
     let mut violations = Vec::new();
 
-    let object_to_type: HashMap<String, String> = ocel.objects
+    let object_to_type: HashMap<String, String> = ocel
+        .objects
         .iter()
         .map(|o| (o.id.clone(), o.object_type.clone()))
         .collect();
@@ -107,57 +108,62 @@ pub fn evaluate(ocel: &OCEL, query: &OcpqQuery) -> OcpqVerdict {
                     }
                 }
             }
-            OcpqClause::Require { left, relation, right, scope } => {
-                match scope {
-                    OcpqScope::Global => {
-                        let mut sorted_events: Vec<(usize, &OCELEvent)> = ocel.events.iter().enumerate().collect();
-                        sorted_events.sort_by(|(idx_a, a), (idx_b, b)| {
+            OcpqClause::Require {
+                left,
+                relation,
+                right,
+                scope,
+            } => match scope {
+                OcpqScope::Global => {
+                    let mut sorted_events: Vec<(usize, &OCELEvent)> =
+                        ocel.events.iter().enumerate().collect();
+                    sorted_events.sort_by(|(idx_a, a), (idx_b, b)| {
+                        match a.timestamp.cmp(&b.timestamp) {
+                            std::cmp::Ordering::Equal => idx_a.cmp(idx_b),
+                            other => other,
+                        }
+                    });
+                    let mut cl_violations = check_relation(&sorted_events, left, *relation, right);
+                    violations.append(&mut cl_violations);
+                }
+                OcpqScope::SameObject { object_type } => {
+                    let mut events_by_object: HashMap<String, Vec<(usize, &OCELEvent)>> =
+                        HashMap::new();
+                    for (idx, event) in ocel.events.iter().enumerate() {
+                        for obj_id in event.all_object_ids() {
+                            if let Some(ref ot) = object_type {
+                                if let Some(obj_type) = object_to_type.get(obj_id) {
+                                    if obj_type == ot {
+                                        events_by_object
+                                            .entry(obj_id.to_string())
+                                            .or_default()
+                                            .push((idx, event));
+                                    }
+                                }
+                            } else {
+                                events_by_object
+                                    .entry(obj_id.to_string())
+                                    .or_default()
+                                    .push((idx, event));
+                            }
+                        }
+                    }
+
+                    for (obj_id, mut ev_list) in events_by_object {
+                        ev_list.sort_by(|(idx_a, a), (idx_b, b)| {
                             match a.timestamp.cmp(&b.timestamp) {
                                 std::cmp::Ordering::Equal => idx_a.cmp(idx_b),
                                 other => other,
                             }
                         });
-                        let mut cl_violations = check_relation(&sorted_events, left, *relation, right);
-                        violations.append(&mut cl_violations);
-                    }
-                    OcpqScope::SameObject { object_type } => {
-                        let mut events_by_object: HashMap<String, Vec<(usize, &OCELEvent)>> = HashMap::new();
-                        for (idx, event) in ocel.events.iter().enumerate() {
-                            for obj_id in event.all_object_ids() {
-                                if let Some(ref ot) = object_type {
-                                    if let Some(obj_type) = object_to_type.get(obj_id) {
-                                        if obj_type == ot {
-                                            events_by_object
-                                                .entry(obj_id.to_string())
-                                                .or_default()
-                                                .push((idx, event));
-                                        }
-                                    }
-                                } else {
-                                    events_by_object
-                                        .entry(obj_id.to_string())
-                                        .or_default()
-                                        .push((idx, event));
-                                }
-                            }
+                        let mut obj_violations = check_relation(&ev_list, left, *relation, right);
+                        for v in &mut obj_violations {
+                            *v = format!("Object {} - {}", obj_id, v);
                         }
-
-                        for (obj_id, mut ev_list) in events_by_object {
-                            ev_list.sort_by(|(idx_a, a), (idx_b, b)| {
-                                match a.timestamp.cmp(&b.timestamp) {
-                                    std::cmp::Ordering::Equal => idx_a.cmp(idx_b),
-                                    other => other,
-                                }
-                            });
-                            let mut obj_violations = check_relation(&ev_list, left, *relation, right);
-                            for v in &mut obj_violations {
-                                *v = format!("Object {} - {}", obj_id, v);
-                            }
-                            violations.append(&mut obj_violations);
-                        }
+                        violations.append(&mut obj_violations);
                     }
                 }
-            }
+            },
         }
     }
 
@@ -176,7 +182,8 @@ impl OcpqEvaluator {
     pub fn evaluate_compat(ocel: &OCEL, query: &wasm4pm_compat::ocpq::OcpqQuery) -> OcpqVerdict {
         let mut violations = Vec::new();
 
-        let object_to_type: HashMap<String, String> = ocel.objects
+        let object_to_type: HashMap<String, String> = ocel
+            .objects
             .iter()
             .map(|o| (o.id.clone(), o.object_type.clone()))
             .collect();
@@ -229,25 +236,37 @@ impl OcpqEvaluator {
                             let relation = match rel_str.as_str() {
                                 "BEFORE" => OcpqRelation::Before,
                                 "AFTER" => OcpqRelation::After,
-                                "IMMEDIATELY_BEFORE" | "IMMEDIATELY BEFORE" => OcpqRelation::ImmediatelyBefore,
-                                "IMMEDIATELY_AFTER" | "IMMEDIATELY AFTER" => OcpqRelation::ImmediatelyAfter,
+                                "IMMEDIATELY_BEFORE" | "IMMEDIATELY BEFORE" => {
+                                    OcpqRelation::ImmediatelyBefore
+                                }
+                                "IMMEDIATELY_AFTER" | "IMMEDIATELY AFTER" => {
+                                    OcpqRelation::ImmediatelyAfter
+                                }
                                 _ => OcpqRelation::Before,
                             };
-                            let mut sorted_events: Vec<(usize, &OCELEvent)> = ocel.events.iter().enumerate().collect();
+                            let mut sorted_events: Vec<(usize, &OCELEvent)> =
+                                ocel.events.iter().enumerate().collect();
                             sorted_events.sort_by(|(idx_a, a), (idx_b, b)| {
-                                let ta = crate::models::parse_timestamp_ms(&a.timestamp).unwrap_or(0);
-                                let tb = crate::models::parse_timestamp_ms(&b.timestamp).unwrap_or(0);
+                                let ta =
+                                    crate::models::parse_timestamp_ms(&a.timestamp).unwrap_or(0);
+                                let tb =
+                                    crate::models::parse_timestamp_ms(&b.timestamp).unwrap_or(0);
                                 match ta.cmp(&tb) {
                                     std::cmp::Ordering::Equal => idx_a.cmp(idx_b),
                                     other => other,
                                 }
                             });
-                            let mut cl_violations = check_relation(&sorted_events, &left, relation, &right);
+                            let mut cl_violations =
+                                check_relation(&sorted_events, &left, relation, &right);
                             violations.append(&mut cl_violations);
                         }
                     }
                 }
-                wasm4pm_compat::ocpq::PredicateKind::E2ORelation { event_var, object_var, qualifier } => {
+                wasm4pm_compat::ocpq::PredicateKind::E2ORelation {
+                    event_var,
+                    object_var,
+                    qualifier,
+                } => {
                     for ev in &ocel.events {
                         if ev.event_type == *event_var {
                             let mut found = false;
@@ -286,7 +305,11 @@ impl OcpqEvaluator {
                         }
                     }
                 }
-                wasm4pm_compat::ocpq::PredicateKind::O2ORelation { object_var1, object_var2, qualifier } => {
+                wasm4pm_compat::ocpq::PredicateKind::O2ORelation {
+                    object_var1,
+                    object_var2,
+                    qualifier,
+                } => {
                     for obj in &ocel.objects {
                         if obj.object_type == *object_var1 {
                             let mut found = false;
@@ -335,7 +358,12 @@ impl OcpqEvaluator {
                         }
                     }
                 }
-                wasm4pm_compat::ocpq::PredicateKind::TimeBetweenEvents { event_var1, event_var2, t_min, t_max } => {
+                wasm4pm_compat::ocpq::PredicateKind::TimeBetweenEvents {
+                    event_var1,
+                    event_var2,
+                    t_min,
+                    t_max,
+                } => {
                     for (obj_id, ev_list) in &events_by_object {
                         for i in 0..ev_list.len() {
                             let ev1 = ev_list[i].1;
@@ -344,8 +372,10 @@ impl OcpqEvaluator {
                                 for j in (i + 1)..ev_list.len() {
                                     let ev2 = ev_list[j].1;
                                     if ev2.event_type == *event_var2 {
-                                        let t1 = crate::models::parse_timestamp_ms(&ev1.timestamp).unwrap_or(0);
-                                        let t2 = crate::models::parse_timestamp_ms(&ev2.timestamp).unwrap_or(0);
+                                        let t1 = crate::models::parse_timestamp_ms(&ev1.timestamp)
+                                            .unwrap_or(0);
+                                        let t2 = crate::models::parse_timestamp_ms(&ev2.timestamp)
+                                            .unwrap_or(0);
                                         let diff = (t2 - t1).max(0) as u64;
                                         if diff < *t_min || diff > *t_max {
                                             violations.push(format!(
@@ -371,10 +401,18 @@ impl OcpqEvaluator {
                         }
                     }
                 }
-                wasm4pm_compat::ocpq::PredicateKind::ChildSetBound { branch_label, min, max } => {
+                wasm4pm_compat::ocpq::PredicateKind::ChildSetBound {
+                    branch_label,
+                    min,
+                    max,
+                } => {
                     // Count relations matching branch_label
                     for obj in &ocel.objects {
-                        let count = obj.embedded_relations.iter().filter(|r| r.qualifier == *branch_label).count();
+                        let count = obj
+                            .embedded_relations
+                            .iter()
+                            .filter(|r| r.qualifier == *branch_label)
+                            .count();
                         if count < *min || count > *max {
                             violations.push(format!(
                                 "ChildSetBound violation: Object {} has {} relations for branch {}, expected [{}, {}]",
@@ -406,17 +444,18 @@ impl OcpqEvaluator {
                 object_types: query.scope().object_types().to_vec(),
             },
             predicates: query.predicates().to_vec(),
-            sub_queries: query.sub_queries().iter().map(|sq| {
-                wasm4pm_compat::ocpq::OcpqQuery {
+            sub_queries: query
+                .sub_queries()
+                .iter()
+                .map(|sq| wasm4pm_compat::ocpq::OcpqQuery {
                     scope: wasm4pm_compat::ocpq::ObjectScope {
                         object_types: sq.scope().object_types().to_vec(),
                     },
                     predicates: sq.predicates().to_vec(),
                     sub_queries: Vec::new(),
-                }
-            }).collect(),
+                })
+                .collect(),
         };
         Self::evaluate_compat(ocel, &compat_query)
     }
 }
-

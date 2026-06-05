@@ -155,8 +155,7 @@ impl LearningRateDecayMonitor {
         self.alpha_expected = self.alpha_0 * 0.9999_f32.powf(cycle_count as f32);
         // Allow 2% tolerance
         let tolerance = self.alpha_expected * 0.02;
-        self.schedule_is_correct =
-            (self.alpha_current - self.alpha_expected).abs() < tolerance;
+        self.schedule_is_correct = (self.alpha_current - self.alpha_expected).abs() < tolerance;
     }
 }
 
@@ -218,7 +217,9 @@ impl RlStabilityMonitor {
         // Check for divergence: >50% growth in last 50 samples
         if self.q_divergence.max_q_history.len() >= 10 {
             let recent_start = self.q_divergence.max_q_history[0];
-            let recent_max = *self.q_divergence.max_q_history
+            let recent_max = *self
+                .q_divergence
+                .max_q_history
                 .iter()
                 .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
                 .unwrap_or(&recent_start);
@@ -233,11 +234,14 @@ impl RlStabilityMonitor {
         if self.learning_curve.reward_history.len() >= 100 {
             self.learning_curve.reward_history.pop_front();
         }
-        self.learning_curve.reward_history.push_back(cumulative_reward);
+        self.learning_curve
+            .reward_history
+            .push_back(cumulative_reward);
 
         // Detect jumps
         if self.learning_curve.reward_history.len() >= 2 {
-            let prev = self.learning_curve.reward_history[self.learning_curve.reward_history.len() - 2];
+            let prev =
+                self.learning_curve.reward_history[self.learning_curve.reward_history.len() - 2];
             let curr = cumulative_reward;
             let delta = (curr - prev).abs();
 
@@ -245,20 +249,28 @@ impl RlStabilityMonitor {
             let mut sum_deltas = 0.0;
             let mut count = 0;
             for i in 1..self.learning_curve.reward_history.len() {
-                let d = (self.learning_curve.reward_history[i] - self.learning_curve.reward_history[i - 1]).abs();
+                let d = (self.learning_curve.reward_history[i]
+                    - self.learning_curve.reward_history[i - 1])
+                    .abs();
                 sum_deltas += d;
                 count += 1;
             }
-            self.learning_curve.mean_delta = if count > 0 { sum_deltas / count as f32 } else { 0.0 };
+            self.learning_curve.mean_delta = if count > 0 {
+                sum_deltas / count as f32
+            } else {
+                0.0
+            };
 
             // Flag jump if >2x mean delta
-            if self.learning_curve.mean_delta > 0.0 && delta > 2.0 * self.learning_curve.mean_delta {
+            if self.learning_curve.mean_delta > 0.0 && delta > 2.0 * self.learning_curve.mean_delta
+            {
                 self.learning_curve.jump_count += 1;
             }
 
             // Chaotic if >20% of transitions are jumps
             if self.learning_curve.reward_history.len() >= 5 {
-                let chaos_threshold = (self.learning_curve.reward_history.len() as f32 * 0.2).ceil() as usize;
+                let chaos_threshold =
+                    (self.learning_curve.reward_history.len() as f32 * 0.2).ceil() as usize;
                 self.learning_curve.is_chaotic = self.learning_curve.jump_count > chaos_threshold;
             }
         }
@@ -294,16 +306,18 @@ impl RlStabilityMonitor {
         let recent_start = len.saturating_sub(recent_len);
 
         // Compute mean of recent samples
-        let recent_sum: f32 = self.td_error_stats.history.iter()
-            .skip(recent_start)
-            .sum();
+        let recent_sum: f32 = self.td_error_stats.history.iter().skip(recent_start).sum();
         self.td_error_stats.mean_recent = recent_sum / recent_len as f32;
 
         // Compute std dev of recent samples
-        let variance = self.td_error_stats.history.iter()
+        let variance = self
+            .td_error_stats
+            .history
+            .iter()
             .skip(recent_start)
             .map(|&x| (x - self.td_error_stats.mean_recent).powi(2))
-            .sum::<f32>() / recent_len as f32;
+            .sum::<f32>()
+            / recent_len as f32;
         self.td_error_stats.std_dev_recent = variance.sqrt();
 
         // Convergence ratio: mean(last 10) / mean(first 10)

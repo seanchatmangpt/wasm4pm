@@ -108,11 +108,12 @@ impl LifecycleState {
                 LifecycleState::Decommission,
             ],
             LifecycleState::Repair => &[LifecycleState::Operation, LifecycleState::Optimization],
-            LifecycleState::Optimization => &[LifecycleState::Operation, LifecycleState::Decommission],
-            LifecycleState::BoardProjection => &[
-                LifecycleState::Optimization,
-                LifecycleState::Decommission,
-            ],
+            LifecycleState::Optimization => {
+                &[LifecycleState::Operation, LifecycleState::Decommission]
+            }
+            LifecycleState::BoardProjection => {
+                &[LifecycleState::Optimization, LifecycleState::Decommission]
+            }
             LifecycleState::Decommission => &[LifecycleState::Archive],
             LifecycleState::Acquisition => &[LifecycleState::Design, LifecycleState::Simulation],
             LifecycleState::Integration => &[LifecycleState::Operation],
@@ -201,8 +202,7 @@ impl LifecycleStateMachine {
 
         // Record event
         let timestamp = 0u64;
-        self.events
-            .push((witness.to_string(), target, timestamp));
+        self.events.push((witness.to_string(), target, timestamp));
 
         self.state = target;
         Ok(target)
@@ -225,10 +225,7 @@ impl LifecycleStateMachine {
 
     /// Check if a gate has been passed
     pub fn gate_passed(&self, gate_name: &str) -> bool {
-        self.gates
-            .get(gate_name)
-            .map(|g| g.passed)
-            .unwrap_or(false)
+        self.gates.get(gate_name).map(|g| g.passed).unwrap_or(false)
     }
 }
 
@@ -260,12 +257,7 @@ impl std::fmt::Display for LifecycleRefusal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::InvalidTransition { from, to } => {
-                write!(
-                    f,
-                    "Invalid transition: {} -> {}",
-                    from.name(),
-                    to.name()
-                )
+                write!(f, "Invalid transition: {} -> {}", from.name(), to.name())
             }
             Self::GateNotPassed(gate) => write!(f, "Quality gate not passed: {}", gate),
             Self::SoundnessViolation => write!(f, "WF-net soundness violation"),
@@ -357,8 +349,7 @@ mod tests {
         assert_eq!(enabled, &[LifecycleState::Simulation]);
 
         // Move to Simulation
-        sm.transition(LifecycleState::Simulation, "test")
-            .unwrap();
+        sm.transition(LifecycleState::Simulation, "test").unwrap();
         let enabled = sm.enabled_transitions();
         assert!(enabled.contains(&LifecycleState::Construction));
         assert!(enabled.contains(&LifecycleState::Design));

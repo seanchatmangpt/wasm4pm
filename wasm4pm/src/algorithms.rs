@@ -26,7 +26,10 @@ pub struct FootprintMatrix {
 }
 
 /// Pure-Rust footprint discovery without wasm-bindgen. Used by integration tests.
-pub fn discover_footprints_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> FootprintMatrix {
+pub fn discover_footprints_from_log<W>(
+    log: &AdmittedEventLog<W>,
+    activity_key: &str,
+) -> FootprintMatrix {
     let col = log.value.to_columnar(activity_key);
     let n = col.vocab.len();
     let mut df = vec![vec![false; n]; n];
@@ -483,9 +486,10 @@ pub fn discover_alpha_plus_plus(
                 activity_count = log.get_activities(activity_key).len(),
                 "Log loaded and analyzed"
             );
-            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
             alpha_plus_plus_inner(&admitted, activity_key, min_support)
-        },
+        }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
@@ -565,7 +569,11 @@ pub fn discover_dfg_filtered_from_log<W>(
     let all_relations = log.value.get_directly_follows(activity_key);
     for (from, to, freq) in all_relations {
         if freq >= min_frequency {
-            dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
+            dfg.edges.push(DirectlyFollowsRelation {
+                from,
+                to,
+                frequency: freq,
+            });
         }
     }
 
@@ -685,7 +693,8 @@ mod tests {
         // Simple linear log: A -> B -> C (no loops)
         let log = make_log_wasm(&[&["A", "B", "C"], &["A", "B", "C"]], "concept:name");
         let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
-        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
+        let pn =
+            alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have transitions for A, B, C
         assert!(
@@ -717,7 +726,8 @@ mod tests {
         // Log with length-1 loop: A -> A -> B
         let log = make_log_wasm(&[&["A", "A", "B"], &["A", "A", "B"]], "concept:name");
         let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
-        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
+        let pn =
+            alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // L1L should have detected A as a self-loop activity
         // There should be a self-loop place for A
@@ -738,7 +748,8 @@ mod tests {
             "concept:name",
         );
         let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
-        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
+        let pn =
+            alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have a back-arc place for the L2L pair (A,B) or (B,A)
         let has_back_place = pn

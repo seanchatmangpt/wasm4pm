@@ -209,8 +209,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             })
         }
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
-            let edges: Vec<Vec<usize>> =
-                cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
+            let edges: Vec<Vec<usize>> = cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
             let node_kinds: Vec<String> = cg
                 .graph
                 .nodes
@@ -445,16 +444,18 @@ pub fn powl_freq_analysis(s: &str) -> Result<String, JsValue> {
     // Overall min of all min_freqs
     let freq_min_min: Option<i64> = nodes.iter().filter_map(|n| n["min_freq"].as_i64()).min();
     // Overall max of all max_freqs (null if any node is unbounded)
-    let freq_max_max: serde_json::Value =
-        if nodes.iter().any(|n| n["is_unbounded"].as_bool().unwrap_or(false)) {
-            serde_json::Value::Null
-        } else {
-            nodes
-                .iter()
-                .filter_map(|n| n["max_freq"].as_i64())
-                .max()
-                .map_or(serde_json::Value::Null, serde_json::Value::from)
-        };
+    let freq_max_max: serde_json::Value = if nodes
+        .iter()
+        .any(|n| n["is_unbounded"].as_bool().unwrap_or(false))
+    {
+        serde_json::Value::Null
+    } else {
+        nodes
+            .iter()
+            .filter_map(|n| n["max_freq"].as_i64())
+            .max()
+            .map_or(serde_json::Value::Null, serde_json::Value::from)
+    };
 
     let result = serde_json::json!({
         "total_frequent_transitions": total,

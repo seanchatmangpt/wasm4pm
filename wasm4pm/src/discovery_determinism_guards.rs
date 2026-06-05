@@ -82,8 +82,7 @@ mod tests {
         // Both RNGs should have same initial state (same seed)
         // Verify by checking they're both seeded from constant
         assert_eq!(
-            STOCHASTIC_ALGORITHM_SEED,
-            42,
+            STOCHASTIC_ALGORITHM_SEED, 42,
             "Default seed should remain constant"
         );
     }

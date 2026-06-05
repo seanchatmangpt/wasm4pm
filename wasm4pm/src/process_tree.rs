@@ -280,7 +280,10 @@ impl ProcessTree {
     #[inline]
     #[must_use]
     pub fn sequence(children: Vec<ProcessTree>) -> Self {
-        debug_assert!(!children.is_empty(), "Sequence must have at least one child");
+        debug_assert!(
+            !children.is_empty(),
+            "Sequence must have at least one child"
+        );
         ProcessTree::Operator {
             op: ProcessTreeOperator::Sequence,
             children,
@@ -294,7 +297,10 @@ impl ProcessTree {
     #[inline]
     #[must_use]
     pub fn xor(children: Vec<ProcessTree>) -> Self {
-        debug_assert!(!children.is_empty(), "ExclusiveChoice must have at least one child");
+        debug_assert!(
+            !children.is_empty(),
+            "ExclusiveChoice must have at least one child"
+        );
         ProcessTree::Operator {
             op: ProcessTreeOperator::ExclusiveChoice,
             children,
@@ -308,7 +314,10 @@ impl ProcessTree {
     #[inline]
     #[must_use]
     pub fn parallel(children: Vec<ProcessTree>) -> Self {
-        debug_assert!(!children.is_empty(), "Parallel must have at least one child");
+        debug_assert!(
+            !children.is_empty(),
+            "Parallel must have at least one child"
+        );
         ProcessTree::Operator {
             op: ProcessTreeOperator::Parallel,
             children,
@@ -582,8 +591,8 @@ impl ProcessTreeNode {
             NodeKind::Silent => ProcessTree::tau(),
             NodeKind::Activity(label) => ProcessTree::activity(ActivityName::new(label)),
             NodeKind::Operator(tag) => {
-                let op = ProcessTreeOperator::from_tag(&tag)
-                    .unwrap_or(ProcessTreeOperator::Sequence);
+                let op =
+                    ProcessTreeOperator::from_tag(&tag).unwrap_or(ProcessTreeOperator::Sequence);
                 let children: Vec<ProcessTree> =
                     self.children.into_iter().map(|c| c.into_typed()).collect();
                 ProcessTree::Operator { op, children }
@@ -660,7 +669,10 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
                     .as_array()
                     .ok_or("Operator node missing 'children' array")?;
                 if children.is_empty() {
-                    return Err(alloc::format!("Operator '{}' must have at least one child", op));
+                    return Err(alloc::format!(
+                        "Operator '{}' must have at least one child",
+                        op
+                    ));
                 }
                 let validated_children: Result<Vec<serde_json::Value>, String> =
                     children.iter().map(|c| validate(c, depth + 1)).collect();
@@ -751,10 +763,9 @@ pub fn discover_simple_process_tree(
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
-    Ok(crate::error::js_val(&discover_simple_process_tree_from_log(
-        &log,
-        activity_key,
-    )))
+    Ok(crate::error::js_val(
+        &discover_simple_process_tree_from_log(&log, activity_key),
+    ))
 }
 
 // ─── Unit tests ───────────────────────────────────────────────────────────────
@@ -877,10 +888,7 @@ mod tests {
 
     #[test]
     fn sequence_tree_repr() {
-        let t = ProcessTree::sequence(vec![
-            ProcessTree::activity("A"),
-            ProcessTree::activity("B"),
-        ]);
+        let t = ProcessTree::sequence(vec![ProcessTree::activity("A"), ProcessTree::activity("B")]);
         assert_eq!(t.operator(), Some(ProcessTreeOperator::Sequence));
         assert_eq!(t.arity(), 2);
         assert_eq!(t.depth(), 1);
@@ -902,14 +910,8 @@ mod tests {
     fn nested_tree_depth() {
         // →( ×(A, B), ∧(C, D) )
         let t = ProcessTree::sequence(vec![
-            ProcessTree::xor(vec![
-                ProcessTree::activity("A"),
-                ProcessTree::activity("B"),
-            ]),
-            ProcessTree::parallel(vec![
-                ProcessTree::activity("C"),
-                ProcessTree::activity("D"),
-            ]),
+            ProcessTree::xor(vec![ProcessTree::activity("A"), ProcessTree::activity("B")]),
+            ProcessTree::parallel(vec![ProcessTree::activity("C"), ProcessTree::activity("D")]),
         ]);
         assert_eq!(t.depth(), 2);
         assert_eq!(t.node_count(), 7); // root + 2 ops + 4 leaves
@@ -967,8 +969,8 @@ mod tests {
 
     #[test]
     fn process_tree_node_into_typed_unknown_tag_defaults_to_sequence() {
-        let node = ProcessTreeNode::operator("UNKNOWN_OP")
-            .add_child(ProcessTreeNode::activity("X"));
+        let node =
+            ProcessTreeNode::operator("UNKNOWN_OP").add_child(ProcessTreeNode::activity("X"));
         let typed = node.into_typed();
         assert_eq!(typed.operator(), Some(ProcessTreeOperator::Sequence));
     }

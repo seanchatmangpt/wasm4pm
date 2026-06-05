@@ -1,11 +1,10 @@
 //! Nanosecond Regression Family — branchless Least Squares solvers for process mining.
 
-use crate::models::{AttributeValue, parse_timestamp_ms};
+use crate::models::{parse_timestamp_ms, AttributeValue};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
-use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
-
+use wasm_bindgen::prelude::*;
 
 const EPSILON: f64 = 1e-12;
 const TIME_KEY: &str = "time:timestamp";
@@ -33,11 +32,16 @@ pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
     let nf = n as f64;
 
     // Use multiple accumulators to break dependency chains and enable SIMD
-    let mut sx0 = 0.0; let mut sx1 = 0.0;
-    let mut sy0 = 0.0; let mut sy1 = 0.0;
-    let mut sxy0 = 0.0; let mut sxy1 = 0.0;
-    let mut sxx0 = 0.0; let mut sxx1 = 0.0;
-    let mut syy0 = 0.0; let mut syy1 = 0.0;
+    let mut sx0 = 0.0;
+    let mut sx1 = 0.0;
+    let mut sy0 = 0.0;
+    let mut sy1 = 0.0;
+    let mut sxy0 = 0.0;
+    let mut sxy1 = 0.0;
+    let mut sxx0 = 0.0;
+    let mut sxx1 = 0.0;
+    let mut syy0 = 0.0;
+    let mut syy1 = 0.0;
 
     let x_chunks = x.chunks_exact(8);
     let y_chunks = y.chunks_exact(8);
@@ -46,9 +50,15 @@ pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
 
     for (xc, yc) in x_chunks.zip(y_chunks) {
         // First 4
-        let x0 = xc[0]; let x1 = xc[1]; let x2 = xc[2]; let x3 = xc[3];
-        let y0 = yc[0]; let y1 = yc[1]; let y2 = yc[2]; let y3 = yc[3];
-        
+        let x0 = xc[0];
+        let x1 = xc[1];
+        let x2 = xc[2];
+        let x3 = xc[3];
+        let y0 = yc[0];
+        let y1 = yc[1];
+        let y2 = yc[2];
+        let y3 = yc[3];
+
         sx0 += x0 + x1 + x2 + x3;
         sy0 += y0 + y1 + y2 + y3;
         sxy0 += x0 * y0 + x1 * y1 + x2 * y2 + x3 * y3;
@@ -56,8 +66,14 @@ pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
         syy0 += y0 * y0 + y1 * y1 + y2 * y2 + y3 * y3;
 
         // Second 4
-        let x4 = xc[4]; let x5 = xc[5]; let x6 = xc[6]; let x7 = xc[7];
-        let y4 = yc[4]; let y5 = yc[5]; let y6 = yc[6]; let y7 = yc[7];
+        let x4 = xc[4];
+        let x5 = xc[5];
+        let x6 = xc[6];
+        let x7 = xc[7];
+        let y4 = yc[4];
+        let y5 = yc[5];
+        let y6 = yc[6];
+        let y7 = yc[7];
 
         sx1 += x4 + x5 + x6 + x7;
         sy1 += y4 + y5 + y6 + y7;
@@ -191,7 +207,7 @@ pub fn discover_ml_regress(eventlog_handle: &str, _activity_key: &str) -> Result
 
     to_js(&MLRegressOutput {
         algorithm: "ml_regress",
-        regression: result
+        regression: result,
     })
 }
 
@@ -199,9 +215,13 @@ pub fn discover_ml_regress(eventlog_handle: &str, _activity_key: &str) -> Result
 pub fn discover_ml_regress_automl(eventlog_handle: &str, k_folds: u32) -> Result<JsValue, JsValue> {
     let (lengths, durations) = extract_lengths_durations(eventlog_handle)?;
     let n = lengths.len();
-    
+
     if n == 0 {
-        return to_js(&MLRegressAutoMLOutput { algorithm: "ml_regress_automl", folds: 0, results: vec![] });
+        return to_js(&MLRegressAutoMLOutput {
+            algorithm: "ml_regress_automl",
+            folds: 0,
+            results: vec![],
+        });
     }
 
     let k = k_folds.max(1) as usize;
@@ -210,19 +230,21 @@ pub fn discover_ml_regress_automl(eventlog_handle: &str, k_folds: u32) -> Result
 
     for i in 0..k {
         let start = i * chunk_size;
-        if start >= n { break; }
+        if start >= n {
+            break;
+        }
         let end = (start + chunk_size).min(n);
-        
+
         let sub_x = &lengths[start..end];
         let sub_y = &durations[start..end];
-        
+
         results.push(regression_internal(sub_x, sub_y));
     }
 
     to_js(&MLRegressAutoMLOutput {
         algorithm: "ml_regress_automl",
         folds: k,
-        results
+        results,
     })
 }
 

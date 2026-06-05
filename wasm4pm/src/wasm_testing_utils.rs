@@ -253,7 +253,10 @@ pub fn validate_output_format(output_json: &str, algorithm: &str) -> Result<JsVa
     }
 
     let mut extra = Vec::new();
-    let all_allowed: Vec<&String> = required_fields.iter().chain(optional_fields.iter()).collect();
+    let all_allowed: Vec<&String> = required_fields
+        .iter()
+        .chain(optional_fields.iter())
+        .collect();
     for key in obj.keys() {
         if !all_allowed.contains(&key) {
             extra.push(key.clone());
@@ -471,10 +474,9 @@ fn get_algorithm_schema_fields(algorithm: &str) -> (Vec<String>, Vec<String>) {
             vec!["places".to_string(), "transitions".to_string()],
             vec!["arcs".to_string()],
         ),
-        "process_tree" | "inductive_miner" => (
-            vec!["tree".to_string()],
-            vec!["children".to_string()],
-        ),
+        "process_tree" | "inductive_miner" => {
+            (vec!["tree".to_string()], vec!["children".to_string()])
+        }
         _ => (vec![], vec![]),
     }
 }
