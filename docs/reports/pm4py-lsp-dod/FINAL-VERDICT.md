@@ -2,9 +2,9 @@
 
 **Doctrine:** PM4PY-LSP-003_ALIVE = pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.
 
-- **Date / Time**: 2026-06-05T01:30:19-07:00
+- **Date / Time**: 2026-06-05T03:09:21-07:00
 - **Verdict**: `PM4PY-LSP-003_ALIVE`
-- **Commit Hash**: `ca22cc0da410f0b98b47895f8936157483235d82`
+- **Commit Hash**: `c06dddfb2b0c9c4fcf93db0cc77a85c4c95d21be`
 - **PM4PY-LSP-002 Prior Verdict**: `PM4PY-LSP-002_ALIVE_WITH_RECEIPT_TAXONOMY_GAP`
 - **Parity / Scope Warning**: We do **not** claim full `wasm4pm` parity, nor do we claim support for all PM4Py workflows. This checkpoint is specific to `pm4py-lsp`.
 
@@ -17,12 +17,12 @@
 | Fmt | `cargo fmt` | Checked via cargo formatter compliance | PASS |
 | Check | `cargo check` | Checked via compilation check | PASS |
 | Clippy | `cargo clippy` | Checked via linter compliance | PASS |
-| Unit | `src/lib.rs` | MISSING | MISSING |
-| Integration | `capability_test.rs` (7), `diagnostics_test.rs` (3), `diagnostic_test.rs` (1), `actions_commands_test.rs` (3), `parity_contract_test.rs` (5), `pm4py_bridge_test.rs` (2), `receipts_fixtures_test.rs` (4), `static_analysis_test.rs` (4) | 29 tests | PASS |
+| Unit | `src/lib.rs` | 5 unit tests (verified PASS inside src/lib.rs) | PASS |
+| Integration | `capability_test.rs` (7), `diagnostics_test.rs` (3), `diagnostic_test.rs` (1), `actions_commands_test.rs` (3), `parity_contract_test.rs` (5), `pm4py_bridge_test.rs` (2), `receipts_fixtures_test.rs` (6), `static_analysis_test.rs` (5) | 32 tests | PASS |
 | E2E LSP | `tests/e2e_lsp_test.rs` (7), `tests/lsp_lifecycle_test.rs` (2) | 9 tests | PASS |
 | Chaos | `tests/chaos_test.rs` | 6 tests | PASS |
 | Stress | `tests/stress_test.rs` | 8 tests | PASS |
-| Benchmark | `benches/` | 9 metrics | PASS |
+| Benchmark | `benches/` | 5 benchmark suites (all compile and run successfully) | PASS |
 | Purity Fence | `vendors/tower-lsp-max` | Verified process-mining-free (0 occurrences of pm4py, xes, ocel, bpmn, petri, powl) | PASS |
 
 ---
@@ -47,13 +47,14 @@ Dimensions covered by the test suite:
 
 ## Evidence
 
-Exactly 44 tests passed, 8 ignored tests, and 0 failed as of validation. All Integration, E2E, Chaos, Stress, and Benchmark gates are implemented and pass/are-active.
+Exactly 52 tests passed, 8 ignored tests, and 0 failed as of validation. All Unit, Integration, E2E, Chaos, Stress, and Benchmark gates are implemented and pass/are-active.
 
-- Integration suite: 29 tests across 8 files (all `#[test]` or `#[tokio::test]`) plus E2E LSP/Chaos (15 tests total) yielding exactly 44 passed tests, 8 ignored.
+- Unit suite: 5 tests in `src/lib.rs` (verified PASS)
+- Integration suite: 32 tests across 8 files (all `#[test]` or `#[tokio::test]`)
 - E2E suite: 9 async tests across 2 files
 - Chaos suite: 6 tests in `tests/chaos_test.rs`
 - Stress suite: 8 tests in `tests/stress_test.rs` (marked as `#[ignore = "stress gate"]` but ran successfully with `-- --ignored`)
-- Benchmark suite: 5 benchmark targets in `benches/` directory
+- Benchmark suite: 5 benchmark targets in `benches/` directory (all compile and run successfully)
 
 ---
 
@@ -82,15 +83,20 @@ Exactly 44 tests passed, 8 ignored tests, and 0 failed as of validation. All Int
 
 ### Cargo Test
 - Command: `DYLD_FRAMEWORK_PATH=/Applications/Xcode.app/Contents/Developer/Library/Frameworks cargo test -p pm4py-lsp`
-- Result: **Passed** (44 tests passed, 8 ignored, 0 failed).
+- Result: **Passed** (52 tests passed, 8 ignored, 0 failed).
 - Output:
 ```
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.15s
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.17s
      Running unittests src/lib.rs (target/debug/deps/pm4py_lsp-8cce2fc329d5f486)
 
-running 0 tests
+running 5 tests
+test diagnostics::pm4py_diag_code_tests::test_as_str_variants ... ok
+test diagnostics::pm4py_diag_code_tests::test_display ... ok
+test tests::identity_check_different_content_returns_false ... ok
+test tests::identity_check_no_stored_content_returns_false ... ok
+test tests::identity_check_same_content_returns_true ... ok
 
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running tests/actions_commands_test.rs (target/debug/deps/actions_commands_test-1219dc08e39eabc0)
 
@@ -112,33 +118,33 @@ test test_formatted_dataframe_diagnostic_none ... ok
 test test_conformance_vector_shift ... ok
 test test_integration_dataframe_formatting ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running tests/chaos_test.rs (target/debug/deps/chaos_test-e3f66447c510e174)
 
 running 6 tests
 test test_chaos_receipt_replay_attack ... ok
+test test_chaos_empty_dataframe ... ok
 test test_chaos_missing_pm4py_columns ... ok
 test test_chaos_null_column_names ... ok
-test test_chaos_empty_dataframe ... ok
-test test_chaos_corrupt_csv_input ... ok
 test test_chaos_concurrent_analysis ... ok
+test test_chaos_corrupt_csv_input ... ok
 
-test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.73s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
 
      Running tests/diagnostic_test.rs (target/debug/deps/diagnostic_test-33ec8d0ce61918db)
 
 running 1 test
 test test_pm4py_diagnostic ... ok
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running tests/diagnostics_test.rs (target/debug/deps/diagnostics_test-07af725f9d10904c)
 
 running 3 tests
-test test_conformance_and_export_diagnostics ... ok
-test test_diagnostics_detection ... ok
 test test_missing_mappings_diagnostics ... ok
+test test_diagnostics_detection ... ok
+test test_conformance_and_export_diagnostics ... ok
 
 test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
@@ -148,12 +154,12 @@ running 7 tests
 test test_e2e_initialize_and_shutdown ... ok
 test test_e2e_close_removes_diagnostics ... ok
 test test_e2e_did_open_triggers_diagnostics ... ok
-test test_e2e_code_action_repairs_diagnostic ... ok
 test test_e2e_did_change_updates_diagnostics ... ok
+test test_e2e_code_action_repairs_diagnostic ... ok
 test test_e2e_multiple_files_concurrent ... ok
 test test_e2e_lsp_lifecycle ... ok
 
-test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
 
      Running tests/lsp_lifecycle_test.rs (target/debug/deps/lsp_lifecycle_test-6020d4a7d6bc36d5)
 
@@ -161,18 +167,18 @@ running 2 tests
 test test_lsp_initialize ... ok
 test test_lsp_did_open_and_change ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running tests/parity_contract_test.rs (target/debug/deps/parity_contract_test-87c595ae5521c60a)
 
 running 5 tests
 test test_classify_parity_gap ... ok
-test test_evaluate_parity_decisions ... ok
 test test_parity_fixture_and_verdict_instantiation ... ok
-test test_run_pm4py_workflow_runtime ... ok
+test test_evaluate_parity_decisions ... ok
 test test_run_pm4py_workflow_static ... ok
+test test_run_pm4py_workflow_runtime ... ok
 
-test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.89s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.51s
 
      Running tests/pm4py_bridge_test.rs (target/debug/deps/pm4py_bridge_test-41124ccbe38079ee)
 
@@ -180,27 +186,30 @@ running 2 tests
 test test_check_pm4py_static_mode ... ok
 test test_check_pm4py_runtime_mode ... ok
 
-test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.34s
 
      Running tests/receipts_fixtures_test.rs (target/debug/deps/receipts_fixtures_test-3435842c56df546e)
 
-running 4 tests
+running 6 tests
 test test_snapshot_id_determinism ... ok
+test test_fixture_missing_version_defaults_to_1 ... ok
 test test_fixture_persistence ... ok
 test test_receipt_persistence ... ok
 test test_corrupt_receipt_refusal ... ok
+test test_receipt_merkle_chain ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
      Running tests/static_analysis_test.rs (target/debug/deps/static_analysis_test-b19af2680f0891aa)
 
-running 4 tests
-test test_from_pm4py_import_syntax ... ok
+running 5 tests
 test test_missing_mappings ... ok
-test test_all_pm4py_capabilities_static_analysis ... ok
+test test_from_pm4py_import_syntax ... ok
+test test_pm4py_alias_format_dataframe_detection ... ok
 test test_pipeline_facts_extraction ... ok
+test test_all_pm4py_capabilities_static_analysis ... ok
 
-test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
 
      Running tests/stress_test.rs (target/debug/deps/stress_test-2900c304acfd598d)
 
@@ -245,7 +254,7 @@ test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 ### Cargo Bench
 - Command: `DYLD_FRAMEWORK_PATH=/Applications/Xcode.app/Contents/Developer/Library/Frameworks cargo bench -p pm4py-lsp`
-- Result: **Passed**
+- Result: **Passed** (All benchmarks compile and run successfully)
 - Output:
 ```
      Running benches/analysis_bench.rs (target/release/deps/analysis_bench-92b9fc5299b71c6d)
@@ -289,7 +298,7 @@ B7_conformance_vector_latency
 
 ## 2. Git Metadata & Physical Fixtures/Receipts Persistence
 
-- **Current HEAD Commit**: `ca22cc0da410f0b98b47895f8936157483235d82`
+- **Current HEAD Commit**: `df8a451a8b3032bd760d275dc57268630770d252`
 - **Fixture/Receipt Storage Status**:
   The physical fixtures under `crates/pm4py-lsp/fixtures/` and receipts under `crates/pm4py-lsp/receipts/` are test-generated (untracked) artifacts, rather than committed files.
 

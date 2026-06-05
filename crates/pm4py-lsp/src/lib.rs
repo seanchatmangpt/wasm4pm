@@ -80,10 +80,15 @@ impl Backend {
             tokio::time::sleep(Duration::from_millis(150)).await;
             pending_scans.lock().await.remove(&uri_clone);
             let diagnostics = diagnose_text(&text_clone);
-            client.publish_diagnostics(uri_clone, diagnostics, None).await;
+            client
+                .publish_diagnostics(uri_clone, diagnostics, None)
+                .await;
         });
 
-        self.pending_scans.lock().await.insert(uri, handle.abort_handle());
+        self.pending_scans
+            .lock()
+            .await
+            .insert(uri, handle.abort_handle());
     }
 
     #[allow(dead_code)]

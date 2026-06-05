@@ -31,9 +31,8 @@ impl PipelineFacts {
         let mut facts = PipelineFacts::default();
 
         // Check for pm4py imports (indented too)
-        let re_pm4py = RE_PM4PY.get_or_init(|| {
-            Regex::new(r"(?m)^[ \t]*import\s+pm4py(?:\s+as\s+(\w+))?").unwrap()
-        });
+        let re_pm4py = RE_PM4PY
+            .get_or_init(|| Regex::new(r"(?m)^[ \t]*import\s+pm4py(?:\s+as\s+(\w+))?").unwrap());
         for cap in re_pm4py.captures_iter(content) {
             facts.has_pm4py = true;
             if let Some(alias) = cap.get(1) {
@@ -50,9 +49,8 @@ impl PipelineFacts {
         }
 
         // Check for pandas aliases (indented too)
-        let re_pandas = RE_PANDAS.get_or_init(|| {
-            Regex::new(r"(?m)^[ \t]*import\s+pandas(?:\s+as\s+(\w+))?").unwrap()
-        });
+        let re_pandas = RE_PANDAS
+            .get_or_init(|| Regex::new(r"(?m)^[ \t]*import\s+pandas(?:\s+as\s+(\w+))?").unwrap());
         for cap in re_pandas.captures_iter(content) {
             if let Some(alias) = cap.get(1) {
                 facts.pandas_aliases.push(alias.as_str().to_string());

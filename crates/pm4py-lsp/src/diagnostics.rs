@@ -38,17 +38,29 @@ mod pm4py_diag_code_tests {
 
     #[test]
     fn test_as_str_variants() {
-        assert_eq!(Pm4pyDiagCode::UnformattedDataframe.as_str(), "unformatted_dataframe");
+        assert_eq!(
+            Pm4pyDiagCode::UnformattedDataframe.as_str(),
+            "unformatted_dataframe"
+        );
         assert_eq!(Pm4pyDiagCode::MissingMappings.as_str(), "missing_mappings");
-        assert_eq!(Pm4pyDiagCode::UnreceiptedOutput.as_str(), "unreceipted_output");
-        assert_eq!(Pm4pyDiagCode::ConformanceExport.as_str(), "conformance_export");
+        assert_eq!(
+            Pm4pyDiagCode::UnreceiptedOutput.as_str(),
+            "unreceipted_output"
+        );
+        assert_eq!(
+            Pm4pyDiagCode::ConformanceExport.as_str(),
+            "conformance_export"
+        );
         assert_eq!(Pm4pyDiagCode::MissingImport.as_str(), "missing_import");
     }
 
     #[test]
     fn test_display() {
         assert_eq!(Pm4pyDiagCode::MissingImport.to_string(), "missing_import");
-        assert_eq!(Pm4pyDiagCode::ConformanceExport.to_string(), "conformance_export");
+        assert_eq!(
+            Pm4pyDiagCode::ConformanceExport.to_string(),
+            "conformance_export"
+        );
     }
 }
 

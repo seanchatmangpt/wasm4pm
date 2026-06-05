@@ -3,8 +3,11 @@
 ## Verdict
 `PM4PY-LSP-003_ALIVE`
 
+## Commit Hash
+`c06dddfb2b0c9c4fcf93db0cc77a85c4c95d21be`
+
 ## Verification Statement
-`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates.`
+`PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates, with 52 non-stress tests passing in total.`
 
 ---
 
@@ -80,4 +83,4 @@
 - Verified via `tests/stress_test.rs`. Total 8 stress tests covering scale of documents/lines/receipts/fixtures/concurrency/deadlocks, all passing.
 
 ### Benchmark Dimensions (B1-B8)
-- Verified via `benches/` performance suites (analysis_bench, diagnostics_bench, receipts_bench, lsp_flow_bench). High throughput and low latency verified.
+- Verified via `benches/` performance suites (analysis_bench, diagnostics_bench, receipts_bench, lsp_flow_bench, pm4py_bench). All benchmarks compile and run successfully (PASS).

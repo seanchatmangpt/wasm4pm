@@ -186,7 +186,10 @@ fn test_receipt_merkle_chain() {
     let r2: Receipt = serde_json::from_str(&r2_content).unwrap();
     let r3: Receipt = serde_json::from_str(&r3_content).unwrap();
 
-    assert!(r1.prev_receipt_hash.is_none(), "first receipt has no predecessor");
+    assert!(
+        r1.prev_receipt_hash.is_none(),
+        "first receipt has no predecessor"
+    );
     assert_eq!(
         r2.prev_receipt_hash.as_deref(),
         Some(hash1.as_str()),
