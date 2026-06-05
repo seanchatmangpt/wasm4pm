@@ -298,7 +298,7 @@ B7_conformance_vector_latency
 
 ## 2. Git Metadata & Physical Fixtures/Receipts Persistence
 
-- **Current HEAD Commit**: `df8a451a8b3032bd760d275dc57268630770d252`
+- **Current HEAD Commit**: `ca8b6e1de68a1cf474445f1ec1008c524e778e66`
 - **Fixture/Receipt Storage Status**:
   The physical fixtures under `crates/pm4py-lsp/fixtures/` and receipts under `crates/pm4py-lsp/receipts/` are test-generated (untracked) artifacts, rather than committed files.
 
