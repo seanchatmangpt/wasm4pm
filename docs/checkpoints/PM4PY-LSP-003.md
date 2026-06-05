@@ -4,7 +4,7 @@
 `PM4PY-LSP-003_ALIVE`
 
 ## Commit Hash
-`c06dddfb2b0c9c4fcf93db0cc77a85c4c95d21be`
+`ca8b6e1de68a1cf474445f1ec1008c524e778e66`
 
 ## Verification Statement
 `PM4PY-LSP-003_ALIVE: pm4py-lsp is validated across unit, integration, e2e, chaos, stress, and benchmark gates, with 52 non-stress tests passing in total.`

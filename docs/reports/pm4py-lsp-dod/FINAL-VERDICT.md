@@ -4,7 +4,7 @@
 
 - **Date / Time**: 2026-06-05T03:09:21-07:00
 - **Verdict**: `PM4PY-LSP-003_ALIVE`
-- **Commit Hash**: `c06dddfb2b0c9c4fcf93db0cc77a85c4c95d21be`
+- **Commit Hash**: `ca8b6e1de68a1cf474445f1ec1008c524e778e66`
 - **PM4PY-LSP-002 Prior Verdict**: `PM4PY-LSP-002_ALIVE_WITH_RECEIPT_TAXONOMY_GAP`
 - **Parity / Scope Warning**: We do **not** claim full `wasm4pm` parity, nor do we claim support for all PM4Py workflows. This checkpoint is specific to `pm4py-lsp`.
 

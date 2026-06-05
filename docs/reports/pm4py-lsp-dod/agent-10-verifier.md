@@ -174,7 +174,7 @@ test result: ok. 0 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; fini
 ---
 
 ## 2. Integrity and Replay Authenticity Checks
-- **Commit HEAD**: `df8a451a8b3032bd760d275dc57268630770d252`
+- **Commit HEAD**: `ca8b6e1de68a1cf474445f1ec1008c524e778e66`
 - **Authenticity validation**: Persisted receipts and fixtures are loaded dynamically. Altering the receipt values or corrupting the files results in verification refusals as checked by the test suite, preventing mock-only compliance.
 - **Purity checks**: Confirms `vendors/tower-lsp-max` retains zero references to domain process-mining terminology, guaranteeing architectural cleanliness.
 
