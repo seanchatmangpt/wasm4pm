@@ -95,6 +95,7 @@ fn test_stress_s3_receipts_generated_verified() {
             snapshot_id,
             data,
             hash,
+            prev_receipt_hash: None,
         };
 
         persist_receipt(&receipt, base_path)
@@ -134,6 +135,7 @@ fn test_stress_s4_fixtures_generated_reloaded() {
         let fixture = Fixture {
             snapshot_id: snapshot_id.clone(),
             data,
+            version: 1,
         };
 
         persist_fixture(&fixture, base_path)

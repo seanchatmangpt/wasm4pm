@@ -1,5 +1,57 @@
 use crate::analysis::PipelineFacts;
 use serde::{Deserialize, Serialize};
+
+// ---------------------------------------------------------------------------
+// Pm4pyDiagCode — canonical diagnostic code enum for pm4py-lsp
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Pm4pyDiagCode {
+    UnformattedDataframe,
+    MissingMappings,
+    UnreceiptedOutput,
+    ConformanceExport,
+    MissingImport,
+}
+
+impl Pm4pyDiagCode {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::UnformattedDataframe => "unformatted_dataframe",
+            Self::MissingMappings => "missing_mappings",
+            Self::UnreceiptedOutput => "unreceipted_output",
+            Self::ConformanceExport => "conformance_export",
+            Self::MissingImport => "missing_import",
+        }
+    }
+}
+
+impl std::fmt::Display for Pm4pyDiagCode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+#[cfg(test)]
+mod pm4py_diag_code_tests {
+    use super::Pm4pyDiagCode;
+
+    #[test]
+    fn test_as_str_variants() {
+        assert_eq!(Pm4pyDiagCode::UnformattedDataframe.as_str(), "unformatted_dataframe");
+        assert_eq!(Pm4pyDiagCode::MissingMappings.as_str(), "missing_mappings");
+        assert_eq!(Pm4pyDiagCode::UnreceiptedOutput.as_str(), "unreceipted_output");
+        assert_eq!(Pm4pyDiagCode::ConformanceExport.as_str(), "conformance_export");
+        assert_eq!(Pm4pyDiagCode::MissingImport.as_str(), "missing_import");
+    }
+
+    #[test]
+    fn test_display() {
+        assert_eq!(Pm4pyDiagCode::MissingImport.to_string(), "missing_import");
+        assert_eq!(Pm4pyDiagCode::ConformanceExport.to_string(), "conformance_export");
+    }
+}
+
 use tower_lsp_max::lsp_types::{
     Diagnostic as LspDiagnostic, DiagnosticSeverity, NumberOrString, Position, Range,
 };

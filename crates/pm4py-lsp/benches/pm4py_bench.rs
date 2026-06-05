@@ -35,6 +35,7 @@ fn bench_snapshot_generation(c: &mut Criterion) {
                 black_box("{}"),
             );
             let fixture = Fixture {
+                version: 1,
                 snapshot_id,
                 data: serde_json::to_value(&facts).unwrap(),
             };
@@ -53,6 +54,7 @@ fn bench_fixture_write(c: &mut Criterion) {
             let snapshot_id =
                 SnapshotId::new(&["file:///event_pipeline.py"], &[STANDARD_FIXTURE], "{}");
             let fixture = Fixture {
+                version: 1,
                 snapshot_id,
                 data: serde_json::to_value(&facts).unwrap(),
             };

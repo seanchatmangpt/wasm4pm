@@ -1,5 +1,14 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::sync::OnceLock;
+
+static RE_PM4PY: OnceLock<Regex> = OnceLock::new();
+static RE_FROM_PM4PY: OnceLock<Regex> = OnceLock::new();
+static RE_PANDAS: OnceLock<Regex> = OnceLock::new();
+static RE_FROM_PANDAS: OnceLock<Regex> = OnceLock::new();
+static RE_CSV: OnceLock<Regex> = OnceLock::new();
+static RE_FORMAT: OnceLock<Regex> = OnceLock::new();
+static RE_CALLS: OnceLock<Regex> = OnceLock::new();
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct PipelineFacts {
@@ -22,7 +31,9 @@ impl PipelineFacts {
         let mut facts = PipelineFacts::default();
 
         // Check for pm4py imports (indented too)
-        let re_pm4py = Regex::new(r"(?m)^[ \t]*import\s+pm4py(?:\s+as\s+(\w+))?").unwrap();
+        let re_pm4py = RE_PM4PY.get_or_init(|| {
+            Regex::new(r"(?m)^[ \t]*import\s+pm4py(?:\s+as\s+(\w+))?").unwrap()
+        });
         for cap in re_pm4py.captures_iter(content) {
             facts.has_pm4py = true;
             if let Some(alias) = cap.get(1) {
@@ -32,13 +43,16 @@ impl PipelineFacts {
             }
         }
 
-        let re_from_pm4py = Regex::new(r"(?m)^[ \t]*from\s+pm4py\b").unwrap();
+        let re_from_pm4py =
+            RE_FROM_PM4PY.get_or_init(|| Regex::new(r"(?m)^[ \t]*from\s+pm4py\b").unwrap());
         if re_from_pm4py.is_match(content) {
             facts.has_pm4py = true;
         }
 
         // Check for pandas aliases (indented too)
-        let re_pandas = Regex::new(r"(?m)^[ \t]*import\s+pandas(?:\s+as\s+(\w+))?").unwrap();
+        let re_pandas = RE_PANDAS.get_or_init(|| {
+            Regex::new(r"(?m)^[ \t]*import\s+pandas(?:\s+as\s+(\w+))?").unwrap()
+        });
         for cap in re_pandas.captures_iter(content) {
             if let Some(alias) = cap.get(1) {
                 facts.pandas_aliases.push(alias.as_str().to_string());
@@ -46,7 +60,8 @@ impl PipelineFacts {
                 facts.pandas_aliases.push("pandas".to_string());
             }
         }
-        let re_from_pandas = Regex::new(r"(?m)^[ \t]*from\s+pandas\b").unwrap();
+        let re_from_pandas =
+            RE_FROM_PANDAS.get_or_init(|| Regex::new(r"(?m)^[ \t]*from\s+pandas\b").unwrap());
         if re_from_pandas.is_match(content) && !facts.pandas_aliases.contains(&"pandas".to_string())
         {
             facts.pandas_aliases.push("pandas".to_string());
@@ -56,7 +71,9 @@ impl PipelineFacts {
         }
 
         // CSV loads and variables (supporting read_csv, read_parquet, read_json, read_excel)
-        let re_csv = Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?(read_csv|read_parquet|read_json|read_excel)\s*\(\s*(?:filepath|filepath_or_buffer\s*=\s*)?(?:['"]([^'"]+)['"]|(\w+))"#).unwrap();
+        let re_csv = RE_CSV.get_or_init(|| {
+            Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?(read_csv|read_parquet|read_json|read_excel)\s*\(\s*(?:filepath|filepath_or_buffer\s*=\s*)?(?:['"]([^'"]+)['"]|(\w+))"#).unwrap()
+        });
         for cap in re_csv.captures_iter(content) {
             let var_name = cap.get(1).unwrap().as_str().to_string();
             facts.csv_vars.push(var_name);
@@ -68,8 +85,9 @@ impl PipelineFacts {
         }
 
         // Formatted vars (format_dataframe)
-        let re_format =
-            Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?format_dataframe\s*\(([^)]*)\)"#).unwrap();
+        let re_format = RE_FORMAT.get_or_init(|| {
+            Regex::new(r#"\b(\w+)\s*=\s*(?:(\w+)\.)?format_dataframe\s*\(([^)]*)\)"#).unwrap()
+        });
         for cap in re_format.captures_iter(content) {
             let var_name = cap.get(1).unwrap().as_str().to_string();
             facts.formatted_vars.push(var_name);
@@ -118,9 +136,10 @@ impl PipelineFacts {
         }
 
         // Discovery, Conformance, and Export/Write calls
-        let re_calls =
+        let re_calls = RE_CALLS.get_or_init(|| {
             Regex::new(r#"\b(?:(\w+)\.)?(discover_[a-zA-Z0-9_]+|conformance_[a-zA-Z0-9_]+|fitness_[a-zA-Z0-9_]+|precision_[a-zA-Z0-9_]+|write_[a-zA-Z0-9_]+|check_wf_net_soundness)\b"#)
-                .unwrap();
+                .unwrap()
+        });
         for cap in re_calls.captures_iter(content) {
             let prefix = cap.get(1).map(|m| m.as_str());
             let func = cap.get(2).unwrap().as_str();

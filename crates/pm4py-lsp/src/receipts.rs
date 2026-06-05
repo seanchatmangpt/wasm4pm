@@ -39,6 +39,8 @@ pub struct Receipt {
     pub snapshot_id: SnapshotId,
     pub data: serde_json::Value,
     pub hash: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub prev_receipt_hash: Option<String>,
 }
 
 pub fn persist_receipt(receipt: &Receipt, base_path: &Path) -> std::io::Result<()> {

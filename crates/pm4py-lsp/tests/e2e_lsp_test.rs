@@ -444,7 +444,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
     backend.did_open(open_params).await;
 
     // Give some time for background notifications to be processed
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(400)).await;
 
     // 4. Verify diagnostic appears.
     let unformatted_diag = {
@@ -517,7 +517,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
         .expect("Command execution should return a receipt");
 
     // Give some time for background tasks and file system writes
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(400)).await;
 
     // 7. Verify WorkspaceEdit applied (e.g. by checking the mock client or simulating it).
     {
@@ -593,7 +593,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
     backend.did_change(change_params).await;
 
     // Give some time for publishDiagnostics notification
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(400)).await;
 
     // 10. Verify diagnostic clears through lifecycle.
     {

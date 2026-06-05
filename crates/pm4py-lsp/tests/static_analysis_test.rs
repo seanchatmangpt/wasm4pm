@@ -104,3 +104,37 @@ net, im, fm = discover_petri_net_inductive(event_log)
         .discovery_calls
         .contains(&"discover_petri_net_inductive".to_string()));
 }
+
+#[test]
+fn test_pm4py_alias_format_dataframe_detection() {
+    // 'import pm4py as pm' — pm.format_dataframe must be detected and
+    // pm4py_aliases must record "pm" so callers can resolve pm.X → pm4py.X
+    let content = r#"
+import pm4py as pm
+import pandas as pd
+
+df = pd.read_csv('log.csv')
+event_log = pm.format_dataframe(df, case_id='case:concept:name', activity='concept:name', timestamp='time:timestamp')
+net, im, fm = pm.discover_petri_net_inductive(event_log)
+"#;
+    let facts = PipelineFacts::extract(content);
+    assert!(facts.has_pm4py);
+    assert!(
+        facts.pm4py_aliases.contains(&"pm".to_string()),
+        "alias 'pm' must be recorded from 'import pm4py as pm'"
+    );
+    assert_eq!(
+        facts.formatted_vars,
+        vec!["event_log"],
+        "pm.format_dataframe must be detected via alias"
+    );
+    assert!(
+        facts
+            .discovery_calls
+            .contains(&"pm.discover_petri_net_inductive".to_string()),
+        "pm.discover_X must be detected via alias"
+    );
+    assert!(!facts.missing_case_id);
+    assert!(!facts.missing_activity);
+    assert!(!facts.missing_timestamp);
+}

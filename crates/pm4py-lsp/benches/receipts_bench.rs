@@ -12,6 +12,7 @@ fn bench_fixture_write_latency(c: &mut Criterion) {
     let facts = pm4py_lsp::analysis::PipelineFacts::extract("import pm4py");
     let snapshot_id = SnapshotId::new(&["file:///event_pipeline.py"], &["import pm4py"], "{}");
     let fixture = Fixture {
+        version: 1,
         snapshot_id,
         data: serde_json::to_value(&facts).unwrap(),
     };
@@ -35,6 +36,7 @@ fn bench_receipt_verify_latency(c: &mut Criterion) {
         snapshot_id: SnapshotId::new(&["file:///test.py"], &["print('hello')"], "{}"),
         data,
         hash,
+        prev_receipt_hash: None,
     };
 
     let snapshot_dir = base_path

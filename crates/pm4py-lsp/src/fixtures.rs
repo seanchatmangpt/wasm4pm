@@ -7,6 +7,12 @@ use std::path::{Path, PathBuf};
 pub struct Fixture {
     pub snapshot_id: SnapshotId,
     pub data: serde_json::Value,
+    #[serde(default = "default_fixture_version")]
+    pub version: u32,
+}
+
+fn default_fixture_version() -> u32 {
+    1
 }
 
 pub fn persist_fixture(fixture: &Fixture, base_path: &Path) -> std::io::Result<()> {

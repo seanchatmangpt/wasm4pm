@@ -192,6 +192,7 @@ fn test_chaos_receipt_replay_attack() {
         snapshot_id: snapshot_id.clone(),
         data: data.clone(),
         hash: hash.clone(),
+        prev_receipt_hash: None,
     };
 
     // First persist — must succeed
@@ -225,6 +226,7 @@ fn test_chaos_receipt_replay_attack() {
         snapshot_id: snapshot_id.clone(),
         data: tampered_data,
         hash: hash.clone(), // original hash — intentional mismatch with tampered data
+        prev_receipt_hash: None,
     };
 
     // Overwriting is a file-system-level replay; verify_receipt_file must now
@@ -246,6 +248,7 @@ fn test_chaos_receipt_replay_attack() {
         snapshot_id: snapshot_id.clone(),
         data: serde_json::json!({ "event": "formatDataFrame", "var": "TAMPERED" }),
         hash: tampered_hash,
+        prev_receipt_hash: None,
     };
     persist_receipt(&legit_tampered, base).expect("persist must succeed");
 

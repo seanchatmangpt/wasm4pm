@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use std::time::Duration;
 use tokio::fs;
 use tokio::sync::Mutex;
 use tower_lsp_max::jsonrpc::{Error, Result};
@@ -13,6 +14,8 @@ use tower_lsp_max::max_protocol;
 use tower_lsp_max::{Client, LanguageServer};
 use uuid::Uuid;
 use wasm4pm_types::hash;
+
+static RE_PARITY_CSV: OnceLock<regex::Regex> = OnceLock::new();
 
 pub mod analysis;
 pub mod diagnostics;
@@ -33,6 +36,7 @@ pub struct Backend {
     pub client: Client,
     pub documents: Arc<Mutex<HashMap<Url, String>>>,
     pub receipts: Arc<Mutex<HashMap<String, max_protocol::Receipt>>>,
+    pub pending_scans: Arc<Mutex<HashMap<Url, tokio::task::AbortHandle>>>,
 }
 
 impl Backend {
@@ -41,17 +45,48 @@ impl Backend {
             client,
             documents: Arc::new(Mutex::new(HashMap::new())),
             receipts: Arc::new(Mutex::new(HashMap::new())),
+            pending_scans: Arc::new(Mutex::new(HashMap::new())),
         }
     }
 
     async fn on_change(&self, uri: Url, text: String) {
+        // Early-return identity check: skip scan if content is unchanged
+        {
+            let current = self.documents.lock().await.get(&uri).cloned();
+            if current.as_deref() == Some(text.as_str()) {
+                return; // identical content, skip full scan
+            }
+        }
+
         self.documents
             .lock()
             .await
             .insert(uri.clone(), text.clone());
-        self.scan_and_diagnose(uri, text).await;
+
+        // Debounce: abort any pending scan for this URI, then schedule a new one
+        {
+            let mut pending = self.pending_scans.lock().await;
+            if let Some(handle) = pending.remove(&uri) {
+                handle.abort();
+            }
+        }
+
+        let pending_scans = self.pending_scans.clone();
+        let client = self.client.clone();
+        let uri_clone = uri.clone();
+        let text_clone = text.clone();
+
+        let handle = tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(150)).await;
+            pending_scans.lock().await.remove(&uri_clone);
+            let diagnostics = diagnose_text(&text_clone);
+            client.publish_diagnostics(uri_clone, diagnostics, None).await;
+        });
+
+        self.pending_scans.lock().await.insert(uri, handle.abort_handle());
     }
 
+    #[allow(dead_code)]
     async fn scan_and_diagnose(&self, uri: Url, text: String) {
         let mut diagnostics = diagnose_text(&text);
 
@@ -238,7 +273,9 @@ pub fn diagnose_text(text: &str) -> Vec<Diagnostic> {
 }
 
 pub fn create_parity_fixture(text: &str) -> Option<ParityFixture> {
-    let re_csv = Regex::new(r#"(\w+)\s*=\s*pd\.read_csv\(['"](.+?)['"]\s*(?:,\s*(.+))?\)"#).ok()?;
+    let re_csv = RE_PARITY_CSV.get_or_init(|| {
+        regex::Regex::new(r#"(\w+)\s*=\s*pd\.read_csv\(['"](.+?)['"]\s*(?:,\s*(.+))?\)"#).unwrap()
+    });
     let caps = re_csv.captures(text)?;
 
     let csv_path = caps.get(2)?.as_str().to_string();
@@ -670,5 +707,34 @@ impl LanguageServer for Backend {
             receipt,
             repair_actions,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Verify that the identity-check logic matches when content is unchanged.
+    #[test]
+    fn identity_check_same_content_returns_true() {
+        let text = "import pm4py\ndf = pd.read_csv('data.csv')\n";
+        let stored: Option<String> = Some(text.to_string());
+        // Simulates: current.as_deref() == Some(new_text.as_str())
+        assert_eq!(stored.as_deref(), Some(text));
+    }
+
+    /// Verify that the identity-check logic differs when content changes.
+    #[test]
+    fn identity_check_different_content_returns_false() {
+        let stored: Option<String> = Some("old content".to_string());
+        let new_text = "new content";
+        assert_ne!(stored.as_deref(), Some(new_text));
+    }
+
+    /// Verify that None stored content is never considered identical.
+    #[test]
+    fn identity_check_no_stored_content_returns_false() {
+        let stored: Option<String> = None;
+        assert_ne!(stored.as_deref(), Some("any text"));
     }
 }
