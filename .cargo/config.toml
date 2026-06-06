@@ -10,3 +10,6 @@ rustflags = [
     "-A", "unused_comparisons",
     "-A", "unused_attributes",
 ]
+
+[env]
+PYO3_PYTHON = "python3.12"

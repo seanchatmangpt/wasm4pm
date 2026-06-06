@@ -9,8 +9,8 @@ documentation = "https://docs.rs/wasm4pm-algos"
 readme = "README.md"
 
 [dependencies]
-wasm4pm-types = { workspace = true }
-wasm4pm-compat = { path = "../../../wasm4pm-compat" }
+wasm4pm-compat.workspace = true
+wasm4pm-types.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 hashbrown = { workspace = true }

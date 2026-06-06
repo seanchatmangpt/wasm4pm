@@ -74,7 +74,7 @@ fn build_allow_receipt() -> (Kernel, QueryAtom8, Decision) {
 
     let answers = match k.query(&query) {
         QueryResult::Answered(v) => v,
-        _ => panic!("expected Answered"),
+        _ => unreachable!("expected Answered"),
     };
     assert_eq!(answers.len(), 1);
 
@@ -488,7 +488,7 @@ fn cf3_rule_derivation_includes_rule_proof_node() {
 
     let answers = match k.query(&query) {
         QueryResult::Answered(v) => v,
-        _ => panic!("expected Answered"),
+        _ => unreachable!("expected Answered"),
     };
 
     assert!(!answers.is_empty());
@@ -519,7 +519,7 @@ fn cf3_deny_emits_only_missing_fact_nodes() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert_eq!(decision.kind, DecisionKind::Deny);
@@ -552,7 +552,7 @@ fn cf4_deny_receipt_hash_is_nonzero() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert_ne!(decision.receipt.receipt_hash, [0u8; 32]);
@@ -566,12 +566,12 @@ fn cf4_deny_receipt_is_deterministic() {
 
     let decision1 = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     let decision2 = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert_eq!(
@@ -590,7 +590,7 @@ fn cf4_deny_proof_is_nonempty() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert!(!decision.proof.is_empty());

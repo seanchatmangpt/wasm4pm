@@ -172,15 +172,15 @@ fn test_loop_round_trip_fidelity() {
 
 #[test]
 fn test_choice_graph_sub_model_nesting() {
-    use wasm4pm_types::{ChoiceGraph, ChoiceGraphNode};
+    use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
 
     // Build a 4-node ChoiceGraph: Start(0) → P(1) → End(3)
     //                                      → Q(2) → End(3)
     let nodes = vec![
-        ChoiceGraphNode::Start,
-        ChoiceGraphNode::Activity("P".into()),
-        ChoiceGraphNode::Activity("Q".into()),
-        ChoiceGraphNode::End,
+        StandaloneChoiceGraphNode::Start,
+        StandaloneChoiceGraphNode::Activity("P".into()),
+        StandaloneChoiceGraphNode::Activity("Q".into()),
+        StandaloneChoiceGraphNode::End,
     ];
     let edges = vec![
         (0, 1), // Start → P
@@ -188,7 +188,7 @@ fn test_choice_graph_sub_model_nesting() {
         (1, 3), // P → End
         (2, 3), // Q → End
     ];
-    let cg = ChoiceGraph::new(nodes, edges).expect("valid 2-branch ChoiceGraph");
+    let cg = ChoiceGraph::new(nodes, edges);
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);

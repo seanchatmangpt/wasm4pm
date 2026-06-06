@@ -29,8 +29,8 @@ fn bench_receipt_verify_latency(c: &mut Criterion) {
     let base_path = dir.path().to_path_buf();
 
     let data = serde_json::json!({"test": "value"});
-    let canonical = wasm4pm_types::hash::canonical_json(&data).unwrap();
-    let hash = wasm4pm_types::hash::blake3_string(&canonical);
+    let canonical = wasm4pm_compat::hash::canonical_json(&data).unwrap();
+    let hash = wasm4pm_compat::hash::blake3_string(&canonical);
     let receipt = Receipt {
         id: "test-receipt-id".to_string(),
         snapshot_id: SnapshotId::new(&["file:///test.py"], &["print('hello')"], "{}"),

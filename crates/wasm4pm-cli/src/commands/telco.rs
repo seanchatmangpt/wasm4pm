@@ -114,28 +114,59 @@ fn dispatch(count: usize) -> Result<()> {
             .progress_chars("#>-"),
     );
 
-    for i in 0..count {
-        // In a real implementation, this would be where we call wasm4pm-algos
-        // For now, we simulate the processing with a small delay for visualization
-        // but report the theoretical nanosecond timing.
+    let law = wasm4pm_algos::prefix_conformance::law::OrderingLaw {
+        law_version: "1.0.0".to_string(),
+        law_id: "telco_sim".to_string(),
+        case_key: vec![],
+        activities: vec!["A".to_string()],
+        precedence: vec![],
+        accepting: vec![],
+        initial: vec!["A".to_string()],
+    };
+    let mut oracle = wasm4pm_algos::prefix_conformance::PrefixOracle::new(&law);
 
-        if i % 10 == 0 {
-            pb.set_message(format!("Cycle: {} ns", 34));
+    let start_time = std::time::Instant::now();
+
+    for i in 0..count {
+        let ev = wasm4pm_algos::prefix_conformance::PrefixEvent {
+            activity: "A".to_string(),
+            time_ms: i as i64,
+            case_id: format!("case_{}", i % 100),
+            tape_index: i,
+        };
+        oracle.observe(&ev);
+
+        if i % 1000 == 0 {
+            pb.set_message(format!("Routing..."));
         }
 
-        thread::sleep(Duration::from_millis(20)); // Artificially slow for the user to see the progress
+        // Artificial delay removed; we now measure actual theoretical nanosecond timing
         pb.inc(1);
     }
 
     pb.finish_with_message("Dispatch complete!");
+
+    let elapsed_ns = start_time.elapsed().as_nanos();
+    let ns_per_event = if count > 0 {
+        elapsed_ns / count as u128
+    } else {
+        0
+    };
+    let throughput = if elapsed_ns > 0 {
+        (count as u128 * 1_000_000_000) / elapsed_ns
+    } else {
+        0
+    };
+
     println!(
         "\n{}",
         "SUCCESS: All events routed through the Vision 2030 layer."
             .bold()
             .green()
     );
-    println!("Total execution time (simulated): {} ms", count * 20);
-    println!("Theoretical throughput: {} events/sec", 1_000_000_000 / 34);
+    println!("Total execution time: {} ns", elapsed_ns);
+    println!("Actual nanoseconds per event: {} ns", ns_per_event);
+    println!("Actual throughput: {} events/sec", throughput);
 
     Ok(())
 }

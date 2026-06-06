@@ -1348,4 +1348,3 @@ mod circuit_breaker_config_tests {
         );
     }
 }
-

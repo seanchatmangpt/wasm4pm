@@ -1,5 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use wasm4pm_types::*;
+use wasm4pm_compat::legacy_conformance::*;
+use wasm4pm_compat::legacy_error::*;
+use wasm4pm_compat::legacy_event_log::*;
+use wasm4pm_compat::legacy_models::*;
 
 /// Alpha+ Miner - discovers Petri nets with implicit places handling
 /// Implements key relations: →, -|→, ||

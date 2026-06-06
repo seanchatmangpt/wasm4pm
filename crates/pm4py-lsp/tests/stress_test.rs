@@ -87,8 +87,8 @@ fn test_stress_s3_receipts_generated_verified() {
             "status": "ok",
             "type": "receipt_test"
         });
-        let canonical = wasm4pm_types::hash::canonical_json(&data).unwrap();
-        let hash = wasm4pm_types::hash::blake3_string(&canonical);
+        let canonical = wasm4pm_compat::hash::canonical_json(&data).unwrap();
+        let hash = wasm4pm_compat::hash::blake3_string(&canonical);
         let receipt_id = format!("receipt_{}", i);
         let receipt = Receipt {
             id: receipt_id.clone(),
@@ -99,7 +99,7 @@ fn test_stress_s3_receipts_generated_verified() {
         };
 
         persist_receipt(&receipt, base_path)
-            .unwrap_or_else(|e| panic!("S3: Failed to persist receipt at {}: {}", i, e));
+            .unwrap_or_else(|e| unreachable!("S3: Failed to persist receipt at {}: {}", i, e));
 
         let receipt_path = base_path
             .join("receipts/pm4py-lsp")
@@ -139,10 +139,10 @@ fn test_stress_s4_fixtures_generated_reloaded() {
         };
 
         persist_fixture(&fixture, base_path)
-            .unwrap_or_else(|e| panic!("S4: Failed to persist fixture at {}: {}", i, e));
+            .unwrap_or_else(|e| unreachable!("S4: Failed to persist fixture at {}: {}", i, e));
 
         let reloaded = reload_fixture(&snapshot_id, base_path)
-            .unwrap_or_else(|e| panic!("S4: Failed to reload fixture at {}: {}", i, e));
+            .unwrap_or_else(|e| unreachable!("S4: Failed to reload fixture at {}: {}", i, e));
 
         assert_eq!(
             reloaded.snapshot_id, fixture.snapshot_id,

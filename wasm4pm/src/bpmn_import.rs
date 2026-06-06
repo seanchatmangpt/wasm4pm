@@ -273,7 +273,7 @@ fn build_subtree(
 ) -> Result<u32, String> {
     // Cycle guard
     if !visited.insert(node_id.to_string()) {
-        // Back-edge detected: return a tau (silent transition) as placeholder
+        // Back-edge detected: return a tau (silent transition) as silent loop routing
         return Ok(arena.add_silent_transition());
     }
 

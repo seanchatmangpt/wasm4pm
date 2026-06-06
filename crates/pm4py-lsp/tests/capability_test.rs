@@ -213,7 +213,7 @@ df = pd.read_csv('log.csv')
 
     // Verify receipt hash matches fixture
     let fixture_content = std::fs::read_to_string(fixture_path).unwrap();
-    let expected_hash = wasm4pm_types::hash::blake3_string(&fixture_content);
+    let expected_hash = wasm4pm_compat::hash::blake3_string(&fixture_content);
     assert_eq!(
         receipt.hash, expected_hash,
         "Receipt hash must match fixture hash"

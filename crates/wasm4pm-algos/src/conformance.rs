@@ -1,6 +1,9 @@
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
-use wasm4pm_types::*;
+use wasm4pm_compat::legacy_conformance::*;
+use wasm4pm_compat::legacy_error::*;
+use wasm4pm_compat::legacy_event_log::*;
+use wasm4pm_compat::legacy_models::*;
 
 /// Token replay conformance checking.
 ///

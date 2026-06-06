@@ -105,7 +105,7 @@ mod tests {
         let (k, q) = build_kernel_and_query();
         let r = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(replay(&k, &q, &r), ReplayStatus::Verified);
     }
@@ -115,7 +115,7 @@ mod tests {
         let (k, q) = build_kernel_and_query();
         let mut r = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         // Tamper with proof root, recompute receipt hash to keep integrity ok.
         r.proof_root[0] ^= 0xFF;
@@ -128,7 +128,7 @@ mod tests {
         let (k, q) = build_kernel_and_query();
         let mut r = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         r.receipt_hash[0] ^= 0xFF;
         assert_eq!(replay(&k, &q, &r), ReplayStatus::ReceiptInvalid);
@@ -139,7 +139,7 @@ mod tests {
         let (k, q) = build_kernel_and_query();
         let mut r = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         r.engine_version = "0.0.0-not-this-engine".into();
         r.receipt_hash = r.compute_hash();

@@ -9,7 +9,10 @@ use walkdir::WalkDir;
 fn test_validate_pm4py_repo() {
     let repo_path = Path::new("../../vendors/pm4py");
     if !repo_path.exists() {
-        println!("pm4py repo not found at {:?}, skipping validation", repo_path);
+        println!(
+            "pm4py repo not found at {:?}, skipping validation",
+            repo_path
+        );
         return;
     }
 
@@ -50,7 +53,9 @@ fn test_validate_pm4py_repo() {
                             let mut combined_code = String::new();
                             if let Some(cells) = json.get("cells").and_then(|v| v.as_array()) {
                                 for cell in cells {
-                                    if cell.get("cell_type").and_then(|v| v.as_str()) == Some("code") {
+                                    if cell.get("cell_type").and_then(|v| v.as_str())
+                                        == Some("code")
+                                    {
                                         if let Some(source) = cell.get("source") {
                                             if let Some(lines) = source.as_array() {
                                                 for line in lines {

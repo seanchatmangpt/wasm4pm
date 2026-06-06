@@ -25,8 +25,8 @@ fn test_receipt_persistence() {
 
     let snapshot_id = SnapshotId::new(&["file:///a.py"], &["import pm4py"], "{}");
     let data = json!({"status": "ok"});
-    let canonical = wasm4pm_types::hash::canonical_json(&data).unwrap();
-    let hash = wasm4pm_types::hash::blake3_string(&canonical);
+    let canonical = wasm4pm_compat::hash::canonical_json(&data).unwrap();
+    let hash = wasm4pm_compat::hash::blake3_string(&canonical);
     let receipt = Receipt {
         id: "receipt1".to_string(),
         snapshot_id: snapshot_id.clone(),
@@ -51,8 +51,8 @@ fn test_corrupt_receipt_refusal() {
 
     let snapshot_id = SnapshotId::new(&["file:///a.py"], &["import pm4py"], "{}");
     let data = json!({"status": "ok"});
-    let canonical = wasm4pm_types::hash::canonical_json(&data).unwrap();
-    let hash = wasm4pm_types::hash::blake3_string(&canonical);
+    let canonical = wasm4pm_compat::hash::canonical_json(&data).unwrap();
+    let hash = wasm4pm_compat::hash::blake3_string(&canonical);
     let mut receipt = Receipt {
         id: "receipt1".to_string(),
         snapshot_id: snapshot_id.clone(),
@@ -77,7 +77,7 @@ fn test_corrupt_receipt_refusal() {
     );
 
     // Reset hash, corrupt the data
-    receipt.hash = wasm4pm_types::hash::blake3_string(&canonical);
+    receipt.hash = wasm4pm_compat::hash::blake3_string(&canonical);
     receipt.data = json!({"status": "tampered_data"});
     persist_receipt(&receipt, base_path).unwrap();
     assert!(
@@ -131,8 +131,8 @@ fn test_receipt_merkle_chain() {
 
     // Receipt 1 — no predecessor
     let data1 = json!({"step": 1});
-    let canonical1 = wasm4pm_types::hash::canonical_json(&data1).unwrap();
-    let hash1 = wasm4pm_types::hash::blake3_string(&canonical1);
+    let canonical1 = wasm4pm_compat::hash::canonical_json(&data1).unwrap();
+    let hash1 = wasm4pm_compat::hash::blake3_string(&canonical1);
     let receipt1 = Receipt {
         id: "chain-receipt-1".to_string(),
         snapshot_id: snapshot_id.clone(),
@@ -144,8 +144,8 @@ fn test_receipt_merkle_chain() {
 
     // Receipt 2 — prev = hash of receipt 1
     let data2 = json!({"step": 2});
-    let canonical2 = wasm4pm_types::hash::canonical_json(&data2).unwrap();
-    let hash2 = wasm4pm_types::hash::blake3_string(&canonical2);
+    let canonical2 = wasm4pm_compat::hash::canonical_json(&data2).unwrap();
+    let hash2 = wasm4pm_compat::hash::blake3_string(&canonical2);
     let receipt2 = Receipt {
         id: "chain-receipt-2".to_string(),
         snapshot_id: snapshot_id.clone(),
@@ -157,8 +157,8 @@ fn test_receipt_merkle_chain() {
 
     // Receipt 3 — prev = hash of receipt 2
     let data3 = json!({"step": 3});
-    let canonical3 = wasm4pm_types::hash::canonical_json(&data3).unwrap();
-    let hash3 = wasm4pm_types::hash::blake3_string(&canonical3);
+    let canonical3 = wasm4pm_compat::hash::canonical_json(&data3).unwrap();
+    let hash3 = wasm4pm_compat::hash::blake3_string(&canonical3);
     let receipt3 = Receipt {
         id: "chain-receipt-3".to_string(),
         snapshot_id: snapshot_id.clone(),

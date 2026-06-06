@@ -2,7 +2,7 @@
 use fake::Fake;
 use proptest::prelude::*;
 use wasm4pm::drift_manager::{CircuitState, StreamCircuitBreaker, TraceSnapshot};
-use wasm4pm_types::import::xes::{XESImportOptions, XESParsingTraceStream};
+use wasm4pm_compat::legacy_import::xes::{XESImportOptions, XESParsingTraceStream};
 
 #[cfg(test)]
 mod tests {
@@ -83,7 +83,7 @@ mod tests {
     #[test]
     fn test_adversarial_ocel_density_bounds() {
         use wasm4pm::oc_orchestrator::OntologyDiscoveryAgent;
-        use wasm4pm_types::ocel::{OCELObject, OCELRelationship, OCEL};
+        use wasm4pm_compat::legacy_ocel::{OCELObject, OCELRelationship, OCEL};
 
         let mut agent = OntologyDiscoveryAgent::new();
         let mut objects = Vec::new();
@@ -162,8 +162,8 @@ mod tests {
     /// Counterfactual: What if the knowledge base has conflicting/poisoned date formats?
     #[test]
     fn test_adversarial_poisoned_knowledge_base() {
-        use wasm4pm_types::import::persistence::IngestionKnowledgeBase;
-        use wasm4pm_types::import::timestamp_utils::parse_timestamp;
+        use wasm4pm_compat::legacy_import::persistence::IngestionKnowledgeBase;
+        use wasm4pm_compat::legacy_import::timestamp_utils::parse_timestamp;
 
         let mut kb = IngestionKnowledgeBase::new();
         kb.learn_date_format(
@@ -190,7 +190,7 @@ mod tests {
     #[test]
     fn test_adversarial_malformed_ocel_mapping() {
         use wasm4pm::oc_orchestrator::OntologyDiscoveryAgent;
-        use wasm4pm_types::ocel::{OCELObject, OCEL};
+        use wasm4pm_compat::legacy_ocel::{OCELObject, OCEL};
 
         let mut agent = OntologyDiscoveryAgent::new();
         let objects = vec![OCELObject {

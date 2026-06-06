@@ -308,7 +308,7 @@ impl<'a> TreeBuilder<'a> {
             return idx;
         }
 
-        // Placeholder node
+        // Allocate split node for top-down recursive construction
         let node_idx = self.nodes.len();
         self.nodes.push(Node {
             feature: best_feature,

@@ -184,8 +184,8 @@ fn test_chaos_receipt_replay_attack() {
 
     let data = serde_json::json!({ "event": "formatDataFrame", "var": "df" });
     let canonical =
-        wasm4pm_types::hash::canonical_json(&data).expect("canonical_json must succeed");
-    let hash = wasm4pm_types::hash::blake3_string(&canonical);
+        wasm4pm_compat::hash::canonical_json(&data).expect("canonical_json must succeed");
+    let hash = wasm4pm_compat::hash::blake3_string(&canonical);
 
     let receipt = Receipt {
         id: "receipt-replay-test-001".to_string(),
@@ -217,8 +217,8 @@ fn test_chaos_receipt_replay_attack() {
     // reject this or the hash verification must detect the tamper.
     let tampered_data = serde_json::json!({ "event": "formatDataFrame", "var": "TAMPERED" });
     let tampered_canonical =
-        wasm4pm_types::hash::canonical_json(&tampered_data).expect("canonical_json must succeed");
-    let tampered_hash = wasm4pm_types::hash::blake3_string(&tampered_canonical);
+        wasm4pm_compat::hash::canonical_json(&tampered_data).expect("canonical_json must succeed");
+    let tampered_hash = wasm4pm_compat::hash::blake3_string(&tampered_canonical);
 
     // Craft a receipt that carries the original hash but tampered data
     let forged_receipt = Receipt {

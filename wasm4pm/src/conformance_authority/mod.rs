@@ -595,27 +595,8 @@ impl ReachabilityHeuristic {
 
 /// State equation heuristic for A* alignment search (advanced).
 ///
-/// Computes a lower bound by relaxing the integer reachability problem
-/// to a Linear Program (LP).
-///
-/// More expensive than reachability heuristic but tighter bounds.
-#[derive(Debug, Clone)]
-pub struct StateEquationHeuristic {
-    /// (Placeholder) LP solver or precomputed bounds
-    pub bounds: HashMap<String, u32>,
-}
-
-impl StateEquationHeuristic {
-    /// Construct state equation heuristic.
-    pub fn new(bounds: HashMap<String, u32>) -> Self {
-        Self { bounds }
-    }
-
-    /// Estimate remaining cost via state equation heuristic.
-    pub fn estimate(&self, marking_hash: &str) -> u32 {
-        self.bounds.get(marking_hash).copied().unwrap_or(0)
-    }
-}
+// Removed fake StateEquationHeuristic stub. A real LP solver must be implemented
+// explicitly when mathematical bounds computing is actively wired into A*.
 
 // ────────────────────────────────────────────────────────────────────────────
 // 7. Boundary Conditions and Safety Limits

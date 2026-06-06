@@ -213,7 +213,7 @@ async fn test_e2e_code_action_repairs_diagnostic() {
 
     let format_action = match &actions[0] {
         CodeActionOrCommand::CodeAction(ca) => ca,
-        _ => panic!("expected CodeAction"),
+        _ => unreachable!("expected CodeAction"),
     };
     assert!(
         format_action.title.contains("format_dataframe"),
@@ -499,7 +499,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
     );
     let format_action = match &code_actions[0] {
         CodeActionOrCommand::CodeAction(action) => action,
-        _ => panic!("Expected a CodeAction, not a Command"),
+        _ => unreachable!("Expected a CodeAction, not a Command"),
     };
     assert_eq!(
         format_action.command.as_ref().unwrap().command,

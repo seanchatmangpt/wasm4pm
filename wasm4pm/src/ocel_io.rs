@@ -538,7 +538,7 @@ fn is_valid_iso8601(s: &str) -> bool {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_ndjson(ndjson: &str) -> Result<String, JsValue> {
-    let ocel_types_struct = wasm4pm_types::import::ocel::import_ocel_ndjson(ndjson)
+    let ocel_types_struct = wasm4pm_compat::legacy_import::ocel::import_ocel_ndjson(ndjson)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse NDJSON: {}", e)))?;
 
     let serialized = serde_json::to_string(&ocel_types_struct)

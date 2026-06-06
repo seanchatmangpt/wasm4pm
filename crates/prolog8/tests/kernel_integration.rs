@@ -86,7 +86,7 @@ fn known_fact_query_yields_allow_with_proof_and_receipt() {
 
     let answers = match k.query(&q) {
         QueryResult::Answered(v) => v,
-        other => panic!("expected Answered, got {other:?}"),
+        other => unreachable!("expected Answered, got {other:?}"),
     };
 
     assert_eq!(answers.len(), 1);
@@ -120,7 +120,7 @@ fn unknown_fact_query_yields_deny_with_negative_proof() {
 
     let denied = match k.query(&q) {
         QueryResult::Denied(d) => d,
-        other => panic!("expected Denied, got {other:?}"),
+        other => unreachable!("expected Denied, got {other:?}"),
     };
 
     assert_eq!(denied.kind, DecisionKind::Deny);
@@ -138,11 +138,11 @@ fn receipt_hash_is_deterministic_across_runs() {
 
     let h1 = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.receipt_hash,
-        _ => panic!(),
+        _ => unreachable!(),
     };
     let h2 = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.receipt_hash,
-        _ => panic!(),
+        _ => unreachable!(),
     };
 
     assert_eq!(h1, h2);
@@ -181,7 +181,7 @@ fn one_step_rule_chain_yields_allow_with_rule_proof_node() {
     let q = query_for(&k, PredicateId(2), "alice", "bob", ProofMode::Both);
     let answers = match k.query(&q) {
         QueryResult::Answered(v) => v,
-        other => panic!("expected Answered, got {other:?}"),
+        other => unreachable!("expected Answered, got {other:?}"),
     };
 
     assert!(!answers.is_empty());
@@ -206,7 +206,7 @@ fn replay_verifies_fresh_allow_receipt() {
 
     let receipt = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.clone(),
-        _ => panic!(),
+        _ => unreachable!(),
     };
 
     assert_eq!(replay(&k, &q, &receipt), ReplayStatus::Verified);
@@ -219,7 +219,7 @@ fn replay_detects_tampered_receipt_hash() {
 
     let mut receipt = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.clone(),
-        _ => panic!(),
+        _ => unreachable!(),
     };
 
     // Flip one byte in the receipt_hash — integrity check must fire.
@@ -234,7 +234,7 @@ fn replay_detects_tampered_proof_root() {
 
     let mut receipt = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.clone(),
-        _ => panic!(),
+        _ => unreachable!(),
     };
 
     // Alter proof_root, recompute the receipt hash so integrity passes,
@@ -330,7 +330,7 @@ fn output_mask_returns_requested_bindings_in_decision() {
             let bob = k.catalog.term_id("bob").unwrap();
             assert_eq!(answers[0].bindings[0], bob);
         }
-        other => panic!("expected Answered, got {other:?}"),
+        other => unreachable!("expected Answered, got {other:?}"),
     }
 }
 
@@ -358,7 +358,7 @@ fn unbound_query_returns_all_matching_rows() {
                 assert_eq!(ans.bindings.len(), 2);
             }
         }
-        other => panic!("expected Answered, got {other:?}"),
+        other => unreachable!("expected Answered, got {other:?}"),
     }
 }
 
@@ -412,7 +412,7 @@ fn kernel_returns_all_answers_beyond_wasm_max() {
                  truncation to MAX_ANSWERS (128) is the WASM boundary's responsibility"
             );
         }
-        other => panic!("expected Answered, got {other:?}"),
+        other => unreachable!("expected Answered, got {other:?}"),
     }
 }
 
@@ -458,7 +458,7 @@ fn replay_with_wrong_facts_yields_mismatch_not_panic() {
 
     let receipt = match k.query(&q) {
         QueryResult::Answered(a) => a[0].receipt.clone(),
-        _ => panic!(),
+        _ => unreachable!(),
     };
 
     // Build a second kernel with a DIFFERENT fact (bob→carol instead of alice→bob).

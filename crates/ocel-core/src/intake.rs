@@ -170,7 +170,7 @@ mod tests {
                 assert_eq!(obj.id, "o1");
                 assert_eq!(obj.object_type, "order");
             }
-            _ => panic!("Expected object"),
+            _ => unreachable!("Expected object"),
         }
 
         match &results[1] {
@@ -179,7 +179,7 @@ mod tests {
                 assert_eq!(evt.relationships.len(), 1); // o1 kept, o2 dropped
                 assert_eq!(evt.relationships[0].object_id, "o1");
             }
-            _ => panic!("Expected event"),
+            _ => unreachable!("Expected event"),
         }
     }
 }

@@ -57,14 +57,14 @@ pub fn guard_zero_denominator(numerator: u32, denominator: u32) -> f64 {
 /// Empty trace fitness should be well-defined:
 /// - If model accepts empty traces (epsilon language): fitness = 1.0
 /// - If model requires ≥1 event: fitness < 1.0
-pub fn guard_empty_trace_fitness(event_count: usize, _is_conforming: bool) -> f64 {
+pub fn guard_empty_trace_fitness(event_count: usize, _is_conforming: bool) -> Option<f64> {
     if event_count == 0 {
         // Empty trace: 0.5 conformance (half of min fitness for 1-event trace)
         // This ensures empty traces are penalized but not catastrophic
-        return 0.5;
+        return Some(0.5);
     }
-    // Non-empty trace: normal fitness computation
-    0.0 // Placeholder; actual fitness computed elsewhere
+    // Non-empty trace: guard does not apply, caller must compute fitness.
+    None
 }
 
 /// Guard 5: Degenerate model (single activity)
@@ -155,8 +155,9 @@ mod tests {
 
     #[test]
     fn guard4_empty_trace_fitness() {
-        assert_eq!(guard_empty_trace_fitness(0, true), 0.5);
-        assert_eq!(guard_empty_trace_fitness(0, false), 0.5);
+        assert_eq!(guard_empty_trace_fitness(0, true), Some(0.5));
+        assert_eq!(guard_empty_trace_fitness(0, false), Some(0.5));
+        assert_eq!(guard_empty_trace_fitness(1, true), None);
     }
 
     #[test]

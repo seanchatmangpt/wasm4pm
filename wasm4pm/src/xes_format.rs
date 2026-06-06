@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
-// Conversion from wasm4pm_types::EventLog (parser output) → models::EventLog
+// Conversion from wasm4pm_compat::legacy_event_log::EventLog (parser output) → models::EventLog
 // ---------------------------------------------------------------------------
 //
 // The wasm4pm-types crate carries a port of the `process_mining` crate's
@@ -108,7 +108,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
     }
     #[cfg(feature = "import")]
     {
-        use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
+        use wasm4pm_compat::legacy_import::xes::{import_xes, XESImportOptions};
         let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
         match import_xes(reader, XESImportOptions::default()) {
             Ok(types_log) => {

@@ -161,9 +161,21 @@ pub fn shap_values(
     // 2. Evaluate model on each coalition
     // 3. Weighted linear regression to get SHAP values
 
+    // Compute actual background mean for all features
+    let mut bg_means = vec![0.0; n_features];
+    for f in 0..n_features {
+        bg_means[f] = (0..n_samples)
+            .map(|i| x_background[i * n_features + f])
+            .sum::<f64>()
+            / n_samples as f64;
+    }
+
+    let bg_mean_array = js_sys::Float64Array::new_with_length(n_features as u32);
+    bg_mean_array.copy_from(&bg_means);
+
     // For now, use a simpler permutation-based approach
     let base_prediction = predict_fn
-        .call1(&JsValue::NULL, &JsValue::from_f64(0.0)) // Background prediction placeholder
+        .call1(&JsValue::NULL, &bg_mean_array) // Compute actual baseline prediction from background means
         .ok()
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
@@ -173,16 +185,14 @@ pub fn shap_values(
         let mut x_perturbed = x.to_vec();
 
         // Perturb feature to background mean
-        let feature_mean: f64 = (0..n_samples)
-            .map(|i| x_background[i * n_features + feature_idx])
-            .sum::<f64>()
-            / n_samples as f64;
+        x_perturbed[feature_idx] = bg_means[feature_idx];
 
-        x_perturbed[feature_idx] = feature_mean;
+        let js_array = js_sys::Float64Array::new_with_length(n_features as u32);
+        js_array.copy_from(&x_perturbed);
 
         // Get prediction with perturbed feature
         let prediction_perturbed = predict_fn
-            .call1(&JsValue::NULL, &JsValue::from_f64(x_perturbed[feature_idx]))
+            .call1(&JsValue::NULL, &js_array)
             .ok()
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
@@ -208,13 +218,17 @@ pub fn lime_explain(
     predict_fn: &js_sys::Function,
     kernel_width: f64,
 ) -> Result<JsValue, JsError> {
+    let js_array_orig = js_sys::Float64Array::new_with_length(n_features as u32);
+    js_array_orig.copy_from(x);
+
     let original_prediction = predict_fn
-        .call1(&JsValue::NULL, &JsValue::from_f64(x[0]))
+        .call1(&JsValue::NULL, &js_array_orig)
         .ok()
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
 
     let mut feature_importance = vec![0.0; n_features];
+    let mut total_variation = 0.0;
 
     // Generate perturbed samples around instance
     for feature_idx in 0..n_features {
@@ -226,15 +240,19 @@ pub fn lime_explain(
             let mut x_perturbed = x.to_vec();
             x_perturbed[feature_idx] += perturbation;
 
+            let js_array_pert = js_sys::Float64Array::new_with_length(n_features as u32);
+            js_array_pert.copy_from(&x_perturbed);
+
             // Get prediction
             let prediction = predict_fn
-                .call1(&JsValue::NULL, &JsValue::from_f64(x_perturbed[feature_idx]))
+                .call1(&JsValue::NULL, &js_array_pert)
                 .ok()
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.0);
 
             // Accumulate difference
             total_diff += (original_prediction - prediction).abs();
+            total_variation += total_diff;
         }
 
         // Average importance
@@ -249,10 +267,15 @@ pub fn lime_explain(
         }
     }
 
+    // Compute heuristic local model confidence based on neighborhood variance stability
+    // R^2 of local surrogate can be approximated inversely to prediction volatility.
+    let avg_variation = total_variation / (n_samples * n_features) as f64;
+    let confidence = 1.0 / (1.0 + avg_variation);
+
     let explanation = Explanation::new(n_features)
         .with_prediction(original_prediction)
         .with_importance(feature_importance)
-        .with_confidence(0.8); // Placeholder confidence
+        .with_confidence(confidence);
 
     serde_wasm_bindgen::to_value(&explanation)
         .map_err(|e| JsError::new(&format!("Failed to convert explanation: {}", e)))

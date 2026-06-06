@@ -315,13 +315,38 @@ pub fn instrumental_variables_impl(
         predicted_treatment.push(beta0_stage1 + beta1_stage1 * val);
     }
 
-    let (beta1_stage2, _beta0_stage2) = simple_linear_regression(&predicted_treatment, outcome);
+    let (beta1_stage2, beta0_stage2) = simple_linear_regression(&predicted_treatment, outcome);
 
     // Wald estimator for CI
     let ate = beta1_stage2;
 
-    // Simplified CI (would use proper 2SLS standard errors in production)
-    let se = ate.abs() * 0.1; // Placeholder
+    // Proper 2SLS Standard Error computation
+    // 1. Calculate residuals using the original treatment (not predicted treatment)
+    // 2. Estimate error variance (sigma^2 = SSR / (N - 2))
+    // 3. Calculate variance of predicted treatment
+    // 4. SE(ATE) = sqrt(sigma^2 / Sum((x_hat_i - x_hat_bar)^2))
+
+    let mut ssr = 0.0;
+    for i in 0..n_samples {
+        let y_pred = beta0_stage2 + beta1_stage2 * treatment[i];
+        let residual = outcome[i] - y_pred;
+        ssr += residual * residual;
+    }
+
+    let sigma_sq = ssr / (n_samples as f64 - 2.0).max(1.0);
+
+    let pred_mean = predicted_treatment.iter().sum::<f64>() / n_samples as f64;
+    let sum_sq_pred = predicted_treatment
+        .iter()
+        .map(|&x| (x - pred_mean) * (x - pred_mean))
+        .sum::<f64>();
+
+    let se = if sum_sq_pred > 0.0 {
+        (sigma_sq / sum_sq_pred).sqrt()
+    } else {
+        0.0
+    };
+
     let z = 1.96;
     let ci_lower = ate - z * se;
     let ci_upper = ate + z * se;

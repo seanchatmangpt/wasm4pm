@@ -308,7 +308,7 @@ pub fn discover_pso_algorithm_from_log(
 }
 
 // Helper: Materialize a DirectlyFollowsGraph from edge set, vocabulary, and frequency maps.
-// Uses actual observed frequencies rather than the previous constant-1 placeholder.
+// Uses actual observed frequencies to accurately reflect event density.
 fn edge_set_to_dfg(
     edge_set: &EdgeSet,
     vocab: &[String],

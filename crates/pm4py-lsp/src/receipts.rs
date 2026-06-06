@@ -66,10 +66,10 @@ pub fn verify_receipt_file(receipt_path: &Path) -> bool {
         Ok(r) => r,
         Err(_) => return false,
     };
-    let canonical = match wasm4pm_types::hash::canonical_json(&receipt.data) {
+    let canonical = match wasm4pm_compat::hash::canonical_json(&receipt.data) {
         Ok(c) => c,
         Err(_) => return false,
     };
-    let expected_hash = wasm4pm_types::hash::blake3_string(&canonical);
+    let expected_hash = wasm4pm_compat::hash::blake3_string(&canonical);
     receipt.hash == expected_hash
 }

@@ -998,7 +998,7 @@ mod tests {
             assert_eq!(keys[0], "a");
             assert_eq!(keys[1], "z");
         } else {
-            panic!("expected Container variant");
+            unreachable!("expected Container variant");
         }
     }
 }

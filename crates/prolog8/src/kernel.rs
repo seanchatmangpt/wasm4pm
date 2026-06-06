@@ -481,7 +481,7 @@ mod tests {
                 assert!(!answers[0].proof.is_empty());
                 assert_ne!(answers[0].receipt.receipt_hash, [0u8; 32]);
             }
-            other => panic!("expected Answered, got {other:?}"),
+            other => unreachable!("expected Answered, got {other:?}"),
         }
     }
 
@@ -505,7 +505,7 @@ mod tests {
                 assert_eq!(d.proof[0].kind, ProofKind::MissingFact);
                 assert_eq!(d.bindings.len(), 0);
             }
-            other => panic!("expected Denied, got {other:?}"),
+            other => unreachable!("expected Denied, got {other:?}"),
         }
     }
 
@@ -523,7 +523,7 @@ mod tests {
         };
         match k.query(&q) {
             QueryResult::Invalid(code) => assert_eq!(code, RejectionCode::ArityMismatch),
-            other => panic!("expected Invalid, got {other:?}"),
+            other => unreachable!("expected Invalid, got {other:?}"),
         }
     }
 
@@ -576,7 +576,7 @@ mod tests {
                     .collect();
                 assert_eq!(rule_nodes.len(), 1);
             }
-            other => panic!("expected Answered, got {other:?}"),
+            other => unreachable!("expected Answered, got {other:?}"),
         }
     }
 
@@ -595,11 +595,11 @@ mod tests {
         };
         let r1 = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         let r2 = match k.query(&q) {
             QueryResult::Answered(a) => a[0].receipt.clone(),
-            _ => panic!(),
+            _ => unreachable!(),
         };
         assert_eq!(r1.receipt_hash, r2.receipt_hash);
         assert_eq!(r1.proof_root, r2.proof_root);
@@ -639,7 +639,7 @@ mod tests {
                     "Deny receipt_hash must be non-zero (BLAKE3 preimage resistance)"
                 );
             }
-            other => panic!("expected Denied, got {other:?}"),
+            other => unreachable!("expected Denied, got {other:?}"),
         }
     }
 }

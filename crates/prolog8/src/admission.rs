@@ -147,7 +147,7 @@ pub fn admit_rule(rule: &Rule8, catalog: &Catalog) -> Result<(), RejectionCode> 
 
     // Feature mask: every set bit must be one of the 8 admitted features.
     // Since `FeatureBit` covers all 8 bit positions, any value of u8 is
-    // valid; this check is a placeholder for future extension where some
+    // valid; this ensures structural tightness even if some
     // bits become reserved.
     let admitted = FeatureBit::ALL.iter().fold(0u8, |acc, f| acc | f.mask());
     if rule.feature_mask & !admitted != 0 {

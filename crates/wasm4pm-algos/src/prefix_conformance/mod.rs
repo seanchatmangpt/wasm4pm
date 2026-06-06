@@ -59,6 +59,7 @@ pub struct PrefixOracle {
     pub cases: HashMap<String, CaseCursor>,
 }
 
+#[derive(serde::Deserialize)]
 pub struct PrefixEvent {
     pub activity: String,
     pub time_ms: i64,

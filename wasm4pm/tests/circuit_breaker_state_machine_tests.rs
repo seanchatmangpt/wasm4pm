@@ -230,7 +230,8 @@ fn test_allow_request_per_state() {
         success_threshold: 2,
         open_timeout_ms: 100_000, // long timeout so it stays Open
         half_open_timeout_ms: 30_000,
-    });
+    })
+    .unwrap();
     breaker_open.record_failure();
     breaker_open.record_failure();
     assert_eq!(breaker_open.state(), CircuitState::Open);
@@ -242,7 +243,8 @@ fn test_allow_request_per_state() {
         success_threshold: 2,
         open_timeout_ms: 1_000,
         half_open_timeout_ms: 100_000, // long half-open timeout so it stays HalfOpen
-    });
+    })
+    .unwrap();
     breaker_half_open.record_failure();
     breaker_half_open.record_failure();
     assert_eq!(breaker_half_open.state(), CircuitState::Open);
@@ -339,14 +341,16 @@ fn test_recovery_timeout_is_configurable() {
         success_threshold: 2,
         open_timeout_ms: short_timeout_ms,
         half_open_timeout_ms: 30_000,
-    }).unwrap();
+    })
+    .unwrap();
 
     let mut breaker_long = CircuitBreaker::with_config(CircuitBreakerConfig {
         failure_threshold: 2,
         success_threshold: 2,
         open_timeout_ms: long_timeout_ms,
         half_open_timeout_ms: 30_000,
-    }).unwrap();
+    })
+    .unwrap();
 
     // Drive both to Open
     breaker_short.record_failure();

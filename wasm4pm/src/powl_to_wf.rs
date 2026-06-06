@@ -179,7 +179,7 @@ fn build(b: &mut NetBuilder, spec: &PowlSpec) -> (String, String) {
             (e, x)
         }
         PowlSpec::Irreducible { .. } => {
-            // No lawful decomposition: emit a silent SESE placeholder so the
+            // No lawful decomposition: emit a silent SESE tau-transition route so the
             // function stays total. Callers detect irreducibility on the spec
             // itself (`PowlSpec::has_irreducible`) before relying on language.
             let e = b.place("irr_in");

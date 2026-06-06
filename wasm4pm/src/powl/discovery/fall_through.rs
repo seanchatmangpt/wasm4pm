@@ -215,7 +215,7 @@ pub fn choice_graph_v2_fall_through(
             .map_err(|e| format!("MineDG v2 failed: {}", e))?;
 
     // Replace each Activity-node in the cut graph with a SubModel sub-tree.
-    // SubModel = XOR of partition activities (placeholder for recursive PM×).
+    // SubModel = XOR of partition activities (fallback base case for recursive PM×).
     let mut new_nodes: Vec<ChoiceGraphNode> = Vec::with_capacity(cut.graph.nodes.len());
     for (i, n) in cut.graph.nodes.iter().enumerate() {
         match n {

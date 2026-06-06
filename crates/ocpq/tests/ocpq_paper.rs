@@ -443,7 +443,7 @@ fn fig6_paid_within_four_weeks_exactly_once() {
         match o {
             "o_a" => assert!(v.satisfied, "o_a satisfies"),
             "o_b" | "o_c" => assert!(!v.satisfied, "{o} violates"),
-            other => panic!("unexpected order {other}"),
+            other => unreachable!("unexpected order {other}"),
         }
     }
 }

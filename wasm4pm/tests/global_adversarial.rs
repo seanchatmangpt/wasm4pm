@@ -2,9 +2,9 @@ use fake::Fake;
 use proptest::prelude::*;
 use wasm4pm::autoprocess::{AutoProcessAgent, CircuitState};
 use wasm4pm::state::{get_or_init_state, StoredObject};
-// TODO: wasm4pm_compat needs wasm4pm_types::event_log::AttributeValue, wasm4pm_types::event_log::Event, wasm4pm_types::event_log::EventLog, wasm4pm_types::event_log::Trace, wasm4pm_types::event_log::XESEditableAttribute
-// use wasm4pm_types::event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
-use wasm4pm_compat::{Event, EventLog, Trace};
+// TODO: wasm4pm_compat needs wasm4pm_compat::legacy_event_log::AttributeValue, wasm4pm_compat::legacy_event_log::Event, wasm4pm_compat::legacy_event_log::EventLog, wasm4pm_compat::legacy_event_log::Trace, wasm4pm_compat::legacy_event_log::XESEditableAttribute
+// use wasm4pm_compat::legacy_event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
+use wasm4pm_compat::legacy_event_log::{Event, EventLog, Trace};
 
 #[cfg(test)]
 mod global_adversarial {
