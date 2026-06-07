@@ -3546,6 +3546,7 @@ dependencies = [
  "criterion",
  "hashbrown 0.17.1",
  "itertools 0.14.0",
+ "ocel-core",
  "serde",
  "serde_json",
  "smallvec",

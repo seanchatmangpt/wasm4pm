@@ -1,0 +1,18 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The State of Process Mining}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}The Hypothesis of Combinatorial Maximalism}{1}{section.1.2}%
+\contentsline {chapter}{\numberline {2}The Computational Substrate: \texttt {wasm4pm}}{3}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Architectural Foundations}{3}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Memory Management and Event Log Topologies}{3}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Object-Centric Process Queries (OCPQ)}{3}{subsection.2.1.2}%
+\contentsline {chapter}{\numberline {3}Semantic Bridging via the Language Server Protocol}{5}{chapter.3}%
+\contentsline {section}{\numberline {3.1}The Limits of Static Analysis}{5}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Developing \texttt {tower-lsp-max}}{5}{section.3.2}%
+\contentsline {section}{\numberline {3.3}The \texttt {pm4py-lsp} Implementation}{5}{section.3.3}%
+\contentsline {chapter}{\numberline {4}The Ostar Proof Discipline}{7}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Receipts and Cryptographic Homeomorphism}{7}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Closing the Taxonomy Gap}{7}{section.4.2}%
+\contentsline {chapter}{\numberline {5}Conclusion}{9}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Summary of Contributions}{9}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Future Work}{9}{section.5.2}%

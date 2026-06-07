@@ -18,6 +18,7 @@ smallvec = { workspace = true }
 itertools = { workspace = true }
 blake3 = { workspace = true }
 bcinr = { workspace = true, optional = true }
+ocel-core = { workspace = true }
 
 [features]
 bcinr = ["dep:bcinr"]

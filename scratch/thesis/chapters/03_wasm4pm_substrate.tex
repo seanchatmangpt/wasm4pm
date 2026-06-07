@@ -1,0 +1,19 @@
+
+\chapter{The Deterministic Execution Authority: WASM4PM}
+\section{The Court of Admissibility}
+\texttt{wasm4pm-compat} is documented as structure-only, process-evidence focused, refusal-first, loss-aware, and graduation-ready. It explicitly is \textit{not} an execution engine or conformance checker; it is the court of admissibility. 
+
+When a downstream project integrates \texttt{wasm4pm-compat}, it must navigate three capability stages:
+\begin{enumerate}
+    \item \texttt{formats}: The ordinary import/export boundary capability.
+    \item \texttt{strict}: Stronger boundary diagnostics and typestate assertions.
+    \item \texttt{wasm4pm}: The graduation bridge toward true WASM execution authority.
+\end{enumerate}
+
+Turning all three on immediately is not "default adoption"; it is full boundary-stage adoption.
+
+\section{Columnar Substrates and Zero-Copy Parsing}
+The \texttt{wasm4pm} kernel completely circumvents the allocation thrashing inherent in object-oriented event logs. By structuring the log as contiguous arrays mapped to cache-line boundaries, traversal acts as a strictly affine transformation over the linear WASM memory address space.
+
+\section{Algorithmic Deconstruction: Discovery}
+By implementing discovery matrices in Rust, parallel threads safely reduce into the final model without expensive synchronization. This guarantees that \texttt{wasm4pm} possesses the rigid execution authority required to process claims passed down from the LSP membrane.

@@ -1,0 +1,89 @@
+\documentclass[11pt,twoside,openright]{book}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{amsmath, amssymb, amsthm, geometry, hyperref, graphicx, mathtools, mathrsfs, tensor, tikz-cd, physics}
+\usepackage{listings, xcolor, fancyhdr, titlesec, tocloft, algorithm, algpseudocode}
+
+\geometry{margin=1.1in}
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[RO,LE]{\leftmark}
+\fancyfoot{}
+\fancyfoot[C]{\thepage}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\scriptsize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{axiom}{Axiom}[section]
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\title{
+    \vspace{2cm}
+    \Huge \textbf{Bridging the Semantic Gap in Process Mining} \\
+    \vspace{1cm}
+    \Large Manufactured Intelligence and Compile-Time Jurisdictions
+    \vspace{2cm}
+}
+\author{
+    \Large \textbf{Sean Chatman} \\
+    \vspace{0.5cm} \\
+    \textit{A dissertation submitted in partial fulfillment} \\
+    \textit{of the requirements for the degree of} \\
+    \textbf{Doctor of Philosophy} \\
+    \vspace{0.5cm} \\
+    Department of Computer Science \\
+    \vspace{2cm}
+}
+\date{June 2026}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\include{frontmatter/abstract}
+\include{frontmatter/acknowledgments}
+
+\tableofcontents
+
+\mainmatter
+\include{chapters/01_introduction}
+\include{chapters/02_background}
+\include{chapters/03_wasm4pm_substrate}
+\include{chapters/04_tower_lsp_max}
+\include{chapters/05_pm4py_lsp}
+\include{chapters/06_ostar_proof_discipline}
+\include{chapters/07_evaluation}
+\include{chapters/08_conclusion}
+
+\backmatter
+\include{backmatter/appendix}
+
+\end{document}

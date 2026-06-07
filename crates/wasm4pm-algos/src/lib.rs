@@ -15,6 +15,7 @@ pub mod heuristic;
 pub mod prefix_conformance;
 pub mod streaming;
 pub mod truex;
+pub mod gall;
 
 // wasm4pm-compat is the canonical type foundation — re-exported for consumers
 pub use wasm4pm_compat;
