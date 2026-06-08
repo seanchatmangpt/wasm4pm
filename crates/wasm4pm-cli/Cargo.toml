@@ -20,7 +20,6 @@ serde_json = { workspace = true }
 dialoguer = "0.11"
 colored = "2.1"
 indicatif = "0.17"
-wasm4pm-compat.workspace = true
 wasm4pm-algos = { version = "26.6.5", path = "../wasm4pm-algos" }
 wasm4pm = { version = "26.6.5", path = "../../wasm4pm", features = ["cloud"] }
 

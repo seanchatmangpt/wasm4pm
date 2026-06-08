@@ -1,0 +1,5 @@
+# act configuration for local GitHub Actions testing
+# Use a full-featured Ubuntu image instead of the default micro image
+-P ubuntu-latest=catthehacker/ubuntu:act-22.04
+--secret-file .secrets.act
+--env-file .env.act

@@ -48,6 +48,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.secrets.act
 data/Road_Traffic_Fine_Management_Process.xes
 
 # Metrics & Logs

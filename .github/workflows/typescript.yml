@@ -20,13 +20,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # pnpm must be set up before setup-node so the cache: pnpm key resolves correctly
-      - uses: pnpm/action-setup@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
+          cache: npm
 
       # Rust + wasm-pack are required before pnpm build because TypeScript packages
       # import from wasm4pm/pkg-nodejs/, which wasm-pack produces.
@@ -44,7 +41,7 @@ jobs:
         run: npm install -g wasm-pack@0.13.1
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       # Build WASM Node.js target first so downstream TS packages can import it
       - name: Build WASM (Node.js target)
@@ -52,20 +49,20 @@ jobs:
         run: npm run build:nodejs
 
       - name: Build all packages
-        run: pnpm build
+        run: npm run build
 
       # Standalone type-check pass (catches type errors that tsc may elide during emit)
       - name: TypeScript type check (tsc --noEmit)
-        run: pnpm --filter './packages/*' --filter './apps/*' exec tsc --noEmit 2>/dev/null || pnpm run --if-present type:check
+        run: npm run type:check --workspaces --if-present 2>/dev/null || npm run type:check
 
       - name: Lint all packages
-        run: pnpm lint
+        run: npm run lint
 
       # npm dependency vulnerability scan (complement to cargo audit in test.yml)
       - name: Audit npm dependencies
-        run: pnpm audit --audit-level=high
+        run: npm audit --audit-level=high
         continue-on-error: false
 
       - name: Test all packages
-        run: pnpm test
+        run: npm test
         timeout-minutes: 15

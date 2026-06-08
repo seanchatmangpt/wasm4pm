@@ -24,7 +24,7 @@ sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 wasm4pm-algos = { version = "26.6.5", path = "crates/wasm4pm-algos" }
 wasm4pm-utils = { version = "26.6.5", path = "crates/wasm4pm-utils" }
-wasm4pm-compat = { version = "26.6.5", path = "../wasm4pm-compat", features = ["wasm4pm"] }
+# wasm4pm-compat = { version = "26.6.5", path = "../wasm4pm-compat", features = ["wasm4pm"] }
 wasm4pm-cognition = { version = "26.6.5", path = "crates/wasm4pm-cognition" }
 wasm4pm-macros = { version = "26.6.5", path = "crates/wasm4pm-macros" }
 prolog8 = { version = "26.6.5", path = "crates/prolog8" }
