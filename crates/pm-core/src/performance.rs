@@ -192,7 +192,7 @@ impl From<usize> for Frequency {
 /// newtype.  Callers converting from millisecond-resolution sources must apply
 /// [`DurationNs::from_millis_f64`] before constructing this type.  Storing
 /// values in nanoseconds avoids the audit-finding of silent ms/ns confusion
-/// found in the legacy `wasm4pm` `ActivityPerformance` struct.
+/// found in the  `wasm4pm` `ActivityPerformance` struct.
 ///
 /// # Mathematical invariants
 /// - `count` ≥ 0 (trivially, `Frequency` is unsigned)
@@ -289,7 +289,7 @@ impl ActivityPerformance {
 ///
 /// # Relationship to wasm4pm `PerformanceSpectrumResult`
 /// - `target_activity` is an [`ActivityName`] newtype (was `String`).
-/// - `segments` replaces the `measurements` field of the legacy type, and each
+/// - `segments` replaces the `measurements` field of the  type, and each
 ///   entry uses typed [`DurationNs`] and [`ActivityName`] fields instead of raw
 ///   `f64 *_ms` / `String` pairs.
 ///
@@ -443,10 +443,10 @@ mod tests {
             ActivityName::new("A"),
             ActivityName::new("B"),
             Frequency::new(10),
-            DurationNs::new(1_000_000),      // 1 ms min
-            DurationNs::new(5_000_000),      // 5 ms max
-            DurationNs::new(3_000_000),      // 3 ms mean
-            DurationNs::new(2_500_000),      // 2.5 ms median
+            DurationNs::new(1_000_000), // 1 ms min
+            DurationNs::new(5_000_000), // 5 ms max
+            DurationNs::new(3_000_000), // 3 ms mean
+            DurationNs::new(2_500_000), // 2.5 ms median
         );
 
         assert_eq!(ap.from_activity.0, "A");
@@ -501,10 +501,7 @@ mod tests {
             DurationNs::new(275),
             DurationNs::new(250),
         );
-        let ps = PerformanceSpectrum::new(
-            ActivityName::new("Start"),
-            alloc::vec![seg_a, seg_b],
-        );
+        let ps = PerformanceSpectrum::new(ActivityName::new("Start"), alloc::vec![seg_a, seg_b]);
 
         assert_eq!(ps.segment_count(), 2);
         assert_eq!(ps.total_observations(), 10); // 3 + 7

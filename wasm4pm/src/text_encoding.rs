@@ -3,12 +3,12 @@ use serde_json::Value;
 use std::collections::{HashMap, HashSet};
 use wasm_bindgen::prelude::*;
 
-/// Convert a DirectlyFollowsGraph to human-readable English text
+/// Convert a DFG to human-readable English text
 /// Describes activities, start/end activities, and edge paths with percentages
 #[wasm_bindgen]
 pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             if dfg.nodes.is_empty() {
                 return Ok("The process contains 0 activities. No flows detected.".to_string());
             }
@@ -97,8 +97,8 @@ pub fn encode_dfg_as_text(dfg_handle: &str) -> Result<String, JsValue> {
 
             Ok(text)
         }
-        Some(_) => Err(crate::error::js_val("Object is not a DirectlyFollowsGraph")),
-        None => Err(crate::error::js_val("DirectlyFollowsGraph not found")),
+        Some(_) => Err(crate::error::js_val("Object is not a DFG")),
+        None => Err(crate::error::js_val("DFG not found")),
     })
 }
 
@@ -539,9 +539,7 @@ pub fn encode_oc_petri_net_as_text(oc_petri_net_handle: &str) -> Result<String, 
                     })
                     .unwrap_or_default();
 
-                let arc_count = net_json["arcs"]
-                    .as_array()
-                    .map_or(0, |arr| arr.len());
+                let arc_count = net_json["arcs"].as_array().map_or(0, |arr| arr.len());
 
                 text.push_str(&format!("  {}:\n", obj_type));
                 text.push_str(&format!(
@@ -672,7 +670,7 @@ fn extract_model_summary(
     handle: &str,
 ) -> Result<ModelSummary, JsValue> {
     state.with_object(handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(ModelSummary {
+        Some(StoredObject::DFG(dfg)) => Ok(ModelSummary {
             name: format!("DFG({})", handle),
             node_count: dfg.nodes.len(),
             nodes: dfg.nodes.iter().map(|n| n.label.clone()).collect(),

@@ -32,7 +32,7 @@ ever holds more than one token.
 ## Files
 - `wasm4pm/src/soundness.rs` — **new** module: `StructuralNet`, `Marking`,
   `ReachabilityGraph`, `WfNetCheck`, `SoundnessReport`, `analyze_petri_net`,
-  WASM export `check_wf_net_soundness`, native shim `check_wf_net_soundness_native`.
+  WASM export `check_wf_net_soundness`, native bridge `check_wf_net_soundness_native`.
 - `wasm4pm/src/models.rs` — existing `PetriNet`/`PetriNetPlace`/`PetriNetTransition`/
   `PetriNetArc` (the substrate `StructuralNet` normalises). Consumed by `soundness.rs`.
 - `wasm4pm/src/lib.rs` — minimal additive `pub mod soundness;` declaration.
@@ -100,7 +100,7 @@ soundness module consumes the resulting `PetriNet` unchanged.
   and all `StructuralNet` predicates are `pub`.
 - **WASM:** `check_wf_net_soundness(petri_net_handle: &str) -> Result<JsValue, JsValue>`
   (`#[wasm_bindgen]`, compiled for `wasm32`), returning a fixed JSON summary.
-- **Native test shim:** `check_wf_net_soundness_native(&PetriNet) -> String`
+- **Native test bridge:** `check_wf_net_soundness_native(&PetriNet) -> String`
   returns the *identical* JSON so the wire contract is tested under `cargo test`.
 
 ## Tests — `wasm4pm/tests/wf_soundness.rs`

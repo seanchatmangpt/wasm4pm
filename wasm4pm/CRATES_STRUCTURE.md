@@ -8,7 +8,7 @@ The wasm4pm WASM process mining platform is organized as a Rust workspace with m
 wasm4pm/
 ├── Cargo.toml                 # Workspace root
 ├── crates/
-│   ├── wasm4pm-types/           # 1️⃣ Foundational: Binary data structures
+│   ├── wasm4pm-compat/           # 1️⃣ Foundational: Binary data structures
 │   │   ├── Cargo.toml
 │   │   └── src/
 │   │       ├── lib.rs         # Module exports
@@ -33,7 +33,7 @@ wasm4pm/
 
 ## Crates
 
-### 1. wasm4pm-types (Foundational)
+### 1. wasm4pm-compat (Foundational)
 
 **Purpose:** Defines the canonical binary data structures that all functions pass around.
 
@@ -58,7 +58,7 @@ wasm4pm/
 
 ### 2. wasm4pm-core (Algorithm Implementation)
 
-**Purpose:** Algorithm implementations that depend on wasm4pm-types.
+**Purpose:** Algorithm implementations that depend on wasm4pm-compat.
 
 **Future:** Will contain implementations of discovery algorithms, conformance checkers, and other process mining operations.
 
@@ -66,7 +66,7 @@ wasm4pm/
 
 **Purpose:** WebAssembly bindings and public API.
 
-**Depends On:** `wasm4pm-types`
+**Depends On:** `wasm4pm-compat`
 
 **Exports:**
 
@@ -81,18 +81,18 @@ wasm4pm/
 ```
 wasm4pm-core
    ↓
-wasm4pm-types
+wasm4pm-compat
 
 wasm4pm (main library)
    ↓
-wasm4pm-types
+wasm4pm-compat
 ```
 
 No circular dependencies. No crate depends on `wpm` (wasm4pm) (the WASM library).
 
 ### 2. Types as the Foundation
 
-All functions pass around types defined in `wasm4pm-types`. This ensures:
+All functions pass around types defined in `wasm4pm-compat`. This ensures:
 
 - **Determinism:** Type definitions are immutable across all callers
 - **Versionability:** Type schema changes are tracked and auditable
@@ -101,7 +101,7 @@ All functions pass around types defined in `wasm4pm-types`. This ensures:
 
 ### 3. Binary Data Structures
 
-Types in `wasm4pm-types` are "binary" in that they:
+Types in `wasm4pm-compat` are "binary" in that they:
 
 - Serialize to deterministic JSON (canonical form with sorted keys)
 - Hash to BLAKE3 for provenance tracking
@@ -110,7 +110,7 @@ Types in `wasm4pm-types` are "binary" in that they:
 
 ### 4. No Platform Dependencies in Core
 
-`wasm4pm-types` is platform-agnostic:
+`wasm4pm-compat` is platform-agnostic:
 
 - No `wasm-bindgen` features
 - No JavaScript APIs
@@ -121,19 +121,19 @@ Types in `wasm4pm-types` are "binary" in that they:
 
 ### Phase 1: ✓ Types Crate (COMPLETE)
 
-All type definitions moved to `wasm4pm-types`.
+All type definitions moved to `wasm4pm-compat`.
 
 ### Phase 2: Algorithm Core
 
-Implementations of discovery, conformance, and analysis algorithms depend on `wasm4pm-types`.
+Implementations of discovery, conformance, and analysis algorithms depend on `wasm4pm-compat`.
 
 ### Phase 3: WASM Bindings
 
-Main `wpm` (wasm4pm) crate becomes thin wrapper around `wasm4pm-types` and `wasm4pm-core`.
+Main `wpm` (wasm4pm) crate becomes thin wrapper around `wasm4pm-compat` and `wasm4pm-core`.
 
 ### Phase 4: Multi-Language Support
 
-TypeScript converters (EventLogIR ↔ EventLog) can use `wasm4pm-types` schema as the source of truth.
+TypeScript converters (EventLogIR ↔ EventLog) can use `wasm4pm-compat` schema as the source of truth.
 
 ## Cargo Workspace Commands
 
@@ -170,10 +170,10 @@ wasm-pack build --target bundler
 wasm-pack build --target nodejs
 ```
 
-`wasm4pm-types` is built as a library and can be compiled natively:
+`wasm4pm-compat` is built as a library and can be compiled natively:
 
 ```bash
-cd crates/wasm4pm-types
+cd crates/wasm4pm-compat
 cargo build --release
 cargo test
 ```
@@ -198,4 +198,4 @@ All crates use shared `workspace.package.version`:
 
 - Cargo Workspaces: https://doc.rust-lang.org/cargo/reference/workspaces.html
 - Three-Layer Architecture: See `../../CLAUDE.md` (Control Plane section)
-- ProvenanceChain: See `wasm4pm-types/src/provenance.rs`
+- ProvenanceChain: See `wasm4pm-compat/src/provenance.rs`

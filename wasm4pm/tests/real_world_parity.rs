@@ -1,10 +1,10 @@
+use std::fs;
 use wasm4pm::advanced::alphappp::{discover_alpha_ppp, AlphaPPPConfig};
 use wasm4pm::advanced::oc_declare::{discover_oc_declare, OCDeclareOptions};
-use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
+use wasm4pm::advanced::ocdfg::OCDFG;
 use wasm4pm::advanced::ocla::OCLanguageAbstraction;
-use wasm4pm::models::{OCEL, EventLog};
+use wasm4pm::models::{EventLog, OCEL};
 use wasm4pm::xes_format::validate_and_parse_xes;
-use std::fs;
 
 #[test]
 fn test_real_world_xes_and_alphappp() {
@@ -19,7 +19,7 @@ fn test_real_world_xes_and_alphappp() {
         println!("Skipping real-world XES test: dataset not found");
         return;
     };
-    
+
     let xes_content = fs::read_to_string(path).expect("Failed to read dataset");
 
     // Test the high-performance core parser
@@ -36,7 +36,10 @@ fn test_real_world_xes_and_alphappp() {
     let petri_net = discover_alpha_ppp(&log, config, "concept:name");
 
     // Assert Alpha+++ produced a structurally sound model
-    assert!(petri_net.transitions.len() > 0, "Should discover transitions");
+    assert!(
+        petri_net.transitions.len() > 0,
+        "Should discover transitions"
+    );
     assert!(petri_net.places.len() > 0, "Should discover places");
     assert!(petri_net.arcs.len() > 0, "Should discover arcs");
 }
@@ -58,21 +61,30 @@ fn test_real_world_ocel_and_advanced_algorithms() {
     let json_content = fs::read_to_string(path).expect("Failed to read OCEL dataset");
 
     // Test the robust OCEL JSON parser natively
-    let ocel: OCEL = serde_json::from_str(&json_content).expect("Failed to parse OCEL JSON natively");
+    let ocel: OCEL =
+        serde_json::from_str(&json_content).expect("Failed to parse OCEL JSON natively");
 
     assert!(ocel.events.len() > 0, "OCEL should have events");
     assert!(ocel.objects.len() > 0, "OCEL should have objects");
 
     // 2. Test OC-DFG Flattening and Discovery
-    let oc_dfg = OCDirectlyFollowsGraph::discover(&ocel);
-    assert!(oc_dfg.dfgs.len() > 0, "Should discover DFGs for object types");
+    let oc_dfg = OCDFG::discover(&ocel);
+    assert!(
+        oc_dfg.dfgs.len() > 0,
+        "Should discover DFGs for object types"
+    );
 
     // 3. Test OCLA Abstraction
     let ocla = OCLanguageAbstraction::create_from_ocel(&ocel);
-    assert!(!ocla.start_ev_types.is_empty(), "Should find start event types");
+    assert!(
+        !ocla.start_ev_types.is_empty(),
+        "Should find start event types"
+    );
 
     // 4. Test OC-DECLARE Rule Discovery
-    let options = OCDeclareOptions { noise_threshold: 0.1 };
+    let options = OCDeclareOptions {
+        noise_threshold: 0.1,
+    };
     let rules = discover_oc_declare(&ocel, options);
     assert!(rules.len() > 0, "Should discover declarative rules");
 }

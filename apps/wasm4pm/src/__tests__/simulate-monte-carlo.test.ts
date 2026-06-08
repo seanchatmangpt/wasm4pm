@@ -705,10 +705,10 @@ describe('wpm simulate — --animate flag', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Backward compatibility — existing flags still work
+// baseline admissibility — existing flags still work
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('wpm simulate — backward compatibility', () => {
+describe('wpm simulate — baseline admissibility', () => {
   let env: TestEnv;
   beforeEach(async () => { env = await createTestEnv(); });
   afterEach(async () => { await env.cleanup(); });

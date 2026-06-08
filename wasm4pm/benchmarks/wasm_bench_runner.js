@@ -167,7 +167,7 @@ async function main() {
   if (CI_MODE) {
     for (const group of ALGORITHM_GROUPS) {
       for (const task of group.tasks) {
-        task.sizes = task.sizes.map(s => Math.min(s, 100));
+        task.sizes = task.sizes.map((s) => Math.min(s, 100));
       }
     }
   }

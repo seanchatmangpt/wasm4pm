@@ -64,8 +64,8 @@ describe('ML nested sub-sections', () => {
   });
 });
 
-describe('ML legacy → nested migration', () => {
-  it('promotes legacy flat fields into nested sub-sections with explicit values winning', () => {
+describe('ML  → nested migration', () => {
+  it('promotes  flat fields into nested sub-sections with explicit values winning', () => {
     const k9 = validate({ ...minimal, ml: { enabled: true, k: 9 } });
     expect(k9.ml!.classify.k).toBe(9);
     expect(k9.ml!.cluster.k).toBe(9);

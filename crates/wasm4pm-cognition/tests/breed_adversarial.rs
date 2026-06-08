@@ -6,8 +6,8 @@
 //! 3. Bypass-attempt (counterfactual): exactly-zero-effort input that the breed
 //!    previously accepted. Now it must either reject or emit meaningful trace.
 
-use wasm4pm_cognition::breeds::*;
 use std::fs;
+use wasm4pm_cognition::breeds::*;
 
 // =============================================================================
 // MYCIN (Production Rules)
@@ -76,7 +76,10 @@ fn mycin_known_input_known_output() {
 
             let output = breed.run(&input).expect("MYCIN run ok");
             assert_eq!(output.breed, BreedId::Mycin);
-            assert!(!output.inference_trace.is_empty(), "MYCIN should have non-empty trace");
+            assert!(
+                !output.inference_trace.is_empty(),
+                "MYCIN should have non-empty trace"
+            );
             assert!(
                 output.inference_trace.iter().any(|t| t.kind == "fire-rule"),
                 "MYCIN should have fired at least one rule"
@@ -185,7 +188,10 @@ fn soar_known_input_known_output() {
 
     let output = breed.run(&input).expect("SOAR run ok");
     assert_eq!(output.breed, BreedId::Soar);
-    assert!(!output.inference_trace.is_empty(), "SOAR should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "SOAR should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -419,18 +425,12 @@ fn soar_preference_cascade() {
 
     // Verify cascade events in trace
     assert!(
-        output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "prohibit"),
+        output.inference_trace.iter().any(|t| t.kind == "prohibit"),
         "SOAR should emit prohibit step"
     );
 
     assert!(
-        output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "dominate"),
+        output.inference_trace.iter().any(|t| t.kind == "dominate"),
         "SOAR should emit dominate step for better-than constraint"
     );
 
@@ -467,14 +467,12 @@ fn gps_known_input_known_output() {
         candidates: vec![],
         facts: vec![],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "move_a_to_b".to_string(),
-                premise: vec!["clear=a".to_string(), "clear=b".to_string()],
-                conclusion: "on=a_b".to_string(),
-                certainty: 1.0,
-            },
-        ],
+        rules: vec![Rule {
+            id: "move_a_to_b".to_string(),
+            premise: vec!["clear=a".to_string(), "clear=b".to_string()],
+            conclusion: "on=a_b".to_string(),
+            certainty: 1.0,
+        }],
         goals: vec![Goal {
             id: "g1".to_string(),
             predicate: "on".to_string(),
@@ -497,12 +495,17 @@ fn gps_known_input_known_output() {
 
     let output = breed.run(&input).expect("GPS run ok");
     assert_eq!(output.breed, BreedId::Gps);
-    assert!(!output.inference_trace.is_empty(), "GPS should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "GPS should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
             .iter()
-            .any(|t| t.kind == "check-presatisfied" || t.kind == "reduce-gap" || t.kind == "apply-operator"),
+            .any(|t| t.kind == "check-presatisfied"
+                || t.kind == "reduce-gap"
+                || t.kind == "apply-operator"),
         "GPS should have gap reduction or operator application step"
     );
     assert!(breed.postconditions(&output).is_ok());
@@ -617,7 +620,10 @@ fn cbr_known_input_known_output() {
 
     let output = breed.run(&input).expect("CBR run ok");
     assert_eq!(output.breed, BreedId::Cbr);
-    assert!(!output.inference_trace.is_empty(), "CBR should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "CBR should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -725,7 +731,10 @@ fn dendral_known_input_known_output() {
 
     let output = breed.run(&input).expect("DENDRAL run ok");
     assert_eq!(output.breed, BreedId::Dendral);
-    assert!(!output.inference_trace.is_empty(), "DENDRAL should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "DENDRAL should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -780,10 +789,7 @@ fn dendral_bypass_attempt_empty_candidates_empty_constraints() {
     let output = breed.run(&input).expect("DENDRAL run ok");
     assert!(!output.inference_trace.is_empty());
     assert!(
-        output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "survive"),
+        output.inference_trace.iter().any(|t| t.kind == "survive"),
         "DENDRAL must emit survive step when no constraints eliminate candidates"
     );
 }
@@ -809,7 +815,10 @@ fn eliza_known_input_known_output() {
 
     let output = breed.run(&input).expect("ELIZA run ok");
     assert_eq!(output.breed, BreedId::Eliza);
-    assert!(!output.inference_trace.is_empty(), "ELIZA should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "ELIZA should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -853,7 +862,10 @@ fn eliza_bypass_attempt_whitespace_only_intent() {
 
     let breed = frame::Eliza;
     let result = breed.preconditions(&input);
-    assert!(result.is_err(), "ELIZA should reject whitespace-only intent");
+    assert!(
+        result.is_err(),
+        "ELIZA should reject whitespace-only intent"
+    );
 }
 
 // =============================================================================
@@ -868,14 +880,12 @@ fn strips_known_input_known_output() {
         candidates: vec![],
         facts: vec![],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "move".to_string(),
-                premise: vec!["clear=a".to_string(), "clear=b".to_string()],
-                conclusion: "on=a_b".to_string(),
-                certainty: 1.0,
-            },
-        ],
+        rules: vec![Rule {
+            id: "move".to_string(),
+            premise: vec!["clear=a".to_string(), "clear=b".to_string()],
+            conclusion: "on=a_b".to_string(),
+            certainty: 1.0,
+        }],
         goals: vec![Goal {
             id: "g1".to_string(),
             predicate: "on".to_string(),
@@ -898,7 +908,10 @@ fn strips_known_input_known_output() {
 
     let output = breed.run(&input).expect("STRIPS run ok");
     assert_eq!(output.breed, BreedId::Strips);
-    assert!(!output.inference_trace.is_empty(), "STRIPS should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "STRIPS should have non-empty trace"
+    );
     assert!(breed.postconditions(&output).is_ok());
 }
 
@@ -1010,7 +1023,10 @@ fn hearsay_known_input_known_output() {
 
     let output = breed.run(&input).expect("Hearsay run ok");
     assert_eq!(output.breed, BreedId::Hearsay);
-    assert!(!output.inference_trace.is_empty(), "Hearsay should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Hearsay should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -1070,12 +1086,10 @@ fn hearsay_dynamic_scheduling() {
     let input = BreedInput {
         intent: "speech_recognition".to_string(),
         candidates: vec![],
-        facts: vec![
-            Fact {
-                key: "signal".to_string(),
-                value: "acoustic".to_string(),
-            },
-        ],
+        facts: vec![Fact {
+            key: "signal".to_string(),
+            value: "acoustic".to_string(),
+        }],
         cases: vec![],
         rules: vec![
             Rule {
@@ -1121,12 +1135,10 @@ fn hearsay_agenda_revision() {
     let input = BreedInput {
         intent: "speech_recognition".to_string(),
         candidates: vec![],
-        facts: vec![
-            Fact {
-                key: "level0".to_string(),
-                value: "initial_hypothesis".to_string(),
-            },
-        ],
+        facts: vec![Fact {
+            key: "level0".to_string(),
+            value: "initial_hypothesis".to_string(),
+        }],
         cases: vec![],
         rules: vec![
             Rule {
@@ -1185,12 +1197,10 @@ fn hearsay_consensus_fusion() {
     let input = BreedInput {
         intent: "speech_recognition".to_string(),
         candidates: vec![],
-        facts: vec![
-            Fact {
-                key: "acoustic".to_string(),
-                value: "signal".to_string(),
-            },
-        ],
+        facts: vec![Fact {
+            key: "acoustic".to_string(),
+            value: "signal".to_string(),
+        }],
         cases: vec![],
         rules: vec![
             Rule {
@@ -1216,7 +1226,10 @@ fn hearsay_consensus_fusion() {
     // Verify word:hello was posted and should have fused confidence via noisy-OR
     // noisy_or(0.7, 0.8) = 1 - (1-0.7)*(1-0.8) = 1 - 0.3*0.2 = 1 - 0.06 = 0.94
     assert!(
-        output.facts.iter().any(|f| f.key == "word" && f.value == "hello"),
+        output
+            .facts
+            .iter()
+            .any(|f| f.key == "word" && f.value == "hello"),
         "Hearsay should post word:hello after both KSs contribute evidence"
     );
 
@@ -1262,7 +1275,10 @@ fn prolog_known_input_known_output() {
 
     let output = breed.run(&input).expect("Prolog run ok");
     assert_eq!(output.breed, BreedId::Prolog);
-    assert!(!output.inference_trace.is_empty(), "Prolog should have non-empty trace");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Prolog should have non-empty trace"
+    );
     assert!(
         output
             .inference_trace
@@ -1287,7 +1303,10 @@ fn prolog_precondition_rejection_empty_triple() {
 
     let breed = prolog::Prolog;
     let result = breed.preconditions(&input);
-    assert!(result.is_err(), "Prolog should reject empty intent+goals+rules");
+    assert!(
+        result.is_err(),
+        "Prolog should reject empty intent+goals+rules"
+    );
 }
 
 #[test]
@@ -1317,10 +1336,7 @@ fn prolog_bypass_attempt_unmatched_goal() {
     assert!(!output.inference_trace.is_empty());
     // Prolog should emit a "decision" step indicating the query result
     assert!(
-        output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "decision"),
+        output.inference_trace.iter().any(|t| t.kind == "decision"),
         "Prolog must emit decision step"
     );
     // selected should be None since the query was denied
@@ -1431,9 +1447,18 @@ fn receipt_generation_and_hashing() {
         let receipt = breed.receipt(&input, &output);
 
         // Verify receipt fields are non-empty hex strings
-        assert!(!receipt.input_hash.is_empty(), "input_hash should be non-empty");
-        assert!(!receipt.output_hash.is_empty(), "output_hash should be non-empty");
-        assert!(!receipt.combined_hash.is_empty(), "combined_hash should be non-empty");
+        assert!(
+            !receipt.input_hash.is_empty(),
+            "input_hash should be non-empty"
+        );
+        assert!(
+            !receipt.output_hash.is_empty(),
+            "output_hash should be non-empty"
+        );
+        assert!(
+            !receipt.combined_hash.is_empty(),
+            "combined_hash should be non-empty"
+        );
 
         // Verify they're valid hex (64-char strings)
         assert_eq!(
@@ -1513,7 +1538,11 @@ fn soar_deterministic_tiebreak() {
 fn log_adapter_produces_valid_breed_input() {
     use wasm4pm_cognition::log_adapter::{log_to_breed_input, LogAdapterInput};
 
-    let top = vec!["Register".to_string(), "Approve".to_string(), "Close".to_string()];
+    let top = vec![
+        "Register".to_string(),
+        "Approve".to_string(),
+        "Close".to_string(),
+    ];
     let input = log_to_breed_input(LogAdapterInput {
         intent: "select discovery algorithm",
         algorithm_candidates: &["dfg", "heuristic_miner", "ilp"],
@@ -1524,7 +1553,6 @@ fn log_adapter_produces_valid_breed_input() {
         mean_trace_len: 8.5,
         top_activities: &top,
     });
-
 
     // Candidates must match the provided list.
     let candidate_ids: Vec<&str> = input.candidates.iter().map(|c| c.id.as_str()).collect();
@@ -1543,8 +1571,16 @@ fn log_adapter_produces_valid_breed_input() {
     }
 
     // scale must be "medium" for 5_000 traces.
-    let scale = input.facts.iter().find(|f| f.key == "scale").map(|f| f.value.as_str());
-    assert_eq!(scale, Some("medium"), "5000 traces must map to scale=medium");
+    let scale = input
+        .facts
+        .iter()
+        .find(|f| f.key == "scale")
+        .map(|f| f.value.as_str());
+    assert_eq!(
+        scale,
+        Some("medium"),
+        "5000 traces must map to scale=medium"
+    );
 
     // Anchor cases must be present.
     assert!(
@@ -1554,5 +1590,8 @@ fn log_adapter_produces_valid_breed_input() {
 
     // All breeds should be able to run with this input (smoke — just preconditions).
     let result = wasm4pm_cognition::breeds::soar::Soar.preconditions(&input);
-    assert!(result.is_ok(), "SOAR preconditions must pass on adapter output");
+    assert!(
+        result.is_ok(),
+        "SOAR preconditions must pass on adapter output"
+    );
 }

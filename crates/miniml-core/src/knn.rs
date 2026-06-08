@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, dist_to_point};
+use crate::matrix::{dist_to_point, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct KnnModel {
@@ -14,13 +14,19 @@ pub struct KnnModel {
 #[wasm_bindgen]
 impl KnnModel {
     #[wasm_bindgen(getter)]
-    pub fn k(&self) -> usize { self.k }
+    pub fn k(&self) -> usize {
+        self.k
+    }
 
     #[wasm_bindgen(getter, js_name = "nSamples")]
-    pub fn n_samples(&self) -> usize { self.n_samples }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen]
     pub fn predict(&self, data: &[f64]) -> Vec<u32> {
@@ -53,7 +59,9 @@ impl KnnModel {
             for j in 0..self.k.min(dists.len()) {
                 votes[dists[j].1 as usize] += 1;
             }
-            let predicted = votes.iter().enumerate()
+            let predicted = votes
+                .iter()
+                .enumerate()
                 .max_by_key(|(_, &v)| v)
                 .map(|(i, _)| i as u32)
                 .unwrap_or(0);
@@ -97,7 +105,12 @@ impl KnnModel {
     }
 }
 
-pub fn knn_fit_impl(data: &[f64], n_features: usize, labels: &[f64], k: usize) -> Result<KnnModel, MlError> {
+pub fn knn_fit_impl(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    k: usize,
+) -> Result<KnnModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if labels.len() != n {
         return Err(MlError::new("labels length must match number of samples"));
@@ -118,7 +131,12 @@ pub fn knn_fit_impl(data: &[f64], n_features: usize, labels: &[f64], k: usize) -
 }
 
 #[wasm_bindgen(js_name = "knnFit")]
-pub fn knn_fit(data: &[f64], n_features: usize, labels: &[f64], k: usize) -> Result<KnnModel, JsError> {
+pub fn knn_fit(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+    k: usize,
+) -> Result<KnnModel, JsError> {
     knn_fit_impl(data, n_features, labels, k).map_err(|e| JsError::new(&e.message))
 }
 
@@ -130,8 +148,8 @@ mod tests {
     fn test_perfect_classification() {
         // Two clear clusters
         let data = vec![
-            0.0, 0.0,  0.1, 0.1,  0.2, 0.0,  // class 0
-            5.0, 5.0,  5.1, 5.1,  4.9, 5.0,  // class 1
+            0.0, 0.0, 0.1, 0.1, 0.2, 0.0, // class 0
+            5.0, 5.0, 5.1, 5.1, 4.9, 5.0, // class 1
         ];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let model = knn_fit_impl(&data, 2, &labels, 3).unwrap();

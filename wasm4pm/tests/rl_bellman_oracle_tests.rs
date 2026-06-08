@@ -73,7 +73,8 @@ impl WorkflowAction for A {
 fn q_learning_terminal_target_equals_reward() {
     // Bellman: Q_new = Q_old + alpha * (r - Q_old) when done == true.
     // Starting from Q_old = 0 with alpha = 1.0 gives Q_new = r exactly.
-    let agent: QLearning<S, A> = QLearning::with_hyperparams(/*lr*/ 1.0, /*df*/ 0.99, /*eps*/ 0.0);
+    let agent: QLearning<S, A> =
+        QLearning::with_hyperparams(/*lr*/ 1.0, /*df*/ 0.99, /*eps*/ 0.0);
     let s = S(0);
     let s_next = S(1);
     let r = 0.7_f32;

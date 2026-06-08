@@ -105,7 +105,13 @@ fn jaccard_metamorphic_growing_overlap_decreases_distance() {
         let a = s(&universe);
         let b = s(&universe[..k]);
         let d = jaccard_distance(&a, &b);
-        assert!(d <= prev + 1e-12, "non-monotonic at k={}: {} > {}", k, d, prev);
+        assert!(
+            d <= prev + 1e-12,
+            "non-monotonic at k={}: {} > {}",
+            k,
+            d,
+            prev
+        );
         prev = d;
     }
 }
@@ -122,11 +128,7 @@ fn ewma_recurrence_holds_pointwise() {
     assert_eq!(s_out[0], v[0]);
     for i in 1..v.len() {
         let expected = alpha * v[i] + (1.0 - alpha) * s_out[i - 1];
-        assert!(
-            (s_out[i] - expected).abs() < 1e-12,
-            "violation at i={}",
-            i
-        );
+        assert!((s_out[i] - expected).abs() < 1e-12, "violation at i={}", i);
     }
 }
 
@@ -156,7 +158,9 @@ fn ewma_lower_alpha_smooths_more_than_higher_alpha() {
     let mut v = Vec::new();
     let mut rng_state: u64 = 0x9E37_79B9_7F4A_7C15;
     for _ in 0..1000 {
-        rng_state = rng_state.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        rng_state = rng_state
+            .wrapping_mul(6364136223846793005)
+            .wrapping_add(1442695040888963407);
         let r = (rng_state >> 11) as f64 / (1u64 << 53) as f64; // [0,1)
         v.push(r - 0.5);
     }
@@ -199,7 +203,10 @@ fn trend_classification_matches_spec() {
     assert_eq!(classify_trend(&[1.0, 2.0, 3.0, 4.0, 5.0]), "rising");
     assert_eq!(classify_trend(&[5.0, 4.0, 3.0, 2.0, 1.0]), "falling");
     // Range / scale < 5% ⇒ stable.
-    assert_eq!(classify_trend(&[100.0, 100.5, 101.0, 100.9, 100.4]), "stable");
+    assert_eq!(
+        classify_trend(&[100.0, 100.5, 101.0, 100.9, 100.4]),
+        "stable"
+    );
 }
 
 // ---------------------------------------------------------------------------

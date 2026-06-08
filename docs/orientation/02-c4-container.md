@@ -10,7 +10,7 @@ graph TD
 
   subgraph "Node.js / Browser Runtime"
     CLI[apps/wasm4pm: wpm CLI]
-    Kernel[packages/kernel: TS Facade]
+    Kernel[packages/kernel: TS boundary]
     Bridge[wasm4pm: WASM Memory Bridge]
   end
 

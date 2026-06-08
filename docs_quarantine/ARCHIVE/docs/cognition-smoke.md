@@ -12,7 +12,7 @@ Each step is independently timed and prints `PASS` or `FAIL` on its own line. Th
 | 2 | `cargo test -p wasm4pm-cognition --lib` | The Rust lib-level tests pass. These cover inference engine correctness, not integration. |
 | 3 | `cargo test -p prolog8 --lib` | The Prolog resolution engine (prolog8 crate) passes its own unit tests. Prolog8 is the primary reasoning backend for the `prolog` contract. |
 | 4 | `bash scripts/cognition-no-stub-scan.sh --quick` | No fraudulent patterns exist in the cognition source: no hardcoded fitness constants, no unconditional `Allow` returns, no dead inference engines. |
-| 5 | `node -e "require('./packages/cognition/dist/index.js')"` | The TypeScript cognition facade is built and importable. This catches broken transpilation or missing dist artifacts. |
+| 5 | `node -e "require('./packages/cognition/dist/index.js')"` | The TypeScript cognition boundary is built and importable. This catches broken transpilation or missing dist artifacts. |
 | 6 | `wpm cognition adversarial --format json \| jq '.payload.detectors \| length'` returns 8 | The adversarial prober reports all 8 detectors. A count below 8 means a detector was removed or its registration was broken. |
 
 ## When to Run

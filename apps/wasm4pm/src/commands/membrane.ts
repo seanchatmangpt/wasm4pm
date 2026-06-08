@@ -1819,7 +1819,7 @@ export const membrane = defineCommand({
     wpm membrane verify                   Run benchmarks — exit non-zero on failure (CI)
     wpm membrane export [--format sarif]  Emit SARIF / JSON / report
 
-  Deprecated aliases (removed v26.6):
+  Removed aliases (removed v26.6):
     health → show    classify → replay    benchmark → verify    inspect → show <handle>
 
   Run "wpm membrane <subcommand> --help" for detailed usage.
@@ -1838,7 +1838,7 @@ export const membrane = defineCommand({
     replay: membraneReplay,
     verify: membraneVerify,
     export: membraneExport,
-    // deprecated aliases (kept for backward compat, removed v26.6)
+    // removed aliases (kept for backward compat, removed v26.6)
     health: membraneShow,
     classify: membraneReplayLog,
     inspect: membraneInspect,

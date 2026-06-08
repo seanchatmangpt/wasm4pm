@@ -1,9 +1,8 @@
-
 mod commands;
 
 use clap::{CommandFactory, Parser, Subcommand};
-use wasm4pm_cli::errors::Report;
 use std::path::PathBuf;
+use wasm4pm_cli::errors::Report;
 
 #[derive(Parser)]
 #[command(name = "wpm")]

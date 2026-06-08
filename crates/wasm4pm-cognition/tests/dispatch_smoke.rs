@@ -2,7 +2,7 @@
 //! routes correctly through the dispatch mechanism and produces non-empty traces.
 
 use wasm4pm_cognition::breeds::{
-    Candidate, Case, Fact, Goal, Rule, StateAtom, BreedInput, BreedId, dispatch_breed_test,
+    dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
 
 /// Create a minimal valid BreedInput for testing.
@@ -249,7 +249,9 @@ fn multi_breed_pipeline_smoke_test() {
     // Diagram 29: Execute all 9 breeds in sequence with appropriate inputs
     // This is a smoke test to verify all breeds execute without panic
 
-    let breeds = vec!["eliza", "cbr", "dendral", "strips", "prolog", "mycin", "gps", "soar", "hearsay"];
+    let breeds = vec![
+        "eliza", "cbr", "dendral", "strips", "prolog", "mycin", "gps", "soar", "hearsay",
+    ];
     let mut all_outputs = vec![];
 
     for breed_name in breeds {
@@ -281,11 +283,7 @@ fn multi_breed_pipeline_smoke_test() {
     }
 
     // Final verification: all 9 breeds executed successfully
-    assert_eq!(
-        all_outputs.len(),
-        9,
-        "pipeline must execute all 9 breeds"
-    );
+    assert_eq!(all_outputs.len(), 9, "pipeline must execute all 9 breeds");
 
     // Verify outputs are properly structured
     for (idx, output) in all_outputs.iter().enumerate() {
@@ -300,8 +298,14 @@ fn multi_breed_pipeline_smoke_test() {
             idx
         );
         assert!(
-            output.inference_trace.iter().map(|s| s.step).max().unwrap_or(0) > 0
-            || output.inference_trace.len() == 1,
+            output
+                .inference_trace
+                .iter()
+                .map(|s| s.step)
+                .max()
+                .unwrap_or(0)
+                > 0
+                || output.inference_trace.len() == 1,
             "output[{}] has invalid trace indices",
             idx
         );
@@ -357,7 +361,10 @@ fn dispatch_preserves_input_candidates() {
     // Verify candidate structure integrity
     for candidate in &output.candidates {
         assert!(!candidate.id.is_empty(), "candidate id must not be empty");
-        assert!(candidate.score >= 0.0 && candidate.score <= 1.0, "candidate score must be in [0,1]");
+        assert!(
+            candidate.score >= 0.0 && candidate.score <= 1.0,
+            "candidate score must be in [0,1]"
+        );
     }
 }
 
@@ -371,12 +378,10 @@ fn dispatch_output_receipt_consistency() {
     assert_eq!(output.breed, BreedId::Prolog);
 
     // Verify output is serializable (receipt computation requires this)
-    let output_json = serde_json::to_string(&output)
-        .expect("output must be JSON serializable");
+    let output_json = serde_json::to_string(&output).expect("output must be JSON serializable");
     assert!(!output_json.is_empty(), "output JSON must not be empty");
 
     // Verify input is serializable
-    let input_json = serde_json::to_string(&input)
-        .expect("input must be JSON serializable");
+    let input_json = serde_json::to_string(&input).expect("input must be JSON serializable");
     assert!(!input_json.is_empty(), "input JSON must not be empty");
 }

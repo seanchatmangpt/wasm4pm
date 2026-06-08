@@ -6,11 +6,11 @@
 //! 3. SPC-to-RL causality chain validation (causal proof across 3 span types)
 
 #![allow(unused)]
-use wasm4pm::*;
+use std::collections::HashMap;
 use wasm4pm::models;
 use wasm4pm::rl_orchestrator;
 use wasm4pm::spc;
-use std::collections::HashMap;
+use wasm4pm::*;
 
 #[test]
 fn cycle43_autonomic_cycle_span_exists() {
@@ -40,9 +40,9 @@ fn cycle43_convergence_validation_td_error_trend() {
 
     // Simulate bounded reward sequence following [-5.5, +1.6] range
     let rewards = vec![
-        0.2, 0.1, -0.3, 0.2, 0.1,  // Early learning (high variance)
-        0.15, 0.15, 0.1, 0.1, 0.15,  // Mid learning (stabilizing)
-        0.1, 0.1, 0.15, 0.1, 0.1,  // Late learning (low variance, converged)
+        0.2, 0.1, -0.3, 0.2, 0.1, // Early learning (high variance)
+        0.15, 0.15, 0.1, 0.1, 0.15, // Mid learning (stabilizing)
+        0.1, 0.1, 0.15, 0.1, 0.1, // Late learning (low variance, converged)
     ];
 
     let gamma = 0.99_f32;
@@ -54,7 +54,10 @@ fn cycle43_convergence_validation_td_error_trend() {
         let action_idx = cycle % 5;
 
         // Compute max Q(s')
-        let max_next_q = *q_values.iter().max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal)).unwrap_or(&0.0);
+        let max_next_q = *q_values
+            .iter()
+            .max_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal))
+            .unwrap_or(&0.0);
 
         // TD error (Bellman residual)
         let td_error: f32 = reward + gamma * max_next_q - q_values[action_idx];
@@ -69,7 +72,7 @@ fn cycle43_convergence_validation_td_error_trend() {
     let mean_late: f32 = td_errors[10..].iter().sum::<f32>() / 5.0;
 
     assert!(
-        mean_late <= mean_early * 1.1,  // Allow 10% tolerance for stochasticity
+        mean_late <= mean_early * 1.1, // Allow 10% tolerance for stochasticity
         "Convergence validation failed: early_mean={:.4}, late_mean={:.4}; expected late <= early",
         mean_early,
         mean_late
@@ -78,7 +81,10 @@ fn cycle43_convergence_validation_td_error_trend() {
     // Verify convergence_status attributes would be valid
     // convergence_status = if |td_error| > 0.1 { "learning" } else { "converged" }
     for &td_err in &td_errors {
-        assert!(td_err.is_finite(), "TD error must be finite (bounded rewards)");
+        assert!(
+            td_err.is_finite(),
+            "TD error must be finite (bounded rewards)"
+        );
     }
 }
 
@@ -92,14 +98,14 @@ fn cycle43_convergence_validation_span_attributes() {
 
     // Sample context features (8-dimensional)
     let context = [
-        1.0_f32,  // event_rate_q
-        2.0_f32,  // activity_count_q
-        0.5_f32,  // health_level
-        1.0_f32,  // circuit_state
-        0.0_f32,  // spc_alert_level
-        0.3_f32,  // drift_status
-        0.2_f32,  // rework_ratio_q
-        0.5_f32,  // cycle_phase
+        1.0_f32, // event_rate_q
+        2.0_f32, // activity_count_q
+        0.5_f32, // health_level
+        1.0_f32, // circuit_state
+        0.0_f32, // spc_alert_level
+        0.3_f32, // drift_status
+        0.2_f32, // rework_ratio_q
+        0.5_f32, // cycle_phase
     ];
 
     // Select agent using LinUCB (spans emitted internally)
@@ -142,8 +148,12 @@ fn cycle43_spc_causality_chain_validation() {
     }
 
     // Simulate RL action selection in response to SPC alert
-    let spc_alert_level = 1_u8;  // One alert active
-    let rl_action = if spc_alert_level > 0 { "Scale" } else { "Continue" };
+    let spc_alert_level = 1_u8; // One alert active
+    let rl_action = if spc_alert_level > 0 {
+        "Scale"
+    } else {
+        "Continue"
+    };
 
     // Verify: action_selected matches SPC alert context (causal link)
     assert!(
@@ -152,7 +162,7 @@ fn cycle43_spc_causality_chain_validation() {
     );
 
     // Cycles 2-3: Assume recovery occurs
-    spc_history.insert(metric.to_string(), (false, 1));  // Alert resolved
+    spc_history.insert(metric.to_string(), (false, 1)); // Alert resolved
 
     // Verify: alert_previous_cycle = true, alert_current_cycle = false → recovery achieved
     {
@@ -172,7 +182,10 @@ fn cycle43_spc_causality_chain_validation() {
 
     // Compute reward delta for recovery (positive reinforcement)
     let recovery_reward_delta = 0.3_f32;
-    assert!(recovery_reward_delta > 0.0, "Recovery should yield positive reward");
+    assert!(
+        recovery_reward_delta > 0.0,
+        "Recovery should yield positive reward"
+    );
 }
 
 #[test]
@@ -215,13 +228,10 @@ fn cycle43_spc_rule_type_classification() {
 
     // Verify causes can be classified (even if empty, the enum variants exist)
     for cause in &causes {
-        let rule_type_str = format!("{:?}", cause);  // Enum Debug format
+        let rule_type_str = format!("{:?}", cause); // Enum Debug format
 
         // Verify enum can be classified (even just by Debug string for now)
-        assert!(
-            !rule_type_str.is_empty(),
-            "Rule type must be classifiable"
-        );
+        assert!(!rule_type_str.is_empty(), "Rule type must be classifiable");
 
         // In future instrumentation (Gap-OBS-2), would emit:
         // spc_rule_type: "rule_1_outlier" | "rule_2_shift" | "rule_3_trend" | "rule_4_two_of_three"
@@ -246,7 +256,10 @@ fn cycle43_agentic_integration_readiness() {
     // - counterfactual analysis with trace correlation
 
     // Stub: verify the test file compiles and runs
-    assert!(true, "Agentic framework integration test structure in place");
+    assert!(
+        true,
+        "Agentic framework integration test structure in place"
+    );
 }
 
 #[test]

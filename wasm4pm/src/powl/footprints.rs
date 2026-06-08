@@ -1,6 +1,7 @@
 //! POWL footprint analysis.
 //!
 //! Ports `pm4py/algo/discovery/footprints/powl/variants/bottomup.py`.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use serde::{Deserialize, Serialize};
@@ -409,7 +410,7 @@ pub fn compute(
                 .nodes
                 .iter()
                 .filter_map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                    ChoiceGraphNode::SubModel(idx) => Some(*idx),
                     _ => None,
                 })
                 .collect();

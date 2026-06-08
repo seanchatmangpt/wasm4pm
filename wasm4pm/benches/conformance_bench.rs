@@ -197,7 +197,11 @@ fn bench_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let net = build_sequential_net();
     let net_handle = get_or_init_state()
@@ -241,7 +245,11 @@ fn bench_simd_token_replay(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_cases in [100, 500, 1_000, 5_000, 10_000] {
         let shape = LogShape {
@@ -253,7 +261,7 @@ fn bench_simd_token_replay(c: &mut Criterion) {
         let log = generate_event_log(&shape);
 
         // Build DFG-based Petri net
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
         let activities = ["A", "B", "C", "D"];
         for (i, &act) in activities.iter().enumerate() {
             dfg.nodes.push(DFGNode {
@@ -271,43 +279,14 @@ fn bench_simd_token_replay(c: &mut Criterion) {
             });
         }
 
-        let net = SimdPetriNet::from_dfg(&dfg);
+        let net = SimdPetriNet::from_dfg(&dfg).expect("Failed to build SimdPetriNet");
 
-        // Pre-compute traces once (outside the benchmark loop)
-        let mut all_activities: Vec<String> = Vec::new();
-        let mut trace_offsets: Vec<usize> = vec![0];
-
-        for trace in &log.traces {
-            for event in &trace.events {
-                if let Some(activity) = event
-                    .attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                {
-                    all_activities.push(activity.to_owned());
-                }
-            }
-            trace_offsets.push(all_activities.len());
-        }
-
-        let total_events: usize = all_activities.len();
+        let col = log.to_columnar(ACTIVITY_KEY);
+        let total_events: usize = col.events.len();
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &(all_activities, trace_offsets),
-            |b, (acts, offsets)| {
-                // Build trace slices with stable references
-                let mut traces: Vec<Vec<&str>> = Vec::new();
-                for i in 0..offsets.len() - 1 {
-                    let start = offsets[i];
-                    let end = offsets[i + 1];
-                    let trace_activities: Vec<&str> =
-                        acts[start..end].iter().map(|s| s.as_ref()).collect();
-                    traces.push(trace_activities);
-                }
-                b.iter(|| black_box(net.replay_log(black_box(&traces))));
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &col, |b, col| {
+            b.iter(|| black_box(net.replay_log(black_box(col))));
+        });
     }
     group.finish();
 }
@@ -321,7 +300,11 @@ fn bench_etconformance_precision(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let net = build_sequential_net();
     let initial_marking: HashMap<String, usize> = net
@@ -368,7 +351,11 @@ fn bench_declare_conformance(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let declare_model = build_declare_model();
     let constraints = declare_model.constraints;
@@ -486,7 +473,11 @@ fn bench_temporal_profile(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(30);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_cases in [100, 500, 1_000, 5_000] {
         let shape = LogShape {

@@ -7,7 +7,7 @@
 //! - Anomaly detection (low-frequency edges are potential anomalies)
 //! - Process summarization (focus on the "happy path")
 
-use crate::models::DirectlyFollowsGraph;
+use crate::models::DFG;
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
@@ -88,8 +88,8 @@ impl StreamingSkeletonBuilder {
     ///
     /// This is a non-destructive read - you can call it multiple times
     /// with different thresholds to explore the process at different granularities.
-    pub fn snapshot_with_min_freq(&self, min_freq: usize) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn snapshot_with_min_freq(&self, min_freq: usize) -> DFG {
+        let mut dfg = DFG::new();
 
         // Filter nodes by frequency
         dfg.nodes = self
@@ -142,7 +142,7 @@ impl StreamingSkeletonBuilder {
 }
 
 impl StreamingAlgorithm for StreamingSkeletonBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         Self::new()

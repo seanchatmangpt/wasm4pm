@@ -43,8 +43,8 @@ fn linucb_variance_non_negative_under_unnormalized_features() {
     let cases: [[f32; N_FEATURES]; 4] = [
         [0.0; N_FEATURES],
         [1.0; N_FEATURES],
-        [-1.0; N_FEATURES],            // out-of-spec negative
-        [10.0; N_FEATURES],            // out-of-spec >1
+        [-1.0; N_FEATURES], // out-of-spec negative
+        [10.0; N_FEATURES], // out-of-spec >1
     ];
     for (i, x) in cases.iter().enumerate() {
         let v = agent.compute_ucb_variance(x);
@@ -57,6 +57,7 @@ fn linucb_variance_non_negative_under_unnormalized_features() {
 /// with the outer-product formula. After many updates A_inv[i][j] must equal
 /// A_inv[j][i] within f32 rounding (≤ ~1e-5 for our magnitudes).
 #[test]
+#[allow(clippy::needless_range_loop)]
 fn linucb_a_inv_symmetric_after_repeated_updates() {
     let mut agent = LinUCBAgent::new();
     let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
@@ -67,7 +68,12 @@ fn linucb_a_inv_symmetric_after_repeated_updates() {
     for i in 0..N_FEATURES {
         for j in (i + 1)..N_FEATURES {
             let d = (a_inv[i][j] - a_inv[j][i]).abs();
-            assert!(d < 1e-5, "A_inv[{i}][{j}]={} vs [{j}][{i}]={} Δ={d}", a_inv[i][j], a_inv[j][i]);
+            assert!(
+                d < 1e-5,
+                "A_inv[{i}][{j}]={} vs [{j}][{i}]={} Δ={d}",
+                a_inv[i][j],
+                a_inv[j][i]
+            );
         }
     }
 }
@@ -80,7 +86,10 @@ fn linucb_select_finite_under_out_of_spec_features() {
     let agent = LinUCBAgent::new();
     let weird = [-0.5_f32, 2.0, -3.0, 0.0, 1.5, -0.1, 0.7, 4.2];
     let (action, score) = agent.select(&weird);
-    assert!((action as usize) < N_ACTIONS, "action {action} out of range");
+    assert!(
+        (action as usize) < N_ACTIONS,
+        "action {action} out of range"
+    );
     assert!(score.is_finite(), "score must be finite, got {score}");
 }
 
@@ -111,7 +120,11 @@ fn spc_history_cycle_count_monotonic_across_evictions() {
     let mut h = SpcHistory::new();
     for i in 0..150_u64 {
         h.record_snapshot(SpcSnapshot::new(format!("t{i}"), 1.0, 100.0, 0.5, 0));
-        assert_eq!(h.cycle_count, i + 1, "cycle_count must monotonically increase");
+        assert_eq!(
+            h.cycle_count,
+            i + 1,
+            "cycle_count must monotonically increase"
+        );
     }
     // Buffer capacity is 100; storage saturates but counter does not.
     assert_eq!(h.history.len(), 100, "ring buffer must cap at 100");
@@ -129,7 +142,10 @@ fn spc_history_clear_resets_both_counter_and_storage() {
     assert_eq!(h.cycle_count, 10);
     h.clear();
     assert_eq!(h.cycle_count, 0, "cycle_count must reset on clear()");
-    assert!(h.history.is_empty(), "ring buffer must be empty after clear()");
+    assert!(
+        h.history.is_empty(),
+        "ring buffer must be empty after clear()"
+    );
     h.record_snapshot(SpcSnapshot::new("post".into(), 1.0, 100.0, 0.5, 0));
     assert_eq!(h.cycle_count, 1, "post-clear push must increment from 0");
 }
@@ -173,13 +189,23 @@ fn circuit_breaker_handles_clock_skew_after_state_restore() {
 
     // allow_request must NOT trip the timeout (elapsed clamps to 0).
     let allowed = cb.allow_request();
-    assert!(!allowed, "Open + skewed-future timestamp must still reject requests");
-    assert_eq!(cb.state(), CircuitState::Open, "must remain Open under clock skew");
+    assert!(
+        !allowed,
+        "Open + skewed-future timestamp must still reject requests"
+    );
+    assert_eq!(
+        cb.state(),
+        CircuitState::Open,
+        "must remain Open under clock skew"
+    );
 
     // Once the real clock catches up past the timeout, it must transition.
     advance_clock(3_600_000 + 1_500); // catch up + timeout
     let allowed = cb.allow_request();
-    assert!(allowed, "after clock catches up + timeout, Open→HalfOpen must allow probe");
+    assert!(
+        allowed,
+        "after clock catches up + timeout, Open→HalfOpen must allow probe"
+    );
     assert_eq!(cb.state(), CircuitState::HalfOpen);
     reset_clock();
 }
@@ -208,7 +234,10 @@ fn circuit_breaker_open_to_half_open_at_exact_timeout() {
     };
     let mut cb = CircuitBreaker::from_state_json(json_state);
     let allowed = cb.allow_request();
-    assert!(allowed, "at exact timeout, Open must transition to HalfOpen");
+    assert!(
+        allowed,
+        "at exact timeout, Open must transition to HalfOpen"
+    );
     assert_eq!(cb.state(), CircuitState::HalfOpen);
 }
 
@@ -221,13 +250,16 @@ fn circuit_breaker_closed_never_times_out() {
     let cb_cfg = CircuitBreakerConfig {
         failure_threshold: 5,
         success_threshold: 2,
-        open_timeout_ms: 1,            // tiny
+        open_timeout_ms: 1, // tiny
         half_open_timeout_ms: 1,
     };
-    let mut cb = CircuitBreaker::with_config(cb_cfg);
-    advance_clock(1_000_000_000);     // huge skip
+    let mut cb = CircuitBreaker::with_config(cb_cfg).unwrap();
+    advance_clock(1_000_000_000); // huge skip
     let allowed = cb.allow_request();
-    assert!(allowed, "Closed must always allow regardless of elapsed time");
+    assert!(
+        allowed,
+        "Closed must always allow regardless of elapsed time"
+    );
     assert_eq!(cb.state(), CircuitState::Closed);
     reset_clock();
 }

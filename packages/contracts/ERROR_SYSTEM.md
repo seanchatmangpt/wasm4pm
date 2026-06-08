@@ -190,7 +190,7 @@ if (result.type === 'ok') {
   console.error('Exit code:', result.error.exit_code);
   console.error('How to fix:', result.error.remediation);
 } else if (result.type === 'err') {
-  console.error('Legacy error:', result.error);
+  console.error(' error:', result.error);
 }
 
 // Type guards

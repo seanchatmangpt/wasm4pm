@@ -400,7 +400,11 @@ mod tests {
         // 1 inter-event gap of 1 hour = 3_600_000 ms
         assert_eq!(order["count"].as_u64().unwrap(), 1);
         let mean = order["mean_ms"].as_f64().unwrap();
-        assert!((mean - 3_600_000.0).abs() < 1.0, "mean should be 1h = 3600000ms, got {}", mean);
+        assert!(
+            (mean - 3_600_000.0).abs() < 1.0,
+            "mean should be 1h = 3600000ms, got {}",
+            mean
+        );
     }
 
     #[test]
@@ -415,7 +419,11 @@ mod tests {
         // Empty OCEL: result should be an empty JSON object
         let result = oc_performance_analysis_inner(&ocel);
         assert!(result.is_object());
-        assert_eq!(result.as_object().unwrap().len(), 0, "Empty OCEL should produce empty result");
+        assert_eq!(
+            result.as_object().unwrap().len(),
+            0,
+            "Empty OCEL should produce empty result"
+        );
     }
 
     #[test]

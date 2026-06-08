@@ -110,18 +110,18 @@ else
     V_STATUS["V6"]="FAIL (WASM cargo check failed for wasm32-unknown-unknown)"
 fi
 
-# ── V7: TS facade zero-logic contract present ────────────────────────────────
-# The TS facade must exist and must not contain any process logic itself.
+# ── V7: TS boundary zero-logic contract present ────────────────────────────────
+# The TS boundary must exist and must not contain any process logic itself.
 TS_INDEX="packages/cognition/src/index.ts"
 TS_ZERO_LOGIC_TEST="packages/cognition/src/__tests__/zero-logic.test.ts"
 if [ -f "$TS_INDEX" ]; then
     if [ -f "$TS_ZERO_LOGIC_TEST" ]; then
-        V_STATUS["V7"]="PASS (TS facade and zero-logic test both present)"
+        V_STATUS["V7"]="PASS (TS boundary and zero-logic test both present)"
     else
-        V_STATUS["V7"]="WARN (TS facade present but zero-logic.test.ts not found at $TS_ZERO_LOGIC_TEST)"
+        V_STATUS["V7"]="WARN (TS boundary present but zero-logic.test.ts not found at $TS_ZERO_LOGIC_TEST)"
     fi
 else
-    V_STATUS["V7"]="FAIL (TS facade not found at $TS_INDEX)"
+    V_STATUS["V7"]="FAIL (TS boundary not found at $TS_INDEX)"
 fi
 
 # ── V8: CLI command present and wired to compiled WASM ───────────────────────

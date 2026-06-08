@@ -12,9 +12,9 @@
 
 extern crate alloc;
 
-use alloc::vec::Vec;
-use crate::primitives::ActivityName;
 use crate::petri_net::TransitionId;
+use crate::primitives::ActivityName;
+use alloc::vec::Vec;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -30,7 +30,11 @@ pub struct AlignmentCost(pub f64);
 impl AlignmentCost {
     /// Construct a cost value. Returns `None` if negative or non-finite.
     pub fn new(v: f64) -> Option<Self> {
-        if v >= 0.0 && v.is_finite() { Some(AlignmentCost(v)) } else { None }
+        if v >= 0.0 && v.is_finite() {
+            Some(AlignmentCost(v))
+        } else {
+            None
+        }
     }
     pub const ZERO: AlignmentCost = AlignmentCost(0.0);
     pub const UNIT: AlignmentCost = AlignmentCost(1.0);
@@ -57,7 +61,10 @@ pub enum AlignmentMove {
     LogOnly { activity: ActivityName },
     /// Model transition `t` fires with no log counterpart. Formal: (≫, t).
     /// `invisible` is true for τ-transitions (zero cost), false for visible (unit cost).
-    ModelOnly { transition: TransitionId, invisible: bool },
+    ModelOnly {
+        transition: TransitionId,
+        invisible: bool,
+    },
 }
 
 impl AlignmentMove {
@@ -66,8 +73,12 @@ impl AlignmentMove {
         match self {
             AlignmentMove::Synchronous { .. } => AlignmentCost::ZERO,
             AlignmentMove::LogOnly { .. } => AlignmentCost::UNIT,
-            AlignmentMove::ModelOnly { invisible: true, .. } => AlignmentCost::ZERO,
-            AlignmentMove::ModelOnly { invisible: false, .. } => AlignmentCost::UNIT,
+            AlignmentMove::ModelOnly {
+                invisible: true, ..
+            } => AlignmentCost::ZERO,
+            AlignmentMove::ModelOnly {
+                invisible: false, ..
+            } => AlignmentCost::UNIT,
         }
     }
 

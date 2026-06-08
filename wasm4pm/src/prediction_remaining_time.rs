@@ -129,8 +129,7 @@ pub fn build_remaining_time_model(
                 let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
                 let mut next_id = 0u32;
                 let mut id_to_activity: Vec<&str> = Vec::new();
-                let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> =
-                    FxHashMap::default();
+                let mut bucket_samples: FxHashMap<(u32, usize), Vec<f64>> = FxHashMap::default();
                 let mut case_durations: Vec<f64> = Vec::new();
 
                 for trace in &log.traces {
@@ -138,8 +137,7 @@ pub fn build_remaining_time_model(
                         .events
                         .iter()
                         .filter_map(|e| {
-                            let act =
-                                e.attributes.get(activity_key).and_then(|v| v.as_string())?;
+                            let act = e.attributes.get(activity_key).and_then(|v| v.as_string())?;
                             let ts = match e.attributes.get(timestamp_key) {
                                 Some(AttributeValue::Date(d)) => parse_timestamp_ms(d),
                                 Some(AttributeValue::String(s)) => parse_timestamp_ms(s),
@@ -238,7 +236,11 @@ pub fn build_remaining_time_model(
             .values()
             .map(|b| {
                 let n = b.count as f64;
-                let ss = if b.count > 1 { b.std_ms.powi(2) * (n - 1.0) } else { 0.0 };
+                let ss = if b.count > 1 {
+                    b.std_ms.powi(2) * (n - 1.0)
+                } else {
+                    0.0
+                };
                 ss + b.mean_ms.powi(2) * n
             })
             .sum::<f64>()

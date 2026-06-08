@@ -14,7 +14,7 @@
 //! - **[u32; 64] fixed array** for markings (zero allocation per trace)
 //! - **Branchless fire** for preset/postset batch updates
 
-use crate::models::{ColumnarLog, DFGNode, DirectlyFollowsGraph};
+use crate::models::{ColumnarLog, DFGNode, DFG};
 use rustc_hash::FxHashMap;
 
 /// Integer-encoded Petri net for SIMD token replay.
@@ -36,6 +36,12 @@ pub struct TraceReplayResult {
     pub missing: u32,
     pub remaining: u32,
     pub fitness: f64,
+    /// Enabled activity count summed across all replay steps (ETC precision numerator basis).
+    pub total_enabled: u32,
+    /// Enabled activities NOT executed at each step (escaping arcs for ETC precision).
+    pub total_escaping: u32,
+    /// ETC precision for this trace: 1 - (total_escaping / total_enabled).
+    pub precision: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -46,10 +52,17 @@ pub struct LogReplayResult {
     pub total_missing: u32,
     pub total_remaining: u32,
     pub overall_fitness: f64,
+    /// ETC precision across all traces: 1 - (Σescaping / Σenabled).
+    pub overall_precision: f64,
+    /// Generalization proxy: 1 - (unique_fitness_paths / total_traces), clamped [0,1].
+    /// Measures diversity of execution paths observed in the log.
+    pub overall_generalization: f64,
+    pub total_enabled: u32,
+    pub total_escaping: u32,
 }
 
 impl SimdPetriNet {
-    pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Result<Self, String> {
+    pub fn from_dfg(dfg: &DFG) -> Result<Self, String> {
         let mut place_ids: FxHashMap<String, u32> = FxHashMap::default();
         let mut label_to_transitions: FxHashMap<String, Vec<u32>> = FxHashMap::default();
         let mut transition_labels: Vec<Option<String>> = Vec::new();
@@ -64,6 +77,10 @@ impl SimdPetriNet {
             place_ids.entry(node.id.clone()).or_insert(id);
         }
 
+        // Track which places have outgoing transitions (appear in any edge.from)
+        let mut places_with_outgoing: std::collections::HashSet<u32> =
+            std::collections::HashSet::default();
+
         for edge in &dfg.edges {
             let trans_id = transition_labels.len() as u32;
             let label = Some(edge.from.clone());
@@ -72,12 +89,33 @@ impl SimdPetriNet {
             let from_id = *place_ids.get(&edge.from).unwrap_or(&0);
             let to_id = *place_ids.get(&edge.to).unwrap_or(&0);
 
+            places_with_outgoing.insert(from_id);
+
             preset.push(vec![from_id]);
             postset.push(vec![to_id]);
 
             if let Some(ref lbl) = label {
                 label_to_transitions
                     .entry(lbl.clone())
+                    .or_default()
+                    .push(trans_id);
+            }
+        }
+
+        // Add a "consume" (sink) transition for every sink place — places that have no
+        // outgoing edge in the DFG.  Without this, the last activity in any trace has
+        // no transition to fire, which causes forced-fire / missing:+1 even for perfect
+        // traces.
+        for node in &dfg.nodes {
+            let node_id = *place_ids.get(&node.id).unwrap_or(&0);
+            if !places_with_outgoing.contains(&node_id) {
+                let trans_id = transition_labels.len() as u32;
+                transition_labels.push(Some(node.id.clone()));
+                // Preset = the sink place itself; postset = empty (token consumed)
+                preset.push(vec![node_id]);
+                postset.push(vec![]);
+                label_to_transitions
+                    .entry(node.id.clone())
                     .or_default()
                     .push(trans_id);
             }
@@ -102,9 +140,20 @@ impl SimdPetriNet {
         vocab: &[&str],
     ) -> TraceReplayResult {
         let mut marking = [0u32; 64];
+        // Seed source places with one token each — canonical token replay initialization.
+        // Without this, the first activity in a finite trace always fires as a "forced fire"
+        // (no token available), producing M:+1 even for perfectly conformant traces.
+        for &p in &self.source_places() {
+            if (p as usize) < 64 {
+                marking[p as usize] = 1;
+            }
+        }
         let mut consumed: u32 = 0;
         let mut produced: u32 = 0;
         let mut missing: u32 = 0;
+        // ETC precision tracking: count enabled activities and escaping activities per step.
+        let mut total_enabled: u32 = 0;
+        let mut total_escaping: u32 = 0;
 
         let max_transitions = self
             .label_to_transitions
@@ -117,6 +166,35 @@ impl SimdPetriNet {
         for activity_idx in activities {
             let activity = vocab[activity_idx as usize];
             let candidates = self.label_to_transitions.get(activity);
+
+            // --- ETC precision: count enabled activities BEFORE firing (pre-fire marking) ---
+            // enabled_count = number of distinct activities that have ≥1 enabled transition.
+            // current_enabled = true if the activity we're about to execute has an enabled transition.
+            let current_activity_enabled: bool = candidates
+                .map(|c| {
+                    c.iter().any(|&tid| {
+                        self.preset[tid as usize]
+                            .iter()
+                            .all(|&p| marking[p as usize] > 0)
+                    })
+                })
+                .unwrap_or(false);
+            let enabled_count: u32 = self
+                .label_to_transitions
+                .values()
+                .filter(|transitions| {
+                    transitions.iter().any(|&tid| {
+                        self.preset[tid as usize]
+                            .iter()
+                            .all(|&p| marking[p as usize] > 0)
+                    })
+                })
+                .count() as u32;
+            total_enabled += enabled_count;
+            // Escaping = enabled activities that were NOT executed.
+            // If current activity was enabled, one slot is "used" → escaping = enabled - 1.
+            // If force-fired (not enabled), none were executed → escaping = enabled.
+            total_escaping += enabled_count.saturating_sub(current_activity_enabled as u32);
 
             let mut fired = 0u32;
             let mut transition_idx = 0;
@@ -193,6 +271,11 @@ impl SimdPetriNet {
         let remaining: u32 = marking[..self.num_places].iter().sum();
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);
+        let precision = if total_enabled == 0 {
+            1.0
+        } else {
+            (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
+        };
 
         TraceReplayResult {
             consumed,
@@ -200,6 +283,9 @@ impl SimdPetriNet {
             missing,
             remaining,
             fitness,
+            total_enabled,
+            total_escaping,
+            precision,
         }
     }
 
@@ -218,6 +304,8 @@ impl SimdPetriNet {
         let total_produced: u32 = trace_results.iter().map(|r| r.produced).sum();
         let total_missing: u32 = trace_results.iter().map(|r| r.missing).sum();
         let total_remaining: u32 = trace_results.iter().map(|r| r.remaining).sum();
+        let total_enabled: u32 = trace_results.iter().map(|r| r.total_enabled).sum();
+        let total_escaping: u32 = trace_results.iter().map(|r| r.total_escaping).sum();
 
         let overall_fitness = compute_fitness(
             total_consumed,
@@ -225,6 +313,24 @@ impl SimdPetriNet {
             total_missing,
             total_remaining,
         );
+        let overall_precision = if total_enabled == 0 {
+            1.0
+        } else {
+            (1.0 - (total_escaping as f64 / total_enabled as f64)).clamp(0.0, 1.0)
+        };
+
+        let total_traces = trace_results.len() as f64;
+        // Generalization proxy: diverse fitness values indicate diverse execution paths.
+        // unique_paths approximated by distinct fitness values (same fitness ≈ same path shape).
+        let unique_paths: std::collections::HashSet<String> = trace_results
+            .iter()
+            .map(|t| format!("{:.6}", t.fitness))
+            .collect();
+        let overall_generalization = if total_traces == 0.0 {
+            0.0_f64
+        } else {
+            (1.0_f64 - (unique_paths.len() as f64 / total_traces)).clamp(0.0, 1.0)
+        };
 
         LogReplayResult {
             trace_results,
@@ -233,7 +339,27 @@ impl SimdPetriNet {
             total_missing,
             total_remaining,
             overall_fitness,
+            overall_precision,
+            overall_generalization,
+            total_enabled,
+            total_escaping,
         }
+    }
+
+    /// Returns the indices of all source places — places that have no incoming transition.
+    /// In a DFG-derived Petri net, these are the "start" activities with no predecessor.
+    pub fn source_places(&self) -> Vec<u32> {
+        // Collect all places that appear in ANY postset (places receiving tokens from transitions)
+        let places_with_incoming: std::collections::HashSet<u32> = self
+            .postset
+            .iter()
+            .flat_map(|post| post.iter().copied())
+            .collect();
+
+        // Source places are all declared places NOT in places_with_incoming
+        (0..self.num_places as u32)
+            .filter(|p| !places_with_incoming.contains(p))
+            .collect()
     }
 
     pub fn num_places(&self) -> usize {
@@ -274,7 +400,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
                 });
             let col = ColumnarLog::from_owned(&col_owned);
 
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
             let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
             let mut seen: FxHashMap<u32, usize> = FxHashMap::default();
 
@@ -320,10 +446,14 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
 
             Ok(serde_json::json!({
                 "overall_fitness": result.overall_fitness,
+                "overall_precision": result.overall_precision,
+                "overall_generalization": result.overall_generalization,
                 "total_consumed": result.total_consumed,
                 "total_produced": result.total_produced,
                 "total_missing": result.total_missing,
                 "total_remaining": result.total_remaining,
+                "total_enabled": result.total_enabled,
+                "total_escaping": result.total_escaping,
                 "trace_count": result.trace_results.len(),
                 "trace_results": result.trace_results.iter().map(|tr| {
                     serde_json::json!({
@@ -332,6 +462,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
                         "missing": tr.missing,
                         "remaining": tr.remaining,
                         "fitness": tr.fitness,
+                        "precision": tr.precision,
                     })
                 }).collect::<Vec<_>>(),
             })
@@ -348,8 +479,84 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
 }
 
 #[cfg(test)]
+mod source_place_tests {
+    use super::*;
+
+    #[test]
+    fn test_perfect_sequential_trace_achieves_1_0_fitness() {
+        // Build a simple DFG: A → B → C
+        let dfg = make_dfg(&[("A", "B"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+
+        // Verify source_places() returns exactly A (index 0 — insertion order)
+        let sources = net.source_places();
+        assert!(!sources.is_empty(), "must have at least one source place");
+
+        // Build vocab and replay the exact sequence the model was built from
+        // place_ids are assigned in node insertion order from make_dfg
+        let vocab: Vec<&str> = net.place_ids.iter().collect::<Vec<_>>().into_iter().fold(
+            vec![""; net.num_places],
+            |mut v, (name, &id)| {
+                if (id as usize) < v.len() {
+                    v[id as usize] = name.as_str();
+                }
+                v
+            },
+        );
+
+        // Find activity indices by name
+        let idx_a = *net.place_ids.get("A").unwrap() as usize;
+        let idx_b = *net.place_ids.get("B").unwrap() as usize;
+        let idx_c = *net.place_ids.get("C").unwrap() as usize;
+
+        let trace = vec![idx_a as u32, idx_b as u32, idx_c as u32];
+        let vocab_refs: Vec<&str> = vocab.clone();
+        let result = net.replay_trace(trace.into_iter(), &vocab_refs);
+
+        assert_eq!(
+            result.missing, 0,
+            "perfect trace should have 0 missing tokens"
+        );
+        assert_eq!(
+            result.remaining, 0,
+            "perfect trace should have 0 remaining tokens"
+        );
+        assert!(
+            (result.fitness - 1.0).abs() < 1e-9,
+            "perfect trace fitness should be 1.0, got {}",
+            result.fitness
+        );
+    }
+
+    #[test]
+    fn test_source_places_single_source() {
+        // A→B→C: only A has no incoming edge
+        let dfg = make_dfg(&[("A", "B"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+        let sources = net.source_places();
+        // A is the place with no incoming edges
+        let a_id = *net.place_ids.get("A").unwrap();
+        assert!(sources.contains(&a_id), "A must be a source place in A→B→C");
+        assert_eq!(sources.len(), 1, "exactly one source in a linear chain");
+    }
+
+    #[test]
+    fn test_source_places_parallel_start() {
+        // Two independent paths: A→C and B→C
+        let dfg = make_dfg(&[("A", "C"), ("B", "C")]);
+        let net = SimdPetriNet::from_dfg(&dfg).unwrap();
+        let sources = net.source_places();
+        let a_id = *net.place_ids.get("A").unwrap();
+        let b_id = *net.place_ids.get("B").unwrap();
+        assert!(sources.contains(&a_id), "A must be source");
+        assert!(sources.contains(&b_id), "B must be source");
+        assert_eq!(sources.len(), 2, "two sources in parallel-start DFG");
+    }
+}
+
+#[cfg(test)]
 #[allow(dead_code)]
-fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
+fn make_dfg(edges: &[(&str, &str)]) -> DFG {
     let mut node_names: Vec<&str> = Vec::new();
     let mut node_set: FxHashMap<&str, usize> = FxHashMap::default();
 
@@ -369,7 +576,7 @@ fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
         *edge_counts.entry((from, to)).or_insert(0) += 1;
     }
 
-    DirectlyFollowsGraph {
+    DFG {
         nodes: node_names
             .iter()
             .map(|&name| DFGNode {

@@ -793,7 +793,7 @@ fn test_regenerate_all_instructions_final() {
     println!("{}", sep);
 }
 
-// ── TEST 17: Regenerate Instructions (Legacy) ────────────────────────────────
+// ── TEST 17: Regenerate Instructions () ────────────────────────────────
 
 #[test]
 fn test_regenerate_all_instructions_enhanced() {

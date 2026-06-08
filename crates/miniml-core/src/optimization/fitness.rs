@@ -3,9 +3,9 @@
 //! Provides generic interfaces for evaluating solution fitness
 //! and common helper functions.
 
-use std::sync::Arc;
-use std::marker::PhantomData;
 use super::types::Individual;
+use std::marker::PhantomData;
+use std::sync::Arc;
 
 /// Trait for fitness evaluation functions
 ///
@@ -203,10 +203,14 @@ pub fn fitness_diversity<T>(population: &[Individual<T>]) -> f64 {
     }
 
     let avg = average_fitness(population);
-    let variance = population.iter().map(|ind| {
-        let diff = ind.fitness - avg;
-        diff * diff
-    }).sum::<f64>() / population.len() as f64;
+    let variance = population
+        .iter()
+        .map(|ind| {
+            let diff = ind.fitness - avg;
+            diff * diff
+        })
+        .sum::<f64>()
+        / population.len() as f64;
 
     variance.sqrt()
 }

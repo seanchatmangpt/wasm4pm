@@ -30,9 +30,9 @@ The metrics oracle and the corpus **consume the verdicts produced by the conform
 
 | Asset | Citation | How this spec uses it |
 |---|---|---|
-| `ConformanceResult { fitness, precision, generalization, simplicity, total_traces, fitting_traces, deviating_traces }` + `conformance_rate()`, `with_precision/with_generalization/with_simplicity` | `crates/wasm4pm-types/src/conformance.rs:62-114` | The four quality metrics (fitness/precision/generalization/simplicity) are **already a serde struct** — the metrics report embeds it verbatim; the new metrics are *additive*, not a replacement. `with_*` setters exist but are unused (only `fitness` is computed today — survey item #11). |
-| `clamp_finite(x, lo, hi)` NaN-safe clamp | `crates/wasm4pm-types/src/conformance.rs:51` | Every ratio metric defined here MUST route through `clamp_finite` (or its equal) so a zero-denominator / NaN never panics. Cite this as the canonical clamp. |
-| `TokenReplayResult { fitness, produced_tokens, consumed_tokens, missing_tokens, remaining_tokens }` | `crates/wasm4pm-types/src/conformance.rs:5` | Token accounting available for fitness sub-evidence if a metric wants replay detail. |
+| `ConformanceResult { fitness, precision, generalization, simplicity, total_traces, fitting_traces, deviating_traces }` + `conformance_rate()`, `with_precision/with_generalization/with_simplicity` | `crates/wasm4pm-compat/src/conformance.rs:62-114` | The four quality metrics (fitness/precision/generalization/simplicity) are **already a serde struct** — the metrics report embeds it verbatim; the new metrics are *additive*, not a replacement. `with_*` setters exist but are unused (only `fitness` is computed today — survey item #11). |
+| `clamp_finite(x, lo, hi)` NaN-safe clamp | `crates/wasm4pm-compat/src/conformance.rs:51` | Every ratio metric defined here MUST route through `clamp_finite` (or its equal) so a zero-denominator / NaN never panics. Cite this as the canonical clamp. |
+| `TokenReplayResult { fitness, produced_tokens, consumed_tokens, missing_tokens, remaining_tokens }` | `crates/wasm4pm-compat/src/conformance.rs:5` | Token accounting available for fitness sub-evidence if a metric wants replay detail. |
 | Existing ggen-living-loop verdict shape: `{ route_id, fitness, precision, required_stage_coverage, receipt_coverage, object_lifecycle_validity, verdict, andon_reason, details:[{dimension, ok, detail}] }` with `verdict ∈ {AndonPull, ...}`, `andon_reason ∈ {InsufficientReceiptCoverage, ...}` | `fixtures/real/trace-conform-agent-proof-lifecycle/expected-conform.json:1-52` | **This is the in-tree per-trace verdict contract.** The metrics report aggregates *across* these per-trace verdicts. The bad-trace corpus reuses this exact `expected-conform.json` shape for its labels. |
 | `ReceiptDoctorReport { state: Admitted|Refused, findings: Vec<ReceiptFinding>, admitted }`; `ReceiptFinding { code, json_path, message, severity: Deny|Warning }` | `wasm4pm/src/receipt.rs:62-82` | The **finding shape** the fake-live / Andon metrics count. The metrics oracle counts findings by `code` and `severity`. |
 | `wpm receipt truthforge <file>` adversarial mutator matrix: clones a receipt, applies 4 mutations, asserts each is `CAUGHT`, prints `{name, caught, refusal_codes}` rows, exits non-zero if any `BYPASSED` | `crates/wasm4pm-cli/src/commands/receipt.rs:367-494` | **The template for the corpus runner.** "Truthforge for process law" mirrors this: instead of mutating one receipt at runtime, it replays a *checked-in* corpus of good+bad traces and asserts each label (`ACCEPT`/`REJECT`) is honored. The `{name, caught, codes}` row layout and the "all caught ⇒ success, any bypassed ⇒ non-zero exit" contract carry over directly. |
@@ -112,7 +112,7 @@ pub struct ManufacturingMetricsReport {
     pub fake_live_catch_rate: Option<f64>,     // M8 (Some only when run over a labeled corpus)
 
     // The four classic PM metrics, reused verbatim from the existing struct.
-    pub conformance: Option<wasm4pm_types::ConformanceResult>, // conformance.rs:62
+    pub conformance: Option<wasm4pm_compat::ConformanceResult>, // conformance.rs:62
 }
 
 pub struct CycleTimeStats { pub mean_ms: f64, pub p50_ms: f64, pub p95_ms: f64, pub max_ms: f64, pub n: usize }

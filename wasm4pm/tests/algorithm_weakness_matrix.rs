@@ -16,7 +16,7 @@
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation, Event,
+    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
     EventLog, Trace,
 };
 use wasm4pm::state::{get_or_init_state, StoredObject};
@@ -29,11 +29,11 @@ use wasm4pm::state::{get_or_init_state, StoredObject};
 /// approach and a dependency threshold.  Mirrors the logic of the
 /// `discover_heuristic_miner` wasm_bindgen wrapper but avoids JsValue (which
 /// panics on native targets).
-fn heuristic_dfg(log: &EventLog, activity_key: &str, threshold: f64) -> DirectlyFollowsGraph {
+fn heuristic_dfg(log: &EventLog, activity_key: &str, threshold: f64) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
         id: act.to_owned(),
         label: act.to_owned(),
@@ -116,11 +116,11 @@ fn make_log(traces: &[(usize, &[&str])]) -> EventLog {
     log
 }
 
-fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn batch_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
         id: act.to_owned(),
         label: act.to_owned(),
@@ -164,7 +164,7 @@ fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
     dfg
 }
 
-fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -274,7 +274,10 @@ fn alpha_fails_on_short_loops() {
         .get(&("A".to_string(), "B".to_string()))
         .copied()
         .unwrap_or(0);
-    assert_eq!(a_to_b, 3, "A→B must appear 3× (once per trace after the loop)");
+    assert_eq!(
+        a_to_b, 3,
+        "A→B must appear 3× (once per trace after the loop)"
+    );
 
     // DOCUMENTED CONSEQUENCE: Alpha Miner would fail to generate a Petri net
     // with a self-loop transition for A. DFG proves the self-loop exists in the data.
@@ -365,7 +368,10 @@ fn streaming_dfg_order_independent_for_same_traces() {
     );
 
     for ((from, to), count) in &edges1 {
-        let count2 = edges2.get(&(from.clone(), to.clone())).copied().unwrap_or(0);
+        let count2 = edges2
+            .get(&(from.clone(), to.clone()))
+            .copied()
+            .unwrap_or(0);
         assert_eq!(
             *count, count2,
             "Edge {}→{} must have identical frequency regardless of trace order",
@@ -411,7 +417,10 @@ fn dfg_noise_inflation_documented() {
         .get(&("A".to_string(), "X".to_string()))
         .copied()
         .unwrap_or(0);
-    assert_eq!(noise_freq, 1, "Noise edge A→X must have frequency exactly 1");
+    assert_eq!(
+        noise_freq, 1,
+        "Noise edge A→X must have frequency exactly 1"
+    );
 
     // Total traces = 101; noise ratio < 2%
     let total_a_out: usize = edges

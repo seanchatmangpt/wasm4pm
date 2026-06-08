@@ -79,13 +79,9 @@ fn parse_xes(content: &str) -> EventLog {
                         if let Some(val_end) = trimmed[val_start..].find('"') {
                             let value = trimmed[val_start..val_start + val_end].to_string();
                             if let Some(ref mut event) = current_event {
-                                event
-                                    .attributes
-                                    .insert(key, AttributeValue::String(value));
+                                event.attributes.insert(key, AttributeValue::String(value));
                             } else if let Some(ref mut trace) = current_trace {
-                                trace
-                                    .attributes
-                                    .insert(key, AttributeValue::String(value));
+                                trace.attributes.insert(key, AttributeValue::String(value));
                             }
                         }
                     }
@@ -122,8 +118,7 @@ fn timestamp_value(event: &Event) -> Option<&str> {
 
 #[test]
 fn test_missing_timestamps_parses_without_panic() {
-    let content =
-        include_str!("fixtures/dirty_data/missing_timestamps.xes");
+    let content = include_str!("fixtures/dirty_data/missing_timestamps.xes");
     let log = parse_xes(content);
 
     // Parse must succeed and produce 1 trace with 2 events
@@ -133,8 +128,7 @@ fn test_missing_timestamps_parses_without_panic() {
 
 #[test]
 fn test_missing_timestamps_first_event_lacks_timestamp() {
-    let content =
-        include_str!("fixtures/dirty_data/missing_timestamps.xes");
+    let content = include_str!("fixtures/dirty_data/missing_timestamps.xes");
     let log = parse_xes(content);
 
     let first_event = &log.traces[0].events[0];
@@ -147,8 +141,7 @@ fn test_missing_timestamps_first_event_lacks_timestamp() {
 
 #[test]
 fn test_missing_timestamps_second_event_has_timestamp() {
-    let content =
-        include_str!("fixtures/dirty_data/missing_timestamps.xes");
+    let content = include_str!("fixtures/dirty_data/missing_timestamps.xes");
     let log = parse_xes(content);
 
     let second_event = &log.traces[0].events[1];
@@ -166,8 +159,7 @@ fn test_missing_timestamps_second_event_has_timestamp() {
 
 #[test]
 fn test_duplicate_events_parses_without_panic() {
-    let content =
-        include_str!("fixtures/dirty_data/duplicate_events.xes");
+    let content = include_str!("fixtures/dirty_data/duplicate_events.xes");
     let log = parse_xes(content);
 
     assert_eq!(log.traces.len(), 1, "expected 1 trace");
@@ -176,8 +168,7 @@ fn test_duplicate_events_parses_without_panic() {
 
 #[test]
 fn test_duplicate_events_detectable_by_same_activity_and_timestamp() {
-    let content =
-        include_str!("fixtures/dirty_data/duplicate_events.xes");
+    let content = include_str!("fixtures/dirty_data/duplicate_events.xes");
     let log = parse_xes(content);
 
     let events = &log.traces[0].events;
@@ -201,8 +192,7 @@ fn test_duplicate_events_detectable_by_same_activity_and_timestamp() {
 
 #[test]
 fn test_out_of_order_parses_without_panic() {
-    let content =
-        include_str!("fixtures/dirty_data/out_of_order.xes");
+    let content = include_str!("fixtures/dirty_data/out_of_order.xes");
     let log = parse_xes(content);
 
     assert_eq!(log.traces.len(), 1, "expected 1 trace");
@@ -211,8 +201,7 @@ fn test_out_of_order_parses_without_panic() {
 
 #[test]
 fn test_out_of_order_detectable_by_descending_timestamps() {
-    let content =
-        include_str!("fixtures/dirty_data/out_of_order.xes");
+    let content = include_str!("fixtures/dirty_data/out_of_order.xes");
     let log = parse_xes(content);
 
     let events = &log.traces[0].events;
@@ -232,8 +221,7 @@ fn test_out_of_order_detectable_by_descending_timestamps() {
 
 #[test]
 fn test_out_of_order_activity_order_in_xml() {
-    let content =
-        include_str!("fixtures/dirty_data/out_of_order.xes");
+    let content = include_str!("fixtures/dirty_data/out_of_order.xes");
     let log = parse_xes(content);
 
     // As declared in the XML, B appears before A
@@ -248,8 +236,7 @@ fn test_out_of_order_activity_order_in_xml() {
 
 #[test]
 fn test_missing_case_id_parses_without_panic() {
-    let content =
-        include_str!("fixtures/dirty_data/missing_case_id.xes");
+    let content = include_str!("fixtures/dirty_data/missing_case_id.xes");
     let log = parse_xes(content);
 
     // The log still has one trace with one event
@@ -259,8 +246,7 @@ fn test_missing_case_id_parses_without_panic() {
 
 #[test]
 fn test_missing_case_id_trace_lacks_concept_name() {
-    let content =
-        include_str!("fixtures/dirty_data/missing_case_id.xes");
+    let content = include_str!("fixtures/dirty_data/missing_case_id.xes");
     let log = parse_xes(content);
 
     let trace = &log.traces[0];

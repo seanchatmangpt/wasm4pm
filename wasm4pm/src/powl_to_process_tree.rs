@@ -12,6 +12,7 @@
 //!    d. Nodes at the same level are wrapped in PARALLEL; levels are sequenced.
 //!    e. Components themselves are wrapped in a top-level PARALLEL if > 1.
 //! 4. DecisionGraph -> Same as StrictPartialOrder (uses the order relation).
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_models::{PowlProcessTree, PtOperator};
@@ -189,9 +190,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> PowlProcessTree {
                 .nodes
                 .iter()
                 .filter_map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => {
-                        Some(apply_recursive(arena, *idx))
-                    }
+                    ChoiceGraphNode::SubModel(idx) => Some(apply_recursive(arena, *idx)),
                     _ => None,
                 })
                 .collect();

@@ -173,9 +173,9 @@ threshold = 0.3
 # enabled: Master switch for ML analysis
 # tasks: Array of ML tasks to enable (classify, cluster, forecast, anomaly, regress, pca)
 #
-# Two config layouts supported (for backward compatibility):
+# Two config layouts supported (for baseline admissibility):
 #   Layout 1 (nested, recommended): Define per-task sub-sections [ml.classify], [ml.cluster], etc.
-#   Layout 2 (flat, legacy): Use top-level `method`, `k`, `eps` fields (deprecated, will be migrated)
+#   Layout 2 (flat, ): Use top-level `method`, `k`, `eps` fields (removed, will be migrated)
 #
 # Per-task sub-sections allow fine-grained control:
 #   [ml.classify]  — Decision tree, k-NN, Naive Bayes, logistic regression

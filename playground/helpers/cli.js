@@ -13,10 +13,10 @@ export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.
  *
  * @param userArgs - CLI arguments
  * @param options - Options: timeout (ms), env (env vars), cwd (working directory)
- *   Note: if options is a string, it is treated as the cwd (backward compatibility)
+ *   Note: if options is a string, it is treated as the cwd (baseline admissibility)
  */
 export function wpm(userArgs, options) {
-    // Support passing cwd as second arg directly (legacy pattern)
+    // Support passing cwd as second arg directly ( pattern)
     const opts = (typeof options === 'string') ? { cwd: options } : options;
     return runCli([WASM4PM, ...userArgs], {
         cliPath: 'node',
@@ -50,7 +50,7 @@ export function combinedOutput(result) {
 export function resolveRepo(...segments) {
     return path.resolve(__dirname, '..', '..', ...segments);
 }
-/** Alias for wpm — backward compatibility with scenarios that import wasm4pm */
+/** Alias for wpm — baseline admissibility with scenarios that import wasm4pm */
 export const wasm4pm = wpm;
 // Re-export for convenience
 export { assertExitCode, assertJsonOutput, EXIT_CODES };

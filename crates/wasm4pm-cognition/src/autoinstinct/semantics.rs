@@ -1,7 +1,7 @@
 //! Responding to Language / Understanding / Sense and Semantics
 //! Implementations from the ELIZA, SHRDLU, Wilks, and Schank lineage.
 //!
-//! Provides nanosecond-scale pattern matching and semantic dependency parsing 
+//! Provides nanosecond-scale pattern matching and semantic dependency parsing
 //! to convert textual input into symbolic conceptual dependency (CD) graphs.
 
 use std::collections::HashMap;
@@ -53,10 +53,10 @@ impl Default for SemanticParser {
 
 impl SemanticParser {
     /// Creates a new `SemanticParser` with a built-in English verb lexicon.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new() -> Self {
         let mut lexicon = HashMap::new();
         lexicon.insert("give".to_string(), PrimitiveAct::Atrans);
@@ -67,10 +67,10 @@ impl SemanticParser {
     }
 
     /// Very basic pattern matching (ELIZA/SHRDLU style)
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn parse(&self, sentence: &str) -> Option<SemanticFrame> {
         let words: Vec<&str> = sentence.split_whitespace().collect();
         if words.len() < 3 {

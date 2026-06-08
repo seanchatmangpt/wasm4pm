@@ -8,8 +8,8 @@ use crate::ml::LinUCBAgent;
 use crate::reinforcement::{
     Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
-use std::collections::{HashSet, VecDeque, HashMap};
-use tracing::{error, warn, span, Level};
+use std::collections::{HashMap, HashSet, VecDeque};
+use tracing::{error, span, warn, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
 // We use the concrete types directly since this module is in the same crate.
@@ -35,10 +35,7 @@ macro_rules! impl_rl_serialization {
             ) -> crate::rl_state_serialization::SerializedAgentQTable {
                 self.export_as_serialized(agent_type)
             }
-            fn restore_q_table(
-                &self,
-                table: crate::rl_state_serialization::SerializedAgentQTable,
-            ) {
+            fn restore_q_table(&self, table: crate::rl_state_serialization::SerializedAgentQTable) {
                 self.restore_from_serialized(table);
             }
         }
@@ -337,14 +334,18 @@ pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
     // Encoding: improved=1 (0b01), stable=2 (0b10), degraded=0 (0b00)
     const HEALTH_DELTA: [f32; 3] = [-1.0, 1.0, 0.2]; // [degraded, improved, stable]
     let improved = (params.curr_health < params.prev_health) as usize;
-    let stable   = ((params.curr_health == params.prev_health) as usize) << 1;
+    let stable = ((params.curr_health == params.prev_health) as usize) << 1;
     reward += HEALTH_DELTA[improved | stable];
 
     // SPC penalty: each special cause signal is a -0.3 penalty (bounded by -1.5)
     // **GUARD: SPC penalty is explicitly capped at 1.5 to prevent overflow**
     // This ensures even pathological cases (1000+ SPC alerts) don't exceed bounds.
     let spc_penalty_magnitude = (params.spc_alert_count as f32 * 0.3).min(1.5);
-    debug_assert!((0.0..=1.5).contains(&spc_penalty_magnitude), "spc penalty magnitude must be in [0, 1.5], got {}", spc_penalty_magnitude);
+    debug_assert!(
+        (0.0..=1.5).contains(&spc_penalty_magnitude),
+        "spc penalty magnitude must be in [0, 1.5], got {}",
+        spc_penalty_magnitude
+    );
     reward -= spc_penalty_magnitude;
 
     // Guard/circuit bonus/penalty — branchless 2D LUT
@@ -359,7 +360,11 @@ pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
     // **GUARD: rework_ratio_q must be in [0, 7]; clamp to prevent out-of-range**
     let clamped_rework_q = (params.rework_ratio_q as f32).clamp(0.0, 7.0);
     let rework_penalty = -(clamped_rework_q / 7.0) * 0.2;
-    debug_assert!((-0.2..=0.0).contains(&rework_penalty), "rework penalty must be in [-0.2, 0], got {}", rework_penalty);
+    debug_assert!(
+        (-0.2..=0.0).contains(&rework_penalty),
+        "rework penalty must be in [-0.2, 0], got {}",
+        rework_penalty
+    );
     reward += rework_penalty;
 
     // Momentum bonus (NEW): reward persistent improvement
@@ -371,7 +376,11 @@ pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
         // Verified: consecutive_successes is capped via saturating_add; here we add additional cap
         let capped_successes = (params.consecutive_successes as f32).min(10.0);
         let momentum_bonus = 0.05_f32 * capped_successes;
-        debug_assert!((0.0..=0.5).contains(&momentum_bonus), "momentum bonus must be in [0, 0.5], got {}", momentum_bonus);
+        debug_assert!(
+            (0.0..=0.5).contains(&momentum_bonus),
+            "momentum bonus must be in [0, 0.5], got {}",
+            momentum_bonus
+        );
         reward += momentum_bonus;
     }
 
@@ -483,8 +492,14 @@ impl ActionHistory {
     /// Success is defined as a positive reward delta.
     pub fn get_success_rate(&self, action: impl Into<String>) -> f32 {
         let action_str = action.into();
-        let filtered: Vec<_> = self.entries.iter().filter(|e| e.action == action_str).collect();
-        if filtered.is_empty() { return 0.0; }
+        let filtered: Vec<_> = self
+            .entries
+            .iter()
+            .filter(|e| e.action == action_str)
+            .collect();
+        if filtered.is_empty() {
+            return 0.0;
+        }
         let successes = filtered.iter().filter(|e| e.successful).count();
         successes as f32 / filtered.len() as f32
     }
@@ -544,7 +559,7 @@ impl StateCoverage {
         let bin = Self::state_to_bin_index(state);
         if self.visited_states.insert(bin) {
             self.states_visited = self.visited_states.len();
-            
+
             // Track dimension-wise occupancy
             self.dimension_seen[0].insert(state.health_level);
             self.dimension_seen[1].insert(state.event_rate_q);
@@ -554,11 +569,11 @@ impl StateCoverage {
             self.dimension_seen[5].insert(state.rework_ratio_q);
             self.dimension_seen[6].insert(state.circuit_state);
             self.dimension_seen[7].insert(state.cycle_phase);
-            
+
             for i in 0..8 {
                 self.dimension_coverage[i] = self.dimension_seen[i].len();
             }
-            
+
             self.coverage_percentage = (self.states_visited as f32 / 368640.0) * 100.0;
         }
     }
@@ -577,7 +592,7 @@ impl StateCoverage {
         }
         pct
     }
-    
+
     /// Returns the overall state space coverage percentage.
     pub fn coverage_percentage(&self) -> f32 {
         self.coverage_percentage
@@ -629,10 +644,10 @@ impl RlOrchestrator {
         Self {
             agents: vec![
                 Box::new(QLearning::new()),          // 0 = QLearning
-                Box::new(SARSAAgent::new()),          // 1 = SARSA
-                Box::new(DoubleQLearning::new()),     // 2 = DoubleQLearning
-                Box::new(ExpectedSARSAAgent::new()),  // 3 = ExpectedSARSA
-                Box::new(ReinforceAgent::new()),      // 4 = REINFORCE
+                Box::new(SARSAAgent::new()),         // 1 = SARSA
+                Box::new(DoubleQLearning::new()),    // 2 = DoubleQLearning
+                Box::new(ExpectedSARSAAgent::new()), // 3 = ExpectedSARSA
+                Box::new(ReinforceAgent::new()),     // 4 = REINFORCE
             ],
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
@@ -654,9 +669,21 @@ impl RlOrchestrator {
             agents: vec![
                 Box::new(QLearning::new_with_seed(0.1, 0.99, seed)),
                 Box::new(SARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(1))),
-                Box::new(DoubleQLearning::new_with_seed(0.1, 0.99, seed.wrapping_add(2))),
-                Box::new(ExpectedSARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(3))),
-                Box::new(ReinforceAgent::new_with_seed(0.01, 0.99, seed.wrapping_add(4))),
+                Box::new(DoubleQLearning::new_with_seed(
+                    0.1,
+                    0.99,
+                    seed.wrapping_add(2),
+                )),
+                Box::new(ExpectedSARSAAgent::new_with_seed(
+                    0.1,
+                    0.99,
+                    seed.wrapping_add(3),
+                )),
+                Box::new(ReinforceAgent::new_with_seed(
+                    0.01,
+                    0.99,
+                    seed.wrapping_add(4),
+                )),
             ],
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
@@ -825,8 +852,10 @@ impl RlOrchestrator {
         let divergence_detected = q_delta > 2.0;
 
         // Check for dead state: sample Q-values for both actions
-        let q_continue = self.agents[self.active_agent as usize].get_q_value_for_otel(state, &RlAction::Continue);
-        let q_scale = self.agents[self.active_agent as usize].get_q_value_for_otel(state, &RlAction::Scale);
+        let q_continue = self.agents[self.active_agent as usize]
+            .get_q_value_for_otel(state, &RlAction::Continue);
+        let q_scale =
+            self.agents[self.active_agent as usize].get_q_value_for_otel(state, &RlAction::Scale);
         let q_avg = (q_continue.abs() + q_scale.abs()) / 2.0;
         let dead_state_detected = q_avg < 0.001 && self.telemetry.cycle_count > 50;
 
@@ -843,15 +872,18 @@ impl RlOrchestrator {
         // Log state transition deltas per dimension to detect impossible transitions
         let health_delta = next_state.health_level as i8 - state.health_level as i8;
         let event_rate_delta = (next_state.event_rate_q as i8 - state.event_rate_q as i8).abs();
-        let activity_delta = (next_state.activity_count_q as i8 - state.activity_count_q as i8).abs();
-        let spc_alert_delta = (next_state.spc_alert_level as i8 - state.spc_alert_level as i8).abs();
+        let activity_delta =
+            (next_state.activity_count_q as i8 - state.activity_count_q as i8).abs();
+        let spc_alert_delta =
+            (next_state.spc_alert_level as i8 - state.spc_alert_level as i8).abs();
         let drift_delta = (next_state.drift_status as i8 - state.drift_status as i8).abs();
         let rework_delta = (next_state.rework_ratio_q as i8 - state.rework_ratio_q as i8).abs();
         let circuit_delta = (next_state.circuit_state as i8 - state.circuit_state as i8).abs();
         let phase_delta = (next_state.cycle_phase as i8 - state.cycle_phase as i8).abs();
 
         // Detect impossible transitions (metamorphic: some deltas should be bounded)
-        let impossible_transition = event_rate_delta > 4 || activity_delta > 4 || spc_alert_delta > 2;
+        let impossible_transition =
+            event_rate_delta > 4 || activity_delta > 4 || spc_alert_delta > 2;
 
         // Primary Bellman update span (Rank-1 oracle)
         tracing::info!(
@@ -888,7 +920,9 @@ impl RlOrchestrator {
         }
 
         // Gap 4: State transition tracing span (Rank-3 metamorphic relation, every 50 cycles or on impossible transition)
-        if impossible_transition || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0) {
+        if impossible_transition
+            || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0)
+        {
             tracing::info!(
                 target: "autonomic.rl.state_transitions",
                 agent_type = self.active_agent.name(),
@@ -907,7 +941,8 @@ impl RlOrchestrator {
         }
 
         // Gap 6: Exploration context span (Rank-2 domain contract, every 50 cycles or if epsilon < 0.1)
-        if epsilon < 0.1 || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0) {
+        if epsilon < 0.1 || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0)
+        {
             tracing::info!(
                 target: "autonomic.rl.exploration_context",
                 agent_type = self.active_agent.name(),
@@ -967,8 +1002,14 @@ impl RlOrchestrator {
         // Serialize 8-dim context as JSON for span attribute
         let context_json = format!(
             r#"{{"event_rate":{:.4},"trace_count":{:.4},"activity_count":{:.4},"health":{:.4},"circuit_state":{:.4},"spc_alert_level":{:.4},"drift_status":{:.4},"cycle_phase":{:.4}}}"#,
-            features[0], features[1], features[2], features[3],
-            features[4], features[5], features[6], features[7]
+            features[0],
+            features[1],
+            features[2],
+            features[3],
+            features[4],
+            features[5],
+            features[6],
+            features[7]
         );
 
         // OBS-4 FIX: Get q_score (mean estimate) to compute exploration_bonus = ucb_score - q_score
@@ -1029,7 +1070,11 @@ impl RlOrchestrator {
         // OBS-1 FIX: Extract active agent's weight delta for convergence signal
         let active_norm_after = norms[action_idx as usize];
         let weight_delta = (active_norm_after - active_norm_before).abs();
-        let convergence_signal = if weight_delta > 0.001 { "learning" } else { "stable" };
+        let convergence_signal = if weight_delta > 0.001 {
+            "learning"
+        } else {
+            "stable"
+        };
 
         // Emit OTEL span with convergence signal (OBS-1 fix)
         let _span = tracing::info_span!(
@@ -1138,7 +1183,8 @@ impl RlOrchestrator {
         // OTEL span wrapper for autonomic run_cycle loop
         // Convergence diagnostics: emit every 10 cycles to prove Bellman convergence (Rank-1 oracle)
         // Only compute convergence metrics on the emission boundary to reduce overhead
-        let emit_convergence = self.telemetry.cycle_count > 0 && self.telemetry.cycle_count % 10 == 0;
+        let emit_convergence =
+            self.telemetry.cycle_count > 0 && self.telemetry.cycle_count % 10 == 0;
 
         // Learning rate schedule (for convergence diagnostics span)
         let alpha_t = learning_rate_schedule(0.1, self.telemetry.cycle_count);
@@ -1148,9 +1194,21 @@ impl RlOrchestrator {
         let active_norm_before = norms[self.active_agent as usize];
 
         // Create span with convergence diagnostics (only meaningful attributes on emission boundary)
-        let convergence_status_value = if emit_convergence { "learning" } else { "periodic" };
+        let convergence_status_value = if emit_convergence {
+            "learning"
+        } else {
+            "periodic"
+        };
 
-        let _cycle_span = tracing::info_span!(
+        // OBS-GAP-1 FIX: declare td_error and convergence fields as Empty so they
+        // can be recorded dynamically after linucb_update() computes the value.
+        // This puts Bellman convergence evidence directly on the rl.run_cycle span
+        // so Jaeger can plot TD error trend without correlating a separate child span.
+        // OBS-GAP-1 FIX: declare td_error and convergence fields as Empty so they
+        // can be recorded dynamically after linucb_update() computes the value.
+        // This puts Bellman convergence evidence directly on the rl.run_cycle span
+        // so Jaeger can plot TD error trend without correlating a separate child span.
+        let cycle_span = tracing::info_span!(
             "rl.run_cycle",
             health_before = state.health_level,
             health_after = next_state.health_level,
@@ -1161,10 +1219,14 @@ impl RlOrchestrator {
             linucb_weight_norm = active_norm_before,
             learning_rate_current = alpha_t,
             convergence_status = convergence_status_value,
+            // OBS-GAP-1: per-cycle TD error and Q-value fields — filled via span.record() below
+            td_error = tracing::field::Empty,
+            q_value_max = tracing::field::Empty,
+            convergence_signal = tracing::field::Empty,
             service_name = "wpm",
             status = "ok",
-        )
-        .entered();
+        );
+        let _cycle_span_guard = cycle_span.enter();
 
         // Track state space coverage (record visited bin)
         let current_bin = Self::state_to_bin(state);
@@ -1198,8 +1260,10 @@ impl RlOrchestrator {
                 tracing::info!(
                     rl_unique_states = analyzer.clustering.unique_states,
                     rl_total_observed_states = analyzer.clustering.total_states_observed,
-                    rl_health_spc_interaction_coverage = analyzer.clustering.health_spc_interaction_coverage,
-                    rl_circuit_drift_interaction_coverage = analyzer.clustering.circuit_drift_interaction_coverage,
+                    rl_health_spc_interaction_coverage =
+                        analyzer.clustering.health_spc_interaction_coverage,
+                    rl_circuit_drift_interaction_coverage =
+                        analyzer.clustering.circuit_drift_interaction_coverage,
                     rl_bottleneck_dimensions_count = bottleneck_dims.len(),
                     rl_high_variance_dimensions_count = high_var_dims.len(),
                     rl_state_distribution_entropy = analyzer.clustering.state_distribution_entropy,
@@ -1319,6 +1383,29 @@ impl RlOrchestrator {
         // Update LinUCB and capture TD error for convergence diagnostics
         let td_error_linucb = self.linucb_update(features, reward);
 
+        // OBS-GAP-1 FIX: record per-cycle TD error directly on the rl.run_cycle span.
+        // Bellman convergence (Rank-1 oracle) can now be proved from a single span
+        // without correlating the separate rl.convergence_diagnostics child span.
+        {
+            let conv_signal = if td_error_linucb.abs() > 0.1 {
+                "learning"
+            } else {
+                "converged"
+            };
+            let q_max = {
+                let q_continue = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Continue);
+                let q_scale = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Scale);
+                let q_restart = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Restart);
+                q_continue.abs().max(q_scale.abs()).max(q_restart.abs())
+            };
+            tracing::Span::current().record("td_error", td_error_linucb);
+            tracing::Span::current().record("q_value_max", q_max);
+            tracing::Span::current().record("convergence_signal", conv_signal);
+        }
+
         // Decay exploration
         self.decay_exploration();
 
@@ -1333,7 +1420,8 @@ impl RlOrchestrator {
             // Q-value stats for Bellman convergence proof (Rank-1 mathematical oracle).
             // q_value_max: max Q-value across all actions for current state (Bellman bound check).
             // q_value_change: magnitude of Q-update this cycle (should trend toward 0 at convergence).
-            let q_curr = self.agents[self.active_agent as usize].get_q_value_for_otel(state, &action);
+            let q_curr =
+                self.agents[self.active_agent as usize].get_q_value_for_otel(state, &action);
             let q_max_candidate = {
                 let q_continue = self.agents[self.active_agent as usize]
                     .get_q_value_for_otel(state, &RlAction::Continue);
@@ -1341,9 +1429,17 @@ impl RlOrchestrator {
                     .get_q_value_for_otel(state, &RlAction::Scale);
                 let q_restart = self.agents[self.active_agent as usize]
                     .get_q_value_for_otel(state, &RlAction::Restart);
-                q_continue.abs().max(q_scale.abs()).max(q_restart.abs()).max(q_curr.abs())
+                q_continue
+                    .abs()
+                    .max(q_scale.abs())
+                    .max(q_restart.abs())
+                    .max(q_curr.abs())
             };
-            let convergence_str = if td_error_linucb.abs() > 0.1 { "learning" } else { "converged" };
+            let convergence_str = if td_error_linucb.abs() > 0.1 {
+                "learning"
+            } else {
+                "converged"
+            };
 
             let _conv_span = tracing::info_span!(
                 "rl.convergence_diagnostics",
@@ -1399,20 +1495,21 @@ impl RlOrchestrator {
         };
 
         // Maintain rolling window
-        self.action_history.record_action_entry(action_entry.clone());
+        self.action_history
+            .record_action_entry(action_entry.clone());
 
         // Compute action diversity metric: if same action >70% in last 10 cycles, apply penalty
         let action_repetition_penalty = if self.action_history.entries.len() >= 10 {
-            let recent_10: Vec<_> = self.action_history.entries
+            let recent_10: Vec<_> = self
+                .action_history
+                .entries
                 .iter()
                 .rev()
                 .take(10)
                 .map(|h| h.action.as_str())
                 .collect();
 
-            let current_action_count = recent_10.iter()
-                .filter(|a| **a == action_label_str)
-                .count();
+            let current_action_count = recent_10.iter().filter(|a| **a == action_label_str).count();
 
             if current_action_count > 7 {
                 // >70% of last 10 were same action — apply diversity penalty
@@ -1455,7 +1552,11 @@ impl RlOrchestrator {
             successful = action_entry.successful,
             reward_delta = final_reward,
             action_distribution = action_histogram.as_str(),
-            status = if action_entry.successful { "ok" } else { "error" },
+            status = if action_entry.successful {
+                "ok"
+            } else {
+                "error"
+            },
             service_name = "wpm",
             "rl.action_tracked"
         );
@@ -1486,7 +1587,11 @@ impl RlOrchestrator {
         &self,
         tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
     ) -> (usize, usize) {
-        let span = span!(Level::DEBUG, "rl_orchestrator.restore_q_tables", agent_count = self.agents.len());
+        let span = span!(
+            Level::DEBUG,
+            "rl_orchestrator.restore_q_tables",
+            agent_count = self.agents.len()
+        );
         let _guard = span.enter();
 
         let mut restored = 0;
@@ -1628,7 +1733,11 @@ mod tests {
     fn reward_best_case_without_momentum_is_one_point_one() {
         // No momentum: health improved, no SPC, no rework, guard+circuit pass
         let r = compute_reward(2, 1, 0, true, true, false, 0);
-        assert!((r - 1.1).abs() < 1e-6, "best case (no momentum) should be +1.1, got {}", r);
+        assert!(
+            (r - 1.1).abs() < 1e-6,
+            "best case (no momentum) should be +1.1, got {}",
+            r
+        );
     }
 
     #[test]
@@ -1644,7 +1753,11 @@ mod tests {
             rework_ratio_q: 0,
             consecutive_successes: 10,
         });
-        assert!((r - 1.6).abs() < 1e-6, "best case (10-cycle momentum) should be +1.6, got {}", r);
+        assert!(
+            (r - 1.6).abs() < 1e-6,
+            "best case (10-cycle momentum) should be +1.6, got {}",
+            r
+        );
     }
 
     /// Worst case: health degrades to terminal, max SPC penalty, max rework, guard fail,
@@ -1655,7 +1768,11 @@ mod tests {
         // max rework_ratio_q=7 (penalty -0.2), guard fail (-0.5), latency exceeded (-0.3).
         // Total: -3.0 - 1.5 - 0.5 - 0.3 - 0.2 = -5.5
         let r = compute_reward(3, 4, 5, false, false, true, 7);
-        assert!((r - (-5.5)).abs() < 1e-6, "worst case reward should be -5.5, got {}", r);
+        assert!(
+            (r - (-5.5)).abs() < 1e-6,
+            "worst case reward should be -5.5, got {}",
+            r
+        );
     }
 
     #[test]
@@ -1711,7 +1828,10 @@ mod tests {
         let mut prev = f32::INFINITY;
         for n in 0..=10 {
             let r = compute_reward(1, 1, n, true, true, false, 0);
-            assert!(r <= prev + 1e-6, "reward must be non-increasing in SPC alerts");
+            assert!(
+                r <= prev + 1e-6,
+                "reward must be non-increasing in SPC alerts"
+            );
             prev = r;
         }
     }
@@ -1722,7 +1842,11 @@ mod tests {
         let no_rework = compute_reward(1, 1, 0, true, true, false, 0);
         let max_rework = compute_reward(1, 1, 0, true, true, false, 7);
         let diff = no_rework - max_rework;
-        assert!((diff - 0.2).abs() < 1e-6, "rework penalty should be 0.2, got {}", diff);
+        assert!(
+            (diff - 0.2).abs() < 1e-6,
+            "rework penalty should be 0.2, got {}",
+            diff
+        );
     }
 
     /// NEW: Momentum bonus applies only when guard_pass && circuit_allowed.
@@ -1742,7 +1866,11 @@ mod tests {
         // Without momentum: 0.2 + 0.1 = 0.3
         let no_momentum = compute_reward(1, 1, 0, true, true, false, 0);
         let bonus = with_momentum - no_momentum;
-        assert!((bonus - 0.25).abs() < 1e-6, "momentum bonus should be 0.25, got {}", bonus);
+        assert!(
+            (bonus - 0.25).abs() < 1e-6,
+            "momentum bonus should be 0.25, got {}",
+            bonus
+        );
 
         // Failed: no momentum bonus even with consecutive_successes>0
         let failed = compute_reward_with_momentum(RewardParameters {
@@ -1756,7 +1884,10 @@ mod tests {
             consecutive_successes: 5,
         });
         let expected = compute_reward(1, 1, 0, false, true, false, 0);
-        assert!((failed - expected).abs() < 1e-6, "failed cycle must not get momentum bonus");
+        assert!(
+            (failed - expected).abs() < 1e-6,
+            "failed cycle must not get momentum bonus"
+        );
     }
 
     /// NEW: Momentum bonus caps at +0.5 (10-cycle window).
@@ -1782,7 +1913,10 @@ mod tests {
             rework_ratio_q: 0,
             consecutive_successes: 100,
         });
-        assert!((momentum_10 - momentum_100).abs() < 1e-6, "momentum must cap at +0.5");
+        assert!(
+            (momentum_10 - momentum_100).abs() < 1e-6,
+            "momentum must cap at +0.5"
+        );
     }
 
     // --- CycleTelemetry default ------------------------------------------
@@ -1802,7 +1936,10 @@ mod tests {
     fn learning_rate_schedule_zero_decay_at_cycle_zero() {
         let alpha_0 = 0.1;
         let alpha_t = learning_rate_schedule(alpha_0, 0);
-        assert!((alpha_t - alpha_0).abs() < 1e-6, "cycle 0 should have no decay");
+        assert!(
+            (alpha_t - alpha_0).abs() < 1e-6,
+            "cycle 0 should have no decay"
+        );
     }
 
     /// Learning rate strictly decreases over time.
@@ -1813,9 +1950,18 @@ mod tests {
         let alpha_2000 = learning_rate_schedule(alpha_0, 2000);
         let alpha_10000 = learning_rate_schedule(alpha_0, 10000);
 
-        assert!(alpha_0 > alpha_1000, "alpha should decay from cycle 0 to 1000");
-        assert!(alpha_1000 > alpha_2000, "alpha should decay from cycle 1000 to 2000");
-        assert!(alpha_2000 > alpha_10000, "alpha should decay from cycle 2000 to 10000");
+        assert!(
+            alpha_0 > alpha_1000,
+            "alpha should decay from cycle 0 to 1000"
+        );
+        assert!(
+            alpha_1000 > alpha_2000,
+            "alpha should decay from cycle 1000 to 2000"
+        );
+        assert!(
+            alpha_2000 > alpha_10000,
+            "alpha should decay from cycle 2000 to 10000"
+        );
     }
 
     /// After 10,000 cycles, alpha drops to approximately 37% of its original value.
@@ -1960,12 +2106,24 @@ mod tests {
                         for circuit in [true, false] {
                             for latency in [true, false] {
                                 let r = compute_reward(
-                                    health_prev, health_curr, spc_alerts, guard, circuit, latency, 0,
+                                    health_prev,
+                                    health_curr,
+                                    spc_alerts,
+                                    guard,
+                                    circuit,
+                                    latency,
+                                    0,
                                 );
                                 assert!(
                                     r >= -5.3 && r <= 1.1,
                                     "Reward {} out of bounds for ({}, {}, {}, {}, {}, {})",
-                                    r, health_prev, health_curr, spc_alerts, guard, circuit, latency
+                                    r,
+                                    health_prev,
+                                    health_curr,
+                                    spc_alerts,
+                                    guard,
+                                    circuit,
+                                    latency
                                 );
                             }
                         }

@@ -3,8 +3,8 @@
 //! Provides stratified K-fold, group K-fold, time series CV, nested CV, LOOCV, and bootstrapping.
 
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Cross-validation split indices
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -106,7 +106,7 @@ pub fn stratified_k_fold(
     // Create stratified folds
     let mut folds: Vec<Vec<usize>> = vec![Vec::new(); n_folds];
 
-    for (_, indices) in class_indices.iter() {
+    for indices in class_indices.values() {
         let _n_class = indices.len();
 
         for (fold_idx, &idx) in indices.iter().enumerate() {
@@ -502,9 +502,7 @@ pub fn compute_cv_result(scores: Vec<f64>) -> Result<JsValue, JsError> {
     let n = scores.len();
     let mean = scores.iter().sum::<f64>() / n as f64;
 
-    let variance = scores.iter()
-        .map(|&s| (s - mean).powi(2))
-        .sum::<f64>() / n as f64;
+    let variance = scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / n as f64;
 
     let std_score = variance.sqrt();
 
@@ -541,9 +539,7 @@ pub fn compute_bootstrap_result(
     let mean = scores.iter().sum::<f64>() / n as f64;
 
     // Standard error
-    let variance = scores.iter()
-        .map(|&s| (s - mean).powi(2))
-        .sum::<f64>() / n as f64;
+    let variance = scores.iter().map(|&s| (s - mean).powi(2)).sum::<f64>() / n as f64;
 
     let std_error = variance.sqrt();
 

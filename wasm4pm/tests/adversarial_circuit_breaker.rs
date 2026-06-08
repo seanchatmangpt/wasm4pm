@@ -49,7 +49,7 @@ fn d1_closed_to_open_on_failure_threshold() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Adversarial check: state must be exactly Closed for every failure
     // BEFORE the threshold fires.
@@ -102,13 +102,17 @@ fn d2_open_to_half_open_after_advance_clock() {
         open_timeout_ms,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open.
     for _ in 0..3 {
         breaker.record_failure();
     }
-    assert_eq!(breaker.state(), CircuitState::Open, "D2 setup failed: not Open");
+    assert_eq!(
+        breaker.state(),
+        CircuitState::Open,
+        "D2 setup failed: not Open"
+    );
 
     // Adversarial check: one tick before timeout — must still reject.
     advance_clock(open_timeout_ms - 1);
@@ -155,7 +159,7 @@ fn d3_half_open_to_closed_on_success_probe() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Navigate: Closed → Open → HalfOpen.
     for _ in 0..3 {
@@ -163,7 +167,11 @@ fn d3_half_open_to_closed_on_success_probe() {
     }
     advance_clock(60_100);
     breaker.allow_request();
-    assert_eq!(breaker.state(), CircuitState::HalfOpen, "D3 setup: not HalfOpen");
+    assert_eq!(
+        breaker.state(),
+        CircuitState::HalfOpen,
+        "D3 setup: not HalfOpen"
+    );
 
     // First success — must NOT close yet.
     breaker.record_success();
@@ -213,7 +221,7 @@ fn d4_half_open_to_open_on_failure_probe() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Navigate: Closed → Open → HalfOpen.
     for _ in 0..3 {
@@ -221,7 +229,11 @@ fn d4_half_open_to_open_on_failure_probe() {
     }
     advance_clock(60_100);
     breaker.allow_request();
-    assert_eq!(breaker.state(), CircuitState::HalfOpen, "D4 setup: not HalfOpen");
+    assert_eq!(
+        breaker.state(),
+        CircuitState::HalfOpen,
+        "D4 setup: not HalfOpen"
+    );
 
     // A single failure in HalfOpen must immediately revert to Open.
     breaker.record_failure();
@@ -261,7 +273,7 @@ fn d5_cb1_regression_open_stays_open_without_advance_clock() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open.
     for _ in 0..3 {
@@ -354,7 +366,7 @@ fn d6_open_circuit_reward_strictly_lower_than_closed() {
         guard_pass,
         false, // circuit_allowed
         false,
-        0,     // rework_ratio_q
+        0, // rework_ratio_q
     );
 
     // Domain contract: Open circuit must yield strictly lower reward.

@@ -1,3 +1,4 @@
+#![allow(clippy::doc_overindented_list_items)]
 //! Rank-1 / Rank-2 oracle tests for the iter-11 discovery-layer audit.
 //!
 //! Three bugs were fixed by the accompanying patch:
@@ -140,7 +141,11 @@ fn sa_with_nan_temperature_runs_and_produces_a_dfg() {
     let log = build_log(&[(10, &["A", "B", "C"]), (5, &["A", "B", "D"])]);
     let (dfg, fitness) =
         discover_simulated_annealing_from_log(&log, "concept:name", f64::NAN, 0.95);
-    assert!(fitness.is_finite(), "SA fitness must be finite, got {:?}", fitness);
+    assert!(
+        fitness.is_finite(),
+        "SA fitness must be finite, got {:?}",
+        fitness
+    );
     assert!(
         !dfg.nodes.is_empty(),
         "SA must populate nodes for non-empty log (got 0 — bug regime returned empty DFG)"
@@ -150,18 +155,19 @@ fn sa_with_nan_temperature_runs_and_produces_a_dfg() {
 #[test]
 fn sa_with_negative_temperature_terminates_and_returns_nodes() {
     let log = build_log(&[(8, &["A", "B", "C", "D"])]);
-    let (dfg, fitness) =
-        discover_simulated_annealing_from_log(&log, "concept:name", -5.0, 0.95);
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", -5.0, 0.95);
     assert_eq!(fitness, 0.0);
-    assert!(dfg.nodes.is_empty(), "negative temperature must return empty DFG");
+    assert!(
+        dfg.nodes.is_empty(),
+        "negative temperature must return empty DFG"
+    );
 }
 
 #[test]
 fn sa_with_infinite_temperature_terminates() {
     let log = build_log(&[(5, &["A", "B", "C"])]);
     // Reaching this point proves termination under finite-time clamping.
-    let (dfg, _f) =
-        discover_simulated_annealing_from_log(&log, "concept:name", f64::INFINITY, 0.9);
+    let (dfg, _f) = discover_simulated_annealing_from_log(&log, "concept:name", f64::INFINITY, 0.9);
     assert_eq!(dfg.nodes.len(), 3);
 }
 
@@ -179,9 +185,8 @@ fn aco_fitness_bounded_under_long_run() {
         (10, &["A", "B", "D"]),
         (5, &["A", "C", "D"]),
     ]);
-    let (_, fitness) =
-        discover_aco_algorithm_from_log(&log, "concept:name", 5, 200)
-            .expect("ACO must succeed on a non-empty log");
+    let (_, fitness) = discover_aco_algorithm_from_log(&log, "concept:name", 5, 200)
+        .expect("ACO must succeed on a non-empty log");
     assert!(
         (0.0..=1.0).contains(&fitness),
         "ACO fitness {:.4} outside [0,1] — pheromone may be unbounded",
@@ -193,8 +198,7 @@ fn aco_fitness_bounded_under_long_run() {
 fn aco_fitness_is_finite() {
     let log = build_log(&[(15, &["A", "B", "C"])]);
     let (_, fitness) =
-        discover_aco_algorithm_from_log(&log, "concept:name", 8, 100)
-            .expect("ACO must succeed");
+        discover_aco_algorithm_from_log(&log, "concept:name", 8, 100).expect("ACO must succeed");
     assert!(
         fitness.is_finite(),
         "ACO fitness must be finite after 100 iterations, got {:?}",
@@ -207,10 +211,11 @@ fn aco_fitness_is_finite() {
 #[test]
 fn aco_determinism_with_bounded_pheromone() {
     let log = build_log(&[(10, &["A", "B", "C"]), (5, &["A", "C", "B"])]);
-    let (dfg1, f1) =
-        discover_aco_algorithm_from_log(&log, "concept:name", 5, 50).expect("ACO #1");
-    let (dfg2, f2) =
-        discover_aco_algorithm_from_log(&log, "concept:name", 5, 50).expect("ACO #2");
+    let (dfg1, f1) = discover_aco_algorithm_from_log(&log, "concept:name", 5, 50).expect("ACO #1");
+    let (dfg2, f2) = discover_aco_algorithm_from_log(&log, "concept:name", 5, 50).expect("ACO #2");
     assert_eq!(dfg1.edges.len(), dfg2.edges.len());
-    assert!((f1 - f2).abs() < 1e-9, "ACO must be deterministic with seed=42");
+    assert!(
+        (f1 - f2).abs() < 1e-9,
+        "ACO must be deterministic with seed=42"
+    );
 }

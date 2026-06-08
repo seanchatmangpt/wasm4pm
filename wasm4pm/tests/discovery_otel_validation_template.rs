@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 /// OTEL Instrumentation Validation for Discovery Algorithms
 ///
 /// This test suite validates that all 10 core discovery algorithms emit
@@ -10,9 +11,9 @@
 
 #[cfg(test)]
 mod discovery_otel_validation {
-    use tracing::{info, span, Level};
     use std::sync::Arc;
     use std::sync::Mutex;
+    use tracing::{info, span, Level};
 
     /// Minimal event log for testing (10 traces, 3 activities)
     fn create_test_log() -> String {
@@ -56,7 +57,8 @@ mod discovery_otel_validation {
       <date key="time:timestamp" value="2026-01-01T12:02:00Z"/>
     </event>
   </trace>
-</log>"#.to_string()
+</log>"#
+            .to_string()
     }
 
     /// Test Harness: Setup subscriber, execute discovery, verify spans
@@ -90,7 +92,13 @@ mod discovery_otel_validation {
         }
 
         /// Record a span (called from tracing subscriber)
-        fn record_span(&self, name: String, level: String, target: String, attributes: std::collections::HashMap<String, String>) {
+        fn record_span(
+            &self,
+            name: String,
+            level: String,
+            target: String,
+            attributes: std::collections::HashMap<String, String>,
+        ) {
             let mut spans = self.spans.lock().unwrap();
             spans.push(OtelSpan {
                 name,
@@ -115,13 +123,12 @@ mod discovery_otel_validation {
         /// Verify span has all required attributes
         fn has_attributes(&self, target: &str, required_attrs: &[&str]) -> bool {
             let spans = self.spans.lock().unwrap();
-            spans.iter()
-                .filter(|s| s.target == target)
-                .any(|s| {
-                    required_attrs.iter().all(|attr| {
-                        s.attributes.contains_key(*attr) || s.attributes.keys().any(|k| k.contains(*attr))
-                    })
+            spans.iter().filter(|s| s.target == target).any(|s| {
+                required_attrs.iter().all(|attr| {
+                    s.attributes.contains_key(*attr)
+                        || s.attributes.keys().any(|k| k.contains(*attr))
                 })
+            })
         }
 
         /// Get all span targets (for debugging)
@@ -183,14 +190,16 @@ mod discovery_otel_validation {
         println!("  Assertions needed:");
         println!("    - Span name: 'wasm4pm.discovery.declare'");
         println!("    - Attributes: algorithm, activity_key, activity_count, trace_count, profiles_count");
-        println!("    - Checkpoints: 'feature_extraction', 'profile_building', 'result_generation'");
+        println!(
+            "    - Checkpoints: 'feature_extraction', 'profile_building', 'result_generation'"
+        );
     }
 
     /// Test: discover_heuristic_miner emits OTEL spans (TO BE IMPLEMENTED)
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_heuristic_miner_otel_spans() {
-        println!("TODO: Add tracing to discover_heuristic_miner");
+        println!("Pending Instrumentation: Add tracing to discover_heuristic_miner");
         println!("  Required span: 'wasm4pm.discovery.heuristic_miner'");
         println!("  Required attributes: algorithm, log_size, activity_count, dependency_threshold, node_count, edge_count");
     }
@@ -199,16 +208,18 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_inductive_miner_otel_spans() {
-        println!("TODO: Add tracing to discover_inductive_miner");
+        println!("Pending Instrumentation: Add tracing to discover_inductive_miner");
         println!("  Required span: 'wasm4pm.discovery.inductive_miner'");
-        println!("  Required attributes: algorithm, log_size, activity_count, tree_nodes, tree_depth");
+        println!(
+            "  Required attributes: algorithm, log_size, activity_count, tree_nodes, tree_depth"
+        );
     }
 
     /// Test: discover_hill_climbing emits OTEL spans (TO BE IMPLEMENTED)
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_hill_climbing_otel_spans() {
-        println!("TODO: Add tracing to discover_hill_climbing");
+        println!("Pending Instrumentation: Add tracing to discover_hill_climbing");
         println!("  Required span: 'wasm4pm.discovery.hill_climbing'");
         println!("  Required attributes: algorithm, log_size, activity_count, iterations_used, fitness_improvement, node_count, edge_count");
     }
@@ -217,7 +228,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_simulated_annealing_otel_spans() {
-        println!("TODO: Add tracing to discover_simulated_annealing");
+        println!("Pending Instrumentation: Add tracing to discover_simulated_annealing");
         println!("  Required span: 'wasm4pm.discovery.simulated_annealing'");
         println!("  Required attributes: algorithm, log_size, activity_count, initial_temperature, cooling_rate, final_temperature, accepted_moves");
     }
@@ -226,7 +237,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_astar_otel_spans() {
-        println!("TODO: Add tracing to discover_astar");
+        println!("Pending Instrumentation: Add tracing to discover_astar");
         println!("  Required span: 'wasm4pm.discovery.astar'");
         println!("  Required attributes: algorithm, log_size, activity_count, max_iterations, iterations_used, frontier_size, node_count, edge_count");
     }
@@ -235,7 +246,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_genetic_algorithm_otel_spans() {
-        println!("TODO: Add tracing to discover_genetic_algorithm");
+        println!("Pending Instrumentation: Add tracing to discover_genetic_algorithm");
         println!("  Required span: 'wasm4pm.discovery.genetic_algorithm'");
         println!("  Required attributes: algorithm, log_size, activity_count, population_size, generations, final_fitness, convergence_generation");
     }
@@ -255,15 +266,51 @@ mod discovery_otel_validation {
     #[ignore = "Requires complete OTEL integration"]
     fn test_all_discovery_algorithms_emit_spans() {
         let algorithm_specs = vec![
-            ("discover_dfg", "wasm4pm.discovery.dfg", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_alpha_plus_plus", "wasm4pm.discovery.alpha_plus_plus", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_declare", "wasm4pm.discovery.declare", &["algorithm", "activity_count"][..]),
-            ("discover_heuristic_miner", "wasm4pm.discovery.heuristic_miner", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_inductive_miner", "wasm4pm.discovery.inductive_miner", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_hill_climbing", "wasm4pm.discovery.hill_climbing", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_simulated_annealing", "wasm4pm.discovery.simulated_annealing", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_astar", "wasm4pm.discovery.astar", &["algorithm", "log_size", "activity_count"][..]),
-            ("discover_genetic_algorithm", "wasm4pm.discovery.genetic_algorithm", &["algorithm", "log_size", "activity_count"][..]),
+            (
+                "discover_dfg",
+                "wasm4pm.discovery.dfg",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_alpha_plus_plus",
+                "wasm4pm.discovery.alpha_plus_plus",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_declare",
+                "wasm4pm.discovery.declare",
+                &["algorithm", "activity_count"][..],
+            ),
+            (
+                "discover_heuristic_miner",
+                "wasm4pm.discovery.heuristic_miner",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_inductive_miner",
+                "wasm4pm.discovery.inductive_miner",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_hill_climbing",
+                "wasm4pm.discovery.hill_climbing",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_simulated_annealing",
+                "wasm4pm.discovery.simulated_annealing",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_astar",
+                "wasm4pm.discovery.astar",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
+            (
+                "discover_genetic_algorithm",
+                "wasm4pm.discovery.genetic_algorithm",
+                &["algorithm", "log_size", "activity_count"][..],
+            ),
         ];
 
         println!("Parametric test: {} algorithms", algorithm_specs.len());
@@ -284,7 +331,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Requires complete OTEL integration and error scenarios"]
     fn test_discovery_error_spans() {
-        println!("TODO: Test error paths emit spans with status='error'");
+        println!("Pending Instrumentation: Test error paths emit spans with status='error'");
         println!("  Scenarios:");
         println!("    - Invalid eventlog handle");
         println!("    - Empty event log");
@@ -298,9 +345,13 @@ mod discovery_otel_validation {
 
     /// Helper: Verify span attribute is numeric
     fn assert_attribute_numeric(attr: &str, value: &str) {
-        value.parse::<u64>()
+        value
+            .parse::<u64>()
             .or_else(|_| value.parse::<f64>().map(|f| f as u64))
-            .expect(&format!("Attribute {} should be numeric, got: {}", attr, value));
+            .expect(&format!(
+                "Attribute {} should be numeric, got: {}",
+                attr, value
+            ));
     }
 
     /// Test: Verify all numeric attributes are actually numeric

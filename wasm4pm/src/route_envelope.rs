@@ -92,12 +92,7 @@ pub fn build_route_envelope(
     let envelope_json = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    "Handle is not an EventLog",
-                ))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -142,8 +137,7 @@ pub fn build_route_envelope(
         }
 
         // ── Sort variants by count descending, then lexicographically ────────
-        let mut sorted_variants: Vec<(Vec<String>, u32)> =
-            variant_counts.into_iter().collect();
+        let mut sorted_variants: Vec<(Vec<String>, u32)> = variant_counts.into_iter().collect();
         sorted_variants.sort_unstable_by(|(a_acts, a_cnt), (b_acts, b_cnt)| {
             b_cnt.cmp(a_cnt).then(a_acts.cmp(b_acts))
         });
@@ -198,17 +192,10 @@ pub fn build_route_envelope(
 /// # Returns
 /// JSON string with verdict, match rate, and candidate continuations.
 #[wasm_bindgen]
-pub fn score_route_motion(
-    envelope_handle: &str,
-    prefix_json: &str,
-) -> Result<JsValue, JsValue> {
+pub fn score_route_motion(envelope_handle: &str, prefix_json: &str) -> Result<JsValue, JsValue> {
     // ── Parse prefix ──────────────────────────────────────────────────────────
-    let prefix: Vec<String> = serde_json::from_str(prefix_json).map_err(|e| {
-        wasm_err(
-            codes::INVALID_JSON,
-            format!("Invalid prefix JSON: {e}"),
-        )
-    })?;
+    let prefix: Vec<String> = serde_json::from_str(prefix_json)
+        .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid prefix JSON: {e}")))?;
 
     let state = get_or_init_state();
 
@@ -259,7 +246,8 @@ pub fn score_route_motion(
             }
             let mut top_next: Vec<(String, u32)> = next_counts.into_iter().collect();
             top_next.sort_unstable_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
-            let continuations: Vec<&str> = top_next.iter().take(3).map(|(a, _)| a.as_str()).collect();
+            let continuations: Vec<&str> =
+                top_next.iter().take(3).map(|(a, _)| a.as_str()).collect();
 
             let result = serde_json::json!({
                 "verdict": "allow",
@@ -281,8 +269,7 @@ pub fn score_route_motion(
             .variants
             .iter()
             .filter(|v| {
-                v.activities.len() >= prefix_len
-                    && v.activities[..prefix_len] == prefix[..]
+                v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..]
             })
             .collect();
 
@@ -316,16 +303,12 @@ pub fn score_route_motion(
         } else if match_rate > 0.5 {
             (
                 "allow",
-                format!(
-                    "Prefix matches {matching_count}/{total_variants} known route(s)"
-                ),
+                format!("Prefix matches {matching_count}/{total_variants} known route(s)"),
             )
         } else {
             (
                 "warn",
-                format!(
-                    "Prefix matches only {matching_count}/{total_variants} known route(s)"
-                ),
+                format!("Prefix matches only {matching_count}/{total_variants} known route(s)"),
             )
         };
 
@@ -431,9 +414,7 @@ pub fn score_route_motion_from_envelope(
     let matching_count = envelope
         .variants
         .iter()
-        .filter(|v| {
-            v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..]
-        })
+        .filter(|v| v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..])
         .count();
 
     let match_rate = if total_variants > 0 {
@@ -447,10 +428,7 @@ pub fn score_route_motion_from_envelope(
             layer: "route".to_string(),
             verdict: crate::automembrane::Verdict::Warn,
             confidence: 0.0,
-            reason: format!(
-                "No known route starts with prefix [{}]",
-                prefix.join(" → ")
-            ),
+            reason: format!("No known route starts with prefix [{}]", prefix.join(" → ")),
             evidence_used: vec!["route_envelope".to_string()],
             missing_evidence: vec![],
         }
@@ -459,9 +437,7 @@ pub fn score_route_motion_from_envelope(
             layer: "route".to_string(),
             verdict: crate::automembrane::Verdict::Allow,
             confidence: match_rate,
-            reason: format!(
-                "Prefix matches {matching_count}/{total_variants} known route(s)"
-            ),
+            reason: format!("Prefix matches {matching_count}/{total_variants} known route(s)"),
             evidence_used: vec!["route_envelope".to_string()],
             missing_evidence: vec![],
         }
@@ -470,9 +446,7 @@ pub fn score_route_motion_from_envelope(
             layer: "route".to_string(),
             verdict: crate::automembrane::Verdict::Warn,
             confidence: match_rate,
-            reason: format!(
-                "Prefix matches only {matching_count}/{total_variants} known route(s)"
-            ),
+            reason: format!("Prefix matches only {matching_count}/{total_variants} known route(s)"),
             evidence_used: vec!["route_envelope".to_string()],
             missing_evidence: vec![],
         }
@@ -535,8 +509,7 @@ mod tests {
             .variants
             .iter()
             .filter(|v| {
-                v.activities.len() >= prefix_len
-                    && v.activities[..prefix_len] == prefix[..]
+                v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..]
             })
             .collect();
 
@@ -566,7 +539,7 @@ mod tests {
         let cases = vec![
             (0.0_f64, "warn"),
             (0.3, "warn"),
-            (0.5, "warn"),   // not strictly greater than 0.5
+            (0.5, "warn"), // not strictly greater than 0.5
             (0.51, "allow"),
             (1.0, "allow"),
         ];
@@ -599,9 +572,7 @@ mod tests {
             std::collections::HashMap::new();
 
         for v in &variants {
-            if v.activities.len() >= prefix_len
-                && v.activities[..prefix_len] == prefix[..]
-            {
+            if v.activities.len() >= prefix_len && v.activities[..prefix_len] == prefix[..] {
                 if let Some(next) = v.activities.get(prefix_len) {
                     *next_counts.entry(next.clone()).or_insert(0) += v.count;
                 }
@@ -624,11 +595,7 @@ mod tests {
     fn coverage_threshold_prunes_variants() {
         // 10 traces: variant A=6, variant B=3, variant C=1
         // threshold=0.8: cumulative after A=0.6 < 0.8, after B=0.9 >= 0.8 → stop after B
-        let sorted = vec![
-            ("A", 6u32),
-            ("B", 3u32),
-            ("C", 1u32),
-        ];
+        let sorted = vec![("A", 6u32), ("B", 3u32), ("C", 1u32)];
         let total = 10.0_f64;
         let threshold = 0.8_f64;
 
@@ -666,7 +633,11 @@ mod tests {
     fn zero_threshold_maps_to_default() {
         let threshold = {
             let t = 0.0_f64;
-            if t <= 0.0 || t > 1.0 { 0.8 } else { t }
+            if t <= 0.0 || t > 1.0 {
+                0.8
+            } else {
+                t
+            }
         };
         assert!((threshold - 0.8).abs() < 1e-9);
     }
@@ -722,7 +693,13 @@ mod tests {
         let matches_abc = check_match(&["A", "B", "C"]);
 
         // Metamorphic: adding more prefix items can only reduce or maintain match count
-        assert!(matches_a >= matches_ab, "A→B cannot match more than A alone");
-        assert!(matches_ab >= matches_abc, "A→B→C cannot match more than A→B");
+        assert!(
+            matches_a >= matches_ab,
+            "A→B cannot match more than A alone"
+        );
+        assert!(
+            matches_ab >= matches_abc,
+            "A→B→C cannot match more than A→B"
+        );
     }
 }

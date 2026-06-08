@@ -41,8 +41,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    CLI[CLI] --> TSFacade[TS Facade\nforwarding only]
-    TSFacade --> WASM[WASM boundary\nwasm-bindgen]
+    CLI[CLI] --> TSboundary[TS boundary\nforwarding only]
+    TSboundary --> WASM[WASM boundary\nwasm-bindgen]
     WASM --> RustCrate[Rust crate\nwasm4pm-cognition]
     RustCrate --> Breed[Real Breed\nRobinson unification\nShortliffe CF\nStrips regression\netc.]
     Breed --> InferenceTrace[Inference Trace\nactual reasoning steps]
@@ -59,7 +59,7 @@ Diagram 2: Wrong TS-scaffolding shape vs Right Rust-first shape.
 
 ## Authority boundary
 
-The Rust crate is the authority. The TypeScript facade is a thin forwarding layer. This boundary is enforced by CI gates — any TS code that makes a cognitive decision (chooses an action, interprets evidence, validates output) is a violation.
+The Rust crate is the authority. The TypeScript boundary is a thin forwarding layer. This boundary is enforced by CI gates — any TS code that makes a cognitive decision (chooses an action, interprets evidence, validates output) is a violation.
 
 ```mermaid
 flowchart LR
@@ -95,7 +95,7 @@ flowchart LR
     style CERT fill:#c00,color:#fff
 ```
 
-Diagram 9: Authority boundary. Rust is authoritative; TS facade cannot make cognitive decisions.
+Diagram 9: Authority boundary. Rust is authoritative; TS boundary cannot make cognitive decisions.
 
 ## Full corrected architecture
 
@@ -108,7 +108,7 @@ flowchart TD
 
     subgraph "TS monorepo (packages/)"
         ENGINE[engine\nstate machine]
-        KERNEL[kernel\nWASM facade]
+        KERNEL[kernel\nWASM boundary]
         CONFIG[config\nZod-validated]
         PLANNER[planner\nExecution DAG]
         OBS[observability\nOTEL + consola]
@@ -122,7 +122,7 @@ flowchart TD
     subgraph "Rust crates"
         PM[wasm4pm-algos\n41 process mining\nalgorithms]
         COG[wasm4pm-cognition\n9 breeds\nadversarial gates\nBLAKE3 receipts]
-        TYPES[wasm4pm-types\nshared structs]
+        TYPES[wasm4pm-compat\nshared structs]
     end
 
     subgraph "Storage"
@@ -156,7 +156,7 @@ The sequence for a single `wpm cognition run` invocation:
 sequenceDiagram
     participant U as User
     participant CLI as wpm CLI
-    participant TS as TS Facade
+    participant TS as TS boundary
     participant WB as wasm-bindgen
     participant RU as Rust (wasm4pm-cognition)
     participant BR as Breed (e.g. MYCIN)
@@ -373,13 +373,13 @@ wasm4pm/                          # Rust workspace root
 │   │       ├── evidence.rs       # EvidenceSource trait
 │   │       └── registry.rs       # breed registry
 │   ├── wasm4pm-algos/            # 41 process mining algorithms
-│   └── wasm4pm-types/            # shared structs (EventLog, Trace, etc.)
+│   └── wasm4pm-compat/            # shared structs (EventLog, Trace, etc.)
 ├── wasm4pm/                      # Original WASM crate (41 algorithms, Node.js target)
 │   └── src/                      # 114 modules
 ├── packages/                     # TypeScript monorepo (10 packages)
 │   ├── contracts/                # receipts, errors, plans, hashing
 │   ├── engine/                   # state machine
-│   ├── kernel/                   # WASM facade
+│   ├── kernel/                   # WASM boundary
 │   ├── config/                   # Zod-validated config
 │   ├── planner/                  # execution DAG
 │   ├── observability/            # OTEL + consola

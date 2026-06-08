@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! ML Real-Data Tests
 //!
 //! Exercises ML sub-families (P4 from coverage audit) against real XES data.
@@ -32,21 +33,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -55,7 +67,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -95,7 +109,10 @@ const ROADTRAFFIC: &[&str] = &[
 macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
-            None => { eprintln!("SKIP: {} not found", $label); return; }
+            None => {
+                eprintln!("SKIP: {} not found", $label);
+                return;
+            }
             Some(l) => l,
         }
     };
@@ -113,12 +130,21 @@ fn pca_roadtraffic_eigenvalues_are_positive() {
 
     let result = pca_internal(&features);
 
-    assert!(result.eigenvalues[0] >= 0.0,
-        "First eigenvalue must be non-negative, got {}", result.eigenvalues[0]);
-    assert!(result.eigenvalues[1] >= 0.0,
-        "Second eigenvalue must be non-negative, got {}", result.eigenvalues[1]);
-    assert!(result.explained_variance[0] >= 0.0 && result.explained_variance[0] <= 1.0,
-        "First explained variance must be in [0,1], got {}", result.explained_variance[0]);
+    assert!(
+        result.eigenvalues[0] >= 0.0,
+        "First eigenvalue must be non-negative, got {}",
+        result.eigenvalues[0]
+    );
+    assert!(
+        result.eigenvalues[1] >= 0.0,
+        "Second eigenvalue must be non-negative, got {}",
+        result.eigenvalues[1]
+    );
+    assert!(
+        result.explained_variance[0] >= 0.0 && result.explained_variance[0] <= 1.0,
+        "First explained variance must be in [0,1], got {}",
+        result.explained_variance[0]
+    );
 }
 
 #[test]
@@ -130,9 +156,12 @@ fn pca_roadtraffic_first_component_dominates() {
     let result = pca_internal(&features);
 
     // The first eigenvalue must be >= second (by definition of PCA)
-    assert!(result.eigenvalues[0] >= result.eigenvalues[1],
+    assert!(
+        result.eigenvalues[0] >= result.eigenvalues[1],
         "First eigenvalue ({}) must be >= second ({})",
-        result.eigenvalues[0], result.eigenvalues[1]);
+        result.eigenvalues[0],
+        result.eigenvalues[1]
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -150,12 +179,18 @@ fn regression_roadtraffic_trace_length_vs_event_count_non_degenerate() {
     let result = regression_internal(&x, &y);
 
     // r_squared must be in [0, 1]
-    assert!(result.r_squared >= 0.0 && result.r_squared <= 1.0,
-        "R² must be in [0,1], got {}", result.r_squared);
+    assert!(
+        result.r_squared >= 0.0 && result.r_squared <= 1.0,
+        "R² must be in [0,1], got {}",
+        result.r_squared
+    );
 
     // With 100 traces and real case lengths, intercept must be positive
-    assert!(result.intercept > 0.0,
-        "Intercept must be positive (avg case length > 0), got {}", result.intercept);
+    assert!(
+        result.intercept > 0.0,
+        "Intercept must be positive (avg case length > 0), got {}",
+        result.intercept
+    );
 }
 
 #[test]
@@ -170,8 +205,11 @@ fn regression_roadtraffic_unique_activities_vs_case_length_correlated() {
     let result = regression_internal(&x, &y);
 
     // Longer traces generally have more unique activities → positive slope
-    assert!(result.slope >= 0.0,
-        "Slope of (trace_length → unique_activities) must be non-negative, got {}", result.slope);
+    assert!(
+        result.slope >= 0.0,
+        "Slope of (trace_length → unique_activities) must be non-negative, got {}",
+        result.slope
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -188,9 +226,16 @@ fn forecast_roadtraffic_case_lengths_ewma_non_degenerate() {
 
     let result = forecast_internal(&series, 0.3);
 
-    assert!(result.rmse >= 0.0, "RMSE must be non-negative, got {}", result.rmse);
-    assert!(result.next_window > 0.0,
-        "Forecast next_window must be positive (trace lengths > 0), got {}", result.next_window);
+    assert!(
+        result.rmse >= 0.0,
+        "RMSE must be non-negative, got {}",
+        result.rmse
+    );
+    assert!(
+        result.next_window > 0.0,
+        "Forecast next_window must be positive (trace lengths > 0), got {}",
+        result.next_window
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -210,10 +255,16 @@ fn automl_forecast_roadtraffic_selects_best_alpha() {
 
     let result = discover_automl_forecast_internal(&windows);
 
-    assert!(result.best_alpha > 0.0 && result.best_alpha < 1.0,
-        "best_alpha must be in (0,1), got {}", result.best_alpha);
-    assert!(result.min_avg_rmse >= 0.0,
-        "min_avg_rmse must be non-negative, got {}", result.min_avg_rmse);
+    assert!(
+        result.best_alpha > 0.0 && result.best_alpha < 1.0,
+        "best_alpha must be in (0,1), got {}",
+        result.best_alpha
+    );
+    assert!(
+        result.min_avg_rmse >= 0.0,
+        "min_avg_rmse must be non-negative, got {}",
+        result.min_avg_rmse
+    );
 }
 
 #[test]
@@ -221,14 +272,23 @@ fn automl_classify_roadtraffic_selects_best_k() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let (features, labels) = extract_features(&log, "concept:name");
 
-    assert!(!features.is_empty(), "extract_features must return non-empty features");
+    assert!(
+        !features.is_empty(),
+        "extract_features must return non-empty features"
+    );
 
     let result = discover_automl_classify_internal(&features, &labels);
 
-    assert!(result.best_k >= 1,
-        "best_k must be at least 1, got {}", result.best_k);
-    assert!(result.max_avg_accuracy >= 0.0 && result.max_avg_accuracy <= 1.0,
-        "max_avg_accuracy must be in [0,1], got {}", result.max_avg_accuracy);
+    assert!(
+        result.best_k >= 1,
+        "best_k must be at least 1, got {}",
+        result.best_k
+    );
+    assert!(
+        result.max_avg_accuracy >= 0.0 && result.max_avg_accuracy <= 1.0,
+        "max_avg_accuracy must be in [0,1], got {}",
+        result.max_avg_accuracy
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -248,10 +308,17 @@ fn knn_sweep_cv_roadtraffic_returns_non_degenerate_accuracy() {
     // Returns accuracy per k value for k=0..=max_k; sweep with 5 folds, max_k=5
     let accuracies = knn_sweep_cv(&features, &labels, 5, 5);
 
-    assert!(!accuracies.is_empty(), "knn_sweep_cv must return non-empty accuracy vector");
+    assert!(
+        !accuracies.is_empty(),
+        "knn_sweep_cv must return non-empty accuracy vector"
+    );
     for (k, &acc) in accuracies.iter().enumerate() {
-        assert!(acc >= 0.0 && acc <= 1.0,
-            "knn_sweep_cv accuracy at k={} must be in [0,1], got {}", k, acc);
+        assert!(
+            acc >= 0.0 && acc <= 1.0,
+            "knn_sweep_cv accuracy at k={} must be in [0,1], got {}",
+            k,
+            acc
+        );
     }
 }
 
@@ -260,16 +327,30 @@ fn extract_features_roadtraffic_produces_correct_count() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let (features, labels) = extract_features(&log, "concept:name");
 
-    assert_eq!(features.len(), log.traces.len(),
-        "extract_features must produce one feature vector per trace");
-    assert_eq!(labels.len(), log.traces.len(),
-        "extract_features must produce one label per trace");
+    assert_eq!(
+        features.len(),
+        log.traces.len(),
+        "extract_features must produce one feature vector per trace"
+    );
+    assert_eq!(
+        labels.len(),
+        log.traces.len(),
+        "extract_features must produce one label per trace"
+    );
 
     // Each feature vector has 2 components: [trace_length, unique_activities]
     for (i, f) in features.iter().enumerate() {
-        assert!(f[0] > 0.0,
-            "Trace {} has feature[0]=trace_length={}, must be > 0", i, f[0]);
-        assert!(f[1] > 0.0,
-            "Trace {} has feature[1]=unique_activities={}, must be > 0", i, f[1]);
+        assert!(
+            f[0] > 0.0,
+            "Trace {} has feature[0]=trace_length={}, must be > 0",
+            i,
+            f[0]
+        );
+        assert!(
+            f[1] > 0.0,
+            "Trace {} has feature[1]=unique_activities={}, must be > 0",
+            i,
+            f[1]
+        );
     }
 }

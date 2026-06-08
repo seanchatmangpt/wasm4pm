@@ -26,7 +26,7 @@ Comprehensive design for three complementary instrumentation solutions:
 - Pseudocode for all three solutions
 - 8 identified error scenarios (schema validation, hazard rate, drift detection, etc.)
 - 5 design conflicts documented with resolutions
-- Backward compatibility strategy
+- baseline admissibility strategy
 - Jaeger trace structure examples
 
 ### 2. **Executive Summary** (`_INSTRUMENTATION_DESIGN_SUMMARY.txt`, 373 lines)
@@ -131,7 +131,7 @@ Trace ID: a1b2c3d4e5f6...xyz
 
 | Conflict | Nature | Resolution |
 |----------|--------|-----------|
-| WASM signature backward compat | API design | Add new `_with_trace()` variants; 6-month deprecation |
+| WASM signature backward compat | API design | Add new `_with_trace()` variants; 6-month removal |
 | Rust tracing crate integration | OTEL standard | Export `trace_id` as attribute; post-processing merge |
 | Return value shape changes | API design | Keep return clean; use OTEL span headers instead |
 | Pre-validation timing | Architecture | Emit both validator + command spans; root merges |
@@ -246,7 +246,7 @@ grep "emitErrorSpanForPhase" /path/to/test/errors.test.ts | wc -l
 1. Check **Part 4** for Chicago TDD compliance checklist
 2. Review **Part 5** conflict resolutions against project architecture
 3. Validate **Part 6** success metrics are measurable
-4. Confirm backward compatibility approach (Part 1.3)
+4. Confirm baseline admissibility approach (Part 1.3)
 
 ### For Testing/QA
 

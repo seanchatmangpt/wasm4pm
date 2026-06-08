@@ -310,7 +310,7 @@ cd apps/wasm4pm && npm test -- cli-ux-improvements.test.ts
 
 ---
 
-## Backward Compatibility
+## baseline admissibility
 
 ✅ **100% backward compatible**
 - Existing commands work unchanged (new verbose levels optional)

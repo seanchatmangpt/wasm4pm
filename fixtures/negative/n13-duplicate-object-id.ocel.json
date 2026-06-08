@@ -1,7 +1,7 @@
 {
   "_comment": "NEGATIVE FIXTURE N13 — duplicate object id. OCEDO requires object ids to be unique (O is a SET). order-1 is declared twice => DUPLICATE_OBJECT_ID. Minimal counterexample: rename the second object to order-2.",
   "expected_refusal": "ObjectLifecycleViolation",
-  "rejecting_primitive": "ocel_core::validate (DUPLICATE_OBJECT_ID)",
+  "rejecting_primitive": "wasm4pm_compat::ocel::validate (DUPLICATE_OBJECT_ID)",
   "eventTypes": [
     { "name": "Create Order", "attributes": [] }
   ],

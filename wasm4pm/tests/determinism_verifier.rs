@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 /// Determinism Verifier
 ///
 /// Rank-1 Oracle: Identical seed → identical output (bit-exact for integers/strings, 1e-9 tolerance for floats)
@@ -8,7 +9,6 @@
 /// - Reproducibility (scientific credibility)
 /// - Debugging (isolate non-determinism)
 /// - CI/CD (stable test results)
-
 use rand::SeedableRng;
 use std::fmt;
 
@@ -68,11 +68,7 @@ impl DeterminismVerifier {
         for i in 0..n_trials {
             for j in (i + 1)..n_trials {
                 if trials[i] != trials[j] {
-                    failed_trials.push((
-                        i,
-                        j,
-                        format!("{:?} != {:?}", trials[i], trials[j]),
-                    ));
+                    failed_trials.push((i, j, format!("{:?} != {:?}", trials[i], trials[j])));
                 } else {
                     consistent_pairs += 1;
                 }
@@ -119,7 +115,8 @@ impl DeterminismVerifier {
                 // Check for NaN/Inf mismatch
                 let both_nan = trials[i].is_nan() && trials[j].is_nan();
                 let both_inf = trials[i].is_infinite() && trials[j].is_infinite();
-                let both_same_sign = (trials[i] > 0.0) == (trials[j] > 0.0) || (both_nan || both_inf);
+                let both_same_sign =
+                    (trials[i] > 0.0) == (trials[j] > 0.0) || (both_nan || both_inf);
 
                 if both_nan || (both_inf && both_same_sign) || diff <= self.float_tolerance {
                     consistent_pairs += 1;
@@ -178,7 +175,10 @@ mod tests {
             rng.gen_range(0..100)
         });
 
-        assert!(result.deterministic, "Seeded RNG should produce deterministic results");
+        assert!(
+            result.deterministic,
+            "Seeded RNG should produce deterministic results"
+        );
         assert_eq!(result.consistency_score, 1.0);
     }
 
@@ -204,7 +204,10 @@ mod tests {
             f32::NAN // Consistent NaN across trials
         });
 
-        assert!(result.deterministic, "Consistent NaN should be treated as deterministic");
+        assert!(
+            result.deterministic,
+            "Consistent NaN should be treated as deterministic"
+        );
         assert_eq!(result.consistency_score, 1.0);
     }
 
@@ -217,7 +220,10 @@ mod tests {
             f32::INFINITY // Consistent positive infinity
         });
 
-        assert!(result.deterministic, "Consistent infinity should be treated as deterministic");
+        assert!(
+            result.deterministic,
+            "Consistent infinity should be treated as deterministic"
+        );
         assert_eq!(result.consistency_score, 1.0);
     }
 
@@ -233,7 +239,10 @@ mod tests {
             0.5 + (counter as f32 * 1e-12)
         });
 
-        assert!(result.deterministic, "Differences within tolerance should pass");
+        assert!(
+            result.deterministic,
+            "Differences within tolerance should pass"
+        );
     }
 
     #[test]
@@ -247,7 +256,10 @@ mod tests {
             0.5 + (counter as f32 * 0.1) // Vary by significant amount
         });
 
-        assert!(!result.deterministic, "Differences outside tolerance should fail");
+        assert!(
+            !result.deterministic,
+            "Differences outside tolerance should fail"
+        );
         assert!(result.consistency_score < 1.0);
     }
 
@@ -301,7 +313,11 @@ mod tests {
                 rng.gen_range(0..1000)
             });
 
-            assert!(result.deterministic, "Seed {} should produce deterministic results", seed);
+            assert!(
+                result.deterministic,
+                "Seed {} should produce deterministic results",
+                seed
+            );
         }
     }
 

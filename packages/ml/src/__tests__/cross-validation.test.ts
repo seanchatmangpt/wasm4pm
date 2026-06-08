@@ -48,10 +48,10 @@ const TOO_SMALL_4 = [
 ];
 
 // ---------------------------------------------------------------------------
-// Backward compatibility
+// baseline admissibility
 // ---------------------------------------------------------------------------
 
-describe('classifyTraces — backward compatibility (crossValidate=false default)', () => {
+describe('classifyTraces — baseline admissibility (crossValidate=false default)', () => {
   it('does not add cv_* fields when crossValidate is not set', async () => {
     const result = await classifyTraces(MINIMAL_6, { method: 'knn', k: 2 });
     expect(result.cv_accuracy).toBeUndefined();

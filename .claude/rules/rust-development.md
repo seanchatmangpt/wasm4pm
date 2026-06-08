@@ -6,7 +6,7 @@
 
 ```
 wasm4pm/                          # Workspace root
-├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types",
+├── Cargo.toml                  # members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-compat",
 │                               #            "crates/wasm4pm-algos", "crates/wasm4pm-cli",
 │                               #            "crates/wasm4pm-utils", "crates/miniml-core",
 │                               #            "crates/wasm4pm-cognition", "crates/prolog8"]

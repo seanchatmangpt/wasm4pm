@@ -6,6 +6,7 @@ use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 use wasm_bindgen::prelude::*;
 
 /// Inductive Miner - recursive structure discovery via cuts
@@ -13,11 +14,307 @@ use wasm_bindgen::prelude::*;
 /// Returns ProcessTree via XOR/Sequence/Parallel/Loop cuts
 /// Pure-Rust Inductive Miner: returns JSON string with the discovered process tree.
 /// Testable without wasm-bindgen runtime.
-pub fn discover_inductive_miner_from_log(log: &EventLog, activity_key: &str) -> String {
-    let activities = log.get_activities(activity_key);
+/// Helper to convert recursive `ProcessTreeNode` to flat compat `ProcessTree`.
+pub fn convert_to_compat_tree(node: &ProcessTreeNode) -> wasm4pm_compat::process_tree::ProcessTree {
+    let mut tree = wasm4pm_compat::process_tree::ProcessTree::new();
+    let root_id = convert_node_recursive(node, &mut tree);
+    tree.root = Some(root_id);
+    tree
+}
+
+fn convert_node_recursive(
+    node: &ProcessTreeNode,
+    tree: &mut wasm4pm_compat::process_tree::ProcessTree,
+) -> wasm4pm_compat::process_tree::ProcessTreeNodeId {
+    let compat_node = match node.node_type.as_str() {
+        "leaf" => {
+            let label = node.label.clone().unwrap_or_default();
+            wasm4pm_compat::process_tree::ProcessTreeNode::Activity(label)
+        }
+        _ => {
+            let op = match node.node_type.as_str() {
+                "sequence" => wasm4pm_compat::process_tree::ProcessTreeOperator::Sequence,
+                "xor" => wasm4pm_compat::process_tree::ProcessTreeOperator::Xor,
+                "parallel" => wasm4pm_compat::process_tree::ProcessTreeOperator::Parallel,
+                "loop" => wasm4pm_compat::process_tree::ProcessTreeOperator::Loop,
+                "or" => wasm4pm_compat::process_tree::ProcessTreeOperator::Or,
+                _ => wasm4pm_compat::process_tree::ProcessTreeOperator::Silent,
+            };
+            let parent_id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());
+            tree.nodes
+                .push(wasm4pm_compat::process_tree::ProcessTreeNode::Activity(
+                    String::new(),
+                ));
+
+            let mut child_ids = Vec::new();
+            for child in &node.children {
+                child_ids.push(convert_node_recursive(child, tree));
+            }
+
+            tree.nodes[parent_id.0] = wasm4pm_compat::process_tree::ProcessTreeNode::Operator {
+                operator: op,
+                children: child_ids,
+            };
+
+            return parent_id;
+        }
+    };
+
+    let id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());
+    tree.nodes.push(compat_node);
+    id
+}
+
+/// Helper to convert recursive `PowlArena` to compat `Powl` model.
+pub fn convert_to_compat_powl(
+    arena: &crate::powl_arena::PowlArena,
+    root: u32,
+) -> wasm4pm_compat::powl::Powl {
+    let mut powl = wasm4pm_compat::powl::Powl::new();
+    let root_id = convert_powl_node_recursive(root, arena, &mut powl);
+    powl.root = Some(root_id);
+    powl
+}
+
+fn convert_powl_node_recursive(
+    idx: u32,
+    arena: &crate::powl_arena::PowlArena,
+    powl: &mut wasm4pm_compat::powl::Powl,
+) -> wasm4pm_compat::powl::PowlNodeId {
+    use crate::powl_arena::{Operator as ArenaOperator, PowlNode as ArenaNode};
+
+    let node = &arena.nodes[idx as usize];
+    let kind = match node {
+        ArenaNode::Transition(t) => {
+            if let Some(lbl) = &t.label {
+                wasm4pm_compat::powl::PowlNodeKind::Atom(lbl.clone())
+            } else {
+                wasm4pm_compat::powl::PowlNodeKind::Silent
+            }
+        }
+        ArenaNode::FrequentTransition(t) => {
+            wasm4pm_compat::powl::PowlNodeKind::Atom(t.activity.clone())
+        }
+        ArenaNode::OperatorPowl(op) => match op.operator {
+            ArenaOperator::Xor => {
+                let mut child_ids = Vec::new();
+                for &child in &op.children {
+                    child_ids.push(convert_powl_node_recursive(child, arena, powl));
+                }
+                wasm4pm_compat::powl::PowlNodeKind::Choice(child_ids)
+            }
+            ArenaOperator::Loop => {
+                let body = if !op.children.is_empty() {
+                    convert_powl_node_recursive(op.children[0], arena, powl)
+                } else {
+                    let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                    powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                        id,
+                        wasm4pm_compat::powl::PowlNodeKind::Silent,
+                    ));
+                    id
+                };
+                let redo = if op.children.len() >= 2 {
+                    Some(convert_powl_node_recursive(op.children[1], arena, powl))
+                } else {
+                    None
+                };
+                wasm4pm_compat::powl::PowlNodeKind::Loop { body, redo }
+            }
+            ArenaOperator::PartialOrder => {
+                let mut child_ids = Vec::new();
+                for &child in &op.children {
+                    child_ids.push(convert_powl_node_recursive(child, arena, powl));
+                }
+                wasm4pm_compat::powl::PowlNodeKind::PartialOrder(child_ids)
+            }
+        },
+        ArenaNode::StrictPartialOrder(spo) => {
+            let mut child_ids = Vec::new();
+            for &child in &spo.children {
+                child_ids.push(convert_powl_node_recursive(child, arena, powl));
+            }
+            let n = spo.children.len();
+            for i in 0..n {
+                for j in 0..n {
+                    if spo.order.is_edge(i, j) {
+                        powl.edges.push(wasm4pm_compat::powl::OrderEdge::new(
+                            child_ids[i],
+                            child_ids[j],
+                        ));
+                    }
+                }
+            }
+            wasm4pm_compat::powl::PowlNodeKind::PartialOrder(child_ids)
+        }
+        ArenaNode::DecisionGraph(dg) => {
+            let mut child_ids = Vec::new();
+            for &child in &dg.children {
+                child_ids.push(convert_powl_node_recursive(child, arena, powl));
+            }
+            let mut cg_node_ids = Vec::new();
+            let start_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+            powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                start_id,
+                wasm4pm_compat::powl::PowlNodeKind::Silent,
+            ));
+            cg_node_ids.push(start_id);
+            for cid in child_ids {
+                cg_node_ids.push(cid);
+            }
+            let end_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+            powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                end_id,
+                wasm4pm_compat::powl::PowlNodeKind::Silent,
+            ));
+            cg_node_ids.push(end_id);
+
+            let mut cg_edges = Vec::new();
+            let n = dg.children.len();
+            for i in 0..n {
+                for j in 0..n {
+                    if dg.order.is_edge(i, j) {
+                        cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                            cg_node_ids[i + 1],
+                            cg_node_ids[j + 1],
+                        ));
+                    }
+                }
+            }
+            for &start_local in &dg.start_nodes {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    start_id,
+                    cg_node_ids[start_local + 1],
+                ));
+            }
+            for &end_local in &dg.end_nodes {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    cg_node_ids[end_local + 1],
+                    end_id,
+                ));
+            }
+            if dg.empty_path {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(start_id, end_id));
+            }
+            wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph {
+                nodes: cg_node_ids,
+                edges: cg_edges,
+            }
+        }
+        ArenaNode::ChoiceGraph(cg) => {
+            let mut cg_node_ids = Vec::new();
+            for n in &cg.graph.nodes {
+                match n {
+                    ChoiceGraphNode::Start => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Silent,
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    ChoiceGraphNode::End => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Silent,
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    ChoiceGraphNode::Activity(lbl) => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Atom(lbl.clone()),
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    ChoiceGraphNode::SubModel(sub_idx) => {
+                        let child_id = convert_powl_node_recursive(*sub_idx, arena, powl);
+                        cg_node_ids.push(child_id);
+                    }
+                }
+            }
+            let mut cg_edges = Vec::new();
+            for &(from_idx, to_idx) in &cg.graph.edges {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    cg_node_ids[from_idx],
+                    cg_node_ids[to_idx],
+                ));
+            }
+            wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph {
+                nodes: cg_node_ids,
+                edges: cg_edges,
+            }
+        }
+    };
+
+    let parent_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+    powl.nodes
+        .push(wasm4pm_compat::powl::PowlNode::new(parent_id, kind));
+    parent_id
+}
+
+/// POWL discovery implementation returning TypedPowl.
+pub struct PowerMiner;
+
+impl PowerMiner {
+    /// Discover a POWL model from an admitted event log.
+    pub fn discover<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> Result<TypedPowl, String> {
+        let config = crate::powl::discovery::DiscoveryConfig {
+            activity_key: activity_key.to_string(),
+            variant: crate::powl::discovery::DiscoveryVariant::DecisionGraphCyclic,
+            min_trace_count: 1,
+            noise_threshold: 0.0,
+            from_dfg: false,
+            fall_through_fired: false,
+        };
+        let (arena, root) = crate::powl::discovery::discover_powl(&log.value, &config)?;
+        let compat_powl = convert_to_compat_powl(&arena, root);
+        compat_powl.validate().map_err(|e| e.to_string())?;
+        Ok(
+            wasm4pm_compat::admission::Admission::<_, wasm4pm_compat::witness::PowlPaper>::new(
+                compat_powl,
+            )
+            .into_evidence(),
+        )
+    }
+}
+
+/// Inductive Miner discovery implementation returning TypedProcessTree.
+pub struct InductiveMiner;
+
+impl InductiveMiner {
+    /// Discover a process tree from an admitted event log.
+    pub fn discover<W>(
+        log: &AdmittedEventLog<W>,
+        activity_key: &str,
+    ) -> Result<TypedProcessTree, String> {
+        let activities = log.value.get_activities(activity_key);
+        let mut sorted_acts: Vec<_> = activities.to_vec();
+        sorted_acts.sort(); // Deterministic ordering
+        let recursive_tree = inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0)
+            .map_err(|e| {
+            e.as_string()
+                .unwrap_or_else(|| "Inductive miner discovery failed".to_string())
+        })?;
+
+        let compat_tree = convert_to_compat_tree(&recursive_tree);
+        Ok(wasm4pm_compat::admission::Admission::<_, wasm4pm_compat::witness::InductiveMiner>::new(compat_tree)
+            .into_evidence())
+    }
+}
+
+/// Pure-Rust Inductive Miner: returns JSON string with the discovered process tree.
+/// Testable without wasm-bindgen runtime.
+pub fn discover_inductive_miner_from_log<W>(
+    log: &AdmittedEventLog<W>,
+    activity_key: &str,
+) -> String {
+    let activities = log.value.get_activities(activity_key);
     let mut sorted_acts: Vec<_> = activities.to_vec();
     sorted_acts.sort();
-    match inductive_miner_recursive(log, &sorted_acts, activity_key, 0) {
+    match inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0) {
         Ok(tree) => {
             let nodes = tree.count_nodes();
             serde_json::to_string(&json!({
@@ -82,7 +379,9 @@ pub fn discover_inductive_miner(
             let mut sorted_acts: Vec<_> = activities.to_vec();
             sorted_acts.sort(); // Deterministic ordering
 
-            inductive_miner_recursive(log, &sorted_acts, activity_key, 0)
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
         }
         Some(_) => Err(crate::error::js_val("Not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
@@ -175,8 +474,11 @@ fn build_df_subset(
     // Map activity name → index so the hot inner loop uses integer pairs
     // instead of cloned String keys. We only materialise (String,String) keys
     // once at the end, not once per directly-follows occurrence.
-    let idx_map: FxHashMap<&str, usize> =
-        activities.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
+    let idx_map: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
 
     // Integer-keyed counting: ~12 bytes/entry vs. ~80 bytes for (String,String).
     let mut int_df: FxHashMap<(usize, usize), usize> = FxHashMap::default();
@@ -216,18 +518,16 @@ fn find_xor_cut(
 
     for split in 1..activities.len() {
         // A node is "left" iff its index < split.
-        let has_cross_edge = df.keys().any(|(from, to)| {
-            match (idx.get(from.as_str()), idx.get(to.as_str())) {
-                (Some(&fi), Some(&ti)) => (fi < split) != (ti < split),
-                _ => false,
-            }
-        });
+        let has_cross_edge =
+            df.keys().any(
+                |(from, to)| match (idx.get(from.as_str()), idx.get(to.as_str())) {
+                    (Some(&fi), Some(&ti)) => (fi < split) != (ti < split),
+                    _ => false,
+                },
+            );
 
         if !has_cross_edge {
-            return Some((
-                activities[..split].to_vec(),
-                activities[split..].to_vec(),
-            ));
+            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
         }
     }
 
@@ -267,10 +567,7 @@ fn find_sequence_cut(
         }
 
         if valid {
-            return Some((
-                activities[..split].to_vec(),
-                activities[split..].to_vec(),
-            ));
+            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
         }
     }
 
@@ -300,9 +597,7 @@ fn find_parallel_cut(
     use rustc_hash::FxHashSet;
     let df_idx: FxHashSet<(usize, usize)> = df
         .keys()
-        .filter_map(|(from, to)| {
-            Some((*idx_map.get(from.as_str())?, *idx_map.get(to.as_str())?))
-        })
+        .filter_map(|(from, to)| Some((*idx_map.get(from.as_str())?, *idx_map.get(to.as_str())?)))
         .collect();
 
     // Union-Find: group activities connected by bidirectional df-edges.
@@ -366,18 +661,16 @@ fn find_loop_cut(
     // body  = activities[..split] (index < split)
     // redo  = activities[split..] (index >= split)
     for split in 1..activities.len() {
-        let has_redo_to_body = df.keys().any(|(from, to)| {
-            match (idx.get(from.as_str()), idx.get(to.as_str())) {
-                (Some(&fi), Some(&ti)) => fi >= split && ti < split,
-                _ => false,
-            }
-        });
+        let has_redo_to_body =
+            df.keys().any(
+                |(from, to)| match (idx.get(from.as_str()), idx.get(to.as_str())) {
+                    (Some(&fi), Some(&ti)) => fi >= split && ti < split,
+                    _ => false,
+                },
+            );
 
         if has_redo_to_body {
-            return Some((
-                activities[..split].to_vec(),
-                activities[split..].to_vec(),
-            ));
+            return Some((activities[..split].to_vec(), activities[split..].to_vec()));
         }
     }
 
@@ -393,7 +686,7 @@ pub fn discover_ant_colony(
     num_ants: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    // DEPRECATED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
+    // REMOVED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
     crate::genetic_discovery::discover_aco_algorithm(
         eventlog_handle,
         activity_key,
@@ -454,7 +747,7 @@ pub fn discover_simulated_annealing(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -473,14 +766,14 @@ pub fn discover_simulated_annealing_from_log(
     activity_key: &str,
     temperature: f64,
     cooling_rate: f64,
-) -> (DirectlyFollowsGraph, f64) {
+) -> (DFG, f64) {
     use std::collections::HashSet as HS;
 
     if temperature <= 0.0 {
-        return (DirectlyFollowsGraph::new(), 0.0); // invalid temperature
+        return (DFG::new(), 0.0); // invalid temperature
     }
     if cooling_rate <= 0.0 || cooling_rate >= 1.0 || !cooling_rate.is_finite() {
-        return (DirectlyFollowsGraph::new(), 0.0); // cooling_rate must be in (0, 1)
+        return (DFG::new(), 0.0); // cooling_rate must be in (0, 1)
     }
 
     let col_owned = log.to_columnar_owned(activity_key);
@@ -490,8 +783,10 @@ pub fn discover_simulated_annealing_from_log(
     let n_vocab = col.vocab.len();
     let edge_cap = n_vocab.saturating_mul(n_vocab) / 4 + 1;
     let mut edge_vocab: Vec<(u32, u32)> = Vec::with_capacity(edge_cap);
-    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::with_capacity_and_hasher(edge_cap, Default::default());
-    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::with_capacity_and_hasher(n_vocab + 1, Default::default());
+    let mut edge_freq: FxHashMap<(u32, u32), f64> =
+        FxHashMap::with_capacity_and_hasher(edge_cap, Default::default());
+    let mut node_freq: FxHashMap<u32, usize> =
+        FxHashMap::with_capacity_and_hasher(n_vocab + 1, Default::default());
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
@@ -532,7 +827,10 @@ pub fn discover_simulated_annealing_from_log(
         // Mutate current_edges in-place instead of cloning a full neighbour copy.
         // Track what was changed so we can undo it on rejection — O(1) allocation
         // instead of O(edges) per temperature step.
-        enum Move { Removed((u32, u32)), Added((u32, u32)) }
+        enum Move {
+            Removed((u32, u32)),
+            Added((u32, u32)),
+        }
         let mv: Option<Move> = if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
             // Sort for deterministic selection independent of HashSet RandomState.
             let mut edges_sorted: Vec<(u32, u32)> = current_edges.iter().copied().collect();
@@ -570,14 +868,21 @@ pub fn discover_simulated_annealing_from_log(
         } else {
             // Undo the move: restore the single changed edge.
             match mv {
-                Some(Move::Removed(e)) => { current_edges.insert(e); }
-                Some(Move::Added(e))   => { current_edges.remove(&e); }
+                Some(Move::Removed(e)) => {
+                    current_edges.insert(e);
+                }
+                Some(Move::Added(e)) => {
+                    current_edges.remove(&e);
+                }
                 None => {}
             }
         }
         temp *= cooling_rate;
     }
-    (edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq), best_fitness)
+    (
+        edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq),
+        best_fitness,
+    )
 }
 
 /// Process Skeleton - extract minimal model structure
@@ -592,7 +897,7 @@ pub fn extract_process_skeleton(
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
 
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             for activity in &activities {
                 dfg.nodes.push(DFGNode {
@@ -629,7 +934,7 @@ pub fn extract_process_skeleton(
     })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .store_object(StoredObject::DFG(dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -771,14 +1076,14 @@ pub fn analyze_case_attributes(
 /// Marked inline(always) so the compiler can specialise it at each call site
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
+// Helper: Materialize a DFG from edge set and vocabulary
 fn edge_set_to_dfg(
     edge_set: &HashSet<(u32, u32)>,
     vocab: &[String],
     edge_freq: &FxHashMap<(u32, u32), f64>,
     node_freq: &FxHashMap<u32, usize>,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
 
     for (idx, activity) in vocab.iter().enumerate() {
         dfg.nodes.push(DFGNode {

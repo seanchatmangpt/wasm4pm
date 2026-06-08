@@ -30,8 +30,8 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm4pm-types = { workspace = true }
-wasm4pm-algos = { workspace = true }
+wasm4pm-compat = { path = "../../wasm4pm-compat", features = ["wasm4pm"] }
+wasm4pm-algos = { version = "26.6.5", path = "../crates/wasm4pm-algos" }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
@@ -56,9 +56,8 @@ statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
 blake3 = "1"
 sha2 = { workspace = true }
-wasm4pm-cognition = { version = "26.5.28", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
+wasm4pm-cognition = { version = "26.6.5", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
 miniml = { workspace = true, optional = true }
-ocel-core = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }
@@ -78,9 +77,9 @@ wasm-bindgen-test = "0.3"
 tempfile = { workspace = true }
 regex = "1"
 naga = { version = "0.19", features = ["wgsl-in"] }
-wasm4pm-macros = { version = "26.5.28", path = "../crates/wasm4pm-macros" }
+wasm4pm-macros = { version = "26.6.5", path = "../crates/wasm4pm-macros" }
 quick-xml = "0.37"
-miniml = { version = "26.5.28", path = "../crates/miniml-core" }
+miniml = { version = "26.6.5", path = "../crates/miniml-core" }
 
 [[bench]]
 name = "fast_algorithms"
@@ -247,6 +246,7 @@ harness = false
 name = "scalability_report"
 
 [features]
+ocel = []
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL FEATURE FLAGS
 # These are the authoritative semantic features for API stability.
@@ -301,7 +301,7 @@ bcinr = ["dep:bcinr"]
 # Cognition kernel re-export (wasm4pm-cognition substrate)
 cognition = ["dep:wasm4pm-cognition"]
 
-# Default: no canonical features (backward compatibility with browser profile below)
+# Default: no canonical features (baseline admissibility with browser profile below)
 default = ["browser"]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -376,7 +376,7 @@ browser = [
   "import"
 ]
 
-# Cloud profile: deprecated alias for browser profile
+# Cloud profile: removed alias for browser profile
 cloud = ["browser"]
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -432,7 +432,8 @@ gpu = []
 # can be declared without cargo errors; parallel_executor.rs guards rayon use internally)
 rayon = []
 powl = []
-ocel = ["dep:ocel-core"]
+serde = []
+
 
 # Utility features
 hand_rolled_stats = []
@@ -447,8 +448,7 @@ poc_gate_validator = []
 # NEVER include in any deployment profile until real model is implemented
 automl_experimental = []
 
-# Optional wasm4pm-types XES import module (requires wasm4pm-types/import feature)
-import = ["wasm4pm-types/import"]
+import = []
 
 [[test]]
 name = "agentic_jtbd_tests"

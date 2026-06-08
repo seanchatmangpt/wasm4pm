@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::{mat_get, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct PcaResult {
@@ -16,25 +16,39 @@ pub struct PcaResult {
 #[wasm_bindgen]
 impl PcaResult {
     #[wasm_bindgen(getter, js_name = "nComponents")]
-    pub fn n_components(&self) -> usize { self.n_components }
+    pub fn n_components(&self) -> usize {
+        self.n_components
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(js_name = "getComponents")]
-    pub fn get_components(&self) -> Vec<f64> { self.components.clone() }
+    pub fn get_components(&self) -> Vec<f64> {
+        self.components.clone()
+    }
 
     #[wasm_bindgen(js_name = "getExplainedVariance")]
-    pub fn get_explained_variance(&self) -> Vec<f64> { self.explained_variance.clone() }
+    pub fn get_explained_variance(&self) -> Vec<f64> {
+        self.explained_variance.clone()
+    }
 
     #[wasm_bindgen(js_name = "getExplainedVarianceRatio")]
-    pub fn get_explained_variance_ratio(&self) -> Vec<f64> { self.explained_variance_ratio.clone() }
+    pub fn get_explained_variance_ratio(&self) -> Vec<f64> {
+        self.explained_variance_ratio.clone()
+    }
 
     #[wasm_bindgen(js_name = "getMean")]
-    pub fn get_mean(&self) -> Vec<f64> { self.mean.clone() }
+    pub fn get_mean(&self) -> Vec<f64> {
+        self.mean.clone()
+    }
 
     #[wasm_bindgen(js_name = "getTransformed")]
-    pub fn get_transformed(&self) -> Vec<f64> { self.transformed.clone() }
+    pub fn get_transformed(&self) -> Vec<f64> {
+        self.transformed.clone()
+    }
 
     /// Project new data onto principal components
     #[wasm_bindgen]
@@ -45,7 +59,8 @@ impl PcaResult {
             for c in 0..self.n_components {
                 let mut dot = 0.0;
                 for j in 0..self.n_features {
-                    dot += (data[i * self.n_features + j] - self.mean[j]) * self.components[c * self.n_features + j];
+                    dot += (data[i * self.n_features + j] - self.mean[j])
+                        * self.components[c * self.n_features + j];
                 }
                 result[i * self.n_components + c] = dot;
             }
@@ -56,14 +71,24 @@ impl PcaResult {
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
         let total: f64 = self.explained_variance_ratio.iter().sum();
-        format!("PCA(components={}, explained_variance={:.1}%)", self.n_components, total * 100.0)
+        format!(
+            "PCA(components={}, explained_variance={:.1}%)",
+            self.n_components,
+            total * 100.0
+        )
     }
 }
 
-pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<PcaResult, MlError> {
+pub fn pca_impl(
+    data: &[f64],
+    n_features: usize,
+    n_components: usize,
+) -> Result<PcaResult, MlError> {
     let n = validate_matrix(data, n_features)?;
     if n_components == 0 || n_components > n_features {
-        return Err(MlError::new("n_components must be between 1 and n_features"));
+        return Err(MlError::new(
+            "n_components must be between 1 and n_features",
+        ));
     }
 
     // Compute mean
@@ -73,7 +98,9 @@ pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<
             *m += mat_get(data, n_features, i, j);
         }
     }
-    for m in mean.iter_mut().take(n_features) { *m /= n as f64; }
+    for m in mean.iter_mut().take(n_features) {
+        *m /= n as f64;
+    }
 
     // Center data
     let mut centered = vec![0.0; n * n_features];
@@ -91,12 +118,16 @@ pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<
             for k in j..d {
                 let val = centered[i * d + j] * centered[i * d + k];
                 cov[j * d + k] += val;
-                if j != k { cov[k * d + j] += val; }
+                if j != k {
+                    cov[k * d + j] += val;
+                }
             }
         }
     }
     let n_f = (n - 1).max(1) as f64;
-    for v in cov.iter_mut() { *v /= n_f; }
+    for v in cov.iter_mut() {
+        *v /= n_f;
+    }
 
     // Power iteration with deflation to find top eigenvectors
     let mut components = Vec::with_capacity(n_components * d);
@@ -118,7 +149,8 @@ pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<
 
     // Use total variance from diagonal of original cov for ratio
     let total_var: f64 = (0..d).map(|j| cov[j * d + j]).sum();
-    let explained_variance_ratio: Vec<f64> = eigenvalues.iter()
+    let explained_variance_ratio: Vec<f64> = eigenvalues
+        .iter()
         .map(|&ev| if total_var > 0.0 { ev / total_var } else { 0.0 })
         .collect();
 
@@ -135,10 +167,13 @@ pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<
     }
 
     Ok(PcaResult {
-        n_components, n_features, components,
+        n_components,
+        n_features,
+        components,
         explained_variance: eigenvalues,
         explained_variance_ratio,
-        mean, transformed,
+        mean,
+        transformed,
     })
 }
 
@@ -158,13 +193,24 @@ fn power_iteration(matrix: &[f64], d: usize, max_iter: usize) -> (f64, Vec<f64>)
 
         // Normalize
         let norm: f64 = w.iter().map(|x| x * x).sum::<f64>().sqrt();
-        if norm < 1e-15 { break; }
-        for x in w.iter_mut() { *x /= norm; }
+        if norm < 1e-15 {
+            break;
+        }
+        for x in w.iter_mut() {
+            *x /= norm;
+        }
 
         // Check convergence
-        let diff: f64 = v.iter().zip(w.iter()).map(|(a, b)| (a - b).powi(2)).sum::<f64>().sqrt();
+        let diff: f64 = v
+            .iter()
+            .zip(w.iter())
+            .map(|(a, b)| (a - b).powi(2))
+            .sum::<f64>()
+            .sqrt();
         v = w;
-        if diff < 1e-10 { break; }
+        if diff < 1e-10 {
+            break;
+        }
     }
 
     // Eigenvalue = v^T * matrix * v
@@ -192,13 +238,7 @@ mod tests {
     #[test]
     fn test_basic_2d() {
         // Data with variance mostly along x-axis
-        let data = vec![
-            1.0, 0.1,
-            2.0, 0.2,
-            3.0, 0.15,
-            4.0, 0.25,
-            5.0, 0.1,
-        ];
+        let data = vec![1.0, 0.1, 2.0, 0.2, 3.0, 0.15, 4.0, 0.25, 5.0, 0.1];
         let result = pca_impl(&data, 2, 1).unwrap();
         assert_eq!(result.n_components, 1);
         // First component should capture most variance
@@ -207,12 +247,7 @@ mod tests {
 
     #[test]
     fn test_explained_variance_sums_to_one() {
-        let data = vec![
-            1.0, 2.0, 3.0,
-            4.0, 5.0, 6.0,
-            7.0, 8.0, 9.0,
-            2.0, 4.0, 1.0,
-        ];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 2.0, 4.0, 1.0];
         let result = pca_impl(&data, 3, 3).unwrap();
         let total: f64 = result.explained_variance_ratio.iter().sum();
         assert!((total - 1.0).abs() < 0.1); // Should be close to 1

@@ -30,21 +30,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -53,7 +64,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -76,7 +89,11 @@ fn load_xes(candidates: &[&str]) -> Option<EventLog> {
             if content.len() > 200 {
                 let log = parse_xes(&content);
                 if !log.traces.is_empty() {
-                    eprintln!("Analytics tests: loaded {} traces from {}", log.traces.len(), path);
+                    eprintln!(
+                        "Analytics tests: loaded {} traces from {}",
+                        log.traces.len(),
+                        path
+                    );
                     return Some(log);
                 }
             }
@@ -86,11 +103,20 @@ fn load_xes(candidates: &[&str]) -> Option<EventLog> {
 }
 
 fn extract_activities(log: &EventLog) -> Vec<Vec<String>> {
-    log.traces.iter().map(|t| {
-        t.events.iter()
-            .filter_map(|e| e.attributes.get("concept:name")?.as_string().map(|s| s.to_string()))
-            .collect()
-    }).collect()
+    log.traces
+        .iter()
+        .map(|t| {
+            t.events
+                .iter()
+                .filter_map(|e| {
+                    e.attributes
+                        .get("concept:name")?
+                        .as_string()
+                        .map(|s| s.to_string())
+                })
+                .collect()
+        })
+        .collect()
 }
 
 const ROADTRAFFIC: &[&str] = &[
@@ -106,7 +132,10 @@ const RUNNING_EXAMPLE: &[&str] = &[
 macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
-            None => { eprintln!("SKIP: {} not found", $label); return; }
+            None => {
+                eprintln!("SKIP: {} not found", $label);
+                return;
+            }
             Some(l) => l,
         }
     };
@@ -123,8 +152,11 @@ fn ewma_series_roadtraffic_case_lengths_smoothed_output_length_matches() {
 
     let smoothed = ewma_series(&values, 0.3);
 
-    assert_eq!(smoothed.len(), values.len(),
-        "EWMA output length must equal input length");
+    assert_eq!(
+        smoothed.len(),
+        values.len(),
+        "EWMA output length must equal input length"
+    );
 }
 
 #[test]
@@ -135,8 +167,12 @@ fn ewma_series_roadtraffic_output_values_are_positive() {
     let smoothed = ewma_series(&values, 0.3);
 
     for (i, &v) in smoothed.iter().enumerate() {
-        assert!(v > 0.0,
-            "EWMA value at index {} must be positive (trace lengths > 0), got {}", i, v);
+        assert!(
+            v > 0.0,
+            "EWMA value at index {} must be positive (trace lengths > 0), got {}",
+            i,
+            v
+        );
     }
 }
 
@@ -145,19 +181,28 @@ fn ewma_series_roadtraffic_smoothing_reduces_variance() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let values: Vec<f64> = log.traces.iter().map(|t| t.events.len() as f64).collect();
 
-    if values.len() < 2 { return; }
+    if values.len() < 2 {
+        return;
+    }
 
     let mean = values.iter().sum::<f64>() / values.len() as f64;
     let raw_variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
 
     let smoothed = ewma_series(&values, 0.3);
     let smooth_mean = smoothed.iter().sum::<f64>() / smoothed.len() as f64;
-    let smooth_variance = smoothed.iter().map(|v| (v - smooth_mean).powi(2)).sum::<f64>()
+    let smooth_variance = smoothed
+        .iter()
+        .map(|v| (v - smooth_mean).powi(2))
+        .sum::<f64>()
         / smoothed.len() as f64;
 
     // EWMA with alpha=0.3 is a strong smoother; variance should not increase
-    assert!(smooth_variance <= raw_variance * 1.05,
-        "EWMA should reduce variance: raw={:.3} smooth={:.3}", raw_variance, smooth_variance);
+    assert!(
+        smooth_variance <= raw_variance * 1.05,
+        "EWMA should reduce variance: raw={:.3} smooth={:.3}",
+        raw_variance,
+        smooth_variance
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -174,24 +219,34 @@ fn classify_trend_roadtraffic_returns_valid_category() {
 
     // classify_trend returns "rising", "falling", or "stable"
     let valid = ["rising", "falling", "stable"];
-    assert!(valid.contains(&trend),
-        "classify_trend must return one of {:?}, got '{}'", valid, trend);
+    assert!(
+        valid.contains(&trend),
+        "classify_trend must return one of {:?}, got '{}'",
+        valid,
+        trend
+    );
 }
 
 #[test]
 fn classify_trend_strictly_increasing_series_is_rising() {
     let increasing: Vec<f64> = (1..=20).map(|i| i as f64).collect();
     let trend = classify_trend(&increasing);
-    assert_eq!(trend, "rising",
-        "Strictly increasing series must be classified 'rising', got '{}'", trend);
+    assert_eq!(
+        trend, "rising",
+        "Strictly increasing series must be classified 'rising', got '{}'",
+        trend
+    );
 }
 
 #[test]
 fn classify_trend_strictly_decreasing_series_is_falling() {
     let decreasing: Vec<f64> = (1..=20).rev().map(|i| i as f64).collect();
     let trend = classify_trend(&decreasing);
-    assert_eq!(trend, "falling",
-        "Strictly decreasing series must be classified 'falling', got '{}'", trend);
+    assert_eq!(
+        trend, "falling",
+        "Strictly decreasing series must be classified 'falling', got '{}'",
+        trend
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -205,29 +260,38 @@ fn rework_score_roadtraffic_payment_loop_detected() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     let trace_activities = extract_activities(&log);
 
-    let rework_traces: Vec<usize> = trace_activities.iter()
+    let rework_traces: Vec<usize> = trace_activities
+        .iter()
         .map(|acts| calculate_rework_score(acts))
         .filter(|&s| s > 0)
         .collect();
 
     // pm4py DFG shows Payment->Payment=5, so at least a few traces have rework
-    assert!(!rework_traces.is_empty(),
-        "roadtraffic must have at least one trace with rework (Payment loop seen in DFG)");
+    assert!(
+        !rework_traces.is_empty(),
+        "roadtraffic must have at least one trace with rework (Payment loop seen in DFG)"
+    );
 }
 
 #[test]
 fn rework_score_trace_with_no_repetitions_is_zero() {
     // A simple trace with all distinct activities has rework_score=0
     let trace = vec!["A".to_string(), "B".to_string(), "C".to_string()];
-    assert_eq!(calculate_rework_score(&trace), 0,
-        "Trace with no consecutive repeats must have rework_score=0");
+    assert_eq!(
+        calculate_rework_score(&trace),
+        0,
+        "Trace with no consecutive repeats must have rework_score=0"
+    );
 }
 
 #[test]
 fn rework_score_trace_with_consecutive_repeat_is_one() {
     let trace = vec!["A".to_string(), "A".to_string(), "B".to_string()];
-    assert_eq!(calculate_rework_score(&trace), 1,
-        "Trace [A,A,B] must have rework_score=1");
+    assert_eq!(
+        calculate_rework_score(&trace),
+        1,
+        "Trace [A,A,B] must have rework_score=1"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -244,21 +308,31 @@ fn prefix_features_roadtraffic_first_activity_prefix() {
     let features = extract_prefix_features(&prefix);
 
     assert_eq!(features.length, 1, "Prefix length must be 1");
-    assert_eq!(features.last_activity, "Create Fine",
-        "last_activity must be 'Create Fine'");
-    assert_eq!(features.unique_activities, 1,
-        "unique_activities must be 1 for single-element prefix");
-    assert_eq!(features.rework_count, 0,
-        "No rework in a single-element prefix");
+    assert_eq!(
+        features.last_activity, "Create Fine",
+        "last_activity must be 'Create Fine'"
+    );
+    assert_eq!(
+        features.unique_activities, 1,
+        "unique_activities must be 1 for single-element prefix"
+    );
+    assert_eq!(
+        features.rework_count, 0,
+        "No rework in a single-element prefix"
+    );
 
     // Verify the function works for all traces
     for acts in &trace_activities {
-        if acts.is_empty() { continue; }
+        if acts.is_empty() {
+            continue;
+        }
         let p = &acts[..1];
         let f = extract_prefix_features(p);
         assert_eq!(f.length, 1, "Single-element prefix must have length=1");
-        assert!(f.unique_activities >= 1,
-            "unique_activities must be >= 1 for non-empty prefix");
+        assert!(
+            f.unique_activities >= 1,
+            "unique_activities must be >= 1 for non-empty prefix"
+        );
     }
 }
 
@@ -268,11 +342,16 @@ fn prefix_features_entropy_bounded() {
     let trace_activities = extract_activities(&log);
 
     for acts in &trace_activities {
-        if acts.len() < 3 { continue; }
+        if acts.len() < 3 {
+            continue;
+        }
         let features = extract_prefix_features(&acts[..3]);
-        assert!(features.activity_frequency_entropy >= 0.0
-            && features.activity_frequency_entropy <= 1.0,
-            "Entropy must be in [0,1], got {}", features.activity_frequency_entropy);
+        assert!(
+            features.activity_frequency_entropy >= 0.0
+                && features.activity_frequency_entropy <= 1.0,
+            "Entropy must be in [0,1], got {}",
+            features.activity_frequency_entropy
+        );
     }
 }
 
@@ -289,11 +368,17 @@ fn boundary_coverage_roadtraffic_create_fine_prefix_has_coverage() {
     let prefix = vec!["Create Fine".to_string()];
     let coverage = boundary_coverage(&prefix, &trace_activities);
 
-    assert!(coverage > 0.0 && coverage <= 1.0,
-        "boundary_coverage must be in (0,1], got {}", coverage);
+    assert!(
+        coverage > 0.0 && coverage <= 1.0,
+        "boundary_coverage must be in (0,1], got {}",
+        coverage
+    );
     // All traces start with "Create Fine", so this prefix reaches many completions
-    assert!(coverage > 0.5,
-        "Prefix ['Create Fine'] appears in most traces, expected coverage > 0.5, got {}", coverage);
+    assert!(
+        coverage > 0.5,
+        "Prefix ['Create Fine'] appears in most traces, expected coverage > 0.5, got {}",
+        coverage
+    );
 }
 
 #[test]
@@ -305,8 +390,11 @@ fn boundary_coverage_impossible_prefix_returns_zero() {
     let prefix = vec!["NONEXISTENT_ACTIVITY_XYZ".to_string()];
     let coverage = boundary_coverage(&prefix, &trace_activities);
 
-    assert_eq!(coverage, 0.0,
-        "Impossible prefix must have boundary_coverage=0.0, got {}", coverage);
+    assert_eq!(
+        coverage, 0.0,
+        "Impossible prefix must have boundary_coverage=0.0, got {}",
+        coverage
+    );
 }
 
 #[test]
@@ -317,6 +405,8 @@ fn boundary_coverage_running_example_register_request() {
     let prefix = vec!["register request".to_string()];
     let coverage = boundary_coverage(&prefix, &trace_activities);
 
-    assert!(coverage > 0.0,
-        "Prefix ['register request'] appears in all 6 traces → coverage > 0");
+    assert!(
+        coverage > 0.0,
+        "Prefix ['register request'] appears in all 6 traces → coverage > 0"
+    );
 }

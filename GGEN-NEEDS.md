@@ -37,20 +37,20 @@ Evidence from the ggen repo (`/Users/sac/ggen`), all to be **deleted or replaced
 
 ## 2. NEED #1 — a lightweight shared OCEL-types crate
 
-**Ask:** extract wasm4pm's OCEL 2.0 types out of the heavy `wasm4pm-types` crate into a new minimal crate so **both** `wasm4pm-types` and ggen depend on it without pulling the whole engine.
+**Ask:** extract wasm4pm's OCEL 2.0 types out of the heavy `wasm4pm-compat` crate into a new minimal crate so **both** `wasm4pm-compat` and ggen depend on it without pulling the whole engine.
 
 **Proposed crate:** `ocel-core` (name negotiable; suggest publishing under the wasm4pm version train `26.5.x`).
 
-**Contents (move from `crates/wasm4pm-types/src/ocel.rs`):**
+**Contents (move from `crates/wasm4pm-compat/src/ocel.rs`):**
 `OCEL`, `OCELType`, `OCELTypeAttribute`, `OCELEvent`, `OCELEventAttribute`, `OCELObject`, `OCELObjectAttribute`, `OCELRelationship`, `OCELAttributeValue` (+ its `Display`).
 
 **Constraints:**
 - Dependencies limited to `serde`, `serde_json`, `chrono`. (`AttributeValue` currently comes from `crate::event_log` — either inline what's needed or move that too; the crate must not transitively pull `wasm4pm-algos`.)
 - `no_std`-friendly if cheap; otherwise std is acceptable — "lightweight" means *few deps*, not no_std at any cost.
-- `wasm4pm-types` then re-exports from `ocel-core` so no wasm4pm call sites break.
+- `wasm4pm-compat` then re-exports from `ocel-core` so no wasm4pm call sites break.
 - Versioned and resolvable cross-repo by ggen (see §5).
 
-**Acceptance:** `wasm4pm-types` compiles re-exporting `ocel-core`; the full wasm4pm test suite stays green; `ocel-core` builds with only serde/serde_json/chrono in its dependency tree.
+**Acceptance:** `wasm4pm-compat` compiles re-exporting `ocel-core`; the full wasm4pm test suite stays green; `ocel-core` builds with only serde/serde_json/chrono in its dependency tree.
 
 ---
 
@@ -81,7 +81,7 @@ ggen's living-LSP proof tests read the **on-disk JSONL** and assert substrings o
 
 ggen must stop owning OCEL read/parse. wasm4pm provides import; ggen calls it.
 
-**Current wasm4pm import surface:** `crates/wasm4pm-types/src/import/ocel/mod_ocel.rs` → `import_ocel_json(&str)`, `import_ocel_json_slice(&[u8])` (whole-document OCEL 2.0 JSON).
+**Current wasm4pm import surface:** `crates/wasm4pm-compat/src/import/ocel/mod_ocel.rs` → `import_ocel_json(&str)`, `import_ocel_json_slice(&[u8])` (whole-document OCEL 2.0 JSON).
 
 **Gap — NDJSON:** ggen writes an **append-only NDJSON** log at `.ggen/ocel/agent-edit-events.ocel.jsonl` (one `OcelEvent` per line; see `crates/ggen-lsp/src/intel/log.rs`). wasm4pm currently imports whole-doc JSON, not line-delimited event streams.
 
@@ -117,7 +117,7 @@ For the discovery/conformance capabilities (§1), ggen consumes wasm4pm as an **
 
 ## 7. Acceptance criteria (definition of done for the build)
 
-1. `ocel-core` crate exists, lightweight (serde/serde_json/chrono only), `wasm4pm-types` re-exports it, full wasm4pm suite green.
+1. `ocel-core` crate exists, lightweight (serde/serde_json/chrono only), `wasm4pm-compat` re-exports it, full wasm4pm suite green.
 2. A documented type-mapping + a migration note for ggen (§3) including the serialized-name constraint (§3.1).
 3. An NDJSON/event-stream importer (§4a) **or** a shared serializer (§4b) that round-trips ggen's real `.ocel.jsonl` log.
 4. A consumable dependency path for ggen (§5).
@@ -138,7 +138,7 @@ struct OcelObjectRef { id: String, r#type: String, qualifier: Option<String> }
 ```
 ggen-graph re-exports + PM primitives to retire: `discover_dfg`, `DfgEdge`, `check_guard`, `check_lifecycle_order`, `EvidenceProjector`, coverage/self-audit.
 
-**wasm4pm** (`crates/wasm4pm-types/src/ocel.rs`): `OCEL{event_types,object_types,events,objects}`, `OCELEvent{id, type, time: FixedOffset, attributes: Vec<OCELEventAttribute>, relationships: Vec<OCELRelationship>}`, `OCELObject{id,type,attributes,relationships}`, `OCELRelationship{object_id,qualifier}`, `OCELAttributeValue` (untagged: Integer/Float/Boolean/Time/String/Null). Import: `import_ocel_json`, `import_ocel_json_slice`. Conformance: `check_conformance_token_replay`, `check_conformance_alignment`.
+**wasm4pm** (`crates/wasm4pm-compat/src/ocel.rs`): `OCEL{event_types,object_types,events,objects}`, `OCELEvent{id, type, time: FixedOffset, attributes: Vec<OCELEventAttribute>, relationships: Vec<OCELRelationship>}`, `OCELObject{id,type,attributes,relationships}`, `OCELRelationship{object_id,qualifier}`, `OCELAttributeValue` (untagged: Integer/Float/Boolean/Time/String/Null). Import: `import_ocel_json`, `import_ocel_json_slice`. Conformance: `check_conformance_token_replay`, `check_conformance_alignment`.
 
 ---
 

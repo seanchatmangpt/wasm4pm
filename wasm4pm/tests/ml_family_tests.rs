@@ -1,8 +1,8 @@
-use wasm4pm::ml::regression::{regression_internal};
-use wasm4pm::ml::forecasting::{forecast_internal};
+use wasm4pm::ml::automl::{discover_automl_classify_internal, discover_automl_forecast_internal};
 use wasm4pm::ml::classification::{knn_internal, knn_internal_metrics};
-use wasm4pm::ml::pca::{pca_internal};
-use wasm4pm::ml::automl::{discover_automl_forecast_internal, discover_automl_classify_internal};
+use wasm4pm::ml::forecasting::forecast_internal;
+use wasm4pm::ml::pca::pca_internal;
+use wasm4pm::ml::regression::regression_internal;
 
 // --- 1. Regression Tests ---
 
@@ -69,7 +69,7 @@ fn test_forecast_periodic() {
     let res = forecast_internal(&data, 0.9);
     // High alpha means it follows the latest value closely
     assert!(res.next_window > 15.0);
-    
+
     let res_low = forecast_internal(&data, 0.1);
     // Low alpha means it stays closer to the average
     assert!(res_low.next_window < 15.0);
@@ -80,13 +80,17 @@ fn test_forecast_periodic() {
 #[test]
 fn test_knn_linearly_separable() {
     let train_x = vec![
-        [1.0, 1.0], [1.1, 1.2], [1.2, 1.1], // Cluster 0
-        [5.0, 5.0], [5.1, 5.2], [5.2, 5.1], // Cluster 1
+        [1.0, 1.0],
+        [1.1, 1.2],
+        [1.2, 1.1], // Cluster 0
+        [5.0, 5.0],
+        [5.1, 5.2],
+        [5.2, 5.1], // Cluster 1
     ];
     let train_y = vec![0, 0, 0, 1, 1, 1];
     let test_x = vec![[1.05, 1.05], [5.05, 5.05]];
     let test_y = vec![0, 1];
-    
+
     let accuracy = knn_internal(&train_x, &train_y, &test_x, &test_y, 3);
     assert_eq!(accuracy, 1.0);
 }
@@ -94,8 +98,12 @@ fn test_knn_linearly_separable() {
 #[test]
 fn test_knn_overlapping() {
     let train_x = vec![
-        [1.0, 1.0], [1.1, 1.1], [2.0, 2.0], // Mostly Cluster 0
-        [1.0, 1.1], [2.1, 2.1], [2.2, 2.2], // Mostly Cluster 1
+        [1.0, 1.0],
+        [1.1, 1.1],
+        [2.0, 2.0], // Mostly Cluster 0
+        [1.0, 1.1],
+        [2.1, 2.1],
+        [2.2, 2.2], // Mostly Cluster 1
     ];
     let train_y = vec![0, 0, 0, 1, 1, 1];
     // A point at [1.05, 1.05] is surrounded by [1.0, 1.0](0), [1.1, 1.1](0), [1.0, 1.1](1)
@@ -110,10 +118,7 @@ fn test_knn_overlapping() {
 
 #[test]
 fn test_pca_orthogonal() {
-    let features = vec![
-        [1.0, 0.0], [-1.0, 0.0],
-        [0.0, 2.0], [0.0, -2.0],
-    ];
+    let features = vec![[1.0, 0.0], [-1.0, 0.0], [0.0, 2.0], [0.0, -2.0]];
     let res = pca_internal(&features);
     // Variance in Y (2.0^2 + (-2.0)^2 = 8) is larger than in X (1.0^2 + (-1.0)^2 = 2)
     assert!(res.eigenvalues[0] > res.eigenvalues[1]);
@@ -123,9 +128,7 @@ fn test_pca_orthogonal() {
 
 #[test]
 fn test_pca_correlated() {
-    let features = vec![
-        [1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0],
-    ];
+    let features = vec![[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0]];
     let res = pca_internal(&features);
     // Perfectly correlated, one eigenvalue should be 0
     assert!(res.explained_variance[0] > 0.99);
@@ -170,7 +173,7 @@ fn test_automl_forecast_convergence() {
     for i in 0..20 {
         windows[i] += (i as f64) * 0.1; // Small linear increase
     }
-    
+
     let result = discover_automl_forecast_internal(&windows);
     // For this data, we expect SOME alpha that gives low RMSE.
     assert!(result.min_avg_rmse < 1.0);
@@ -182,14 +185,14 @@ fn test_automl_classify_convergence() {
     // Generate clearly separable data
     let mut features = Vec::new();
     let mut labels = Vec::new();
-    
+
     for _ in 0..10 {
         features.push([1.0, 1.0]);
         labels.push(0);
         features.push([10.0, 10.0]);
         labels.push(1);
     }
-    
+
     let result = discover_automl_classify_internal(&features, &labels);
     // For clearly separable data, accuracy should be 1.0
     assert_eq!(result.max_avg_accuracy, 1.0);
@@ -221,11 +224,15 @@ fn test_forecast_mae_le_rmse_invariant() {
     let data = [10.0, 22.0, 11.0, 25.0, 9.0, 27.0, 8.0, 30.0];
     let res = forecast_internal(&data, 0.3);
     assert!(res.mae > 0.0, "non-constant series should produce mae > 0");
-    assert!(res.rmse > 0.0, "non-constant series should produce rmse > 0");
+    assert!(
+        res.rmse > 0.0,
+        "non-constant series should produce rmse > 0"
+    );
     assert!(
         res.mae <= res.rmse + 1e-10,
         "Jensen's inequality: mae ({}) must be <= rmse ({})",
-        res.mae, res.rmse
+        res.mae,
+        res.rmse
     );
 }
 
@@ -235,7 +242,10 @@ fn test_forecast_mae_le_rmse_invariant() {
 fn test_forecast_mape_finite_on_positive_series() {
     let data = [100.0, 110.0, 90.0, 120.0, 80.0, 130.0];
     let res = forecast_internal(&data, 0.5);
-    assert!(res.mape.is_finite(), "mape must be finite for positive series");
+    assert!(
+        res.mape.is_finite(),
+        "mape must be finite for positive series"
+    );
     assert!(res.mape >= 0.0, "mape must be non-negative");
 }
 
@@ -245,9 +255,15 @@ fn test_forecast_mape_finite_on_positive_series() {
 #[test]
 fn test_knn_metrics_perfect_three_class_classification() {
     let train_x = vec![
-        [1.0, 1.0], [1.1, 1.2], [1.2, 1.1],
-        [5.0, 5.0], [5.1, 5.2], [5.2, 5.1],
-        [9.0, 9.0], [9.1, 9.2], [9.2, 9.1],
+        [1.0, 1.0],
+        [1.1, 1.2],
+        [1.2, 1.1],
+        [5.0, 5.0],
+        [5.1, 5.2],
+        [5.2, 5.1],
+        [9.0, 9.0],
+        [9.1, 9.2],
+        [9.2, 9.1],
     ];
     let train_y = vec![0u8, 0, 0, 1, 1, 1, 2, 2, 2];
     let test_x = vec![[1.05, 1.05], [5.05, 5.05], [9.05, 9.05]];
@@ -259,7 +275,7 @@ fn test_knn_metrics_perfect_three_class_classification() {
     assert!((m.macro_recall - 1.0).abs() < 1e-10);
     assert!((m.macro_f1 - 1.0).abs() < 1e-10);
 
-    // Cross-check: legacy `knn_internal` accuracy must equal the metric.
+    // Cross-check:  `knn_internal` accuracy must equal the metric.
     let acc = knn_internal(&train_x, &train_y, &test_x, &test_y, 3);
     assert!(
         (acc - m.accuracy).abs() < 1e-10,
@@ -285,18 +301,23 @@ fn test_knn_metrics_macro_scores_reveal_class_imbalance() {
     let test_y = vec![0u8, 0, 0, 0, 1];
 
     let m = knn_internal_metrics(&train_x, &train_y, &test_x, &test_y, 3);
-    assert!((m.accuracy - 0.8).abs() < 1e-10, "4/5 correct => accuracy=0.8");
+    assert!(
+        (m.accuracy - 0.8).abs() < 1e-10,
+        "4/5 correct => accuracy=0.8"
+    );
     // Class 1 has 0 recall (the only class-1 test point is missed).
     // Macro recall = (1.0 + 0.0) / 2 = 0.5, which is strictly less than
     // accuracy=0.8. The pre-existing accuracy-only API could not see this.
     assert!(
         m.macro_recall < m.accuracy,
         "macro_recall ({}) must reveal the missed class-1 point; accuracy={}",
-        m.macro_recall, m.accuracy
+        m.macro_recall,
+        m.accuracy
     );
     assert!(
         m.macro_f1 < m.accuracy,
         "macro_f1 ({}) must reveal the missed class-1 point; accuracy={}",
-        m.macro_f1, m.accuracy
+        m.macro_f1,
+        m.accuracy
     );
 }

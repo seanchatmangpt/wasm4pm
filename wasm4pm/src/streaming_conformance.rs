@@ -1,4 +1,4 @@
-use crate::models::{DirectlyFollowsGraph, PetriNet, StreamingConformanceChecker};
+use crate::models::{DFG, PetriNet, StreamingConformanceChecker};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -6,9 +6,9 @@ use wasm_bindgen::prelude::*;
 /// Store a DFG from its JSON representation and return a handle.
 #[wasm_bindgen]
 pub fn store_dfg_from_json(dfg_json: &str) -> Result<JsValue, JsValue> {
-    let dfg: DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: DFG = serde_json::from_str(dfg_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid DFG JSON: {}", e)))?;
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;
     Ok(crate::error::js_val(&handle))
 }
 
@@ -23,7 +23,7 @@ pub fn store_petri_net_from_json(pn_json: &str) -> Result<JsValue, JsValue> {
 
 /// Begin a new streaming conformance session against a reference Petri Net or Directly-Follows Graph.
 ///
-/// `model_handle` — handle to a stored PetriNet or DirectlyFollowsGraph.
+/// `model_handle` — handle to a stored PetriNet or DFG.
 ///
 /// Returns an opaque session handle string.
 #[wasm_bindgen]
@@ -32,10 +32,12 @@ pub fn streaming_conformance_begin(model_handle: &str) -> Result<JsValue, JsValu
         Some(StoredObject::PetriNet(pn)) => {
             Ok(StreamingConformanceChecker::from_petri_net(pn.clone()))
         }
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             Ok(StreamingConformanceChecker::from_dfg(dfg.clone()))
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet or DirectlyFollowsGraph")),
+        Some(_) => Err(crate::error::js_val(
+            "Handle is not a PetriNet or DFG",
+        )),
         None => Err(crate::error::js_val("Model handle not found")),
     })?;
 
@@ -56,7 +58,7 @@ pub fn streaming_conformance_add_event(
     get_or_init_state().with_object_mut(handle, |obj| match obj {
         Some(StoredObject::StreamingConformanceChecker(c)) => {
             c.add_event(case_id, activity);
-            
+
             let (fitness, state_str) = if let Some(trace_state) = c.open_traces.get(case_id) {
                 if c.net.is_some() {
                     let denom = (trace_state.consumed_tokens + trace_state.missing_tokens) as f64;
@@ -81,7 +83,10 @@ pub fn streaming_conformance_add_event(
                     };
                     if let Some(ref dfg_edges) = c.dfg_edges {
                         for i in 0..total_steps {
-                            let pair = (trace_state.activities[i].clone(), trace_state.activities[i + 1].clone());
+                            let pair = (
+                                trace_state.activities[i].clone(),
+                                trace_state.activities[i + 1].clone(),
+                            );
                             if !dfg_edges.contains(&pair) {
                                 deviations += 1;
                             }
@@ -226,7 +231,7 @@ pub fn streaming_conformance_finalize(handle: &str) -> Result<JsValue, JsValue> 
 
 /// Check prefix conformance for a given sequence of activities against a model.
 ///
-/// `model_handle` - handle to a stored PetriNet or DirectlyFollowsGraph.
+/// `model_handle` - handle to a stored PetriNet or DFG.
 /// `prefix_json` - a JSON array of activity names.
 ///
 /// Returns a JSON string conforming to PrefixConformancePayload.
@@ -238,12 +243,12 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
     let state = get_or_init_state();
     let mut actual_handle = model_handle.to_string();
 
-    let exists = state.with_object(model_handle, |obj| {
-        match obj {
+    let exists = state
+        .with_object(model_handle, |obj| match obj {
             Some(StoredObject::PetriNet(_)) => Ok(true),
             _ => Ok(false),
-        }
-    }).unwrap_or(false);
+        })
+        .unwrap_or(false);
 
     if !exists {
         let reg = crate::model_registry::get_registry();
@@ -266,7 +271,9 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
             for (i, activity) in prefix.iter().enumerate() {
                 checker.add_event(case_id, activity);
                 if let Some(state) = checker.open_traces.get(case_id) {
-                    if state.state == crate::models::TraceState::Blocked && violation_index.is_none() {
+                    if state.state == crate::models::TraceState::Blocked
+                        && violation_index.is_none()
+                    {
                         violation_index = Some(i);
                         violating_activity = Some(activity.clone());
                     }

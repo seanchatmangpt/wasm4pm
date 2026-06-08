@@ -1,6 +1,6 @@
 set -euo pipefail
 
-RELEASE="26.5.28"
+RELEASE="26.6.5"
 OUT="artifacts/releases/v${RELEASE}"
 mkdir -p "$OUT"
 
@@ -9,7 +9,7 @@ git status --porcelain=v1 | tee "$OUT/git-status.txt"
 git rev-parse HEAD | tee "$OUT/git-head.txt"
 
 echo "== version scan =="
-rg "26\.5\.13|26\.5\.15|26\.5\.19|26\.5\.20|26\.5\.21|26\.5\.28" . \
+rg "26\.5\.13|26\.5\.15|26\.5\.19|26\.5\.20|26\.5\.21|26\.5\.28|26\.5\.29" . \
   | tee "$OUT/version-scan.txt" || true
 
 echo "== examples gate =="

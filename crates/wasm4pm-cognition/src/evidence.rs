@@ -113,10 +113,10 @@ pub struct OtelEvidenceSource {
 
 impl OtelEvidenceSource {
     /// Create a new OTEL evidence source from ingested spans.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new(spans: Vec<serde_json::Value>, chain: ReceiptChain) -> Self {
         Self { spans, chain }
     }
@@ -142,11 +142,13 @@ impl OtelEvidenceSource {
 
 impl EvidenceSource for OtelEvidenceSource {
     fn gate_passed(&self, gate_id: &str) -> bool {
-        Self::span_for_gate(&self.spans, gate_id).into_iter().any(|s| {
-            Self::span_attr(s, "gate.passed")
-                .and_then(|v| v.as_bool())
-                .unwrap_or(false)
-        })
+        Self::span_for_gate(&self.spans, gate_id)
+            .into_iter()
+            .any(|s| {
+                Self::span_attr(s, "gate.passed")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
+            })
     }
 
     fn evidence_count(&self, gate_id: &str) -> usize {
@@ -164,7 +166,11 @@ impl EvidenceSource for OtelEvidenceSource {
         let mut ids: Vec<String> = self
             .spans
             .iter()
-            .filter_map(|s| Self::span_attr(s, "gate.id").and_then(|v| v.as_str()).map(String::from))
+            .filter_map(|s| {
+                Self::span_attr(s, "gate.id")
+                    .and_then(|v| v.as_str())
+                    .map(String::from)
+            })
             .collect();
         ids.sort();
         ids.dedup();
@@ -203,7 +209,11 @@ impl EvidenceSource for OtelEvidenceSource {
                 let kind = Self::span_attr(s, "evidence.kind")
                     .and_then(|v| v.as_str())
                     .map(String::from);
-                Some(Artifact { digest, source, kind })
+                Some(Artifact {
+                    digest,
+                    source,
+                    kind,
+                })
             })
             .collect()
     }
@@ -307,10 +317,10 @@ pub struct FilesystemEvidenceSource {
 
 impl FilesystemEvidenceSource {
     /// Create a new filesystem evidence source rooted at `root`.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new<P: Into<std::path::PathBuf>>(root: P, chain: ReceiptChain) -> Self {
         Self {
             root: root.into(),
@@ -369,10 +379,10 @@ pub struct CompositeEvidenceSource {
 
 impl CompositeEvidenceSource {
     /// Create a composite source.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn new(otel: OtelEvidenceSource, fs: FilesystemEvidenceSource) -> Self {
         Self { otel, fs }
     }
@@ -410,7 +420,9 @@ impl EvidenceSource for CompositeEvidenceSource {
         self.otel.receipt_chain()
     }
     fn signing_time_skew(&self) -> Option<Duration> {
-        self.otel.signing_time_skew().or_else(|| self.fs.signing_time_skew())
+        self.otel
+            .signing_time_skew()
+            .or_else(|| self.fs.signing_time_skew())
     }
     fn benchmark_verdict(&self, target: &str) -> Option<Verdict> {
         self.otel
@@ -425,10 +437,14 @@ impl EvidenceSource for CompositeEvidenceSource {
         h
     }
     fn executor_pubkey(&self) -> Option<VerifyingKey> {
-        self.otel.executor_pubkey().or_else(|| self.fs.executor_pubkey())
+        self.otel
+            .executor_pubkey()
+            .or_else(|| self.fs.executor_pubkey())
     }
     fn verifier_pubkey(&self) -> Option<VerifyingKey> {
-        self.otel.verifier_pubkey().or_else(|| self.fs.verifier_pubkey())
+        self.otel
+            .verifier_pubkey()
+            .or_else(|| self.fs.verifier_pubkey())
     }
     fn attestation_descends(&self) -> Option<bool> {
         self.otel
@@ -436,6 +452,8 @@ impl EvidenceSource for CompositeEvidenceSource {
             .or_else(|| self.fs.attestation_descends())
     }
     fn external_chain_root(&self) -> Option<[u8; 32]> {
-        self.otel.external_chain_root().or_else(|| self.fs.external_chain_root())
+        self.otel
+            .external_chain_root()
+            .or_else(|| self.fs.external_chain_root())
     }
 }

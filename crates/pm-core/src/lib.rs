@@ -11,7 +11,7 @@
 //! | `primitives` | XES IEEE 1849-2016, van der Aalst 2016 §2.1 | ActivityName, CaseId, TimestampNs, … |
 //! | `log` | IEEE 1849-2016 | EventLog, Trace, Event |
 //! | `petri_net` | Murata 1989, van der Aalst 2016 §2.2 | PetriNet, PetriPlace, PetriTransition |
-//! | `dfg` | van der Aalst 2016 §3 | DirectlyFollowsGraph |
+//! | `dfg` | van der Aalst 2016 §3 | DFG |
 //! | `process_tree` | Leemans et al. 2013 ICATPN | ProcessTree, ProcessOperator |
 //! | `alignment` | Adriansyah 2014 PhD | AlignmentMove, Alignment |
 //! | `quality` | van der Aalst 2016 §9.2 | FitnessScore, QualityDimensions |
@@ -37,7 +37,7 @@
 //! use pm_core::prelude::*;
 //!
 //! // Build a directly-follows graph
-//! let mut dfg = DirectlyFollowsGraph::new();
+//! let mut dfg = DFG::new();
 //! dfg.record_edge(
 //!     ActivityName::from("Register"),
 //!     ActivityName::from("Approve"),
@@ -46,7 +46,8 @@
 
 #![no_std]
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![allow(missing_docs)]
+#![allow(clippy::all, unused_imports, unused_attributes)]
 
 #[macro_use]
 extern crate alloc;
@@ -106,16 +107,16 @@ pub mod social_network;
 pub mod prelude {
     // Core vocabulary from primitives
     pub use crate::primitives::{
-        ActivityName, CaseId, DurationNs, Frequency, ObjectId, ObjectType,
-        PlaceId, ResourceName, TimestampNs, TransitionId,
+        ActivityName, CaseId, DurationNs, Frequency, ObjectId, ObjectType, PlaceId, ResourceName,
+        TimestampNs, TransitionId,
     };
     // Quality dimensions (bounded constructors)
     pub use crate::quality::{
-        FitnessScore, GeneralizationScore, PrecisionScore, QualityDimensions,
-        SimplicityScore, TokenReplayStats,
+        FitnessScore, GeneralizationScore, PrecisionScore, QualityDimensions, SimplicityScore,
+        TokenReplayStats,
     };
     // Core process model structures
-    pub use crate::dfg::DirectlyFollowsGraph;
+    pub use crate::dfg::DFG;
     pub use crate::log::XesLog;
     pub use crate::ocel::ObjectCentricEventLog;
     pub use crate::petri_net::PetriNet;

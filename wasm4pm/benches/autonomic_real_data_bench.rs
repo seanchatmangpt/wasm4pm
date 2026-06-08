@@ -21,8 +21,8 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::{HashMap, HashSet};
-use std::time::Duration;
 use std::fs;
+use std::time::Duration;
 
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::prediction_drift::{classify_trend, ewma_series, jaccard_distance};
@@ -44,21 +44,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -67,7 +78,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -90,10 +103,15 @@ fn generate_synthetic_fallback() -> EventLog {
     let activities = ["Register", "Validate", "Assess", "Approve", "Close"];
     let mut log = EventLog::new();
     for i in 0..100usize {
-        let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
         let len = 5 + (i % 8);
         for j in 0..len {
-            let mut ev = Event { attributes: HashMap::new() };
+            let mut ev = Event {
+                attributes: HashMap::new(),
+            };
             ev.attributes.insert(
                 ACTIVITY_KEY.to_string(),
                 AttributeValue::String(activities[j % activities.len()].to_string()),
@@ -134,16 +152,24 @@ fn extract_activity_frequencies(log: &EventLog) -> Vec<f64> {
 }
 
 fn extract_rework_ratio(log: &EventLog) -> f64 {
-    let rework_traces = log.traces.iter().filter(|t| {
-        let mut seen: HashMap<&str, usize> = HashMap::new();
-        for ev in &t.events {
-            if let Some(AttributeValue::String(a)) = ev.attributes.get(ACTIVITY_KEY) {
-                *seen.entry(a.as_str()).or_insert(0) += 1;
+    let rework_traces = log
+        .traces
+        .iter()
+        .filter(|t| {
+            let mut seen: HashMap<&str, usize> = HashMap::new();
+            for ev in &t.events {
+                if let Some(AttributeValue::String(a)) = ev.attributes.get(ACTIVITY_KEY) {
+                    *seen.entry(a.as_str()).or_insert(0) += 1;
+                }
             }
-        }
-        seen.values().any(|&c| c > 1)
-    }).count();
-    if log.traces.is_empty() { 0.0 } else { rework_traces as f64 / log.traces.len() as f64 }
+            seen.values().any(|&c| c > 1)
+        })
+        .count();
+    if log.traces.is_empty() {
+        0.0
+    } else {
+        rework_traces as f64 / log.traces.len() as f64
+    }
 }
 
 fn extract_window_activity_sets(
@@ -165,7 +191,10 @@ fn extract_window_activity_sets(
                 .collect()
         })
         .collect();
-    windows.windows(2).map(|w| (w[0].clone(), w[1].clone())).collect()
+    windows
+        .windows(2)
+        .map(|w| (w[0].clone(), w[1].clone()))
+        .collect()
 }
 
 fn build_chart_data(series: &[f64]) -> Vec<ChartData> {
@@ -205,7 +234,10 @@ fn build_rl_features(
         .iter()
         .flat_map(|t| t.events.iter())
         .filter_map(|e| e.attributes.get(ACTIVITY_KEY))
-        .filter_map(|v| match v { AttributeValue::String(s) => Some(s.as_str()), _ => None })
+        .filter_map(|v| match v {
+            AttributeValue::String(s) => Some(s.as_str()),
+            _ => None,
+        })
         .collect();
     let n_activities = unique_activities.len();
 
@@ -221,22 +253,22 @@ fn build_rl_features(
     };
 
     // Normalize each component to [0,1] matching RlState quantization ranges
-    let event_rate_norm = (avg_rate / 50.0_f64).clamp(0.0, 1.0) as f32;        // 0-7 → /7
-    let activity_norm  = (n_activities as f64 / 30.0).clamp(0.0, 1.0) as f32;   // 0-7
-    let trace_norm     = ((trace_count as f64).log2() / 14.0).clamp(0.0, 1.0) as f32; // log scale
-    let rework_norm    = (rework_ratio as f32).clamp(0.0, 1.0);
-    let total_norm     = ((total_events as f64) / 100_000.0).clamp(0.0, 1.0) as f32;
-    let freq_norm      = (avg_freq / 20.0_f64).clamp(0.0, 1.0) as f32;
+    let event_rate_norm = (avg_rate / 50.0_f64).clamp(0.0, 1.0) as f32; // 0-7 → /7
+    let activity_norm = (n_activities as f64 / 30.0).clamp(0.0, 1.0) as f32; // 0-7
+    let trace_norm = ((trace_count as f64).log2() / 14.0).clamp(0.0, 1.0) as f32; // log scale
+    let rework_norm = (rework_ratio as f32).clamp(0.0, 1.0);
+    let total_norm = ((total_events as f64) / 100_000.0).clamp(0.0, 1.0) as f32;
+    let freq_norm = (avg_freq / 20.0_f64).clamp(0.0, 1.0) as f32;
 
     [
-        event_rate_norm,   // event_rate_q proxy
-        activity_norm,     // activity_count_q proxy
-        0.0_f32,           // spc_alert_level (set during bench)
-        0.0_f32,           // drift_status (set during bench)
-        rework_norm,       // rework_ratio_q proxy
-        trace_norm,        // cycle_phase proxy
-        total_norm,        // health_level proxy
-        freq_norm,         // circuit_state proxy
+        event_rate_norm, // event_rate_q proxy
+        activity_norm,   // activity_count_q proxy
+        0.0_f32,         // spc_alert_level (set during bench)
+        0.0_f32,         // drift_status (set during bench)
+        rework_norm,     // rework_ratio_q proxy
+        trace_norm,      // cycle_phase proxy
+        total_norm,      // health_level proxy
+        freq_norm,       // circuit_state proxy
     ]
 }
 
@@ -264,9 +296,13 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> AutonomicDataset {
         .filter_map(|p| {
             let resolved = p.replace("~", &home);
             let content = fs::read_to_string(&resolved).ok()?;
-            if content.len() < 200 { return None; }
+            if content.len() < 200 {
+                return None;
+            }
             let l = parse_xes(&content);
-            if l.traces.is_empty() { return None; }
+            if l.traces.is_empty() {
+                return None;
+            }
             Some(l)
         })
         .next()
@@ -285,7 +321,10 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> AutonomicDataset {
         .iter()
         .flat_map(|t| t.events.iter())
         .filter_map(|e| e.attributes.get(ACTIVITY_KEY))
-        .filter_map(|v| match v { AttributeValue::String(s) => Some(s.as_str()), _ => None })
+        .filter_map(|v| match v {
+            AttributeValue::String(s) => Some(s.as_str()),
+            _ => None,
+        })
         .collect();
 
     let event_rates = extract_event_rates(&log);
@@ -294,7 +333,12 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> AutonomicDataset {
     let chart_data = build_chart_data(&event_rates);
     let window_pairs = extract_window_activity_sets(&log, 50);
 
-    let rl_features = build_rl_features(&log, &event_rates, &activity_frequencies, rework_ratio as f64);
+    let rl_features = build_rl_features(
+        &log,
+        &event_rates,
+        &activity_frequencies,
+        rework_ratio as f64,
+    );
     let health = compute_health_state(event_count, trace_count, unique_acts.len() as u64);
     let rl_state = RlState::from_features(&rl_features, health, rework_ratio);
     // next_state = slightly healthier (simulates successful cycle)
@@ -326,7 +370,10 @@ fn real_datasets() -> Vec<AutonomicDataset> {
             "sepsis",
         ),
         load_dataset(
-            &["bench_data/bpi2020_travel.xes", "../../bench_data/bpi2020_travel.xes"],
+            &[
+                "bench_data/bpi2020_travel.xes",
+                "../../bench_data/bpi2020_travel.xes",
+            ],
             "bpi2020",
         ),
         load_dataset(
@@ -437,7 +484,12 @@ fn bench_rl_cycle(c: &mut Criterion) {
         group.throughput(Throughput::Elements(1));
         group.bench_with_input(
             BenchmarkId::new("dataset", ds.label),
-            &(ds.rl_features, ds.rl_state.clone(), ds.rl_next_state.clone(), ds.spc_alert_count),
+            &(
+                ds.rl_features,
+                ds.rl_state.clone(),
+                ds.rl_next_state.clone(),
+                ds.spc_alert_count,
+            ),
             |b, (features, state, next, alerts)| {
                 // Note: orch is captured by ref; state machine updates are part of the measurement
                 let mut local_orch = RlOrchestrator::new_with_seed(42);
@@ -471,7 +523,8 @@ fn bench_circuit_breaker(c: &mut Criterion) {
     for ds in &datasets {
         // Build a sequence of N=100 allow+record operations at the real failure rate
         let n = 100usize;
-        let failure_rate = (ds.spc_alert_count as f64 / ds.trace_count.max(1) as f64).clamp(0.0, 1.0);
+        let failure_rate =
+            (ds.spc_alert_count as f64 / ds.trace_count.max(1) as f64).clamp(0.0, 1.0);
         let failures: Vec<bool> = (0..n)
             .map(|i| (i as f64 / n as f64) < failure_rate)
             .collect();

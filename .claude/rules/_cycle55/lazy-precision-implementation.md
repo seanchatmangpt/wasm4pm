@@ -65,7 +65,7 @@ LRU cache for conformance results indexed by `log_hash:model_hash`.
 - Cache-based lazy computation
 - Latency characteristics per mode
 - Cache TTL and expiration
-- Backward compatibility (default=full, same fitness across modes)
+- baseline admissibility (default=full, same fitness across modes)
 - Exit code contract preservation
 - Human output formatting
 - Cache statistics tracking
@@ -73,7 +73,7 @@ LRU cache for conformance results indexed by `log_hash:model_hash`.
 **Execution Note:** Tests require WASM to be built (`npm run build:nodejs`). Test harness validates:
 - Mode values are accepted
 - Payload structure is correct
-- Backward compatibility is maintained
+- baseline admissibility is maintained
 - Cache semantics work correctly
 
 ## Success Criteria — Achieved
@@ -138,7 +138,7 @@ wpm conformance log.xes --precision-mode fast --format json
 
 1. The ConformanceCache is generic and can be reused for other conformance-related metrics (generalization, simplicity, etc.)
 2. TTL is configurable per entry — can be tightened for frequently-changing logs
-3. Backward compatibility is absolute — default mode='full' produces identical output to prior releases
+3. baseline admissibility is absolute — default mode='full' produces identical output to prior releases
 4. Cache key is deterministic (SHA256) — same log+model always produces same hash
 5. Exit codes unchanged — based on fitness vs threshold, not precision mode
 

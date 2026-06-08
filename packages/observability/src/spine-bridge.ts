@@ -90,11 +90,11 @@ export interface SpineProofAggRecord {
 export interface SpineVerdictRecord {
   runId: string;
   verdict: 'admitted' | 'refused';
-  /** LIVE-14: runtime mode (e.g. "ModeC_Distributed"). Optional for backward compatibility. */
+  /** LIVE-14: runtime mode (e.g. "ModeC_Distributed"). Optional for baseline admissibility. */
   runtimeMode?: string;
-  /** LIVE-14: actor role (e.g. "proof_aggregator"). Optional for backward compatibility. */
+  /** LIVE-14: actor role (e.g. "proof_aggregator"). Optional for baseline admissibility. */
   actorRole?: string;
-  /** LIVE-14: whether this actor can emit Accepted verdicts. Optional for backward compatibility. */
+  /** LIVE-14: whether this actor can emit Accepted verdicts. Optional for baseline admissibility. */
   canEmitAccepted?: boolean;
 }
 

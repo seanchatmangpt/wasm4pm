@@ -25,7 +25,7 @@ use std::time::Duration;
 fn closed_claw_benchmarks(c: &mut Criterion) {
     pipeline_a_discovery::bench_discovery_core(c);
     pipeline_b_conformance::bench_conformance_core(c);
-    pipeline_c_ocel::bench_ocel_core(c);
+    pipeline_c_ocel::bench_wasm4pm_compat::ocel(c);
     pipeline_d_semantic::bench_semantic_proof(c);
     pipeline_e_manufacturing::bench_manufacturing_truth(c);
     pipeline_f_ml::bench_ml_augmented(c);

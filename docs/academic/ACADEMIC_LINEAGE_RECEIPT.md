@@ -3,7 +3,7 @@
 **Date:** 2026-05-30
 **Gate:** ACADEMIC-LINEAGE-001
 **Verdict:** PARTIAL
-**Hash commitment:** [to be filled by cargo make receipt]
+**Hash commitment:** 042e95f170ad4b9780e5475e08d4283b00e93d03f936f07824ceea62ae300f84
 
 ---
 
@@ -166,7 +166,7 @@ Conducted by Agent A12, 2026-05-30. 45 claims audited across lineage documents 1
 
 ## Hash Commitment
 
-**Hash commitment placeholder:** [to be filled by cargo make receipt]
+**Hash commitment placeholder:** 042e95f170ad4b9780e5475e08d4283b00e93d03f936f07824ceea62ae300f84
 
 This receipt will be cryptographically committed once the BLAKE3 chain is run post-merge. The hash covers: ALGORITHM_LINEAGE.toml + ALGORITHM_LINEAGE.md + all lineage documents 10–16 + FIRST_CLAIM_AUDIT.md + IMPLEMENTATION_CROSSWALK.md.
 

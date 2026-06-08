@@ -403,7 +403,7 @@ def _gate_recency_valid(
 
     Requirements:
     1. Version referenced matches current version (26.4.x)
-    2. APIs referenced are not deprecated
+    2. APIs referenced are not removed
     3. Links are valid (no 404s for external references)
 
     Raises
@@ -426,15 +426,15 @@ def _gate_recency_valid(
                 f"Update all version references."
             )
 
-    # Check for deprecated API references
-    deprecated_apis = [
+    # Check for removed API references
+    removed_apis = [
         "old_discover_dfg",  # hypothetical
-        "legacy_conformance",  # hypothetical
+        "conformance",  # hypothetical
     ]
 
-    for api in deprecated_apis:
+    for api in removed_apis:
         assert api not in doc_content, (
-            f"Doc references deprecated API: {api}. "
+            f"Doc references removed API: {api}. "
             f"Check API.md for current function names."
         )
 

@@ -14,9 +14,7 @@
 //! and `value == "<pattern>||<template>"` (delimited by `||`). If no
 //! patterns are supplied, a built-in Rogerian script is used.
 
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
-};
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
 
 /// Frame / ELIZA breed.
 pub struct Eliza;
@@ -183,10 +181,7 @@ impl CognitionBreed for Eliza {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec![
-            "pattern_matching".to_string(),
-            "slot_filling".to_string(),
-        ]
+        vec!["pattern_matching".to_string(), "slot_filling".to_string()]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
@@ -295,7 +290,10 @@ mod tests {
     fn pronoun_reflection_end_of_string_me_my() {
         assert_eq!(reflect_pronouns("i love me"), "you love you");
         assert_eq!(reflect_pronouns("this is my"), "this is your");
-        assert_eq!(reflect_pronouns("the choice is mine"), "the choice is yours");
+        assert_eq!(
+            reflect_pronouns("the choice is mine"),
+            "the choice is yours"
+        );
     }
 
     /// Rank-1 regression test: start-of-string pronouns still reflect after
@@ -384,7 +382,10 @@ mod tests {
         assert!(output.selected.is_some());
         assert!(!output.explanation.is_empty());
         assert!(
-            output.inference_trace.iter().any(|t| t.kind == "match-pattern"),
+            output
+                .inference_trace
+                .iter()
+                .any(|t| t.kind == "match-pattern"),
             "Should have matched a pattern"
         );
     }

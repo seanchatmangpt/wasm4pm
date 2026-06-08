@@ -45,7 +45,7 @@ fn test_closed_to_open_on_threshold_failures() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // State must remain Closed for every failure up to (but not including) threshold
     for i in 0..threshold {
@@ -87,7 +87,7 @@ fn test_open_to_half_open_after_timeout() {
         open_timeout_ms,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open
     for _ in 0..3 {
@@ -137,7 +137,7 @@ fn test_half_open_to_closed_on_success() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open, then to HalfOpen
     for _ in 0..3 {
@@ -185,7 +185,7 @@ fn test_half_open_to_open_on_failure() {
         open_timeout_ms: 60_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Drive to Open, then to HalfOpen
     for _ in 0..3 {
@@ -230,7 +230,8 @@ fn test_allow_request_per_state() {
         success_threshold: 2,
         open_timeout_ms: 100_000, // long timeout so it stays Open
         half_open_timeout_ms: 30_000,
-    });
+    })
+    .unwrap();
     breaker_open.record_failure();
     breaker_open.record_failure();
     assert_eq!(breaker_open.state(), CircuitState::Open);
@@ -242,7 +243,8 @@ fn test_allow_request_per_state() {
         success_threshold: 2,
         open_timeout_ms: 1_000,
         half_open_timeout_ms: 100_000, // long half-open timeout so it stays HalfOpen
-    });
+    })
+    .unwrap();
     breaker_half_open.record_failure();
     breaker_half_open.record_failure();
     assert_eq!(breaker_half_open.state(), CircuitState::Open);
@@ -275,7 +277,7 @@ fn test_failure_counter_resets_on_closed() {
         open_timeout_ms: 10_000,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Cycle 1: Closed -> Open via failures
     for _ in 0..threshold {
@@ -339,14 +341,16 @@ fn test_recovery_timeout_is_configurable() {
         success_threshold: 2,
         open_timeout_ms: short_timeout_ms,
         half_open_timeout_ms: 30_000,
-    });
+    })
+    .unwrap();
 
     let mut breaker_long = CircuitBreaker::with_config(CircuitBreakerConfig {
         failure_threshold: 2,
         success_threshold: 2,
         open_timeout_ms: long_timeout_ms,
         half_open_timeout_ms: 30_000,
-    });
+    })
+    .unwrap();
 
     // Drive both to Open
     breaker_short.record_failure();
@@ -416,7 +420,7 @@ fn test_full_lifecycle_closed_open_half_open_closed() {
         open_timeout_ms: 5_000,
         half_open_timeout_ms: 3_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Phase 1: Start in Closed
     assert_eq!(breaker.state(), CircuitState::Closed);

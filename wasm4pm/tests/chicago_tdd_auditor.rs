@@ -6,7 +6,6 @@
 /// 3. Chicago TDD Oracles: Rank-1+ (no Rank-5 code-derived oracles)
 /// 4. FM-5 Prevention: No self-referential tests
 /// 5. Determinism: Operations deterministic with seeded RNG (5+ seeds, 50+ cycles)
-
 use std::collections::HashMap;
 
 /// OTEL span structure (simplified)
@@ -51,16 +50,10 @@ impl ChicagoTddAuditor {
         );
 
         // Conformance check
-        required_span_attributes.insert(
-            "conformance.check",
-            vec!["fitness", "precision"],
-        );
+        required_span_attributes.insert("conformance.check", vec!["fitness", "precision"]);
 
         // Prediction
-        required_span_attributes.insert(
-            "predict.execute",
-            vec!["task", "predictions_count"],
-        );
+        required_span_attributes.insert("predict.execute", vec!["task", "predictions_count"]);
 
         // RL convergence
         required_span_attributes.insert(
@@ -109,7 +102,10 @@ impl ChicagoTddAuditor {
                 layer: AuditLayer::OtelSpan,
                 operation: span.name.clone(),
                 passed: false,
-                details: format!("Invalid status: '{}' (must be 'ok' or 'error')", span.status),
+                details: format!(
+                    "Invalid status: '{}' (must be 'ok' or 'error')",
+                    span.status
+                ),
             };
         }
 
@@ -189,7 +185,10 @@ impl ChicagoTddAuditor {
         let failed = total - passed;
 
         let mut report = format!("Chicago TDD Audit Report\n");
-        report.push_str(&format!("Total: {}, Passed: {}, Failed: {}\n\n", total, passed, failed));
+        report.push_str(&format!(
+            "Total: {}, Passed: {}, Failed: {}\n\n",
+            total, passed, failed
+        ));
 
         let mut by_layer: HashMap<AuditLayer, Vec<&AuditCheckpoint>> = HashMap::new();
         for cp in checkpoints {
@@ -200,10 +199,7 @@ impl ChicagoTddAuditor {
             report.push_str(&format!("Layer: {:?}\n", layer));
             for cp in cps {
                 let status = if cp.passed { "✓" } else { "✗" };
-                report.push_str(&format!(
-                    "  {} {} ({})\n",
-                    status, cp.operation, cp.details
-                ));
+                report.push_str(&format!("  {} {} ({})\n", status, cp.operation, cp.details));
             }
             report.push('\n');
         }

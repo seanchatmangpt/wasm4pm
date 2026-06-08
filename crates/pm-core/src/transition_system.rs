@@ -274,7 +274,7 @@ mod serde_state_id {
 /// part of the minimal formal definition but is required for the Two-Step
 /// algorithm's weighting heuristics.
 ///
-/// `ActivityName` replaces the raw `String` in the legacy wasm4pm
+/// `ActivityName` replaces the raw `String` in the  wasm4pm
 /// `TSTransition.activity` field — a breaking but necessary fix noted in the
 /// module-level audit.
 ///
@@ -388,7 +388,7 @@ mod serde_ts_transition {
 /// - `initial` — the unique initial state `s₀ ∈ S` (Def 3.1). The caller is
 ///   responsible for ensuring `initial ∈ states.keys()`.
 /// - `accepting` — `BTreeSet<StateId>`: final/accepting states F ⊆ S
-///   (renamed from `final_states` in the legacy code to match standard
+///   (renamed from `final_states` in the  code to match standard
 ///   automata-theory notation). `BTreeSet` guarantees deterministic
 ///   enumeration.
 /// - `transitions` — `Vec<TsTransition>`: the transition relation → as an
@@ -535,18 +535,12 @@ impl TransitionSystem {
     /// Allocates a new `Vec`; for hot paths consider iterating
     /// `self.transitions` directly.
     pub fn outgoing(&self, from: StateId) -> Vec<&TsTransition> {
-        self.transitions
-            .iter()
-            .filter(|t| t.from == from)
-            .collect()
+        self.transitions.iter().filter(|t| t.from == from).collect()
     }
 
     /// Return all transitions that arrive at state `to`.
     pub fn incoming(&self, to: StateId) -> Vec<&TsTransition> {
-        self.transitions
-            .iter()
-            .filter(|t| t.to == to)
-            .collect()
+        self.transitions.iter().filter(|t| t.to == to).collect()
     }
 
     /// Return all states reachable from `start` via a single transition step.
@@ -611,19 +605,22 @@ impl TransitionSystem {
             if !self.states.contains_key(&t.from) {
                 errors.push(alloc::format!(
                     "transition[{}]: from={} not in states",
-                    i, t.from
+                    i,
+                    t.from
                 ));
             }
             if !self.states.contains_key(&t.to) {
                 errors.push(alloc::format!(
                     "transition[{}]: to={} not in states",
-                    i, t.to
+                    i,
+                    t.to
                 ));
             }
             if !self.alphabet.contains(&t.activity) {
                 errors.push(alloc::format!(
                     "transition[{}]: activity '{}' not in alphabet",
-                    i, t.activity
+                    i,
+                    t.activity
                 ));
             }
         }
@@ -655,7 +652,9 @@ impl fmt::Display for TransitionSystem {
 
 #[cfg(feature = "serde")]
 mod serde_transition_system {
-    use super::{ActivityName, BTreeMap, BTreeSet, Frequency, StateId, TransitionSystem, TsTransition};
+    use super::{
+        ActivityName, BTreeMap, BTreeSet, Frequency, StateId, TransitionSystem, TsTransition,
+    };
     use alloc::string::String;
     use alloc::vec::Vec;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -706,11 +705,7 @@ mod serde_transition_system {
     impl<'de> Deserialize<'de> for TransitionSystem {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
             let p = TransitionSystemProxy::deserialize(d)?;
-            let states = p
-                .states
-                .into_iter()
-                .map(|(k, v)| (StateId(k), v))
-                .collect();
+            let states = p.states.into_iter().map(|(k, v)| (StateId(k), v)).collect();
             let accepting = p.accepting.into_iter().map(StateId).collect();
             let transitions = p
                 .transitions
@@ -745,10 +740,7 @@ mod tests {
     #[test]
     fn state_id_newtype_is_repr_transparent_u32() {
         // Zero-cost: size_of<StateId> == size_of<u32>
-        assert_eq!(
-            core::mem::size_of::<StateId>(),
-            core::mem::size_of::<u32>(),
-        );
+        assert_eq!(core::mem::size_of::<StateId>(), core::mem::size_of::<u32>(),);
     }
 
     #[test]

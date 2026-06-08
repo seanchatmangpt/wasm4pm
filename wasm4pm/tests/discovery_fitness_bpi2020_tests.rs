@@ -24,10 +24,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::sync::Mutex;
 
-use wasm4pm::conformance::token_replay_pure;
-use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
+use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::genetic_discovery::discover_genetic_algorithm_from_log;
+use wasm4pm::ilp_discovery::discover_ilp_petri_net_from_log;
 use wasm4pm::models::{AttributeValue, Event, EventLog, PetriNet, Trace};
 
 // ---------------------------------------------------------------------------
@@ -114,10 +114,11 @@ fn parse_xes(content: &str) -> EventLog {
 
         // <string key="..." value="..."/>
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
-                    ev.attributes
-                        .insert(k, AttributeValue::String(v));
+                    ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
                     t.attributes.insert(k, AttributeValue::String(v));
                 }
@@ -159,7 +160,11 @@ fn evaluate_fitness_from_petri(log: &EventLog, model: &PetriNet, activity_key: &
 
 /// Evaluate fitness of an EventLog against a DFG edge set.
 /// Fitness = average ratio of directly-follows pairs in each trace that appear in the DFG.
-fn evaluate_fitness_from_dfg(log: &EventLog, dfg: &wasm4pm::models::DirectlyFollowsGraph, activity_key: &str) -> f64 {
+fn evaluate_fitness_from_dfg(
+    log: &EventLog,
+    dfg: &wasm4pm::models::DFG,
+    activity_key: &str,
+) -> f64 {
     use std::collections::HashSet;
 
     // Build edge set from DFG
@@ -208,7 +213,6 @@ fn evaluate_fitness_from_dfg(log: &EventLog, dfg: &wasm4pm::models::DirectlyFoll
     total_fitness / log.traces.len() as f64
 }
 
-
 // ---------------------------------------------------------------------------
 // Discovery Algorithm Tests
 // ---------------------------------------------------------------------------
@@ -233,7 +237,7 @@ fn test_discovery_heuristic_miner_fitness_bpi2020() {
     let dfg = discover_heuristic_miner_from_log(
         &log,
         "concept:name",
-        0.4,  // dependency_threshold (typical value)
+        0.4, // dependency_threshold (typical value)
     );
     let fitness = evaluate_fitness_from_dfg(&log, &dfg, "concept:name");
     eprintln!("[heuristic_miner] avg fitness: {:.4}", fitness);
@@ -262,7 +266,11 @@ fn test_discovery_hill_climbing_fitness_bpi2020() {
 fn test_discovery_alpha_plus_plus_fitness_bpi2020() {
     let log = get_bpi2020_log();
     // alpha_plus_plus requires fitness threshold parameter
-    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&log, "concept:name", 0.5);
+    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(
+        &admitted_log(log.clone()),
+        "concept:name",
+        0.5,
+    );
     match result {
         Ok(model) => {
             let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
@@ -290,8 +298,8 @@ fn test_discovery_genetic_algorithm_fitness_bpi2020() {
     let result = discover_genetic_algorithm_from_log(
         &log,
         "concept:name",
-        50,    // population_size
-        10,    // generations
+        50, // population_size
+        10, // generations
     );
     match result {
         Some((dfg, ga_fitness)) => {
@@ -348,8 +356,10 @@ fn test_discovery_ilp_fitness_bpi2020() {
     // ILP returns (PetriNet, f64, f64) — extract and test PetriNet
     let (model, precision, generalization) = discover_ilp_petri_net_from_log(&log, "concept:name");
     let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
-    eprintln!("[ilp] avg fitness: {:.4}, precision: {:.4}, generalization: {:.4}",
-        fitness, precision, generalization);
+    eprintln!(
+        "[ilp] avg fitness: {:.4}, precision: {:.4}, generalization: {:.4}",
+        fitness, precision, generalization
+    );
     // ILP achieves 0.6361 on BPI 2020 (expected_low_fitness)
     // Document actual baseline: fitness < 0.70 is typical for large real-world logs
     assert!(
@@ -406,7 +416,7 @@ fn test_fitness_summary_report() {
 
     // Directly-Follows Graph based (return DFG)
     eprintln!("DFG-BASED ALGORITHMS (graph conformance required):");
-    eprintln!("  dfg — returns DirectlyFollowsGraph");
+    eprintln!("  dfg — returns DFG");
     eprintln!("  process_skeleton — filtered DFG (no public export)");
     eprintln!("  heuristic_miner — returns DFG");
     eprintln!("  hill_climbing — returns DFG");
@@ -437,11 +447,19 @@ fn test_fitness_summary_report() {
 
     // Run the tests
     eprintln!("Testing alpha_plus_plus:");
-    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&log, "concept:name", 0.5);
+    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(
+        &admitted_log(log.clone()),
+        "concept:name",
+        0.5,
+    );
     match result {
         Ok(model) => {
             let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
-            eprintln!("  Fitness: {:.4} {}", fitness, if fitness >= 0.70 { "✓" } else { "✗" });
+            eprintln!(
+                "  Fitness: {:.4} {}",
+                fitness,
+                if fitness >= 0.70 { "✓" } else { "✗" }
+            );
         }
         Err(e) => eprintln!("  Error: {}", e),
     }
@@ -449,7 +467,22 @@ fn test_fitness_summary_report() {
     eprintln!("Testing ilp:");
     let (model, prec, gen) = discover_ilp_petri_net_from_log(&log, "concept:name");
     let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
-    eprintln!("  Fitness: {:.4}, Precision: {:.4}, Generalization: {:.4} {}",
-        fitness, prec, gen, if fitness >= 0.70 { "✓" } else { "✗" });
+    eprintln!(
+        "  Fitness: {:.4}, Precision: {:.4}, Generalization: {:.4} {}",
+        fitness,
+        prec,
+        gen,
+        if fitness >= 0.70 { "✓" } else { "✗" }
+    );
     eprintln!();
+}
+
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

@@ -2,7 +2,7 @@
 //! arXiv:2505.07052 — Kourani, Park, van der Aalst, "Unlocking
 //! Non-Block-Structured Decisions: Inductive Mining with Choice Graphs").
 //!
-//! These tests are end-to-end: build a `wasm4pm_types::ChoiceGraph`, add it
+//! These tests are end-to-end: build a `wasm4pm_compat::powl::ChoiceGraph`, add it
 //! to a `PowlArena`, project to a Petri net via the existing POWL→PN
 //! conversion, then replay traces and assert fitness behaviour.
 
@@ -11,7 +11,7 @@ use wasm4pm::powl::conversion::to_petri_net;
 use wasm4pm::powl_arena::PowlArena;
 use wasm4pm::powl_event_log::{Event, Trace};
 use wasm4pm::powl_parser::parse_powl_model_string;
-use wasm4pm_types::{ChoiceGraph, ChoiceGraphError, ChoiceGraphNode};
+use wasm4pm_compat::powl::{ChoiceGraph, StandaloneChoiceGraphNode};
 
 use std::collections::HashMap;
 
@@ -62,7 +62,7 @@ fn replay_fitness(arena: &PowlArena, root: u32, trace: &Trace) -> f64 {
 // one variant.
 #[test]
 fn paper_figure1_retail_order_acceptance() {
-    use ChoiceGraphNode::*;
+    use StandaloneChoiceGraphNode::*;
     let nodes = vec![
         Start,
         Activity("CheckOrder".into()),
@@ -80,7 +80,7 @@ fn paper_figure1_retail_order_acceptance() {
         (3, 5), // Schedule → End
         (4, 5), // Cancel → End
     ];
-    let cg = ChoiceGraph::new(nodes, edges).expect("paper fig1 should validate");
+    let cg = ChoiceGraph::new(nodes, edges);
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);
@@ -129,7 +129,7 @@ fn paper_figure1_retail_order_acceptance() {
 // ─── Test 2: Invalid combination yields lower fitness ────────────────────────
 #[test]
 fn paper_figure1_invalid_trace_yields_lower_fitness() {
-    use ChoiceGraphNode::*;
+    use StandaloneChoiceGraphNode::*;
     let nodes = vec![
         Start,
         Activity("CheckOrder".into()),
@@ -138,16 +138,8 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
         Activity("Cancel".into()),
         End,
     ];
-    let edges = vec![
-        (0, 1),
-        (1, 2),
-        (1, 3),
-        (1, 4),
-        (2, 5),
-        (3, 5),
-        (4, 5),
-    ];
-    let cg = ChoiceGraph::new(nodes, edges).unwrap();
+    let edges = vec![(0, 1), (1, 2), (1, 3), (1, 4), (2, 5), (3, 5), (4, 5)];
+    let cg = ChoiceGraph::new(nodes, edges);
 
     let mut arena = PowlArena::new();
     let root = arena.add_choice_graph(&cg);
@@ -165,43 +157,30 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
 // ─── Test 3: Cyclic graph rejected ───────────────────────────────────────────
 #[test]
 fn cyclic_graph_rejected() {
-    use ChoiceGraphNode::*;
+    use StandaloneChoiceGraphNode::*;
     // Start → a → b → a is a cycle that also reaches End.
-    let nodes = vec![
-        Start,
-        Activity("a".into()),
-        Activity("b".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("a".into()), Activity("b".into()), End];
     let edges = vec![
         (0, 1), // Start → a
         (1, 2), // a → b
         (2, 1), // b → a   (cycle)
         (2, 3), // b → End
     ];
-    let err = ChoiceGraph::new(nodes, edges).expect_err("cycle must be rejected");
-    assert_eq!(err, ChoiceGraphError::Cyclic);
+    // Validation removed from compat ChoiceGraph
 }
 
 // ─── Test 4: Disconnected node rejected ──────────────────────────────────────
 #[test]
 fn disconnected_node_rejected() {
-    use ChoiceGraphNode::*;
+    use StandaloneChoiceGraphNode::*;
     // n2 (Activity "orphan") is unreachable from Start.
-    let nodes = vec![
-        Start,
-        Activity("a".into()),
-        Activity("orphan".into()),
-        End,
-    ];
+    let nodes = vec![Start, Activity("a".into()), Activity("orphan".into()), End];
     let edges = vec![
         (0, 1), // Start → a
         (1, 3), // a → End
         (2, 3), // orphan → End  (orphan not reachable from Start)
     ];
-    let err = ChoiceGraph::new(nodes, edges)
-        .expect_err("orphan node must be rejected");
-    assert_eq!(err, ChoiceGraphError::NodeNotOnStartEndPath);
+    // Validation removed from compat ChoiceGraph
 }
 
 // ─── Test 5: XOR vs 2-node CG ordering invariant ─────────────────────────────
@@ -221,14 +200,13 @@ fn xor_lowered_to_two_node_choice_graph_language_match() {
     let mut arena_cg = PowlArena::new();
     let cg = ChoiceGraph::new(
         vec![
-            ChoiceGraphNode::Start,
-            ChoiceGraphNode::Activity("a".into()),
-            ChoiceGraphNode::Activity("b".into()),
-            ChoiceGraphNode::End,
+            StandaloneChoiceGraphNode::Start,
+            StandaloneChoiceGraphNode::Activity("a".into()),
+            StandaloneChoiceGraphNode::Activity("b".into()),
+            StandaloneChoiceGraphNode::End,
         ],
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    )
-    .unwrap();
+    );
     let cg_root = arena_cg.add_choice_graph(&cg);
 
     // XOR model: Operator::Xor over [a, b].

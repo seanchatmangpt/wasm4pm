@@ -6,15 +6,18 @@
 //! Full DECLARE conformance checking via the WASM boundary is tested in the
 //! Node.js test suite in `packages/kernel/__tests__/`.
 
-use wasm4pm::models::{EventLog, Trace, Event, AttributeValue};
 use std::collections::HashMap;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn make_trace(activities: Vec<&str>) -> Trace {
     let mut trace = Trace::default();
     for activity in activities {
         let mut event = Event::default();
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(activity.to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
         event.attributes = attrs;
         trace.events.push(event);
     }
@@ -41,13 +44,17 @@ fn first_activity(trace: &Trace) -> Option<&str> {
 
 /// Collect all activity names in a trace.
 fn trace_activities(trace: &Trace) -> Vec<&str> {
-    trace.events.iter().filter_map(|e| {
-        if let Some(AttributeValue::String(s)) = e.attributes.get("concept:name") {
-            Some(s.as_str())
-        } else {
-            None
-        }
-    }).collect()
+    trace
+        .events
+        .iter()
+        .filter_map(|e| {
+            if let Some(AttributeValue::String(s)) = e.attributes.get("concept:name") {
+                Some(s.as_str())
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 /// Test that all 9 constraint templates are discoverable from a structured log.
@@ -87,7 +94,11 @@ fn test_perfect_conformance_all_constraints() {
         let acts = trace_activities(trace);
         for (i, &act) in acts.iter().enumerate() {
             if act == "A" {
-                assert_eq!(acts.get(i + 1), Some(&"B"), "A must be immediately followed by B");
+                assert_eq!(
+                    acts.get(i + 1),
+                    Some(&"B"),
+                    "A must be immediately followed by B"
+                );
             }
         }
     }
@@ -104,7 +115,10 @@ fn test_conformance_existence_violation() {
 
     // Verify the violation trace: trace 1 is missing B
     let trace1_activities = trace_activities(&log.traces[1]);
-    assert!(!trace1_activities.contains(&"B"), "Trace 1 should not contain B");
+    assert!(
+        !trace1_activities.contains(&"B"),
+        "Trace 1 should not contain B"
+    );
     assert_eq!(log.traces.len(), 3);
 }
 
@@ -136,7 +150,11 @@ fn test_conformance_chain_response_violations() {
     // Trace 1 has intervening X between A and B
     let trace1_acts = trace_activities(&log.traces[1]);
     let a_idx = trace1_acts.iter().position(|&a| a == "A").unwrap();
-    assert_eq!(trace1_acts.get(a_idx + 1), Some(&"X"), "Should have X between A and B");
+    assert_eq!(
+        trace1_acts.get(a_idx + 1),
+        Some(&"X"),
+        "Should have X between A and B"
+    );
     assert_eq!(log.traces.len(), 3);
 }
 
@@ -189,10 +207,10 @@ fn test_conformance_precedence_violations() {
 #[test]
 fn test_conformance_multiple_violations() {
     let log = make_log(vec![
-        vec!["A", "B"],        // Conforming
-        vec!["A", "X"],        // Violates Response(A, B)
-        vec!["B", "A"],        // Violates Precedence(A, B)
-        vec!["A"],             // Violates CoExistence(A, B) — B absent
+        vec!["A", "B"], // Conforming
+        vec!["A", "X"], // Violates Response(A, B)
+        vec!["B", "A"], // Violates Precedence(A, B)
+        vec!["A"],      // Violates CoExistence(A, B) — B absent
     ]);
 
     assert_eq!(log.traces.len(), 4);
@@ -226,10 +244,18 @@ fn test_conformance_succession_violations() {
 
     // Verify the violations are correctly represented
     let t = trace_activities(&log_response_violation.traces[1]);
-    assert_eq!(t.get(1), Some(&"C"), "Response violation: A followed by C not B");
+    assert_eq!(
+        t.get(1),
+        Some(&"C"),
+        "Response violation: A followed by C not B"
+    );
 
     let t2 = trace_activities(&log_precedence_violation.traces[1]);
-    assert_eq!(t2.first(), Some(&"B"), "Precedence violation: B appears first");
+    assert_eq!(
+        t2.first(),
+        Some(&"B"),
+        "Precedence violation: B appears first"
+    );
 }
 
 /// Test ChainPrecedence: B immediately preceded by A.
@@ -244,7 +270,11 @@ fn test_conformance_chain_precedence_violations() {
     // Trace 1: C immediately precedes B, not A
     let trace1_acts = trace_activities(&log.traces[1]);
     let b_idx = trace1_acts.iter().position(|&a| a == "B").unwrap();
-    assert_eq!(trace1_acts.get(b_idx - 1), Some(&"C"), "B should be preceded by C");
+    assert_eq!(
+        trace1_acts.get(b_idx - 1),
+        Some(&"C"),
+        "B should be preceded by C"
+    );
 }
 
 /// Large log test: verify trace count is correct.
@@ -265,13 +295,19 @@ fn test_conformance_fitness_computation() {
     assert_eq!(log.traces.len(), 100);
 
     // 10 traces have [A, C], 90 have [A, B]
-    let violating = log.traces.iter()
+    let violating = log
+        .traces
+        .iter()
         .filter(|t| trace_activities(t) == vec!["A", "C"])
         .count();
     assert_eq!(violating, 10, "Should have 10 violating traces");
     // fitness = 1 - (10/100) = 0.9
     let fitness = 1.0 - (violating as f64 / log.traces.len() as f64);
-    assert!((fitness - 0.9).abs() < 1e-9, "Fitness should be 0.9, got {}", fitness);
+    assert!(
+        (fitness - 0.9).abs() < 1e-9,
+        "Fitness should be 0.9, got {}",
+        fitness
+    );
 }
 
 /// Test with empty log.
@@ -285,11 +321,7 @@ fn test_conformance_empty_log() {
 /// Test with single activity logs.
 #[test]
 fn test_conformance_single_activity() {
-    let log = make_log(vec![
-        vec!["A"],
-        vec!["A"],
-        vec!["A"],
-    ]);
+    let log = make_log(vec![vec!["A"], vec!["A"], vec!["A"]]);
 
     assert_eq!(log.traces.len(), 3);
     // All traces have only A — CoExistence(A, B) violated
@@ -315,10 +347,14 @@ fn test_conformance_support_filtering() {
     let log = make_log(traces);
     assert_eq!(log.traces.len(), 100);
 
-    let ab_count = log.traces.iter()
+    let ab_count = log
+        .traces
+        .iter()
         .filter(|t| trace_activities(t) == vec!["A", "B"])
         .count();
-    let ac_count = log.traces.iter()
+    let ac_count = log
+        .traces
+        .iter()
         .filter(|t| trace_activities(t) == vec!["A", "C"])
         .count();
 

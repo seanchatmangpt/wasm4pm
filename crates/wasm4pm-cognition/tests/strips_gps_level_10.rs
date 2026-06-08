@@ -1,10 +1,11 @@
+#![allow(clippy::all, unused_mut)]
 //! Level 10 Tests: STRIPS Frame Axioms & GPS Subgoal Ordering
 //!
 //! STRIPS: Test that frame axioms preserve implicit state across actions
 //! GPS: Test that subgoal ordering reduces backtracking and matches Newell & Shaw benchmarks
 
 use wasm4pm_cognition::breeds::{
-    Candidate, Fact, Goal, Rule, StateAtom, BreedInput, BreedId, dispatch_breed_test,
+    dispatch_breed_test, BreedId, BreedInput, Candidate, Fact, Goal, Rule, StateAtom,
 };
 
 // =============================================================================
@@ -17,14 +18,12 @@ use wasm4pm_cognition::breeds::{
 fn blocks_world_with_frames() -> BreedInput {
     BreedInput {
         intent: "achieve color preservation".into(),
-        candidates: vec![
-            Candidate {
-                id: "change-location".into(),
-                score: 0.8,
-                eliminated: false,
-                elimination_reason: None,
-            },
-        ],
+        candidates: vec![Candidate {
+            id: "change-location".into(),
+            score: 0.8,
+            eliminated: false,
+            elimination_reason: None,
+        }],
         // Frame axioms: color properties are preserved across change-location action
         facts: vec![
             Fact {
@@ -38,21 +37,17 @@ fn blocks_world_with_frames() -> BreedInput {
         ],
         cases: vec![],
         // Simple action: change location (doesn't explicitly touch colors)
-        rules: vec![
-            Rule {
-                id: "change-location".into(),
-                premise: vec!["at=A,table".into()],
-                conclusion: "at=A,B;!at=A,table".into(),
-                certainty: 1.0,
-            },
-        ],
-        goals: vec![
-            Goal {
-                id: "goal1".into(),
-                predicate: "at".into(),
-                value: "A,B".into(),
-            },
-        ],
+        rules: vec![Rule {
+            id: "change-location".into(),
+            premise: vec!["at=A,table".into()],
+            conclusion: "at=A,B;!at=A,table".into(),
+            certainty: 1.0,
+        }],
+        goals: vec![Goal {
+            id: "goal1".into(),
+            predicate: "at".into(),
+            value: "A,B".into(),
+        }],
         state: vec![
             StateAtom {
                 predicate: "at".into(),
@@ -116,13 +111,23 @@ fn strips_side_effects_via_frame_preservation() {
     let output = dispatch_breed_test("strips", &input).expect("STRIPS location change");
 
     assert_eq!(output.breed, BreedId::Strips);
-    assert!(output.selected.is_some(), "location change action must be plannable");
+    assert!(
+        output.selected.is_some(),
+        "location change action must be plannable"
+    );
 
     // Verify the plan is minimal (just one action)
     let plan = output.selected.unwrap();
     let steps: Vec<&str> = plan.split(',').collect();
-    assert_eq!(steps.len(), 1, "should be exactly one action: change-location");
-    assert_eq!(steps[0], "change-location", "action should be change-location");
+    assert_eq!(
+        steps.len(),
+        1,
+        "should be exactly one action: change-location"
+    );
+    assert_eq!(
+        steps[0], "change-location",
+        "action should be change-location"
+    );
 }
 
 #[test]
@@ -337,7 +342,10 @@ fn gps_goal_level_priority() {
         .inference_trace
         .iter()
         .any(|t| t.kind.contains("cycle") || t.detail.contains("cycle"));
-    assert!(!has_cycle_error, "GPS should not detect cycles for acyclic problems");
+    assert!(
+        !has_cycle_error,
+        "GPS should not detect cycles for acyclic problems"
+    );
 }
 
 #[test]
@@ -367,10 +375,8 @@ fn strips_vs_gps_plan_length() {
     // Use a simple solvable problem
     let input = blocks_world_with_frames();
 
-    let strips_output = dispatch_breed_test("strips", &input)
-        .expect("STRIPS execution");
-    let gps_output = dispatch_breed_test("gps", &input)
-        .expect("GPS execution");
+    let strips_output = dispatch_breed_test("strips", &input).expect("STRIPS execution");
+    let gps_output = dispatch_breed_test("gps", &input).expect("GPS execution");
 
     // Both should find plans
     assert!(strips_output.selected.is_some(), "STRIPS must find plan");

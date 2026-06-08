@@ -1,6 +1,6 @@
 /**
  * api.ts
- * Kernel — versioned TypeScript facade over wasm4pm WASM algorithms
+ * Kernel — versioned TypeScript boundary over wasm4pm WASM algorithms
  *
  * Provides: Kernel.version(), Kernel.checkCompatibility(), Kernel.algorithms(),
  * Kernel.run(), Kernel.stream(), Kernel.freeHandle(), Kernel.stats()
@@ -322,7 +322,7 @@ export interface KernelWasmModule extends Omit<WasmModule,
 }
 
 /**
- * Kernel — the versioned API facade for wasm4pm
+ * Kernel — the versioned API boundary for wasm4pm
  *
  * Usage:
  * ```ts
@@ -700,7 +700,7 @@ export class Kernel {
 
   /**
    * Discover a process model.
-   * Semantic facade over `run()` for discovery algorithms.
+   * Semantic boundary over `run()` for discovery algorithms.
    * 
    * @example
    * ```ts
@@ -718,7 +718,7 @@ export class Kernel {
 
   /**
    * Predict an outcome or metric.
-   * Semantic facade over `run()` for prediction algorithms.
+   * Semantic boundary over `run()` for prediction algorithms.
    * 
    * @example
    * ```ts

@@ -1,12 +1,12 @@
 /**
  * wasm4pm
- * Core kernel — versioned API facade over wasm4pm WASM algorithms
+ * Core kernel — versioned API boundary over wasm4pm WASM algorithms
  *
  * Provides: Kernel class, algorithm registry, version checks, deterministic hashing,
  * Rust→TypeScript error propagation, and three-layer backend architecture.
  */
 
-// Kernel API facade
+// Kernel API boundary
 /**
  * Kernel — Core process mining backend abstraction.
  * @description Executes discovery, conformance, and analysis algorithms via WASM with multi-backend support.

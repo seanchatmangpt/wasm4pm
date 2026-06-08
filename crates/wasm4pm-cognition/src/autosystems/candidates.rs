@@ -5,7 +5,7 @@
 //! replaces that arrangement with an open [`Candidate`] type whose dimensions
 //! are validated against a manifest of [`DimensionSpec`] declarations.
 //!
-//! The legacy `ArchitectureFamily` enum is kept as a `#[deprecated]` shim so
+//! The  `ArchitectureFamily` enum is kept as a `#[removed]` bridge so
 //! existing call sites continue to compile while migrations land.
 
 use crate::autosystems::dimension::DimensionSpec;
@@ -38,16 +38,13 @@ pub enum RuntimeBoundary {
     ForbiddenCentralWork,
 }
 
-/// Legacy architecture family enumeration.
+///  architecture family enumeration.
 ///
 /// Retained for compile-time compatibility with prior dependents. Manifest-driven
 /// discovery uses [`Candidate::family_id`] (free-form string) instead.
-#[allow(deprecated)]
-#[deprecated(
-    since = "26.4.28",
-    note = "Use Candidate::family_id (manifest-driven) instead of the closed enum"
-)]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[allow(removed)]
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArchitectureFamily {
     /// Centralized cloud service.
     CentralizedCloud,
@@ -91,19 +88,19 @@ pub struct Candidate {
 
 impl Candidate {
     /// Lookup a dimension value by key.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn get(&self, key: &str) -> Option<f64> {
         self.dimensions.get(key).copied()
     }
 
     /// Count of declared dimensions.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn arity(&self) -> usize {
         self.dimensions.len()
     }
@@ -129,10 +126,10 @@ impl CandidateManifest {
     /// Validate every candidate's dimensions against the declared specs.
     ///
     /// Returns the first violation encountered (if any).
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn validate(&self) -> Result<(), String> {
         let by_key: IndexMap<&str, &DimensionSpec> = self
             .dimensions
@@ -159,16 +156,12 @@ pub trait CandidateDiscovery {
     fn discover(&self) -> Result<CandidateManifest, String>;
 }
 
-/// **Deprecated.** Returns an empty list.
+/// **Removed.** Returns an empty list.
 ///
 /// The previous implementation hardcoded nine candidates with poisoned baseline
 /// scores. Use [`ManifestDiscovery::from_path`] or [`FilesystemDiscovery`] with
 /// an actual manifest. The bundled `assets/manifests/9-family-demo.json`
 /// contains a neutral demo set for tests.
-#[deprecated(
-    since = "26.4.28",
-    note = "Hardcoded candidates were removed. Load a manifest with ManifestDiscovery."
-)]
 ///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
@@ -229,8 +222,8 @@ mod tests {
     }
 
     #[test]
-    #[allow(deprecated)]
-    fn deprecated_all_candidates_returns_empty() {
+    #[allow(removed)]
+    fn removed_all_candidates_returns_empty() {
         assert!(all_candidates().is_empty());
     }
 }

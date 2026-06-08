@@ -1,6 +1,6 @@
-/// RL Action Tracking Tests
-///
-/// Tests for RL Gap 2 implementation: healing actions tracking with success rates.
+//! RL Action Tracking Tests
+//!
+//! Tests for RL Gap 2 implementation: healing actions tracking with success rates.
 
 use wasm4pm::{rl_orchestrator::RlOrchestrator, RlState};
 
@@ -27,13 +27,13 @@ fn test_action_history_tracks_success() {
             ..state
         };
 
-        let (action_label, reward) = orch.run_cycle(
+        let (action_label, _reward) = orch.run_cycle(
             &[0.5, 1.0, 2.0, 0.0, 1.0, 2.0, 0.0, 1.0],
             &state,
             &next_state,
-            0, // spc_alert_count
-            true, // guard_pass
-            true, // circuit_allowed
+            0,     // spc_alert_count
+            true,  // guard_pass
+            true,  // circuit_allowed
             false, // latency_budget_exceeded
         );
 
@@ -146,9 +146,12 @@ fn test_action_distribution_histogram() {
 
     // Verify histogram properties:
     // 1. All actions have valid names (Continue, Scale, Retry, Fallback, Restart)
-    for (action, _) in &stats {
+    for action in stats.keys() {
         assert!(
-            matches!(action.as_str(), "Continue" | "Scale" | "Retry" | "Fallback" | "Restart"),
+            matches!(
+                action.as_str(),
+                "Continue" | "Scale" | "Retry" | "Fallback" | "Restart"
+            ),
             "action '{}' is not a valid RlAction variant",
             action
         );
@@ -156,7 +159,10 @@ fn test_action_distribution_histogram() {
 
     // 2. Success rates sum to expected pattern (should have some successes)
     let success_count: u32 = stats.values().map(|(_, s, _)| s).sum();
-    assert!(success_count > 0, "should have at least some successful actions");
+    assert!(
+        success_count > 0,
+        "should have at least some successful actions"
+    );
 }
 
 #[test]

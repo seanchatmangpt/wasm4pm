@@ -114,22 +114,30 @@ fn drift_detection_fires_on_sudden_drift() {
     let before_acts: &[&str] = &["A", "B", "C"];
     let after_acts: &[&str] = &["X", "Y", "Z"];
     for i in 0..5usize {
-        log.traces.push(make_trace(&format!("before{}", i), before_acts));
+        log.traces
+            .push(make_trace(&format!("before{}", i), before_acts));
     }
     for i in 0..5usize {
-        log.traces.push(make_trace(&format!("after{}", i), after_acts));
+        log.traces
+            .push(make_trace(&format!("after{}", i), after_acts));
     }
 
     let handle = store_log(log);
 
     // Use window_size=1 for maximum sensitivity
     let result = detect_drift(&handle, "concept:name", 1);
-    assert!(result.is_ok(), "detect_drift must return Ok, got {:?}", result);
+    assert!(
+        result.is_ok(),
+        "detect_drift must return Ok, got {:?}",
+        result
+    );
 
     let jsval = result.unwrap();
-    let json_str: String = jsval.as_string().expect("detect_drift must return a string");
-    let parsed: serde_json::Value = serde_json::from_str(&json_str)
-        .expect("detect_drift result must be valid JSON");
+    let json_str: String = jsval
+        .as_string()
+        .expect("detect_drift must return a string");
+    let parsed: serde_json::Value =
+        serde_json::from_str(&json_str).expect("detect_drift result must be valid JSON");
 
     let drifts_detected = parsed["drifts_detected"]
         .as_u64()
@@ -171,8 +179,7 @@ fn no_false_positive_on_stable_log() {
         .unwrap()
         .as_string()
         .expect("detect_drift must return a string");
-    let parsed: serde_json::Value =
-        serde_json::from_str(&json_str).expect("must be valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&json_str).expect("must be valid JSON");
 
     let drifts_detected = parsed["drifts_detected"]
         .as_u64()
@@ -219,10 +226,11 @@ fn drift_detection_delay_bounded_by_window_size() {
         .unwrap()
         .as_string()
         .expect("detect_drift must return a string");
-    let parsed: serde_json::Value =
-        serde_json::from_str(&json_str).expect("must be valid JSON");
+    let parsed: serde_json::Value = serde_json::from_str(&json_str).expect("must be valid JSON");
 
-    let drifts = parsed["drifts"].as_array().expect("drifts must be an array");
+    let drifts = parsed["drifts"]
+        .as_array()
+        .expect("drifts must be an array");
     if !drifts.is_empty() {
         let first_position = drifts[0]["position"]
             .as_u64()

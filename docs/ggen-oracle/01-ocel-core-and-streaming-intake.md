@@ -22,19 +22,19 @@ The carve GGEN-NEEDS §2 asks for is **already done**, not pending:
 
 | Asset | Citation | Notes |
 |---|---|---|
-| `ocel-core` crate is a workspace member | `/Users/sac/wasm4pm/Cargo.toml:4` (`members = [ ..., "crates/ocel-core"]`) | Leaf crate below `wasm4pm-types` as Structure-Map §1 requires. |
+| `ocel-core` crate is a workspace member | `/Users/sac/wasm4pm/Cargo.toml:4` (`members = [ ..., "crates/ocel-core"]`) | Leaf crate below `wasm4pm-compat` as Structure-Map §1 requires. |
 | All 9 OCEL 2.0 types defined | `crates/ocel-core/src/lib.rs:8-100` | `OCEL`, `OCELType`, `OCELTypeAttribute`, `OCELEventAttribute`, `OCELEvent`, `OCELRelationship`, `OCELObject`, `OCELObjectAttribute`, `OCELAttributeValue` + `Display` (`lib.rs:88`). Matches GGEN-NEEDS §2 contents list exactly. |
 | Dep tree is minimal | `crates/ocel-core/Cargo.toml` | Only `serde` (derive), `serde_json`, `chrono` (serde). No `hashbrown`/`uuid`/`wasm-bindgen`. Satisfies GGEN-NEEDS §2 "serde/serde_json/chrono only". |
-| `wasm4pm-types` re-exports it | `crates/wasm4pm-types/src/ocel.rs:6-9` (`pub use ocel_core::{OCEL, OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELObjectAttribute, OCELRelationship, OCELType, OCELTypeAttribute};`) | Full re-export set — fixes Structure-Map §9.1's "incomplete re-export" warning (that warning is now stale; `OCELType`/`OCELRelationship`/`OCELAttributeValue` ARE re-exported). |
-| The `From<event_log::AttributeValue>` coupling stays behind | `crates/wasm4pm-types/src/ocel.rs:11-38` | Bidirectional `From` impls live in `wasm4pm-types` (which owns `event_log`/`uuid`), NOT in `ocel-core` — exactly the boundary Structure-Map §2.A demands. **No change needed.** |
-| `wasm4pm-types` declares the path dep | `crates/wasm4pm-types/Cargo.toml:12` (`ocel-core = { path = "../ocel-core" }`) | |
+| `wasm4pm-compat` re-exports it | `crates/wasm4pm-compat/src/ocel.rs:6-9` (`pub use wasm4pm_compat::ocel::{OCEL, OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELObjectAttribute, OCELRelationship, OCELType, OCELTypeAttribute};`) | Full re-export set — fixes Structure-Map §9.1's "incomplete re-export" warning (that warning is now stale; `OCELType`/`OCELRelationship`/`OCELAttributeValue` ARE re-exported). |
+| The `From<event_log::AttributeValue>` coupling stays behind | `crates/wasm4pm-compat/src/ocel.rs:11-38` | Bidirectional `From` impls live in `wasm4pm-compat` (which owns `event_log`/`uuid`), NOT in `ocel-core` — exactly the boundary Structure-Map §2.A demands. **No change needed.** |
+| `wasm4pm-compat` declares the path dep | `crates/wasm4pm-compat/Cargo.toml:12` (`ocel-core = { path = "../ocel-core" }`) | |
 
 ### 2.2 EXISTS — two NDJSON readers (that disagree)
 
 | Reader | Citation | Shape | Verdict |
 |---|---|---|---|
-| `import_ocel_ndjson(&str) -> Result<OCEL, String>` | `crates/wasm4pm-types/src/import/ocel/mod_ocel.rs:17-74` | Whole-string, `serde_json::Value`-probed by presence of `"time"` / `"name"`; synthesizes `event_types`/`object_types`; tolerates a truncated last line by silently dropping unparseable lines. | **Folds into an `OCEL`** (what GGEN-NEEDS §4a wants) but has a **dead `"name"` branch** (`mod_ocel.rs:37-42` parses an `OCELType` then discards it — `if let Ok(ocel_type)` binds and does nothing) and **silently swallows malformed mid-stream lines** (can't distinguish "truncated tail" from "corrupt middle"). |
-| `ocel_core::intake::NDJsonStream<R: BufRead>` | `crates/ocel-core/src/intake.rs:41-108` | Lazy `Iterator<Item = Result<OCELRecord, String>>` over a `BufRead`; `OCELRecord = untagged{Event,Object}` (`intake.rs:7-12`); applies an `ExtractionPlan` (`intake.rs:14-39`) with referential-integrity drop of dangling relationships. | **Better engine** (lazy, crash-safe-ish, filter-capable) but **does NOT fold into an `OCEL`** and **returns `Err` on the truncated final line** (`intake.rs:99-101`) instead of tolerating it — violates GGEN-NEEDS §4 acceptance ("truncated final line is tolerated"). |
+| `import_ocel_ndjson(&str) -> Result<OCEL, String>` | `crates/wasm4pm-compat/src/import/ocel/mod_ocel.rs:17-74` | Whole-string, `serde_json::Value`-probed by presence of `"time"` / `"name"`; synthesizes `event_types`/`object_types`; tolerates a truncated last line by silently dropping unparseable lines. | **Folds into an `OCEL`** (what GGEN-NEEDS §4a wants) but has a **dead `"name"` branch** (`mod_ocel.rs:37-42` parses an `OCELType` then discards it — `if let Ok(ocel_type)` binds and does nothing) and **silently swallows malformed mid-stream lines** (can't distinguish "truncated tail" from "corrupt middle"). |
+| `wasm4pm_compat::ocel::intake::NDJsonStream<R: BufRead>` | `crates/ocel-core/src/intake.rs:41-108` | Lazy `Iterator<Item = Result<OCELRecord, String>>` over a `BufRead`; `OCELRecord = untagged{Event,Object}` (`intake.rs:7-12`); applies an `ExtractionPlan` (`intake.rs:14-39`) with referential-integrity drop of dangling relationships. | **Better engine** (lazy, crash-safe-ish, filter-capable) but **does NOT fold into an `OCEL`** and **returns `Err` on the truncated final line** (`intake.rs:99-101`) instead of tolerating it — violates GGEN-NEEDS §4 acceptance ("truncated final line is tolerated"). |
 
 These two paths duplicate intent and disagree on truncation policy. **The spec unifies them (§5).**
 
@@ -183,7 +183,7 @@ pub fn fold_ndjson_str(s: &str, plan: ExtractionPlan, tail: TailPolicy)
 
 ### 5.2 HashMap-attribute ingestion (G4)
 
-ggen emits `"attributes":{"code":"GGEN-TPL-001"}` (a JSON object), ocel-core wants an array. Add a serde shim so BOTH shapes deserialize:
+ggen emits `"attributes":{"code":"GGEN-TPL-001"}` (a JSON object), ocel-core wants an array. Add a serde bridge so BOTH shapes deserialize:
 
 ```rust
 // crates/ocel-core/src/intake.rs — TO BE BUILT
@@ -210,7 +210,7 @@ Buffer the trailing partial run: read line-by-line via the existing `NDJsonStrea
 
 ### 5.5 Retire the divergent path
 
-Once `fold_ndjson` lands, `import_ocel_ndjson` (`mod_ocel.rs:17`) should delegate to it (one-liner: `ocel_core::intake::fold_ndjson_str(s, ExtractionPlan::default(), TailPolicy::TolerateTruncatedTail).map(|(o,_)| o)`), and its dead `"name"` branch (`mod_ocel.rs:37-42`) deleted. This removes the two-readers-disagree hazard (G6) without breaking `wasm4pm-types`' API.
+Once `fold_ndjson` lands, `import_ocel_ndjson` (`mod_ocel.rs:17`) should delegate to it (one-liner: `wasm4pm_compat::ocel::intake::fold_ndjson_str(s, ExtractionPlan::default(), TailPolicy::TolerateTruncatedTail).map(|(o,_)| o)`), and its dead `"name"` branch (`mod_ocel.rs:37-42`) deleted. This removes the two-readers-disagree hazard (G6) without breaking `wasm4pm-compat`' API.
 
 ---
 
@@ -220,7 +220,7 @@ Once `fold_ndjson` lands, `import_ocel_ndjson` (`mod_ocel.rs:17`) should delegat
 |---|---|---|
 | Types (`OCEL*`) + aliases (§4) | `ocel-core` | Leaf, link-safe; ggen links this and nothing else (GGEN-NEEDS §5). |
 | `fold_ndjson` / `TailPolicy` / `FoldReport` (§5) | `ocel-core::intake` | Pure (`serde`+`serde_json`+`std::io::BufRead` only); reuses `NDJsonStream`. Keeps the engine `wasm-bindgen`-free so the oracle subprocess can use it. |
-| Re-export | `wasm4pm-types` via `ocel.rs:6` | Already wired; add `pub use ocel_core::intake::{fold_ndjson, TailPolicy, FoldReport};` so engine call sites get it. |
+| Re-export | `wasm4pm-compat` via `ocel.rs:6` | Already wired; add `pub use wasm4pm_compat::ocel::intake::{fold_ndjson, TailPolicy, FoldReport};` so engine call sites get it. |
 | CLI surface | `wpm` — extend `wpm mining` or add `wpm oracle ingest` | A thin command that reads a `.ocel.jsonl`, calls `fold_ndjson`, and prints `FoldReport` + `OCEL` summary as JSON. This is the intake half of the oracle the sibling specs (conformance/prefix) consume. Tests in `crates/wasm4pm-cli/tests/cli_tests.rs` (`assert_cmd`, Structure-Map §6). |
 
 This spec defines **intake only**. Conformance / prefix-completability / receipt-causality consume the `OCEL` that `fold_ndjson` produces and are specced in sibling files.
@@ -293,7 +293,7 @@ fixtures/real/ggen-living-loop-6link/
 | A4 | ggen's on-disk grep constraint holds (GGEN-NEEDS §3.1) | The fixture `agent-edit-events.ocel.jsonl` (unchanged on disk) still matches `"activity":"DiagnosticRaised"`, `item.tera`, `GGEN-TPL-001`. |
 | A5 | `fold_ndjson` recovers all 6 activities + 4 object types from the fixture | `cargo test -p ocel-core fold_six_link`. |
 | A6 | Truncated final line tolerated; corrupt-middle rejected (G6) | `truncated-tail.ocel.jsonl` folds 6 events with `tail_truncated==true`; a fixture with a corrupt line #3 under `Strict` returns `Err`, under lenient pushes one `DroppedLine`. |
-| A7 | `import_ocel_ndjson` delegates; dead `"name"` branch gone (§5.5) | `mod_ocel.rs` body is the one-line delegation; `wasm4pm-types` suite green. |
+| A7 | `import_ocel_ndjson` delegates; dead `"name"` branch gone (§5.5) | `mod_ocel.rs` body is the one-line delegation; `wasm4pm-compat` suite green. |
 | A8 | Full wasm4pm suite green (GGEN-NEEDS §2 acceptance) | `cargo test --workspace`. |
 | A9 | `wpm oracle ingest` emits the §7 envelope; exit 0 on truncated tail | `cli_tests.rs` with `assert_cmd` + `predicates` on stdout JSON. |
 | A10 | ggen consumes via subprocess (proof obligation #6, intake half) | ggen-side Chicago-TDD test runs `wpm oracle ingest` on its real tape, asserts the 6 event types in the JSON envelope. |
@@ -303,7 +303,7 @@ fixtures/real/ggen-living-loop-6link/
 ## 10. Open questions (flag to ggen / sibling specs)
 
 - **OQ1 (manifest):** Does `version.workspace = true` resolve when `ocel-core` is git-depended from ggen's separate repo? If not, pin a literal `26.5.29` synced to the train. (G7 / GGEN-NEEDS §5.)
-- **OQ2 (attrs shim):** Custom `Deserialize` on `OCELEvent.attributes` vs. value-probe inside `fold_ndjson`? The former keeps one code path; the latter keeps the type derive clean. Recommend the untagged `AttrsRepr` field-level shim (§5.2). (G4.)
+- **OQ2 (attrs bridge):** Custom `Deserialize` on `OCELEvent.attributes` vs. value-probe inside `fold_ndjson`? The former keeps one code path; the latter keeps the type derive clean. Recommend the untagged `AttrsRepr` field-level bridge (§5.2). (G4.)
 - **OQ3 (qualifier default):** ggen's `OcelObjectRef.qualifier` is `Option<String>`; `OCELRelationship.qualifier` is non-optional `String`. When ggen emits `null`/absent, fold to `""` or `"rel"`? Recommend `""` (matches `#[serde(default)]`). Confirm with ggen so mined qualifiers stay stable.
 - **OQ4 (object lines):** Does ggen's tape ever emit standalone object lines, or only inline-in-events? §5.3 synthesis assumes inline-only is possible. ggen to confirm `IntelLog` append format.
 - **OQ5 (CLI placement):** `wpm oracle ingest` (new noun) vs. fold inside `wpm mining`? Sibling conformance spec should co-locate; this spec defers the noun choice to the oracle-CLI spec.

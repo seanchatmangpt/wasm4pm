@@ -1,10 +1,14 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq};
+use crate::matrix::{euclidean_dist_sq, validate_matrix};
+use wasm_bindgen::prelude::*;
 
 /// Compute the mean silhouette score for clustering quality.
 /// Range: [-1, 1] where 1 = well-clustered, 0 = overlapping, -1 = wrong cluster.
-pub fn silhouette_score_impl(data: &[f64], n_features: usize, labels: &[f64]) -> Result<f64, MlError> {
+pub fn silhouette_score_impl(
+    data: &[f64],
+    n_features: usize,
+    labels: &[f64],
+) -> Result<f64, MlError> {
     let n = validate_matrix(data, n_features)?;
     if labels.len() != n {
         return Err(MlError::new("labels length must match number of samples"));
@@ -19,20 +23,28 @@ pub fn silhouette_score_impl(data: &[f64], n_features: usize, labels: &[f64]) ->
     clusters.dedup();
 
     if clusters.len() < 2 {
-        return Err(MlError::new("Need at least 2 clusters for silhouette score"));
+        return Err(MlError::new(
+            "Need at least 2 clusters for silhouette score",
+        ));
     }
 
     // Precompute cluster assignments for O(1) lookup
     let mut cluster_indices: Vec<Vec<usize>> = vec![Vec::new(); clusters.len()];
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let c = clusters.iter().position(|&cls| (cls - label).abs() < 1e-10).unwrap();
+        let c = clusters
+            .iter()
+            .position(|&cls| (cls - label).abs() < 1e-10)
+            .unwrap();
         cluster_indices[c].push(i);
     }
 
     let mut total_silhouette = 0.0;
 
     for (i, &label) in labels.iter().enumerate().take(n) {
-        let ci = clusters.iter().position(|&cls| (cls - label).abs() < 1e-10).unwrap();
+        let ci = clusters
+            .iter()
+            .position(|&cls| (cls - label).abs() < 1e-10)
+            .unwrap();
         let same_cluster = &cluster_indices[ci];
 
         // a(i) = mean distance to other points in same cluster
@@ -78,11 +90,7 @@ pub fn silhouette_score_impl(data: &[f64], n_features: usize, labels: &[f64]) ->
 }
 
 #[wasm_bindgen(js_name = "silhouetteScore")]
-pub fn silhouette_score(
-    data: &[f64],
-    n_features: usize,
-    labels: &[f64],
-) -> Result<f64, JsError> {
+pub fn silhouette_score(data: &[f64], n_features: usize, labels: &[f64]) -> Result<f64, JsError> {
     silhouette_score_impl(data, n_features, labels).map_err(|e| JsError::new(&e.message))
 }
 
@@ -94,24 +102,29 @@ mod tests {
     fn test_perfect_clustering() {
         // Two well-separated clusters
         let data = vec![
-            0.0, 0.0,  0.1, 0.1,  -0.1, 0.1,   // cluster 0
-            10.0, 10.0,  10.1, 10.1,  9.9, 10.1, // cluster 1
+            0.0, 0.0, 0.1, 0.1, -0.1, 0.1, // cluster 0
+            10.0, 10.0, 10.1, 10.1, 9.9, 10.1, // cluster 1
         ];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let score = silhouette_score_impl(&data, 2, &labels).unwrap();
-        assert!(score > 0.8, "Expected high silhouette score for well-separated clusters, got {}", score);
+        assert!(
+            score > 0.8,
+            "Expected high silhouette score for well-separated clusters, got {}",
+            score
+        );
     }
 
     #[test]
     fn test_overlapping_clusters() {
         // Random-ish data — score should be lower
-        let data = vec![
-            1.0, 1.0,  2.0, 1.5,  1.5, 2.0,
-            1.5, 1.0,  2.0, 2.0,  1.0, 2.0,
-        ];
+        let data = vec![1.0, 1.0, 2.0, 1.5, 1.5, 2.0, 1.5, 1.0, 2.0, 2.0, 1.0, 2.0];
         let labels = vec![0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
         let score = silhouette_score_impl(&data, 2, &labels).unwrap();
-        assert!(score < 0.8, "Expected low silhouette score for overlapping clusters, got {}", score);
+        assert!(
+            score < 0.8,
+            "Expected low silhouette score for overlapping clusters, got {}",
+            score
+        );
         assert!(score > -1.0);
     }
 
@@ -125,10 +138,7 @@ mod tests {
     #[test]
     fn test_singleton_cluster() {
         // One singleton cluster + one normal cluster
-        let data = vec![
-            0.0, 0.0,
-            10.0, 10.0,  10.1, 10.1,  9.9, 10.1,
-        ];
+        let data = vec![0.0, 0.0, 10.0, 10.0, 10.1, 10.1, 9.9, 10.1];
         let labels = vec![0.0, 1.0, 1.0, 1.0];
         let score = silhouette_score_impl(&data, 2, &labels).unwrap();
         // Should not panic, silhouette of singleton is 0 by convention
@@ -138,12 +148,14 @@ mod tests {
     #[test]
     fn test_three_clusters() {
         let data = vec![
-            0.0, 0.0,  0.1, 0.1,
-            10.0, 0.0,  10.1, 0.1,
-            0.0, 10.0,  0.1, 10.1,
+            0.0, 0.0, 0.1, 0.1, 10.0, 0.0, 10.1, 0.1, 0.0, 10.0, 0.1, 10.1,
         ];
         let labels = vec![0.0, 0.0, 1.0, 1.0, 2.0, 2.0];
         let score = silhouette_score_impl(&data, 2, &labels).unwrap();
-        assert!(score > 0.8, "Expected high score for 3 well-separated clusters, got {}", score);
+        assert!(
+            score > 0.8,
+            "Expected high score for 3 well-separated clusters, got {}",
+            score
+        );
     }
 }

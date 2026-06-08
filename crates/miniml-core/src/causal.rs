@@ -114,7 +114,8 @@ pub fn propensity_score_matching_impl(
 
     for &treated_idx in &treated_indices {
         let treated_score = propensity_scores[treated_idx];
-        let treated_covariates = &covariates[treated_idx * n_features..(treated_idx + 1) * n_features];
+        let treated_covariates =
+            &covariates[treated_idx * n_features..(treated_idx + 1) * n_features];
         let _treated_outcome = outcome[treated_idx];
 
         // Find best matching control (not yet used)
@@ -170,10 +171,12 @@ pub fn propensity_score_matching_impl(
     }
 
     let ate = average_treatment_effect(&treated_outcomes, &control_outcomes);
-    let (ci_lower, ci_upper) = bootstrap_ci(&matched_pairs, treatment, outcome, covariates, n_features);
+    let (ci_lower, ci_upper) =
+        bootstrap_ci(&matched_pairs, treatment, outcome, covariates, n_features);
     let p_value = compute_p_value(ate, &treated_outcomes, &control_outcomes);
 
-    Ok(CausalEffect::new(ate, ci_lower, ci_upper, p_value, 0.05).with_sample_sizes(n_treated, n_control))
+    Ok(CausalEffect::new(ate, ci_lower, ci_upper, p_value, 0.05)
+        .with_sample_sizes(n_treated, n_control))
 }
 
 #[wasm_bindgen]
@@ -242,11 +245,7 @@ fn bootstrap_ci(
     }
 
     let mean = effects.iter().sum::<f64>() / effects.len() as f64;
-    let variance = effects
-        .iter()
-        .map(|x| (x - mean).powi(2))
-        .sum::<f64>()
-        / effects.len() as f64;
+    let variance = effects.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / effects.len() as f64;
     let std = variance.sqrt();
 
     let se = std / (effects.len() as f64).sqrt();
@@ -287,7 +286,6 @@ fn compute_p_value(ate: f64, treated_outcomes: &[f64], control_outcomes: &[f64])
 
     let t_stat = ate / se;
     // Approximate p-value using normal distribution
-    
 
     if t_stat.abs() > 1.96 {
         0.05
@@ -317,19 +315,45 @@ pub fn instrumental_variables_impl(
         predicted_treatment.push(beta0_stage1 + beta1_stage1 * val);
     }
 
-    let (beta1_stage2, _beta0_stage2) = simple_linear_regression(&predicted_treatment, outcome);
+    let (beta1_stage2, beta0_stage2) = simple_linear_regression(&predicted_treatment, outcome);
 
     // Wald estimator for CI
     let ate = beta1_stage2;
 
-    // Simplified CI (would use proper 2SLS standard errors in production)
-    let se = ate.abs() * 0.1; // Placeholder
+    // Proper 2SLS Standard Error computation
+    // 1. Calculate residuals using the original treatment (not predicted treatment)
+    // 2. Estimate error variance (sigma^2 = SSR / (N - 2))
+    // 3. Calculate variance of predicted treatment
+    // 4. SE(ATE) = sqrt(sigma^2 / Sum((x_hat_i - x_hat_bar)^2))
+
+    let mut ssr = 0.0;
+    for i in 0..n_samples {
+        let y_pred = beta0_stage2 + beta1_stage2 * treatment[i];
+        let residual = outcome[i] - y_pred;
+        ssr += residual * residual;
+    }
+
+    let sigma_sq = ssr / (n_samples as f64 - 2.0).max(1.0);
+
+    let pred_mean = predicted_treatment.iter().sum::<f64>() / n_samples as f64;
+    let sum_sq_pred = predicted_treatment
+        .iter()
+        .map(|&x| (x - pred_mean) * (x - pred_mean))
+        .sum::<f64>();
+
+    let se = if sum_sq_pred > 0.0 {
+        (sigma_sq / sum_sq_pred).sqrt()
+    } else {
+        0.0
+    };
+
     let z = 1.96;
     let ci_lower = ate - z * se;
     let ci_upper = ate + z * se;
     let p_value = if ate.abs() > 2.0 * se { 0.05 } else { 0.5 };
 
-    Ok(CausalEffect::new(ate, ci_lower, ci_upper, p_value, 0.05).with_sample_sizes(n_samples, n_samples))
+    Ok(CausalEffect::new(ate, ci_lower, ci_upper, p_value, 0.05)
+        .with_sample_sizes(n_samples, n_samples))
 }
 
 #[wasm_bindgen]
@@ -374,8 +398,8 @@ pub fn difference_in_differences_impl(
     let treated_var = variance(treated_post) + variance(treated_pre);
     let control_var = variance(control_post) + variance(control_pre);
 
-    let se = ((treated_var / n_treated_pre as f64 + control_var / n_control_pre as f64).sqrt())
-        / 2.0;
+    let se =
+        ((treated_var / n_treated_pre as f64 + control_var / n_control_pre as f64).sqrt()) / 2.0;
 
     let z = 1.96;
     let ci_lower = ate - z * se;
@@ -603,7 +627,9 @@ mod tests {
         let control_pre = vec![10.0, 11.0, 9.0];
         let control_post = vec![12.0, 13.0, 11.0];
 
-        let result = difference_in_differences(&treated_pre, &treated_post, &control_pre, &control_post).unwrap();
+        let result =
+            difference_in_differences(&treated_pre, &treated_post, &control_pre, &control_post)
+                .unwrap();
 
         // Treated group improved by 5, control by 2, so DiD = 3
         assert!((result.ate - 3.0).abs() < 0.1);
@@ -613,7 +639,7 @@ mod tests {
     fn test_uplift_forest() {
         let features = vec![
             1.0, 2.0, 3.0, // sample 0
-            2.0, 3.0, 4.0,  // sample 1
+            2.0, 3.0, 4.0, // sample 1
             1.5, 2.5, 3.5, // sample 2
             0.5, 1.5, 2.5, // sample 3
         ];

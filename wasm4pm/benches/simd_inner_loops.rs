@@ -10,6 +10,9 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use wasm4pm::simd_inner_loops::*;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // ============================================================================
 // Scalar baseline implementations (for comparison)
 // ============================================================================
@@ -93,10 +96,10 @@ fn generate_petri_transitions(
             let preset_len = rng.gen_range(1..3);
             let postset_len = rng.gen_range(1..3);
             let preset = (0..preset_len)
-                .map(|_| (rng.gen::<u32>() % num_places as u32))
+                .map(|_| rng.gen::<u32>() % num_places as u32)
                 .collect();
             let postset = (0..postset_len)
-                .map(|_| (rng.gen::<u32>() % num_places as u32))
+                .map(|_| rng.gen::<u32>() % num_places as u32)
                 .collect();
             (preset, postset)
         })
@@ -110,7 +113,11 @@ fn generate_petri_transitions(
 fn bench_activity_counter_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("activity_counter_scalar");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_activities in [10, 100, 1000].iter() {
         let sequence_len = 10000;
@@ -135,7 +142,11 @@ fn bench_activity_counter_scalar(c: &mut Criterion) {
 fn bench_activity_counter_simd(c: &mut Criterion) {
     let mut group = c.benchmark_group("activity_counter_simd");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_activities in [10, 100, 1000].iter() {
         let sequence_len = 10000;
@@ -164,7 +175,11 @@ fn bench_activity_counter_simd(c: &mut Criterion) {
 fn bench_edge_aggregator_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("edge_aggregator_scalar");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_edges in [1000, 10000, 100000].iter() {
         let mut rng = StdRng::seed_from_u64(42);
@@ -195,7 +210,11 @@ fn bench_edge_aggregator_scalar(c: &mut Criterion) {
 fn bench_edge_aggregator_simd(c: &mut Criterion) {
     let mut group = c.benchmark_group("edge_aggregator_simd");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_edges in [1000, 10000, 100000].iter() {
         let mut rng = StdRng::seed_from_u64(42);
@@ -227,7 +246,11 @@ fn bench_edge_aggregator_simd(c: &mut Criterion) {
 fn bench_variant_hash_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("variant_hash_scalar");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
@@ -249,7 +272,11 @@ fn bench_variant_hash_scalar(c: &mut Criterion) {
 fn bench_variant_hash_simd(c: &mut Criterion) {
     let mut group = c.benchmark_group("variant_hash_simd");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for trace_len in [10, 50, 200].iter() {
         let variants = black_box(generate_trace_variants(1000, *trace_len));
@@ -275,7 +302,11 @@ fn bench_variant_hash_simd(c: &mut Criterion) {
 fn bench_marking_update_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("marking_update_scalar");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_places in [10, 100, 1000].iter() {
         let transitions = black_box(generate_petri_transitions(*num_places, 5000));
@@ -301,7 +332,11 @@ fn bench_marking_update_scalar(c: &mut Criterion) {
 fn bench_marking_update_simd(c: &mut Criterion) {
     let mut group = c.benchmark_group("marking_update_simd");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_places in [10, 100, 1000].iter() {
         let transitions = black_box(generate_petri_transitions(*num_places, 5000));
@@ -335,7 +370,11 @@ fn bench_marking_update_simd(c: &mut Criterion) {
 fn bench_token_accumulation_scalar(c: &mut Criterion) {
     let mut group = c.benchmark_group("token_accumulation_scalar");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_operations in [1000, 10000, 100000].iter() {
         let mut rng = StdRng::seed_from_u64(42);
@@ -380,7 +419,11 @@ fn bench_token_accumulation_scalar(c: &mut Criterion) {
 fn bench_token_accumulation_simd(c: &mut Criterion) {
     let mut group = c.benchmark_group("token_accumulation_simd");
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for num_operations in [1000, 10000, 100000].iter() {
         let mut rng = StdRng::seed_from_u64(42);

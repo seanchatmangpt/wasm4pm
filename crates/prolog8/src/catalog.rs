@@ -63,7 +63,8 @@ impl Catalog {
 
     /// Add a predicate. Replaces any existing entry under the same id.
     pub fn add_predicate(&mut self, meta: PredicateMeta) {
-        self.predicate_by_label.insert(meta.label.clone(), meta.pred_id);
+        self.predicate_by_label
+            .insert(meta.label.clone(), meta.pred_id);
         self.predicates.insert(meta.pred_id, meta);
     }
 

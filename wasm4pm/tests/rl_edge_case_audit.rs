@@ -1,7 +1,10 @@
+#![allow(clippy::all, dead_code)]
 //! Edge case audit for RL orchestrator: action bounds, reward NaN/Inf, LinUCB safety
 
-use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward, compute_reward_with_momentum, RewardParameters};
-use wasm4pm::{RlState, RlAction};
+use wasm4pm::rl_orchestrator::{
+    compute_reward, compute_reward_with_momentum, AgentType, RewardParameters, RlOrchestrator,
+};
+use wasm4pm::{RlAction, RlState};
 
 // GUARD 1: Action bounds (0-4 valid, reject out-of-range)
 #[test]
@@ -23,11 +26,18 @@ fn action_out_of_range_detection() {
 
     // Verify AgentType from_u8 rejects out-of-range
     assert!(AgentType::from_u8(5).is_none(), "AgentType should reject 5");
-    assert!(AgentType::from_u8(255).is_none(), "AgentType should reject 255");
+    assert!(
+        AgentType::from_u8(255).is_none(),
+        "AgentType should reject 255"
+    );
 
     // Valid agent types: 0-4
     for i in 0u8..5 {
-        assert!(AgentType::from_u8(i).is_some(), "AgentType should accept {}", i);
+        assert!(
+            AgentType::from_u8(i).is_some(),
+            "AgentType should accept {}",
+            i
+        );
     }
 }
 
@@ -47,7 +57,12 @@ fn action_stats_zero_division_guard() {
             assert_eq!(*rate, 0.0, "zero action count must yield 0.0 rate, not NaN");
         } else {
             // rate = successful / total, should be in [0.0, 1.0]
-            assert!(*rate >= 0.0 && *rate <= 1.0, "rate {} out of bounds for action {}", rate, action);
+            assert!(
+                *rate >= 0.0 && *rate <= 1.0,
+                "rate {} out of bounds for action {}",
+                rate,
+                action
+            );
         }
     }
 }
@@ -63,11 +78,19 @@ fn reward_never_nan_or_inf() {
 
     // Case 2: Maximum values
     let r = compute_reward(4, 4, 1000, true, true, true, 7);
-    assert!(r.is_finite(), "reward should be finite even with max values, got {}", r);
+    assert!(
+        r.is_finite(),
+        "reward should be finite even with max values, got {}",
+        r
+    );
 
     // Case 3: State with extreme rework
     let r = compute_reward(3, 4, 5, false, false, true, 7);
-    assert!(r.is_finite(), "reward with max rework should be finite, got {}", r);
+    assert!(
+        r.is_finite(),
+        "reward with max rework should be finite, got {}",
+        r
+    );
 
     // Case 4: With momentum bonus that could accumulate
     for momentum in [0u32, 5, 10, 100, 1000] {
@@ -81,7 +104,12 @@ fn reward_never_nan_or_inf() {
             rework_ratio_q: 0,
             consecutive_successes: momentum,
         });
-        assert!(r.is_finite(), "reward with momentum {} should be finite, got {}", momentum, r);
+        assert!(
+            r.is_finite(),
+            "reward with momentum {} should be finite, got {}",
+            momentum,
+            r
+        );
         // Momentum bonus caps at 10-cycle window, should not grow unbounded
         if momentum > 10 {
             let r_capped = compute_reward_with_momentum(RewardParameters {
@@ -94,7 +122,10 @@ fn reward_never_nan_or_inf() {
                 rework_ratio_q: 0,
                 consecutive_successes: 10,
             });
-            assert!(r <= r_capped * 1.001, "momentum bonus should cap at 10-cycle window");
+            assert!(
+                r <= r_capped * 1.001,
+                "momentum bonus should cap at 10-cycle window"
+            );
         }
     }
 }
@@ -111,7 +142,11 @@ fn terminal_state_reward_contract() {
 
     // Difference: terminal includes both degradation (-1.0) and terminal penalty (-2.0) = -3.0 total impact
     let diff = terminal - non_terminal;
-    assert!((diff - (-3.2)).abs() < 1e-6, "terminal + degradation should be -3.2, got {}", diff);
+    assert!(
+        (diff - (-3.2)).abs() < 1e-6,
+        "terminal + degradation should be -3.2, got {}",
+        diff
+    );
 }
 
 // GUARD 5: LinUCB action index bounds
@@ -124,25 +159,33 @@ fn linucb_action_index_bounds() {
 
     // LinUCB bounded select should return action in [0, 4]
     let action_idx = orchestrator.linucb_bounded_select(&features);
-    assert!(action_idx <= 4, "LinUCB action index {} must be in [0,4]", action_idx);
+    assert!(
+        action_idx <= 4,
+        "LinUCB action index {} must be in [0,4]",
+        action_idx
+    );
 
     // Verify conversion to AgentType is safe
     let agent = AgentType::from_u8(action_idx as u8);
-    assert!(agent.is_some(), "LinUCB action {} should map to valid AgentType", action_idx);
+    assert!(
+        agent.is_some(),
+        "LinUCB action {} should map to valid AgentType",
+        action_idx
+    );
 }
 
 // GUARD 6: State space dimension bounds
 #[test]
 fn state_space_dimension_bounds() {
     let state = RlState {
-        health_level: 4,        // max 4
-        event_rate_q: 7,        // max 7
-        activity_count_q: 7,    // max 7
-        spc_alert_level: 3,     // max 3
-        drift_status: 2,        // max 2
-        rework_ratio_q: 7,      // max 7
-        circuit_state: 2,       // max 2
-        cycle_phase: 3,         // max 3
+        health_level: 4,     // max 4
+        event_rate_q: 7,     // max 7
+        activity_count_q: 7, // max 7
+        spc_alert_level: 3,  // max 3
+        drift_status: 2,     // max 2
+        rework_ratio_q: 7,   // max 7
+        circuit_state: 2,    // max 2
+        cycle_phase: 3,      // max 3
     };
 
     // state_to_bin should handle max values without overflow
@@ -159,33 +202,41 @@ fn state_space_dimension_bounds() {
 fn reward_component_bounds_verified() {
     // Worst case: all penalties fire
     let r_worst = compute_reward(
-        3,    // prev_health
-        4,    // curr_health (degraded + terminal)
-        5,    // spc_alert_count (capped at -1.5)
+        3,     // prev_health
+        4,     // curr_health (degraded + terminal)
+        5,     // spc_alert_count (capped at -1.5)
         false, // guard_pass (penalty -0.5)
         false, // circuit_allowed (redundant penalty, LUT [false,false]=-0.5)
         true,  // latency_budget_exceeded (-0.3)
-        7,    // rework_ratio_q (max -0.2)
+        7,     // rework_ratio_q (max -0.2)
     );
 
     // Expected: -1.0 (degradation) + -2.0 (terminal) - 1.5 (SPC) - 0.5 (guard/circuit) - 0.3 (latency) - 0.2 (rework)
     //         = -5.5
-    assert!(r_worst <= -5.4 && r_worst >= -5.6, "worst case should be ~-5.5, got {}", r_worst);
+    assert!(
+        r_worst <= -5.4 && r_worst >= -5.6,
+        "worst case should be ~-5.5, got {}",
+        r_worst
+    );
 
     // Best case: all bonuses
     let r_best = compute_reward_with_momentum(RewardParameters {
-        prev_health: 2,    // prev_health
-        curr_health: 1,    // curr_health (improved)
-        spc_alert_count: 0,    // spc_alert_count
-        guard_pass: true, // guard_pass
-        circuit_allowed: true, // circuit_allowed
+        prev_health: 2,                 // prev_health
+        curr_health: 1,                 // curr_health (improved)
+        spc_alert_count: 0,             // spc_alert_count
+        guard_pass: true,               // guard_pass
+        circuit_allowed: true,          // circuit_allowed
         latency_budget_exceeded: false, // latency_budget_exceeded
-        rework_ratio_q: 0,    // rework_ratio_q
-        consecutive_successes: 10,   // consecutive_successes (max momentum)
+        rework_ratio_q: 0,              // rework_ratio_q
+        consecutive_successes: 10,      // consecutive_successes (max momentum)
     });
 
     // Expected: +1.0 (improved) + 0.1 (guard+circuit) + 0.5 (momentum capped) = +1.6
-    assert!(r_best <= 1.61 && r_best >= 1.59, "best case should be ~+1.6, got {}", r_best);
+    assert!(
+        r_best <= 1.61 && r_best >= 1.59,
+        "best case should be ~+1.6, got {}",
+        r_best
+    );
 }
 
 // GUARD 8: State equality check (FM-1 self-referential fix)
@@ -204,7 +255,7 @@ fn state_equality_prevents_self_reference() {
 
     let state2 = state1.clone();
     let state3 = RlState {
-        health_level: 3,  // Different
+        health_level: 3, // Different
         ..state1
     };
 
@@ -220,21 +271,25 @@ fn state_equality_prevents_self_reference() {
 fn rework_ratio_quantization_safe() {
     // Test quantization at boundaries (per lib.rs quantize_rework_ratio)
     let test_cases = vec![
-        (0.0, 0),     // 0% → 0-5% range → 0
-        (0.03, 0),    // 3% → 0-5% range → 0
-        (0.05, 0),    // 5% → 0-5% range → 0
-        (0.10, 1),    // 10% → 6-15% range → 1
-        (0.20, 2),    // 20% → 16-25% range → 2 (NOT 1!)
-        (0.50, 4),    // 50% → 41-55% range → 4
-        (0.80, 6),    // 80% → 71-85% range → 6
-        (0.95, 7),    // 95% → 86-100% range → 7
-        (1.00, 7),    // 100% → 86-100% range → 7
-        (1.5, 7),     // Out of range (should clamp at 100%) → 7
+        (0.0, 0),  // 0% → 0-5% range → 0
+        (0.03, 0), // 3% → 0-5% range → 0
+        (0.05, 0), // 5% → 0-5% range → 0
+        (0.10, 1), // 10% → 6-15% range → 1
+        (0.20, 2), // 20% → 16-25% range → 2 (NOT 1!)
+        (0.50, 4), // 50% → 41-55% range → 4
+        (0.80, 6), // 80% → 71-85% range → 6
+        (0.95, 7), // 95% → 86-100% range → 7
+        (1.00, 7), // 100% → 86-100% range → 7
+        (1.5, 7),  // Out of range (should clamp at 100%) → 7
     ];
 
     for (ratio, expected_q) in test_cases {
         let state = RlState::from_features(&[0.5; 8], 0, ratio);
-        assert_eq!(state.rework_ratio_q, expected_q, "rework_ratio {} should quantize to {}, got {}", ratio, expected_q, state.rework_ratio_q);
+        assert_eq!(
+            state.rework_ratio_q, expected_q,
+            "rework_ratio {} should quantize to {}, got {}",
+            ratio, expected_q, state.rework_ratio_q
+        );
     }
 }
 
@@ -245,12 +300,24 @@ fn state_coverage_percentage_never_nan() {
 
     // Initially, no states visited
     let coverage = orchestrator.get_state_coverage();
-    assert!(coverage.coverage_percentage.is_finite(), "coverage % should be finite");
-    assert_eq!(coverage.coverage_percentage, 0.0, "initial coverage should be 0%");
+    assert!(
+        coverage.coverage_percentage.is_finite(),
+        "coverage % should be finite"
+    );
+    assert_eq!(
+        coverage.coverage_percentage, 0.0,
+        "initial coverage should be 0%"
+    );
 
     // Verify coverage percentage calculation is safe
     // (actual state visits would populate this in real runs)
     let coverage = orchestrator.get_state_coverage();
-    assert!(coverage.coverage_percentage.is_finite(), "coverage % should remain finite");
-    assert!(coverage.coverage_percentage >= 0.0 && coverage.coverage_percentage <= 100.0, "coverage should be in [0,100]");
+    assert!(
+        coverage.coverage_percentage.is_finite(),
+        "coverage % should remain finite"
+    );
+    assert!(
+        coverage.coverage_percentage >= 0.0 && coverage.coverage_percentage <= 100.0,
+        "coverage should be in [0,100]"
+    );
 }

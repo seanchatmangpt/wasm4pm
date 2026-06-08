@@ -9,7 +9,7 @@
 //! memory usage (approximately 135KB regardless of log size).
 
 use super::{BloomFilter, CountMinSketch, HyperLogLog};
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use rustc_hash::FxHashMap;
 
 /// Simple hash function for trace and activity strings.
@@ -80,6 +80,8 @@ pub struct StreamingLog {
     total_events: usize,
     /// Previous activity ID in the current trace (for streaming event-by-event).
     prev_activity_id: Option<u32>,
+    /// Map of trace_hash to its previous activity ID (for interleaved streaming).
+    active_traces: FxHashMap<u64, u32>,
     /// Whether the current trace has started (for tracking start activities).
     trace_has_started: bool,
 }
@@ -99,6 +101,7 @@ impl StreamingLog {
             end_counts: Vec::new(),
             total_events: 0,
             prev_activity_id: None,
+            active_traces: FxHashMap::default(),
             trace_has_started: false,
         }
     }
@@ -127,7 +130,7 @@ impl StreamingLog {
     pub fn add_event(
         &mut self,
         activity: &str,
-        _trace_hash: u64,
+        trace_hash: u64,
         is_trace_start: bool,
         is_trace_end: bool,
     ) {
@@ -144,7 +147,19 @@ impl StreamingLog {
             self.trace_has_started = true;
             // Clear any carry-over from the previous trace so the first event
             // of this trace does not produce a spurious cross-trace edge.
-            self.prev_activity_id = None;
+            if trace_hash != 0 {
+                self.active_traces.remove(&trace_hash);
+            } else {
+                self.prev_activity_id = None;
+            }
+
+            // Deduplicate & track trace cardinality
+            if trace_hash != 0 {
+                if !self.seen_traces.contains(trace_hash) {
+                    self.seen_traces.insert(trace_hash);
+                    self.cardinality.add(trace_hash);
+                }
+            }
         }
         if is_trace_end {
             self.end_counts[id as usize] += 1;
@@ -152,18 +167,31 @@ impl StreamingLog {
         }
 
         // Add DFG edge from previous event (within the same trace only)
-        if let Some(prev_id) = self.prev_activity_id {
+        let prev_id = if trace_hash != 0 {
+            self.active_traces.get(&trace_hash).copied()
+        } else {
+            self.prev_activity_id
+        };
+
+        if let Some(prev_id) = prev_id {
             self.dfg_sketch.add_pair(prev_id, id);
         }
 
         // After recording the edge, update prev.  For the final event of a
         // trace we immediately clear it so the *next* trace cannot accidentally
-        // link back to this one (belt-and-suspenders; the is_trace_start guard
-        // above already handles the cross-trace boundary).
+        // link back to this one.
         if is_trace_end {
-            self.prev_activity_id = None;
+            if trace_hash != 0 {
+                self.active_traces.remove(&trace_hash);
+            } else {
+                self.prev_activity_id = None;
+            }
         } else {
-            self.prev_activity_id = Some(id);
+            if trace_hash != 0 {
+                self.active_traces.insert(trace_hash, id);
+            } else {
+                self.prev_activity_id = Some(id);
+            }
         }
 
         self.total_events += 1;
@@ -207,13 +235,13 @@ impl StreamingLog {
         h
     }
 
-    /// Build an approximate [`DirectlyFollowsGraph`] from the current state.
+    /// Build an approximate [`DFG`] from the current state.
     ///
     /// Node frequencies are exact (kept in `node_freqs`).
     /// Edge frequencies are estimated from the Count-Min Sketch (may be
     /// slightly overestimated due to hash collisions).
-    pub fn estimate_dfg(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn estimate_dfg(&self) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes with exact frequencies
         dfg.nodes = self
@@ -283,6 +311,8 @@ impl StreamingLog {
             + self.node_freqs.capacity() * std::mem::size_of::<u32>()
             + self.start_counts.capacity() * std::mem::size_of::<u32>()
             + self.end_counts.capacity() * std::mem::size_of::<u32>()
+            + self.active_traces.capacity()
+                * (std::mem::size_of::<u64>() + std::mem::size_of::<u32>())
     }
 }
 
@@ -507,6 +537,54 @@ mod tests {
             .edges
             .iter()
             .any(|e| e.from == "Register" && e.to == "Approve");
-        assert!(has_register_approve, "Expected Register→Approve edge missing");
+        assert!(
+            has_register_approve,
+            "Expected Register→Approve edge missing"
+        );
+    }
+
+    #[test]
+    fn test_interleaved_trace_streaming() {
+        let mut slog = StreamingLog::new();
+
+        let trace1_hash = 11111;
+        let trace2_hash = 22222;
+
+        // Stream event-by-event in interleaved order
+        // Trace 1: A -> B
+        // Trace 2: X -> Y
+        slog.add_event("A", trace1_hash, true, false);
+        slog.add_event("X", trace2_hash, true, false);
+        slog.add_event("B", trace1_hash, false, true);
+        slog.add_event("Y", trace2_hash, false, true);
+
+        let dfg = slog.estimate_dfg();
+
+        // Should have edges: A->B, X->Y
+        let ab = dfg.edges.iter().any(|e| e.from == "A" && e.to == "B");
+        let xy = dfg.edges.iter().any(|e| e.from == "X" && e.to == "Y");
+        assert!(ab, "Expected edge A->B missing");
+        assert!(xy, "Expected edge X->Y missing");
+
+        // Should NOT have cross-trace edges: A->X, X->B, B->Y
+        let ax = dfg.edges.iter().any(|e| e.from == "A" && e.to == "X");
+        let xb = dfg.edges.iter().any(|e| e.from == "X" && e.to == "B");
+        let by = dfg.edges.iter().any(|e| e.from == "B" && e.to == "Y");
+        assert!(!ax, "Spurious cross-trace edge A->X found");
+        assert!(!xb, "Spurious cross-trace edge X->B found");
+        assert!(!by, "Spurious cross-trace edge B->Y found");
+    }
+
+    #[test]
+    fn test_add_event_cardinality() {
+        let mut slog = StreamingLog::new();
+        slog.add_event("A", 11111, true, false);
+        slog.add_event("B", 11111, false, true);
+        slog.add_event("X", 22222, true, false);
+        slog.add_event("Y", 22222, false, true);
+
+        // Cardinality should be updated for the two unique traces
+        let est = slog.estimate_cardinality();
+        assert!(est >= 2, "Expected cardinality >= 2, got {}", est);
     }
 }

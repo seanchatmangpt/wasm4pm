@@ -1,6 +1,7 @@
 /// Convert a POWL model to a process tree.
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_process_tree::{ProcessTree, PtOperator};
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 struct Dag {
     n: usize,
@@ -303,9 +304,7 @@ pub fn apply_recursive(arena: &PowlArena, node_idx: u32) -> ProcessTree {
                 .nodes
                 .iter()
                 .filter_map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::SubModel(idx) => {
-                        Some(apply_recursive(arena, *idx))
-                    }
+                    ChoiceGraphNode::SubModel(idx) => Some(apply_recursive(arena, *idx)),
                     _ => None,
                 })
                 .collect();

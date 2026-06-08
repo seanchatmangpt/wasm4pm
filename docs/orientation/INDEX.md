@@ -30,13 +30,13 @@ This index provides a comprehensive map of the `wasm4pm` architecture. It is str
 5. **Combinatorial Maximalism**: Release certificates bind all evidence hashes to the current git commit to prevent receipt theater.
 6. **Zero Suppression Rule**: The Rust codebase enforces zero Clippy warnings or attributes.
 7. **Cross-Tool Parity Foundation**: Truex canonical digests guarantee cross-language parity (Rust4PM, PM4Py, PM4JS).
-8. **TypeScript SDK Facade**: The WASM complexity is fully encapsulated by a strongly typed SDK (`packages/kernel`).
+8. **TypeScript SDK boundary**: The WASM complexity is fully encapsulated by a strongly typed SDK (`packages/kernel`).
 9. **Universal Deployment Profile**: The system supports Edge, Browser, Mobile, and Node.js environments via targeted WASM compilation profiles.
 10. **OTLP Embedded Instrumentation**: The execution engine emits JSON lines spans compatible with the OpenTelemetry OTLP standard.
 
 ## Top 5 Inferred Facts (Medium Confidence)
 
-1. **PostHog Integration**: INFERRED that telemetry flows reliably through to PostHog from the native JS facade.
+1. **PostHog Integration**: INFERRED that telemetry flows reliably through to PostHog from the native JS boundary.
 2. **Memory Bounds**: INFERRED that the WASM allocation (`wasm-bindgen`) will safely handle log batches up to 500MB without OOM errors on standard Node hosts.
 3. **Parallel Iterators**: INFERRED that BLAKE3 parallelism significantly reduces runtime latency during massive canonicalizations.
 4. **PM4Py Bridge Parity**: INFERRED that the Python interoperability bridge correctly outputs matching BLAKE3 digests.

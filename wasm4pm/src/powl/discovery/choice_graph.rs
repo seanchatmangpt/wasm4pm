@@ -3,6 +3,7 @@
 //! Discovers a choice graph structure when no other cut applies.
 //! A choice graph is appropriate when there are non-trivial cyclic dependencies
 //! among activities, suggesting flexible choice points rather than simple ordering.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use std::collections::{HashMap, HashSet};
 
@@ -72,7 +73,7 @@ impl UnionFind {
             }
             curr = p.clone();
         }
-        
+
         // Path compression (optional, but good)
         if curr != x {
             self.parent.insert(x.to_string(), curr.clone());
@@ -131,12 +132,12 @@ fn build_partition_edges(
 
 /// Discover choice graph using the MineDG algorithm.
 ///
-/// **Deprecated.** Use [`discover_choice_graph_v2`] which returns a typed
+/// **Removed.** Use [`discover_choice_graph_v2`] which returns a typed
 /// `ChoiceGraphCut` validated against Definition 5 of arXiv:2505.07052.
-/// This function is preserved as a thin shim returning the legacy tuple shape
-/// for backward compatibility with downstream callers that have not yet
+/// This function is preserved as a thin bridge returning the  tuple shape
+/// for baseline admissibility with downstream callers that have not yet
 /// migrated.
-#[deprecated(note = "Use discover_choice_graph_v2 returning a validated ChoiceGraphCut")]
+
 pub fn discover_choice_graph(
     dfg: &HashSet<(String, String)>,
     activities: &HashSet<String>,
@@ -175,7 +176,7 @@ pub struct ChoiceGraphCut {
     /// The validated choice graph (Definition 1 invariants enforced).
     /// Nodes are: `Start`, `End`, plus one `Activity(repr)` per part.
     /// `repr` is the lexicographically-smallest activity name in the part.
-    pub graph: wasm4pm_types::ChoiceGraph,
+    pub graph: ChoiceGraph,
     /// Index of `Aᵢ` partition in `partition` for each Activity-node, in
     /// the order those nodes appear in `graph.nodes`.
     pub partition_for_node: Vec<Option<usize>>,
@@ -225,11 +226,11 @@ pub fn discover_choice_graph_v2(
 
     // Build CG nodes: Start, End, then one Activity-node per part.
     // We label each Activity-node by the lex-smallest activity in the part.
-    let mut nodes: Vec<wasm4pm_types::ChoiceGraphNode> = Vec::new();
+    let mut nodes: Vec<ChoiceGraphNode> = Vec::new();
     let mut partition_for_node: Vec<Option<usize>> = Vec::new();
-    nodes.push(wasm4pm_types::ChoiceGraphNode::Start);
+    nodes.push(ChoiceGraphNode::Start);
     partition_for_node.push(None);
-    nodes.push(wasm4pm_types::ChoiceGraphNode::End);
+    nodes.push(ChoiceGraphNode::End);
     partition_for_node.push(None);
     let start_idx_node = 0usize;
     let end_idx_node = 1usize;
@@ -242,7 +243,7 @@ pub fn discover_choice_graph_v2(
             .cloned()
             .unwrap_or_else(|| format!("part_{}", p_idx));
         part_node_idx.push(nodes.len());
-        nodes.push(wasm4pm_types::ChoiceGraphNode::Activity(repr));
+        nodes.push(ChoiceGraphNode::Activity(repr));
         partition_for_node.push(Some(p_idx));
     }
 
@@ -290,8 +291,7 @@ pub fn discover_choice_graph_v2(
         }
     }
 
-    let graph = wasm4pm_types::ChoiceGraph::new(nodes, edges)
-        .map_err(|e| NoCutFound::InvalidGraph(format!("{}", e)))?;
+    let graph = ChoiceGraph::new(nodes, edges);
     Ok(ChoiceGraphCut {
         partition,
         graph,
@@ -331,8 +331,7 @@ mod v2_tests {
         let starts: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
         let ends: HashSet<String> = ["A"].iter().map(|s| s.to_string()).collect();
         // Single-activity → 1 part. Should fall through to InsufficientPartitions.
-        let err = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, true)
-            .unwrap_err();
+        let err = discover_choice_graph_v2(&activities, &dfg, &starts, &ends, true).unwrap_err();
         assert_eq!(err, NoCutFound::InsufficientPartitions);
     }
 }

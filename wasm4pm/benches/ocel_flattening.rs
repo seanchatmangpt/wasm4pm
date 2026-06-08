@@ -179,7 +179,11 @@ fn bench_ocel_one_to_one(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Sweep over (num_objects, events_per_object) combinations
     let configs: &[(usize, usize)] = &[(50, 5), (200, 10), (500, 15), (1_000, 20)];
@@ -189,11 +193,9 @@ fn bench_ocel_one_to_one(c: &mut Criterion) {
         let total_events = ocel.events.len() as u64;
 
         group.throughput(Throughput::Elements(total_events));
-        group.bench_with_input(
-            BenchmarkId::new("objects", num_objects),
-            &ocel,
-            |b, o| b.iter(|| measure_flattening_loss(o, "order")),
-        );
+        group.bench_with_input(BenchmarkId::new("objects", num_objects), &ocel, |b, o| {
+            b.iter(|| measure_flattening_loss(o, "order"))
+        });
     }
     group.finish();
 }
@@ -207,7 +209,11 @@ fn bench_ocel_one_to_many(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // (num_events, objects_per_event) — objects_per_event is the N in 1:N
     let configs: &[(usize, usize)] = &[(50, 3), (200, 5), (500, 8), (1_000, 10)];
@@ -217,11 +223,9 @@ fn bench_ocel_one_to_many(c: &mut Criterion) {
         let total_events = ocel.events.len() as u64;
 
         group.throughput(Throughput::Elements(total_events));
-        group.bench_with_input(
-            BenchmarkId::new("events", num_events),
-            &ocel,
-            |b, o| b.iter(|| measure_flattening_loss(o, "item")),
-        );
+        group.bench_with_input(BenchmarkId::new("events", num_events), &ocel, |b, o| {
+            b.iter(|| measure_flattening_loss(o, "item"))
+        });
     }
     group.finish();
 }
@@ -235,26 +239,24 @@ fn bench_ocel_many_to_many(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // (num_objects, num_events, fanout)
-    let configs: &[(usize, usize, usize)] = &[
-        (20, 50, 3),
-        (50, 200, 5),
-        (100, 500, 8),
-        (200, 1_000, 10),
-    ];
+    let configs: &[(usize, usize, usize)] =
+        &[(20, 50, 3), (50, 200, 5), (100, 500, 8), (200, 1_000, 10)];
 
     for &(num_objects, num_events, fanout) in configs {
         let ocel = build_many_to_many_ocel(num_objects, num_events, fanout);
         let total_events = ocel.events.len() as u64;
 
         group.throughput(Throughput::Elements(total_events));
-        group.bench_with_input(
-            BenchmarkId::new("events", num_events),
-            &ocel,
-            |b, o| b.iter(|| measure_flattening_loss(o, "process")),
-        );
+        group.bench_with_input(BenchmarkId::new("events", num_events), &ocel, |b, o| {
+            b.iter(|| measure_flattening_loss(o, "process"))
+        });
     }
     group.finish();
 }

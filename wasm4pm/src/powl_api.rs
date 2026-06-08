@@ -1,4 +1,5 @@
 //! POWL WASM bindings — public API exported to JavaScript.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsValue;
@@ -136,7 +137,7 @@ pub fn get_children(s: &str, arena_idx: u32) -> Result<JsValue, JsValue> {
             .nodes
             .iter()
             .filter_map(|n| match n {
-                wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                ChoiceGraphNode::SubModel(idx) => Some(*idx),
                 _ => None,
             })
             .collect(),
@@ -166,7 +167,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             "is_skippable": t.is_skippable(),
             "is_repeatable": t.is_repeatable(),
             "is_unbounded": t.is_unbounded(),
-            // Legacy boolean fields kept for backward compat
+            //  boolean fields kept for backward compat
             "skippable": t.skippable,
             "selfloop": t.selfloop,
             "id": t.id,
@@ -208,17 +209,16 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             })
         }
         Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
-            let edges: Vec<Vec<usize>> =
-                cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
+            let edges: Vec<Vec<usize>> = cg.graph.edges.iter().map(|(a, b)| vec![*a, *b]).collect();
             let node_kinds: Vec<String> = cg
                 .graph
                 .nodes
                 .iter()
                 .map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::Start => "Start".into(),
-                    wasm4pm_types::ChoiceGraphNode::End => "End".into(),
-                    wasm4pm_types::ChoiceGraphNode::Activity(l) => format!("Activity({})", l),
-                    wasm4pm_types::ChoiceGraphNode::SubModel(i) => format!("SubModel({})", i),
+                    ChoiceGraphNode::Start => "Start".into(),
+                    ChoiceGraphNode::End => "End".into(),
+                    ChoiceGraphNode::Activity(l) => format!("Activity({})", l),
+                    ChoiceGraphNode::SubModel(i) => format!("SubModel({})", i),
                 })
                 .collect();
             serde_json::json!({
@@ -444,16 +444,18 @@ pub fn powl_freq_analysis(s: &str) -> Result<String, JsValue> {
     // Overall min of all min_freqs
     let freq_min_min: Option<i64> = nodes.iter().filter_map(|n| n["min_freq"].as_i64()).min();
     // Overall max of all max_freqs (null if any node is unbounded)
-    let freq_max_max: serde_json::Value =
-        if nodes.iter().any(|n| n["is_unbounded"].as_bool().unwrap_or(false)) {
-            serde_json::Value::Null
-        } else {
-            nodes
-                .iter()
-                .filter_map(|n| n["max_freq"].as_i64())
-                .max()
-                .map_or(serde_json::Value::Null, serde_json::Value::from)
-        };
+    let freq_max_max: serde_json::Value = if nodes
+        .iter()
+        .any(|n| n["is_unbounded"].as_bool().unwrap_or(false))
+    {
+        serde_json::Value::Null
+    } else {
+        nodes
+            .iter()
+            .filter_map(|n| n["max_freq"].as_i64())
+            .max()
+            .map_or(serde_json::Value::Null, serde_json::Value::from)
+    };
 
     let result = serde_json::json!({
         "total_frequent_transitions": total,
@@ -506,7 +508,7 @@ fn collect_freq_nodes(arena: &PowlArena, idx: u32, out: &mut Vec<serde_json::Val
                 .nodes
                 .iter()
                 .filter_map(|n| match n {
-                    wasm4pm_types::ChoiceGraphNode::SubModel(i) => Some(*i),
+                    ChoiceGraphNode::SubModel(i) => Some(*i),
                     _ => None,
                 })
                 .collect();

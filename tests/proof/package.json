@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/test-proof",
-  "version": "0.0.0",
+  "version": "26.6.5",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,12 +9,12 @@
   "devDependencies": {
     "vitest": "^1.1.0",
     "vite-plugin-wasm": "^3.6.0",
-    "@wasm4pm/testing": "workspace:*",
-    "@wasm4pm/contracts": "workspace:*",
-    "wasm4pm": "workspace:*",
-    "@wasm4pm/config": "workspace:*",
-    "@wasm4pm/engine": "workspace:*",
-    "@wasm4pm/ml": "workspace:*",
-    "@wasm4pm/observability": "workspace:*"
+    "@wasm4pm/testing": "file:../../packages/testing",
+    "@wasm4pm/contracts": "file:../../packages/contracts",
+    "wasm4pm": "file:../../packages/kernel",
+    "@wasm4pm/config": "file:../../packages/config",
+    "@wasm4pm/engine": "file:../../packages/engine",
+    "@wasm4pm/ml": "file:../../packages/ml",
+    "@wasm4pm/observability": "file:../../packages/observability"
   }
 }

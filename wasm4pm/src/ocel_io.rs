@@ -6,15 +6,15 @@
 //!
 //! - [`load_ocel2_from_json`] - Load OCEL from JSON string
 //! - [`export_ocel2_to_json`] - Export OCEL to JSON string
-//! - [`validate_ocel`] - Validate OCEL structure and referential integrity
+//! - [`validate_ocel_inner`] - Validate OCEL structure and referential integrity
 //!
 //! ## Example
 //!
 //! ```javascript
-//! import { load_ocel2_from_json, validate_ocel } from "wasm4pm";
+//! import { load_ocel2_from_json, validate_ocel_inner } from "wasm4pm";
 //!
 //! const handle = load_ocel2_from_json(jsonString);
-//! const validation = validate_ocel(handle);
+//! const validation = validate_ocel_inner(handle);
 //! ```
 
 #[cfg(feature = "ocel")]
@@ -55,12 +55,11 @@ pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
 }
 
 #[cfg(feature = "ocel")]
-fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
+pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     let mut errors = Vec::new();
 
     // Build a set of valid object IDs for quick lookup
-    let valid_object_ids: HashSet<String> =
-        ocel.objects.iter().map(|o| o.id.clone()).collect();
+    let valid_object_ids: HashSet<String> = ocel.objects.iter().map(|o| o.id.clone()).collect();
 
     // 1. Event Referential Integrity
     for event in &ocel.events {
@@ -125,12 +124,9 @@ fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
     }
 
     // 4. Declared Types Consistency
-    let declared_event_types: HashSet<String> =
-        ocel.event_types.clone().into_iter().collect();
+    let declared_event_types: HashSet<String> = ocel.event_types.clone().into_iter().collect();
     for event in &ocel.events {
-        if !declared_event_types.is_empty()
-            && !declared_event_types.contains(&event.event_type)
-        {
+        if !declared_event_types.is_empty() && !declared_event_types.contains(&event.event_type) {
             errors.push(format!(
                 "Event '{}' has undeclared type: '{}'",
                 event.id, event.event_type
@@ -138,11 +134,9 @@ fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
         }
     }
 
-    let declared_object_types: HashSet<String> =
-        ocel.object_types.clone().into_iter().collect();
+    let declared_object_types: HashSet<String> = ocel.object_types.clone().into_iter().collect();
     for object in &ocel.objects {
-        if !declared_object_types.is_empty()
-            && !declared_object_types.contains(&object.object_type)
+        if !declared_object_types.is_empty() && !declared_object_types.contains(&object.object_type)
         {
             errors.push(format!(
                 "Object '{}' has undeclared type: '{}'",
@@ -154,10 +148,18 @@ fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
     // 5. Monotonicity (Timeline conformance)
     let violations = validate_ocel_object_lifecycles(ocel);
     for v in violations {
-        let ts_a_str = ocel.events.iter().find(|e| e.id == v.event_a_id)
-            .map(|e| e.timestamp.as_str()).unwrap_or("");
-        let ts_b_str = ocel.events.iter().find(|e| e.id == v.event_b_id)
-            .map(|e| e.timestamp.as_str()).unwrap_or("");
+        let ts_a_str = ocel
+            .events
+            .iter()
+            .find(|e| e.id == v.event_a_id)
+            .map(|e| e.timestamp.as_str())
+            .unwrap_or("");
+        let ts_b_str = ocel
+            .events
+            .iter()
+            .find(|e| e.id == v.event_b_id)
+            .map(|e| e.timestamp.as_str())
+            .unwrap_or("");
         errors.push(format!(
             "Monotonicity violation for object '{}': event '{}' at '{}' ({} ms) is followed by event '{}' with earlier timestamp '{}' ({} ms)",
             v.object_id, v.event_a_id, ts_a_str, v.timestamp_a_ms,
@@ -179,7 +181,7 @@ fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
 pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let errors = validate_ocel_core(ocel);
+            let errors = validate_ocel_inner(ocel);
             let is_valid = errors.is_empty();
 
             let report = json!({
@@ -236,15 +238,9 @@ pub struct ProvenanceQuery {
 #[serde(tag = "type")]
 pub enum PathNode {
     #[serde(rename = "object")]
-    Object {
-        id: String,
-        object_type: String,
-    },
+    Object { id: String, object_type: String },
     #[serde(rename = "event")]
-    Event {
-        id: String,
-        event_type: String,
-    },
+    Event { id: String, event_type: String },
 }
 
 #[cfg(feature = "ocel")]
@@ -274,7 +270,10 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                         )));
                     }
                 } else {
-                    return Err(crate::error::js_val(&format!("Start object '{}' not found", start_id)));
+                    return Err(crate::error::js_val(&format!(
+                        "Start object '{}' not found",
+                        start_id
+                    )));
                 }
             } else {
                 for o in &ocel.objects {
@@ -286,10 +285,12 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
 
             let mut active_paths: Vec<Vec<PathNode>> = initial_objects
                 .into_iter()
-                .map(|o| vec![PathNode::Object {
-                    id: o.id.clone(),
-                    object_type: o.object_type.clone(),
-                }])
+                .map(|o| {
+                    vec![PathNode::Object {
+                        id: o.id.clone(),
+                        object_type: o.object_type.clone(),
+                    }]
+                })
                 .collect();
 
             // 2. Fetch O2O relations locally (global + embedded) to avoid mutability issues
@@ -310,7 +311,13 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                 for path in &active_paths {
                     if let Some(last_node) = path.last() {
                         match (last_node, step) {
-                            (PathNode::Object { id: obj_id, .. }, TraversalStep::ObjectToEvent { event_type, qualifier }) => {
+                            (
+                                PathNode::Object { id: obj_id, .. },
+                                TraversalStep::ObjectToEvent {
+                                    event_type,
+                                    qualifier,
+                                },
+                            ) => {
                                 for event in &ocel.events {
                                     if &event.event_type == event_type {
                                         let matches_qualifier = event.object_refs.iter().any(|r| {
@@ -327,11 +334,19 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                                     }
                                 }
                             }
-                            (PathNode::Event { id: ev_id, .. }, TraversalStep::EventToObject { object_type, qualifier }) => {
+                            (
+                                PathNode::Event { id: ev_id, .. },
+                                TraversalStep::EventToObject {
+                                    object_type,
+                                    qualifier,
+                                },
+                            ) => {
                                 if let Some(event) = ocel.events.iter().find(|e| &e.id == ev_id) {
                                     for r in &event.object_refs {
                                         if &r.qualifier == qualifier {
-                                            if let Some(target_obj) = ocel.objects.iter().find(|o| o.id == r.object_id) {
+                                            if let Some(target_obj) =
+                                                ocel.objects.iter().find(|o| o.id == r.object_id)
+                                            {
                                                 if &target_obj.object_type == object_type {
                                                     let mut next_path = path.clone();
                                                     next_path.push(PathNode::Object {
@@ -345,12 +360,23 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                                     }
                                 }
                             }
-                            (PathNode::Object { id: obj_id, .. }, TraversalStep::ObjectToObject { object_type, qualifier, direction }) => {
+                            (
+                                PathNode::Object { id: obj_id, .. },
+                                TraversalStep::ObjectToObject {
+                                    object_type,
+                                    qualifier,
+                                    direction,
+                                },
+                            ) => {
                                 for rel in &all_relations {
                                     if &rel.qualifier == qualifier {
                                         // Forward search
-                                        if (direction == "forward" || direction == "both") && &rel.source_id == obj_id {
-                                            if let Some(target_obj) = ocel.objects.iter().find(|o| o.id == rel.target_id) {
+                                        if (direction == "forward" || direction == "both")
+                                            && &rel.source_id == obj_id
+                                        {
+                                            if let Some(target_obj) =
+                                                ocel.objects.iter().find(|o| o.id == rel.target_id)
+                                            {
                                                 if &target_obj.object_type == object_type {
                                                     let mut next_path = path.clone();
                                                     next_path.push(PathNode::Object {
@@ -362,8 +388,12 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                                             }
                                         }
                                         // Reverse search
-                                        if (direction == "reverse" || direction == "both") && &rel.target_id == obj_id {
-                                            if let Some(source_obj) = ocel.objects.iter().find(|o| o.id == rel.source_id) {
+                                        if (direction == "reverse" || direction == "both")
+                                            && &rel.target_id == obj_id
+                                        {
+                                            if let Some(source_obj) =
+                                                ocel.objects.iter().find(|o| o.id == rel.source_id)
+                                            {
                                                 if &source_obj.object_type == object_type {
                                                     let mut next_path = path.clone();
                                                     next_path.push(PathNode::Object {
@@ -384,9 +414,12 @@ pub fn query_provenance_traversal(ocel_handle: &str, query_json: &str) -> Result
                 active_paths = new_paths;
             }
 
-            let result = ProvenanceQueryResult { paths: active_paths };
-            let result_json = serde_json::to_string(&result)
-                .map_err(|e| crate::error::js_val(&format!("Failed to serialize query result: {}", e)))?;
+            let result = ProvenanceQueryResult {
+                paths: active_paths,
+            };
+            let result_json = serde_json::to_string(&result).map_err(|e| {
+                crate::error::js_val(&format!("Failed to serialize query result: {}", e))
+            })?;
             Ok(result_json)
         }
         Some(_) => Err(crate::error::js_val("Object is not an OCEL")),
@@ -505,14 +538,15 @@ fn is_valid_iso8601(s: &str) -> bool {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_ndjson(ndjson: &str) -> Result<String, JsValue> {
-    let ocel_types_struct = wasm4pm_types::import::ocel::import_ocel_ndjson(ndjson)
+    let ocel_types_struct = wasm4pm_compat::import::ocel::import_ocel_ndjson(ndjson)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse NDJSON: {}", e)))?;
 
     let serialized = serde_json::to_string(&ocel_types_struct)
         .map_err(|e| crate::error::js_val(&format!("Failed to serialize OCEL structure: {}", e)))?;
 
-    let ocel: crate::models::OCEL = serde_json::from_str(&serialized)
-        .map_err(|e| crate::error::js_val(&format!("Failed to convert to internal OCEL 2.0: {}", e)))?;
+    let ocel: crate::models::OCEL = serde_json::from_str(&serialized).map_err(|e| {
+        crate::error::js_val(&format!("Failed to convert to internal OCEL 2.0: {}", e))
+    })?;
 
     let handle = get_or_init_state()
         .store_object(StoredObject::OCEL(ocel))
@@ -587,7 +621,7 @@ mod tests {
     #[test]
     fn test_ocel_io_validation_valid() {
         let ocel = create_test_ocel();
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(errors.is_empty(), "Valid OCEL should have no errors");
     }
 
@@ -604,7 +638,7 @@ mod tests {
             object_refs: vec![],
         });
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect missing object");
         assert!(errors.iter().any(|e| e.contains("non-existent")));
     }
@@ -614,7 +648,7 @@ mod tests {
         let mut ocel = create_test_ocel();
         ocel.events[0].timestamp = "not-a-timestamp".to_string();
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect invalid timestamp");
         assert!(errors.iter().any(|e| e.contains("invalid ISO 8601")));
     }
@@ -630,7 +664,7 @@ mod tests {
             embedded_relations: vec![],
         });
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect duplicate object ID");
         assert!(errors.iter().any(|e| e.contains("Duplicate object")));
     }
@@ -643,7 +677,7 @@ mod tests {
             qualifier: "related".to_string(),
         }];
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(errors.is_empty(), "Valid object refs should pass");
     }
 
@@ -655,7 +689,7 @@ mod tests {
             qualifier: "related".to_string(),
         }];
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect invalid object ref");
     }
 
@@ -677,18 +711,30 @@ mod tests {
             target_id: "order1".to_string(),
             qualifier: "relates".to_string(),
         });
-        let errors = validate_ocel_internals(&ocel);
-        assert!(!errors.is_empty(), "Should detect invalid source in global relation");
-        assert!(errors.iter().any(|e| e.contains("references non-existent source object")));
+        let errors = validate_ocel_inner_internals(&ocel);
+        assert!(
+            !errors.is_empty(),
+            "Should detect invalid source in global relation"
+        );
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("references non-existent source object")));
 
         let mut ocel = create_test_ocel();
-        ocel.objects[0].embedded_relations.push(crate::models::OCELObjectRelRef {
-            object_id: "nonexistent_embedded".to_string(),
-            qualifier: "relates".to_string(),
-        });
-        let errors = validate_ocel_internals(&ocel);
-        assert!(!errors.is_empty(), "Should detect invalid target in embedded relation");
-        assert!(errors.iter().any(|e| e.contains("embedded relation references non-existent object")));
+        ocel.objects[0]
+            .embedded_relations
+            .push(crate::models::OCELObjectRelRef {
+                object_id: "nonexistent_embedded".to_string(),
+                qualifier: "relates".to_string(),
+            });
+        let errors = validate_ocel_inner_internals(&ocel);
+        assert!(
+            !errors.is_empty(),
+            "Should detect invalid target in embedded relation"
+        );
+        assert!(errors
+            .iter()
+            .any(|e| e.contains("embedded relation references non-existent object")));
     }
 
     #[test]
@@ -702,7 +748,7 @@ mod tests {
             object_ids: vec!["order1".to_string()],
             object_refs: vec![],
         });
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect monotonicity violation");
         assert!(errors.iter().any(|e| e.contains("Monotonicity violation")));
     }
@@ -731,8 +777,14 @@ mod tests {
                     attributes: std::collections::HashMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
-                        OCELEventObjectRef { object_id: "agent_1".to_string(), qualifier: "editor".to_string() },
-                        OCELEventObjectRef { object_id: "file_1".to_string(), qualifier: "modified".to_string() },
+                        OCELEventObjectRef {
+                            object_id: "agent_1".to_string(),
+                            qualifier: "editor".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "file_1".to_string(),
+                            qualifier: "modified".to_string(),
+                        },
                     ],
                 },
                 OCELEvent {
@@ -742,9 +794,18 @@ mod tests {
                     attributes: std::collections::HashMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
-                        OCELEventObjectRef { object_id: "agent_1".to_string(), qualifier: "checker".to_string() },
-                        OCELEventObjectRef { object_id: "file_1".to_string(), qualifier: "checked".to_string() },
-                        OCELEventObjectRef { object_id: "diag_species_1".to_string(), qualifier: "ruleset".to_string() },
+                        OCELEventObjectRef {
+                            object_id: "agent_1".to_string(),
+                            qualifier: "checker".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "file_1".to_string(),
+                            qualifier: "checked".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "diag_species_1".to_string(),
+                            qualifier: "ruleset".to_string(),
+                        },
                     ],
                 },
                 OCELEvent {
@@ -754,9 +815,18 @@ mod tests {
                     attributes: std::collections::HashMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
-                        OCELEventObjectRef { object_id: "agent_1".to_string(), qualifier: "resolver".to_string() },
-                        OCELEventObjectRef { object_id: "file_1".to_string(), qualifier: "source".to_string() },
-                        OCELEventObjectRef { object_id: "diag_species_1".to_string(), qualifier: "resolved".to_string() },
+                        OCELEventObjectRef {
+                            object_id: "agent_1".to_string(),
+                            qualifier: "resolver".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "file_1".to_string(),
+                            qualifier: "source".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "diag_species_1".to_string(),
+                            qualifier: "resolved".to_string(),
+                        },
                     ],
                 },
                 OCELEvent {
@@ -766,9 +836,18 @@ mod tests {
                     attributes: std::collections::HashMap::new(),
                     object_ids: vec![],
                     object_refs: vec![
-                        OCELEventObjectRef { object_id: "agent_1".to_string(), qualifier: "creator".to_string() },
-                        OCELEventObjectRef { object_id: "receipt_1".to_string(), qualifier: "output".to_string() },
-                        OCELEventObjectRef { object_id: "file_1".to_string(), qualifier: "basis".to_string() },
+                        OCELEventObjectRef {
+                            object_id: "agent_1".to_string(),
+                            qualifier: "creator".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "receipt_1".to_string(),
+                            qualifier: "output".to_string(),
+                        },
+                        OCELEventObjectRef {
+                            object_id: "file_1".to_string(),
+                            qualifier: "basis".to_string(),
+                        },
                     ],
                 },
             ],
@@ -799,9 +878,10 @@ mod tests {
                     object_type: "Receipt".to_string(),
                     attributes: std::collections::HashMap::new(),
                     changes: vec![],
-                    embedded_relations: vec![
-                        OCELObjectRelRef { object_id: "file_1".to_string(), qualifier: "basis".to_string() }
-                    ],
+                    embedded_relations: vec![OCELObjectRelRef {
+                        object_id: "file_1".to_string(),
+                        qualifier: "basis".to_string(),
+                    }],
                 },
             ],
             object_relations: vec![],
@@ -825,8 +905,9 @@ mod tests {
         }"#;
 
         let res_str = query_provenance_traversal(&handle, query_json).expect("Query failed");
-        let res: ProvenanceQueryResult = serde_json::from_str(&res_str).expect("Deserialize result failed");
-        
+        let res: ProvenanceQueryResult =
+            serde_json::from_str(&res_str).expect("Deserialize result failed");
+
         assert_eq!(res.paths.len(), 1);
         assert_eq!(res.paths[0].len(), 2);
         match &res.paths[0][0] {
@@ -834,19 +915,19 @@ mod tests {
                 assert_eq!(id, "receipt_1");
                 assert_eq!(object_type, "Receipt");
             }
-            _ => panic!("Expected object node"),
+            _ => unreachable!("Expected object node"),
         }
         match &res.paths[0][1] {
             PathNode::Object { id, object_type } => {
                 assert_eq!(id, "file_1");
                 assert_eq!(object_type, "File");
             }
-            _ => panic!("Expected object node"),
+            _ => unreachable!("Expected object node"),
         }
     }
 
     /// Helper for testing: run validation and return errors
-    fn validate_ocel_internals(ocel: &OCEL) -> Vec<String> {
-        validate_ocel_core(ocel)
+    fn validate_ocel_inner_internals(ocel: &OCEL) -> Vec<String> {
+        validate_ocel_inner(ocel)
     }
 }

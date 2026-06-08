@@ -38,7 +38,7 @@ console.log(config.metadata.provenance);      // provenance tracking
 Schema v1 used a flat layout for `[ml]`. Schema v1 keeps validating, but
 new code should use the nested per-task layout introduced in v26.5.x.
 
-| Legacy (still valid)              | Preferred                           |
+|  (still valid)              | Preferred                           |
 |-----------------------------------|-------------------------------------|
 | `ml.method = "knn"`               | `ml.classify.model = "knn"`         |
 | `ml.k = 5`                        | `ml.classify.k = 5`, `ml.cluster.k = 5` |
@@ -49,7 +49,7 @@ new code should use the nested per-task layout introduced in v26.5.x.
 
 `validate()` performs the promotion automatically — there is no rename
 step required for in-place upgrades. You can adopt nested sections one
-task at a time, and explicit nested values always win over their legacy
+task at a time, and explicit nested values always win over their 
 counterparts.
 
 ## Configuration Sources

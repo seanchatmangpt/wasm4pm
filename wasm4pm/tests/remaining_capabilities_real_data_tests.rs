@@ -50,21 +50,32 @@ fn parse_xes(content: &str) -> EventLog {
     for line in content.lines() {
         let trimmed = line.trim();
         if trimmed.starts_with("<trace>") || trimmed.starts_with("<trace ") {
-            current_trace = Some(Trace { attributes: HashMap::new(), events: Vec::new() });
+            current_trace = Some(Trace {
+                attributes: HashMap::new(),
+                events: Vec::new(),
+            });
         }
         if trimmed.starts_with("</trace>") {
-            if let Some(t) = current_trace.take() { log.traces.push(t); }
+            if let Some(t) = current_trace.take() {
+                log.traces.push(t);
+            }
         }
         if trimmed.starts_with("<event>") || trimmed.starts_with("<event ") {
-            current_event = Some(Event { attributes: HashMap::new() });
+            current_event = Some(Event {
+                attributes: HashMap::new(),
+            });
         }
         if trimmed.starts_with("</event>") {
             if let Some(ev) = current_event.take() {
-                if let Some(ref mut t) = current_trace { t.events.push(ev); }
+                if let Some(ref mut t) = current_trace {
+                    t.events.push(ev);
+                }
             }
         }
         if trimmed.starts_with("<string") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::String(v));
                 } else if let Some(ref mut t) = current_trace {
@@ -73,7 +84,9 @@ fn parse_xes(content: &str) -> EventLog {
             }
         }
         if trimmed.starts_with("<date") {
-            if let (Some(k), Some(v)) = (extract_attr(trimmed, "key"), extract_attr(trimmed, "value")) {
+            if let (Some(k), Some(v)) =
+                (extract_attr(trimmed, "key"), extract_attr(trimmed, "value"))
+            {
                 if let Some(ref mut ev) = current_event {
                     ev.attributes.insert(k, AttributeValue::Date(v));
                 }
@@ -96,7 +109,11 @@ fn load_xes(candidates: &[&str]) -> Option<EventLog> {
             if content.len() > 200 {
                 let log = parse_xes(&content);
                 if !log.traces.is_empty() {
-                    eprintln!("Remaining tests: loaded {} traces from {}", log.traces.len(), path);
+                    eprintln!(
+                        "Remaining tests: loaded {} traces from {}",
+                        log.traces.len(),
+                        path
+                    );
                     return Some(log);
                 }
             }
@@ -118,7 +135,10 @@ const ROADTRAFFIC: &[&str] = &[
 macro_rules! require_log {
     ($paths:expr, $label:expr) => {
         match load_xes($paths) {
-            None => { eprintln!("SKIP: {} not found", $label); return; }
+            None => {
+                eprintln!("SKIP: {} not found", $label);
+                return;
+            }
             Some(l) => l,
         }
     };
@@ -132,31 +152,39 @@ macro_rules! require_log {
 fn footprints_running_example_register_request_causal_to_examine() {
     // pm4py oracle: register request → examine casually (causal, not reverse)
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Find indices for known activities
     let idx_register = fp.activities.iter().position(|a| a == "register request");
     let idx_examine = fp.activities.iter().position(|a| a == "examine casually");
 
-    assert!(idx_register.is_some() && idx_examine.is_some(),
-        "Both 'register request' and 'examine casually' must be in footprint activities");
+    assert!(
+        idx_register.is_some() && idx_examine.is_some(),
+        "Both 'register request' and 'examine casually' must be in footprint activities"
+    );
 
     let r = idx_register.unwrap();
     let e = idx_examine.unwrap();
 
     // "register request" → "examine casually" should be Causal
-    assert_eq!(fp.matrix[r][e], FootprintRelation::Causal,
-        "register request → examine casually must be Causal in footprint matrix");
+    assert_eq!(
+        fp.matrix[r][e],
+        FootprintRelation::Causal,
+        "register request → examine casually must be Causal in footprint matrix"
+    );
 
     // Reverse should be CausalInv (or NeverFollows)
-    assert_ne!(fp.matrix[e][r], FootprintRelation::Causal,
-        "examine casually → register request must NOT be Causal");
+    assert_ne!(
+        fp.matrix[e][r],
+        FootprintRelation::Causal,
+        "examine casually → register request must NOT be Causal"
+    );
 }
 
 #[test]
 fn footprints_running_example_matrix_is_square() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     let n = fp.activities.len();
     assert!(n > 0, "Footprint matrix must have at least one activity");
@@ -170,35 +198,45 @@ fn footprints_running_example_matrix_is_square() {
 fn footprints_roadtraffic_create_fine_causal_to_send_fine() {
     // pm4py DFG oracle: Create Fine → Send Fine (77/100) — one-way causal
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     let idx_create = fp.activities.iter().position(|a| a == "Create Fine");
     let idx_send = fp.activities.iter().position(|a| a == "Send Fine");
 
-    assert!(idx_create.is_some() && idx_send.is_some(),
-        "Both 'Create Fine' and 'Send Fine' must be in footprint activities");
+    assert!(
+        idx_create.is_some() && idx_send.is_some(),
+        "Both 'Create Fine' and 'Send Fine' must be in footprint activities"
+    );
 
     let c = idx_create.unwrap();
     let s = idx_send.unwrap();
 
     // Create Fine → Send Fine is causal (always forward in DFG)
-    assert_eq!(fp.matrix[c][s], FootprintRelation::Causal,
-        "Create Fine → Send Fine must be Causal, got {:?}", fp.matrix[c][s]);
+    assert_eq!(
+        fp.matrix[c][s],
+        FootprintRelation::Causal,
+        "Create Fine → Send Fine must be Causal, got {:?}",
+        fp.matrix[c][s]
+    );
 }
 
 #[test]
 fn footprints_roadtraffic_has_never_follows_pairs() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
-    let never_follows_count = fp.matrix.iter()
+    let never_follows_count = fp
+        .matrix
+        .iter()
         .flat_map(|row| row.iter())
         .filter(|r| **r == FootprintRelation::NeverFollows)
         .count();
 
     // With 18 activities in roadtraffic, most pairs never follow each other
-    assert!(never_follows_count > 0,
-        "Roadtraffic footprint must have NeverFollows pairs");
+    assert!(
+        never_follows_count > 0,
+        "Roadtraffic footprint must have NeverFollows pairs"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +252,9 @@ fn streaming_dfg_builder_roadtraffic_matches_batch_edge_count() {
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
         for event in &trace.events {
-            if let Some(act) = event.attributes.get("concept:name")
+            if let Some(act) = event
+                .attributes
+                .get("concept:name")
                 .and_then(|v| v.as_string())
             {
                 streaming.add_event(&case_id, act);
@@ -225,11 +265,15 @@ fn streaming_dfg_builder_roadtraffic_matches_batch_edge_count() {
     let streaming_dfg = streaming.finalize();
 
     // Compare with batch DFG
-    let batch_dfg = discover_dfg_from_log(&log, "concept:name");
+    let batch_dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
-    assert_eq!(streaming_dfg.edges.len(), batch_dfg.edges.len(),
+    assert_eq!(
+        streaming_dfg.edges.len(),
+        batch_dfg.edges.len(),
         "Streaming DFG edge count ({}) must match batch DFG ({})",
-        streaming_dfg.edges.len(), batch_dfg.edges.len());
+        streaming_dfg.edges.len(),
+        batch_dfg.edges.len()
+    );
 }
 
 #[test]
@@ -240,7 +284,9 @@ fn streaming_dfg_builder_roadtraffic_has_create_fine_to_send_fine() {
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
         for event in &trace.events {
-            if let Some(act) = event.attributes.get("concept:name")
+            if let Some(act) = event
+                .attributes
+                .get("concept:name")
                 .and_then(|v| v.as_string())
             {
                 streaming.add_event(&case_id, act);
@@ -250,9 +296,14 @@ fn streaming_dfg_builder_roadtraffic_has_create_fine_to_send_fine() {
     }
     let dfg = streaming.finalize();
 
-    let has_edge = dfg.edges.iter().any(|e| e.from == "Create Fine" && e.to == "Send Fine");
-    assert!(has_edge,
-        "Streaming DFG must contain Create Fine → Send Fine edge");
+    let has_edge = dfg
+        .edges
+        .iter()
+        .any(|e| e.from == "Create Fine" && e.to == "Send Fine");
+    assert!(
+        has_edge,
+        "Streaming DFG must contain Create Fine → Send Fine edge"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -264,13 +315,15 @@ fn streaming_conformance_roadtraffic_replays_all_traces() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
 
     // Build reference DFG, then create streaming conformance checker from it
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
         for event in &trace.events {
-            if let Some(act) = event.attributes.get("concept:name")
+            if let Some(act) = event
+                .attributes
+                .get("concept:name")
                 .and_then(|v| v.as_string())
             {
                 checker.add_event(&case_id, act);
@@ -279,10 +332,16 @@ fn streaming_conformance_roadtraffic_replays_all_traces() {
         checker.close_trace(&case_id);
     }
 
-    assert_eq!(checker.results.len(), log.traces.len(),
-        "StreamingConformanceChecker must produce one result per trace");
-    assert_eq!(checker.event_count, log.traces.iter().map(|t| t.events.len()).sum::<usize>(),
-        "event_count must equal total events in log");
+    assert_eq!(
+        checker.results.len(),
+        log.traces.len(),
+        "StreamingConformanceChecker must produce one result per trace"
+    );
+    assert_eq!(
+        checker.event_count,
+        log.traces.iter().map(|t| t.events.len()).sum::<usize>(),
+        "event_count must equal total events in log"
+    );
 }
 
 #[test]
@@ -290,13 +349,15 @@ fn streaming_conformance_roadtraffic_self_replay_fitness_is_high() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
 
     // DFG discovered from the same log → self-replay should have high fitness
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
         for event in &trace.events {
-            if let Some(act) = event.attributes.get("concept:name")
+            if let Some(act) = event
+                .attributes
+                .get("concept:name")
                 .and_then(|v| v.as_string())
             {
                 checker.add_event(&case_id, act);
@@ -305,18 +366,21 @@ fn streaming_conformance_roadtraffic_self_replay_fitness_is_high() {
         checker.close_trace(&case_id);
     }
 
-    let avg_fitness: f64 = checker.results.iter().map(|r| r.fitness).sum::<f64>()
-        / checker.results.len() as f64;
+    let avg_fitness: f64 =
+        checker.results.iter().map(|r| r.fitness).sum::<f64>() / checker.results.len() as f64;
 
-    assert!(avg_fitness >= 0.80,
-        "Streaming conformance self-replay avg fitness must be >= 0.80, got {:.3}", avg_fitness);
+    assert!(
+        avg_fitness >= 0.80,
+        "Streaming conformance self-replay avg fitness must be >= 0.80, got {:.3}",
+        avg_fitness
+    );
 }
 
 #[test]
 fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     // An invalid trace: reverse order (decide before register) — should have deviations
@@ -326,9 +390,12 @@ fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() 
 
     if let Some(r) = result {
         // Either fitness is lower than 1.0 or there are deviations
-        assert!(r.fitness < 1.0 || !r.deviations.is_empty() || !r.is_conforming,
+        assert!(
+            r.fitness < 1.0 || !r.deviations.is_empty() || !r.is_conforming,
             "An invalid trace (decide before register) must not be perfectly conforming; \
-             fitness={:.3}", r.fitness);
+             fitness={:.3}",
+            r.fitness
+        );
     }
     // If close_trace returns None, the case was never opened — that's a bug
 }
@@ -341,10 +408,12 @@ fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() 
 #[cfg(feature = "petri_net_playout")]
 fn playout_roadtraffic_dfg_generates_correct_trace_count() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let activities: Vec<String> = dfg.nodes.iter().map(|n| n.id.clone()).collect();
-    let edges: Vec<(String, String)> = dfg.edges.iter()
+    let edges: Vec<(String, String)> = dfg
+        .edges
+        .iter()
         .map(|e| (e.from.clone(), e.to.clone()))
         .collect();
 
@@ -364,14 +433,20 @@ fn playout_roadtraffic_dfg_generates_correct_trace_count() {
         &params,
     );
 
-    assert_eq!(playout_log.traces.len(), 20,
+    assert_eq!(
+        playout_log.traces.len(),
+        20,
         "play_out_dfg_core must generate exactly 20 traces, got {}",
-        playout_log.traces.len());
+        playout_log.traces.len()
+    );
 
     // Each generated trace must have at least one event
     for (i, trace) in playout_log.traces.iter().enumerate() {
-        assert!(!trace.events.is_empty(),
-            "Generated trace {} must have at least one event", i);
+        assert!(
+            !trace.events.is_empty(),
+            "Generated trace {} must have at least one event",
+            i
+        );
     }
 }
 
@@ -379,28 +454,42 @@ fn playout_roadtraffic_dfg_generates_correct_trace_count() {
 #[cfg(feature = "petri_net_playout")]
 fn playout_roadtraffic_generated_activities_are_in_dfg() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let known_activities: std::collections::HashSet<String> =
         dfg.nodes.iter().map(|n| n.id.clone()).collect();
 
     let activities: Vec<String> = dfg.nodes.iter().map(|n| n.id.clone()).collect();
-    let edges: Vec<(String, String)> = dfg.edges.iter()
+    let edges: Vec<(String, String)> = dfg
+        .edges
+        .iter()
         .map(|e| (e.from.clone(), e.to.clone()))
         .collect();
 
-    let params = PlayOutParameters { num_traces: 10, ..Default::default() };
+    let params = PlayOutParameters {
+        num_traces: 10,
+        ..Default::default()
+    };
     let playout_log = play_out_dfg_core(
-        &activities, &edges, &dfg.start_activities, &dfg.end_activities, &params,
+        &activities,
+        &edges,
+        &dfg.start_activities,
+        &dfg.end_activities,
+        &params,
     );
 
     for trace in &playout_log.traces {
         for event in &trace.events {
-            if let Some(act) = event.attributes.get("concept:name")
+            if let Some(act) = event
+                .attributes
+                .get("concept:name")
                 .and_then(|v| v.as_string())
             {
-                assert!(known_activities.contains(act),
-                    "Generated activity '{}' not in DFG node set", act);
+                assert!(
+                    known_activities.contains(act),
+                    "Generated activity '{}' not in DFG node set",
+                    act
+                );
             }
         }
     }
@@ -422,22 +511,35 @@ fn petri_net_reduction_running_example_reduces_or_stays_same() {
     let result = reduce_petri_net(&mut petri_net);
 
     // Places and transitions after reduction must not exceed original
-    assert!(result.reduced_places <= original_places,
+    assert!(
+        result.reduced_places <= original_places,
         "Reduction must not increase place count: {} → {}",
-        original_places, result.reduced_places);
-    assert!(result.reduced_transitions <= original_transitions,
+        original_places,
+        result.reduced_places
+    );
+    assert!(
+        result.reduced_transitions <= original_transitions,
         "Reduction must not increase transition count: {} → {}",
-        original_transitions, result.reduced_transitions);
+        original_transitions,
+        result.reduced_transitions
+    );
 
     // Removed counts must be consistent
-    assert_eq!(result.places_removed, original_places - result.reduced_places,
-        "places_removed mismatch");
-    assert_eq!(result.transitions_removed, original_transitions - result.reduced_transitions,
-        "transitions_removed mismatch");
+    assert_eq!(
+        result.places_removed,
+        original_places - result.reduced_places,
+        "places_removed mismatch"
+    );
+    assert_eq!(
+        result.transitions_removed,
+        original_transitions - result.reduced_transitions,
+        "transitions_removed mismatch"
+    );
 
-    eprintln!("Reduction: {}→{} places, {}→{} transitions",
-        original_places, result.reduced_places,
-        original_transitions, result.reduced_transitions);
+    eprintln!(
+        "Reduction: {}→{} places, {}→{} transitions",
+        original_places, result.reduced_places, original_transitions, result.reduced_transitions
+    );
 }
 
 #[test]
@@ -450,9 +552,12 @@ fn count_reducible_elements_running_example_is_consistent_with_reduce() {
     let reducible = count_reducible_elements(&petri_net);
     let total = petri_net.places.len() + petri_net.transitions.len();
 
-    assert!(reducible <= total,
+    assert!(
+        reducible <= total,
         "Reducible element count ({}) must not exceed total elements ({})",
-        reducible, total);
+        reducible,
+        total
+    );
 }
 
 #[test]
@@ -464,8 +569,22 @@ fn petri_net_reduction_roadtraffic_runs_without_panic() {
     // Should not panic on real-world log
     let result = reduce_petri_net(&mut petri_net);
 
-    assert!(result.reduced_places <= result.original_places,
-        "Reduction must be monotone on places");
-    assert!(result.reduced_transitions <= result.original_transitions,
-        "Reduction must be monotone on transitions");
+    assert!(
+        result.reduced_places <= result.original_places,
+        "Reduction must be monotone on places"
+    );
+    assert!(
+        result.reduced_transitions <= result.original_transitions,
+        "Reduction must be monotone on transitions"
+    );
+}
+
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

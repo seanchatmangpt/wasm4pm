@@ -1727,7 +1727,9 @@ fn e2e_challenge_llm_replacement_bounded_decision_budget() {
 fn e2e_challenge_adversarial_reward_distribution() {
     // Adversarial: maximum degradation + maximum SPC alerts + all guards failed
     let rewards: Vec<f32> = (0..=4)
-        .flat_map(|from| (0..=4).map(move |to| compute_reward(from, to, 100, false, false, false, 0)))
+        .flat_map(|from| {
+            (0..=4).map(move |to| compute_reward(from, to, 100, false, false, false, 0))
+        })
         .collect();
 
     for r in &rewards {

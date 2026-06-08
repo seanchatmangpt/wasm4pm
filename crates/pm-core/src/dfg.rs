@@ -38,7 +38,10 @@ pub struct DfgEdge {
 
 impl DfgEdge {
     pub fn new(from: impl Into<ActivityName>, to: impl Into<ActivityName>) -> Self {
-        DfgEdge { from: from.into(), to: to.into() }
+        DfgEdge {
+            from: from.into(),
+            to: to.into(),
+        }
     }
 }
 
@@ -51,7 +54,7 @@ impl DfgEdge {
 /// other crates that depend on `pm-core`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct DirectlyFollowsGraph {
+pub struct DFG {
     /// A — activity set (nodes). Formal: A ⊆ A* (van der Aalst 2016 §2.1).
     pub activities: BTreeSet<ActivityName>,
     /// F × W — edge multiset with frequencies. Formal: W : F → ℕ.
@@ -62,10 +65,10 @@ pub struct DirectlyFollowsGraph {
     pub end_activities: BTreeMap<ActivityName, Frequency>,
 }
 
-impl DirectlyFollowsGraph {
+impl DFG {
     /// Construct an empty DFG.
     pub fn new() -> Self {
-        DirectlyFollowsGraph {
+        DFG {
             activities: BTreeSet::new(),
             edges: BTreeMap::new(),
             start_activities: BTreeMap::new(),
@@ -110,11 +113,17 @@ impl DirectlyFollowsGraph {
     /// Frequency of the directly-follows relation (from → to), or 0 if absent.
     #[inline]
     pub fn edge_frequency(&self, from: &ActivityName, to: &ActivityName) -> Frequency {
-        self.edges.get(&DfgEdge { from: from.clone(), to: to.clone() }).copied().unwrap_or(0)
+        self.edges
+            .get(&DfgEdge {
+                from: from.clone(),
+                to: to.clone(),
+            })
+            .copied()
+            .unwrap_or(0)
     }
 }
 
-impl Default for DirectlyFollowsGraph {
+impl Default for DFG {
     fn default() -> Self {
         Self::new()
     }

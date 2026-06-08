@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// Result of a polynomial regression fit: y = c0 + c1*x + c2*x² + ...
 #[derive(Clone)]
@@ -133,7 +133,11 @@ fn solve_linear_system(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>
 }
 
 /// Internal implementation
-pub fn polynomial_regression_impl(x: &[f64], y: &[f64], degree: usize) -> Result<PolynomialModel, MlError> {
+pub fn polynomial_regression_impl(
+    x: &[f64],
+    y: &[f64],
+    degree: usize,
+) -> Result<PolynomialModel, MlError> {
     if x.len() != y.len() {
         return Err(MlError::new("x and y arrays must have the same length"));
     }
@@ -189,7 +193,11 @@ pub fn polynomial_regression_impl(x: &[f64], y: &[f64], degree: usize) -> Result
         ss_tot += (yi - y_mean).powi(2);
     }
 
-    let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };
+    let r_squared = if ss_tot == 0.0 {
+        1.0
+    } else {
+        1.0 - (ss_res / ss_tot)
+    };
 
     Ok(PolynomialModel {
         coefficients,
@@ -202,7 +210,11 @@ pub fn polynomial_regression_impl(x: &[f64], y: &[f64], degree: usize) -> Result
 /// Fit a polynomial regression model using the normal equations
 /// Solves: (X^T X) β = X^T y where X is the Vandermonde matrix
 #[wasm_bindgen(js_name = "polynomialRegression")]
-pub fn polynomial_regression(x: &[f64], y: &[f64], degree: usize) -> Result<PolynomialModel, JsError> {
+pub fn polynomial_regression(
+    x: &[f64],
+    y: &[f64],
+    degree: usize,
+) -> Result<PolynomialModel, JsError> {
     polynomial_regression_impl(x, y, degree).map_err(|e| JsError::new(&e.message))
 }
 
@@ -226,9 +238,9 @@ mod tests {
         let model = polynomial_regression_impl(&x, &y, 2).unwrap();
         let coefs = model.get_coefficients();
 
-        assert!((coefs[0] - 1.0).abs() < 1e-8);  // constant
-        assert!((coefs[1] - 2.0).abs() < 1e-8);  // linear
-        assert!((coefs[2] - 1.0).abs() < 1e-8);  // quadratic
+        assert!((coefs[0] - 1.0).abs() < 1e-8); // constant
+        assert!((coefs[1] - 2.0).abs() < 1e-8); // linear
+        assert!((coefs[2] - 1.0).abs() < 1e-8); // quadratic
         assert!((model.r_squared - 1.0).abs() < 1e-8);
     }
 
@@ -241,10 +253,10 @@ mod tests {
         let model = polynomial_regression_impl(&x, &y, 3).unwrap();
         let coefs = model.get_coefficients();
 
-        assert!((coefs[0]).abs() < 1e-8);         // constant
+        assert!((coefs[0]).abs() < 1e-8); // constant
         assert!((coefs[1] - (-1.0)).abs() < 1e-8); // linear
-        assert!((coefs[2]).abs() < 1e-8);         // quadratic
-        assert!((coefs[3] - 1.0).abs() < 1e-8);   // cubic
+        assert!((coefs[2]).abs() < 1e-8); // quadratic
+        assert!((coefs[3] - 1.0).abs() < 1e-8); // cubic
     }
 
     #[test]

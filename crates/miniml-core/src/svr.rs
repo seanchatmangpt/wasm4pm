@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::{validate_matrix, Rng};
+use wasm_bindgen::prelude::*;
 
 /// Epsilon-Support Vector Regression using PEGASOS-style subgradient descent.
 ///
@@ -22,28 +22,44 @@ pub struct SVRModel {
 #[wasm_bindgen]
 impl SVRModel {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "weights")]
-    pub fn weights_js(&self) -> Vec<f64> { self.weights.clone() }
+    pub fn weights_js(&self) -> Vec<f64> {
+        self.weights.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "bias")]
-    pub fn bias_js(&self) -> f64 { self.bias }
+    pub fn bias_js(&self) -> f64 {
+        self.bias
+    }
 
     #[wasm_bindgen(getter, js_name = "supportVectors")]
-    pub fn support_vectors_js(&self) -> Vec<f64> { self.support_vectors.clone() }
+    pub fn support_vectors_js(&self) -> Vec<f64> {
+        self.support_vectors.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "supportLabels")]
-    pub fn support_labels_js(&self) -> Vec<f64> { self.support_labels.clone() }
+    pub fn support_labels_js(&self) -> Vec<f64> {
+        self.support_labels.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "supportAlphas")]
-    pub fn support_alphas_js(&self) -> Vec<f64> { self.support_alphas.clone() }
+    pub fn support_alphas_js(&self) -> Vec<f64> {
+        self.support_alphas.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "epsilon")]
-    pub fn epsilon_js(&self) -> f64 { self.epsilon }
+    pub fn epsilon_js(&self) -> f64 {
+        self.epsilon
+    }
 
     #[wasm_bindgen(getter, js_name = "c")]
-    pub fn c_js(&self) -> f64 { self.c }
+    pub fn c_js(&self) -> f64 {
+        self.c
+    }
 
     /// Predict target values using the learned weight vector.
     #[wasm_bindgen]
@@ -55,7 +71,10 @@ impl SVRModel {
     pub fn to_string_js(&self) -> String {
         format!(
             "SVRModel(n_features={}, epsilon={}, c={}, n_support={})",
-            self.n_features, self.epsilon, self.c, self.support_labels.len()
+            self.n_features,
+            self.epsilon,
+            self.c,
+            self.support_labels.len()
         )
     }
 }
@@ -74,7 +93,13 @@ pub struct SVRConfig {
 impl SVRConfig {
     #[wasm_bindgen(constructor)]
     pub fn new(epsilon: f64, c: f64, max_iter: usize, lr: f64, seed: u64) -> SVRConfig {
-        SVRConfig { epsilon, c, max_iter, lr, seed }
+        SVRConfig {
+            epsilon,
+            c,
+            max_iter,
+            lr,
+            seed,
+        }
     }
 }
 
@@ -223,14 +248,12 @@ pub fn svr_fit(
     targets: &[f64],
     config: SVRConfig,
 ) -> Result<SVRModel, JsValue> {
-    svr_fit_impl(data, n_features, targets, config)
-        .map_err(|e| JsValue::from_str(&e.message))
+    svr_fit_impl(data, n_features, targets, config).map_err(|e| JsValue::from_str(&e.message))
 }
 
 #[wasm_bindgen(js_name = "svrPredict")]
 pub fn svr_predict(model: &SVRModel, data: &[f64]) -> Result<Vec<f64>, JsValue> {
-    svr_predict_impl(model, data)
-        .map_err(|e| JsValue::from_str(&e.message))
+    svr_predict_impl(model, data).map_err(|e| JsValue::from_str(&e.message))
 }
 
 #[cfg(test)]
@@ -251,7 +274,9 @@ mod tests {
             assert!(
                 (p - t).abs() < 1.0,
                 "prediction {} vs target {}, diff {}",
-                p, t, (p - t).abs()
+                p,
+                t,
+                (p - t).abs()
             );
         }
     }
@@ -271,7 +296,9 @@ mod tests {
             assert!(
                 (p - t).abs() < model.epsilon + 1.0,
                 "prediction {} vs target {}, should be within epsilon {}",
-                p, t, model.epsilon
+                p,
+                t,
+                model.epsilon
             );
         }
     }
@@ -279,13 +306,7 @@ mod tests {
     #[test]
     fn test_svr_multidimensional() {
         // 2D data: y = x1 + x2
-        let data = vec![
-            1.0, 2.0,
-            2.0, 3.0,
-            3.0, 4.0,
-            4.0, 5.0,
-            5.0, 6.0,
-        ];
+        let data = vec![1.0, 2.0, 2.0, 3.0, 3.0, 4.0, 4.0, 5.0, 5.0, 6.0];
         let targets = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
         let config = SVRConfig::new(0.1, 10.0, 10000, 0.01, 42);
@@ -296,7 +317,9 @@ mod tests {
             assert!(
                 (p - t).abs() < 1.0,
                 "prediction {} vs target {}, diff {}",
-                p, t, (p - t).abs()
+                p,
+                t,
+                (p - t).abs()
             );
         }
     }

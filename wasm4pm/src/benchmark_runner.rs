@@ -451,7 +451,11 @@ pub fn run_all_benchmarks() -> Result<JsValue, JsValue> {
     let results: Vec<BenchmarkResult> = traces.iter().map(evaluate_trace).collect();
     let passed = results.iter().filter(|r| r.pass).count();
     let failed = total - passed;
-    let pass_rate = if total > 0 { passed as f64 / total as f64 } else { 0.0 };
+    let pass_rate = if total > 0 {
+        passed as f64 / total as f64
+    } else {
+        0.0
+    };
 
     let aggregate = AllBenchmarksResult {
         total,

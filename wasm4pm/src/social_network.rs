@@ -1,6 +1,6 @@
 use crate::models::EventLog;
-use crate::state::{get_or_init_state, StoredObject};
 use crate::network_metrics::{NetworkEdge, NetworkNode, SocialNetwork};
+use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 /// Priority 8 — Social network / organisational mining.
 ///
@@ -16,8 +16,7 @@ use wasm_bindgen::prelude::*;
 pub fn discover_handover_network_from_log(log: &EventLog, resource_key: &str) -> String {
     let mut handovers: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut workload: std::collections::HashMap<String, usize> =
-        std::collections::HashMap::new();
+    let mut workload: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
     for trace in &log.traces {
         let resources: Vec<Option<String>> = trace
@@ -69,15 +68,17 @@ pub fn discover_handover_network(log_handle: &str, resource_key: &str) -> Result
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
-    Ok(crate::error::js_val(&discover_handover_network_from_log(&log, resource_key)))
+    Ok(crate::error::js_val(&discover_handover_network_from_log(
+        &log,
+        resource_key,
+    )))
 }
 
 /// Pure-Rust working-together network discovery without wasm-bindgen. Used by integration tests.
 pub fn discover_working_together_network_from_log(log: &EventLog, resource_key: &str) -> String {
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
+    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for trace in &log.traces {
         let resources: std::collections::HashSet<String> = trace
@@ -130,7 +131,9 @@ pub fn discover_working_together_network(
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
-    Ok(crate::error::js_val(&discover_working_together_network_from_log(&log, resource_key)))
+    Ok(crate::error::js_val(
+        &discover_working_together_network_from_log(&log, resource_key),
+    ))
 }
 
 /// Compute network centrality metrics (degree, betweenness, closeness).
@@ -138,10 +141,7 @@ pub fn discover_working_together_network(
 /// Returns JSON with keys: `degree`, `betweenness`, `closeness`, all as maps
 /// from resource ID to centrality score (0-1).
 #[wasm_bindgen]
-pub fn compute_network_metrics(
-    log_handle: &str,
-    resource_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn compute_network_metrics(log_handle: &str, resource_key: &str) -> Result<JsValue, JsValue> {
     let log = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
@@ -151,8 +151,7 @@ pub fn compute_network_metrics(
     // Build network from handover relationships
     let mut handovers: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
+    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for trace in &log.traces {
         let resources: Vec<Option<String>> = trace
@@ -209,8 +208,10 @@ pub fn compute_network_metrics(
         "closeness": closeness,
     });
 
-    Ok(crate::error::js_val(&serde_json::to_string(&result)
-        .unwrap_or_else(|_| r#"{"degree":{},"betweenness":{},"closeness":{}}"#.to_string())))
+    Ok(crate::error::js_val(
+        &serde_json::to_string(&result)
+            .unwrap_or_else(|_| r#"{"degree":{},"betweenness":{},"closeness":{}}"#.to_string()),
+    ))
 }
 
 /// Compute clustering coefficient (local and global).
@@ -228,8 +229,7 @@ pub fn compute_clustering_coefficient(
     // Build network from working-together relationships
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
+    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for trace in &log.traces {
         let resources: std::collections::HashSet<String> = trace
@@ -283,16 +283,15 @@ pub fn compute_clustering_coefficient(
         "local": local_coeffs,
     });
 
-    Ok(crate::error::js_val(&serde_json::to_string(&result)
-        .unwrap_or_else(|_| r#"{"global":0,"local":{}}"#.to_string())))
+    Ok(crate::error::js_val(
+        &serde_json::to_string(&result)
+            .unwrap_or_else(|_| r#"{"global":0,"local":{}}"#.to_string()),
+    ))
 }
 
 /// Detect communities in the network using Louvain algorithm.
 #[wasm_bindgen]
-pub fn detect_communities(
-    log_handle: &str,
-    resource_key: &str,
-) -> Result<JsValue, JsValue> {
+pub fn detect_communities(log_handle: &str, resource_key: &str) -> Result<JsValue, JsValue> {
     let log = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
@@ -302,8 +301,7 @@ pub fn detect_communities(
     // Build network from working-together relationships
     let mut co_occur: std::collections::HashMap<(String, String), usize> =
         std::collections::HashMap::new();
-    let mut all_resources: std::collections::HashSet<String> =
-        std::collections::HashSet::new();
+    let mut all_resources: std::collections::HashSet<String> = std::collections::HashSet::new();
 
     for trace in &log.traces {
         let resources: std::collections::HashSet<String> = trace
@@ -354,6 +352,7 @@ pub fn detect_communities(
 
     let result = json!(communities);
 
-    Ok(crate::error::js_val(&serde_json::to_string(&result)
-        .unwrap_or_else(|_| r#"{}"#.to_string())))
+    Ok(crate::error::js_val(
+        &serde_json::to_string(&result).unwrap_or_else(|_| r#"{}"#.to_string()),
+    ))
 }

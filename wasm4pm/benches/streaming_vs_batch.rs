@@ -17,8 +17,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation,
-    Event, EventLog, Trace,
+    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
+    EventLog, Trace,
 };
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
@@ -32,7 +32,7 @@ use helpers::{bench_sizes, generate_event_log, make_handle, ACTIVITY_KEY};
 // ---------------------------------------------------------------------------
 
 /// Build a DFG using `StreamingDfgBuilder` (scalar streaming path).
-fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let mut builder = StreamingDfgBuilder::new();
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);
@@ -47,7 +47,7 @@ fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollows
 }
 
 /// Build a DFG using `SimdStreamingDfg` (columnar SIMD/scalar path).
-fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let col = log.to_columnar_owned(activity_key);
     let vocab_refs: Vec<&str> = col.vocab.iter().map(|s| s.as_str()).collect();
     let mut builder = SimdStreamingDfg::new();
@@ -58,11 +58,11 @@ fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph
 /// Compute a batch DFG directly from an EventLog using the columnar approach
 /// (mirrors `batch_dfg_from_log` in streaming_batch_equivalence_tests.rs).
 /// This is the pure-Rust path — no JsValue overhead.
-fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
 
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
         id: act.to_owned(),
@@ -94,20 +94,21 @@ fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGrap
             .or_insert(0) += 1;
     }
 
-    dfg.edges
-        .extend(edge_counts.into_iter().map(|((f, t), freq)| {
-            DirectlyFollowsRelation {
+    dfg.edges.extend(
+        edge_counts
+            .into_iter()
+            .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
                 to: col.vocab[t as usize].to_owned(),
                 frequency: freq,
-            }
-        }));
+            }),
+    );
 
     dfg
 }
 
 /// Build an order-independent edge map `(from, to) -> frequency` from a DFG.
-fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -123,7 +124,11 @@ fn bench_dfg_batch(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes() {
         let (handle, events) = make_handle(&shape);
@@ -146,17 +151,19 @@ fn bench_dfg_streaming(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
         let events = log.event_count();
         group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", shape.num_cases),
-            &log,
-            |b, l| b.iter(|| streaming_dfg_from_log(l, ACTIVITY_KEY)),
-        );
+        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
+            b.iter(|| streaming_dfg_from_log(l, ACTIVITY_KEY))
+        });
     }
     group.finish();
 }
@@ -170,17 +177,19 @@ fn bench_dfg_simd(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
         let events = log.event_count();
         group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", shape.num_cases),
-            &log,
-            |b, l| b.iter(|| simd_dfg_from_log(l, ACTIVITY_KEY)),
-        );
+        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
+            b.iter(|| simd_dfg_from_log(l, ACTIVITY_KEY))
+        });
     }
     group.finish();
 }
@@ -202,27 +211,27 @@ fn bench_parity_check(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(50);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     for shape in bench_sizes() {
         let log = generate_event_log(&shape);
         let events = log.event_count();
         group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", shape.num_cases),
-            &log,
-            |b, l| {
-                b.iter(|| {
-                    let batch = batch_dfg_from_log(l, ACTIVITY_KEY);
-                    let streaming = streaming_dfg_from_log(l, ACTIVITY_KEY);
-                    let batch_map = edges_to_map(&batch);
-                    let streaming_map = edges_to_map(&streaming);
-                    // Perform the comparison (this is what the oracle does)
-                    let _equal = batch_map.len() == streaming_map.len();
-                    batch_map.len() + streaming_map.len()
-                })
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", shape.num_cases), &log, |b, l| {
+            b.iter(|| {
+                let batch = batch_dfg_from_log(l, ACTIVITY_KEY);
+                let streaming = streaming_dfg_from_log(l, ACTIVITY_KEY);
+                let batch_map = edges_to_map(&batch);
+                let streaming_map = edges_to_map(&streaming);
+                // Perform the comparison (this is what the oracle does)
+                let _equal = batch_map.len() == streaming_map.len();
+                batch_map.len() + streaming_map.len()
+            })
+        });
     }
     group.finish();
 }

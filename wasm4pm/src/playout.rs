@@ -153,6 +153,7 @@ pub fn play_out_tree(
     tree: &crate::powl_process_tree::ProcessTree,
     params: &PlayOutParameters,
 ) -> EventLog {
+    fastrand::seed(42);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
@@ -232,6 +233,7 @@ fn play_out_dfg_with_starts(
     end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
+    fastrand::seed(42);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
@@ -316,8 +318,10 @@ fn format_timestamp_ms(ms: i64) -> String {
     let millis = (ms % 1000) as u32;
     // Simple ISO 8601 format: 1970-01-12T10:46:40.000Z
     // Use chrono for proper formatting
-    chrono::DateTime::from_timestamp(secs, millis * 1_000_000)
-        .map_or_else(|| "1970-01-01T00:00:00.000Z".to_string(), |dt| dt.to_rfc3339())
+    chrono::DateTime::from_timestamp(secs, millis * 1_000_000).map_or_else(
+        || "1970-01-01T00:00:00.000Z".to_string(),
+        |dt| dt.to_rfc3339(),
+    )
 }
 
 // ─── WASM exports ──────────────────────────────────────────────────────────────
@@ -393,7 +397,7 @@ pub fn play_out_process_tree(
 #[wasm_bindgen]
 pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue> {
     // Parse the DFG from JSON
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: crate::models::DFG = serde_json::from_str(dfg_json)
         .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid DFG JSON: {}", e)))?;
 
     // Parse parameters with defaults
@@ -447,7 +451,7 @@ pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue
 mod tests {
     use super::*;
     use crate::powl_process_tree::ProcessTree;
-    use std::collections::{HashMap, BTreeMap};
+    use std::collections::{BTreeMap, HashMap};
 
     fn default_params() -> PlayOutParameters {
         PlayOutParameters {
@@ -687,7 +691,7 @@ mod tests {
                 AttributeValue::Date(s) => {
                     assert!(!s.is_empty(), "Date string should not be empty")
                 }
-                other => panic!("Expected AttributeValue::Date, got {:?}", other),
+                other => unreachable!("Expected AttributeValue::Date, got {:?}", other),
             }
         }
     }

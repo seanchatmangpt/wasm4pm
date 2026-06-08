@@ -64,7 +64,7 @@ export function assertVerifyResult(raw: unknown): VerifyResult {
   return raw as unknown as VerifyResult;
 }
 
-/** `system_build` output per `wasm.rs:287-290`. Refuses legacy `candidates`. */
+/** `system_build` output per `wasm.rs:287-290`. Refuses  `candidates`. */
 export function assertSystemBuildResult(raw: unknown): SystemBuildResult {
   if (!isObj(raw)) reject('system_build', `expected object`);
   if (!Array.isArray(raw.pareto_front))
@@ -72,7 +72,7 @@ export function assertSystemBuildResult(raw: unknown): SystemBuildResult {
   if (!Array.isArray(raw.dominated))
     reject('system_build', `dominated must be an array`);
   if ('candidates' in raw)
-    reject('system_build', `legacy 'candidates' field — Rust emits pareto_front/dominated`);
+    reject('system_build', ` 'candidates' field — Rust emits pareto_front/dominated`);
   return raw as unknown as SystemBuildResult;
 }
 

@@ -4,8 +4,8 @@
 //!
 //! Detects when the underlying data distribution changes over time.
 
-use wasm_bindgen::prelude::*;
 use std::collections::HashSet;
+use wasm_bindgen::prelude::*;
 
 /// Drift point detected in a sequence
 #[derive(Clone, Debug)]
@@ -229,11 +229,8 @@ pub fn detect_statistical_drift(
     let mut drift_points = Vec::new();
     let mut prev_mean = values[..window_size].iter().sum::<f64>() / window_size as f64;
     let mut prev_std = {
-        let mean_sq = values[..window_size]
-            .iter()
-            .map(|&v| v * v)
-            .sum::<f64>()
-            / window_size as f64;
+        let mean_sq =
+            values[..window_size].iter().map(|&v| v * v).sum::<f64>() / window_size as f64;
         (mean_sq - prev_mean * prev_mean).sqrt().max(0.0)
     };
 

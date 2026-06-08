@@ -39,7 +39,7 @@ describe('assertContractResult', () => {
   it('rejects status drift', () => {
     expect(() => assertContractResult({ ...OK, status: 'rejected' })).toThrow(/status/);
   });
-  it('rejects legacy `hash` field (Rust emits output_hash)', () => {
+  it('rejects  `hash` field (Rust emits output_hash)', () => {
     const { output_hash: _d, ...rest } = OK;
     void _d;
     expect(() => assertContractResult({ ...rest, hash: OUTPUT_HASH })).toThrow(/output_hash/);
@@ -95,7 +95,7 @@ describe('assertSystemBuildResult', () => {
       assertSystemBuildResult({ pareto_front: [], dominated: [] }),
     ).not.toThrow();
   });
-  it('rejects legacy `candidates` field', () => {
+  it('rejects  `candidates` field', () => {
     expect(() =>
       assertSystemBuildResult({ pareto_front: [], dominated: [], candidates: [] }),
     ).toThrow(/candidates/);
@@ -108,7 +108,7 @@ describe('assertSystemVerifyResult', () => {
       assertSystemVerifyResult({ target: 's', status: 'verified', findings: [] }),
     ).not.toThrow();
   });
-  it('tolerates legacy status: "ok"', () => {
+  it('tolerates  status: "ok"', () => {
     expect(() =>
       assertSystemVerifyResult({ target: 's', status: 'ok', findings: [] }),
     ).not.toThrow();

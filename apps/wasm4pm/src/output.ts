@@ -59,7 +59,7 @@ export interface CommandResult<T = unknown> {
 
 /** Emit options — replaces OutputOptions for the canonical path */
 export interface EmitOptions {
-  format: 'json' | 'sarif' | 'jsonl' | 'human';
+  format?: 'json' | 'sarif' | 'jsonl' | 'human' | 'csv';
   verbose?: boolean | number; // true = 1, can be 1, 2, 3 for -v, -vv, -vvv
   verboseLevel?: 0 | 1 | 2 | 3; // Explicit level (0=default, 1=debug, 2=decision, 3=spans)
   quiet?: boolean;
@@ -87,6 +87,20 @@ export function emitResult<T>(
   }
 
   switch (options.format) {
+    case 'csv':
+      if (!options.quiet) {
+        const projection = new ConsoleProjection(options);
+        if (consoleRenderer) {
+          consoleRenderer(result, projection);
+        } else {
+          projection.log('key,value');
+          projection.log(`command,${result.command}`);
+          projection.log(`status,${result.status}`);
+          projection.log(`exit_code,${result.exit_code}`);
+          projection.log(`message,"${result.message.replace(/"/g, '""')}"`);
+        }
+      }
+      break;
     case 'json':
       // Machine-readable JSON is always emitted when requested — even with --quiet.
       // Hooks (e.g. stop-proof-gate.sh) rely on `wpm … --format json --quiet`.
@@ -295,89 +309,189 @@ function codeToErrorType(code: string): 'config' | 'source' | 'execution' | 'sys
 // Non-authoritative console display. Human readability is NOT the output contract.
 // Use emitResult() + a ConsoleRenderer for all command output.
 
+function stripEmojis(text: string): string {
+  const replacementMap: Record<string, string> = {
+    '🎯': '[Goal]',
+    '💡': '[Tip]',
+    '📊': '[Chart]',
+    '✔': '[OK]',
+    '✓': '[OK]',
+    '✗': '[ERR]',
+    '⚠': '[WARN]',
+    '◐': '[Medium]',
+    '◕': '[Low]',
+    '░': '-',
+    '▓': '#',
+  };
+
+  let result = text;
+  for (const [emoji, replacement] of Object.entries(replacementMap)) {
+    result = result.split(emoji).join(replacement);
+  }
+  return result;
+}
+
 export class ConsoleProjection {
   readonly verbose: boolean;
   readonly verboseLevel: 0 | 1 | 2 | 3; // 0=normal, 1=debug, 2=decision, 3=spans
   readonly quiet: boolean;
+  readonly noColor: boolean;
+  readonly noEmoji: boolean;
 
-  constructor(options: { verbose?: boolean | number; verboseLevel?: 0 | 1 | 2 | 3; quiet?: boolean } = {}) {
+  constructor(options: EmitOptions = {} as EmitOptions) {
     this.verbose = !!options.verbose;
-    this.verboseLevel = normalizeVerboseLevel(options as EmitOptions);
+    this.verboseLevel = normalizeVerboseLevel(options);
     this.quiet = options.quiet ?? false;
+
+    // Check CI environments, NO_COLOR environment variables, and CLI parameters
+    const isCI = !!process.env.CI;
+    const hasNoColorArg = options.noColor || process.argv.includes('--no-color');
+    const hasNoEmojiArg = options.noEmoji || process.argv.includes('--no-emoji');
+
+    this.noColor = !!hasNoColorArg || !!process.env.NO_COLOR || isCI;
+    this.noEmoji = !!hasNoEmojiArg || isCI;
+
+    if (this.noColor) {
+      process.env.NO_COLOR = '1';
+    }
   }
 
   success(message: string): void {
-    if (!this.quiet) consola.success(message);
+    if (this.quiet) return;
+    let msg = message;
+    if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    if (this.noEmoji) msg = stripEmojis(msg);
+
+    if (this.noColor || this.noEmoji) {
+      consola.log(`[OK] ${msg}`);
+    } else {
+      consola.success(msg);
+    }
   }
 
   info(message: string): void {
-    if (!this.quiet) consola.info(message);
+    if (this.quiet) return;
+    let msg = message;
+    if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    if (this.noEmoji) msg = stripEmojis(msg);
+
+    if (this.noColor || this.noEmoji) {
+      consola.log(`[INFO] ${msg}`);
+    } else {
+      consola.info(msg);
+    }
   }
 
   warn(message: string): void {
-    consola.warn(message);
+    let msg = message;
+    if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    if (this.noEmoji) msg = stripEmojis(msg);
+
+    if (this.noColor || this.noEmoji) {
+      consola.log(`[WARN] ${msg}`);
+    } else {
+      consola.warn(msg);
+    }
   }
 
   error(message: string): void {
-    consola.error(message);
+    let msg = message;
+    if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+    if (this.noEmoji) msg = stripEmojis(msg);
+
+    if (this.noColor || this.noEmoji) {
+      consola.log(`[ERROR] ${msg}`);
+    } else {
+      consola.error(msg);
+    }
   }
 
   /** Level 1: debug logs and diagnostic info */
   debug(message: string): void {
     if (this.verboseLevel >= 1 && !this.quiet) {
-      consola.log(`${'\x1b[2m'}[DEBUG]${'\x1b[0m'} ${message}`);
+      let msg = message;
+      if (this.noColor) {
+        msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        consola.log(`[DEBUG] ${msg}`);
+      } else {
+        if (this.noEmoji) msg = stripEmojis(msg);
+        consola.log(`${'\x1b[2m'}[DEBUG]${'\x1b[0m'} ${msg}`);
+      }
     }
   }
 
   /** Level 2: decision tree and reasoning (why was this chosen?) */
   decision(message: string): void {
     if (this.verboseLevel >= 2 && !this.quiet) {
-      consola.log(`${'\x1b[36m'}[DECISION]${'\x1b[0m'} ${message}`);
+      let msg = message;
+      if (this.noColor) {
+        msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        consola.log(`[DECISION] ${msg}`);
+      } else {
+        if (this.noEmoji) msg = stripEmojis(msg);
+        consola.log(`${'\x1b[36m'}[DECISION]${'\x1b[0m'} ${msg}`);
+      }
     }
   }
 
   /** Level 3: OTEL span IDs for Jaeger correlation */
   span(message: string, spanId?: string): void {
     if (this.verboseLevel >= 3 && !this.quiet) {
-      const span = spanId ? ` ${'\x1b[33m'}(${spanId})${'\x1b[0m'}` : '';
-      consola.log(`${'\x1b[35m'}[SPAN]${'\x1b[0m'} ${message}${span}`);
+      let msg = message;
+      if (this.noColor) {
+        msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+        consola.log(`[SPAN] ${msg}${spanId ? ` (${spanId})` : ''}`);
+      } else {
+        if (this.noEmoji) msg = stripEmojis(msg);
+        const span = spanId ? ` ${'\x1b[33m'}(${spanId})${'\x1b[0m'}` : '';
+        consola.log(`${'\x1b[35m'}[SPAN]${'\x1b[0m'} ${msg}${span}`);
+      }
     }
   }
 
   box(message: string): void {
-    if (!this.quiet) consola.box(message);
+    if (!this.quiet) {
+      let msg = message;
+      if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+      if (this.noEmoji) msg = stripEmojis(msg);
+      consola.box(msg);
+    }
   }
 
   log(message: string, data?: Record<string, unknown>): void {
     if (!this.quiet) {
+      let msg = message;
+      if (this.noColor) msg = msg.replace(/\x1b\[[0-9;]*[a-zA-Z]/g, '');
+      if (this.noEmoji) msg = stripEmojis(msg);
+
       if (data && Object.keys(data).length > 0) {
-        console.log(message, data);
+        console.log(msg, data);
       } else {
-        console.log(message);
+        console.log(msg);
       }
     }
   }
 }
 
-// ─── Backward-compat (deprecated) ────────────────────────────────────────────
+// ─── Backward-compat (removed) ────────────────────────────────────────────
 // These remain for the duration of the migration. New code must use
 // CommandResult<T> + emitResult(). Do not add new callers.
 
-/** @deprecated Use CommandResult<T> + emitResult() instead */
+/** @removed Use CommandResult<T> + emitResult() instead */
 export interface OutputOptions {
   format?: 'human' | 'json';
   verbose?: boolean;
   quiet?: boolean;
 }
 
-/** @deprecated Use ConsoleProjection instead */
+/** @removed Use ConsoleProjection instead */
 export class HumanFormatter extends ConsoleProjection {
   constructor(options: OutputOptions = {}) {
     super(options as unknown as EmitOptions);
   }
 }
 
-/** @deprecated Internal to emitResult(). Do not use in new code. */
+/** @removed Internal to emitResult(). Do not use in new code. */
 export class JSONFormatter {
   private quiet: boolean;
 
@@ -416,7 +530,7 @@ export class JSONFormatter {
   }
 }
 
-/** @deprecated Use emitResult() instead */
+/** @removed Use emitResult() instead */
 export function getFormatter(options: OutputOptions = {}): HumanFormatter | JSONFormatter {
   if (options.format === 'json') {
     return new JSONFormatter(options);

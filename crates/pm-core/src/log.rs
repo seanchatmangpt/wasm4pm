@@ -185,11 +185,7 @@ impl core::hash::Hash for XesAttribute {
             XesAttribute::Int(i) => i.hash(state),
             XesAttribute::Float(f) => {
                 // Canonical bit pattern: treat NaN as a single canonical value (all-ones mantissa).
-                let bits: u64 = if f.is_nan() {
-                    u64::MAX
-                } else {
-                    f.to_bits()
-                };
+                let bits: u64 = if f.is_nan() { u64::MAX } else { f.to_bits() };
                 bits.hash(state);
             }
             XesAttribute::DateNs(n) => n.hash(state),
@@ -263,8 +259,8 @@ mod serde_impl {
 
     impl<'de> Deserialize<'de> for XesAttribute {
         fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-            use serde::de::{self, MapAccess, Visitor};
             use alloc::string::ToString;
+            use serde::de::{self, MapAccess, Visitor};
 
             struct AttrVisitor;
 
@@ -275,7 +271,10 @@ mod serde_impl {
                     f.write_str("a map with 'type' and 'value' keys")
                 }
 
-                fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<XesAttribute, A::Error> {
+                fn visit_map<A: MapAccess<'de>>(
+                    self,
+                    mut map: A,
+                ) -> Result<XesAttribute, A::Error> {
                     use serde_json::Value as JV;
 
                     let mut typ: Option<alloc::string::String> = None;
@@ -285,7 +284,9 @@ mod serde_impl {
                         match key.as_str() {
                             "type" => typ = Some(map.next_value()?),
                             "value" => val = Some(map.next_value()?),
-                            _ => { let _: serde_json::Value = map.next_value()?; }
+                            _ => {
+                                let _: serde_json::Value = map.next_value()?;
+                            }
                         }
                     }
 
@@ -298,22 +299,33 @@ mod serde_impl {
                             Ok(XesAttribute::String(s))
                         }
                         "int" => {
-                            let i = val.as_i64().ok_or_else(|| de::Error::custom("expected i64"))?;
+                            let i = val
+                                .as_i64()
+                                .ok_or_else(|| de::Error::custom("expected i64"))?;
                             Ok(XesAttribute::Int(i))
                         }
                         "float" => {
-                            let f = val.as_f64().ok_or_else(|| de::Error::custom("expected f64"))?;
+                            let f = val
+                                .as_f64()
+                                .ok_or_else(|| de::Error::custom("expected f64"))?;
                             Ok(XesAttribute::Float(f))
                         }
                         "date_ns" => {
-                            let n = val.as_i64().ok_or_else(|| de::Error::custom("expected i64 ns"))?;
+                            let n = val
+                                .as_i64()
+                                .ok_or_else(|| de::Error::custom("expected i64 ns"))?;
                             Ok(XesAttribute::DateNs(n))
                         }
                         "boolean" => {
-                            let b = val.as_bool().ok_or_else(|| de::Error::custom("expected bool"))?;
+                            let b = val
+                                .as_bool()
+                                .ok_or_else(|| de::Error::custom("expected bool"))?;
                             Ok(XesAttribute::Boolean(b))
                         }
-                        _ => Err(de::Error::custom(alloc::format!("unknown XesAttribute type: {}", typ))),
+                        _ => Err(de::Error::custom(alloc::format!(
+                            "unknown XesAttribute type: {}",
+                            typ
+                        ))),
                     }
                 }
             }
@@ -424,7 +436,9 @@ impl Ord for XesEvent {
     /// lexicographic on the full attribute map for tie-breaking.
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         match (self.timestamp_ns(), other.timestamp_ns()) {
-            (Some(a), Some(b)) => a.cmp(&b).then_with(|| self.attributes.cmp(&other.attributes)),
+            (Some(a), Some(b)) => a
+                .cmp(&b)
+                .then_with(|| self.attributes.cmp(&other.attributes)),
             (Some(_), None) => core::cmp::Ordering::Less,
             (None, Some(_)) => core::cmp::Ordering::Greater,
             (None, None) => self.attributes.cmp(&other.attributes),
@@ -604,7 +618,9 @@ impl<'de> serde::Deserialize<'de> for XesTrace {
                     match key.as_str() {
                         "attributes" => attributes = Some(map.next_value()?),
                         "events" => events = Some(map.next_value()?),
-                        _ => { let _: serde_json::Value = map.next_value()?; }
+                        _ => {
+                            let _: serde_json::Value = map.next_value()?;
+                        }
                     }
                 }
 
@@ -821,7 +837,9 @@ impl<'de> serde::Deserialize<'de> for XesLog {
                     match key.as_str() {
                         "attributes" => attributes = Some(map.next_value()?),
                         "traces" => traces = Some(map.next_value()?),
-                        _ => { let _: serde_json::Value = map.next_value()?; }
+                        _ => {
+                            let _: serde_json::Value = map.next_value()?;
+                        }
                     }
                 }
 
@@ -940,10 +958,7 @@ mod tests {
             alloc::string::String::from("time:timestamp"),
             XesAttribute::DateNs(1_700_000_000_000_000_000),
         );
-        assert_eq!(
-            event.timestamp_ns(),
-            Some(1_700_000_000_000_000_000)
-        );
+        assert_eq!(event.timestamp_ns(), Some(1_700_000_000_000_000_000));
     }
 
     /// Verify XesLog::all_events() yields all trace/event pairs in order.
@@ -983,7 +998,7 @@ mod tests {
             assert_eq!(keys[0], "a");
             assert_eq!(keys[1], "z");
         } else {
-            panic!("expected Container variant");
+            unreachable!("expected Container variant");
         }
     }
 }

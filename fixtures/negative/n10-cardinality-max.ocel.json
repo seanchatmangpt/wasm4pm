@@ -1,7 +1,7 @@
 {
   "_comment": "NEGATIVE FIXTURE N10 — O2O / object-type cardinality violation. The route declares Order with max_count=1 (one order per Order-to-Cash case), but this log carries TWO Order instances (order-1, order-2). Validated with the field cardinality window. Minimal counterexample: delete order-2 and the count returns to 1 (lawful).",
   "expected_refusal": "ObjectLifecycleViolation",
-  "rejecting_primitive": "ocel_core::validate (CARDINALITY_MAX)",
+  "rejecting_primitive": "wasm4pm_compat::ocel::validate (CARDINALITY_MAX)",
   "cardinality": {
     "Order": { "created_by": ["Create Order"], "min_count": 1, "max_count": 1 }
   },

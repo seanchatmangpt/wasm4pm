@@ -5,8 +5,8 @@
 //! Provides sequence prediction, trend detection, and
 //! statistical modeling algorithms.
 
-use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Shannon entropy of a probability distribution
 fn entropy(probs: &[f64]) -> f64 {
@@ -75,10 +75,7 @@ pub fn predict_top_k(
         }
     }
 
-    candidates.sort_by(|a, b| {
-        b.1.partial_cmp(&a.1)
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
     let top_k = k.min(candidates.len());
     let items: Vec<String> = candidates
@@ -86,11 +83,7 @@ pub fn predict_top_k(
         .take(top_k)
         .map(|(i, _)| i.clone())
         .collect();
-    let probabilities: Vec<f64> = candidates
-        .iter()
-        .take(top_k)
-        .map(|(_, p)| *p)
-        .collect();
+    let probabilities: Vec<f64> = candidates.iter().take(top_k).map(|(_, p)| *p).collect();
 
     let confidence = probabilities.first().copied().unwrap_or(0.0);
     let ent = entropy(&probabilities);
@@ -166,10 +159,7 @@ pub fn beam_search(
             }
         }
 
-        next_beams.sort_by(|a, b| {
-            b.1.partial_cmp(&a.1)
-                .unwrap_or(std::cmp::Ordering::Equal)
-        });
+        next_beams.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         beams = next_beams.into_iter().take(beam_width).collect();
     }
 
@@ -319,7 +309,11 @@ pub fn build_transition_graph<T: std::hash::Hash + Eq + Clone + std::fmt::Displa
         .map(|((from, to), count)| {
             let total = state_totals.get(&from).copied().unwrap_or(1);
             let prob = count as f64 / total as f64;
-            TransitionEdge { from, to, probability: prob }
+            TransitionEdge {
+                from,
+                to,
+                probability: prob,
+            }
         })
         .collect();
     edges.sort_by(|a, b| {
@@ -419,7 +413,11 @@ pub fn extract_prefix_features<T: std::hash::Hash + Eq + Clone + std::fmt::Displ
     } else {
         0.0
     };
-    let norm_ent = if max_ent > 0.0 { item_entropy / max_ent } else { 0.0 };
+    let norm_ent = if max_ent > 0.0 {
+        item_entropy / max_ent
+    } else {
+        0.0
+    };
 
     PrefixFeatures {
         length,
@@ -438,15 +436,10 @@ pub fn extract_prefix_features<T: std::hash::Hash + Eq + Clone + std::fmt::Displ
 ///
 /// # Returns
 /// Probability of normal completion [0, 1]
-pub fn boundary_coverage<T: PartialEq>(
-    prefix: &[T],
-    complete_sequences: &[Vec<T>],
-) -> f64 {
+pub fn boundary_coverage<T: PartialEq>(prefix: &[T], complete_sequences: &[Vec<T>]) -> f64 {
     let matching: Vec<&Vec<T>> = complete_sequences
         .iter()
-        .filter(|trace| {
-            trace.len() >= prefix.len() && &trace[..prefix.len()] == prefix
-        })
+        .filter(|trace| trace.len() >= prefix.len() && &trace[..prefix.len()] == prefix)
         .collect();
 
     if matching.is_empty() {
@@ -467,7 +460,10 @@ pub fn boundary_coverage<T: PartialEq>(
     let sigma = variance.sqrt();
     let threshold = median as f64 + 2.0 * sigma;
 
-    let normal_count = lengths.iter().filter(|&&len| (len as f64) <= threshold).count();
+    let normal_count = lengths
+        .iter()
+        .filter(|&&len| (len as f64) <= threshold)
+        .count();
     normal_count as f64 / lengths.len() as f64
 }
 
@@ -527,7 +523,12 @@ mod tests {
         next02.insert(3, 2);
         counts.insert(vec![0, 2], next02);
 
-        let vocab = vec!["A".to_string(), "B".to_string(), "C".to_string(), "D".to_string()];
+        let vocab = vec![
+            "A".to_string(),
+            "B".to_string(),
+            "C".to_string(),
+            "D".to_string(),
+        ];
         let paths = beam_search(&counts, &vocab, &[0], 2, 2);
 
         assert!(!paths.is_empty());
@@ -565,11 +566,7 @@ mod tests {
 
     #[test]
     fn test_boundary_coverage() {
-        let sequences = vec![
-            vec![1, 2, 3],
-            vec![1, 2, 3, 4],
-            vec![1, 2, 3, 4, 5],
-        ];
+        let sequences = vec![vec![1, 2, 3], vec![1, 2, 3, 4], vec![1, 2, 3, 4, 5]];
 
         let coverage = boundary_coverage(&[1, 2], &sequences);
         assert!(coverage > 0.0 && coverage <= 1.0);
@@ -577,11 +574,7 @@ mod tests {
 
     #[test]
     fn test_transition_graph() {
-        let sequences = vec![
-            vec!["A", "B", "C"],
-            vec!["A", "B", "C"],
-            vec!["A", "B"],
-        ];
+        let sequences = vec![vec!["A", "B", "C"], vec!["A", "B", "C"], vec!["A", "B"]];
 
         let graph = build_transition_graph(&sequences);
 

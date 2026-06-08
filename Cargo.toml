@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocel-core", "crates/ocpq", "crates/pm-core"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocpq", "crates/pm-core", "crates/pm4py-lsp"]
 
 [workspace.package]
-version = "26.5.29"
+version = "26.6.5"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -22,15 +22,14 @@ rustc-hash = "2"
 blake3 = "1.5"
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-types = { version = "26.5.29", path = "crates/wasm4pm-types" }
-wasm4pm-algos = { version = "26.5.29", path = "crates/wasm4pm-algos" }
-wasm4pm-utils = { version = "26.5.29", path = "crates/wasm4pm-utils" }
-wasm4pm-cognition = { version = "26.5.29", path = "crates/wasm4pm-cognition" }
-wasm4pm-macros = { version = "26.5.29", path = "crates/wasm4pm-macros" }
-prolog8 = { version = "26.5.29", path = "crates/prolog8" }
-miniml = { version = "26.5.29", path = "crates/miniml-core" }
-ocel-core = { version = "26.5.30", path = "crates/ocel-core" }
-ocpq = { version = "26.5.30", path = "crates/ocpq" }
+wasm4pm-algos = { version = "26.6.5", path = "crates/wasm4pm-algos" }
+wasm4pm-utils = { version = "26.6.5", path = "crates/wasm4pm-utils" }
+wasm4pm-compat = { version = "26.6.5", path = "../wasm4pm-compat", features = ["wasm4pm"] }
+wasm4pm-cognition = { version = "26.6.5", path = "crates/wasm4pm-cognition" }
+wasm4pm-macros = { version = "26.6.5", path = "crates/wasm4pm-macros" }
+prolog8 = { version = "26.6.5", path = "crates/prolog8" }
+miniml = { version = "26.6.5", path = "crates/miniml-core" }
+ocpq = { version = "26.6.5", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 tempfile = "3.8"

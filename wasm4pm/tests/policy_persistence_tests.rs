@@ -26,11 +26,12 @@ fn test_save_load_roundtrip_with_real_q_table() {
     }
 
     // Create checkpoint with realistic metrics
-    let mut metrics = ConvergenceMetrics::default();
-    metrics.td_error_mean = 0.042;
-    metrics.q_max = 8.5;
-    metrics.learning_rate_current = 0.0763;
-    metrics.convergence_status = "converged".to_string();
+    let metrics = ConvergenceMetrics {
+        td_error_mean: 0.042,
+        q_max: 8.5,
+        learning_rate_current: 0.0763,
+        convergence_status: "converged".to_string(),
+    };
 
     let checkpoint = PolicyCheckpoint::new(
         "QLearning".to_string(),
@@ -41,7 +42,9 @@ fn test_save_load_roundtrip_with_real_q_table() {
     );
 
     // Save
-    checkpoint.save(&checkpoint_path).expect("Failed to save checkpoint");
+    checkpoint
+        .save(&checkpoint_path)
+        .expect("Failed to save checkpoint");
 
     // Load
     let loaded = PolicyCheckpoint::load(&checkpoint_path).expect("Failed to load checkpoint");
@@ -78,13 +81,22 @@ fn test_hash_integrity_verification() {
     );
 
     let original_hash = checkpoint.blake3_hash.clone();
-    assert!(checkpoint.verify_integrity(), "Original checkpoint hash should verify");
+    assert!(
+        checkpoint.verify_integrity(),
+        "Original checkpoint hash should verify"
+    );
 
     checkpoint.save(&checkpoint_path).expect("Save failed");
 
     let loaded = PolicyCheckpoint::load(&checkpoint_path).expect("Load failed");
-    assert_eq!(loaded.blake3_hash, original_hash, "Hash should match after roundtrip");
-    assert!(loaded.verify_integrity(), "Loaded checkpoint hash should verify");
+    assert_eq!(
+        loaded.blake3_hash, original_hash,
+        "Hash should match after roundtrip"
+    );
+    assert!(
+        loaded.verify_integrity(),
+        "Loaded checkpoint hash should verify"
+    );
 }
 
 #[test]
@@ -104,8 +116,7 @@ fn test_corrupt_hash_detection() {
 
     // Corrupt the saved file by modifying checkpoint_epoch
     let json_str = std::fs::read_to_string(&checkpoint_path).expect("Read failed");
-    let mut json_value: serde_json::Value =
-        serde_json::from_str(&json_str).expect("Parse failed");
+    let mut json_value: serde_json::Value = serde_json::from_str(&json_str).expect("Parse failed");
     json_value["checkpoint_epoch"] = serde_json::json!(9999); // Tamper
     std::fs::write(&checkpoint_path, json_value.to_string()).expect("Write failed");
 

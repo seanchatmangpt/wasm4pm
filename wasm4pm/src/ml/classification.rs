@@ -1,7 +1,7 @@
 //! Nanosecond Classification Family — branchless k-NN for process mining.
 
-use crate::state::{get_or_init_state, StoredObject};
 use crate::models::EventLog;
+use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
@@ -22,9 +22,7 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
     let state = get_or_init_state();
 
     let (features, labels) = state.with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            Ok(extract_features(log, activity_key))
-        }
+        Some(StoredObject::EventLog(log)) => Ok(extract_features(log, activity_key)),
         _ => Err(crate::error::js_val("not_found")),
     })?;
 
@@ -44,7 +42,13 @@ pub fn discover_ml_classify(eventlog_handle: &str, activity_key: &str) -> Result
 
     // Compute full classification metrics, not just accuracy. A single accuracy
     // figure cannot reveal class imbalance — see `knn_internal_metrics`.
-    let metrics = knn_internal_metrics(train_features, train_labels, test_features, test_labels, K_NEIGHBORS);
+    let metrics = knn_internal_metrics(
+        train_features,
+        train_labels,
+        test_features,
+        test_labels,
+        K_NEIGHBORS,
+    );
 
     to_js_val(&json!({
         "algorithm": "ml_classify",
@@ -72,7 +76,7 @@ pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<[f64; 2]>, V
 
     for i in 0..num_traces {
         let start = col.trace_offsets[i];
-        let end = col.trace_offsets[i+1];
+        let end = col.trace_offsets[i + 1];
         let len = (end - start) as f64;
 
         let mut unique = 0;
@@ -105,25 +109,29 @@ pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<[f64; 2]>, V
 
 /// Nanosecond Sweep: Multi-K Cross-Validation in a single pass over distances.
 #[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
-pub fn knn_sweep_cv(
-    features: &[[f64; 2]],
-    labels: &[u8],
-    folds: usize,
-    max_k: usize,
-) -> Vec<f64> {
+pub fn knn_sweep_cv(features: &[[f64; 2]], labels: &[u8], folds: usize, max_k: usize) -> Vec<f64> {
     let n = features.len();
-    if n == 0 { return vec![0.0; max_k + 1]; }
+    if n == 0 {
+        return vec![0.0; max_k + 1];
+    }
     let fold_size = n / folds;
     let max_k_eff = max_k.clamp(1, 32);
     let mut k_correct = vec![0usize; max_k_eff + 1];
 
     for fold in 0..folds {
         let test_start = fold * fold_size;
-        let test_end = if fold == folds - 1 { n } else { (fold + 1) * fold_size };
+        let test_end = if fold == folds - 1 {
+            n
+        } else {
+            (fold + 1) * fold_size
+        };
 
         for i in test_start..test_end {
             let test_f = &features[i];
-            let mut top_k = [Neighbor { dist: f64::MAX, label: 0 }; 32];
+            let mut top_k = [Neighbor {
+                dist: f64::MAX,
+                label: 0,
+            }; 32];
             let mut current_max_dist = f64::MAX;
 
             let train_ranges = [0..test_start, test_end..n];
@@ -131,7 +139,7 @@ pub fn knn_sweep_cv(
                 for j in range {
                     let dx = test_f[0] - features[j][0];
                     let dy = test_f[1] - features[j][1];
-                    let dist = dx*dx + dy*dy;
+                    let dist = dx * dx + dy * dy;
 
                     if dist < current_max_dist {
                         let mut d = dist;
@@ -202,7 +210,10 @@ pub fn knn_internal_metrics(
     let k_eff = k.clamp(1, 32);
 
     for (i, test_f) in test_x.iter().enumerate() {
-        let mut top_k = [Neighbor { dist: f64::MAX, label: 0 }; 32];
+        let mut top_k = [Neighbor {
+            dist: f64::MAX,
+            label: 0,
+        }; 32];
         let mut max_dist = f64::MAX;
         let tx = test_f[0];
         let ty = test_f[1];
@@ -245,7 +256,11 @@ pub fn knn_internal_metrics(
 
     let total: u64 = conf.iter().flatten().sum();
     let correct: u64 = (0..3).map(|c| conf[c][c]).sum();
-    let accuracy = if total == 0 { 0.0 } else { correct as f64 / total as f64 };
+    let accuracy = if total == 0 {
+        0.0
+    } else {
+        correct as f64 / total as f64
+    };
 
     let mut per_class_f1 = [0.0f64; 3];
     let mut sum_p = 0.0;
@@ -297,13 +312,16 @@ pub fn knn_internal(
     train_y: &[u8],
     test_x: &[[f64; 2]],
     test_y: &[u8],
-    k: usize
+    k: usize,
 ) -> f64 {
     let mut correct = 0;
     let k_eff = k.clamp(1, 32);
 
     for (i, test_f) in test_x.iter().enumerate() {
-        let mut top_k = [Neighbor { dist: f64::MAX, label: 0 }; 32];
+        let mut top_k = [Neighbor {
+            dist: f64::MAX,
+            label: 0,
+        }; 32];
         let mut max_dist = f64::MAX;
 
         let tx = test_f[0];
@@ -316,10 +334,26 @@ pub fn knn_internal(
 
         for (tc, tyc) in train_chunks.zip(train_y_chunks) {
             // Unrolled distance calculation to saturate pipeline and allow auto-vectorization
-            let d0 = { let dx = tx - tc[0][0]; let dy = ty - tc[0][1]; dx*dx + dy*dy };
-            let d1 = { let dx = tx - tc[1][0]; let dy = ty - tc[1][1]; dx*dx + dy*dy };
-            let d2 = { let dx = tx - tc[2][0]; let dy = ty - tc[2][1]; dx*dx + dy*dy };
-            let d3 = { let dx = tx - tc[3][0]; let dy = ty - tc[3][1]; dx*dx + dy*dy };
+            let d0 = {
+                let dx = tx - tc[0][0];
+                let dy = ty - tc[0][1];
+                dx * dx + dy * dy
+            };
+            let d1 = {
+                let dx = tx - tc[1][0];
+                let dy = ty - tc[1][1];
+                dx * dx + dy * dy
+            };
+            let d2 = {
+                let dx = tx - tc[2][0];
+                let dy = ty - tc[2][1];
+                dx * dx + dy * dy
+            };
+            let d3 = {
+                let dx = tx - tc[3][0];
+                let dy = ty - tc[3][1];
+                dx * dx + dy * dy
+            };
 
             // We only enter the branchless insertion loop if at least one candidate is better
             // This preserves branchless throughput for the common case (far neighbors)
@@ -347,7 +381,7 @@ pub fn knn_internal(
         for (train_f, &label) in rem_x.iter().zip(rem_y.iter()) {
             let dx = tx - train_f[0];
             let dy = ty - train_f[1];
-            let dist = dx*dx + dy*dy;
+            let dist = dx * dx + dy * dy;
 
             if dist < max_dist {
                 let mut d = dist;
@@ -387,7 +421,9 @@ pub fn knn_internal(
         }
     }
 
-    if test_x.is_empty() { return 0.0; }
+    if test_x.is_empty() {
+        return 0.0;
+    }
     correct as f64 / test_x.len() as f64
 }
 

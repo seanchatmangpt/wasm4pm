@@ -69,7 +69,7 @@ COMPLETION: May 6, 2026
    ✓ decision_graph_fall_through() - Enhanced
      - Now attempts MineDG first (primary strategy)
      - Falls back to standard_decision_graph_fall_through() on failure
-     - Maintains backward compatibility
+     - Maintains baseline admissibility
 
    ✓ standard_decision_graph_fall_through()
      - Extracted standard decision graph logic (previously in decision_graph_fall_through)
@@ -215,7 +215,7 @@ Documentation:
 Integration:
 ✓ Uses existing PowlArena API (add_transition, add_operator, add_decision_graph)
 ✓ Properly imports choice_graph module in fall_through.rs
-✓ Maintains backward compatibility (optional MineDG, falls back to standard DG)
+✓ Maintains baseline admissibility (optional MineDG, falls back to standard DG)
 ✓ No changes to public APIs
 
 ================================================================================

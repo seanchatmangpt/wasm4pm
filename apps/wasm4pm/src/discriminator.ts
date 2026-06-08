@@ -154,6 +154,20 @@ export function discriminate(raw: unknown, algorithmId?: string): DiscoveryShape
     };
   }
 
+  // 7. Handle-only DFG (simd_streaming_dfg): the WASM kernel stores the full DFG
+  //    in WASM memory and returns only the opaque handle string with no metadata
+  //    counts. This occurs when discover_dfg_simd_handle() is used — the model is
+  //    valid but all structural counts are unknown at the JS boundary.
+  //    Classify as DFG with nodes=0/edges=0 (unknown, not empty).
+  if (typeof obj['handle'] === 'string' && Object.keys(obj).length === 1) {
+    return {
+      kind: 'dfg',
+      nodes: 0,
+      edges: 0,
+      raw: obj,
+    };
+  }
+
   throw new DiscoveryShapeError(algorithmId ?? 'unknown', Object.keys(obj));
 }
 

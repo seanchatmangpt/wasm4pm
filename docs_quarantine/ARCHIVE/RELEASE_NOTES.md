@@ -346,7 +346,7 @@ npm install @wasm4pm/cli@26.4.10
 
 ## Headline Features: Enterprise-Grade Process Mining Platform
 
-This major release transforms wasm4pm from a pure WebAssembly library into a comprehensive, production-ready process mining platform. We've added 10 new packages spanning configuration management, service infrastructure, observability, and automation—while maintaining 100% backward compatibility with the existing JavaScript/TypeScript API.
+This major release transforms wasm4pm from a pure WebAssembly library into a comprehensive, production-ready process mining platform. We've added 10 new packages spanning configuration management, service infrastructure, observability, and automation—while maintaining 100% baseline admissibility with the existing JavaScript/TypeScript API.
 
 ### Key Achievements
 - **10 New Packages** - Microservice-ready architecture
@@ -480,7 +480,7 @@ Comprehensive type definitions and validation schemas for all wasm4pm concepts.
 - **Builder Pattern** - Fluent API for complex objects
 - **Comprehensive Errors** - Typed error variants
 - **Trace/Metrics** - Performance and audit tracking
-- **Compatibility Layer** - Version checking and migration paths
+- **baseline** - Version checking and migration paths
 
 #### Example Usage
 ```typescript
@@ -738,7 +738,7 @@ Object-Centric Event Log (OCEL) support and extensions.
 
 ## Breaking Changes
 
-**None.** This release maintains 100% backward compatibility with v26.4.4.
+**None.** This release maintains 100% baseline admissibility with v26.4.4.
 
 All existing JavaScript/TypeScript code using the `wasm4pm` package will continue to work without modifications. The new packages are additive and optional.
 
@@ -1061,7 +1061,7 @@ pnpm test
 
 ---
 
-## Deprecations
+## Removals
 
 None in this release. All existing APIs remain supported.
 

@@ -134,9 +134,9 @@ enabled = false
 | `WASM4PM_OTEL_ENABLED`  | `observability.otel_enabled`  | `false`    | `WASM4PM_OTEL_ENABLED=true`                   |
 | `WASM4PM_OTEL_ENDPOINT` | `observability.otel_endpoint` | --         | `WASM4PM_OTEL_ENDPOINT=http://localhost:4317` |
 
-### Legacy ENV Variables (Backward Compatible)
+###  ENV Variables (Backward Compatible)
 
-| Legacy Variable         | Maps To                 |
+|  Variable         | Maps To                 |
 | ----------------------- | ----------------------- |
 | `WASM4PM_PROFILE`       | `WASM4PM_PROFILE`       |
 | `WASM4PM_ALGORITHM`     | `WASM4PM_ALGORITHM`     |

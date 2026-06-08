@@ -29,7 +29,7 @@ wasm4pm's cognition kernel is built from these primitives. LLMs render the resul
 ## What this IS
 
 - A real Rust crate with 9 implemented old-AI algorithms
-- A wasm-bindgen bridge to a thin TypeScript facade
+- A wasm-bindgen bridge to a thin TypeScript boundary
 - A CLI surface (`wpm cognition`) that emits machine-canonical receipts
 - An adversarial detector framework that catches false-pass patterns
 - A BLAKE3 receipt chain with cryptographic actor identity and external trust anchors
@@ -65,7 +65,7 @@ flowchart TD
     end
 
     subgraph "RIGHT (current)"
-        R_CLI[CLI] --> R_TS[TS facade\nforwarding only]
+        R_CLI[CLI] --> R_TS[TS boundary\nforwarding only]
         R_TS --> R_WASM[WASM boundary]
         R_WASM --> R_RUST[Rust breed\nreal inference]
         R_RUST --> R_RECEIPT[BLAKE3 receipt\ncryptographic proof]
@@ -281,7 +281,7 @@ flowchart TD
 sequenceDiagram
     participant U as User
     participant CLI as wpm CLI
-    participant TS as TS Facade
+    participant TS as TS boundary
     participant WB as wasm-bindgen
     participant RU as Rust kernel
     participant BR as Breed
@@ -399,7 +399,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    subgraph "v1 (deprecated, vulnerable)"
+    subgraph "v1 (removed, vulnerable)"
         V1S[BLAKE3(input_hash || output_hash\n|| prev_hash || pubkey || sig)]
         V1S --> V1BUG[Canonicalization attack:\nab+cd == a+bcd\ndifferent inputs, same hash]
     end
@@ -826,7 +826,7 @@ flowchart TD
 
     subgraph "TS monorepo"
         ENGINE2[engine\nstate machine]
-        KERNEL2[kernel\nWASM facade]
+        KERNEL2[kernel\nWASM boundary]
         CONFIG2[config\nZod-validated]
         PLANNER2[planner\nDAG]
         OBS2[observability\nOTEL]
@@ -840,7 +840,7 @@ flowchart TD
     subgraph "Rust"
         PM2[wasm4pm-algos\n41 algorithms]
         COG2[wasm4pm-cognition\n9 breeds\nadversarial gates\nBLAKE3 receipts]
-        TYPES2[wasm4pm-types]
+        TYPES2[wasm4pm-compat]
     end
 
     subgraph "Storage"

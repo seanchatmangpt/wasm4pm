@@ -20,21 +20,21 @@
 //! Measure: cumulative reward, convergence rate, action distribution.
 //! Expected: Pessimistic bias visible in positive-skew environments (all rewards positive).
 
+use std::collections::HashMap;
 use wasm4pm::rl_orchestrator::RlOrchestrator;
 use wasm4pm::RlState;
-use std::collections::HashMap;
 
 /// Stable system state — no alerts, no drift, circuit closed.
 fn stable_state() -> RlState {
     RlState {
-        health_level: 0,      // Normal
-        event_rate_q: 3,      // Mid-range event rate
-        activity_count_q: 3,  // Mid-range activity
-        spc_alert_level: 0,   // No SPC alerts
-        drift_status: 0,      // No drift
-        rework_ratio_q: 0,    // No rework
-        circuit_state: 0,     // Closed (healthy)
-        cycle_phase: 0,       // Phase 0
+        health_level: 0,     // Normal
+        event_rate_q: 3,     // Mid-range event rate
+        activity_count_q: 3, // Mid-range activity
+        spc_alert_level: 0,  // No SPC alerts
+        drift_status: 0,     // No drift
+        rework_ratio_q: 0,   // No rework
+        circuit_state: 0,    // Closed (healthy)
+        cycle_phase: 0,      // Phase 0
     }
 }
 
@@ -46,18 +46,19 @@ fn stable_features() -> [f32; 8] {
 /// Degraded system state — some alerts, some drift, elevated rework.
 fn degraded_state() -> RlState {
     RlState {
-        health_level: 2,      // Degraded
-        event_rate_q: 5,      // Higher event rate
-        activity_count_q: 5,  // More activities
-        spc_alert_level: 2,   // Multiple SPC alerts
-        drift_status: 1,      // Low drift
-        rework_ratio_q: 4,    // Moderate rework
-        circuit_state: 0,     // Closed but strained
+        health_level: 2,     // Degraded
+        event_rate_q: 5,     // Higher event rate
+        activity_count_q: 5, // More activities
+        spc_alert_level: 2,  // Multiple SPC alerts
+        drift_status: 1,     // Low drift
+        rework_ratio_q: 4,   // Moderate rework
+        circuit_state: 0,    // Closed but strained
         cycle_phase: 1,
     }
 }
 
 /// Features for degraded system.
+#[allow(dead_code)]
 fn degraded_features() -> [f32; 8] {
     [0.4, 0.4, 0.4, 0.3, 0.1, 0.5, 0.0, 0.15]
 }
@@ -73,9 +74,15 @@ fn degraded_features() -> [f32; 8] {
 #[test]
 fn test_baseline_stable_convergence_per_agent() {
     let seeds = [42u64, 123, 456, 789, 999];
-    let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
+    let agent_names = [
+        "QLearning",
+        "SARSA",
+        "DoubleQLearning",
+        "ExpectedSARSA",
+        "REINFORCE",
+    ];
 
-    for (agent_idx, agent_name) in agent_names.iter().enumerate() {
+    for (_agent_idx, agent_name) in agent_names.iter().enumerate() {
         let mut results_per_seed: Vec<(u64, f32)> = Vec::new();
 
         for seed in seeds {
@@ -128,7 +135,13 @@ fn test_baseline_stable_convergence_per_agent() {
 #[test]
 fn test_convergence_rate_comparison() {
     let agent_indices = [0, 1, 2, 3, 4];
-    let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
+    let agent_names = [
+        "QLearning",
+        "SARSA",
+        "DoubleQLearning",
+        "ExpectedSARSA",
+        "REINFORCE",
+    ];
 
     let mut convergence_cycles: Vec<(usize, String)> = Vec::new();
 
@@ -183,9 +196,15 @@ fn test_convergence_rate_comparison() {
 /// Hypothesis: Pessimistic reward bias could cause "Continue" to dominate (safe action).
 #[test]
 fn test_action_distribution_diversity() {
-    let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
+    let agent_names = [
+        "QLearning",
+        "SARSA",
+        "DoubleQLearning",
+        "ExpectedSARSA",
+        "REINFORCE",
+    ];
 
-    for (agent_idx, agent_name) in agent_names.iter().enumerate() {
+    for (_agent_idx, agent_name) in agent_names.iter().enumerate() {
         let mut orch = RlOrchestrator::new_with_seed(42);
         let state = stable_state();
         let features = stable_features();
@@ -204,13 +223,23 @@ fn test_action_distribution_diversity() {
             assert!(
                 percentage < 80.0,
                 "Agent {} action '{}' dominates {:.1}% (should be <80%)",
-                agent_name, action, percentage
+                agent_name,
+                action,
+                percentage
             );
         }
 
-        eprintln!("\nAgent {} action distribution (out of {} cycles):", agent_name, total_actions);
+        eprintln!(
+            "\nAgent {} action distribution (out of {} cycles):",
+            agent_name, total_actions
+        );
         for (action, count) in action_counts {
-            eprintln!("  {}: {} ({:.1}%)", action, count, (count as f32 / total_actions as f32) * 100.0);
+            eprintln!(
+                "  {}: {} ({:.1}%)",
+                action,
+                count,
+                (count as f32 / total_actions as f32) * 100.0
+            );
         }
     }
 }
@@ -233,12 +262,14 @@ fn test_reward_asymmetry_pessimism_bias() {
     let mut baseline_actions: HashMap<String, usize> = HashMap::new();
 
     for cycle in 0..200 {
-        let (action, reward) = orch_baseline.run_cycle(&features, &state, &state, 0, true, true, false);
+        let (action, reward) =
+            orch_baseline.run_cycle(&features, &state, &state, 0, true, true, false);
         *baseline_actions.entry(action).or_insert(0) += 1;
 
         // Print first 10 cycles to see reward structure
         if cycle < 10 {
-            eprintln!("Cycle {}: reward = {:.3}, cumulative = {:.3}",
+            eprintln!(
+                "Cycle {}: reward = {:.3}, cumulative = {:.3}",
                 cycle,
                 reward,
                 orch_baseline.telemetry().cumulative_reward
@@ -271,7 +302,13 @@ fn test_reward_asymmetry_pessimism_bias() {
 /// are consistent (high correlation) across seeds. Inconsistency suggests instability.
 #[test]
 fn test_multiseed_reward_consistency() {
-    let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
+    let agent_names = [
+        "QLearning",
+        "SARSA",
+        "DoubleQLearning",
+        "ExpectedSARSA",
+        "REINFORCE",
+    ];
     let seeds = [42u64, 123, 456, 789, 999];
 
     for agent_name in agent_names.iter() {
@@ -291,7 +328,11 @@ fn test_multiseed_reward_consistency() {
 
         // Compute coefficient of variation (CV = std_dev / mean)
         let mean: f32 = final_rewards.iter().sum::<f32>() / final_rewards.len() as f32;
-        let variance: f32 = final_rewards.iter().map(|r| (r - mean).powi(2)).sum::<f32>() / final_rewards.len() as f32;
+        let variance: f32 = final_rewards
+            .iter()
+            .map(|r| (r - mean).powi(2))
+            .sum::<f32>()
+            / final_rewards.len() as f32;
         let std_dev = variance.sqrt();
         let cv = std_dev / mean.abs();
 
@@ -326,23 +367,31 @@ fn test_reward_bounds_enforcement() {
 
     // Degraded state with maximum penalties
     let worst_state = RlState {
-        health_level: 4,       // Terminal
-        event_rate_q: 7,       // Max
-        activity_count_q: 7,   // Max
-        spc_alert_level: 3,    // Max alerts
-        drift_status: 2,       // Max drift
-        rework_ratio_q: 7,     // Max rework
-        circuit_state: 2,      // Open (unhealthy)
+        health_level: 4,     // Terminal
+        event_rate_q: 7,     // Max
+        activity_count_q: 7, // Max
+        spc_alert_level: 3,  // Max alerts
+        drift_status: 2,     // Max drift
+        rework_ratio_q: 7,   // Max rework
+        circuit_state: 2,    // Open (unhealthy)
         cycle_phase: 3,
     };
-    let worst_features = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+    let _worst_features = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
     let mut min_reward = f32::MAX;
     let mut max_reward = f32::MIN;
 
     // Run through diverse state transitions
     for _ in 0..100 {
-        let (_, reward) = orch.run_cycle(&healthy_features, &healthy, &worst_state, 10, false, false, true);
+        let (_, reward) = orch.run_cycle(
+            &healthy_features,
+            &healthy,
+            &worst_state,
+            10,
+            false,
+            false,
+            true,
+        );
         min_reward = min_reward.min(reward);
         max_reward = max_reward.max(reward);
     }
@@ -393,7 +442,15 @@ fn test_reward_component_sensitivity() {
         ..base_state
     };
     for _ in 0..100 {
-        let _ = orch.run_cycle(&features, &state_with_spc, &state_with_spc, 3, true, true, false);
+        let _ = orch.run_cycle(
+            &features,
+            &state_with_spc,
+            &state_with_spc,
+            3,
+            true,
+            true,
+            false,
+        );
     }
     let spc_reward = orch.telemetry().cumulative_reward;
     scenario_results.push(("SPC Alerts (3)".to_string(), spc_reward));
@@ -402,7 +459,15 @@ fn test_reward_component_sensitivity() {
     let mut orch = RlOrchestrator::new_with_seed(42);
     let degraded = degraded_state();
     for _ in 0..100 {
-        let _ = orch.run_cycle(&stable_features(), &degraded, &degraded, 0, true, true, false);
+        let _ = orch.run_cycle(
+            &stable_features(),
+            &degraded,
+            &degraded,
+            0,
+            true,
+            true,
+            false,
+        );
     }
     let health_reward = orch.telemetry().cumulative_reward;
     scenario_results.push(("Health Degraded".to_string(), health_reward));

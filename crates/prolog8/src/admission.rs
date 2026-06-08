@@ -5,7 +5,7 @@
 //! a caller that bypasses admission is a kernel-safety violation.
 
 use crate::catalog::Catalog;
-use crate::types::{Atom8, Rule8, ARITY_CAP, BODY_CAP, FeatureBit, VAR_CAP};
+use crate::types::{Atom8, FeatureBit, Rule8, ARITY_CAP, BODY_CAP, VAR_CAP};
 use serde::{Deserialize, Serialize};
 
 /// Structured rejection codes per ARD section 7.
@@ -147,11 +147,9 @@ pub fn admit_rule(rule: &Rule8, catalog: &Catalog) -> Result<(), RejectionCode> 
 
     // Feature mask: every set bit must be one of the 8 admitted features.
     // Since `FeatureBit` covers all 8 bit positions, any value of u8 is
-    // valid; this check is a placeholder for future extension where some
+    // valid; this ensures structural tightness even if some
     // bits become reserved.
-    let admitted = FeatureBit::ALL
-        .iter()
-        .fold(0u8, |acc, f| acc | f.mask());
+    let admitted = FeatureBit::ALL.iter().fold(0u8, |acc, f| acc | f.mask());
     if rule.feature_mask & !admitted != 0 {
         return Err(RejectionCode::FeatureBitNotAdmitted);
     }
@@ -173,7 +171,7 @@ pub fn admit_rule(rule: &Rule8, catalog: &Catalog) -> Result<(), RejectionCode> 
 mod tests {
     use super::*;
     use crate::catalog::{PredicateMeta, PredicateProofPolicy};
-    use crate::types::{Atom8, PredicateId, PlanId, RuleId, TermId, BINDING_PATTERNS};
+    use crate::types::{Atom8, PlanId, PredicateId, RuleId, TermId, BINDING_PATTERNS};
 
     fn cat_with_p(arity: u8) -> Catalog {
         let mut cat = Catalog::new(crate::types::CatalogId(1));
@@ -265,7 +263,10 @@ mod tests {
         rule.body_len = 9; // tampered
         rule.body_mask = 0xFF;
         // Caller deliberately broke invariants → admission must catch it.
-        assert_eq!(admit_rule(&rule, &cat), Err(RejectionCode::RuleBodyCapExceeded));
+        assert_eq!(
+            admit_rule(&rule, &cat),
+            Err(RejectionCode::RuleBodyCapExceeded)
+        );
     }
 
     #[test]

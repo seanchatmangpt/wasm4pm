@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::{validate_matrix, Rng};
+use wasm_bindgen::prelude::*;
 
 /// Split data into training and testing sets using Fisher-Yates shuffle.
 /// Returns: [n_train, n_test, n_features, X_train..., X_test..., y_train..., y_test...]

@@ -784,7 +784,7 @@ export const results = defineCommand({
             count: trendData.length,
             best: values.length > 0 ? Math.max(...values) : null,
             worst: values.length > 0 ? Math.min(...values) : null,
-            // Legacy field names kept for backward compat
+            //  field names kept for backward compat
             values,
             timestamps,
             trend: trendDirection,
@@ -1412,12 +1412,12 @@ export const results = defineCommand({
               id: i + 1,
               index: i + 1,
               // path is the canonical contract field; filepath is kept for
-              // backward compatibility with existing consumers.
+              // baseline admissibility with existing consumers.
               path: f.filepath,
               filepath: f.filepath,
               name: f.name,
               // timestamp is the canonical contract field; savedAt is kept for
-              // backward compatibility.
+              // baseline admissibility.
               timestamp: f.mtime.toISOString(),
               savedAt: f.mtime.toISOString(),
               task: taskName,

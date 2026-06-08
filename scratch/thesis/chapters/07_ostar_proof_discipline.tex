@@ -1,0 +1,15 @@
+
+\chapter{The Ostar Proof Discipline}
+\section{The Receipt Functor}
+Let $\mathbf{Exec}$ be the category of admitted execution states and bounded transitions. Let $\mathbf{Hash}$ be the category of digest states. The receipt functor $\rho: \mathbf{Exec} \to \mathbf{Hash}$ is defined by BLAKE3 integration:
+\begin{equation}
+\rho(S_{i+1}) = H_{i+1} = \mathrm{BLAKE3}(H_i \Vert id(f_i) \Vert S_{i+1} \Vert meta_i)
+\end{equation}
+Functoriality ensures $\rho(g\circ f) = \rho(g)\circ\rho(f)$. This creates a Merkle-DAG receipt $R_A = (h_{in}, h_{cfg}, \dots)$.
+
+\section{The Final Claim}
+This yields the compact doctrine of the thesis:
+\begin{equation}
+\boxed{R \vdash A = \mu(O^{\star})}
+\end{equation}
+Receipt falsifier: $\neg \exists R_A \Rightarrow \neg \vdash A$. No receipt, no claim. The receipt proves the manufactured consequence actually occurred within the WASM execution authority.

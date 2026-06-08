@@ -449,7 +449,7 @@ export async function executeMlTask(
 
   // ── Auto-selection: detect log characteristics for algorithm selection ──
   // Compute characteristics whenever autoSelect is enabled OR when no explicit method is given
-  // (to preserve backward compatibility with original auto-suggest behavior)
+  // (to preserve baseline admissibility with original auto-suggest behavior)
   let logCharacteristics: LogCharacteristics | undefined;
   if (options.autoSelect || !options.method) {
     try {

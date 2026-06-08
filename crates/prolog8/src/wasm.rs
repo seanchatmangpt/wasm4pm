@@ -294,14 +294,20 @@ pub fn prolog8_query(input_json: &str) -> Result<JsValue, JsValue> {
 
     let mut kernel = Kernel::new(parsed.catalog);
     for block in parsed.facts {
-        kernel
-            .load_facts(block.into_fact_block())
-            .map_err(|c| js_err(&format!("fact admission rejected: {}", rejection_message(c))))?;
+        kernel.load_facts(block.into_fact_block()).map_err(|c| {
+            js_err(&format!(
+                "fact admission rejected: {}",
+                rejection_message(c)
+            ))
+        })?;
     }
     for rule in parsed.rules {
-        kernel
-            .load_rule(rule)
-            .map_err(|c| js_err(&format!("rule admission rejected: {}", rejection_message(c))))?;
+        kernel.load_rule(rule).map_err(|c| {
+            js_err(&format!(
+                "rule admission rejected: {}",
+                rejection_message(c)
+            ))
+        })?;
     }
 
     let query = parsed.query.into_query_atom();
@@ -356,15 +362,19 @@ pub fn prolog8_replay(input_json: &str) -> Result<JsValue, JsValue> {
         kernel
             .load_facts(block.into_fact_block())
             .map_err(|c: RejectionCode| {
-                js_err(&format!("fact admission rejected: {}", rejection_message(c)))
+                js_err(&format!(
+                    "fact admission rejected: {}",
+                    rejection_message(c)
+                ))
             })?;
     }
     for rule in parsed.rules {
-        kernel
-            .load_rule(rule)
-            .map_err(|c: RejectionCode| {
-                js_err(&format!("rule admission rejected: {}", rejection_message(c)))
-            })?;
+        kernel.load_rule(rule).map_err(|c: RejectionCode| {
+            js_err(&format!(
+                "rule admission rejected: {}",
+                rejection_message(c)
+            ))
+        })?;
     }
 
     let query = parsed.query.into_query_atom();

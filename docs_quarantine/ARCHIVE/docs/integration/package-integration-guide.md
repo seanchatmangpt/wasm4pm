@@ -122,7 +122,7 @@ export interface EngineStatus {
 ```
 
 #### `@wasm4pm/kernel` (~800 lines)
-**Purpose:** Type-safe API facade over wasm4pm WASM algorithms  
+**Purpose:** Type-safe API boundary over wasm4pm WASM algorithms  
 **Exports:**
 - `Kernel` class — interface to load and invoke WASM algorithms
 - `AlgorithmRegistry` — catalog of available algorithms with metadata

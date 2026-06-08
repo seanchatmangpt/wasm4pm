@@ -187,11 +187,7 @@ impl JtbdRunner for DefaultJtbdRunner {
     }
 
     fn run_suite(&self, cases: &[JtbdCase]) -> Result<Vec<JtbdResult>, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.run_suite",
-            case_count = cases.len(),
-        )
-        .entered();
+        let _span = tracing::debug_span!("agentic.run_suite", case_count = cases.len(),).entered();
 
         let t0 = std::time::Instant::now();
         let results: Result<Vec<JtbdResult>, AgenticError> =
@@ -286,7 +282,10 @@ mod tests {
             None,
         );
         let result = runner.run_case(&case).unwrap();
-        assert!(!result.passed, "case must fail when expected_role does not match");
+        assert!(
+            !result.passed,
+            "case must fail when expected_role does not match"
+        );
     }
 
     #[test]
@@ -301,7 +300,10 @@ mod tests {
             Some(SwarmTopology::ReviewLoop),
         );
         let result = runner.run_case(&case).unwrap();
-        assert!(result.passed, "case must pass when expected_topology matches");
+        assert!(
+            result.passed,
+            "case must pass when expected_topology matches"
+        );
     }
 
     #[test]
@@ -335,10 +337,28 @@ mod tests {
     fn run_suite_aggregates_results() {
         let runner = DefaultJtbdRunner;
         let cases = vec![
-            simple_case("s1", WorkflowPhase::Intake, RiskLevel::Low, Some(AgentRole::Explorer), None),
-            simple_case("s2", WorkflowPhase::Plan, RiskLevel::Medium, Some(AgentRole::Planner), None),
+            simple_case(
+                "s1",
+                WorkflowPhase::Intake,
+                RiskLevel::Low,
+                Some(AgentRole::Explorer),
+                None,
+            ),
+            simple_case(
+                "s2",
+                WorkflowPhase::Plan,
+                RiskLevel::Medium,
+                Some(AgentRole::Planner),
+                None,
+            ),
             // Deliberate failure: wrong topology
-            simple_case("s3", WorkflowPhase::Execute, RiskLevel::Low, None, Some(SwarmTopology::Debate)),
+            simple_case(
+                "s3",
+                WorkflowPhase::Execute,
+                RiskLevel::Low,
+                None,
+                Some(SwarmTopology::Debate),
+            ),
         ];
         let results = runner.run_suite(&cases).unwrap();
         assert_eq!(results.len(), 3);

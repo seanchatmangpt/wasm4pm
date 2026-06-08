@@ -10,7 +10,11 @@ pub fn r2_score_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError> {
     let n = y_true.len();
     let mean_true: f64 = y_true.iter().sum::<f64>() / n as f64;
     let ss_tot: f64 = y_true.iter().map(|y| (y - mean_true).powi(2)).sum();
-    let ss_res: f64 = y_true.iter().zip(y_pred.iter()).map(|(t, p)| (t - p).powi(2)).sum();
+    let ss_res: f64 = y_true
+        .iter()
+        .zip(y_pred.iter())
+        .map(|(t, p)| (t - p).powi(2))
+        .sum();
 
     if ss_tot == 0.0 {
         // All true values are identical (zero variance). If predictions also match
@@ -33,9 +37,12 @@ pub fn mean_squared_error_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, Ml
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return Err(MlError::new("arrays must be same non-zero length"));
     }
-    let mse = y_true.iter().zip(y_pred.iter())
+    let mse = y_true
+        .iter()
+        .zip(y_pred.iter())
         .map(|(t, p)| (t - p).powi(2))
-        .sum::<f64>() / y_true.len() as f64;
+        .sum::<f64>()
+        / y_true.len() as f64;
     Ok(mse)
 }
 
@@ -60,9 +67,12 @@ pub fn mean_absolute_error_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, M
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return Err(MlError::new("arrays must be same non-zero length"));
     }
-    let mae = y_true.iter().zip(y_pred.iter())
+    let mae = y_true
+        .iter()
+        .zip(y_pred.iter())
         .map(|(t, p)| (t - p).abs())
-        .sum::<f64>() / y_true.len() as f64;
+        .sum::<f64>()
+        / y_true.len() as f64;
     Ok(mae)
 }
 
@@ -78,7 +88,9 @@ pub fn median_absolute_error(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsEr
         return Err(JsError::new("arrays must be same non-zero length"));
     }
 
-    let mut errors: Vec<f64> = y_true.iter().zip(y_pred.iter())
+    let mut errors: Vec<f64> = y_true
+        .iter()
+        .zip(y_pred.iter())
         .map(|(t, p)| (t - p).abs())
         .collect();
     errors.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
@@ -94,17 +106,24 @@ pub fn median_absolute_error(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsEr
 
 /// Mean Absolute Percentage Error (with epsilon for division by zero)
 #[wasm_bindgen(js_name = "meanAbsolutePercentageError")]
-pub fn mean_absolute_percentage_error(y_true: &[f64], y_pred: &[f64], epsilon: f64) -> Result<f64, JsError> {
+pub fn mean_absolute_percentage_error(
+    y_true: &[f64],
+    y_pred: &[f64],
+    epsilon: f64,
+) -> Result<f64, JsError> {
     if y_true.len() != y_pred.len() || y_true.is_empty() {
         return Err(JsError::new("arrays must be same non-zero length"));
     }
 
-    let mape: f64 = y_true.iter().zip(y_pred.iter())
+    let mape: f64 = y_true
+        .iter()
+        .zip(y_pred.iter())
         .map(|(t, p)| {
             let denom = t.abs().max(epsilon);
             ((t - p).abs() / denom) * 100.0
         })
-        .sum::<f64>() / y_true.len() as f64;
+        .sum::<f64>()
+        / y_true.len() as f64;
 
     Ok(mape)
 }
@@ -134,7 +153,11 @@ mod tests {
         let y_true = vec![5.0, 5.0, 5.0];
         let y_pred = vec![5.0, 5.0, 5.0];
         let r2 = r2_score_impl(&y_true, &y_pred).unwrap();
-        assert!((r2 - 1.0).abs() < 1e-10, "Expected R²=1.0 for perfect zero-variance case, got {}", r2);
+        assert!(
+            (r2 - 1.0).abs() < 1e-10,
+            "Expected R²=1.0 for perfect zero-variance case, got {}",
+            r2
+        );
     }
 
     #[test]
@@ -144,8 +167,11 @@ mod tests {
         let y_true = vec![5.0, 5.0, 5.0];
         let y_pred = vec![4.0, 4.0, 4.0];
         let r2 = r2_score_impl(&y_true, &y_pred).unwrap();
-        assert!((r2 - 0.0).abs() < 1e-10,
-            "Expected R²=0.0 for zero-variance wrong-prediction case, got {}", r2);
+        assert!(
+            (r2 - 0.0).abs() < 1e-10,
+            "Expected R²=0.0 for zero-variance wrong-prediction case, got {}",
+            r2
+        );
     }
 
     #[test]

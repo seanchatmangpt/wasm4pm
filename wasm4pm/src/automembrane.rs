@@ -257,11 +257,11 @@ fn snapshot_hash(request_id: &str, timestamp_ms: f64) -> String {
 /// `build_route_envelope`, `build_automl_envelope`, and `build_time_envelope`.
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct EnvelopeHandles {
-    pub actor:  Option<String>,
+    pub actor: Option<String>,
     pub object: Option<String>,
-    pub route:  Option<String>,
+    pub route: Option<String>,
     pub automl: Option<String>,
-    pub time:   Option<String>,
+    pub time: Option<String>,
 }
 
 /// Evaluate the actor layer.
@@ -342,22 +342,54 @@ fn evaluate_route_layer(motion: &RequestMotion) -> LayerVerdict {
 }
 
 /// Evaluate the automl layer.
-/// Reserved for ML-scored risk assessment by the MiniML engine.
-///
-/// # CAUTION — layer was NOT actually evaluated
-/// This function returns `Verdict::Allow` only because `Verdict::Deferred` does not
-/// yet exist in the enum (adding it would require updating ~72 match arms). The
-/// confidence is set to `0.1` (not `0.3`) to clearly signal that no real assessment
-/// was performed. Callers MUST NOT treat this as a genuine Allow — the layer was
-/// bypassed entirely.
-fn evaluate_automl_layer(_motion: &RequestMotion) -> LayerVerdict {
+/// In the absence of a specific loaded envelope model, this layer performs a 
+/// structural risk assessment on the requested motion, penalizing missing roles,
+/// unknown origin systems, and uncredentialed high-stakes actions.
+fn evaluate_automl_layer(motion: &RequestMotion) -> LayerVerdict {
+    let mut risk_score = 0.0;
+    let mut reasons = Vec::new();
+    let mut confidence = 0.8;
+
+    // Feature 1: Role presence
+    if motion.role.is_none() {
+        risk_score += 0.4;
+        reasons.push("Missing actor role context");
+        confidence -= 0.1;
+    }
+
+    // Feature 2: Origin system context
+    if motion.origin_system.is_none() {
+        risk_score += 0.3;
+        reasons.push("Unknown origin system");
+        confidence -= 0.1;
+    }
+
+    // Feature 3: Action stakes vs Context
+    let is_high_stakes = HIGH_STAKES_KEYWORDS.iter().any(|k| motion.requested_action.to_lowercase().contains(k));
+    if is_high_stakes && risk_score > 0.0 {
+        risk_score += 0.5;
+        reasons.push("High stakes action requested with incomplete context");
+    }
+
+    let verdict = if risk_score >= 0.8 {
+        Verdict::Quarantine
+    } else if risk_score >= 0.4 {
+        Verdict::Warn
+    } else {
+        Verdict::Allow
+    };
+
+    let reason_str = if reasons.is_empty() {
+        "AutoML structural risk assessment passed".to_string()
+    } else {
+        format!("AutoML structural risk assessment: {}", reasons.join("; "))
+    };
+
     LayerVerdict {
         layer: "automl".to_string(),
-        verdict: Verdict::Allow,
-        confidence: 0.1,
-        reason: "BYPASSED: AutoML model not yet loaded — this layer was not evaluated; \
-                 do not interpret as a genuine allow decision"
-            .to_string(),
+        verdict,
+        confidence,
+        reason: reason_str,
         evidence_used: vec![],
         missing_evidence: vec![],
     }
@@ -436,7 +468,11 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
             confidence = verdict.confidence,
             decision_rationale = verdict.reason.as_str(),
             service_name = "wpm",
-            status = if matches!(verdict.verdict, Verdict::RequireEvidence) { "error" } else { "ok" },
+            status = if matches!(verdict.verdict, Verdict::RequireEvidence) {
+                "error"
+            } else {
+                "ok"
+            },
         );
     }
 
@@ -448,7 +484,10 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
 // ---------------------------------------------------------------------------
 
 fn is_downstream_admitted(verdict: &Verdict) -> bool {
-    matches!(verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn)
+    matches!(
+        verdict,
+        Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -458,7 +497,10 @@ fn is_downstream_admitted(verdict: &Verdict) -> bool {
 fn render_explanation(receipt: &VerdictReceipt) -> String {
     let mut lines: Vec<String> = Vec::new();
 
-    lines.push(format!("Verdict: {}", receipt.final_verdict.to_string().to_uppercase()));
+    lines.push(format!(
+        "Verdict: {}",
+        receipt.final_verdict.to_string().to_uppercase()
+    ));
     lines.push(format!("Decisive layer: {}", receipt.decisive_layer));
     lines.push(String::new());
     lines.push("Layer breakdown:".to_string());
@@ -501,7 +543,10 @@ fn render_explanation(receipt: &VerdictReceipt) -> String {
 
 /// Evaluate the actor layer, using a trained `ActorEnvelope` when a handle is
 /// supplied. Falls back to the stateless `evaluate_actor_layer` on any error.
-fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&str>) -> LayerVerdict {
+fn evaluate_actor_layer_with_envelope(
+    motion: &RequestMotion,
+    handle: Option<&str>,
+) -> LayerVerdict {
     let h = match handle {
         Some(h) => h,
         None => return evaluate_actor_layer(motion),
@@ -511,10 +556,15 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
     let result = state.with_object(h, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            _ => return Err(crate::error::wasm_err(crate::error::codes::INVALID_HANDLE, "not a json string")),
+            _ => {
+                return Err(crate::error::wasm_err(
+                    crate::error::codes::INVALID_HANDLE,
+                    "not a json string",
+                ))
+            }
         };
-        let envelope: crate::actor_envelope::ActorEnvelope =
-            serde_json::from_str(json_str).map_err(|e| {
+        let envelope: crate::actor_envelope::ActorEnvelope = serde_json::from_str(json_str)
+            .map_err(|e| {
                 // GAP-1: Emit error span for envelope deserialization failure
                 tracing::warn!(
                     envelope_type = "actor",
@@ -527,7 +577,9 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
                 );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
-        Ok(crate::actor_envelope::score_actor_motion_from_envelope(&envelope, motion))
+        Ok(crate::actor_envelope::score_actor_motion_from_envelope(
+            &envelope, motion,
+        ))
     });
 
     match result {
@@ -547,7 +599,10 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 
 /// Evaluate the route layer, using a trained `RouteEnvelope` when a handle is
 /// supplied. Falls back to the stateless `evaluate_route_layer` on any error.
-fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&str>) -> LayerVerdict {
+fn evaluate_route_layer_with_envelope(
+    motion: &RequestMotion,
+    handle: Option<&str>,
+) -> LayerVerdict {
     let h = match handle {
         Some(h) => h,
         None => return evaluate_route_layer(motion),
@@ -557,10 +612,15 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
     let result = state.with_object(h, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            _ => return Err(crate::error::wasm_err(crate::error::codes::INVALID_HANDLE, "not a json string")),
+            _ => {
+                return Err(crate::error::wasm_err(
+                    crate::error::codes::INVALID_HANDLE,
+                    "not a json string",
+                ))
+            }
         };
-        let envelope: crate::route_envelope::RouteEnvelope =
-            serde_json::from_str(json_str).map_err(|e| {
+        let envelope: crate::route_envelope::RouteEnvelope = serde_json::from_str(json_str)
+            .map_err(|e| {
                 // GAP-1: Emit error span for envelope deserialization failure
                 tracing::warn!(
                     envelope_type = "route",
@@ -573,7 +633,9 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
                 );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
-        Ok(crate::route_envelope::score_route_motion_from_envelope(&envelope, motion))
+        Ok(crate::route_envelope::score_route_motion_from_envelope(
+            &envelope, motion,
+        ))
     });
 
     match result {
@@ -594,7 +656,10 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 /// Evaluate the automl layer, using a trained `AutomlEnvelopeModel` when a
 /// handle is supplied. Falls back to the stateless `evaluate_automl_layer` on
 /// any error.
-fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&str>) -> LayerVerdict {
+fn evaluate_automl_layer_with_envelope(
+    motion: &RequestMotion,
+    handle: Option<&str>,
+) -> LayerVerdict {
     let h = match handle {
         Some(h) => h,
         None => return evaluate_automl_layer(motion),
@@ -604,10 +669,15 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
     let result = state.with_object(h, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            _ => return Err(crate::error::wasm_err(crate::error::codes::INVALID_HANDLE, "not a json string")),
+            _ => {
+                return Err(crate::error::wasm_err(
+                    crate::error::codes::INVALID_HANDLE,
+                    "not a json string",
+                ))
+            }
         };
-        let model: crate::automl_envelope::AutomlEnvelopeModel =
-            serde_json::from_str(json_str).map_err(|e| {
+        let model: crate::automl_envelope::AutomlEnvelopeModel = serde_json::from_str(json_str)
+            .map_err(|e| {
                 // GAP-1: Emit error span for envelope deserialization failure
                 tracing::warn!(
                     envelope_type = "automl",
@@ -620,7 +690,9 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
                 );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
-        Ok(crate::automl_envelope::score_motion_automl_from_envelope(&model, motion))
+        Ok(crate::automl_envelope::score_motion_automl_from_envelope(
+            &model, motion,
+        ))
     });
 
     match result {
@@ -659,7 +731,12 @@ fn evaluate_time_layer_with_envelope(motion: &RequestMotion, handle: Option<&str
     let result = state.with_object(h, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            _ => return Err(crate::error::wasm_err(crate::error::codes::INVALID_HANDLE, "not a json string")),
+            _ => {
+                return Err(crate::error::wasm_err(
+                    crate::error::codes::INVALID_HANDLE,
+                    "not a json string",
+                ))
+            }
         };
         let envelope: crate::time_envelope::TimeEnvelope =
             serde_json::from_str(json_str).map_err(|e| {
@@ -740,13 +817,25 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
         action = motion.requested_action.as_str(),
         final_verdict = final_verdict.to_string().as_str(),
         decisive_layer = decisive_layer.as_str(),
-        confidence = receipt.layer_verdicts.iter().map(|lv| lv.confidence).sum::<f64>() / receipt.layer_verdicts.len() as f64,
+        confidence = receipt
+            .layer_verdicts
+            .iter()
+            .map(|lv| lv.confidence)
+            .sum::<f64>()
+            / receipt.layer_verdicts.len() as f64,
         layer_count = receipt.layer_verdicts.len() as u32,
         downstream_admitted = downstream_admitted,
         has_missing_evidence = !receipt.missing_evidence.is_empty(),
         duration_ms = elapsed_ms,
         service_name = "wpm",
-        status = if matches!(final_verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn) { "ok" } else { "error" },
+        status = if matches!(
+            final_verdict,
+            Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn
+        ) {
+            "ok"
+        } else {
+            "error"
+        },
     );
 
     receipt
@@ -826,14 +915,26 @@ pub fn classify_motion_internal_with_envelopes(
         action = motion.requested_action.as_str(),
         final_verdict = final_verdict.to_string().as_str(),
         decisive_layer = decisive_layer.as_str(),
-        confidence = receipt.layer_verdicts.iter().map(|lv| lv.confidence).sum::<f64>() / receipt.layer_verdicts.len() as f64,
+        confidence = receipt
+            .layer_verdicts
+            .iter()
+            .map(|lv| lv.confidence)
+            .sum::<f64>()
+            / receipt.layer_verdicts.len() as f64,
         layer_count = receipt.layer_verdicts.len() as u32,
         envelopes_used = envelopes_used as u32,
         downstream_admitted = downstream_admitted,
         has_missing_evidence = !receipt.missing_evidence.is_empty(),
         duration_ms = elapsed_ms,
         service_name = "wpm",
-        status = if matches!(final_verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn) { "ok" } else { "error" },
+        status = if matches!(
+            final_verdict,
+            Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn
+        ) {
+            "ok"
+        } else {
+            "error"
+        },
     );
 
     receipt
@@ -877,9 +978,13 @@ pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
     // Resolve timestamp: prefer value embedded in motion, fall back to wall clock on WASM.
     let ts_resolved = motion.timestamp_ms.unwrap_or_else(|| {
         #[cfg(target_arch = "wasm32")]
-        { js_sys::Date::now() }
+        {
+            js_sys::Date::now()
+        }
         #[cfg(not(target_arch = "wasm32"))]
-        { 0.0 }
+        {
+            0.0
+        }
     });
 
     // Inject the resolved timestamp so classify_motion_internal sees it.
@@ -898,7 +1003,11 @@ pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
         downstream_admitted = receipt.downstream_admitted,
         duration_ms = elapsed_ms,
         service_name = "wpm",
-        status = if receipt.downstream_admitted { "ok" } else { "error" },
+        status = if receipt.downstream_admitted {
+            "ok"
+        } else {
+            "error"
+        },
     );
 
     to_js_str(&receipt)
@@ -967,7 +1076,7 @@ pub fn build_motion_from_log_trace(
                 return Err(wasm_err(
                     codes::INVALID_INPUT,
                     format!("Object at '{log_handle}' is not an EventLog"),
-                ))
+                ));
             }
             None => {
                 let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
@@ -981,7 +1090,7 @@ pub fn build_motion_from_log_trace(
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
                     format!("No object at handle '{log_handle}'"),
-                ))
+                ));
             }
         };
 
@@ -1043,8 +1152,7 @@ pub fn build_motion_from_log_trace(
             .attributes
             .get("time:timestamp")
             .and_then(|av| match av {
-                AttributeValue::Date(s) => crate::models::parse_timestamp_ms(s)
-                    .map(|ms| ms as f64),
+                AttributeValue::Date(s) => crate::models::parse_timestamp_ms(s).map(|ms| ms as f64),
                 AttributeValue::Float(f) => Some(*f),
                 AttributeValue::Int(i) => Some(*i as f64),
                 _ => None,
@@ -1057,9 +1165,7 @@ pub fn build_motion_from_log_trace(
             .iter()
             .filter(|(k, v)| {
                 let k_lower = k.to_lowercase();
-                (k_lower.contains("id")
-                    || k_lower.contains("case")
-                    || k_lower.contains("object"))
+                (k_lower.contains("id") || k_lower.contains("case") || k_lower.contains("object"))
                     && matches!(v, AttributeValue::String(_))
             })
             .filter_map(|(_, v)| v.as_string().map(str::to_string))
@@ -1126,7 +1232,8 @@ pub fn classify_motion_with_envelopes(
         let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
         tracing::warn!(
             event = "wasm_motion_parse_error_with_envelopes",
-            error = format!("classify_motion_with_envelopes: invalid RequestMotion JSON: {e}").as_str(),
+            error =
+                format!("classify_motion_with_envelopes: invalid RequestMotion JSON: {e}").as_str(),
             duration_ms = elapsed_ms,
             service_name = "wpm",
             status = "error",
@@ -1137,28 +1244,32 @@ pub fn classify_motion_with_envelopes(
         )
     })?;
 
-    let envelopes: EnvelopeHandles =
-        serde_json::from_str(envelope_handles_json).map_err(|e| {
-            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
-            tracing::warn!(
-                event = "wasm_envelope_parse_error",
-                error = format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}").as_str(),
-                duration_ms = elapsed_ms,
-                service_name = "wpm",
-                status = "error",
-            );
-            wasm_err(
-                codes::INVALID_JSON,
-                format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}"),
-            )
-        })?;
+    let envelopes: EnvelopeHandles = serde_json::from_str(envelope_handles_json).map_err(|e| {
+        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        tracing::warn!(
+            event = "wasm_envelope_parse_error",
+            error = format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}")
+                .as_str(),
+            duration_ms = elapsed_ms,
+            service_name = "wpm",
+            status = "error",
+        );
+        wasm_err(
+            codes::INVALID_JSON,
+            format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}"),
+        )
+    })?;
 
     // Resolve timestamp: prefer value embedded in motion, fall back to wall clock on WASM.
     let ts_resolved = motion.timestamp_ms.unwrap_or_else(|| {
         #[cfg(target_arch = "wasm32")]
-        { js_sys::Date::now() }
+        {
+            js_sys::Date::now()
+        }
         #[cfg(not(target_arch = "wasm32"))]
-        { 0.0 }
+        {
+            0.0
+        }
     });
 
     let mut motion_with_ts = motion.clone();
@@ -1177,7 +1288,11 @@ pub fn classify_motion_with_envelopes(
         layer_count = receipt.layer_verdicts.len() as u32,
         duration_ms = elapsed_ms,
         service_name = "wpm",
-        status = if receipt.downstream_admitted { "ok" } else { "error" },
+        status = if receipt.downstream_admitted {
+            "ok"
+        } else {
+            "error"
+        },
     );
 
     to_js_str(&receipt)
@@ -1191,7 +1306,12 @@ pub fn classify_motion_with_envelopes(
 mod tests {
     use super::*;
 
-    fn make_motion(actor: &str, action: &str, evidence: Vec<&str>, objects: Vec<&str>) -> RequestMotion {
+    fn make_motion(
+        actor: &str,
+        action: &str,
+        evidence: Vec<&str>,
+        objects: Vec<&str>,
+    ) -> RequestMotion {
         RequestMotion {
             request_id: "test-req-001".to_string(),
             actor: actor.to_string(),
@@ -1497,7 +1617,12 @@ mod tests {
 
     #[test]
     fn verdict_receipt_serializes_and_deserializes() {
-        let motion = make_motion("carol", "transfer_funds", vec!["receipt-xyz"], vec!["acc-1"]);
+        let motion = make_motion(
+            "carol",
+            "transfer_funds",
+            vec!["receipt-xyz"],
+            vec!["acc-1"],
+        );
         let layers = vec![
             evaluate_actor_layer(&motion),
             evaluate_object_layer(&motion),

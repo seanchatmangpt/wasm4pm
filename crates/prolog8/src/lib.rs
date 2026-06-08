@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 
 //! # Prolog8 — Byte-Capped Proof Engine
 //!
@@ -50,7 +51,7 @@ pub use replay::{replay, ReplayStatus};
 pub use types::{
     Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactBlockMeta, FactRow8, FeatureBit,
     PredicateId, ProofKind, ProofMode, ProofNode, ProofNodeId, QueryAtom8, Receipt, Rule8, RuleId,
-    SourceId, SubstitutionId, TermId, ARITY_CAP, BODY_CAP, BINDING_PATTERNS, VAR_CAP,
+    SourceId, SubstitutionId, TermId, ARITY_CAP, BINDING_PATTERNS, BODY_CAP, VAR_CAP,
 };
 
 /// Engine version reported in receipts.

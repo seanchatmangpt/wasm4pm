@@ -139,7 +139,10 @@ fn next_activity_beats_uniform_random_on_structured_log() {
     let preds = predictor.predict(&prefix);
 
     // Must have at least one prediction and the top one must be "B"
-    assert!(!preds.is_empty(), "predictor must return at least one candidate");
+    assert!(
+        !preds.is_empty(),
+        "predictor must return at least one candidate"
+    );
     assert_eq!(preds[0].0, "B", "top prediction after [A] must be B");
     // p=1.0 >> 0.25 (uniform baseline over 4 activities)
     assert!(
@@ -164,7 +167,10 @@ fn next_activity_top_prediction_is_most_frequent_follower() {
     let prefix = vec!["A".to_string()];
     let preds = predictor.predict(&prefix);
 
-    assert!(!preds.is_empty(), "predictor must return at least one candidate");
+    assert!(
+        !preds.is_empty(),
+        "predictor must return at least one candidate"
+    );
     assert_eq!(
         preds[0].0, "B",
         "top prediction after [A] must be B (5/7 > 2/7)"
@@ -185,7 +191,10 @@ fn next_activity_returns_bounded_probabilities() {
     let prefix = vec!["A".to_string()];
     let preds = predictor.predict(&prefix);
 
-    assert!(!preds.is_empty(), "predictor must return candidates for seen prefix");
+    assert!(
+        !preds.is_empty(),
+        "predictor must return candidates for seen prefix"
+    );
 
     let sum: f64 = preds.iter().map(|(_, p)| p).sum();
     for (act, prob) in &preds {
@@ -226,8 +235,14 @@ fn next_activity_prefix_length_1_vs_2_differ_on_ambiguous_log() {
     let preds_bigram_after_a = predictor2.predict(&prefix1);
     let preds_trigram_after_ab = predictor3.predict(&prefix2);
 
-    assert!(!preds_bigram_after_a.is_empty(), "bigram must predict after [A]");
-    assert!(!preds_trigram_after_ab.is_empty(), "trigram must predict after [A,B]");
+    assert!(
+        !preds_bigram_after_a.is_empty(),
+        "bigram must predict after [A]"
+    );
+    assert!(
+        !preds_trigram_after_ab.is_empty(),
+        "trigram must predict after [A,B]"
+    );
 
     // Bigram after [A] → top is B
     assert_eq!(
@@ -256,8 +271,15 @@ fn remaining_time_never_negative() {
     // mathematical property directly: for valid positive rates, the estimate
     // is finite and non-negative.
     let result = estimate_queue_delay(0.5, 1.0);
-    assert!(result >= 0.0, "queue delay must be non-negative, got {}", result);
-    assert!(result.is_finite(), "queue delay must be finite for stable queue");
+    assert!(
+        result >= 0.0,
+        "queue delay must be non-negative, got {}",
+        result
+    );
+    assert!(
+        result.is_finite(),
+        "queue delay must be finite for stable queue"
+    );
 }
 
 // ===========================================================================
@@ -378,7 +400,10 @@ fn remaining_time_decreases_as_prefix_grows_on_regular_log() {
 
     // Rank 2: prefix length grows monotonically as process advances
     assert!(feat_a.length < feat_ab.length, "prefix A shorter than AB");
-    assert!(feat_ab.length < feat_abc.length, "prefix AB shorter than ABC");
+    assert!(
+        feat_ab.length < feat_abc.length,
+        "prefix AB shorter than ABC"
+    );
 
     // Unique activities grow (no rework)
     assert!(

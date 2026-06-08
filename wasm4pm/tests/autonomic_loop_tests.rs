@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Integration tests for the connected autonomic loop.
 //!
 //! Tests that the RL orchestrator persists state across autonomic cycles,
@@ -325,8 +326,7 @@ fn make_chart_data(values: &[f64]) -> Vec<ChartData> {
         return vec![];
     }
     let mean = values.iter().sum::<f64>() / values.len() as f64;
-    let variance =
-        values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
+    let variance = values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
     let std_dev = variance.sqrt();
     values
         .iter()
@@ -419,8 +419,15 @@ fn test_mape_k_chain_degraded_health_drives_non_continue_actions() {
 
     let mut seen_actions: std::collections::HashSet<String> = std::collections::HashSet::new();
     for _ in 0..30 {
-        let (action, _reward) =
-            orch.run_cycle(&features, &critical, &still_critical, 8, false, false, false);
+        let (action, _reward) = orch.run_cycle(
+            &features,
+            &critical,
+            &still_critical,
+            8,
+            false,
+            false,
+            false,
+        );
         seen_actions.insert(action);
     }
 
@@ -466,11 +473,26 @@ fn snapshot_reward_function_shape() {
     // Snapshot the reward computation for canonical health transitions.
     // Any change to the reward formula will fail this test.
     let cases = vec![
-        ("normal_healthy", compute_reward(0, 0, 0, true, true, false, 0)),
-        ("degraded_recovering", compute_reward(3, 2, 0, true, true, false, 0)),
-        ("critical_worsening", compute_reward(2, 3, 5, false, false, false, 0)),
-        ("terminal_transition", compute_reward(3, 4, 0, true, true, false, 0)),
-        ("latency_penalty", compute_reward(2, 2, 0, true, true, true, 0)),
+        (
+            "normal_healthy",
+            compute_reward(0, 0, 0, true, true, false, 0),
+        ),
+        (
+            "degraded_recovering",
+            compute_reward(3, 2, 0, true, true, false, 0),
+        ),
+        (
+            "critical_worsening",
+            compute_reward(2, 3, 5, false, false, false, 0),
+        ),
+        (
+            "terminal_transition",
+            compute_reward(3, 4, 0, true, true, false, 0),
+        ),
+        (
+            "latency_penalty",
+            compute_reward(2, 2, 0, true, true, true, 0),
+        ),
     ];
     // Round to 4 decimal places for float stability
     let rounded: Vec<(&str, f64)> = cases
@@ -509,10 +531,7 @@ fn snapshot_orchestrator_telemetry_after_10_cycles() {
     // Snapshot stable fields; exclude last_reward (float) by rounding
     let summary = format!(
         "cycle_count={} agent={:?} last_spc={} consec_success={}",
-        t.cycle_count,
-        t.active_agent_name,
-        t.last_spc_alert_count,
-        t.consecutive_successes
+        t.cycle_count, t.active_agent_name, t.last_spc_alert_count, t.consecutive_successes
     );
     insta::assert_debug_snapshot!("orchestrator_telemetry_10_cycles", summary);
 }

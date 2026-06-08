@@ -221,7 +221,7 @@ describe('wpm conformance --precision-mode', () => {
     });
   });
 
-  describe('backward compatibility', () => {
+  describe('baseline admissibility', () => {
     it('should default to full mode when --precision-mode is omitted', () => {
       // Default behavior unchanged — full computation bundled
       const defaultMode = 'full';

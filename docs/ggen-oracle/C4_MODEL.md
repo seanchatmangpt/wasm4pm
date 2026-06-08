@@ -181,10 +181,10 @@ Container_Boundary(evidence, "Receipt / OCEL / Process Evidence") {
 }
 
 System_Ext(wasm4pm, "wasm4pm / wpm", "External process-law oracle")
-System_Ext(ocel_core, "ocel-core", "Shared OCEL types")
+System_Ext(wasm4pm_compat::ocel, "ocel-core", "Shared OCEL types")
 System_Ext(ci, "CI / gates", "Verification runner")
 
-Rel(event_builders, ocel_core, "Uses shared event/object types from")
+Rel(event_builders, wasm4pm_compat::ocel, "Uses shared event/object types from")
 Rel(event_builders, ocel_stream, "Appends to")
 Rel(ocel_stream, wasm4pm, "Imported / mined / conformed by")
 Rel(wasm4pm, receipt_docs, "Provides process-law judgment for")

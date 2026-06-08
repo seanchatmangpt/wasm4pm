@@ -74,7 +74,7 @@ fn test_circuit_breaker_open_timeout_expiration_emits_probe_span() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force Open by recording failures
         breaker.record_failure();
@@ -110,7 +110,7 @@ fn test_circuit_breaker_halfopen_timeout_recovery_failure_emits_span() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force to Open
         breaker.record_failure();
@@ -128,10 +128,7 @@ fn test_circuit_breaker_halfopen_timeout_recovery_failure_emits_span() {
 
         // Verify transition back to Open due to timeout
         assert_eq!(breaker.state(), CircuitState::Open);
-        assert!(
-            !allowed,
-            "Open state must not allow requests"
-        );
+        assert!(!allowed, "Open state must not allow requests");
     });
 }
 
@@ -152,7 +149,7 @@ fn test_circuit_breaker_halfopen_to_closed_on_success() {
             open_timeout_ms: 100,
             half_open_timeout_ms: 50,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Force to Open
         breaker.record_failure();
@@ -200,10 +197,7 @@ fn test_spc_rule_1_point_beyond_ucl() {
     let alerts = check_western_electric_rules(&[ooc]);
 
     assert_eq!(alerts.len(), 1);
-    assert!(matches!(
-        alerts[0],
-        SpecialCause::OutOfControl { .. }
-    ));
+    assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
 }
 
 // ===========================================================================
@@ -229,8 +223,13 @@ fn test_spc_rule_2_nine_consecutive_above_centerline() {
     let alerts = check_western_electric_rules(&data);
 
     // Rule 1 may fire on some points; Rule 2 should definitely fire
-    let rule_2_fires = alerts.iter().any(|a| matches!(a, SpecialCause::Shift { .. }));
-    assert!(rule_2_fires, "Rule 2 must fire for 9 consecutive points above CL");
+    let rule_2_fires = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::Shift { .. }));
+    assert!(
+        rule_2_fires,
+        "Rule 2 must fire for 9 consecutive points above CL"
+    );
 }
 
 // ===========================================================================
@@ -269,8 +268,13 @@ fn test_spc_rule_3_six_consecutive_increasing() {
     let alerts = check_western_electric_rules(&data);
 
     // Rule 3 should fire for the 6 increasing points
-    let rule_3_fires = alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. }));
-    assert!(rule_3_fires, "Rule 3 must fire for 6 consecutive increasing points");
+    let rule_3_fires = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::Trend { .. }));
+    assert!(
+        rule_3_fires,
+        "Rule 3 must fire for 6 consecutive increasing points"
+    );
 }
 
 // ===========================================================================
@@ -311,8 +315,13 @@ fn test_spc_rule_4_two_of_three_beyond_2sigma_above() {
     let alerts = check_western_electric_rules(&data);
 
     // Rule 4 should fire for 2+ of last 3 beyond 2σ
-    let rule_4_fires = alerts.iter().any(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
-    assert!(rule_4_fires, "Rule 4 must fire for 2+ of 3 points beyond 2σ");
+    let rule_4_fires = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::TwoOfThree { .. }));
+    assert!(
+        rule_4_fires,
+        "Rule 4 must fire for 2+ of 3 points beyond 2σ"
+    );
 }
 
 // ===========================================================================
@@ -356,10 +365,15 @@ fn test_spc_multiple_rules_fire_in_single_buffer() {
     let alerts = check_western_electric_rules(&data);
 
     // Multiple rules should fire
-    assert!(!alerts.is_empty(), "Multiple rules should fire in pathological buffer");
+    assert!(
+        !alerts.is_empty(),
+        "Multiple rules should fire in pathological buffer"
+    );
 
     // Rule 1 (OutOfControl) should be present
-    let has_rule_1 = alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
+    let has_rule_1 = alerts
+        .iter()
+        .any(|a| matches!(a, SpecialCause::OutOfControl { .. }));
     assert!(has_rule_1, "Rule 1 must fire for out-of-control point");
 }
 

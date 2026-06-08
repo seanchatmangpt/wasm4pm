@@ -30,9 +30,24 @@ use wasm4pm::foundry::{
 };
 use wasm4pm::soundness::analyze_petri_net;
 use wasm4pm::wf_to_powl::{powl_language, wf_net_language};
+use wasm4pm_compat::ocel::ObjectTypeCardinality;
+use wasm4pm::models::OCEL;
 
-use ocel_core::validate::validate;
-use ocel_core::ObjectTypeCardinality;
+struct ValidationReport {
+    valid: bool,
+    errors: Vec<String>,
+}
+
+fn validate(ocel: &wasm4pm::compat_api_probe::OCEL, _card: &HashMap<String, ObjectTypeCardinality>) -> ValidationReport {
+    // We just cast it temporarily for testing
+    let json = serde_json::to_string(ocel).unwrap();
+    let compat_ocel: wasm4pm::models::OCEL = serde_json::from_str(&json).unwrap();
+    let errors = wasm4pm::ocel_io::validate_ocel_inner(&compat_ocel);
+    ValidationReport {
+        valid: errors.is_empty(),
+        errors,
+    }
+}
 
 // ─── Positive leg 1: the OCEL log validates against the meta-model ──────────
 
@@ -73,12 +88,16 @@ fn manufactured_ocel_has_o2o_relations() {
     let ocel = field_ocel();
     let order_o2o = ocel.o2o("order-1");
     assert!(
-        order_o2o.iter().any(|(to, q)| *to == "item-1" && *q == "contains"),
+        order_o2o
+            .iter()
+            .any(|(to, q)| *to == "item-1" && *q == "contains"),
         "Order should reference Item via a qualified O2O relation; got {order_o2o:?}"
     );
     let inv_o2o = ocel.o2o("inv-1");
     assert!(
-        inv_o2o.iter().any(|(to, q)| *to == "pay-1" && *q == "settled_by"),
+        inv_o2o
+            .iter()
+            .any(|(to, q)| *to == "pay-1" && *q == "settled_by"),
         "Invoice should reference Payment via a qualified O2O relation; got {inv_o2o:?}"
     );
 }
@@ -92,9 +111,21 @@ fn manufactured_ocel_has_o2o_relations() {
 fn field_net_is_sound_and_safe() {
     let net = field_net();
     let report = analyze_petri_net(&net);
-    assert!(report.is_wf_net, "field net must be a structural WF-net: {}", report.reason);
-    assert!(report.is_sound, "field net must be sound: {}", report.reason);
-    assert!(report.is_safe, "field net must be safe (1-bounded): {}", report.reason);
+    assert!(
+        report.is_wf_net,
+        "field net must be a structural WF-net: {}",
+        report.reason
+    );
+    assert!(
+        report.is_sound,
+        "field net must be sound: {}",
+        report.reason
+    );
+    assert!(
+        report.is_safe,
+        "field net must be safe (1-bounded): {}",
+        report.reason
+    );
     assert!(
         report.dead_transitions.is_empty(),
         "field net must have no dead transitions; got {:?}",
@@ -141,7 +172,8 @@ fn field_process_tree_preserves_language() {
     let tree_lang = tree_language(&tree);
     let powl_lang = powl_language(&field_powl().powl);
     assert_eq!(
-        tree_lang, powl_lang,
+        tree_lang,
+        powl_lang,
         "process-tree language must equal POWL language; tree = {}",
         tree.repr()
     );
@@ -183,7 +215,10 @@ fn positive_traces_conform_at_fitness_one() {
     }
     // And the corpus IS the language (complete coverage, not a strict subset).
     let corpus: std::collections::BTreeSet<Vec<String>> = traces.iter().cloned().collect();
-    assert_eq!(corpus, lang, "positive corpus must equal the field net language");
+    assert_eq!(
+        corpus, lang,
+        "positive corpus must equal the field net language"
+    );
 }
 
 /// The happy-path interleaving the OCEL log materialises (Pick→Pack→Ship before
@@ -228,7 +263,10 @@ fn off_language_trace_is_refused() {
     );
     // An unknown activity is likewise refused.
     let unknown = vec!["Teleport Order".to_string()];
-    assert!(!lang.contains(&unknown), "unknown-activity trace must be refused");
+    assert!(
+        !lang.contains(&unknown),
+        "unknown-activity trace must be refused"
+    );
 }
 
 // ─── Projection surface: XES / CSV / OCPQ fixtures are well-formed ──────────
@@ -242,7 +280,10 @@ fn xes_projection_well_formed() {
     // Activities appear in flattened time order.
     let pos_create = xes.find("Create Order").expect("Create Order in XES");
     let pos_confirm = xes.find("Confirm Order").expect("Confirm Order in XES");
-    assert!(pos_create < pos_confirm, "Create Order must precede Confirm Order in XES");
+    assert!(
+        pos_create < pos_confirm,
+        "Create Order must precede Confirm Order in XES"
+    );
 }
 
 /// The CSV projection has a header and one data row per flattened event.
@@ -252,7 +293,11 @@ fn csv_projection_well_formed() {
     let lines: Vec<&str> = csv.lines().collect();
     assert_eq!(lines[0], "case_id,activity,timestamp,event_id");
     // 7 happy-path events qualify order-1 ⇒ 7 data rows.
-    assert_eq!(lines.len(), 1 + 7, "CSV should have header + 7 event rows; got {csv}");
+    assert_eq!(
+        lines.len(),
+        1 + 7,
+        "CSV should have header + 7 event rows; got {csv}"
+    );
     assert!(lines[1].starts_with("order-1,Create Order,"));
 }
 
@@ -318,8 +363,7 @@ fn emits_world_fixtures_to_disk() {
 
     // Round-trip: the written OCEL re-parses and re-validates from disk.
     let on_disk = std::fs::read_to_string(out_dir.join("ocel-v2.json")).expect("read OCEL");
-    let parsed: ocel_core::OCEL =
-        serde_json::from_str(&on_disk).expect("on-disk OCEL re-parses");
+    let parsed: wasm4pm_compat::ocel::OCEL = serde_json::from_str(&on_disk).expect("on-disk OCEL re-parses");
     let report = validate(&parsed, &HashMap::new());
     assert!(
         report.valid,

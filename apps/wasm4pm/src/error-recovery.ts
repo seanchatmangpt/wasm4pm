@@ -106,21 +106,29 @@ export function getRecoveryHint(
     if (errorMessage.includes('Algorithm') && errorMessage.includes('not found')) {
       const algoMatch = errorMessage.match(/['"]([^'"]+)['"]/);
       const badAlgo = algoMatch ? algoMatch[1] : 'unknown';
-      const suggestions: string[] = [
-        'dfg',
-        'heuristic',
-        'inductive',
-        'ilp',
-        'genetic',
-        'simulated-annealing',
+      const candidates = [
+        ...new Set([
+          ...Object.keys(_ALGORITHM_CLI_ALIASES),
+          ...Object.values(_ALGORITHM_CLI_ALIASES),
+        ]),
       ];
-      const didYouMean = findClosestAlgorithm(badAlgo, suggestions);
+      const didYouMean = findClosestAlgorithm(badAlgo, candidates);
+
+      let conventionHint = '';
+      if (didYouMean) {
+        if (badAlgo.includes('-') && didYouMean.includes('_')) {
+          conventionHint = ` Note: use underscores ('_') instead of dashes ('-') for registry IDs (or use the CLI alias).`;
+        } else if (badAlgo.includes('_') && didYouMean.includes('-')) {
+          conventionHint = ` Note: use dashes ('-') instead of underscores ('_') for CLI aliases.`;
+        }
+      }
+
       return {
         code: 'CONFIG_ALGORITHM_NOT_FOUND',
-        suggestion: `Algorithm '${badAlgo}' not recognized.${didYouMean ? ` Did you mean '${didYouMean}'?` : ''}`,
+        suggestion: `Algorithm '${badAlgo}' not recognized.${didYouMean ? ` Did you mean '${didYouMean}'?${conventionHint}` : ''}`,
         command: 'wpm algorithms',
         envVar: 'WASM4PM_ALGORITHM',
-        alternatives: suggestions,
+        alternatives: candidates.slice(0, 8),
         didYouMean,
         docsUrl: 'https://wasm4pm.dev/docs/algorithms',
       };

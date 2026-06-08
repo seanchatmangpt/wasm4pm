@@ -278,7 +278,10 @@ impl AutoProcessAgent {
         circuit_timeout_steps: u64,
     ) -> Self {
         let mut agent = Self {
-            q_table: vec![0.0_f32; QTABLE_SIZE].into_boxed_slice().try_into().unwrap(), // infallible: vec has exactly QTABLE_SIZE elements
+            q_table: vec![0.0_f32; QTABLE_SIZE]
+                .into_boxed_slice()
+                .try_into()
+                .unwrap(), // infallible: vec has exactly QTABLE_SIZE elements
             circuit_state: CircuitState::Closed,
             circuit_failure_count: 0,
             circuit_threshold,
@@ -371,7 +374,7 @@ impl AutoProcessAgent {
 
     /// Look up Q-value and return corresponding action with ε-greedy exploration.
     ///
-    /// This variant is kept for backward compatibility. New code should use
+    /// This variant is kept for baseline admissibility. New code should use
     /// `select_action_epsilon_greedy_with_reason`.
     #[inline(always)]
     pub fn select_action_epsilon_greedy(
@@ -398,7 +401,10 @@ impl AutoProcessAgent {
 
         let (selected_idx, reason) = if self.rng.f32() < eps {
             // Explore: pick random action
-            (self.rng.usize(0..ACTION_SPACE_SIZE), DecisionReason::Explored)
+            (
+                self.rng.usize(0..ACTION_SPACE_SIZE),
+                DecisionReason::Explored,
+            )
         } else {
             // Exploit: find argmax_a Q(s, a)
             let mut max_q = f32::NEG_INFINITY;
@@ -520,9 +526,7 @@ impl AutoProcessAgent {
             // CB-1 fix: trip immediately, do not wait for a caller-driven
             // advance_circuit_breaker() tick.
             match self.circuit_state {
-                CircuitState::Closed
-                    if self.circuit_failure_count >= self.circuit_threshold =>
-                {
+                CircuitState::Closed if self.circuit_failure_count >= self.circuit_threshold => {
                     self.circuit_state = CircuitState::Open;
                     self.circuit_open_at_step = self.step_counter;
                 }
@@ -599,7 +603,10 @@ impl AutoProcessAgent {
             let next_base = (trans.next_state_id as usize) * ACTION_SPACE_SIZE;
 
             // Strict bounds-checking assertion before unsafe access
-            assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
+            assert!(
+                next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE,
+                "Q-table bounds check failed for next_state_id"
+            );
             unsafe {
                 let s = self
                     .q_table
@@ -646,9 +653,12 @@ impl AutoProcessAgent {
         done: bool,
     ) {
         let next_base = (next_state_id as usize) * ACTION_SPACE_SIZE;
-        
+
         // Strict bounds-checking assertion before unsafe access
-        assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
+        assert!(
+            next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE,
+            "Q-table bounds check failed for next_state_id"
+        );
         let max_next_q = unsafe {
             let s = self
                 .q_table

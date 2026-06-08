@@ -15,7 +15,7 @@ use rustc_hash::FxHashMap;
 use wasm_bindgen::prelude::*;
 
 use crate::models::{
-    ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation, EventLog,
+    ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, EventLog,
 };
 
 // ---------------------------------------------------------------------------
@@ -130,15 +130,15 @@ impl PartialDfg {
     }
 }
 
-/// Build a `DirectlyFollowsGraph` from accumulated integer-keyed counts.
+/// Build a `DFG` from accumulated integer-keyed counts.
 fn build_dfg_from_counts(
     col: &ColumnarLog,
     node_counts: &FxHashMap<u32, usize>,
     edge_counts: FxHashMap<(u32, u32), usize>,
     start_counts: FxHashMap<u32, usize>,
     end_counts: FxHashMap<u32, usize>,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
 
     // Nodes from vocabulary (activities seen across all traces)
     dfg.nodes = col
@@ -182,7 +182,7 @@ fn build_dfg_from_counts(
 /// Sequential DFG computation used as the reference implementation and
 /// as the WASM fallback when rayon is unavailable.
 #[allow(dead_code)]
-fn compute_dfg_sequential(col: &ColumnarLog) -> DirectlyFollowsGraph {
+fn compute_dfg_sequential(col: &ColumnarLog) -> DFG {
     let partial = PartialDfg::from_trace_range(col, 0..col.trace_offsets.len().saturating_sub(1));
     build_dfg_from_counts(
         col,
@@ -202,10 +202,10 @@ fn compute_dfg_sequential(col: &ColumnarLog) -> DirectlyFollowsGraph {
 /// Processes 256-event batch chunks with 4x loop unrolling.
 /// Fixed iteration structure enables CPU branch prediction and SIMD vectorization.
 /// Works on all platforms (native, WASM) with identical output.
-pub fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
+pub fn compute_dfg_parallel(col: &ColumnarLog) -> DFG {
     let num_traces = col.trace_offsets.len().saturating_sub(1);
     if num_traces == 0 {
-        return DirectlyFollowsGraph::new();
+        return DFG::new();
     }
 
     // Fixed 256-event chunks with 4x unroll for constant-cycle processing
@@ -296,8 +296,7 @@ fn process_batch_unrolled(
     // Count edges — skip positions that cross a trace boundary.
     // `trace_starts` marks where each trace begins in the batch; the event
     // at position `trace_starts[k]` is NOT a successor of position `trace_starts[k]-1`.
-    let boundary_set: std::collections::HashSet<usize> =
-        trace_starts.iter().copied().collect();
+    let boundary_set: std::collections::HashSet<usize> = trace_starts.iter().copied().collect();
     for i in 0..events.len().saturating_sub(1) {
         // Skip if position i+1 is the start of a new trace
         if boundary_set.contains(&(i + 1)) {
@@ -369,12 +368,17 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
             serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string())
         }
         "alpha_plus_plus" => {
-            match crate::algorithms::alpha_plus_plus_inner(log, activity_key, 0.0) {
-                Ok(petri_net) => serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string()),
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            match crate::algorithms::alpha_plus_plus_inner(&admitted, activity_key, 0.0) {
+                Ok(petri_net) => {
+                    serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string())
+                }
                 Err(_) => serde_json::json!({
                     "algorithm": "alpha_plus_plus",
                     "error": "alpha++ discovery failed"
-                }).to_string(),
+                })
+                .to_string(),
             }
         }
         "heuristic_miner" => {
@@ -397,7 +401,7 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
 }
 
 /// Convenience: compute DFG (delegates to parallel when available).
-fn compute_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn compute_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
     compute_dfg_parallel(&col)
@@ -672,7 +676,7 @@ mod tests {
                 name
             );
             let parsed: serde_json::Value = serde_json::from_str(json_str).unwrap_or_else(|_| {
-                panic!("result for {} should be valid JSON: {}", name, json_str)
+                unreachable!("result for {} should be valid JSON: {}", name, json_str)
             });
             // Should not contain an error
             assert!(

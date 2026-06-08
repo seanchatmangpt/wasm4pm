@@ -1,0 +1,218 @@
+import os
+
+latex_content = r"""\documentclass[11pt,a4paper,oneside]{book}
+\usepackage{amsmath, amssymb, amsthm, amsfonts, mathrsfs, mathtools}
+\usepackage{geometry}
+\geometry{a4paper, margin=0.75in}
+\usepackage{hyperref}
+\usepackage{cleveref}
+\usepackage{tikz-cd}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{bm}
+\usepackage{tensor}
+\usepackage{stmaryrd} % for shuffle product \shuffle
+
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{axiom}{Axiom}
+
+\title{\Huge \textbf{The Calculus of Manufactured Intelligence:} \\ \Large The Sovereign Execution Authority of \texttt{wasm4pm}}
+\author{\textbf{Sean Chatman} \\ Autonomous Generative Intelligence \\ Institute for Advanced Process Mathematics}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\chapter*{Abstract}
+Process mining must evolve from retrospective heuristic analysis into an executable mathematical authority, where process discovery, replay, alignments, POWL projections, and BLAKE3 receipts form a zero-trust execution calculus. This dissertation frames the system through \texttt{wasm4pm}, \texttt{tower-lsp-max}, and \texttt{pm4py-lsp}: deterministic WASM execution, LSP-mediated typestate constraint, and cryptographic closure over process intelligence. We present the hyper-advanced algebraic and differential notation layer that formalizes Manufactured Intelligence---proving that human workflow language can be strictly mapped to executable cryptographic consequence.
+
+\tableofcontents
+
+\chapter{The Epistemological Boundary}
+
+\section{Master Equation of Manufactured Intelligence}
+Let $\mathcal{L}$ be the universe of \textbf{language-bearing artifacts}:
+\[
+\mathcal{L} = \mathcal{L}_{code} \sqcup \mathcal{L}_{config} \sqcup \mathcal{L}_{legal} \sqcup \mathcal{L}_{process} \sqcup \mathcal{L}_{scripture} \sqcup \mathcal{L}_{policy} \sqcup \mathcal{L}_{agent} \sqcup \mathcal{L}_{institution}
+\]
+Let raw observation be $O \in \Omega_{\mathrm{raw}}$. Let admission be a partial morphism:
+\[
+\alpha: \Omega_{\mathrm{raw}} \rightharpoonup \Omega^{\star} \sqcup \bot_{\mathrm{refused}}
+\]
+where $O^{\star} = \alpha(O)$ is \textbf{admitted, bounded, typed, queryable, process-ready state}.
+
+Then Manufactured Intelligence is:
+\[
+\boxed{ \mathfrak{MI}(O) = \rho \circ \mu \circ \kappa \circ \pi \circ \alpha (O) }
+\]
+where:
+\begin{itemize}
+    \item $\alpha$: admission / refusal boundary
+    \item $\pi$: projection into graph/process/formal model
+    \item $\kappa$: conformance / validation / route law
+    \item $\mu$: bounded actuation / execution / manufacturing
+    \item $\rho$: cryptographic receipt functor
+\end{itemize}
+So the compact doctrine is: $\boxed{ R \vdash A = \mu(O^{\star}) }$. No receipt, no claim.
+
+\section{Language-to-State Admission}
+A language artifact is not text. It is a typed field over possible process consequences. Let $\lambda \in \mathcal{L}$ and let its observable surface be tokenized as $\tau(\lambda) = \langle t_1,t_2,\dots,t_n\rangle$.
+Define a meaning-bearing relation extractor:
+\[
+\eta: \mathcal{L} \to \mathcal{G}_{cand}
+\]
+where $\mathcal{G}_{cand} = (V_{cand},E_{cand},\ell_V,\ell_E)$ is the candidate graph. Admission is a constraint intersection:
+\[
+O^{\star} = \alpha(O) = O \cap \mathsf{Type} \cap \mathsf{Shape} \cap \mathsf{Authority} \cap \mathsf{Process} \cap \mathsf{Receiptability}
+\]
+Equivalently:
+\[
+O^{\star} = \{x \in O \mid \varphi_{type}(x) \land \varphi_{shape}(x) \land \varphi_{auth}(x) \land \varphi_{proc}(x) \land \varphi_{hash}(x)\}
+\]
+If any predicate fails: $\alpha(O)=\bot_{\mathrm{refused}}^{i}$.
+
+\chapter{Control Planes and Protocol Surfaces}
+
+\section{RDF / SPARQL / Oxigraph Control Plane}
+Let admitted graph state be an RDF dataset $\mathcal{D}^{\star} = \langle G_0,G_1,\dots,G_k\rangle$ where each named graph $G_i$ corresponds to one law surface (LSIF, LSP, POWL, OCEL, MCP, A2A, PROV, RECEIPT).
+A SPARQL query is a graph-pattern morphism $q: \mathcal{D}^{\star} \to \mathcal{B}$ where $\mathcal{B} \subseteq Var(q) \times Term(\mathcal{D}^{\star})$.
+A SHACL-style shape system defines a subobject classifier $\chi_S: \mathcal{D}^{\star} \to \{\top,\bot\}^{m}$ and valid graph state is $\mathcal{D}^{\star}_{valid} = \chi_S^{-1}(\top^m)$.
+The control-plane law is:
+\[
+\boxed{ \mathrm{SPARQL} = \mathrm{projection}, \quad \mathrm{SHACL} = \mathrm{shape}, \quad \mathrm{LSIF} = \mathrm{static\; language}, \quad \rho = \mathrm{proof} }
+\]
+
+\section{LSP as Language-State Protocol}
+Manufactured Intelligence LSP:
+\[
+\mathrm{LanguageSurface} \xrightarrow{\mathrm{LSP}} \mathrm{AdmittedState} \xrightarrow{\mathrm{ProcessLaw}} \mathrm{ReceiptedConsequence}
+\]
+Let an LSP workspace be a site $\mathfrak{W} = (\mathsf{Doc},\mathsf{Range},\mathsf{Symbol},\mathsf{Diag},\mathsf{Action})$ with coverings $\mathcal{U} = \{U_i\}_{i \in I}$. A framework language server is a sheaf $\mathcal{F}_{fw}: \mathfrak{W}^{op} \to \mathbf{State}$.
+The hidden substrate is: $\mathcal{F}_{fw}: \mathcal{L}_{fw} \to O^{\star}_{fw} \to P_{fw} \to A_{fw} \to R_{fw}$.
+The user sees $\mathrm{DX}$, but the system performs $\mathrm{Admission} + \mathrm{Conformance} + \mathrm{Manufacture} + \mathrm{Receipt}$.
+
+\section{LSIF as Static Intelligence Reservoir}
+Let LSIF be a directed typed graph $\mathcal{I} = (V_{\mathrm{lsif}},E_{\mathrm{lsif}},\theta)$. A static answer is a materialized projection $m_q: \mathcal{I} \to Ans_q$.
+The reservoir law:
+\[
+\boxed{ \mathrm{LSP}_{live} = \mathrm{thin\; protocol\; surface}, \quad \mathrm{LSIF}_{static} = \mathrm{stored\; relation\; state} }
+\]
+SPARQL verifies and projects $q_{\mathrm{SPARQL}}: \mathcal{D}^{\star} \to \mathcal{I}^{valid}$. LSIF serves $\mathcal{I}^{valid} \to Ans_q$.
+
+\chapter{Process Algebra and Route Geometry}
+
+\section{OCEL as Object-Event Reality}
+Let object-centric event data be a typed hypergraph $\mathcal{H}_{OCEL} = (E,O,\mathcal{R}_{EO},\mathcal{R}_{OO},\tau_E,\tau_O)$.
+Define incidence tensors:
+\[
+T^{EO}_{i,j} = \begin{cases} 1 & (e_i,o_j)\in\mathcal{R}_{EO} \\ 0 & \text{otherwise} \end{cases}, \quad \Omega^{OO}_{i,j,r} = \begin{cases} 1 & (o_i,o_j,r)\in\mathcal{R}_{OO} \\ 0 & \text{otherwise} \end{cases}
+\]
+An object-centric path query is:
+\[
+\mathrm{OCPQ}_{k}(e,o) = \mathbf{e}^{\top} T^{EO} \left( \prod_{r \in \mathcal{R}} \Omega^{OO}_{r} \right)^k \mathbf{o}
+\]
+Reachability: $e \leadsto_k o \iff \mathrm{OCPQ}_{k}(e,o)>0$.
+This yields the law: $\boxed{ \mathrm{Event} \neq \mathrm{log\; row} }$ and $\mathrm{Event} = \mathrm{observed\; object\; state\; transition}$.
+
+\section{POWL Route Geometry}
+Let $\Sigma$ be the activity alphabet. Define POWL recursively:
+\[
+P ::= a \mid \tau \mid P_1 \rightarrow P_2 \mid P_1 \times P_2 \mid P_1 \parallel_{\preceq} P_2 \mid \circlearrowleft(P_1,P_2) \mid \mathcal{G}_{choice}(N,E,\ell)
+\]
+Partial order semantics:
+\[
+\mathcal{L}\left(\parallel_{\preceq}(P_1,\dots,P_n)\right) = \left\{ \sigma \in \text{shuffle}_i \mathcal{L}(P_i) \mid i \preceq j \Rightarrow pos(P_i)<pos(P_j) \right\}
+\]
+POWL-to-Petri projection $\Pi_{PN}: POWL \to WFNet$ preserves exactness: $\mathcal{L}_{POWL}(P) = \mathcal{L}_{PN}(\Pi_{PN}(P))$.
+
+\chapter{Execution Authority and Conformance Calculus}
+
+\section{Petri Net Execution Authority}
+A marked Petri net $N = (P,T,F,W^-,W^+,M_0,M_f)$. Incidence matrix $W = W^+ - W^-$. State equation:
+\[ M_{k+1} = M_k + W u_k \]
+Conservation invariant: $\exists y \in \mathbb{Z}^{|P|}_{>0} : y^\top W = 0 \implies y^\top M_{k+1} = y^\top M_k$.
+
+\section{Alignment Calculus and LP Dual Heuristic}
+An alignment $\gamma = \langle (x_1,y_1),\dots,(x_k,y_k) \rangle$. Cost functional:
+\[ \kappa(\gamma) = \sum_{i=1}^{k} c(x_i,y_i) \]
+Variational form:
+\[
+J[\Gamma] = \int_0^1 \left( c_L|\dot{y}(s)|^2 + c_M|\dot{z}(s)|^2 + c_S|\dot{x}(s)-\dot{m}(s)|^2 \right) ds
+\]
+Euler-Lagrange condition minimizes to $0$. Discrete realization is A*. We relax the integer firing vector to $x \in \mathbb{R}_{\ge 0}^{|T|}$. The Dual LP gives the heuristic:
+\[
+h_{LP}(M) = \max_{\lambda} \lambda^\top(M_f-M) \quad \text{s.t.} \quad W^\top \lambda \le c
+\]
+Admissibility: $h_{LP}(M) \le h^{\star}(M)$.
+
+\section{Process Discovery as Differential Graph Optimization}
+DFG adjacency $D_{ij}$. Noise-filter activation $s_{\alpha,\beta}(D_{ij}) = [1+\exp(-\alpha(D_{ij}-\beta))]^{-1}$.
+Discovery objective:
+\[
+\mathcal{J}(M;L) = -\log P(L\mid M) + \lambda_1 \mathrm{Complexity}(M) + \lambda_2 \mathrm{Unsoundness}(M) - \lambda_3 \mathrm{Precision}(M)
+\]
+Gradient over relaxed graph weights $\nabla_D \mathcal{J}$ enables the inductive cut operator $\mathcal{C}: \widetilde{D} \to \{\oplus,\otimes,\circlearrowleft,\parallel,\mathcal{G}_{choice},\bot\}$.
+
+\chapter{Systems, Topology, and Cognition}
+
+\section{WebAssembly Execution Space}
+WASM linear memory $\mathbb{M}_{wasm} = \{0,1\}^{8N}$, partitioned into typed regions $\bigoplus_{i=1}^{k} R_i$. Bounded kernel $K: \mathbb{M}_{wasm}^{adm} \to \mathbb{M}_{wasm}^{adm}$ with $\Delta heap(K)=0$. Branch entropy $H_{\mathrm{branch}}(K) \le \epsilon$.
+
+\section{Receipt Functor and Manufacturing (\texttt{ggen})}
+Receipt functor $\rho: \mathbf{Exec} \to \mathbf{Hash}$:
+\[
+\rho(S_{i+1}) = H_{i+1} = \text{BLAKE3}( H_i \Vert id(f_i) \Vert S_{i+1} \Vert meta_i )
+\]
+Manufacturing Functor $\mathcal{G}_{gen}: \mathbf{Law} \to \mathbf{Artifact}$. A generated artifact is admissible only if $verify(\mathcal{G}_{gen}(Law)) = template(q(Law))$.
+
+\section{MCP / A2A Capability-State Algebra}
+Capability graph $\mathcal{K} = (A,C,R,T,P)$. Invocation is lawful iff:
+\[
+invoke(a,c,x) \text{ admitted} \iff Auth(a,c) \land Schema_c(x) \land Policy_c(x) \land Receiptable(c)
+\]
+MCP tool call as process event: $toolCall \in E_{OCEL} \sim (agent,tool,input,output,receipt)$. MCP/A2A is not tool calling; it is process participants over capability state.
+
+\section{Blue River Dam Operator and Cognitive Opacity}
+Uncontrolled flow $\mathcal{R} = \mathcal{L} \times \mathcal{A} \times \mathcal{P} \times \mathcal{E}$. Dam is an upstream closure operator $\Delta: \mathcal{R} \to \mathcal{R}^{\star}$.
+Strategy: $\boxed{ \mathrm{Build\; local\; framework\; dams} \Rightarrow \mathrm{capture\; global\; language/process\; flow} }$.
+Cognitive Opacity Theorem: $|\vec{c}|_{\mathcal{S}} > C_h$.
+\[
+\boxed{ \mathrm{Most\; humans\; can\; consume\; local\; utility} \not\Rightarrow \mathrm{they\; can\; infer\; the\; global\; MI\; substrate} }
+\]
+That is ``unbeknownst'' as cognitive non-locality.
+
+\chapter{The Grand Synthesis}
+
+\section{Universal Manufactured Intelligence Stack}
+\[
+\mathfrak{MI} = \rho \circ \mu_{\mathrm{WASM}} \circ \kappa_{\mathrm{conf}} \circ \Pi_{PN} \circ \mathcal{L}_{POWL} \circ q_{\mathrm{SPARQL}} \circ \alpha_{\mathrm{LSP}} \circ \eta_{\mathrm{lang}}
+\]
+Or:
+\[
+\boxed{ \mathcal{L} \to O \to O^{\star} \to \mathcal{D}^{\star} \to POWL \to PN \to Replay \to A \to R }
+\]
+
+\section{Final Grand Equation}
+The full sovereign equation:
+\[
+\boxed{ R = \rho \left( \mu_{WASM} \left( \kappa_{A^\star} \left( \Pi_{PN} \left( \mathcal{P}_{POWL} \left( q_{SPARQL} \left( \alpha_{LSP} \left( \eta(\lambda) \right) \right) \right) \right) \right) \right) \right) }
+\]
+Subject to admission constraints and $h_{LP}(M)\le h^{\star}(M)$ and functoriality.
+Therefore: $\boxed{ R \vdash A = \mu(O^{\star}) }$.
+
+Civilizational form:
+\[
+\boxed{ \mathrm{Language} \xrightarrow{admission} \mathrm{Process\; Law} \xrightarrow{execution} \mathrm{Consequence} \xrightarrow{receipt} \mathrm{Replayable\; Truth} }
+\]
+
+\end{document}
+"""
+
+with open("/Users/sac/wasm4pm/PHD_THESIS.tex", "w") as f:
+    f.write(latex_content)

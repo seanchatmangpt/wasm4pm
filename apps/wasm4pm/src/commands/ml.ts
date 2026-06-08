@@ -104,6 +104,14 @@ export const ml = defineCommand({
       type: 'boolean',
       description: 'Run all 6 ML tasks on the same log and show a multi-task summary table',
     },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();

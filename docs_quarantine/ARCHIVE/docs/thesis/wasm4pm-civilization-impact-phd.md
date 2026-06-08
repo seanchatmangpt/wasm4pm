@@ -50,7 +50,7 @@ The civilizational impact argument is necessarily projective rather than measure
 
 **Figure 3.2** — The five deployment profile gradient from mobile (~500KB) through browser (~2.7MB), illustrating feature accumulation across profiles and the 12 canonical feature flags that gate each capability tier.
 
-**Figure 3.3** — The handle-based WASM API: opaque string handles identifying stored objects in a Rust-side arena, with TypeScript dispatching by algorithm name through the Kernel facade.
+**Figure 3.3** — The handle-based WASM API: opaque string handles identifying stored objects in a Rust-side arena, with TypeScript dispatching by algorithm name through the Kernel boundary.
 
 **Figure 3.4** — The 10-package TypeScript monorepo dependency graph, from contracts (leaf) through engine, planner, kernel, config, observability, testing, ml, and swarm to the wpm CLI.
 
@@ -317,7 +317,7 @@ The 10-package monorepo is organized according to domain-driven design principle
 
 **`@wasm4pm/contracts`** is the leaf package with no internal dependencies. It defines the shared types that all other packages use: `Receipt` (cryptographic proof of execution with BLAKE3 hashing), `ErrorCode` (structured error codes in the 200s-700s range), `Result<T>` (discriminated union for error propagation), `ExecutionPlan` (DAG of plan nodes), and the prediction task types. The contracts package embodies the principle that shared types should be owned by no one: they belong to the domain, not to any particular service.
 
-**`@wasm4pm/kernel`** is the WASM facade. It wraps the raw WASM module behind a typed `Kernel` class that dispatches by algorithm name through `run(algorithmName, handle, params)`. The kernel also hosts the algorithm registry — metadata for all 41 algorithms including speed tiers, quality tiers, complexity classes, deployment profiles, and estimated performance characteristics. The kernel is the only package that imports the WASM binary.
+**`@wasm4pm/kernel`** is the WASM boundary. It wraps the raw WASM module behind a typed `Kernel` class that dispatches by algorithm name through `run(algorithmName, handle, params)`. The kernel also hosts the algorithm registry — metadata for all 41 algorithms including speed tiers, quality tiers, complexity classes, deployment profiles, and estimated performance characteristics. The kernel is the only package that imports the WASM binary.
 
 **`@wasm4pm/config`** implements the five-layer configuration resolution system: CLI arguments override TOML file, which overrides JSON file, which overrides environment variables, which override defaults. Each resolved field carries provenance metadata indicating which layer provided its value. Zod schemas validate the resolved configuration and derive the TypeScript types used throughout the system.
 
@@ -491,19 +491,19 @@ Provenance tracking — recording which configuration layer provided each field'
 
 The AutoML preset selection in `generateOptimalConfig()` is a TypeScript-first concept: the function examines the resolved configuration, determines the input log's characteristics (if available), and returns an enriched configuration object with algorithm selection annotations. The annotation fields (`_selectedAlgorithm`, `_selectionReason`) are TypeScript-only extensions to the validated config type — they do not appear in the Zod schema but are added after schema validation. This pattern — schema-validated core with TypeScript-typed extensions — is a useful pattern for any TypeScript system where some metadata is generated internally rather than provided by users.
 
-### 5.3 The WASM Facade Pattern
+### 5.3 The WASM boundary Pattern
 
-The `@wasm4pm/kernel` package demonstrates a **typed dispatch facade** over a complex, dynamically-typed WASM API. The raw WASM module exports over 70 functions with signatures like `discover_dfg(handle: string, activity_key: string) => string | null`. The TypeScript facade wraps this with:
+The `@wasm4pm/kernel` package demonstrates a **typed dispatch boundary** over a complex, dynamically-typed WASM API. The raw WASM module exports over 70 functions with signatures like `discover_dfg(handle: string, activity_key: string) => string | null`. The TypeScript boundary wraps this with:
 
 ```typescript
 kernel.run('dfg', handle, { activityKey: 'concept:name' }): Promise<KernelResult>
 ```
 
-The facade provides three benefits. First, **type safety**: the `run()` signature accepts a typed `algorithmName` from the registry, typed `params` validated against the algorithm's parameter schema, and returns a typed `KernelResult`. Second, **algorithm-agnosticism**: callers do not need to know which WASM function name corresponds to which algorithm — the kernel dispatches internally based on the registry. Third, **cross-cutting concerns**: the kernel applies OTEL instrumentation, timing measurement, receipt hashing, and error wrapping uniformly to all algorithm invocations, without requiring each caller to implement these.
+The boundary provides three benefits. First, **type safety**: the `run()` signature accepts a typed `algorithmName` from the registry, typed `params` validated against the algorithm's parameter schema, and returns a typed `KernelResult`. Second, **algorithm-agnosticism**: callers do not need to know which WASM function name corresponds to which algorithm — the kernel dispatches internally based on the registry. Third, **cross-cutting concerns**: the kernel applies OTEL instrumentation, timing measurement, receipt hashing, and error wrapping uniformly to all algorithm invocations, without requiring each caller to implement these.
 
-The facade pattern (Gamma et al., 1994) is well-established, but its application to WASM interfaces is relatively novel. The key insight is that the WASM boundary is a natural facade boundary: the TypeScript caller should never need to know the details of the WASM function interface, which may change across WASM build versions, feature flag configurations, or deployment profiles. The facade insulates the TypeScript layer from these variations.
+The boundary pattern (Gamma et al., 1994) is well-established, but its application to WASM interfaces is relatively novel. The key insight is that the WASM boundary is a natural boundary boundary: the TypeScript caller should never need to know the details of the WASM function interface, which may change across WASM build versions, feature flag configurations, or deployment profiles. The boundary insulates the TypeScript layer from these variations.
 
-For the TypeScript/JavaScript ecosystem, the WASM facade pattern is directly applicable to any TypeScript project that embeds a complex WASM library. The pattern — registry-driven dispatch, typed parameters, uniform cross-cutting concerns, algorithm-agnostic callers — scales from small WASM libraries with a handful of exports to complex platforms like wasm4pm with 70+ exports.
+For the TypeScript/JavaScript ecosystem, the WASM boundary pattern is directly applicable to any TypeScript project that embeds a complex WASM library. The pattern — registry-driven dispatch, typed parameters, uniform cross-cutting concerns, algorithm-agnostic callers — scales from small WASM libraries with a handful of exports to complex platforms like wasm4pm with 70+ exports.
 
 ### 5.4 OTEL in TypeScript: The Non-Blocking Sink Pattern
 
@@ -838,7 +838,7 @@ This thesis has identified three concrete contributions to the three ecosystems 
 
 **To the Rust ecosystem**: The deployment profile pattern — 12 canonical feature flags mapped to five explicit deployment profiles with documented binary size targets. And the documentation of the `serde_wasm_bindgen::to_value(&serde_json::Value)` silent empty-object defect with the `to_js_str` fix.
 
-**To the TypeScript ecosystem**: The WASM facade pattern (`Kernel.run(algorithmName, handle, params)` as a typed dispatch layer over a complex WASM API), the monorepo-as-domain-model pattern (10 packages as bounded contexts), the non-blocking OTEL sink pattern, and the stale-JS defect documentation with its correct fix.
+**To the TypeScript ecosystem**: The WASM boundary pattern (`Kernel.run(algorithmName, handle, params)` as a typed dispatch layer over a complex WASM API), the monorepo-as-domain-model pattern (10 packages as bounded contexts), the non-blocking OTEL sink pattern, and the stale-JS defect documentation with its correct fix.
 
 **To the WebAssembly ecosystem**: The binary size frontier as a structured approach to capability-constrained deployment differentiation, the handle-based API as the correct abstraction for expensive Rust objects at the WASM boundary, and the WASM-compatible RL pattern (RefCell, step counter, seeded `fastrand`) for stateful autonomous systems.
 

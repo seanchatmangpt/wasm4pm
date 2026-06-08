@@ -4,8 +4,8 @@
 
 use crate::error::MlError;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Voting type for ensemble
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -276,8 +276,8 @@ pub fn stacked_ensemble(
         cv_predictions.push(model_preds);
     }
 
-    let ensemble = StackedEnsemble::new(base_models, meta_model)
-        .with_cv_predictions(cv_predictions);
+    let ensemble =
+        StackedEnsemble::new(base_models, meta_model).with_cv_predictions(cv_predictions);
 
     serde_wasm_bindgen::to_value(&ensemble)
         .map_err(|e| JsError::new(&format!("Failed to convert ensemble: {}", e)))
@@ -311,7 +311,8 @@ pub fn voting_ensemble(
     let mut ensemble = VotingEnsemble::new(models, voting);
 
     if let Some(w) = weights {
-        ensemble = ensemble.with_weights(w)
+        ensemble = ensemble
+            .with_weights(w)
             .map_err(|e| JsError::new(&format!("Failed to set weights: {}", e)))?;
     }
 
@@ -413,7 +414,11 @@ mod tests {
 
     #[test]
     fn test_voting_ensemble_hard() {
-        let models = vec!["Model1".to_string(), "Model2".to_string(), "Model3".to_string()];
+        let models = vec![
+            "Model1".to_string(),
+            "Model2".to_string(),
+            "Model3".to_string(),
+        ];
         let ensemble = VotingEnsemble::new(models, VotingType::Hard);
 
         let predictions = vec![0.0, 1.0, 1.0]; // Two votes for class 1

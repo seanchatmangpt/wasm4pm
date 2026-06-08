@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// Quantile Regression - Predicts conditional quantiles via pinball loss.
 ///
@@ -19,16 +19,24 @@ pub struct QuantileRegressionModel {
 #[wasm_bindgen]
 impl QuantileRegressionModel {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "coefficients")]
-    pub fn coef_js(&self) -> Vec<f64> { self.coefficients.clone() }
+    pub fn coef_js(&self) -> Vec<f64> {
+        self.coefficients.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "intercept")]
-    pub fn intercept_js(&self) -> f64 { self.intercept }
+    pub fn intercept_js(&self) -> f64 {
+        self.intercept
+    }
 
     #[wasm_bindgen(getter, js_name = "quantile")]
-    pub fn quantile_js(&self) -> f64 { self.quantile }
+    pub fn quantile_js(&self) -> f64 {
+        self.quantile
+    }
 
     /// Predict target values at the fitted quantile.
     #[wasm_bindgen]
@@ -194,8 +202,7 @@ pub fn quantile_regression_predict(
     model: &QuantileRegressionModel,
     data: &[f64],
 ) -> Result<Vec<f64>, JsValue> {
-    quantile_regression_predict_impl(model, data)
-        .map_err(|e| JsValue::from_str(&e.message))
+    quantile_regression_predict_impl(model, data).map_err(|e| JsValue::from_str(&e.message))
 }
 
 #[cfg(test)]
@@ -208,7 +215,8 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let targets = vec![2.0, 4.0, 6.0, 8.0, 10.0];
 
-        let model = quantile_regression_fit_impl(&data, 1, &targets, 0.5, 5000, 0.01, 1e-10).unwrap();
+        let model =
+            quantile_regression_fit_impl(&data, 1, &targets, 0.5, 5000, 0.01, 1e-10).unwrap();
         let preds = quantile_regression_predict_impl(&model, &data).unwrap();
 
         // Median regression on perfectly linear data should be close to the line
@@ -216,7 +224,8 @@ mod tests {
             assert!(
                 (p - t).abs() < 1.0,
                 "median prediction {} vs target {}",
-                p, t
+                p,
+                t
             );
         }
     }
@@ -224,13 +233,13 @@ mod tests {
     #[test]
     fn test_quantile_25() {
         // quantile=0.25 should be below median predictions
-        let data = vec![
-            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
-        ];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         let targets = vec![3.0, 5.0, 4.0, 7.0, 6.0, 9.0, 8.0, 11.0, 10.0, 13.0];
 
-        let model_q25 = quantile_regression_fit_impl(&data, 1, &targets, 0.25, 5000, 0.01, 1e-10).unwrap();
-        let model_q50 = quantile_regression_fit_impl(&data, 1, &targets, 0.50, 5000, 0.01, 1e-10).unwrap();
+        let model_q25 =
+            quantile_regression_fit_impl(&data, 1, &targets, 0.25, 5000, 0.01, 1e-10).unwrap();
+        let model_q50 =
+            quantile_regression_fit_impl(&data, 1, &targets, 0.50, 5000, 0.01, 1e-10).unwrap();
 
         let preds_q25 = quantile_regression_predict_impl(&model_q25, &data).unwrap();
         let preds_q50 = quantile_regression_predict_impl(&model_q50, &data).unwrap();
@@ -245,20 +254,21 @@ mod tests {
         assert!(
             below_count >= preds_q25.len() * 6 / 10,
             "q25 should be below median in most predictions, got {}/{}",
-            below_count, preds_q25.len()
+            below_count,
+            preds_q25.len()
         );
     }
 
     #[test]
     fn test_quantile_75() {
         // quantile=0.75 should be above median predictions
-        let data = vec![
-            1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0,
-        ];
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         let targets = vec![3.0, 5.0, 4.0, 7.0, 6.0, 9.0, 8.0, 11.0, 10.0, 13.0];
 
-        let model_q50 = quantile_regression_fit_impl(&data, 1, &targets, 0.50, 5000, 0.01, 1e-10).unwrap();
-        let model_q75 = quantile_regression_fit_impl(&data, 1, &targets, 0.75, 5000, 0.01, 1e-10).unwrap();
+        let model_q50 =
+            quantile_regression_fit_impl(&data, 1, &targets, 0.50, 5000, 0.01, 1e-10).unwrap();
+        let model_q75 =
+            quantile_regression_fit_impl(&data, 1, &targets, 0.75, 5000, 0.01, 1e-10).unwrap();
 
         let preds_q50 = quantile_regression_predict_impl(&model_q50, &data).unwrap();
         let preds_q75 = quantile_regression_predict_impl(&model_q75, &data).unwrap();
@@ -273,7 +283,8 @@ mod tests {
         assert!(
             above_count >= preds_q75.len() * 6 / 10,
             "q75 should be above median in most predictions, got {}/{}",
-            above_count, preds_q75.len()
+            above_count,
+            preds_q75.len()
         );
     }
 }

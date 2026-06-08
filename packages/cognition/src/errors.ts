@@ -1,4 +1,4 @@
-//! Structured error class for the cognition facade.
+//! Structured error class for the cognition boundary.
 //!
 //! Zero decision logic — only carries a code, message, and optional cause/details
 //! across the WASM boundary so callers can dispatch on `error.code` without

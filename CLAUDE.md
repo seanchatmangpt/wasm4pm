@@ -54,7 +54,7 @@ wasm4pm/
 │   │                       # WARNING: `cargo install --path crates/wasm4pm-cli` shadows
 │   │                       #          the TypeScript CLI if both are on PATH
 │   ├── wasm4pm-algos/      # Algorithm implementations (Rust, used by wasm4pm-cli)
-│   ├── wasm4pm-types/      # Shared Rust types (EventLog, DFG, etc.)
+│   ├── wasm4pm-compat/      # Shared Rust types (EventLog, DFG, etc.)
 │   ├── wasm4pm-utils/      # Shared Rust utilities
 │   ├── miniml-core/        # Micro-ML Rust crate
 │   ├── wasm4pm-cognition/  # Cognition layer WASM crate
@@ -85,7 +85,7 @@ The Rust binary (`crates/wasm4pm-cli/`) is part of the Cargo workspace (`cargo b
 |---|---|
 | `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
 | `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
-| `@wasm4pm/kernel` | WASM facade — 38 registered algorithms (per `packages/kernel/src/registry.ts`), `run(algorithmName, handle, params)`, streaming via `stream()` |
+| `@wasm4pm/kernel` | WASM boundary — 38 registered algorithms (per `packages/kernel/src/registry.ts`), `run(algorithmName, handle, params)`, streaming via `stream()` |
 | `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
 | `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
 | `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
@@ -295,6 +295,14 @@ npm run measure-sizes         # measure WASM binary sizes
 ```
 
 ### Rust
+
+> **Toolchain constraint (GAP_WASM4PM_CAVEAT_003):** The Rust toolchain is pinned in
+> `rust-toolchain.toml` to a specific nightly date (`nightly-2026-04-15`).
+> Do NOT change to unpinned `channel = "nightly"` — that is non-reproducible on CI
+> and may fail with E0554 when `generic_const_exprs` (a nightly-only feature used by
+> wasm4pm-compat) is stabilized or broken in a newer nightly. When adopting a newer
+> nightly, update the date, run `cargo check`, and commit as a separate toolchain bump.
+
 ```bash
 cargo check                   # fast type check
 cargo build --release         # build WASM library

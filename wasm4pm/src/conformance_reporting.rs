@@ -89,7 +89,12 @@ pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown
     // Estimate produced/consumed from overall fitness formula
     // fitness = 1 - (missing + consumed) / (produced + remaining)
     // For approximation, assume balanced token flow
-    let total_produced = result.case_fitness.iter().map(|t| t.trace_fitness as usize).sum::<usize>().max(total_missing);
+    let total_produced = result
+        .case_fitness
+        .iter()
+        .map(|t| t.trace_fitness as usize)
+        .sum::<usize>()
+        .max(total_missing);
     let total_consumed = total_missing;
 
     // Calculate percentages (with safe division)
@@ -102,8 +107,11 @@ pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown
     // Identify bottleneck activities (those with highest deviation counts)
     let mut activities: Vec<_> = activity_map.values().collect();
     activities.sort_by_key(|a| std::cmp::Reverse(a.missing_tokens));
-    let bottleneck_activities: Vec<String> =
-        activities.iter().take(3).map(|a| a.activity.clone()).collect();
+    let bottleneck_activities: Vec<String> = activities
+        .iter()
+        .take(3)
+        .map(|a| a.activity.clone())
+        .collect();
 
     FitnessBreakdown {
         overall_fitness: result.avg_fitness,

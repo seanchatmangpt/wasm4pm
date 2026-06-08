@@ -1,19 +1,50 @@
 use anyhow::{Context, Result};
 use colored::Colorize;
-use wasm4pm_cli::io::{Io, Table};
 use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 use wasm4pm::simd_token_replay;
 use wasm4pm::state::delete_object;
 use wasm4pm::xes_format::load_eventlog_from_xes;
+use wasm4pm_cli::io::{Io, Table};
 
 pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
     let io = Io::new(false);
 
+    // 0. Format detection — bail early with actionable message for OCEL files
+    let ext = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    let is_ocel = (ext == "json" && input.to_string_lossy().contains(".ocel"))
+        || ext == "jsonocel"
+        || ext == "ocel";
+
+    if is_ocel {
+        // OCEL format detected — graduate to wasm4pm engine for full support.
+        // The wasm4pm WASM layer supports OCEL 2.0 via feature-ocel, but the
+        // Rust CLI audit path uses SIMD token replay which requires a flattened
+        // XES-like trace structure. Emit a clear actionable message.
+        anyhow::bail!(
+            "OCEL 2.0 format detected ({:?}).\n\
+             The wpm audit command currently supports XES event logs (IEEE 1849).\n\
+             To audit an OCEL log, flatten it first:\n\n\
+             \twpm run --algorithm dfg --format json {:?}\n\n\
+             or use the TypeScript CLI: wpm conformance {:?}",
+            input,
+            input,
+            input
+        );
+    }
+
     // 1. Load XES
-    let xes_content = fs::read_to_string(&input)
-        .with_context(|| format!("Failed to read event log: {:?}", input))?;
+    let xes_content = fs::read_to_string(&input).with_context(|| {
+        format!(
+            "Failed to read XES event log ({:?}). Supported formats: .xes",
+            input
+        )
+    })?;
 
     // 2. Load into wasm4pm state
     let log_handle = load_eventlog_from_xes(&xes_content)
@@ -36,8 +67,13 @@ pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
 }
 
 fn print_audit_report(result: &Value, io: &Io) {
-    let fitness = result["fitness"].as_f64().unwrap_or(0.0);
-    let precision = result["precision"].as_f64().unwrap_or(0.0);
+    // Verdict schema: wpm-verdict-v1.json — reads overall_fitness (NOT fitness), trace[].missing (NOT missing_tokens)
+    // simd_token_replay emits "overall_fitness" and "overall_precision" at the top level.
+    // Per-trace objects use "missing" and "remaining" (not "missing_tokens" /
+    // "remaining_tokens"). There is no "trace_id" field; traces are indexed by
+    // position in the "trace_results" array.
+    let fitness = result["overall_fitness"].as_f64().unwrap_or(0.0);
+    let precision = result["overall_precision"].as_f64();
 
     io.header("Vision 2030 Conformance Audit Report");
 
@@ -51,7 +87,14 @@ fn print_audit_report(result: &Value, io: &Io) {
 
     println!("\n{:<25} {}", "Audit Verdict:".bold(), verdict);
     println!("{:<25} {:.4}", "Fitness Score:".bold(), fitness);
-    println!("{:<25} {:.4}", "Precision Score:".bold(), precision);
+    match precision {
+        Some(p) => println!("{:<25} {:.4}", "Precision Score:".bold(), p),
+        None => println!(
+            "{:<25} {}",
+            "Precision Score:".bold(),
+            "UNSUPPORTED".dimmed()
+        ),
+    };
 
     if let Some(traces) = result["trace_results"].as_array() {
         println!("\n{:<25} {}", "Total Traces Audited:".bold(), traces.len());
@@ -70,17 +113,20 @@ fn print_audit_report(result: &Value, io: &Io) {
         if traces.len() - fitting_count > 0 {
             println!("\n{}", "Sample Deviations:".bold().underline());
             let mut table = Table::new(vec!["Trace ID", "Fitness", "Problems"]);
-            for trace in traces
+            for (idx, trace) in traces
                 .iter()
-                .filter(|t| t["fitness"].as_f64().unwrap_or(0.0) < 1.0)
+                .enumerate()
+                .filter(|(_, t)| t["fitness"].as_f64().unwrap_or(0.0) < 1.0)
                 .take(5)
             {
-                let problems = format!(
-                    "M: {}, R: {}",
-                    trace["missing_tokens"], trace["remaining_tokens"]
-                );
+                // Per-trace JSON: "missing" and "remaining" (not "missing_tokens" /
+                // "remaining_tokens"). Use positional index as trace identifier since
+                // simd_token_replay does not emit a "trace_id" field.
+                let missing = trace["missing"].as_u64().unwrap_or(0);
+                let remaining = trace["remaining"].as_u64().unwrap_or(0);
+                let problems = format!("M: {}, R: {}", missing, remaining);
                 table.add_row(vec![
-                    trace["trace_id"].as_str().unwrap_or("unknown").to_string(),
+                    format!("trace-{}", idx),
                     format!("{:.2}", trace["fitness"].as_f64().unwrap_or(0.0)),
                     problems,
                 ]);

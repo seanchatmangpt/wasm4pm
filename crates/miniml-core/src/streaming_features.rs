@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WelfordStatistics {
@@ -73,7 +73,7 @@ impl StreamingFeatureExtractor {
 
     pub fn extract_vector(&self, activities: &[String], duration_ms: f64) -> Vec<f64> {
         let mut vec = Vec::new();
-        
+
         // 1. Duration Z-score
         let mean = self.duration_stats.mean;
         let std = self.duration_stats.std_dev();
@@ -89,7 +89,7 @@ impl StreamingFeatureExtractor {
 
         // 3. TF-IDF for common activities (we'd need a fixed vocab or just pick top N)
         // For simplicity, we just use the first few dimensions for raw stats
-        
+
         vec
     }
 }

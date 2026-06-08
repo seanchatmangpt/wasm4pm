@@ -14,16 +14,17 @@
 use prolog8::{
     admit_atom, admit_rule,
     catalog::{Catalog, PredicateMeta, PredicateProofPolicy},
-    hash::{combine_roots, DOMAIN_PROLOG8_CATALOG, DOMAIN_PROLOG8_FACT, DOMAIN_PROLOG8_INPUT,
-           DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT, DOMAIN_PROLOG8_RULES},
-    kernel::{Decision, Kernel, QueryResult},
-    replay, ReplayStatus,
-    types::{
-        Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, PlanId,
-        PredicateId, ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId,
-        BODY_CAP,
+    hash::{
+        combine_roots, DOMAIN_PROLOG8_CATALOG, DOMAIN_PROLOG8_FACT, DOMAIN_PROLOG8_INPUT,
+        DOMAIN_PROLOG8_OUTPUT, DOMAIN_PROLOG8_PROOF_ROOT, DOMAIN_PROLOG8_RULES,
     },
-    RejectionCode,
+    kernel::{Decision, Kernel, QueryResult},
+    replay,
+    types::{
+        Atom8, CatalogId, DecisionKind, EpochId, FactBlock8, FactRow8, PlanId, PredicateId,
+        ProofKind, ProofMode, QueryAtom8, Rule8, RuleId, SourceId, TermId, BODY_CAP,
+    },
+    RejectionCode, ReplayStatus,
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,7 +74,7 @@ fn build_allow_receipt() -> (Kernel, QueryAtom8, Decision) {
 
     let answers = match k.query(&query) {
         QueryResult::Answered(v) => v,
-        _ => panic!("expected Answered"),
+        _ => unreachable!("expected Answered"),
     };
     assert_eq!(answers.len(), 1);
 
@@ -97,7 +98,7 @@ fn cf1_arity_at_cap_passes() {
         materialized: false,
     });
 
-    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(&format!("t{}", i))).collect();
+    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(format!("t{}", i))).collect();
     let mut atom = Atom8::new(PredicateId(1), 8, &terms);
     atom.binding_mask = 0xFF;
 
@@ -217,7 +218,7 @@ fn cf1_binding_mask_at_cap_passes() {
         materialized: false,
     });
 
-    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(&format!("t{}", i))).collect();
+    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(format!("t{}", i))).collect();
     let mut atom = Atom8::new(PredicateId(1), 8, &terms);
     atom.binding_mask = 0xFF;
 
@@ -487,7 +488,7 @@ fn cf3_rule_derivation_includes_rule_proof_node() {
 
     let answers = match k.query(&query) {
         QueryResult::Answered(v) => v,
-        _ => panic!("expected Answered"),
+        _ => unreachable!("expected Answered"),
     };
 
     assert!(!answers.is_empty());
@@ -499,7 +500,8 @@ fn cf3_rule_derivation_includes_rule_proof_node() {
 
     for node in &decision.proof {
         assert_ne!(
-            node.kind, ProofKind::MissingFact,
+            node.kind,
+            ProofKind::MissingFact,
             "Allow should not have MissingFact nodes"
         );
     }
@@ -517,7 +519,7 @@ fn cf3_deny_emits_only_missing_fact_nodes() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert_eq!(decision.kind, DecisionKind::Deny);
@@ -550,7 +552,7 @@ fn cf4_deny_receipt_hash_is_nonzero() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert_ne!(decision.receipt.receipt_hash, [0u8; 32]);
@@ -564,15 +566,18 @@ fn cf4_deny_receipt_is_deterministic() {
 
     let decision1 = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     let decision2 = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
-    assert_eq!(decision1.receipt.receipt_hash, decision2.receipt.receipt_hash);
+    assert_eq!(
+        decision1.receipt.receipt_hash,
+        decision2.receipt.receipt_hash
+    );
 }
 
 /// **Contract:** Deny proof is non-empty.
@@ -585,7 +590,7 @@ fn cf4_deny_proof_is_nonempty() {
 
     let decision = match k.query(&query) {
         QueryResult::Denied(d) => d,
-        _ => panic!("expected Denied"),
+        _ => unreachable!("expected Denied"),
     };
 
     assert!(!decision.proof.is_empty());
@@ -654,7 +659,7 @@ fn cf4_predicate_with_no_fact_block_yields_deny() {
 /// **Theorem:** All 10 domain-separated BLAKE3 keys are pairwise distinct (45 pairs).
 #[test]
 fn cf5_all_domain_keys_are_pairwise_distinct() {
-    let domains = vec![
+    let domains = [
         *DOMAIN_PROLOG8_FACT,
         *DOMAIN_PROLOG8_INPUT,
         *DOMAIN_PROLOG8_OUTPUT,

@@ -156,13 +156,13 @@ mod tests {
     /// and idempotent (cap(cap(x)) == cap(x)).
     #[test]
     fn cap_n_components_invariants() {
-        assert_eq!(cap_n_components(99, 5, 100), 5);   // capped by vocab
-        assert_eq!(cap_n_components(99, 100, 5), 4);   // capped by n-1
-        assert_eq!(cap_n_components(99, 3, 7), 3);     // tighter wins (vocab)
-        assert_eq!(cap_n_components(99, 50, 4), 3);    // tighter wins (n-1)
-        assert_eq!(cap_n_components(0, 5, 100), 1);    // never zero
-        assert_eq!(cap_n_components(5, 1, 10), 1);     // vocab=1 → 1
-        assert_eq!(cap_n_components(3, 10, 20), 3);    // identity in range
+        assert_eq!(cap_n_components(99, 5, 100), 5); // capped by vocab
+        assert_eq!(cap_n_components(99, 100, 5), 4); // capped by n-1
+        assert_eq!(cap_n_components(99, 3, 7), 3); // tighter wins (vocab)
+        assert_eq!(cap_n_components(99, 50, 4), 3); // tighter wins (n-1)
+        assert_eq!(cap_n_components(0, 5, 100), 1); // never zero
+        assert_eq!(cap_n_components(5, 1, 10), 1); // vocab=1 → 1
+        assert_eq!(cap_n_components(3, 10, 20), 3); // identity in range
         let once = cap_n_components(99, 7, 30);
         assert_eq!(once, cap_n_components(once, 7, 30)); // idempotent
     }

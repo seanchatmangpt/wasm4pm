@@ -99,15 +99,15 @@ else
     check 4 "wasm-bindgen exports exist in src/wasm.rs" "fail: $WASM_RS does not exist"
 fi
 
-# ── DoD-05: TS facade is thin (delegates; has zero-logic.test.ts) ───────────────
+# ── DoD-05: TS boundary is thin (delegates; has zero-logic.test.ts) ───────────────
 TS_INDEX="packages/cognition/src/index.ts"
 TS_ZERO_LOGIC="packages/cognition/src/__tests__/zero-logic.test.ts"
 if [ -f "$TS_INDEX" ] && [ -f "$TS_ZERO_LOGIC" ]; then
-    check 5 "TS facade is thin (zero-logic.test.ts present)" "pass"
+    check 5 "TS boundary is thin (zero-logic.test.ts present)" "pass"
 elif [ -f "$TS_INDEX" ]; then
-    check 5 "TS facade is thin (zero-logic.test.ts present)" "fail: index.ts present but zero-logic.test.ts missing at $TS_ZERO_LOGIC"
+    check 5 "TS boundary is thin (zero-logic.test.ts present)" "fail: index.ts present but zero-logic.test.ts missing at $TS_ZERO_LOGIC"
 else
-    check 5 "TS facade is thin (zero-logic.test.ts present)" "fail: TS facade missing at $TS_INDEX"
+    check 5 "TS boundary is thin (zero-logic.test.ts present)" "fail: TS boundary missing at $TS_INDEX"
 fi
 
 # ── DoD-06: No forbidden placeholder tokens in src/ ────────────────────────────

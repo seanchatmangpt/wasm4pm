@@ -2,10 +2,10 @@
 //!
 //! Supports JSON (human-readable) and binary (compact) formats.
 
+use base64::{engine::general_purpose, Engine as _};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use base64::{engine::general_purpose, Engine as _};
 
 /// Training metadata for provenance tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -194,7 +194,8 @@ pub fn encode_model_base64(binary: &[u8]) -> String {
 /// Decode base64 to binary model
 #[wasm_bindgen]
 pub fn decode_model_base64(encoded: &str) -> Result<Vec<u8>, JsError> {
-    general_purpose::STANDARD.decode(encoded)
+    general_purpose::STANDARD
+        .decode(encoded)
         .map_err(|e| JsError::new(&format!("Failed to decode base64: {}", e)))
 }
 
@@ -218,17 +219,14 @@ mod tests {
 
     #[test]
     fn test_save_load_json() {
-        let model = PersistentModel::new(
-            "RandomForest",
-            json!({"n_trees": 100, "max_depth": 10})
-        )
-        .with_metadata(
-            TrainingMetadata::new("RandomForest")
-                .with_accuracy(0.95)
-                .with_training_time(45000)
-                .with_dimensions(1000, 20)
-        )
-        .with_selected_features(vec![0, 2, 5, 7]);
+        let model = PersistentModel::new("RandomForest", json!({"n_trees": 100, "max_depth": 10}))
+            .with_metadata(
+                TrainingMetadata::new("RandomForest")
+                    .with_accuracy(0.95)
+                    .with_training_time(45000)
+                    .with_dimensions(1000, 20),
+            )
+            .with_selected_features(vec![0, 2, 5, 7]);
 
         // Test serialization directly (WASM wrappers require JsValue context)
         let json = serde_json::to_string_pretty(&model).unwrap();
@@ -243,12 +241,9 @@ mod tests {
     fn test_save_load_binary() {
         let model = PersistentModel::new(
             "LogisticRegression",
-            json!({"learning_rate": 0.01, "max_iter": 1000})
+            json!({"learning_rate": 0.01, "max_iter": 1000}),
         )
-        .with_metadata(
-            TrainingMetadata::new("LogisticRegression")
-                .with_accuracy(0.87)
-        );
+        .with_metadata(TrainingMetadata::new("LogisticRegression").with_accuracy(0.87));
 
         // Test JSON round-trip (binary serialization via bincode requires WASM context
         // due to serde_json::Value + bincode compatibility)

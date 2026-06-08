@@ -1,9 +1,9 @@
-use wasm_bindgen::prelude::*;
-use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get, Rng};
 use crate::decision_tree::decision_tree_impl;
+use crate::error::MlError;
 use crate::knn::knn_fit_impl;
+use crate::matrix::{mat_get, validate_matrix, Rng};
 use crate::naive_bayes::naive_bayes_impl;
+use wasm_bindgen::prelude::*;
 
 /// K-fold cross-validation.
 /// Returns: [mean_score, std_score, score_fold_0, score_fold_1, ..., score_fold_K-1]
@@ -76,14 +76,33 @@ pub fn cross_validate_score_impl(
         // Train model and compute accuracy
         let score = match model_type {
             "decision_tree" => {
-                let max_depth = if !model_params.is_empty() { model_params[0] as usize } else { 10 };
-                let min_samples = if model_params.len() > 1 { model_params[1] as usize } else { 2 };
-                let model = decision_tree_impl(&train_data, n_features, &train_labels, max_depth, min_samples, true)?;
+                let max_depth = if !model_params.is_empty() {
+                    model_params[0] as usize
+                } else {
+                    10
+                };
+                let min_samples = if model_params.len() > 1 {
+                    model_params[1] as usize
+                } else {
+                    2
+                };
+                let model = decision_tree_impl(
+                    &train_data,
+                    n_features,
+                    &train_labels,
+                    max_depth,
+                    min_samples,
+                    true,
+                )?;
                 let preds = model.predict(&test_data);
                 compute_accuracy(&test_labels, &preds)
             }
             "knn" => {
-                let k = if !model_params.is_empty() { model_params[0] as usize } else { 3 };
+                let k = if !model_params.is_empty() {
+                    model_params[0] as usize
+                } else {
+                    3
+                };
                 let model = knn_fit_impl(&train_data, n_features, &train_labels, k)?;
                 let preds_u32 = model.predict(&test_data);
                 let preds: Vec<f64> = preds_u32.iter().map(|&p| p as f64).collect();
@@ -103,9 +122,7 @@ pub fn cross_validate_score_impl(
 
     // Compute mean and std of scores
     let mean = scores.iter().sum::<f64>() / scores.len() as f64;
-    let variance = scores.iter()
-        .map(|s| (s - mean).powi(2))
-        .sum::<f64>() / scores.len() as f64;
+    let variance = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
     let std = variance.sqrt();
 
     // Result: [mean, std, score_0, score_1, ..., score_K-1]
@@ -118,7 +135,8 @@ pub fn cross_validate_score_impl(
 }
 
 fn compute_accuracy(y_true: &[f64], y_pred: &[f64]) -> f64 {
-    let correct = y_true.iter()
+    let correct = y_true
+        .iter()
         .zip(y_pred.iter())
         .filter(|(t, p)| (**t - **p).abs() < 1e-10)
         .count();
@@ -145,24 +163,26 @@ mod tests {
     fn make_test_data() -> (Vec<f64>, Vec<f64>) {
         // Two clear clusters, 12 samples
         let data = vec![
-            0.0, 0.0,  0.1, 0.1,  -0.1, 0.1,  0.0, -0.1,  0.1, -0.1,  -0.1, -0.1,
-            5.0, 5.0,  5.1, 5.1,  4.9, 5.0,  5.0, 4.9,  5.1, 4.9,  4.9, 5.1,
+            0.0, 0.0, 0.1, 0.1, -0.1, 0.1, 0.0, -0.1, 0.1, -0.1, -0.1, -0.1, 5.0, 5.0, 5.1, 5.1,
+            4.9, 5.0, 5.0, 4.9, 5.1, 4.9, 4.9, 5.1,
         ];
-        let labels = vec![
-            0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-        ];
+        let labels = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
         (data, labels)
     }
 
     #[test]
     fn test_decision_tree_cv() {
         let (data, labels) = make_test_data();
-        let result = cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
+        let result =
+            cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
 
         let mean = result[0];
         let std = result[1];
-        assert!(mean > 0.8, "Expected high accuracy for well-separated data, got {}", mean);
+        assert!(
+            mean > 0.8,
+            "Expected high accuracy for well-separated data, got {}",
+            mean
+        );
         assert!(std >= 0.0);
         // 3 fold scores
         assert_eq!(result.len(), 5); // mean + std + 3 scores
@@ -174,7 +194,11 @@ mod tests {
         let result = cross_validate_score_impl(&data, 2, &labels, 3, "knn", &[3.0]).unwrap();
 
         let mean = result[0];
-        assert!(mean > 0.8, "Expected high accuracy for KNN on well-separated data, got {}", mean);
+        assert!(
+            mean > 0.8,
+            "Expected high accuracy for KNN on well-separated data, got {}",
+            mean
+        );
     }
 
     #[test]
@@ -183,7 +207,11 @@ mod tests {
         let result = cross_validate_score_impl(&data, 2, &labels, 3, "naive_bayes", &[]).unwrap();
 
         let mean = result[0];
-        assert!(mean > 0.8, "Expected high accuracy for NB on well-separated data, got {}", mean);
+        assert!(
+            mean > 0.8,
+            "Expected high accuracy for NB on well-separated data, got {}",
+            mean
+        );
     }
 
     #[test]
@@ -208,8 +236,10 @@ mod tests {
     #[test]
     fn test_deterministic() {
         let (data, labels) = make_test_data();
-        let r1 = cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
-        let r2 = cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
+        let r1 =
+            cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
+        let r2 =
+            cross_validate_score_impl(&data, 2, &labels, 3, "decision_tree", &[10.0, 2.0]).unwrap();
         assert_eq!(r1, r2);
     }
 

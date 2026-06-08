@@ -13,6 +13,7 @@
 
 use crate::error::Wasm4pmError;
 use crate::powl_arena::{BinaryRelation, Operator, PowlArena};
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 // ─── Tokeniser ────────────────────────────────────────────────────────────────
 
@@ -261,7 +262,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
 
     // Each node is `nID=<spec>`; record (id_str, ChoiceGraphNode).
     let mut id_to_idx: Vec<(String, usize)> = Vec::new();
-    let mut nodes: Vec<wasm4pm_types::ChoiceGraphNode> = Vec::new();
+    let mut nodes: Vec<ChoiceGraphNode> = Vec::new();
 
     for tok in &raw_node_tokens {
         let (id_str, spec) = match tok.find('=') {
@@ -285,7 +286,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 Some(p) => p,
                 None => continue,
             };
-            // Reject `-->` (legacy PO arrow): must be `->` only.
+            // Reject `-->` ( PO arrow): must be `->` only.
             if edge_tok.as_bytes().get(arrow_pos + 2) == Some(&b'>') {
                 return Err(format!(
                     "CG edge '{}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar",
@@ -308,31 +309,30 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
         }
     }
 
-    let cg = wasm4pm_types::ChoiceGraph::new(nodes, edges)
-        .map_err(|e| format!("invalid CG: {}", e))?;
+    let cg = ChoiceGraph::new(nodes, edges);
     Ok(arena.add_choice_graph(&cg))
 }
 
 fn parse_choice_graph_node_spec(
     spec: &str,
     arena: &mut PowlArena,
-) -> Result<wasm4pm_types::ChoiceGraphNode, String> {
+) -> Result<ChoiceGraphNode, String> {
     let s = spec.trim();
     if s == "Start" {
-        return Ok(wasm4pm_types::ChoiceGraphNode::Start);
+        return Ok(ChoiceGraphNode::Start);
     }
     if s == "End" {
-        return Ok(wasm4pm_types::ChoiceGraphNode::End);
+        return Ok(ChoiceGraphNode::End);
     }
     if let Some(rest) = s.strip_prefix("Activity(") {
         let inner = rest
             .strip_suffix(')')
             .ok_or_else(|| format!("Activity(...) missing ')': '{}'", s))?;
-        return Ok(wasm4pm_types::ChoiceGraphNode::Activity(inner.trim().to_string()));
+        return Ok(ChoiceGraphNode::Activity(inner.trim().to_string()));
     }
     // Fallback: parse as nested POWL sub-model.
     let sub_idx = parse_powl_model_string(s, arena).map_err(|e| e.to_string())?;
-    Ok(wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx))
+    Ok(ChoiceGraphNode::SubModel(sub_idx))
 }
 
 fn extract_bracketed_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
@@ -391,11 +391,7 @@ fn node_label_matches(token: &str, label: &str) -> bool {
     }
     // Normalize internal whitespace around commas and parens so that
     // "X(pay, installment)" matches "X(pay,installment)" etc.
-    let normalize = |s: &str| {
-        s.chars()
-            .filter(|c| !c.is_whitespace())
-            .collect::<String>()
-    };
+    let normalize = |s: &str| s.chars().filter(|c| !c.is_whitespace()).collect::<String>();
     normalize(t) == normalize(l)
 }
 

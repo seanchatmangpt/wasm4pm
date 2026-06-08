@@ -79,7 +79,7 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
                     guard_pass,
                     circuit_allowed,
                     false,
-                    0,  // rework_ratio_q = 0 (default)
+                    0, // rework_ratio_q = 0 (default)
                 );
 
                 // Domain contract: estimated_reward must be in the RL reward range [-5.0, 1.1]
@@ -137,7 +137,10 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
 
         // Compute confidence: if many options agree on reward, confidence is high
         let reward_variance = if options.len() > 1 {
-            let mean = options.iter().filter_map(|o| o.estimated_reward).fold(0.0, |a, b| a + b)
+            let mean = options
+                .iter()
+                .filter_map(|o| o.estimated_reward)
+                .fold(0.0, |a, b| a + b)
                 / options.len() as f32;
             let variance = options
                 .iter()
@@ -248,12 +251,18 @@ mod tests {
     fn selected_option_has_highest_reward() {
         let ev = DefaultCounterfactualEvaluator;
         let task = task_with_actions(
-            vec![ActionClass::Execute, ActionClass::Read, ActionClass::Escalate],
+            vec![
+                ActionClass::Execute,
+                ActionClass::Read,
+                ActionClass::Escalate,
+            ],
             DriftStatus::Watch,
         );
         let result = ev.evaluate_options(&task).unwrap();
         let selected_id = result.selected_option_id.clone().unwrap();
-        let selected_reward = result.options.iter()
+        let selected_reward = result
+            .options
+            .iter()
             .find(|o| o.option_id == selected_id)
             .and_then(|o| o.estimated_reward)
             .unwrap();
@@ -280,10 +289,14 @@ mod tests {
             .evaluate_options(&task_with_actions(actions, DriftStatus::OutOfControl))
             .unwrap();
 
-        let stable_best = stable_result.options.iter()
+        let stable_best = stable_result
+            .options
+            .iter()
             .filter_map(|o| o.estimated_reward)
             .fold(f32::NEG_INFINITY, f32::max);
-        let oc_best = oc_result.options.iter()
+        let oc_best = oc_result
+            .options
+            .iter()
             .filter_map(|o| o.estimated_reward)
             .fold(f32::NEG_INFINITY, f32::max);
 
@@ -303,7 +316,9 @@ mod tests {
         let ev = DefaultCounterfactualEvaluator;
         let task = task_with_actions(vec![ActionClass::Execute], DriftStatus::Stable);
         let result = ev.evaluate_options(&task).unwrap();
-        let exec_opt = result.options.iter()
+        let exec_opt = result
+            .options
+            .iter()
             .find(|o| matches!(o.action_class, ActionClass::Execute))
             .unwrap();
         assert_eq!(exec_opt.projected_disposition, DecisionDisposition::Allow);
@@ -314,7 +329,9 @@ mod tests {
         let ev = DefaultCounterfactualEvaluator;
         let task = task_with_actions(vec![ActionClass::Escalate], DriftStatus::Stable);
         let result = ev.evaluate_options(&task).unwrap();
-        let esc_opt = result.options.iter()
+        let esc_opt = result
+            .options
+            .iter()
             .find(|o| matches!(o.action_class, ActionClass::Escalate))
             .unwrap();
         assert_eq!(esc_opt.projected_disposition, DecisionDisposition::Escalate);
@@ -339,6 +356,9 @@ mod tests {
         // Property: empty/default input must never panic
         let ev = DefaultCounterfactualEvaluator;
         let result = ev.evaluate_options(&TaskContext::default());
-        assert!(result.is_ok(), "default TaskContext must not panic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "default TaskContext must not panic: {result:?}"
+        );
     }
 }

@@ -1,0 +1,66 @@
+[project]
+name = "wasm4pm"
+version = "0.1.0"
+description = "Process mining platform — algorithm backend and TypeScript monorepo"
+authors = ["Sean Chatman"]
+license = "MIT"
+
+# ---------------------------------------------------------------------------
+# Ontology: wasm4pm domain ontology
+# ---------------------------------------------------------------------------
+[ontology]
+source = "ontology/public-alignment.ttl"
+additional = [
+  "ontology/public-shapes.ttl",
+  "semconv/wasm4pm-ontology.ttl",
+  "semconv/wasm4pm-shapes.ttl",
+  "lifecycle/schema/domain.ttl",
+  "lifecycle/schema/algorithms.ttl",
+]
+standard_only = false
+
+[generation]
+output_dir = "."
+
+# ---------------------------------------------------------------------------
+# Declared packs (local reference to wasm4pm-compat)
+# ---------------------------------------------------------------------------
+[[packs]]
+name = "wasm4pm-compat"
+registry = "local"
+path = "../wasm4pm-compat/ggen"
+
+# ---------------------------------------------------------------------------
+# Rule: extract-witnesses
+# Uses wasm4pm-compat queries + templates to emit the witnesses module.
+# NOTE: pack references require Pack variant support in ggen (implemented
+# in previous step). If the resolver cannot yet locate pack outputs,
+# fall back to the local file variants below.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name = "extract-witnesses-via-pack"
+query    = { pack = "wasm4pm-compat", output = "queries",        file = "extract-witnesses.rq" }
+template = { pack = "wasm4pm-compat", output = "templates_rust", file = "witness-marker.tera" }
+output_file = "wasm4pm/src/generated/witnesses.rs"
+mode = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: wasm-boundary (WIT interface generation)
+# Generates the WIT interface from compat authority ontology.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name = "wasm-boundary"
+query    = { pack = "wasm4pm-compat", output = "queries",        file = "extract-source-modules.rq" }
+template = { pack = "wasm4pm-compat", output = "templates_rust", file = "wasm-boundary.rs.tera" }
+output_file = "wasm4pm/src/generated/wasm_boundary.rs"
+mode = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: audit-feature-isolation (shell script generation)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name = "audit-feature-isolation"
+query    = { pack = "wasm4pm-compat", output = "queries",        file = "extract-blocking-audits.rq" }
+template = { pack = "wasm4pm-compat", output = "templates_rust", file = "audit-feature-isolation.sh.tera" }
+output_file = "ggen/audits/audit-feature-isolation.sh"
+mode = "Overwrite"

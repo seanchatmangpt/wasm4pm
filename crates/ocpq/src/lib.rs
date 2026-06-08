@@ -7,7 +7,7 @@
 //! type/function realizes so the test oracles are the paper, not the code
 //! (no FM-5 self-reference).
 //!
-//! Built on top of [`ocel_core::OCEL`] (the `L = (E, O, eval, oaval)` OCED of
+//! Built on top of [`wasm4pm_compat::ocel::OCEL`] (the `L = (E, O, eval, oaval)` OCED of
 //! agent A2), whose `e2o`, `o2o`, `event_set`, `object_set` and `time` surfaces
 //! supply the relations the BASIC predicates quantify over.
 //!
@@ -23,7 +23,7 @@
 
 use std::collections::BTreeMap;
 
-use ocel_core::OCEL;
+use wasm4pm_compat::ocel::OCEL;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "wasm")]
@@ -342,10 +342,10 @@ impl BindingBox {
 
     /// Recursive Cartesian-product enumerator over `domains[idx..]`, collecting
     /// bindings that pass [`Self::satisfied_by`].
-    fn product<'a>(
+    fn product(
         &self,
         idx: usize,
-        domains: &[Vec<&'a str>],
+        domains: &[Vec<&str>],
         current: &mut Binding,
         log: &OCEL,
         out: &mut Vec<Binding>,
@@ -369,10 +369,7 @@ impl BindingBox {
     /// `Var(self) ⊆ Var(other) ∧ Pred(self) ⊆ Pred(other)`.
     #[must_use]
     pub fn refines(&self, other: &BindingBox) -> bool {
-        let vars_sub = self
-            .vars
-            .iter()
-            .all(|v| other.vars.iter().any(|w| w == v));
+        let vars_sub = self.vars.iter().all(|v| other.vars.iter().any(|w| w == v));
         let preds_sub = self
             .preds
             .iter()
@@ -497,7 +494,7 @@ impl QueryTree {
             .filter(|x| b.refines(x))
             .count();
         let above = count >= cs.n_min;
-        let below = cs.n_max.map_or(true, |m| count <= m);
+        let below = cs.n_max.is_none_or(|m| count <= m);
         above && below
     }
 
@@ -554,13 +551,12 @@ pub struct ConstraintResult {
 /// [`evaluate_node_constraint`] generalizes this to any node id.)
 #[must_use]
 pub fn evaluate_constraint(tree: &QueryTree, log: &OCEL) -> ConstraintResult {
-    evaluate_node_constraint(tree, &tree.root.clone(), log)
-        .unwrap_or_else(|| ConstraintResult {
-            node: tree.root.clone(),
-            satisfied: 0,
-            violated: 0,
-            verdicts: Vec::new(),
-        })
+    evaluate_node_constraint(tree, &tree.root.clone(), log).unwrap_or_else(|| ConstraintResult {
+        node: tree.root.clone(),
+        satisfied: 0,
+        violated: 0,
+        verdicts: Vec::new(),
+    })
 }
 
 /// Evaluate `constr` of an arbitrary node `node_id` (Fig. 6 generalized).

@@ -91,7 +91,7 @@ Cognition source files must not use these words (except in the noted exceptions)
 
 ### 3. Real cognition only
 
-The TypeScript facade has zero decision logic. Rust is the authority. Concretely:
+The TypeScript boundary has zero decision logic. Rust is the authority. Concretely:
 
 - TS may parse CLI arguments, format output, save receipts, marshal requests
 - TS must not choose an action, validate evidence, run an inference step, or self-certify output

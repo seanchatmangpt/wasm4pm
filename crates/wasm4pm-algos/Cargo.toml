@@ -9,7 +9,7 @@ documentation = "https://docs.rs/wasm4pm-algos"
 readme = "README.md"
 
 [dependencies]
-wasm4pm-types = { workspace = true }
+wasm4pm-compat.workspace = true
 serde = { workspace = true }
 serde_json = { workspace = true }
 hashbrown = { workspace = true }
@@ -17,6 +17,8 @@ smallvec = { workspace = true }
 itertools = { workspace = true }
 blake3 = { workspace = true }
 bcinr = { workspace = true, optional = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
 
 [features]
 bcinr = ["dep:bcinr"]

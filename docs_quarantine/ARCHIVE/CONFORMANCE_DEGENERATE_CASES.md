@@ -126,7 +126,7 @@ Test categories:
 ✅ Clear diagnostics for errors  
 ✅ Exit codes follow contract (0, 1, 2, 3, 6)  
 ✅ Verbose mode provides guidance  
-✅ Backward compatibility preserved (no breaking changes)
+✅ baseline admissibility preserved (no breaking changes)
 
 ## Recommendations
 

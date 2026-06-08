@@ -24,9 +24,12 @@ use wasm_bindgen::prelude::*;
 
 /// Pure-Rust DFG discovery without wasm-bindgen. Used by integration tests.
 #[must_use]
-pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
-    let col_owned = log.to_columnar_owned(activity_key);
+pub fn discover_dfg_from_log<W>(
+    log: &AdmittedEventLog<W>,
+    activity_key: &str,
+) -> DFG {
+    let mut dfg = DFG::new();
+    let col_owned = log.value.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
@@ -38,10 +41,8 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
     // Pre-size the edge map to n²/4 as a rough initial capacity — avoids most
     // rehashes for typical logs where the DFG is sparse relative to n².
     let n = col.vocab.len();
-    let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::with_capacity_and_hasher(
-        n.saturating_mul(n) / 4 + 1,
-        Default::default(),
-    );
+    let mut edge_counts: FxHashMap<(u32, u32), usize> =
+        FxHashMap::with_capacity_and_hasher(n.saturating_mul(n) / 4 + 1, Default::default());
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -121,13 +122,19 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
                 "DFG discovery started"
             );
 
-            let dfg = discover_dfg_from_log(log, activity_key);
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            let dfg = discover_dfg_from_log(&admitted, activity_key);
 
             // Derive activity_count from the already-built DFG nodes — avoids
             // a second full columnar pass that was previously done by get_activities().
             let node_count = dfg.nodes.len();
             let edge_count = dfg.edges.len();
-            let complexity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
+            let complexity = if node_count > 0 {
+                edge_count as f64 / node_count as f64
+            } else {
+                0.0
+            };
 
             tracing::info!(
                 target: "wasm4pm.discovery.dfg",
@@ -155,14 +162,14 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
     })
 }
 
-/// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
+/// Pure-Rust OCEL DFG discovery: returns DFG without wasm-bindgen.
 ///
 /// This is the testable core of `discover_ocel_dfg`. Integration tests
 /// on native targets cannot call `#[wasm_bindgen]` functions, so they use
 /// this instead.
 #[must_use]
-pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
+    let mut dfg = DFG::new();
 
     // Get event types
     for event_type in &ocel.event_types {
@@ -195,7 +202,10 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
     // Use sort_unstable_by + str comparison to avoid allocating a String per comparison.
     for events in events_by_object.values_mut() {
         events.sort_unstable_by(|(ai, _), (bi, _)| {
-            ocel.events[*ai].timestamp.as_str().cmp(ocel.events[*bi].timestamp.as_str())
+            ocel.events[*ai]
+                .timestamp
+                .as_str()
+                .cmp(ocel.events[*bi].timestamp.as_str())
         });
     }
 
@@ -268,12 +278,13 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
+            let mut result: FxHashMap<String, DFG> = FxHashMap::default();
 
             // Build sorted activity vocabulary for stable index assignment
             let mut activity_vocab: Vec<String> = {
                 let mut seen: FxHashSet<&str> = FxHashSet::default();
-                ocel.events.iter()
+                ocel.events
+                    .iter()
                     .filter_map(|e| {
                         if seen.insert(e.event_type.as_str()) {
                             Some(e.event_type.clone())
@@ -306,7 +317,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
 
             // For each object type, discover a separate DFG
             for obj_type in &ocel.object_types {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 for name in &activity_vocab {
                     dfg.nodes.push(DFGNode {
@@ -338,7 +349,10 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 // sort_unstable_by with str comparison avoids a String allocation per comparison.
                 for events in events_by_object.values_mut() {
                     events.sort_unstable_by(|(ai, _), (bi, _)| {
-                        ocel.events[*ai].timestamp.as_str().cmp(ocel.events[*bi].timestamp.as_str())
+                        ocel.events[*ai]
+                            .timestamp
+                            .as_str()
+                            .cmp(ocel.events[*bi].timestamp.as_str())
                     });
                 }
 

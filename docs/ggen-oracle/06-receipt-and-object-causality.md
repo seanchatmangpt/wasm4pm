@@ -27,12 +27,12 @@ Both halves consume **one** artifact: ggen's append-only tape at `.ggen/ocel/age
 
 | Asset | Citation | Reuse for this spec |
 |---|---|---|
-| Object-graph traversal engine | `wasm4pm/src/ocel_io.rs:258` `query_provenance_traversal(ocel_handle, query_json)`; `ProvenanceQuery` (`:228`), `TraversalStep{ObjectToEvent,EventToObject,ObjectToObject}` (`:204`), `PathNode{Object,Event}` (`:237`), `ProvenanceQueryResult{paths}` (`:252`) | The **lineage / object-causality query engine already exists.** It walks object→event→object and object→object(forward/reverse/both) over the legacy OCEL (shape 2.B). The object-causality catalog (§6) is expressed as `ProvenanceQuery` programs. Logic is pure Rust inside the `with_object` closure — extract to a pure fn for CLI reuse. |
+| Object-graph traversal engine | `wasm4pm/src/ocel_io.rs:258` `query_provenance_traversal(ocel_handle, query_json)`; `ProvenanceQuery` (`:228`), `TraversalStep{ObjectToEvent,EventToObject,ObjectToObject}` (`:204`), `PathNode{Object,Event}` (`:237`), `ProvenanceQueryResult{paths}` (`:252`) | The **lineage / object-causality query engine already exists.** It walks object→event→object and object→object(forward/reverse/both) over the  OCEL (shape 2.B). The object-causality catalog (§6) is expressed as `ProvenanceQuery` programs. Logic is pure Rust inside the `with_object` closure — extract to a pure fn for CLI reuse. |
 | Per-object temporal-order check | `ocel_io.rs:413` `validate_ocel_object_lifecycles(&OCEL)->Vec<LifecycleViolation>`; `LifecycleViolation{object_id,event_a_id,event_b_id,timestamp_a_ms,timestamp_b_ms}` (`:399`); ISO-8601 parse `parse_ts_ms` (`:419`) | Seed of receipt-causality. It already detects "event B for an object appears later but is timestamped earlier." The 6-link ordering law (§4) is a *semantic* layer on top of this raw temporal check. |
 | Receipt refusal architecture | `wasm4pm/src/receipt.rs`: `OCELReceiptLinter::lint` (`:287`), `ReceiptDoctor::audit`/`verify_with_audience` (cited in 00-MAP §4.3). Findings types live in **`crates/ocel-core/src/intake.rs`**: `ReceiptTruthRefusal` (`:33`), `FindingSeverity{Deny,Warning}` (`:56`), `ReceiptFinding{code,json_path,message,severity}` (`:63`), `ReceiptDoctorState{Admitted,Refused}` (`:71`), `ReceiptDoctorReport{state,findings,admitted}` (`:78`) | **Copy this shape exactly** for the new oracle verdict. The finding/refusal pattern is already in the link-safe `ocel-core` crate — the new receipt-causality refusals extend the same family. |
 | OCEL object & relationship types | `crates/ocel-core/src/lib.rs`: `OCELObject{id,object_type,attributes,relationships}` (`:58`), `OCELRelationship{object_id,qualifier}` (`:51`), `OCELEvent{id,event_type,time,attributes,relationships}` (`:39`) | The cross-agent object graph (§5) is declared in these types. ggen's `objects: Vec<OcelObjectRef{id,type,qualifier}>` maps onto event `relationships`. |
 | NDJSON intake | `crates/ocel-core/src/intake.rs:41` `NDJsonStream<R: BufRead>` (yields `OCELRecord{Event,Object}`), `ExtractionPlan` (`:14`) | Reads ggen's `.ocel.jsonl` directly, one record/line, tolerant of filters. This is the front door for the oracle. (The 00-MAP marked NDJSON "TO BE BUILT" — it now **EXISTS** in `ocel-core`. Confirm against `intake.rs` before re-implementing.) |
-| Legacy OCEL graph fields the traversal needs | `wasm4pm/src/models.rs`: `OCELObjectRelation{source_id,target_id,qualifier}` (`:631`), `OCELObject.embedded_relations: Vec<OCELObjectRelRef>` (`:707`), `OCEL.object_relations` (`:727`), `OCELEvent.object_refs` (`:659`), `all_object_ids()` (`:664`) | `query_provenance_traversal` reads these (`ocel_io.rs:296-305` merges global + embedded O2O). The object-causality queries depend on object→object edges existing — see §5.3 for what ggen must emit. |
+|  OCEL graph fields the traversal needs | `wasm4pm/src/models.rs`: `OCELObjectRelation{source_id,target_id,qualifier}` (`:631`), `OCELObject.embedded_relations: Vec<OCELObjectRelRef>` (`:707`), `OCEL.object_relations` (`:727`), `OCELEvent.object_refs` (`:659`), `all_object_ids()` (`:664`) | `query_provenance_traversal` reads these (`ocel_io.rs:296-305` merges global + embedded O2O). The object-causality queries depend on object→object edges existing — see §5.3 for what ggen must emit. |
 | BLAKE3 / canonical hashing | `ocel-core/src/intake.rs:164` `compute_blake3_hash`; truex `canonical_stringify` (`crates/wasm4pm-algos/src/truex/canonicalize.rs:3`) | Receipt-lineage chaining (`previous_receipt_id`) and tape-integrity hashing align with ggen's existing BLAKE3 `event_id`/`receipt_id` derivation (`ggen .../intel/events.rs:81,92`). |
 
 ### 2.2 TO BE BUILT (this spec defines them)
@@ -133,7 +133,7 @@ Law (each clause is a `DeclareConstraint`-style rule; `models.rs:573` provides t
 // crates/wasm4pm-algos/src/oracle/ordering_law.rs   (TO BE BUILT)
 pub struct OrderingViolation { pub episode_id: String, pub rule: &'static str,
                                pub refusal: OracleRefusal, pub detail: String }
-pub fn check_ordering_law(ocel: &ocel_core::OCEL) -> Vec<OrderingViolation>;
+pub fn check_ordering_law(ocel: &wasm4pm_compat::ocel::OCEL) -> Vec<OrderingViolation>;
 ```
 
 ---
@@ -195,7 +195,7 @@ Each addition is an extra `attributes` key or extra `objects`/relation entry. Th
 
 ## 6. Object-centric causality query catalog (B5)
 
-Each query is a named `ProvenanceQuery` (`ocel_io.rs:228`) program plus an aggregation. The traversal engine already exists; B5 = the catalog + counting. Queries run over the materialized legacy `OCEL` (2.B) after intake.
+Each query is a named `ProvenanceQuery` (`ocel_io.rs:228`) program plus an aggregation. The traversal engine already exists; B5 = the catalog + counting. Queries run over the materialized  `OCEL` (2.B) after intake.
 
 ### 6.1 Lineage / receipt-causality queries
 
@@ -225,9 +225,9 @@ Aggregation lives in B5 as small pure fns returning serde structs; the *walking*
 // crates/wasm4pm-algos/src/oracle/object_causality.rs   (TO BE BUILT)
 pub struct LoopRank { pub diagnostic_code: String, pub loop_count: u64 }
 pub struct AndonRank { pub file: String, pub andon_count: u64 }
-pub fn species_repair_loops(ocel: &ocel_core::OCEL) -> Vec<LoopRank>;     // ranked desc
-pub fn files_causing_andon(ocel: &ocel_core::OCEL) -> Vec<AndonRank>;     // ranked desc
-pub fn agents_touched_route(ocel: &ocel_core::OCEL, route_id: &str) -> Vec<String>;
+pub fn species_repair_loops(ocel: &wasm4pm_compat::ocel::OCEL) -> Vec<LoopRank>;     // ranked desc
+pub fn files_causing_andon(ocel: &wasm4pm_compat::ocel::OCEL) -> Vec<AndonRank>;     // ranked desc
+pub fn agents_touched_route(ocel: &wasm4pm_compat::ocel::OCEL, route_id: &str) -> Vec<String>;
 ```
 
 ---
@@ -237,7 +237,7 @@ pub fn agents_touched_route(ocel: &ocel_core::OCEL, route_id: &str) -> Vec<Strin
 ### 7.1 Crate placement
 
 - **`ocel-core`** (`crates/ocel-core/`): no change beyond what GGEN-NEEDS §2 already landed. The findings vocabulary (`ReceiptFinding`/`FindingSeverity`/`ReceiptDoctorState`) already lives in `ocel-core/src/intake.rs:33-82` — **add the new oracle refusal variants there** so they stay link-safe and ggen-readable.
-- **`wasm4pm-algos`** (`crates/wasm4pm-algos/`): new pure module `oracle/` holding `receipt_witness.rs` (§3.2), `ordering_law.rs` (§4 / B1), `receipt_causality.rs` (B2/B3/B4), `object_causality.rs` (§6 / B5). Pure Rust, no `wasm-bindgen` → CLI-callable. Re-uses `ocel_core` types and the traversal logic **extracted** from `ocel_io.rs:258` into a pure `query_provenance(ocel: &OCEL, q: &ProvenanceQuery) -> ProvenanceQueryResult` (today it is trapped inside a `#[wasm_bindgen]` `with_object` closure; lift the body, leave the JS shim calling it).
+- **`wasm4pm-algos`** (`crates/wasm4pm-algos/`): new pure module `oracle/` holding `receipt_witness.rs` (§3.2), `ordering_law.rs` (§4 / B1), `receipt_causality.rs` (B2/B3/B4), `object_causality.rs` (§6 / B5). Pure Rust, no `wasm-bindgen` → CLI-callable. Re-uses `wasm4pm_compat::ocel` types and the traversal logic **extracted** from `ocel_io.rs:258` into a pure `query_provenance(ocel: &OCEL, q: &ProvenanceQuery) -> ProvenanceQueryResult` (today it is trapped inside a `#[wasm_bindgen]` `with_object` closure; lift the body, leave the JS bridge calling it).
 - **`wasm4pm-cli`** (`crates/wasm4pm-cli/`): new `wpm oracle` command (B6), wired in `src/main.rs` `Commands` enum (mirror `Receipt(...)` at `main.rs:68`), implemented in `src/commands/oracle.rs`.
 
 ### 7.2 New oracle refusal variants (extend `ocel-core/src/intake.rs::ReceiptTruthRefusal`, `:33`)
@@ -347,7 +347,7 @@ Reuse the convention in `fixtures/real/<scenario>/` (00-MAP §6). The `trace-con
 
 ## 10. Acceptance criteria (wasm4pm builders verify)
 
-1. **B1** `check_ordering_law` exists in `wasm4pm-algos/src/oracle/ordering_law.rs`, pure Rust, no `wasm-bindgen`; unit-tested with real `ocel_core::OCEL` values (no mocks) covering R1–R6.
+1. **B1** `check_ordering_law` exists in `wasm4pm-algos/src/oracle/ordering_law.rs`, pure Rust, no `wasm-bindgen`; unit-tested with real `wasm4pm_compat::ocel::OCEL` values (no mocks) covering R1–R6.
 2. **Traversal lift:** `query_provenance(&OCEL,&ProvenanceQuery)->ProvenanceQueryResult` callable from `wasm4pm-algos`/CLI without WASM; the `#[wasm_bindgen]` `query_provenance_traversal` (`ocel_io.rs:258`) delegates to it; existing wasm tests stay green.
 3. **B2/B3/B4** `ReceiptWitness` materialization + the three checks produce `ReceiptFinding`s using the `ocel-core` finding types; new refusal variants added to `ReceiptTruthRefusal` (`intake.rs:33`); full wasm4pm suite green.
 4. **B5** §6.1/§6.2 queries return deterministic, ranked results on the §9 admitted fixture.

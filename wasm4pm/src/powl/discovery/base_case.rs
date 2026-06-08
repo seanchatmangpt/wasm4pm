@@ -40,7 +40,7 @@ mod tests {
             Some(crate::powl_arena::PowlNode::Transition(t)) => {
                 assert_eq!(t.label.as_deref(), Some("A"));
             }
-            _ => panic!("Expected Transition node"),
+            _ => unreachable!("Expected Transition node"),
         }
     }
 }

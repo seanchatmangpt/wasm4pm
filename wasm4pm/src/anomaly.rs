@@ -44,7 +44,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
         .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             if activities.len() < 2 {
                 return Ok(JsValue::from_f64(0.0));
             }
@@ -74,7 +74,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
         None => Err(crate::error::js_val("DFG handle not found")),
     })
 }
@@ -83,23 +83,25 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
 pub fn discover_ml_anomaly(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     // Generate DFG implicitly if we just have log handle
     let state = get_or_init_state();
-    
+
     // 1. Generate DFG using existing fast discovery
     let dfg_json = crate::discovery::discover_dfg(log_handle, activity_key)?;
-    
+
     // 2. Store it
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(&dfg_json.as_string().unwrap_or_default())
-        .map_err(|e| crate::error::js_val(&format!("Failed to parse dfg: {}", e)))?;
-        
-    let dfg_handle = state.store_object(StoredObject::DirectlyFollowsGraph(dfg))
+    let dfg: crate::models::DFG =
+        serde_json::from_str(&dfg_json.as_string().unwrap_or_default())
+            .map_err(|e| crate::error::js_val(&format!("Failed to parse dfg: {}", e)))?;
+
+    let dfg_handle = state
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_| crate::error::js_val("Failed to store DFG"))?;
-        
+
     // 3. Score anomalies
     let result = score_log_anomalies(log_handle, &dfg_handle, activity_key)?;
-    
+
     // 4. Cleanup
     let _ = state.delete_object(&dfg_handle);
-    
+
     Ok(result)
 }
 
@@ -120,13 +122,13 @@ pub fn score_log_anomalies(
     // Collect DFG edge frequencies
     let edge_data: Vec<(String, String, usize)> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+            Some(StoredObject::DFG(dfg)) => Ok(dfg
                 .edges
                 .iter()
                 .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
                 .collect()),
             Some(_) => Err(crate::error::js_val(
-                "dfg_handle is not a DirectlyFollowsGraph",
+                "dfg_handle is not a DFG",
             )),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
@@ -198,7 +200,11 @@ pub fn score_log_anomalies(
                 let (mean, std_dev) = score_distribution_stats(&scores);
                 for r in results.iter_mut() {
                     if let Some(score) = r["score"].as_f64() {
-                        let z = if std_dev > 1e-12 { (score - mean) / std_dev } else { 0.0 };
+                        let z = if std_dev > 1e-12 {
+                            (score - mean) / std_dev
+                        } else {
+                            0.0
+                        };
                         if let Some(obj) = r.as_object_mut() {
                             obj.insert("z_score".to_string(), json!(z));
                             obj.insert("is_outlier".to_string(), json!(z > 2.0));
@@ -225,7 +231,10 @@ mod tests {
     #[test]
     fn constant_scores_have_zero_std() {
         let (mean, std) = score_distribution_stats(&[3.0, 3.0, 3.0, 3.0]);
-        assert!((mean - 3.0).abs() < 1e-12, "mean of constant series = constant");
+        assert!(
+            (mean - 3.0).abs() < 1e-12,
+            "mean of constant series = constant"
+        );
         assert!(std.abs() < 1e-12, "std of constant series = 0, got {}", std);
     }
 
@@ -237,11 +246,19 @@ mod tests {
         let (mean, std) = score_distribution_stats(&[0.0, 1.0, 2.0, 3.0, 4.0]);
         assert!((mean - 2.0).abs() < 1e-12);
         let max_z = (4.0 - mean) / std;
-        assert!(max_z < 2.0, "uniform [0..4] must not contain z>2 outliers; got {}", max_z);
+        assert!(
+            max_z < 2.0,
+            "uniform [0..4] must not contain z>2 outliers; got {}",
+            max_z
+        );
 
         let (mean2, std2) = score_distribution_stats(&[0.0, 1.0, 2.0, 3.0, 4.0, 12.0]);
         let z = (12.0 - mean2) / std2;
-        assert!(z > 2.0, "score 12 in [0..4, 12] must be z>2 outlier; got {}", z);
+        assert!(
+            z > 2.0,
+            "score 12 in [0..4, 12] must be z>2 outlier; got {}",
+            z
+        );
     }
 
     /// Empty input is the explicit caller-side guard: the score_log_anomalies

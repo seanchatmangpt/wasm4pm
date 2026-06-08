@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::Rng;
+use wasm_bindgen::prelude::*;
 
 // ============================================================
 // Structs
@@ -17,11 +17,17 @@ pub struct MarkovChain {
 #[wasm_bindgen]
 impl MarkovChain {
     #[wasm_bindgen(getter, js_name = "nStates")]
-    pub fn n_states(&self) -> usize { self.n_states }
+    pub fn n_states(&self) -> usize {
+        self.n_states
+    }
 
     /// Create a Markov chain from a flat row-major transition matrix and initial distribution.
     #[wasm_bindgen(js_name = "fromMatrix")]
-    pub fn from_matrix(transition_matrix: &[f64], n_states: usize, initial_distribution: &[f64]) -> Result<MarkovChain, JsValue> {
+    pub fn from_matrix(
+        transition_matrix: &[f64],
+        n_states: usize,
+        initial_distribution: &[f64],
+    ) -> Result<MarkovChain, JsValue> {
         markov_chain_impl(transition_matrix, n_states, initial_distribution)
             .map_err(|e| JsValue::from_str(&e.message))
     }
@@ -43,7 +49,13 @@ impl MarkovChain {
     /// Simulate a trajectory of the chain.
     #[wasm_bindgen(js_name = "simulate")]
     pub fn simulate(&self, initial_state: usize, n_steps: usize, seed: u64) -> Vec<usize> {
-        simulate_chain_impl(&self.transition_matrix, self.n_states, initial_state, n_steps, seed)
+        simulate_chain_impl(
+            &self.transition_matrix,
+            self.n_states,
+            initial_state,
+            n_steps,
+            seed,
+        )
     }
 }
 
@@ -60,10 +72,14 @@ pub struct HMM {
 #[wasm_bindgen]
 impl HMM {
     #[wasm_bindgen(getter, js_name = "nStates")]
-    pub fn n_states(&self) -> usize { self.n_states }
+    pub fn n_states(&self) -> usize {
+        self.n_states
+    }
 
     #[wasm_bindgen(getter, js_name = "nObservations")]
-    pub fn n_observations(&self) -> usize { self.n_observations }
+    pub fn n_observations(&self) -> usize {
+        self.n_observations
+    }
 
     /// Create an HMM from parameters.
     #[wasm_bindgen(js_name = "fromParams")]
@@ -74,17 +90,28 @@ impl HMM {
         n_states: usize,
         n_observations: usize,
     ) -> Result<HMM, JsValue> {
-        hmm_from_params_impl(initial_probs, transition_probs, emission_probs, n_states, n_observations)
-            .map_err(|e| JsValue::from_str(&e.message))
+        hmm_from_params_impl(
+            initial_probs,
+            transition_probs,
+            emission_probs,
+            n_states,
+            n_observations,
+        )
+        .map_err(|e| JsValue::from_str(&e.message))
     }
 
     /// Forward algorithm — compute P(observations | model).
     #[wasm_bindgen(js_name = "forward")]
     pub fn forward(&self, observations: &[usize]) -> Result<f64, JsValue> {
         let (_, log_likelihood) = hmm_forward_impl(
-            &self.initial_probs, &self.transition_probs, &self.emission_probs,
-            observations, self.n_states, self.n_observations
-        ).map_err(|e| JsValue::from_str(&e.message))?;
+            &self.initial_probs,
+            &self.transition_probs,
+            &self.emission_probs,
+            observations,
+            self.n_states,
+            self.n_observations,
+        )
+        .map_err(|e| JsValue::from_str(&e.message))?;
         Ok(log_likelihood)
     }
 
@@ -92,14 +119,26 @@ impl HMM {
     #[wasm_bindgen(js_name = "viterbi")]
     pub fn viterbi(&self, observations: &[usize]) -> Result<Vec<usize>, JsValue> {
         hmm_viterbi_impl(
-            &self.initial_probs, &self.transition_probs, &self.emission_probs,
-            observations, self.n_states, self.n_observations
-        ).map_err(|e| JsValue::from_str(&e.message))
+            &self.initial_probs,
+            &self.transition_probs,
+            &self.emission_probs,
+            observations,
+            self.n_states,
+            self.n_observations,
+        )
+        .map_err(|e| JsValue::from_str(&e.message))
     }
 
     /// Train HMM using Baum-Welch (EM algorithm).
     #[wasm_bindgen(js_name = "train")]
-    pub fn train(observations: &[usize], n_states: usize, n_obs_symbols: usize, max_iter: usize, tol: f64, seed: u64) -> Result<HMM, JsValue> {
+    pub fn train(
+        observations: &[usize],
+        n_states: usize,
+        n_obs_symbols: usize,
+        max_iter: usize,
+        tol: f64,
+        seed: u64,
+    ) -> Result<HMM, JsValue> {
         hmm_train_baum_welch_impl(observations, n_states, n_obs_symbols, max_iter, tol, seed)
             .map_err(|e| JsValue::from_str(&e.message))
     }
@@ -119,22 +158,34 @@ pub struct MCMCResult {
 #[wasm_bindgen]
 impl MCMCResult {
     #[wasm_bindgen(getter)]
-    pub fn samples(&self) -> Vec<f64> { self.samples.clone() }
+    pub fn samples(&self) -> Vec<f64> {
+        self.samples.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "acceptanceRate")]
-    pub fn acceptance_rate(&self) -> f64 { self.acceptance_rate }
+    pub fn acceptance_rate(&self) -> f64 {
+        self.acceptance_rate
+    }
 
     #[wasm_bindgen(getter, js_name = "posteriorMean")]
-    pub fn posterior_mean(&self) -> f64 { self.posterior_mean }
+    pub fn posterior_mean(&self) -> f64 {
+        self.posterior_mean
+    }
 
     #[wasm_bindgen(getter, js_name = "posteriorStd")]
-    pub fn posterior_std(&self) -> f64 { self.posterior_std }
+    pub fn posterior_std(&self) -> f64 {
+        self.posterior_std
+    }
 
     #[wasm_bindgen(getter, js_name = "ciLower")]
-    pub fn ci_lower(&self) -> f64 { self.ci_lower }
+    pub fn ci_lower(&self) -> f64 {
+        self.ci_lower
+    }
 
     #[wasm_bindgen(getter, js_name = "ciUpper")]
-    pub fn ci_upper(&self) -> f64 { self.ci_upper }
+    pub fn ci_upper(&self) -> f64 {
+        self.ci_upper
+    }
 }
 
 // ============================================================
@@ -151,24 +202,36 @@ pub fn markov_chain_impl(
         return Err(MlError::new("n_states must be > 0"));
     }
     if transition_matrix.len() != n_states * n_states {
-        return Err(MlError::new("transition_matrix must have n_states^2 elements"));
+        return Err(MlError::new(
+            "transition_matrix must have n_states^2 elements",
+        ));
     }
     if initial_distribution.len() != n_states {
-        return Err(MlError::new("initial_distribution must have n_states elements"));
+        return Err(MlError::new(
+            "initial_distribution must have n_states elements",
+        ));
     }
 
     // Validate rows sum to ~1.0
     for i in 0..n_states {
-        let row_sum: f64 = (0..n_states).map(|j| transition_matrix[i * n_states + j]).sum();
+        let row_sum: f64 = (0..n_states)
+            .map(|j| transition_matrix[i * n_states + j])
+            .sum();
         if (row_sum - 1.0).abs() > 0.01 {
-            return Err(MlError::new(format!("Row {} of transition matrix sums to {} (expected 1.0)", i, row_sum)));
+            return Err(MlError::new(format!(
+                "Row {} of transition matrix sums to {} (expected 1.0)",
+                i, row_sum
+            )));
         }
     }
 
     // Validate initial distribution sums to ~1.0
     let init_sum: f64 = initial_distribution.iter().sum();
     if (init_sum - 1.0).abs() > 0.01 {
-        return Err(MlError::new(format!("initial_distribution sums to {} (expected 1.0)", init_sum)));
+        return Err(MlError::new(format!(
+            "initial_distribution sums to {} (expected 1.0)",
+            init_sum
+        )));
     }
 
     Ok(MarkovChain {
@@ -190,7 +253,9 @@ pub fn compute_steady_state_impl(
         return Err(MlError::new("n_states must be > 0"));
     }
     if transition_matrix.len() != n_states * n_states {
-        return Err(MlError::new("transition_matrix must have n_states^2 elements"));
+        return Err(MlError::new(
+            "transition_matrix must have n_states^2 elements",
+        ));
     }
     if max_iter == 0 {
         return Err(MlError::new("max_iter must be > 0"));
@@ -217,7 +282,9 @@ pub fn compute_steady_state_impl(
         }
 
         // Check convergence (max absolute change)
-        let max_diff = state.iter().zip(new_state.iter())
+        let max_diff = state
+            .iter()
+            .zip(new_state.iter())
             .map(|(a, b)| (a - b).abs())
             .fold(0.0_f64, f64::max);
 
@@ -241,7 +308,9 @@ pub fn n_step_probability_impl(
         return Err(MlError::new("n_states must be > 0"));
     }
     if transition_matrix.len() != n_states * n_states {
-        return Err(MlError::new("transition_matrix must have n_states^2 elements"));
+        return Err(MlError::new(
+            "transition_matrix must have n_states^2 elements",
+        ));
     }
 
     // Start with identity matrix
@@ -311,10 +380,14 @@ fn hmm_from_params_impl(
         return Err(MlError::new("initial_probs must have n_states elements"));
     }
     if transition_probs.len() != n_states * n_states {
-        return Err(MlError::new("transition_probs must have n_states^2 elements"));
+        return Err(MlError::new(
+            "transition_probs must have n_states^2 elements",
+        ));
     }
     if emission_probs.len() != n_states * n_observations {
-        return Err(MlError::new("emission_probs must have n_states * n_observations elements"));
+        return Err(MlError::new(
+            "emission_probs must have n_states * n_observations elements",
+        ));
     }
 
     Ok(HMM {
@@ -351,7 +424,9 @@ pub fn hmm_forward_impl(
         c += alpha[i];
     }
     if c == 0.0 {
-        return Err(MlError::new("Zero probability at t=0 — check initial/emission probs"));
+        return Err(MlError::new(
+            "Zero probability at t=0 — check initial/emission probs",
+        ));
     }
     scale[0] = c;
     for v in alpha.iter_mut() {
@@ -409,9 +484,13 @@ pub fn hmm_backward_impl(
         alpha[i] = initial[i] * emission[i * n_obs_symbols + observations[0]];
         c += alpha[i];
     }
-    if c == 0.0 { return Err(MlError::new("Zero probability")); }
+    if c == 0.0 {
+        return Err(MlError::new("Zero probability"));
+    }
     scale[0] = c;
-    for v in alpha.iter_mut() { *v /= c; }
+    for v in alpha.iter_mut() {
+        *v /= c;
+    }
 
     for t in 1..t_len {
         let mut new_alpha = vec![0.0; n_states];
@@ -424,22 +503,30 @@ pub fn hmm_backward_impl(
             new_alpha[j] = sum * emission[j * n_obs_symbols + observations[t]];
             c += new_alpha[j];
         }
-        if c == 0.0 { return Err(MlError::new("Zero probability")); }
+        if c == 0.0 {
+            return Err(MlError::new("Zero probability"));
+        }
         scale[t] = c;
-        for v in new_alpha.iter_mut() { *v /= c; }
+        for v in new_alpha.iter_mut() {
+            *v /= c;
+        }
         alpha = new_alpha;
     }
 
     // Backward pass
     let mut beta = vec![1.0; n_states];
-    for v in beta.iter_mut() { *v /= scale[t_len - 1]; }
+    for v in beta.iter_mut() {
+        *v /= scale[t_len - 1];
+    }
 
     for t in (0..t_len - 1).rev() {
         let mut new_beta = vec![0.0; n_states];
         for i in 0..n_states {
             let mut sum = 0.0;
             for j in 0..n_states {
-                sum += transition[i * n_states + j] * emission[j * n_obs_symbols + observations[t + 1]] * beta[j];
+                sum += transition[i * n_states + j]
+                    * emission[j * n_obs_symbols + observations[t + 1]]
+                    * beta[j];
             }
             new_beta[i] = sum / scale[t];
         }
@@ -482,8 +569,11 @@ pub fn hmm_viterbi_impl(
             let mut max_val = neg_inf;
             let mut max_idx = 0;
             for i in 0..n_states {
-                let val = delta[i] + transition[i * n_states + j].ln().max(neg_inf)
-                    + emission[j * n_obs_symbols + observations[t]].ln().max(neg_inf);
+                let val = delta[i]
+                    + transition[i * n_states + j].ln().max(neg_inf)
+                    + emission[j * n_obs_symbols + observations[t]]
+                        .ln()
+                        .max(neg_inf);
                 if val > max_val {
                     max_val = val;
                     max_idx = i;
@@ -547,12 +637,26 @@ pub fn hmm_train_baum_welch_impl(
 
     for _iter in 0..max_iter {
         // E-step: forward-backward
-        let (alpha, ll) = match hmm_forward_impl(&initial, &transition, &emission_mat, observations, n_states, n_obs_symbols) {
+        let (alpha, ll) = match hmm_forward_impl(
+            &initial,
+            &transition,
+            &emission_mat,
+            observations,
+            n_states,
+            n_obs_symbols,
+        ) {
             Ok(r) => r,
             Err(_) => continue, // skip if zero probability
         };
 
-        let beta = match hmm_backward_impl(&initial, &transition, &emission_mat, observations, n_states, n_obs_symbols) {
+        let beta = match hmm_backward_impl(
+            &initial,
+            &transition,
+            &emission_mat,
+            observations,
+            n_states,
+            n_obs_symbols,
+        ) {
             Ok(r) => r,
             Err(_) => continue,
         };
@@ -581,15 +685,20 @@ pub fn hmm_train_baum_welch_impl(
             let mut denom = 0.0;
             for i in 0..n_states {
                 for j in 0..n_states {
-                    denom += alpha[i] * transition[i * n_states + j]
-                        * emission_mat[j * n_obs_symbols + obs_next] * beta[j];
+                    denom += alpha[i]
+                        * transition[i * n_states + j]
+                        * emission_mat[j * n_obs_symbols + obs_next]
+                        * beta[j];
                 }
             }
             if denom > 0.0 {
                 for i in 0..n_states {
                     for j in 0..n_states {
-                        xi[i][j] = alpha[i] * transition[i * n_states + j]
-                            * emission_mat[j * n_obs_symbols + obs_next] * beta[j] / denom;
+                        xi[i][j] = alpha[i]
+                            * transition[i * n_states + j]
+                            * emission_mat[j * n_obs_symbols + obs_next]
+                            * beta[j]
+                            / denom;
                     }
                 }
             }
@@ -604,7 +713,11 @@ pub fn hmm_train_baum_welch_impl(
             let gamma_sum: f64 = (0..t_len.saturating_sub(1)).map(|t| gamma[t][i]).sum();
             for j in 0..n_states {
                 let xi_sum: f64 = (0..t_len.saturating_sub(1)).map(|_| xi[i][j]).sum();
-                transition[i * n_states + j] = if gamma_sum > 0.0 { xi_sum / gamma_sum } else { 0.0 };
+                transition[i * n_states + j] = if gamma_sum > 0.0 {
+                    xi_sum / gamma_sum
+                } else {
+                    0.0
+                };
             }
         }
 
@@ -616,7 +729,11 @@ pub fn hmm_train_baum_welch_impl(
                     .filter(|&t| observations[t] == k)
                     .map(|t| gamma[t][i])
                     .sum();
-                emission_mat[i * n_obs_symbols + k] = if gamma_sum > 0.0 { numer / gamma_sum } else { 1.0 / n_obs_symbols as f64 };
+                emission_mat[i * n_obs_symbols + k] = if gamma_sum > 0.0 {
+                    numer / gamma_sum
+                } else {
+                    1.0 / n_obs_symbols as f64
+                };
             }
         }
     }
@@ -686,7 +803,8 @@ where
     // Compute posterior statistics
     let n = samples.len();
     let mean: f64 = samples.iter().sum::<f64>() / n as f64;
-    let variance: f64 = samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
+    let variance: f64 =
+        samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
     let std = variance.sqrt();
 
     // 95% credible interval (percentile method)
@@ -717,7 +835,9 @@ fn mat_mul(a: &[f64], b: &[f64], n: usize) -> Vec<f64> {
     for i in 0..n {
         for k in 0..n {
             let a_ik = a[i * n + k];
-            if a_ik == 0.0 { continue; }
+            if a_ik == 0.0 {
+                continue;
+            }
             for j in 0..n {
                 result[i * n + j] += a_ik * b[k * n + j];
             }
@@ -731,7 +851,9 @@ fn random_simplex(rng: &mut Rng, n: usize) -> Vec<f64> {
     let mut vals: Vec<f64> = (0..n).map(|_| rng.next_f64()).collect();
     let sum: f64 = vals.iter().sum();
     if sum > 0.0 {
-        for v in vals.iter_mut() { *v /= sum; }
+        for v in vals.iter_mut() {
+            *v /= sum;
+        }
     } else {
         vals = vec![1.0 / n as f64; n];
     }
@@ -780,8 +902,18 @@ mod tests {
         // Steady state: pi[0] = 0.75, pi[1] = 0.25 (from pi*P = pi)
         let tm = vec![0.9, 0.1, 0.3, 0.7];
         let ss = compute_steady_state_impl(&tm, 2, 1000, 1e-10).unwrap();
-        assert!((ss[0] - 0.75).abs() < 0.01, "ss[0] = {}, expected {}", ss[0], 0.75);
-        assert!((ss[1] - 0.25).abs() < 0.01, "ss[1] = {}, expected {}", ss[1], 0.25);
+        assert!(
+            (ss[0] - 0.75).abs() < 0.01,
+            "ss[0] = {}, expected {}",
+            ss[0],
+            0.75
+        );
+        assert!(
+            (ss[1] - 0.25).abs() < 0.01,
+            "ss[1] = {}, expected {}",
+            ss[1],
+            0.25
+        );
     }
 
     #[test]
@@ -814,8 +946,14 @@ mod tests {
         // Each row of P^100 should be approximately the steady state
         for i in 0..2 {
             for j in 0..2 {
-                assert!((result[i * 2 + j] - ss[j]).abs() < 0.01,
-                    "P^100[{}][{}] = {}, expected ~{}", i, j, result[i * 2 + j], ss[j]);
+                assert!(
+                    (result[i * 2 + j] - ss[j]).abs() < 0.01,
+                    "P^100[{}][{}] = {}, expected ~{}",
+                    i,
+                    j,
+                    result[i * 2 + j],
+                    ss[j]
+                );
             }
         }
     }
@@ -892,12 +1030,21 @@ mod tests {
         let log_normal = |x: f64| -x * x / 2.0;
         let result = metropolis_hastings_impl(log_normal, 1.0, 10000, 1000, 42, 0.0).unwrap();
 
-        assert!((result.posterior_mean - 0.0).abs() < 0.15,
-            "posterior mean should be ~0, got {}", result.posterior_mean);
-        assert!((result.posterior_std - 1.0).abs() < 0.15,
-            "posterior std should be ~1, got {}", result.posterior_std);
-        assert!(result.acceptance_rate > 0.1 && result.acceptance_rate < 0.9,
-            "acceptance rate should be reasonable, got {}", result.acceptance_rate);
+        assert!(
+            (result.posterior_mean - 0.0).abs() < 0.15,
+            "posterior mean should be ~0, got {}",
+            result.posterior_mean
+        );
+        assert!(
+            (result.posterior_std - 1.0).abs() < 0.15,
+            "posterior std should be ~1, got {}",
+            result.posterior_std
+        );
+        assert!(
+            result.acceptance_rate > 0.1 && result.acceptance_rate < 0.9,
+            "acceptance rate should be reasonable, got {}",
+            result.acceptance_rate
+        );
         assert!(result.ci_lower < result.ci_upper);
     }
 
@@ -930,7 +1077,15 @@ mod tests {
         let mean = sum / n as f64;
         let variance = sum_sq / n as f64 - mean * mean;
         // Mean should be ~0, variance ~1
-        assert!(mean.abs() < 0.1, "Box-Muller mean should be ~0, got {}", mean);
-        assert!((variance - 1.0).abs() < 0.1, "Box-Muller variance should be ~1, got {}", variance);
+        assert!(
+            mean.abs() < 0.1,
+            "Box-Muller mean should be ~0, got {}",
+            mean
+        );
+        assert!(
+            (variance - 1.0).abs() < 0.1,
+            "Box-Muller variance should be ~1, got {}",
+            variance
+        );
     }
 }

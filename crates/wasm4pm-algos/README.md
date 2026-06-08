@@ -15,7 +15,7 @@ This crate provides the core algorithms for process discovery and conformance ch
 
 ```rust
 use wasm4pm_algos::dfg;
-use wasm4pm_types::EventLog;
+use wasm4pm_compat::EventLog;
 
 // Discover a DFG from an event log
 // let log = ...;

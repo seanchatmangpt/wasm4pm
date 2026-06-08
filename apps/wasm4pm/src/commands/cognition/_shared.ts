@@ -49,7 +49,7 @@ export function saveReceipt(receipt: unknown, dirRel: string): string {
   const dir = path.resolve(dirRel);
   fs.mkdirSync(dir, { recursive: true });
   // Rust `CognitionReceipt` exposes `run_id` (BLAKE3 hex). Fall back to
-  // legacy `id` for any callers that have not migrated yet.
+  //  `id` for any callers that have not migrated yet.
   let id = '';
   if (receipt && typeof receipt === 'object') {
     const r = receipt as { run_id?: unknown; id?: unknown };

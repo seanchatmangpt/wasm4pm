@@ -135,7 +135,8 @@ impl BinaryHeader {
         for i in 0..6 {
             let start = 40 + i * 8;
             header.section_offsets[i] =
-                u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap()); // infallible: same guard
+                u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap());
+            // infallible: same guard
         }
 
         header.checksum = u64::from_le_bytes(bytes[88..96].try_into().unwrap()); // infallible: same guard
@@ -507,7 +508,9 @@ impl<'a> BinaryLogView<'a> {
         if offset + 8 > self.data.len() {
             return Err("Out of bounds read".to_string());
         }
-        Ok(u64::from_le_bytes(self.data[offset..offset + 8].try_into().unwrap()))
+        Ok(u64::from_le_bytes(
+            self.data[offset..offset + 8].try_into().unwrap(),
+        ))
     }
 
     /// Convert to an `OwnedColumnarLog` compatible with the cache layer.
@@ -677,7 +680,8 @@ pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
 /// default timestamp key.
 #[wasm_bindgen]
 pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
-    let view = BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
+    let view =
+        BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
 
     let log = view
         .to_event_log("concept:name", "time:timestamp")
@@ -714,7 +718,8 @@ pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
         )));
     }
 
-    let header = BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
+    let header =
+        BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
 
     let info = json!({
         "version": header.version,

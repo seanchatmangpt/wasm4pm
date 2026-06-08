@@ -1,7 +1,7 @@
 {
   "_comment": "Kernel.run() dispatch overhead baselines. ceiling_ms is the CI enforcement ceiling (generous). measured_ms is the P99 observed on a developer workstation. Tighten ceiling_ms as performance improves.",
   "_updated": "2026-05-05",
-  "_methodology": "100 or 1000 sequential kernel.run() calls against a deterministic WASM stub. Measures TypeScript facade overhead only (dispatch, cache key hashing, OTEL span emission, result validation).",
+  "_methodology": "100 or 1000 sequential kernel.run() calls against a deterministic WASM stub. Measures TypeScript boundary overhead only (dispatch, cache key hashing, OTEL span emission, result validation).",
   "dfg_n100": {
     "description": "100 sequential DFG runs (distinct log handles, no cache hits)",
     "n": 100,

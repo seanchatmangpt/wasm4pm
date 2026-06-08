@@ -1,4 +1,4 @@
-# Release Notes - v26.5.19
+# Release Notes - v26.5.29
 
 **Release Date:** 2026-05-19
 
@@ -10,7 +10,7 @@ This release includes significant improvements to performance, testing, and rele
 
 
 ### Features
-release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+release(v26.5.29): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
 fix(test): increase tolerance for robust scaling test on synthetic 2D data
 feat(cycle43): close DX/Observability gaps — flag aliases, edge case handling, OTEL enhancements
 test(qol): cycle 43 phase 2 — add test cases for envelope deserialization and custody layer diagnostics
@@ -131,7 +131,7 @@ fix(observability,testing): close four "looks-legitimate-but-isn't" gaps
 feat(ml): expose MAE/MAPE on forecasting + macro F1/precision/recall on classify
 ### Bug Fixes
 fix(tests): remove all #[ignore] from OC conformance and performance tests
-release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+release(v26.5.29): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
 fix(test): adjust spc_rule_1_outlier_detection test data for z-score > 3.0
 fix(test): increase tolerance for robust scaling test on synthetic 2D data
 fix(cli): document flag aliases in command descriptions
@@ -260,7 +260,7 @@ fix(observability): close OTEL span coverage and semconv schema gaps
 fix(membrane,config): wire WASM4PM_MEMBRANE_* variables to config schema and runtime
 fix(validation): add real-data algorithm validation script with pm4py ground truth
 fix(cognition): close three field-contract gaps in TypeScript layer
-fix(wasm4pm-algos,wasm4pm-utils,wasm4pm-types): close three API-drift gaps in auxiliary crates
+fix(wasm4pm-algos,wasm4pm-utils,wasm4pm-compat): close three API-drift gaps in auxiliary crates
 fix(tps-metrics): close three quality gaps — rename misleading field, fix saturation bug, replace stub tests
 fix(config): close three config validation gaps — source/sink cross-field requirements, swarm algorithm ID validation, and prediction tasks enforcement
 fix(doctor): resolve HTML report test failure
@@ -288,7 +288,7 @@ fix(observability,testing): close four "looks-legitimate-but-isn't" gaps
 feat(ml): expose MAE/MAPE on forecasting + macro F1/precision/recall on classify
 ### Performance Improvements
 fix(tests): remove all #[ignore] from OC conformance and performance tests
-release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+release(v26.5.29): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
 fix(ensemble-voting): deterministic tie-breaking with Rank-1 oracle compliance
 feat(conformance): add negative testing suite with invariant violations and statistical rigor
 fix(dx): clarify CLI command descriptions and exit code documentation
@@ -319,7 +319,7 @@ feat(healing,rl): implement 5 autonomic gap fixes for Iteration 11c
 docs(cli): add config precedence hint to help output
 feat(iter8): implement 5 critical gap fixes — parameter suggestions, testing, docs, JSON consistency, RL observability
 test(enterprise): close 5 AtomVM/Erlang/marketplace bridge gaps (section K)
-docs(config,planner): clarify deprecated ML field backward-compatibility status
+docs(config,planner): clarify removed ML field backward-compatibility status
 docs(wasm4pm-cli): clarify relationship between Rust and TypeScript wpm binaries
 docs(claude-md): sync stale references after iter 1-5 gap fixes
 feat(spc): implement Western Electric Rule 4 (2-of-3 beyond 2σ) and close test gaps
@@ -332,10 +332,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [26.5.19] - 2026-05-19
+## [26.5.29] - 2026-05-19
 
 ### Added
-- Updated documentation and README.md for the v26.5.19 release.
+- Updated documentation and README.md for the v26.5.29 release.
 
 ## [26.5.15] - 2026-05-15 — Proof-Gate v2, Adversarial Admissibility v2, 21-Hook Coverage, Advanced Algorithms
 

@@ -22,12 +22,17 @@ fn test_spc_rule_1_outlier_detection() {
 
     // Compute z-score for the outlier value
     let mean = test_values.iter().sum::<f64>() / test_values.len() as f64;
-    let variance = test_values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / test_values.len() as f64;
+    let variance =
+        test_values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / test_values.len() as f64;
     let std_dev = variance.sqrt();
     let z_score = (outlier - mean).abs() / std_dev;
 
     // Assert that z-score is > 3 (Rule 1 threshold)
-    assert!(z_score > 3.0, "Outlier should have z-score > 3, got {}", z_score);
+    assert!(
+        z_score > 3.0,
+        "Outlier should have z-score > 3, got {}",
+        z_score
+    );
 }
 
 #[test]
@@ -40,14 +45,18 @@ fn test_spc_rule_2_shift_direction() {
     // direction attribute set.
 
     let test_values = vec![
-        25.0, 26.0, 25.5, 27.0, 28.0, 26.5, 27.5, 29.0, 28.5, 27.0  // All above baseline mean of 20
+        25.0, 26.0, 25.5, 27.0, 28.0, 26.5, 27.5, 29.0, 28.5,
+        27.0, // All above baseline mean of 20
     ];
 
     let baseline_mean = 20.0;
     let above_baseline = test_values.iter().filter(|&&v| v > baseline_mean).count();
 
     // Assert that >= 9 values are above baseline (Rule 2 threshold)
-    assert_eq!(above_baseline, 10, "All 10 points should be above baseline for shift detection");
+    assert_eq!(
+        above_baseline, 10,
+        "All 10 points should be above baseline for shift detection"
+    );
 }
 
 #[test]
@@ -60,13 +69,13 @@ fn test_spc_rule_3_trend_monotonicity() {
     // emits span with spc_rule_type="rule_3_trend", trend_direction attribute.
 
     let test_values = vec![
-        15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0  // Strictly increasing
+        15.0, 16.0, 17.0, 18.0, 19.0, 20.0, 21.0, // Strictly increasing
     ];
 
     // Count monotonic increasing sequence
     let mut increasing_count = 1;
     for i in 1..test_values.len() {
-        if test_values[i] > test_values[i-1] {
+        if test_values[i] > test_values[i - 1] {
             increasing_count += 1;
         } else {
             break;
@@ -74,7 +83,11 @@ fn test_spc_rule_3_trend_monotonicity() {
     }
 
     // Assert that we have >= 6 consecutive increasing points (Rule 3 threshold)
-    assert!(increasing_count >= 6, "Should have at least 6 increasing points, got {}", increasing_count);
+    assert!(
+        increasing_count >= 6,
+        "Should have at least 6 increasing points, got {}",
+        increasing_count
+    );
 }
 
 #[test]

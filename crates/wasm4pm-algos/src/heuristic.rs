@@ -1,5 +1,8 @@
-use wasm4pm_types::*;
 use std::collections::HashMap;
+use wasm4pm_compat::conformance::*;
+use wasm4pm_compat::error::*;
+use wasm4pm_compat::event_log::*;
+use wasm4pm_compat::models::*;
 
 /// Heuristic Miner - discovers DFG based on activity frequencies and directly-follows relationships
 /// Time complexity: O(n + m) where n = events, m = edges

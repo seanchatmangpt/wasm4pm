@@ -4,8 +4,8 @@
 //!
 //! Provides a generic simulated annealing algorithm for optimization.
 
-use crate::optimization::types::*;
 use crate::optimization::fitness::*;
+use crate::optimization::types::*;
 use wasm_bindgen::prelude::*;
 
 /// Re-use the RNG from genetic module
@@ -115,7 +115,8 @@ impl SimulatedAnnealing {
 
                 // Generate neighbor
                 let neighbor_state = neighbor_fn(&current_state);
-                let neighbor_fitness = fitness_fn.evaluate(&Individual::new(neighbor_state.clone()));
+                let neighbor_fitness =
+                    fitness_fn.evaluate(&Individual::new(neighbor_state.clone()));
                 evaluations += 1;
 
                 // Accept or reject
@@ -163,8 +164,8 @@ impl Default for SimulatedAnnealing {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::genetic::seed_rng;
+    use super::*;
 
     // Sphere function: minimize sum(x^2)
     fn sphere_function(genes: &[f64]) -> f64 {

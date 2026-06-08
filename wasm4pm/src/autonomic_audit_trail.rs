@@ -35,11 +35,11 @@ impl fmt::Display for AuditPhase {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AuditEventType {
     AgentSelected(String),
-    SpcRuleFired(String, String), // (rule_type, metric)
+    SpcRuleFired(String, String),        // (rule_type, metric)
     CircuitTransitioned(String, String), // (before_state, after_state)
-    RecoveryStarted(String), // reason
-    RecoveryCompleted(bool, i8), // (success, health_delta)
-    EscalationTriggered(String), // reason
+    RecoveryStarted(String),             // reason
+    RecoveryCompleted(bool, i8),         // (success, health_delta)
+    EscalationTriggered(String),         // reason
 }
 
 impl fmt::Display for AuditEventType {
@@ -54,7 +54,11 @@ impl fmt::Display for AuditEventType {
             }
             AuditEventType::RecoveryStarted(reason) => write!(f, "recovery_started({})", reason),
             AuditEventType::RecoveryCompleted(success, delta) => {
-                write!(f, "recovery_completed(success={}, delta={})", success, delta)
+                write!(
+                    f,
+                    "recovery_completed(success={}, delta={})",
+                    success, delta
+                )
             }
             AuditEventType::EscalationTriggered(reason) => {
                 write!(f, "escalation_triggered({})", reason)
@@ -176,7 +180,14 @@ impl AutonomicAuditTrail {
             self.events.last().unwrap().event_hash.clone() // infallible: checked is_empty() above
         };
 
-        let event = AuditEvent::new(timestamp_ns, event_type, details, phase, cycle_count, prev_hash);
+        let event = AuditEvent::new(
+            timestamp_ns,
+            event_type,
+            details,
+            phase,
+            cycle_count,
+            prev_hash,
+        );
 
         // Verify new event's hash computation
         if event.event_hash.is_empty() {
@@ -184,14 +195,8 @@ impl AutonomicAuditTrail {
         }
 
         // Update running checksum
-        let updated_checksum = blake3::hash(
-            format!(
-                "{}:{}",
-                self.checksum,
-                event.event_hash
-            )
-            .as_bytes(),
-        );
+        let updated_checksum =
+            blake3::hash(format!("{}:{}", self.checksum, event.event_hash).as_bytes());
         self.checksum = updated_checksum.to_hex().to_string();
 
         self.events.push(event);
@@ -261,7 +266,10 @@ impl AutonomicAuditTrail {
         }
 
         timeline.push_str("╰──────────────────────────────────────────────────────────\n");
-        timeline.push_str(&format!("Checksum (Merkle root): {}\n", &self.checksum[..16]));
+        timeline.push_str(&format!(
+            "Checksum (Merkle root): {}\n",
+            &self.checksum[..16]
+        ));
         timeline.push_str(&format!("Chain verified: {}\n", self.verify_chain()));
 
         timeline

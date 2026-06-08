@@ -212,7 +212,11 @@ fn bench_uniform_dfg(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(4));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES {
         let log = generate_uniform(batch);
         let (handle, events) = store_log(log);
@@ -229,7 +233,11 @@ fn bench_skewed_dfg(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(4));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES {
         let log = generate_skewed(batch);
         let (handle, events) = store_log(log);
@@ -246,7 +254,11 @@ fn bench_adversarial_dfg(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(20);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES {
         let log = generate_adversarial(batch);
         let (handle, events) = store_log(log);
@@ -265,7 +277,11 @@ fn bench_uniform_inductive(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES.iter().filter(|&&b| b <= 4096) {
         let log = generate_uniform(batch);
         let (handle, events) = store_log(log);
@@ -282,7 +298,11 @@ fn bench_skewed_inductive(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES.iter().filter(|&&b| b <= 4096) {
         let log = generate_skewed(batch);
         let (handle, events) = store_log(log);
@@ -299,7 +319,11 @@ fn bench_adversarial_inductive(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(6));
     group.warm_up_time(Duration::from_secs(1));
     group.sample_size(15);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
     for &batch in BATCH_SIZES.iter().filter(|&&b| b <= 4096) {
         let log = generate_adversarial(batch);
         let (handle, events) = store_log(log);

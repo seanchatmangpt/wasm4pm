@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! RL Learning Stability Comprehensive Tests
 //!
 //! Audit suite for RL learning stability across 5 key dimensions:
@@ -18,8 +19,8 @@
 
 #[cfg(feature = "cloud")]
 mod stability_tests {
+    use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
     use wasm4pm::rl_stability_monitor::RlStabilityMonitor;
-    use wasm4pm::rl_orchestrator::{RlOrchestrator, compute_reward};
     use wasm4pm::RlState;
 
     // =========================================================================
@@ -52,18 +53,22 @@ mod stability_tests {
         let features = [0.1, 0.05, 0.06, 0.0, 0.0, 1.0, 1.0, 0.001];
 
         for cycle in 0..200 {
-            let _ = orch.run_cycle(&features, &stable_state, &stable_state, 0, true, true, false);
+            let _ = orch.run_cycle(
+                &features,
+                &stable_state,
+                &stable_state,
+                0,
+                true,
+                true,
+                false,
+            );
 
             // Compute reward for this cycle
             let reward = compute_reward(0, 0, 0, true, true, false, 0);
             monitor.record_reward(orch.telemetry().cumulative_reward);
 
             // Approximate TD error as |reward - previous_reward|
-            let td_approx = if cycle > 0 {
-                reward
-            } else {
-                0.0
-            };
+            let td_approx = if cycle > 0 { reward } else { 0.0 };
             monitor.record_td_error(td_approx);
         }
 
@@ -113,7 +118,7 @@ mod stability_tests {
         };
 
         let failed = RlState {
-            health_level: 4,  // Terminal state
+            health_level: 4, // Terminal state
             event_rate_q: 0,
             activity_count_q: 0,
             spc_alert_level: 5,
@@ -138,9 +143,9 @@ mod stability_tests {
 
             // Record monitored values (approximation: reward magnitude as proxy for Q-scale)
             let reward = if cycle % 2 == 0 {
-                compute_reward(0, 0, 0, true, true, false, 0)  // ~0.3
+                compute_reward(0, 0, 0, true, true, false, 0) // ~0.3
             } else {
-                compute_reward(3, 4, 5, true, true, false, 7)  // ~-3.0
+                compute_reward(3, 4, 5, true, true, false, 7) // ~-3.0
             };
 
             monitor.record_max_q_value(reward.abs(), cycle as u64);
@@ -186,7 +191,15 @@ mod stability_tests {
         let features = [0.1, 0.05, 0.06, 0.0, 0.0, 1.0, 1.0, 0.001];
 
         for _ in 0..300 {
-            let _ = orch.run_cycle(&features, &stable_state, &stable_state, 0, true, true, false);
+            let _ = orch.run_cycle(
+                &features,
+                &stable_state,
+                &stable_state,
+                0,
+                true,
+                true,
+                false,
+            );
             monitor.record_reward(orch.telemetry().cumulative_reward);
 
             // Every reward should be valid
@@ -203,8 +216,10 @@ mod stability_tests {
 
         // Assertion: Mean reward should be positive in stable state
         assert!(
-            monitor.learning_curve.reward_history.is_empty() ||
-            monitor.learning_curve.reward_history.iter().sum::<f32>() / monitor.learning_curve.reward_history.len() as f32 > 0.0,
+            monitor.learning_curve.reward_history.is_empty()
+                || monitor.learning_curve.reward_history.iter().sum::<f32>()
+                    / monitor.learning_curve.reward_history.len() as f32
+                    > 0.0,
             "Mean cumulative reward should be positive in stable state"
         );
     }
@@ -230,13 +245,13 @@ mod stability_tests {
 
         for successes in 0..50 {
             let reward = compute_reward_with_momentum(wasm4pm::rl_orchestrator::RewardParameters {
-                prev_health: 1,      // improved (from health_level 1 → 0)
+                prev_health: 1, // improved (from health_level 1 → 0)
                 curr_health: 0,
-                spc_alert_count: 0,  // no SPC alerts
-                guard_pass: true,   // guard pass
-                circuit_allowed: true,   // circuit allowed
-                latency_budget_exceeded: false,  // no latency budget exceeded
-                rework_ratio_q: 0,      // no rework
+                spc_alert_count: 0,             // no SPC alerts
+                guard_pass: true,               // guard pass
+                circuit_allowed: true,          // circuit allowed
+                latency_budget_exceeded: false, // no latency budget exceeded
+                rework_ratio_q: 0,              // no rework
                 consecutive_successes: successes,
             });
             cumulative += reward;
@@ -332,7 +347,15 @@ mod stability_tests {
         let features = [0.1, 0.05, 0.06, 0.0, 0.0, 1.0, 1.0, 0.001];
 
         for cycle in 0..500 {
-            let _ = orch.run_cycle(&features, &stable_state, &stable_state, 0, true, true, false);
+            let _ = orch.run_cycle(
+                &features,
+                &stable_state,
+                &stable_state,
+                0,
+                true,
+                true,
+                false,
+            );
 
             let reward = compute_reward(0, 0, 0, true, true, false, 0);
             monitor.record_reward(orch.telemetry().cumulative_reward);
@@ -343,18 +366,33 @@ mod stability_tests {
 
         // Final checks
         println!("Stability Report:");
-        println!("  TD error monotonic: {}", monitor.td_error_stats.is_monotonic_decreasing);
-        println!("  Q-values diverging: {}", monitor.q_divergence.is_diverging);
-        println!("  Learning curve chaotic: {}", monitor.learning_curve.is_chaotic);
-        println!("  Reward outliers: {}", monitor.reward_scaling.has_extreme_outliers);
-        println!("  Convergence ratio: {:.3}", monitor.td_error_stats.convergence_ratio);
+        println!(
+            "  TD error monotonic: {}",
+            monitor.td_error_stats.is_monotonic_decreasing
+        );
+        println!(
+            "  Q-values diverging: {}",
+            monitor.q_divergence.is_diverging
+        );
+        println!(
+            "  Learning curve chaotic: {}",
+            monitor.learning_curve.is_chaotic
+        );
+        println!(
+            "  Reward outliers: {}",
+            monitor.reward_scaling.has_extreme_outliers
+        );
+        println!(
+            "  Convergence ratio: {:.3}",
+            monitor.td_error_stats.convergence_ratio
+        );
 
         // At least 3 of 4 checks should pass in stable environment
         let pass_count = [
             !monitor.q_divergence.is_diverging,
             !monitor.learning_curve.is_chaotic,
             !monitor.reward_scaling.has_extreme_outliers,
-            monitor.td_error_stats.convergence_ratio <= 1.5,  // Allow some slack
+            monitor.td_error_stats.convergence_ratio <= 1.5, // Allow some slack
         ]
         .iter()
         .filter(|&&x| x)

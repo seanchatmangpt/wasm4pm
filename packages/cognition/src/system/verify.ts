@@ -50,7 +50,7 @@ export async function verifySystem(
         { cause: e },
       );
     }
-    // Refuses unknown status; tolerates legacy 'ok' (see guard.ts).
+    // Refuses unknown status; tolerates  'ok' (see guard.ts).
     return assertSystemVerifyResult(parsed);
   } catch (err) {
     status = 'ERROR';

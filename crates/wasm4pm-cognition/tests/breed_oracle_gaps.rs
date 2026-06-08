@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut)]
 //! Missing breed oracle tests — iter-15 coverage gap closure.
 //!
 //! Oracle ranks used here:
@@ -10,11 +11,11 @@
 //! every expected value is derived from the algorithm's mathematical
 //! specification or documented domain contract, not from the implementation.
 
-use wasm4pm_cognition::breeds::{
-    Candidate, Fact, Goal, Rule, StateAtom, BreedInput, BreedId, dispatch_breed_test,
-};
 use wasm4pm_cognition::breeds::hearsay::noisy_or;
 use wasm4pm_cognition::breeds::production_rules::combine_cf;
+use wasm4pm_cognition::breeds::{
+    dispatch_breed_test, BreedId, BreedInput, Candidate, Fact, Goal, Rule, StateAtom,
+};
 
 // =============================================================================
 // Helper builders
@@ -80,7 +81,13 @@ fn empty_input_base() -> BreedInput {
 /// From definition: 1-(1-a)(1-b) == 1-(1-b)(1-a) for all a, b.
 #[test]
 fn hearsay_noisy_or_commutativity() {
-    let pairs = [(0.3_f32, 0.7), (0.0, 0.9), (0.5, 0.5), (1.0, 0.2), (0.0, 0.0)];
+    let pairs = [
+        (0.3_f32, 0.7),
+        (0.0, 0.9),
+        (0.5, 0.5),
+        (1.0, 0.2),
+        (0.0, 0.0),
+    ];
     for (a, b) in pairs {
         let ab = noisy_or(a, b);
         let ba = noisy_or(b, a);
@@ -223,12 +230,7 @@ fn mycin_combine_cf_commutativity_same_sign() {
 /// From Shortliffe-Buchanan (positive branch): a + b - a*b > max(a,b) when both > 0.
 #[test]
 fn mycin_combine_cf_positive_combination_strengthens() {
-    let pairs = [
-        (0.3_f32, 0.4),
-        (0.6, 0.5),
-        (0.1, 0.9),
-        (0.5, 0.5),
-    ];
+    let pairs = [(0.3_f32, 0.4), (0.6, 0.5), (0.1, 0.9), (0.5, 0.5)];
     for (a, b) in pairs {
         let r = combine_cf(a, b);
         let prior_max = a.max(b);
@@ -251,12 +253,7 @@ fn strips_presatisfied_goal_returns_empty_plan() {
     // Initial state already satisfies the goal.
     input.state = vec![state_atom("ready", "true")];
     input.goals = vec![goal("g1", "ready", "true")];
-    input.rules = vec![rule(
-        "make-ready",
-        vec!["input=present"],
-        "ready=true",
-        1.0,
-    )];
+    input.rules = vec![rule("make-ready", vec!["input=present"], "ready=true", 1.0)];
 
     let output = dispatch_breed_test("strips", &input).expect("STRIPS presatisfied");
 
@@ -308,10 +305,7 @@ fn strips_preconditions_reject_empty_goals() {
     input.rules = vec![rule("act", vec![], "something=done", 1.0)];
 
     let result = Strips.preconditions(&input);
-    assert!(
-        result.is_err(),
-        "STRIPS must reject input with no goals"
-    );
+    assert!(result.is_err(), "STRIPS must reject input with no goals");
 }
 
 /// Rank-2: STRIPS empty rules → precondition rejects.
@@ -416,16 +410,8 @@ fn gps_unreachable_goal_returns_error() {
 #[test]
 fn hearsay_seeds_initial_facts() {
     let mut input = empty_input_base();
-    input.facts = vec![
-        fact("phone", "T"),
-        fact("phone", "HH"),
-    ];
-    input.rules = vec![rule(
-        "ks-phone-to-word",
-        vec!["phone:T"],
-        "word:THE",
-        0.9,
-    )];
+    input.facts = vec![fact("phone", "T"), fact("phone", "HH")];
+    input.rules = vec![rule("ks-phone-to-word", vec!["phone:T"], "word:THE", 0.9)];
 
     let output = dispatch_breed_test("hearsay", &input).expect("Hearsay seed test");
     assert_eq!(output.breed, BreedId::Hearsay);
@@ -543,7 +529,11 @@ fn soar_require_restricts_to_required_set() {
     );
     for c in &output.candidates {
         if c.id != "beta" {
-            assert!(c.eliminated, "non-required candidate {} must be eliminated", c.id);
+            assert!(
+                c.eliminated,
+                "non-required candidate {} must be eliminated",
+                c.id
+            );
         }
     }
 }
@@ -580,10 +570,7 @@ fn soar_preconditions_reject_empty_candidates() {
     input.candidates = vec![];
 
     let result = Soar.preconditions(&input);
-    assert!(
-        result.is_err(),
-        "SOAR must reject input with no candidates"
-    );
+    assert!(result.is_err(), "SOAR must reject input with no candidates");
 }
 
 // =============================================================================
@@ -605,10 +592,18 @@ fn dendral_forbid_eliminates_named_candidate() {
     assert_eq!(output.breed, BreedId::Dendral);
 
     // Domain contract: only the forbidden candidate is eliminated.
-    let cloud = output.candidates.iter().find(|c| c.id == "centralized-cloud").unwrap();
+    let cloud = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "centralized-cloud")
+        .unwrap();
     assert!(cloud.eliminated, "forbidden candidate must be eliminated");
 
-    let edge = output.candidates.iter().find(|c| c.id == "edge-deployment").unwrap();
+    let edge = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "edge-deployment")
+        .unwrap();
     assert!(!edge.eliminated, "non-forbidden candidate must survive");
 
     assert_eq!(
@@ -623,10 +618,7 @@ fn dendral_forbid_eliminates_named_candidate() {
 #[test]
 fn dendral_elimination_is_monotonic() {
     let mut input = empty_input_base();
-    input.candidates = vec![
-        candidate("target", 0.9),
-        candidate("other", 0.5),
-    ];
+    input.candidates = vec![candidate("target", 0.9), candidate("other", 0.5)];
     // First constraint eliminates target; second is unrelated.
     input.facts = vec![
         fact("constraint", "forbid:target"),
@@ -655,10 +647,18 @@ fn dendral_min_score_constraint_eliminates_low_scorer() {
 
     let output = dispatch_breed_test("dendral", &input).expect("DENDRAL min-score");
 
-    let low = output.candidates.iter().find(|c| c.id == "low-quality").unwrap();
+    let low = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "low-quality")
+        .unwrap();
     assert!(low.eliminated, "low-score candidate must be eliminated");
 
-    let high = output.candidates.iter().find(|c| c.id == "high-quality").unwrap();
+    let high = output
+        .candidates
+        .iter()
+        .find(|c| c.id == "high-quality")
+        .unwrap();
     assert!(!high.eliminated, "high-score candidate must survive");
 }
 
@@ -667,17 +667,18 @@ fn dendral_min_score_constraint_eliminates_low_scorer() {
 #[test]
 fn dendral_no_constraints_all_survive() {
     let mut input = empty_input_base();
-    input.candidates = vec![
-        candidate("alpha", 0.8),
-        candidate("beta", 0.6),
-    ];
+    input.candidates = vec![candidate("alpha", 0.8), candidate("beta", 0.6)];
     input.facts = vec![]; // no constraints
 
     let output = dispatch_breed_test("dendral", &input).expect("DENDRAL no constraints");
 
     // Domain contract: all candidates survive.
     for c in &output.candidates {
-        assert!(!c.eliminated, "candidate {} must survive with no constraints", c.id);
+        assert!(
+            !c.eliminated,
+            "candidate {} must survive with no constraints",
+            c.id
+        );
     }
 
     // Explanation mentions 0 constraints applied.
@@ -713,17 +714,9 @@ fn dendral_preconditions_reject_empty_candidates() {
 #[test]
 fn mycin_fires_rules_by_certainty_order() {
     let mut input = empty_input_base();
-    input.facts = vec![
-        fact("symptom", "fever"),
-        fact("symptom", "cough"),
-    ];
+    input.facts = vec![fact("symptom", "fever"), fact("symptom", "cough")];
     input.rules = vec![
-        rule(
-            "rule-low",
-            vec!["symptom=fever"],
-            "disease=mild-cold",
-            0.3,
-        ),
+        rule("rule-low", vec!["symptom=fever"], "disease=mild-cold", 0.3),
         rule(
             "rule-high",
             vec!["symptom=cough"],

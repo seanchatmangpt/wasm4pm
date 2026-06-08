@@ -112,8 +112,8 @@ fn ga_convergence_more_generations_never_worse() {
         (10, &["Start", "Register", "Approve", "End"]),
         (5, &["Start", "Register", "Reject", "End"]),
     ]);
-    let (_, f1) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 1)
-        .expect("GA must succeed");
+    let (_, f1) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 1).expect("GA must succeed");
     let (_, f100) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 100)
         .expect("GA must succeed");
 
@@ -129,10 +129,10 @@ fn ga_convergence_more_generations_never_worse() {
 #[test]
 fn ga_deterministic_same_seed() {
     let log = controlled_log();
-    let (_, f1) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("GA must succeed");
-    let (_, f2) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("GA must succeed");
+    let (_, f1) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50).expect("GA must succeed");
+    let (_, f2) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 50).expect("GA must succeed");
     assert_eq!(
         f1, f2,
         "GA is not deterministic: different fitness {:.6} vs {:.6} on identical inputs",
@@ -144,8 +144,8 @@ fn ga_deterministic_same_seed() {
 #[test]
 fn ga_output_structure_valid() {
     let log = controlled_log();
-    let (dfg, _) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30)
-        .expect("GA must succeed");
+    let (dfg, _) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30).expect("GA must succeed");
     assert!(
         !dfg.nodes.is_empty(),
         "GA DFG must contain at least one node"
@@ -185,10 +185,10 @@ fn pso_convergence_more_iterations_never_worse() {
         (10, &["Start", "Register", "Approve", "End"]),
         (5, &["Start", "Register", "Reject", "End"]),
     ]);
-    let (_, f5) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 5)
-        .expect("PSO must succeed");
-    let (_, f50) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("PSO must succeed");
+    let (_, f5) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 5).expect("PSO must succeed");
+    let (_, f50) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 50).expect("PSO must succeed");
 
     assert!(
         f50 >= f5 - 1e-9,
@@ -202,10 +202,10 @@ fn pso_convergence_more_iterations_never_worse() {
 #[test]
 fn pso_deterministic_same_seed() {
     let log = controlled_log();
-    let (_, f1) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("PSO must succeed");
-    let (_, f2) = discover_pso_algorithm_from_log(&log, "concept:name", 20, 50)
-        .expect("PSO must succeed");
+    let (_, f1) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 50).expect("PSO must succeed");
+    let (_, f2) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 20, 50).expect("PSO must succeed");
     assert_eq!(f1, f2, "PSO is not deterministic");
 }
 
@@ -433,10 +433,7 @@ fn ilp_perfect_fitness_on_fitting_log() {
 /// produce 4 places: A→B, A→C, B→D, C→D). Validates candidate generation + greedy cover.
 #[test]
 fn ilp_detects_parallel_and_split() {
-    let log = build_log(&[
-        (10, &["A", "B", "D"]),
-        (10, &["A", "C", "D"]),
-    ]);
+    let log = build_log(&[(10, &["A", "B", "D"]), (10, &["A", "C", "D"])]);
     let (pn, fitness, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
     // Must produce a valid model that replays both variants
     assert!(
@@ -445,7 +442,10 @@ fn ilp_detects_parallel_and_split() {
         fitness
     );
     // Must have source and sink at minimum
-    assert!(pn.places.len() >= 2, "ILP must produce at least source and sink places");
+    assert!(
+        pn.places.len() >= 2,
+        "ILP must produce at least source and sink places"
+    );
     // Must produce transitions for all 4 activities
     assert_eq!(
         pn.transitions.len(),
@@ -462,7 +462,10 @@ fn ilp_detects_self_loop_place() {
     let log = build_log(&[(10, &["A", "A", "B"])]);
     let (pn, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
     let has_loop_place = pn.places.iter().any(|p| p.id.contains("loop"));
-    assert!(has_loop_place, "L1L activity A should produce a self-loop place");
+    assert!(
+        has_loop_place,
+        "L1L activity A should produce a self-loop place"
+    );
 }
 
 /// ILP output is a valid Petri net structure: source has initial marking,
@@ -474,7 +477,11 @@ fn ilp_output_is_valid_petri_net() {
     // Source place must have initial marking
     let source = pn.places.iter().find(|p| p.id == "p_source");
     assert!(source.is_some(), "Petri net must have p_source place");
-    assert_eq!(source.unwrap().marking, Some(1), "p_source must have initial marking 1");
+    assert_eq!(
+        source.unwrap().marking,
+        Some(1),
+        "p_source must have initial marking 1"
+    );
     // Must have transitions for each activity
     assert_eq!(pn.transitions.len(), 3, "Must have 3 transitions for X,Y,Z");
     // Must have arcs
@@ -486,14 +493,15 @@ fn ilp_output_is_valid_petri_net() {
 #[test]
 fn alpha_plus_plus_output_is_petri_net() {
     use wasm4pm::algorithms::discover_alpha_plus_plus_from_log;
-    let log = build_log(&[
-        (10, &["A", "B", "C"]),
-        (5, &["A", "C", "B"]),
-    ]);
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let log = build_log(&[(10, &["A", "B", "C"]), (5, &["A", "C", "B"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let pn = discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.0)
         .expect("alpha_plus_plus must succeed");
     assert!(!pn.places.is_empty(), "Alpha++ must produce places");
-    assert!(!pn.transitions.is_empty(), "Alpha++ must produce transitions");
+    assert!(
+        !pn.transitions.is_empty(),
+        "Alpha++ must produce transitions"
+    );
     assert!(!pn.arcs.is_empty(), "Alpha++ must produce arcs");
     assert!(
         pn.places.iter().any(|p| p.id == "p_source"),
@@ -510,7 +518,8 @@ fn alpha_plus_plus_output_is_petri_net() {
 #[test]
 fn dfg_edges_have_positive_frequency() {
     let log = controlled_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(
         !dfg.edges.is_empty(),
         "DFG must have at least one edge for a non-trivial log"
@@ -530,15 +539,16 @@ fn dfg_edges_have_positive_frequency() {
 #[test]
 fn dfg_filtered_threshold_monotone() {
     let log = controlled_log();
-    let unfiltered = discover_dfg_filtered_from_log(&log, "concept:name", 0);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let unfiltered = discover_dfg_filtered_from_log(&admitted, "concept:name", 0);
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert_eq!(
         unfiltered.edges.len(),
         dfg.edges.len(),
         "filtered(min=0) edge count must equal unfiltered"
     );
 
-    let filtered = discover_dfg_filtered_from_log(&log, "concept:name", 999_999);
+    let filtered = discover_dfg_filtered_from_log(&admitted, "concept:name", 999_999);
     assert!(
         filtered.edges.is_empty(),
         "filtered(min=999999) must produce no edges"
@@ -550,8 +560,9 @@ fn dfg_filtered_threshold_monotone() {
 #[test]
 fn heuristic_miner_fewer_edges_than_dfg() {
     let log = controlled_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
-    let hm = discover_heuristic_miner_from_log(&log, "concept:name", 0.5);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
+    let hm = discover_heuristic_miner_from_log(&admitted.value, "concept:name", 0.5);
     assert!(
         hm.edges.len() <= dfg.edges.len(),
         "heuristic miner (threshold=0.5) must have ≤ DFG edges; got hm={} dfg={}",
@@ -570,7 +581,8 @@ fn heuristic_miner_fewer_edges_than_dfg() {
 fn footprints_causal_antisymmetric() {
     use wasm4pm::algorithms::FootprintRelation;
     let log = build_log(&[(5, &["A", "B", "C"]), (5, &["A", "C", "B"])]);
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let fp = discover_footprints_from_log(&admitted, "concept:name");
     let n = fp.activities.len();
     for i in 0..n {
         for j in 0..n {
@@ -579,8 +591,10 @@ fn footprints_causal_antisymmetric() {
                     fp.matrix[j][i],
                     FootprintRelation::Causal,
                     "footprint antisymmetry violated: {}→{} is Causal AND {}→{} is Causal",
-                    fp.activities[i], fp.activities[j],
-                    fp.activities[j], fp.activities[i]
+                    fp.activities[i],
+                    fp.activities[j],
+                    fp.activities[j],
+                    fp.activities[i]
                 );
             }
         }
@@ -674,7 +688,9 @@ fn temporal_profile_nonnegative_durations() {
         assert!(
             *mean >= 0.0,
             "temporal profile mean for {}→{} is negative: {:.2}",
-            a, b, mean
+            a,
+            b,
+            mean
         );
     }
 }
@@ -766,7 +782,8 @@ fn hc_prunes_below_dfg() {
         (20, &["Start", "Process", "End"]),
         (20, &["Start", "Process", "Review", "End"]),
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     let hc = discover_hill_climbing_from_log(&log, "concept:name");
 
     // Monotonicity: HC can only remove edges.
@@ -787,7 +804,8 @@ fn hc_prunes_below_dfg() {
         assert!(
             edge.frequency > 0,
             "HC edge {}→{} has frequency 0 (frequencies must be real)",
-            edge.from, edge.to
+            edge.from,
+            edge.to
         );
     }
     let max_freq = hc.edges.iter().map(|e| e.frequency).max().unwrap_or(0);
@@ -805,9 +823,18 @@ fn hc_prunes_below_dfg() {
 fn astar_beyond_100_edges() {
     // 12 activities → up to 11 directly-follows pairs per trace; 3 variants → 12+ unique pairs.
     let log = build_log(&[
-        (5, &["A","B","C","D","E","F","G","H","I","J","K","L"]),
-        (5, &["A","C","B","D","F","E","G","I","H","J","L","K"]),
-        (5, &["L","K","J","I","H","G","F","E","D","C","B","A"]),
+        (
+            5,
+            &["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"],
+        ),
+        (
+            5,
+            &["A", "C", "B", "D", "F", "E", "G", "I", "H", "J", "L", "K"],
+        ),
+        (
+            5,
+            &["L", "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "A"],
+        ),
     ]);
     let (dfg, _iters) = discover_astar_from_log(&log, "concept:name", 500);
     assert!(
@@ -840,8 +867,8 @@ fn ga_edges_have_real_frequency() {
     // 20 traces each with [A, B, C, D] → each edge appears exactly 20 times.
     let log = build_log(&[(20, &["A", "B", "C", "D"])]);
 
-    let (ga_dfg, _) = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30)
-        .expect("GA must succeed");
+    let (ga_dfg, _) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30).expect("GA must succeed");
     let max_freq = ga_dfg.edges.iter().map(|e| e.frequency).max().unwrap_or(0);
     assert!(
         max_freq > 1,
@@ -849,8 +876,8 @@ fn ga_edges_have_real_frequency() {
         max_freq
     );
 
-    let (pso_dfg, _) = discover_pso_algorithm_from_log(&log, "concept:name", 10, 20)
-        .expect("PSO must succeed");
+    let (pso_dfg, _) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 10, 20).expect("PSO must succeed");
     let pso_max = pso_dfg.edges.iter().map(|e| e.frequency).max().unwrap_or(0);
     assert!(
         pso_max > 1,
@@ -859,14 +886,15 @@ fn ga_edges_have_real_frequency() {
     );
 
     // ACO with enough ants to reliably find non-empty solutions.
-    let (aco_dfg, _) = discover_aco_algorithm_from_log(&log, "concept:name", 30, 30)
-        .expect("ACO must succeed");
+    let (aco_dfg, _) =
+        discover_aco_algorithm_from_log(&log, "concept:name", 30, 30).expect("ACO must succeed");
     // Verify structural correctness: any selected edges must have real frequencies.
     for edge in &aco_dfg.edges {
         assert!(
             edge.frequency > 0,
             "ACO edge {}→{} has frequency 0 (must be > 0 for observed edges)",
-            edge.from, edge.to
+            edge.from,
+            edge.to
         );
     }
     // With 30 ants × 30 iterations and a single-variant log, ACO must find the
@@ -888,11 +916,9 @@ fn ga_edges_have_real_frequency() {
 #[test]
 fn inductive_parallel_cut_fires() {
     // Equal mix ensures both B→C and C→B are observed (bidirectional).
-    let log = build_log(&[
-        (5, &["A", "B", "C"]),
-        (5, &["A", "C", "B"]),
-    ]);
-    let json_str = discover_inductive_miner_from_log(&log, "concept:name");
+    let log = build_log(&[(5, &["A", "B", "C"]), (5, &["A", "C", "B"])]);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
     let v: serde_json::Value =
         serde_json::from_str(&json_str).expect("inductive miner must return valid JSON");
 
@@ -976,10 +1002,10 @@ fn astar_more_iter_never_fewer_edges() {
 #[test]
 fn pso_global_best_at_least_as_good_as_initial_spawn() {
     let log = controlled_log();
-    let (_, f1) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 1)
-        .expect("PSO must succeed");
-    let (_, f50) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 50)
-        .expect("PSO must succeed");
+    let (_, f1) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 30, 1).expect("PSO must succeed");
+    let (_, f50) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 30, 50).expect("PSO must succeed");
     assert!(
         f50 >= f1 - 1e-9,
         "PSO global-best regressed: 1-iter={:.4} 50-iter={:.4}",
@@ -1002,10 +1028,10 @@ fn pso_iterations_improve_global_best() {
         (10, &["A", "B", "D", "C", "E"]),
         (5, &["A", "C", "B", "D", "E"]),
     ]);
-    let (_, f_low) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 2)
-        .expect("PSO must succeed");
-    let (_, f_high) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 50)
-        .expect("PSO must succeed");
+    let (_, f_low) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 30, 2).expect("PSO must succeed");
+    let (_, f_high) =
+        discover_pso_algorithm_from_log(&log, "concept:name", 30, 50).expect("PSO must succeed");
     assert!(
         f_high >= f_low - 1e-9,
         "PSO with more iterations regressed: low={:.4} high={:.4}",

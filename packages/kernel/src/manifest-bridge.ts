@@ -9,7 +9,7 @@
  * Each `AlgorithmMetadata` entry in the kernel registry maps to exactly one
  * mcpp `PartManifest` JSON object. The bridge is the canonical authority for
  * this mapping; any hand-written manifest for a registry algorithm is a
- * legacy path that must be retired.
+ *  path that must be retired.
  *
  * Field derivation summary (see `algorithmToPartManifest` below):
  *

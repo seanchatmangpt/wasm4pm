@@ -16,8 +16,79 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::borrow::Cow;
-use std::collections::{HashMap, BTreeMap, BinaryHeap, HashSet, VecDeque};
-use crate::alignment_fitness::{AlignmentState, generate_successors, AlignmentFitnessConfig};
+use std::collections::{BTreeMap, BinaryHeap, HashMap, HashSet, VecDeque};
+
+/// Alignment move types for A* alignment computation.
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub enum AlignmentMove {
+    /// Synchronous move (log and model match)
+    Sync { _activity: String },
+    /// Log move (only in log)
+    LogMove { _activity: String },
+    /// Model move (only in model)
+    ModelMove { _activity: String },
+}
+
+/// A* search frontier state for alignment computation.
+#[derive(Clone, Debug)]
+pub struct AlignmentState {
+    /// Current position in trace (index)
+    pub trace_pos: usize,
+    /// Current marking (place -> token count)
+    pub marking: Vec<usize>,
+    /// Cost so far
+    pub g_cost: f64,
+    /// Estimated remaining cost (heuristic)
+    pub h_cost: f64,
+    /// Alignment path
+    pub path: Vec<AlignmentMove>,
+}
+
+impl PartialEq for AlignmentState {
+    fn eq(&self, other: &Self) -> bool {
+        self.trace_pos == other.trace_pos && self.marking == other.marking
+    }
+}
+
+impl Eq for AlignmentState {}
+
+impl PartialOrd for AlignmentState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for AlignmentState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // BinaryHeap is max-heap, but we want min-heap for A*
+        // Use floating point total ordering
+        let f_self = self.g_cost + self.h_cost;
+        let f_other = other.g_cost + other.h_cost;
+        f_other
+            .partial_cmp(&f_self)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
+/// Configuration for alignment-based fitness computation.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AlignmentFitnessConfig {
+    pub max_iterations: usize,
+    pub sync_cost: f64,
+    pub log_move_cost: f64,
+    pub model_move_cost: f64,
+}
+
+impl Default for AlignmentFitnessConfig {
+    fn default() -> Self {
+        Self {
+            max_iterations: 100000,
+            sync_cost: 0.0,
+            log_move_cost: 1.0,
+            model_move_cost: 1.0,
+        }
+    }
+}
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 ///
@@ -259,15 +330,46 @@ pub struct EventLog {
     pub traces: Vec<Trace>,
 }
 
-fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<AttributeValue> {
+/// An admitted event log wrapped in a process evidence carrier.
+pub type AdmittedEventLog<W = ()> =
+    wasm4pm_compat::evidence::Evidence<EventLog, wasm4pm_compat::state::Admitted, W>;
+
+/// An admitted process tree wrapped in a process evidence carrier.
+pub type TypedProcessTree<W = wasm4pm_compat::witness::InductiveMiner> =
+    wasm4pm_compat::evidence::Evidence<
+        wasm4pm_compat::process_tree::ProcessTree,
+        wasm4pm_compat::state::Admitted,
+        W,
+    >;
+
+/// An admitted POWL model wrapped in a process evidence carrier.
+pub type TypedPowl<W = wasm4pm_compat::witness::PowlPaper> = wasm4pm_compat::evidence::Evidence<
+    wasm4pm_compat::powl::Powl,
+    wasm4pm_compat::state::Admitted,
+    W,
+>;
+
+fn convert_attribute_value(
+    val: wasm4pm_compat::event_log::AttributeValue,
+) -> Option<AttributeValue> {
     match val {
-        wasm4pm_types::AttributeValue::String(s) => Some(AttributeValue::String(s)),
-        wasm4pm_types::AttributeValue::Date(d) => Some(AttributeValue::Date(d.to_rfc3339())),
-        wasm4pm_types::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
-        wasm4pm_types::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
-        wasm4pm_types::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
-        wasm4pm_types::AttributeValue::ID(id) => Some(AttributeValue::String(id.to_string())),
-        wasm4pm_types::AttributeValue::List(l) => {
+        wasm4pm_compat::event_log::AttributeValue::String(s) => {
+            Some(AttributeValue::String(s))
+        }
+        wasm4pm_compat::event_log::AttributeValue::Date(d) => {
+            Some(AttributeValue::Date(d.to_rfc3339()))
+        }
+        wasm4pm_compat::event_log::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
+        wasm4pm_compat::event_log::AttributeValue::Float(f) => {
+            Some(AttributeValue::Float(f))
+        }
+        wasm4pm_compat::event_log::AttributeValue::Boolean(b) => {
+            Some(AttributeValue::Boolean(b))
+        }
+        wasm4pm_compat::event_log::AttributeValue::ID(id) => {
+            Some(AttributeValue::String(id.to_string()))
+        }
+        wasm4pm_compat::event_log::AttributeValue::List(l) => {
             let mut list = Vec::new();
             for attr in l {
                 if let Some(cv) = convert_attribute_value(attr.value) {
@@ -275,8 +377,8 @@ fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<Attribu
                 }
             }
             Some(AttributeValue::List(list))
-        },
-        wasm4pm_types::AttributeValue::Container(c) => {
+        }
+        wasm4pm_compat::event_log::AttributeValue::Container(c) => {
             let mut map = HashMap::new();
             for attr in c {
                 if let Some(cv) = convert_attribute_value(attr.value) {
@@ -284,12 +386,14 @@ fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<Attribu
                 }
             }
             Some(AttributeValue::Container(map))
-        },
-        wasm4pm_types::AttributeValue::None() => None,
+        }
+        wasm4pm_compat::event_log::AttributeValue::None() => None,
     }
 }
 
-fn convert_attributes(attrs: wasm4pm_types::Attributes) -> HashMap<String, AttributeValue> {
+fn convert_attributes(
+    attrs: wasm4pm_compat::event_log::Attributes,
+) -> HashMap<String, AttributeValue> {
     let mut map = HashMap::new();
     for attr in attrs {
         if let Some(cv) = convert_attribute_value(attr.value) {
@@ -299,8 +403,8 @@ fn convert_attributes(attrs: wasm4pm_types::Attributes) -> HashMap<String, Attri
     map
 }
 
-impl From<wasm4pm_types::EventLog> for EventLog {
-    fn from(log: wasm4pm_types::EventLog) -> Self {
+impl From<wasm4pm_compat::event_log::EventLog> for EventLog {
+    fn from(log: wasm4pm_compat::event_log::EventLog) -> Self {
         let mut traces = Vec::with_capacity(log.traces.len());
         for trace in log.traces {
             let mut events = Vec::with_capacity(trace.events.len());
@@ -669,8 +773,8 @@ impl OCELEvent {
             .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
     }
 
-    /// Extract object IDs from object_refs only (deprecated, use all_object_ids).
-    #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
+    /// Extract object IDs from object_refs only (removed, use all_object_ids).
+    
     pub fn get_object_ids(&self) -> Vec<String> {
         self.object_refs
             .iter()
@@ -712,10 +816,20 @@ pub struct OCELObject {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCEL {
     /// List of all event types (activities) in the log.
-    #[serde(rename = "eventTypes", alias = "event_types", default, deserialize_with = "deserialize_ocel_type_names")]
+    #[serde(
+        rename = "eventTypes",
+        alias = "event_types",
+        default,
+        deserialize_with = "deserialize_ocel_type_names"
+    )]
     pub event_types: Vec<String>,
     /// List of all object types in the log.
-    #[serde(rename = "objectTypes", alias = "object_types", default, deserialize_with = "deserialize_ocel_type_names")]
+    #[serde(
+        rename = "objectTypes",
+        alias = "object_types",
+        default,
+        deserialize_with = "deserialize_ocel_type_names"
+    )]
     pub object_types: Vec<String>,
     /// All events in the log.
     #[serde(default)]
@@ -849,7 +963,7 @@ pub struct DirectlyFollowsRelation {
 ///
 /// The DFG shows which activities directly follow each other in the event log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DirectlyFollowsGraph {
+pub struct DFG {
     /// Activities in the graph with their occurrence frequencies.
     pub nodes: Vec<DFGNode>,
     /// Directed edges representing directly-follows relations.
@@ -871,11 +985,11 @@ pub struct DFGNode {
     pub frequency: usize,
 }
 
-impl DirectlyFollowsGraph {
+impl DFG {
     /// Create a new empty Directly-Follows Graph.
     #[must_use]
     pub fn new() -> Self {
-        DirectlyFollowsGraph {
+        DFG {
             nodes: Vec::new(),
             edges: Vec::new(),
             start_activities: BTreeMap::new(),
@@ -1073,10 +1187,16 @@ pub fn is_final_reachable(
     let mut trans_inputs = vec![Vec::new(); net.transitions.len()];
     let mut trans_outputs = vec![Vec::new(); net.transitions.len()];
     for arc in &net.arcs {
-        if let (Some(&p_idx), Some(t_idx)) = (place_index.get(&arc.from), net.transitions.iter().position(|t| t.id == arc.to)) {
+        if let (Some(&p_idx), Some(t_idx)) = (
+            place_index.get(&arc.from),
+            net.transitions.iter().position(|t| t.id == arc.to),
+        ) {
             trans_inputs[t_idx].push(p_idx);
         }
-        if let (Some(t_idx), Some(&p_idx)) = (net.transitions.iter().position(|t| t.id == arc.from), place_index.get(&arc.to)) {
+        if let (Some(t_idx), Some(&p_idx)) = (
+            net.transitions.iter().position(|t| t.id == arc.from),
+            place_index.get(&arc.to),
+        ) {
             trans_outputs[t_idx].push(p_idx);
         }
     }
@@ -1096,9 +1216,7 @@ pub fn is_final_reachable(
 
         // Generate successor markings by firing any enabled transition
         for (t_idx, _) in net.transitions.iter().enumerate() {
-            let enabled = trans_inputs[t_idx]
-                .iter()
-                .all(|&p_idx| current[p_idx] > 0);
+            let enabled = trans_inputs[t_idx].iter().all(|&p_idx| current[p_idx] > 0);
 
             if enabled {
                 let mut next_marking = current.clone();
@@ -1132,7 +1250,7 @@ pub struct StreamingConformanceChecker {
 
     // Petri Net Mode fields
     pub net: Option<crate::models::PetriNet>,
-    pub incidence: Option<wasm4pm_types::models::FlatIncidenceMatrix>,
+    pub incidence: Option<wasm4pm_compat::models::FlatIncidenceMatrix>,
 
     // Shared state
     pub open_traces: HashMap<String, OpenTraceState>,
@@ -1143,7 +1261,7 @@ pub struct StreamingConformanceChecker {
 impl StreamingConformanceChecker {
     /// Create a new checker from a Directly-Follows Graph.
     #[must_use]
-    pub fn from_dfg(dfg: DirectlyFollowsGraph) -> Self {
+    pub fn from_dfg(dfg: DFG) -> Self {
         let dfg_edges: std::collections::HashSet<(String, String)> = dfg
             .edges
             .iter()
@@ -1173,19 +1291,35 @@ impl StreamingConformanceChecker {
         let t_count = net.transitions.len();
         let mut data = vec![0; p_count * t_count];
 
-        let place_idx: HashMap<&str, usize> = net.places.iter().enumerate().map(|(i, p)| (p.id.as_str(), i)).collect();
-        let trans_idx: HashMap<&str, usize> = net.transitions.iter().enumerate().map(|(i, t)| (t.id.as_str(), i)).collect();
+        let place_idx: HashMap<&str, usize> = net
+            .places
+            .iter()
+            .enumerate()
+            .map(|(i, p)| (p.id.as_str(), i))
+            .collect();
+        let trans_idx: HashMap<&str, usize> = net
+            .transitions
+            .iter()
+            .enumerate()
+            .map(|(i, t)| (t.id.as_str(), i))
+            .collect();
 
         for arc in &net.arcs {
             let weight = arc.weight.unwrap_or(1) as i32;
-            if let (Some(&p), Some(&t)) = (place_idx.get(arc.from.as_str()), trans_idx.get(arc.to.as_str())) {
+            if let (Some(&p), Some(&t)) = (
+                place_idx.get(arc.from.as_str()),
+                trans_idx.get(arc.to.as_str()),
+            ) {
                 data[p * t_count + t] -= weight;
-            } else if let (Some(&t), Some(&p)) = (trans_idx.get(arc.from.as_str()), place_idx.get(arc.to.as_str())) {
+            } else if let (Some(&t), Some(&p)) = (
+                trans_idx.get(arc.from.as_str()),
+                place_idx.get(arc.to.as_str()),
+            ) {
                 data[p * t_count + t] += weight;
             }
         }
 
-        let incidence = wasm4pm_types::models::FlatIncidenceMatrix {
+        let incidence = wasm4pm_compat::models::FlatIncidenceMatrix {
             data,
             places_count: p_count,
             transitions_count: t_count,
@@ -1212,29 +1346,32 @@ impl StreamingConformanceChecker {
             let net = self.net.as_ref().unwrap();
             let incidence = self.incidence.as_ref().unwrap();
 
-            let state = self.open_traces.entry(case_id.to_string()).or_insert_with(|| {
-                let mut marking = vec![0; p_count];
-                let mut produced_tokens = 0;
-                for (i, p) in net.places.iter().enumerate() {
-                    if let Some(&tokens) = net.initial_marking.get(&p.id) {
-                        marking[i] = tokens;
-                        produced_tokens += tokens;
+            let state = self
+                .open_traces
+                .entry(case_id.to_string())
+                .or_insert_with(|| {
+                    let mut marking = vec![0; p_count];
+                    let mut produced_tokens = 0;
+                    for (i, p) in net.places.iter().enumerate() {
+                        if let Some(&tokens) = net.initial_marking.get(&p.id) {
+                            marking[i] = tokens;
+                            produced_tokens += tokens;
+                        }
                     }
-                }
-                if produced_tokens == 0 && !net.places.is_empty() {
-                    marking[0] = 1;
-                    produced_tokens = 1;
-                }
-                OpenTraceState {
-                    activities: Vec::new(),
-                    marking,
-                    produced_tokens,
-                    consumed_tokens: 0,
-                    missing_tokens: 0,
-                    state: TraceState::Alive,
-                    astar_frontier: None,
-                }
-            });
+                    if produced_tokens == 0 && !net.places.is_empty() {
+                        marking[0] = 1;
+                        produced_tokens = 1;
+                    }
+                    OpenTraceState {
+                        activities: Vec::new(),
+                        marking,
+                        produced_tokens,
+                        consumed_tokens: 0,
+                        missing_tokens: 0,
+                        state: TraceState::Alive,
+                        astar_frontier: None,
+                    }
+                });
 
             state.activities.push(activity.to_string());
 
@@ -1261,7 +1398,6 @@ impl StreamingConformanceChecker {
                     }
                 }
             }
-
 
             if let Some(t_idx) = t_idx_opt {
                 // Consume tokens
@@ -1295,7 +1431,12 @@ impl StreamingConformanceChecker {
             if state.missing_tokens > 0 {
                 state.state = TraceState::Blocked;
             } else {
-                let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+                let place_index: FxHashMap<&String, usize> = net
+                    .places
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| (&p.id, i))
+                    .collect();
                 if is_final_reachable(net, &state.marking, &place_index) {
                     state.state = TraceState::Alive;
                 } else {
@@ -1307,15 +1448,29 @@ impl StreamingConformanceChecker {
             let config = AlignmentFitnessConfig::default();
             let k = state.activities.len();
 
-            let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
-            let transition_index: FxHashMap<&String, usize> = net.transitions.iter().enumerate().map(|(i, t)| (&t.id, i)).collect();
+            let place_index: FxHashMap<&String, usize> = net
+                .places
+                .iter()
+                .enumerate()
+                .map(|(i, p)| (&p.id, i))
+                .collect();
+            let transition_index: FxHashMap<&String, usize> = net
+                .transitions
+                .iter()
+                .enumerate()
+                .map(|(i, t)| (&t.id, i))
+                .collect();
             let mut trans_inputs: Vec<Vec<usize>> = vec![Vec::new(); net.transitions.len()];
             let mut trans_outputs: Vec<Vec<usize>> = vec![Vec::new(); net.transitions.len()];
             for arc in &net.arcs {
-                if let (Some(&place_idx), Some(&trans_idx)) = (place_index.get(&arc.from), transition_index.get(&arc.to)) {
+                if let (Some(&place_idx), Some(&trans_idx)) =
+                    (place_index.get(&arc.from), transition_index.get(&arc.to))
+                {
                     trans_inputs[trans_idx].push(place_idx);
                 }
-                if let (Some(&trans_idx), Some(&place_idx)) = (transition_index.get(&arc.from), place_index.get(&arc.to)) {
+                if let (Some(&trans_idx), Some(&place_idx)) =
+                    (transition_index.get(&arc.from), place_index.get(&arc.to))
+                {
                     trans_outputs[trans_idx].push(place_idx);
                 }
             }
@@ -1371,7 +1526,8 @@ impl StreamingConformanceChecker {
                 }
                 frontier.closed_set.insert(state_key);
 
-                generate_successors(
+                #[cfg(feature = "alignment_fitness")]
+                crate::alignment_fitness::generate_successors(
                     &state.activities,
                     net,
                     &place_index,
@@ -1381,11 +1537,18 @@ impl StreamingConformanceChecker {
                     &current,
                     &mut frontier.open_set,
                 );
+                #[cfg(not(feature = "alignment_fitness"))]
+                {
+                    // Placeholder if alignment_fitness feature is not enabled
+                    break;
+                }
             }
         } else {
             // DFG Mode
-            let state = self.open_traces.entry(case_id.to_string()).or_insert_with(|| {
-                OpenTraceState {
+            let state = self
+                .open_traces
+                .entry(case_id.to_string())
+                .or_insert_with(|| OpenTraceState {
                     activities: Vec::new(),
                     marking: Vec::new(),
                     produced_tokens: 0,
@@ -1393,8 +1556,7 @@ impl StreamingConformanceChecker {
                     missing_tokens: 0,
                     state: TraceState::Alive,
                     astar_frontier: None,
-                }
-            });
+                });
             state.activities.push(activity.to_string());
         }
     }
@@ -1406,10 +1568,10 @@ impl StreamingConformanceChecker {
         let result = if self.net.is_some() {
             let net = self.net.as_ref().unwrap();
             let remaining_tokens: usize = state.marking.iter().sum();
-            
+
             let denom_c = state.consumed_tokens as f64;
             let denom_p = state.produced_tokens as f64;
-            
+
             let term1 = if denom_c > 0.0 {
                 1.0 - (state.missing_tokens as f64 / denom_c)
             } else {
@@ -1427,7 +1589,12 @@ impl StreamingConformanceChecker {
             } else if fitness < 1.0 {
                 TraceState::FakeLive
             } else {
-                let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+                let place_index: FxHashMap<&String, usize> = net
+                    .places
+                    .iter()
+                    .enumerate()
+                    .map(|(i, p)| (&p.id, i))
+                    .collect();
                 let reached_final = is_final_marking(net, &place_index, &state.marking);
                 if reached_final {
                     TraceState::Alive
@@ -1452,7 +1619,11 @@ impl StreamingConformanceChecker {
         Some(result)
     }
 
-    fn check_trace_dfg(&self, case_id: &str, activities: &[String]) -> StreamingConformanceTraceResult {
+    fn check_trace_dfg(
+        &self,
+        case_id: &str,
+        activities: &[String],
+    ) -> StreamingConformanceTraceResult {
         let mut deviations = Vec::new();
 
         if activities.is_empty() {
@@ -1496,7 +1667,11 @@ impl StreamingConformanceChecker {
         StreamingConformanceTraceResult {
             case_id: case_id.to_string(),
             is_conforming: deviations.is_empty(),
-            state: if deviations.is_empty() { TraceState::Alive } else { TraceState::Blocked },
+            state: if deviations.is_empty() {
+                TraceState::Alive
+            } else {
+                TraceState::Blocked
+            },
             deviations,
             fitness,
         }
@@ -1577,7 +1752,7 @@ impl Default for PetriNet {
     }
 }
 
-impl Default for DirectlyFollowsGraph {
+impl Default for DFG {
     fn default() -> Self {
         Self::new()
     }

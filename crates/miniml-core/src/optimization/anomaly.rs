@@ -5,8 +5,8 @@
 //! Provides anomaly scoring for sequences and data points.
 //! Answers: "Is this sequence/data point unusual compared to reference?"
 
-use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
+use wasm_bindgen::prelude::*;
 
 /// Cost for missing transitions in sequence anomaly detection
 const MISSING_TRANSITION_COST: f64 = 10.0;
@@ -197,22 +197,15 @@ pub fn build_transition_model<T: std::hash::Hash + Eq + Clone>(
 ///
 /// # Returns
 /// Vector of boolean flags (true = outlier)
-pub fn detect_statistical_outliers(
-    values: &[f64],
-    reference: &[f64],
-    threshold: f64,
-) -> Vec<bool> {
+pub fn detect_statistical_outliers(values: &[f64], reference: &[f64], threshold: f64) -> Vec<bool> {
     if reference.is_empty() || reference.len() < 2 {
         return vec![false; values.len()];
     }
 
     // Compute mean and std dev of reference
     let mean: f64 = reference.iter().sum::<f64>() / reference.len() as f64;
-    let variance: f64 = reference
-        .iter()
-        .map(|&v| (v - mean).powi(2))
-        .sum::<f64>()
-        / reference.len() as f64;
+    let variance: f64 =
+        reference.iter().map(|&v| (v - mean).powi(2)).sum::<f64>() / reference.len() as f64;
     let std_dev = variance.sqrt();
 
     if std_dev == 0.0 {
@@ -279,25 +272,13 @@ pub fn isolation_forest_score(
             let left: Vec<usize> = indices
                 .iter()
                 .copied()
-                .filter(|&i| {
-                    reference[i]
-                        .get(feature)
-                        .copied()
-                        .unwrap_or(0.0)
-                        < split_value
-                })
+                .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) < split_value)
                 .collect();
 
             let right: Vec<usize> = indices
                 .iter()
                 .copied()
-                .filter(|&i| {
-                    reference[i]
-                        .get(feature)
-                        .copied()
-                        .unwrap_or(0.0)
-                        >= split_value
-                })
+                .filter(|&i| reference[i].get(feature).copied().unwrap_or(0.0) >= split_value)
                 .collect();
 
             // Determine which side the point goes to
@@ -362,11 +343,7 @@ mod tests {
 
     #[test]
     fn test_build_transition_model() {
-        let sequences = vec![
-            vec!["A", "B", "C"],
-            vec!["A", "B", "C"],
-            vec!["A", "B"],
-        ];
+        let sequences = vec![vec!["A", "B", "C"], vec!["A", "B", "C"], vec!["A", "B"]];
 
         let (freq, total) = build_transition_model(&sequences);
 

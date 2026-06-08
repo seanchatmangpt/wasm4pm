@@ -26,10 +26,15 @@ describe('dfg discovery shape contract', () => {
     expect(shape.kind).toBe('dfg');
   });
 
-  it('rejects handle-only payload (pre-fix bug shape)', () => {
-    expect(() => discriminate({ handle: 'dfg_handle_only' }, 'dfg')).toThrow(
-      DiscoveryShapeError
-    );
+  it('accepts handle-only payload as streaming DFG (simd_streaming_dfg shape)', () => {
+    // simd_streaming_dfg returns { handle } only — the full graph lives in WASM memory.
+    // The discriminator classifies this as a DFG with unknown (0) node/edge counts.
+    const shape = discriminate({ handle: 'dfg_handle_only' }, 'simd_streaming_dfg');
+    expect(shape.kind).toBe('dfg');
+    if (shape.kind === 'dfg') {
+      expect(shape.nodes).toBe(0);
+      expect(shape.edges).toBe(0);
+    }
   });
 
   it('accepts inductive tree at top level with handle', () => {

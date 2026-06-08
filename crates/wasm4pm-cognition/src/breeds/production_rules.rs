@@ -132,10 +132,9 @@ impl CognitionBreed for Mycin {
         // Pick selected: highest-CF conclusion key=value pair.
         let mut best: Option<(String, f32)> = None;
         for (k, v) in working_memory.iter() {
-            if k.contains('=') && *v > 0.0
-                && best.as_ref().is_none_or(|(_, bv)| *v > *bv) {
-                    best = Some((k.clone(), *v));
-                }
+            if k.contains('=') && *v > 0.0 && best.as_ref().is_none_or(|(_, bv)| *v > *bv) {
+                best = Some((k.clone(), *v));
+            }
         }
         let selected = best.map(|(k, _)| k);
 
@@ -180,7 +179,10 @@ impl CognitionBreed for Mycin {
 
     fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("MYCIN fired 0 rules — no evidence of inference when rules were provided".to_string());
+            return Err(
+                "MYCIN fired 0 rules — no evidence of inference when rules were provided"
+                    .to_string(),
+            );
         }
         Ok(())
     }

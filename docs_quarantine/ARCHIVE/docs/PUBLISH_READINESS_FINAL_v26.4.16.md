@@ -237,7 +237,7 @@ commits ahead: 11
 
 ### Modified Files
 - 8 Rust source files (clippy fixes)
-- 1 TypeScript type file (crates/wasm4pm-types/src/provenance.rs)
+- 1 TypeScript type file (crates/wasm4pm-compat/src/provenance.rs)
 - 2 package.json files (version updates)
 - 1 Cargo.lock
 - 1 WASM package manifest

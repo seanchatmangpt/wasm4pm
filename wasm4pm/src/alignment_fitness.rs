@@ -5,30 +5,13 @@
 
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
-use serde::{Deserialize, Serialize};
 use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
 use std::collections::{BinaryHeap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
-/// Configuration for alignment-based fitness computation.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AlignmentFitnessConfig {
-    pub max_iterations: usize,
-    pub sync_cost: f64,
-    pub log_move_cost: f64,
-    pub model_move_cost: f64,
-}
-
-impl Default for AlignmentFitnessConfig {
-    fn default() -> Self {
-        Self {
-            max_iterations: 100_000,
-            sync_cost: 0.0,
-            log_move_cost: 1.0,
-            model_move_cost: 1.0,
-        }
-    }
-}
+// Re-export types for convenience
+pub use crate::models::{AlignmentFitnessConfig, AlignmentMove, AlignmentState};
 
 /// Result of alignment-based fitness computation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -40,63 +23,6 @@ pub struct AlignmentFitnessReport {
     pub total_model_moves: usize,
     pub aligned_traces: usize,
     pub total_traces: usize,
-}
-
-/// Alignment state for A* search.
-#[derive(Clone, Debug)]
-pub struct AlignmentState {
-    /// Current position in trace (index)
-    pub trace_pos: usize,
-    /// Current marking (place -> token count)
-    pub marking: Vec<usize>,
-    /// Cost so far
-    pub g_cost: f64,
-    /// Estimated remaining cost (heuristic)
-    pub h_cost: f64,
-    /// Alignment path
-    pub path: Vec<AlignmentMove>,
-}
-
-/// Alignment move type.
-#[derive(Clone, Debug)]
-pub enum AlignmentMove {
-    /// Synchronous move (log and model match)
-    Sync { _activity: String },
-    /// Log move (only in log)
-    LogMove { _activity: String },
-    /// Model move (only in model)
-    ModelMove { _activity: String },
-}
-
-impl AlignmentState {
-    fn f_cost(&self) -> f64 {
-        self.g_cost + self.h_cost
-    }
-}
-
-impl PartialEq for AlignmentState {
-    fn eq(&self, other: &Self) -> bool {
-        self.trace_pos == other.trace_pos && self.marking == other.marking
-    }
-}
-
-impl Eq for AlignmentState {}
-
-impl PartialOrd for AlignmentState {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for AlignmentState {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        // BinaryHeap is max-heap, but we want min-heap for A*
-        // Use floating point total ordering
-        other
-            .f_cost()
-            .partial_cmp(&self.f_cost())
-            .unwrap_or(std::cmp::Ordering::Equal)
-    }
 }
 
 /// Compute alignment-based fitness.
@@ -210,14 +136,12 @@ pub fn compute_alignment_fitness(
     //   2. Guard against NaN/Inf in either operand (e.g. negative costs in
     //      a malformed config that overflowed prior arithmetic).
     //   3. Clamp to [0.0, 1.0] — the old code only forced .max(0.0).
-    let fitness = if !worst_case_cost.is_finite()
-        || !total_cost.is_finite()
-        || worst_case_cost <= 0.0
-    {
-        1.0
-    } else {
-        1.0 - (total_cost / worst_case_cost)
-    };
+    let fitness =
+        if !worst_case_cost.is_finite() || !total_cost.is_finite() || worst_case_cost <= 0.0 {
+            1.0
+        } else {
+            1.0 - (total_cost / worst_case_cost)
+        };
     let fitness = if fitness.is_finite() {
         fitness.clamp(0.0, 1.0)
     } else {
@@ -617,5 +541,47 @@ mod tests {
             report.fitness
         );
         assert!(report.fitness.is_finite(), "fitness must not be NaN/Inf");
+    }
+}
+
+/// Alignment-based conformance checking implementation.
+pub struct AlignmentConformance;
+
+impl AlignmentConformance {
+    /// Compute conformance and check against a claimed fitness metric.
+    pub fn conformance<const NUM: u64, const DEN: u64>(
+        log: &wasm4pm_compat::evidence::Evidence<
+            EventLog,
+            wasm4pm_compat::state::Admitted,
+            wasm4pm_compat::witness::AlignmentPaper,
+        >,
+        petri_net: &PetriNet,
+    ) -> Result<
+        f64,
+        String,
+    >
+    where
+        wasm4pm_compat::law::Require<{ DEN > 0 }>: wasm4pm_compat::law::IsTrue,
+        wasm4pm_compat::law::Require<{ NUM <= DEN }>: wasm4pm_compat::law::IsTrue,
+    {
+        let config = AlignmentFitnessConfig {
+            max_iterations: 10_000,
+            sync_cost: 0.0,
+            log_move_cost: 1.0,
+            model_move_cost: 1.0,
+        };
+        let report = compute_alignment_fitness(&log.value, petri_net, &config)?;
+        let computed_fitness = report.fitness;
+        let claimed_fitness = NUM as f64 / DEN as f64;
+
+        // Allow a small tolerance for floating point representation
+        if (computed_fitness - claimed_fitness).abs() > 1e-5 {
+            return Err(format!(
+                "Claimed fitness {}/{} ({}) does not match computed fitness {}",
+                NUM, DEN, claimed_fitness, computed_fitness
+            ));
+        }
+
+        Ok(0.0)
     }
 }

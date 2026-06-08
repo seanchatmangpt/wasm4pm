@@ -10,9 +10,7 @@
 
 #![cfg(feature = "cloud")]
 
-use wasm4pm::{
-    analyze_dimension_usage, format_dimensionality_report, RlState,
-};
+use wasm4pm::{analyze_dimension_usage, format_dimensionality_report, RlState};
 
 #[test]
 fn test_dimensionality_analysis_empty_states() {
@@ -97,8 +95,7 @@ fn test_bottleneck_detection_single_value() {
             assert!(
                 report.is_bottleneck,
                 "Dimension {} should be bottleneck (coverage: {:.1}%)",
-                report.dimension_name,
-                report.coverage_percent
+                report.dimension_name, report.coverage_percent
             );
         }
     }
@@ -144,8 +141,14 @@ fn test_gap_detection_in_values() {
         })
         .collect();
 
-    assert!(gap_strings.iter().any(|g| g == "1"), "Missing gap at value 1");
-    assert!(gap_strings.iter().any(|g| g == "3"), "Missing gap at value 3");
+    assert!(
+        gap_strings.iter().any(|g| g == "1"),
+        "Missing gap at value 1"
+    );
+    assert!(
+        gap_strings.iter().any(|g| g == "3"),
+        "Missing gap at value 3"
+    );
 }
 
 #[test]

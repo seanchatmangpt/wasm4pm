@@ -23,7 +23,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use crate::testing::conformance::{AndonPull, ConformanceVerdict, ExpectedConformance, ProofDimension};
+use crate::testing::conformance::{
+    AndonPull, ConformanceVerdict, ExpectedConformance, ProofDimension,
+};
 
 // ── Evidence types ────────────────────────────────────────────────────────────
 
@@ -40,13 +42,19 @@ pub struct ObjectEvidence {
 
 impl ObjectEvidence {
     pub fn new(id: impl Into<String>, hash: impl Into<String>) -> Self {
-        Self { id: id.into(), hash: hash.into() }
+        Self {
+            id: id.into(),
+            hash: hash.into(),
+        }
     }
 
     /// Compute BLAKE3 of `data` and use it as the object hash.
     pub fn from_data(id: impl Into<String>, data: &[u8]) -> Self {
         let hash = blake3::hash(data).to_hex().to_string();
-        Self { id: id.into(), hash }
+        Self {
+            id: id.into(),
+            hash,
+        }
     }
 }
 
@@ -63,7 +71,11 @@ pub struct ActivityEvidence {
 
 impl ActivityEvidence {
     pub fn new(activity: impl Into<String>) -> Self {
-        Self { activity: activity.into(), inputs: vec![], outputs: vec![] }
+        Self {
+            activity: activity.into(),
+            inputs: vec![],
+            outputs: vec![],
+        }
     }
 
     pub fn with_inputs(mut self, inputs: Vec<ObjectEvidence>) -> Self {
@@ -84,7 +96,11 @@ pub enum EvidenceError {
     InputObjectNotRegistered(String),
     /// An input object was found but the provided hash does not match the
     /// hash recorded when the object was created (tamper detection).
-    InputHashMismatch { id: String, expected: String, actual: String },
+    InputHashMismatch {
+        id: String,
+        expected: String,
+        actual: String,
+    },
     /// An output object ID was already registered by a previous activity.
     OutputObjectAlreadyRegistered(String),
     /// No inputs and no outputs: the receipt cannot bind to nothing.
@@ -94,14 +110,26 @@ pub enum EvidenceError {
 impl std::fmt::Display for EvidenceError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::InputObjectNotRegistered(id) =>
-                write!(f, "input object '{id}' not registered — used before creation"),
-            Self::InputHashMismatch { id, expected, actual } =>
-                write!(f, "input object '{id}' hash mismatch: expected {expected:.12}… got {actual:.12}…"),
-            Self::OutputObjectAlreadyRegistered(id) =>
-                write!(f, "output object '{id}' already registered — double-creation"),
-            Self::NoObjectEvidence =>
-                write!(f, "no object evidence — at least one input or output is required"),
+            Self::InputObjectNotRegistered(id) => write!(
+                f,
+                "input object '{id}' not registered — used before creation"
+            ),
+            Self::InputHashMismatch {
+                id,
+                expected,
+                actual,
+            } => write!(
+                f,
+                "input object '{id}' hash mismatch: expected {expected:.12}… got {actual:.12}…"
+            ),
+            Self::OutputObjectAlreadyRegistered(id) => write!(
+                f,
+                "output object '{id}' already registered — double-creation"
+            ),
+            Self::NoObjectEvidence => write!(
+                f,
+                "no object evidence — at least one input or output is required"
+            ),
         }
     }
 }
@@ -131,8 +159,16 @@ impl CapturedOutput {
         let stdout = stdout.into();
         let stderr = stderr.into();
         Self {
-            stdout: if stdout.is_empty() { None } else { Some(stdout) },
-            stderr: if stderr.is_empty() { None } else { Some(stderr) },
+            stdout: if stdout.is_empty() {
+                None
+            } else {
+                Some(stdout)
+            },
+            stderr: if stderr.is_empty() {
+                None
+            } else {
+                Some(stderr)
+            },
         }
     }
 
@@ -265,9 +301,17 @@ impl PowlTestHarness {
     pub fn record_activity(&mut self, activity: impl Into<String>) {
         let activity = activity.into();
         // Name-only receipt — NOT counted as bound evidence.
-        let receipt_input = format!("name-only:{}:{}:{}", self.route_id, activity, self.events.len());
+        let receipt_input = format!(
+            "name-only:{}:{}:{}",
+            self.route_id,
+            activity,
+            self.events.len()
+        );
         let receipt = blake3::hash(receipt_input.as_bytes()).to_hex().to_string();
-        self.events.push(TestEvent { activity, object_ids: vec![] });
+        self.events.push(TestEvent {
+            activity,
+            object_ids: vec![],
+        });
         self.receipts.push(receipt);
         // bound_evidence_count is NOT incremented — record_activity is not evidence.
     }
@@ -286,10 +330,7 @@ impl PowlTestHarness {
     /// `bound_evidence_count` — this is what makes `receipt_coverage` real.
     ///
     /// On failure, the activity is NOT recorded and the event log is unchanged.
-    pub fn complete_activity(
-        &mut self,
-        evidence: ActivityEvidence,
-    ) -> Result<(), EvidenceError> {
+    pub fn complete_activity(&mut self, evidence: ActivityEvidence) -> Result<(), EvidenceError> {
         if evidence.inputs.is_empty() && evidence.outputs.is_empty() {
             return Err(EvidenceError::NoObjectEvidence);
         }
@@ -318,7 +359,9 @@ impl PowlTestHarness {
         // Validate outputs: must not already exist.
         for output in &evidence.outputs {
             if self.object_registry.contains_key(&output.id) {
-                return Err(EvidenceError::OutputObjectAlreadyRegistered(output.id.clone()));
+                return Err(EvidenceError::OutputObjectAlreadyRegistered(
+                    output.id.clone(),
+                ));
             }
         }
 
@@ -326,17 +369,24 @@ impl PowlTestHarness {
         for output in &evidence.outputs {
             self.object_registry.insert(
                 output.id.clone(),
-                ObjectRecord { hash: output.hash.clone(), created_at: event_idx },
+                ObjectRecord {
+                    hash: output.hash.clone(),
+                    created_at: event_idx,
+                },
             );
         }
 
         // Chain receipt: prev_hash + route_id + activity + inputs + outputs.
         let prev_hash = self.receipts.last().cloned().unwrap_or_default();
-        let input_part = evidence.inputs.iter()
+        let input_part = evidence
+            .inputs
+            .iter()
             .map(|i| format!("{}:{}", i.id, i.hash))
             .collect::<Vec<_>>()
             .join(",");
-        let output_part = evidence.outputs.iter()
+        let output_part = evidence
+            .outputs
+            .iter()
             .map(|o| format!("{}:{}", o.id, o.hash))
             .collect::<Vec<_>>()
             .join(",");
@@ -354,7 +404,10 @@ impl PowlTestHarness {
             object_ids.push(output.id.clone());
         }
 
-        self.events.push(TestEvent { activity: evidence.activity, object_ids });
+        self.events.push(TestEvent {
+            activity: evidence.activity,
+            object_ids,
+        });
         self.receipts.push(receipt);
         self.bound_evidence_count += 1;
 
@@ -416,7 +469,10 @@ impl PowlTestHarness {
         match result {
             Ok(()) => self.finish(),
             Err(_) => {
-                self.events.push(TestEvent { activity: "panic.caught".into(), object_ids: vec![] });
+                self.events.push(TestEvent {
+                    activity: "panic.caught".into(),
+                    object_ids: vec![],
+                });
                 ConformanceVerdict::andon(AndonPull::UnhandledPanic)
             }
         }
@@ -522,7 +578,9 @@ impl PowlTestHarness {
                 })
                 .collect(),
         };
-        let log = EventLog { traces: vec![trace] };
+        let log = EventLog {
+            traces: vec![trace],
+        };
 
         let fr = compute_fitness(&pn.net, &pn.initial_marking, &pn.final_marking, &log);
 
@@ -607,13 +665,19 @@ mod tests {
     #[test]
     fn finish_without_model_returns_incomplete() {
         let h = PowlTestHarness::new("route");
-        assert_eq!(h.finish(), ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete));
+        assert_eq!(
+            h.finish(),
+            ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)
+        );
     }
 
     #[test]
     fn finish_with_missing_model_file_returns_incomplete() {
         let h = PowlTestHarness::new("route").model("nonexistent-route-model.powl.json");
-        assert_eq!(h.finish(), ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete));
+        assert_eq!(
+            h.finish(),
+            ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)
+        );
     }
 
     #[test]
@@ -665,7 +729,10 @@ mod tests {
     fn run_catching_panic_returns_unhandled_panic_on_panic() {
         let mut h = PowlTestHarness::new("route");
         let verdict = h.run_catching_panic(|_| panic!("intentional test panic"));
-        assert_eq!(verdict, ConformanceVerdict::Andon(AndonPull::UnhandledPanic));
+        assert_eq!(
+            verdict,
+            ConformanceVerdict::Andon(AndonPull::UnhandledPanic)
+        );
     }
 
     #[test]
@@ -682,6 +749,9 @@ mod tests {
             h.record_activity("a");
         });
         // No model set → TestRouteIncomplete
-        assert_eq!(verdict, ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete));
+        assert_eq!(
+            verdict,
+            ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)
+        );
     }
 }

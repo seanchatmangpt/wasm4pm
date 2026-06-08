@@ -359,7 +359,7 @@ impl Builder {
                 }
             }
             Some(PowlNode::ChoiceGraph(_)) => {
-                // ChoiceGraph → BPMN: render as a silent task (placeholder).
+                // ChoiceGraph → BPMN: render as a silent routing task.
                 // Spec-compliant CG-to-BPMN export is out of scope for this refactor.
                 let t = self.ids.next("cg_silent");
                 self.elements.push(format!(

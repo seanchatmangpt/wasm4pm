@@ -7,7 +7,7 @@
 | Rust Core | 60 Algorithms + Truex Engine | `crates/wasm4pm-algos/`, `Cargo.toml` | High | High-performance core |
 | WASM Bridge | `wasm-bindgen` annotations | `wasm4pm/src/lib.rs` | High | FFI Boundary |
 | CLI Surface | `wpm` command definitions | `apps/wasm4pm/src/commands/` | High | The user entry point |
-| SDK Facade | Node.js TS interface | `packages/kernel/` | High | Abstracts WASM memory |
+| SDK boundary | Node.js TS interface | `packages/kernel/` | High | Abstracts WASM memory |
 | Observability | OTLP telemetry spans | `packages/observability/` | High | |
 | E2E Testing | Parity verification & Unit Tests | `scripts/examples/`, `tests/` | High | |
 | Documentation | Diátaxis structure | `docs/` | High | |

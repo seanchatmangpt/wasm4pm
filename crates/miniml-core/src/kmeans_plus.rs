@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::{validate_matrix, Rng};
+use wasm_bindgen::prelude::*;
 
 /// K-Means++ Clustering (improved initialization)
 /// Returns cluster assignments and final centroids
@@ -11,8 +11,7 @@ pub fn kmeans_plus(
     n_clusters: usize,
     max_iter: usize,
 ) -> Result<Vec<f64>, JsError> {
-    kmeans_plus_impl(data, n_features, n_clusters, max_iter)
-        .map_err(|e| JsError::new(&e.message))
+    kmeans_plus_impl(data, n_features, n_clusters, max_iter).map_err(|e| JsError::new(&e.message))
 }
 
 /// K-Means++ implementation with smart initialization
@@ -77,7 +76,7 @@ pub fn kmeans_plus_impl(
         centroids = new_centroids;
 
         if !changed {
-            break;  // Converged
+            break; // Converged
         }
     }
 
@@ -176,9 +175,8 @@ mod tests {
     #[test]
     fn test_kmeans_plus_two_clusters() {
         let data = vec![
-            0.0, 0.0,  // Cluster 0
-            0.1, 0.1,
-            10.0, 10.0,  // Cluster 1
+            0.0, 0.0, // Cluster 0
+            0.1, 0.1, 10.0, 10.0, // Cluster 1
             10.1, 10.1,
         ];
 
@@ -189,21 +187,18 @@ mod tests {
 
         // Next 4 elements are assignments
         let assignments = &result[1..5];
-        assert_eq!(assignments[0], assignments[1]);  // First two same cluster
-        assert_eq!(assignments[2], assignments[3]);  // Last two same cluster
+        assert_eq!(assignments[0], assignments[1]); // First two same cluster
+        assert_eq!(assignments[2], assignments[3]); // Last two same cluster
     }
 
     #[test]
     fn test_kmeans_plus_centroids() {
-        let data = vec![
-            0.0, 0.0,
-            10.0, 10.0,
-        ];
+        let data = vec![0.0, 0.0, 10.0, 10.0];
 
         let result = kmeans_plus_impl(&data, 2, 2, 50).unwrap();
 
         // After n_clusters (1) and assignments (2), we have centroids
-        let centroids_start = 1 + 2;  // n_clusters + n_samples
+        let centroids_start = 1 + 2; // n_clusters + n_samples
         let centroid0_x = result[centroids_start];
         let centroid0_y = result[centroids_start + 1];
         let centroid1_x = result[centroids_start + 2];

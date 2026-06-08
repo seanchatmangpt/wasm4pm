@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// Robust Scaler - Scale features using median and IQR (robust to outliers)
 #[wasm_bindgen]
@@ -13,10 +13,14 @@ pub struct RobustScaler {
 #[wasm_bindgen]
 impl RobustScaler {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "nSamples")]
-    pub fn n_samples(&self) -> usize { self.n_samples }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
 
     /// Fit scaler to data (compute median and IQR per feature)
     #[wasm_bindgen]
@@ -72,7 +76,10 @@ impl RobustScaler {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("RobustScaler(n_features={}, n_samples={})", self.n_features, self.n_samples)
+        format!(
+            "RobustScaler(n_features={}, n_samples={})",
+            self.n_features, self.n_samples
+        )
     }
 }
 
@@ -95,7 +102,7 @@ mod tests {
         // Data with extreme outlier
         let data = vec![
             1.0, 2.0, 3.0, 4.0, 5.0,    // Normal values
-            1000.0,                      // Extreme outlier
+            1000.0, // Extreme outlier
         ];
         let mut scaler = robust_scaler(1);
         let transformed = scaler.fit_transform(&data).unwrap();
@@ -129,10 +136,7 @@ mod tests {
 
     #[test]
     fn test_transform_inverts_correctly() {
-        let data = vec![
-            0.0, 10.0,
-            10.0, 20.0,
-        ];
+        let data = vec![0.0, 10.0, 10.0, 20.0];
         let mut scaler = robust_scaler(2);
         scaler.fit(&data).unwrap();
         let transformed = scaler.transform(&data);

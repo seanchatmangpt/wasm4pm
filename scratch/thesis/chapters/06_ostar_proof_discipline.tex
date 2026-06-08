@@ -1,0 +1,11 @@
+
+\chapter{The Ostar Proof Discipline}
+\section{Receipts as Proof of Consequence}
+It is fundamentally insufficient to compute a process mining result; the computation itself must be mathematically unforgeable. The foundational "One-Line Law" of this architecture states: \textit{No receipt, no claim.}
+
+Receipts are the ultimate proof that the manufactured consequence actually occurred. They bind the language constraint of \texttt{pm4py-lsp} to the execution authority of \texttt{wasm4pm}.
+
+Let the abstract execution graph be a compact manifold $X$, and states define a bundle $E \to X$. By the Atiyah-Singer Index Theorem, the topological index evaluates to the BLAKE3 receipt hash:
+\begin{equation}
+\operatorname{ind}(\slashed{D}_E) = \int_X \operatorname{ch}(E) \wedge \widehat{A}(X) \equiv \mathcal{H}_{BLAKE3} \pmod{\mathbb{Z}}
+\end{equation}

@@ -44,7 +44,7 @@
 //! let offsets: Vec<usize> = vec![0, 3, 6];
 //! dfg.add_events(&events, &offsets);
 //!
-//! // Materialize into a DirectlyFollowsGraph
+//! // Materialize into a DFG
 //! let vocab = vec!["A", "B", "C", "D"];
 //! let result = dfg.finish(&vocab);
 //! assert_eq!(result.nodes.len(), 4);
@@ -326,11 +326,11 @@ impl SimdStreamingDfg {
         }
     }
 
-    /// Materialize the accumulated counts into a `DirectlyFollowsGraph`.
+    /// Materialize the accumulated counts into a `DFG`.
     ///
     /// The `vocab` slice maps u32 IDs back to activity name strings.
-    pub fn finish(&self, vocab: &[&str]) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn finish(&self, vocab: &[&str]) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes
         dfg.nodes = vocab
@@ -463,7 +463,7 @@ impl Default for SimdStreamingDfg {
 ///
 /// # Returns
 ///
-/// JSON `DirectlyFollowsGraph` with nodes, edges, start_activities, end_activities.
+/// JSON `DFG` with nodes, edges, start_activities, end_activities.
 #[wasm_bindgen]
 pub fn discover_dfg_simd(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
@@ -524,7 +524,7 @@ pub fn discover_dfg_simd_handle(
         )),
     })?;
 
-    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    let handle = get_or_init_state().store_object(StoredObject::DFG(dfg))?;
     Ok(crate::error::js_val(&handle))
 }
 
@@ -649,8 +649,8 @@ mod tests {
 
     /// Hand-rolled scalar DFG builder for parity testing.
     /// Mirrors the logic in `discovery.rs::discover_dfg` exactly.
-    fn scalar_build_dfg(traces: &[&[u32]], vocab: &[&str]) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    fn scalar_build_dfg(traces: &[&[u32]], vocab: &[&str]) -> DFG {
+        let mut dfg = DFG::new();
 
         dfg.nodes.extend(vocab.iter().map(|&act| DFGNode {
             id: act.to_owned(),
@@ -684,22 +684,19 @@ mod tests {
                 .or_insert(0) += 1;
         }
 
-        dfg.edges.extend(
-            edge_counts
-                .into_iter()
-                .filter_map(|((f, t), freq)| {
-                    // Bounds check: only include edges where both activities are valid
-                    if (f as usize) < vocab.len() && (t as usize) < vocab.len() {
-                        Some(DirectlyFollowsRelation {
-                            from: vocab[f as usize].to_owned(),
-                            to: vocab[t as usize].to_owned(),
-                            frequency: freq,
-                        })
-                    } else {
-                        None
-                    }
-                }),
-        );
+        dfg.edges
+            .extend(edge_counts.into_iter().filter_map(|((f, t), freq)| {
+                // Bounds check: only include edges where both activities are valid
+                if (f as usize) < vocab.len() && (t as usize) < vocab.len() {
+                    Some(DirectlyFollowsRelation {
+                        from: vocab[f as usize].to_owned(),
+                        to: vocab[t as usize].to_owned(),
+                        frequency: freq,
+                    })
+                } else {
+                    None
+                }
+            }));
 
         dfg
     }

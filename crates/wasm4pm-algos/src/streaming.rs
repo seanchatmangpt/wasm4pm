@@ -1,5 +1,8 @@
-use wasm4pm_types::*;
 use std::collections::HashMap;
+use wasm4pm_compat::conformance::*;
+use wasm4pm_compat::error::*;
+use wasm4pm_compat::event_log::*;
+use wasm4pm_compat::models::*;
 
 /// Inductive Miner - discovers structured process models recursively
 /// Simplified single-pass version focused on core control flow discovery

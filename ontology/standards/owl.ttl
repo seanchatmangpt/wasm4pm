@@ -88,7 +88,7 @@ owl:Class a rdfs:Class ;
 
 owl:DataRange a rdfs:Class ;
      rdfs:label "DataRange" ;
-     rdfs:comment "The class of OWL data ranges, which are special kinds of datatypes. Note: The use of the IRI owl:DataRange has been deprecated as of OWL 2. The IRI rdfs:Datatype SHOULD be used instead." ;
+     rdfs:comment "The class of OWL data ranges, which are special kinds of datatypes. Note: The use of the IRI owl:DataRange has been removed as of OWL 2. The IRI rdfs:Datatype SHOULD be used instead." ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:subClassOf rdfs:Datatype . 
 
@@ -98,15 +98,15 @@ owl:DatatypeProperty a rdfs:Class ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:subClassOf rdf:Property . 
 
-owl:DeprecatedClass a rdfs:Class ;
-     rdfs:label "DeprecatedClass" ;
-     rdfs:comment "The class of deprecated classes." ;
+owl:RemovedClass a rdfs:Class ;
+     rdfs:label "RemovedClass" ;
+     rdfs:comment "The class of removed classes." ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:subClassOf rdfs:Class . 
 
-owl:DeprecatedProperty a rdfs:Class ;
-     rdfs:label "DeprecatedProperty" ;
-     rdfs:comment "The class of deprecated properties." ;
+owl:RemovedProperty a rdfs:Class ;
+     rdfs:label "RemovedProperty" ;
+     rdfs:comment "The class of removed properties." ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:subClassOf rdf:Property . 
 
@@ -270,9 +270,9 @@ owl:datatypeComplementOf a rdf:Property ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:range rdfs:Datatype . 
 
-owl:deprecated a owl:AnnotationProperty ;
-     rdfs:label "deprecated" ;
-     rdfs:comment "The annotation property that indicates that a given entity has been deprecated." ;
+owl:removed a owl:AnnotationProperty ;
+     rdfs:label "removed" ;
+     rdfs:comment "The annotation property that indicates that a given entity has been removed." ;
      rdfs:domain rdfs:Resource ;
      rdfs:isDefinedBy <http://www.w3.org/2002/07/owl#> ;
      rdfs:range rdfs:Resource . 

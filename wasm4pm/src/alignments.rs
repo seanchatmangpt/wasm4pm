@@ -389,7 +389,7 @@ pub fn compute_optimal_alignments(
     Ok(crate::error::js_val(&result_json))
 }
 
-/// Legacy function for backward compatibility: DFG-based alignment (greedy).
+///  function for baseline admissibility: DFG-based alignment (greedy).
 #[wasm_bindgen]
 pub fn compute_alignments(
     log_handle: &str,
@@ -398,21 +398,21 @@ pub fn compute_alignments(
 ) -> Result<JsValue, JsValue> {
     let edge_map: std::collections::HashMap<(String, String), usize> = get_or_init_state()
         .with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+            Some(StoredObject::DFG(dfg)) => Ok(dfg
                 .edges
                 .iter()
                 .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
                 .collect()),
-            Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+            Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
     let start_activities: std::collections::HashSet<String> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+            Some(StoredObject::DFG(dfg)) => {
                 Ok(dfg.start_activities.keys().cloned().collect())
             }
-            Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+            Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 

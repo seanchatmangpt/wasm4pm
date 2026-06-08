@@ -3,8 +3,8 @@
 //! Direct timing of key algorithms to show WASM performance.
 //! Uses _impl functions (pure Rust, no WASM dependency).
 
-use std::time::Instant;
 use miniml::*;
+use std::time::Instant;
 
 fn generate_data(n_samples: usize, n_features: usize) -> Vec<f64> {
     (0..n_samples * n_features)
@@ -202,8 +202,14 @@ fn main() {
 
     let times: Vec<f64> = results.iter().map(|(_, t)| *t).collect();
     let avg = times.iter().sum::<f64>() / times.len() as f64;
-    let min = *times.iter().min_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-    let max = *times.iter().max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+    let min = *times
+        .iter()
+        .min_by(|a, b| a.partial_cmp(b).unwrap())
+        .unwrap();
+    let max = *times
+        .iter()
+        .max_by(|a, b| a.partial_cmp(b).unwrap())
+        .unwrap();
 
     println!("Benchmarks run: {}", results.len());
     println!("Average time:  {:.3}ms", avg);

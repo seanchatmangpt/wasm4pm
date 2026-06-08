@@ -35,7 +35,9 @@ macro_rules! bounded_score {
             }
             /// Construct without bounds check (for trusted computation output).
             #[inline]
-            pub const fn new_unchecked(v: f64) -> Self { $name(v) }
+            pub const fn new_unchecked(v: f64) -> Self {
+                $name(v)
+            }
             pub const ZERO: $name = $name(0.0);
             pub const ONE: $name = $name(1.0);
         }
@@ -93,8 +95,15 @@ impl QualityDimensions {
             self.simplicity.0,
         ];
         let n = vals.len() as f64;
-        let sum_inv: f64 = vals.iter().map(|v| if *v > 0.0 { 1.0 / v } else { f64::INFINITY }).sum();
-        if sum_inv.is_infinite() { 0.0 } else { n / sum_inv }
+        let sum_inv: f64 = vals
+            .iter()
+            .map(|v| if *v > 0.0 { 1.0 / v } else { f64::INFINITY })
+            .sum();
+        if sum_inv.is_infinite() {
+            0.0
+        } else {
+            n / sum_inv
+        }
     }
 
     /// Returns true if all four dimensions meet the thresholds:

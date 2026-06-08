@@ -540,6 +540,10 @@ mod tests {
         // So both directions should appear.
         let result = build_causal_heuristic(&log, "concept:name", 0.0).unwrap();
         // Both A→B and B→A have strength ≥ 0.0 (B→A clamped to 0)
-        assert_eq!(result.relations.len(), 2, "Both directions should appear at threshold 0.0");
+        assert_eq!(
+            result.relations.len(),
+            2,
+            "Both directions should appear at threshold 0.0"
+        );
     }
 }

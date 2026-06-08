@@ -48,6 +48,6 @@ npm test
 
 ## See Also
 
-- [@wasm4pm/kernel](../kernel) — WASM algorithm facade
+- [@wasm4pm/kernel](../kernel) — WASM algorithm boundary
 - [@wasm4pm/testing](../testing) — Test harnesses and oracles
 - [@wasm4pm/ml](../ml) — Machine learning process mining

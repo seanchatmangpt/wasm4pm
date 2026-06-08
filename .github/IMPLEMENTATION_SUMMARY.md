@@ -204,11 +204,11 @@ Added release-related scripts:
 │   ├── test.yml                 ← NEW (comprehensive test matrix)
 │   ├── build.yml                ← NEW (WASM optimization)
 │   ├── release.yml              ← NEW (gated release)
-│   ├── publish-npm.yml          (existing, legacy)
-│   ├── wasm-build.yml           (existing, legacy)
-│   ├── test.linux.yml           (existing, legacy)
-│   ├── test.macos.yml           (existing, legacy)
-│   └── test.windows.yml         (existing, legacy)
+│   ├── publish-npm.yml          (existing, )
+│   ├── wasm-build.yml           (existing, )
+│   ├── test.linux.yml           (existing, )
+│   ├── test.macos.yml           (existing, )
+│   └── test.windows.yml         (existing, )
 ├── scripts/
 │   ├── verify-release.sh        ← NEW
 │   ├── verify-versions.sh       ← NEW
@@ -381,12 +381,12 @@ Current test suite:
 ## Integration with Existing Workflows
 
 The new workflows coexist with existing workflows:
-- `publish-npm.yml` - Legacy, still works
-- `test.linux.yml`, `test.macos.yml`, `test.windows.yml` - Legacy, still work
-- `wasm-build.yml` - Legacy, still works
+- `publish-npm.yml` - , still works
+- `test.linux.yml`, `test.macos.yml`, `test.windows.yml` - , still work
+- `wasm-build.yml` - , still works
 
 New workflows are recommended:
-- `test.yml` - Replaces legacy test.*.yml
+- `test.yml` - Replaces  test.*.yml
 - `release.yml` - Replaces publish-npm.yml (with gating)
 - `build.yml` - New optimization step
 

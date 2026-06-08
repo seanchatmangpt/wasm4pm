@@ -1,5 +1,5 @@
-use wasm_bindgen::prelude::*;
 use crate::matrix::mat_get;
+use wasm_bindgen::prelude::*;
 
 /// Compute dot product between two vectors.
 #[inline]
@@ -237,7 +237,8 @@ mod tests {
         assert!(
             (result - expected).abs() < 1e-10,
             "expected {}, got {}",
-            expected, result
+            expected,
+            result
         );
     }
 
@@ -253,8 +254,12 @@ mod tests {
                 assert!(
                     (kernel[i * n_samples + j] - kernel[j * n_samples + i]).abs() < 1e-10,
                     "kernel[{}][{}] = {} != kernel[{}][{}] = {}",
-                    i, j, kernel[i * n_samples + j],
-                    j, i, kernel[j * n_samples + i]
+                    i,
+                    j,
+                    kernel[i * n_samples + j],
+                    j,
+                    i,
+                    kernel[j * n_samples + i]
                 );
             }
         }
@@ -274,7 +279,8 @@ mod tests {
         assert!(
             (result - expected).abs() < 1e-10,
             "polynomial kernel degree 2: expected {}, got {}",
-            expected, result
+            expected,
+            result
         );
     }
 

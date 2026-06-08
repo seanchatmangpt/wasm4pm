@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, dist_to_point, Rng};
+use crate::matrix::{dist_to_point, validate_matrix, Rng};
+use wasm_bindgen::prelude::*;
 
 /// Model for K-Means clustering.
 #[wasm_bindgen]
@@ -17,27 +17,39 @@ pub struct KMeansModel {
 impl KMeansModel {
     /// Get the number of clusters
     #[wasm_bindgen(getter)]
-    pub fn k(&self) -> usize { self.k }
+    pub fn k(&self) -> usize {
+        self.k
+    }
 
     /// Get the number of iterations performed
     #[wasm_bindgen(getter)]
-    pub fn iterations(&self) -> usize { self.iterations }
+    pub fn iterations(&self) -> usize {
+        self.iterations
+    }
 
     /// Get the final inertia (sum of squared distances to nearest centroid)
     #[wasm_bindgen(getter)]
-    pub fn inertia(&self) -> f64 { self.inertia }
+    pub fn inertia(&self) -> f64 {
+        self.inertia
+    }
 
     /// Get the centroids as a flat array
     #[wasm_bindgen(js_name = "getCentroids")]
-    pub fn get_centroids(&self) -> Vec<f64> { self.centroids.clone() }
+    pub fn get_centroids(&self) -> Vec<f64> {
+        self.centroids.clone()
+    }
 
     /// Get the cluster assignments for each training sample
     #[wasm_bindgen(js_name = "getAssignments")]
-    pub fn get_assignments(&self) -> Vec<u32> { self.assignments.clone() }
+    pub fn get_assignments(&self) -> Vec<u32> {
+        self.assignments.clone()
+    }
 
     /// Get the number of features
     #[wasm_bindgen(js_name = "getNFeatures")]
-    pub fn get_n_features(&self) -> usize { self.n_features }
+    pub fn get_n_features(&self) -> usize {
+        self.n_features
+    }
 
     /// Assign new data points to nearest centroid
     #[wasm_bindgen]
@@ -68,12 +80,20 @@ impl KMeansModel {
     /// Return a string representation of the model
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("KMeans(k={}, iterations={}, inertia={:.4})", self.k, self.iterations, self.inertia)
+        format!(
+            "KMeans(k={}, iterations={}, inertia={:.4})",
+            self.k, self.iterations, self.inertia
+        )
     }
 }
 
 /// Implementation of K-Means clustering
-pub fn kmeans_impl(data: &[f64], n_features: usize, k: usize, max_iter: usize) -> Result<KMeansModel, MlError> {
+pub fn kmeans_impl(
+    data: &[f64],
+    n_features: usize,
+    k: usize,
+    max_iter: usize,
+) -> Result<KMeansModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if k == 0 || k > n {
         return Err(MlError::new("k must be between 1 and number of samples"));
@@ -90,8 +110,15 @@ pub fn kmeans_impl(data: &[f64], n_features: usize, k: usize, max_iter: usize) -
     for c in 1..k {
         // Update distances to nearest centroid
         for (i, dist) in dists.iter_mut().enumerate().take(n) {
-            let d = dist_to_point(data, n_features, i, &centroids[(c - 1) * n_features..c * n_features]);
-            if d < *dist { *dist = d; }
+            let d = dist_to_point(
+                data,
+                n_features,
+                i,
+                &centroids[(c - 1) * n_features..c * n_features],
+            );
+            if d < *dist {
+                *dist = d;
+            }
         }
         // Weighted random selection
         let total: f64 = dists.iter().map(|&d| d * d).sum();
@@ -99,7 +126,10 @@ pub fn kmeans_impl(data: &[f64], n_features: usize, k: usize, max_iter: usize) -
         let mut chosen = 0;
         for (i, &dist) in dists.iter().enumerate().take(n) {
             target -= dist * dist;
-            if target <= 0.0 { chosen = i; break; }
+            if target <= 0.0 {
+                chosen = i;
+                break;
+            }
         }
         centroids[c * n_features..(c + 1) * n_features]
             .copy_from_slice(&data[chosen * n_features..(chosen + 1) * n_features]);
@@ -117,13 +147,26 @@ pub fn kmeans_impl(data: &[f64], n_features: usize, k: usize, max_iter: usize) -
             let mut best = 0u32;
             let mut best_dist = f64::INFINITY;
             for c in 0..k {
-                let d = dist_to_point(data, n_features, i, &centroids[c * n_features..(c + 1) * n_features]);
-                if d < best_dist { best_dist = d; best = c as u32; }
+                let d = dist_to_point(
+                    data,
+                    n_features,
+                    i,
+                    &centroids[c * n_features..(c + 1) * n_features],
+                );
+                if d < best_dist {
+                    best_dist = d;
+                    best = c as u32;
+                }
             }
-            if *assign != best { changed = true; *assign = best; }
+            if *assign != best {
+                changed = true;
+                *assign = best;
+            }
         }
 
-        if !changed { break; }
+        if !changed {
+            break;
+        }
 
         // Recalculate centroids
         let mut counts = vec![0usize; k];
@@ -150,16 +193,33 @@ pub fn kmeans_impl(data: &[f64], n_features: usize, k: usize, max_iter: usize) -
     let mut inertia = 0.0;
     for (i, &assign) in assignments.iter().enumerate().take(n) {
         let c = assign as usize;
-        let d = dist_to_point(data, n_features, i, &centroids[c * n_features..(c + 1) * n_features]);
+        let d = dist_to_point(
+            data,
+            n_features,
+            i,
+            &centroids[c * n_features..(c + 1) * n_features],
+        );
         inertia += d * d;
     }
 
-    Ok(KMeansModel { k, n_features, centroids, assignments, iterations, inertia })
+    Ok(KMeansModel {
+        k,
+        n_features,
+        centroids,
+        assignments,
+        iterations,
+        inertia,
+    })
 }
 
 /// K-Means clustering algorithm
 #[wasm_bindgen(js_name = "kmeans")]
-pub fn kmeans(data: &[f64], n_features: usize, k: usize, max_iter: usize) -> Result<KMeansModel, JsError> {
+pub fn kmeans(
+    data: &[f64],
+    n_features: usize,
+    k: usize,
+    max_iter: usize,
+) -> Result<KMeansModel, JsError> {
     kmeans_impl(data, n_features, k, max_iter).map_err(|e| JsError::new(&e.message))
 }
 
@@ -169,10 +229,7 @@ mod tests {
 
     #[test]
     fn test_two_clusters() {
-        let data = vec![
-            0.0, 0.0,  0.1, 0.1,  0.2, 0.0,
-            5.0, 5.0,  5.1, 5.1,  4.9, 5.0,
-        ];
+        let data = vec![0.0, 0.0, 0.1, 0.1, 0.2, 0.0, 5.0, 5.0, 5.1, 5.1, 4.9, 5.0];
         let model = kmeans_impl(&data, 2, 2, 100).unwrap();
         assert_eq!(model.k, 2);
         assert_eq!(model.assignments.len(), 6);

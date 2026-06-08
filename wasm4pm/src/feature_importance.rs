@@ -200,10 +200,9 @@ pub fn global_feature_importance(
     for prefix in &prefixes {
         // Get baseline
         let baseline = get_or_init_state().with_object(model_handle, |obj| match obj {
-            Some(StoredObject::NGramPredictor(predictor)) => Ok(predictor
-                .predict(prefix)
-                .first()
-                .map_or(0.0, |(_, p)| *p)),
+            Some(StoredObject::NGramPredictor(predictor)) => {
+                Ok(predictor.predict(prefix).first().map_or(0.0, |(_, p)| *p))
+            }
             Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Handle type changed")),
             None => Err(wasm_err(
                 codes::INTERNAL_ERROR,
@@ -223,10 +222,9 @@ pub fn global_feature_importance(
                 0.0
             } else {
                 get_or_init_state().with_object(model_handle, |obj| match obj {
-                    Some(StoredObject::NGramPredictor(predictor)) => Ok(predictor
-                        .predict(&ablated)
-                        .first()
-                        .map_or(0.0, |(_, p)| *p)),
+                    Some(StoredObject::NGramPredictor(predictor)) => {
+                        Ok(predictor.predict(&ablated).first().map_or(0.0, |(_, p)| *p))
+                    }
                     Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Handle type changed")),
                     None => Err(wasm_err(
                         codes::INTERNAL_ERROR,

@@ -25,22 +25,22 @@ use std::collections::HashMap;
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 use wasm4pm::advanced_algorithms::discover_heuristic_miner_from_log;
+use wasm4pm::algorithms::FootprintRelation;
 use wasm4pm::algorithms::{discover_alpha_plus_plus_from_log, discover_footprints_from_log};
 use wasm4pm::batches::discover_batches;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::discovery::discover_dfg_from_log;
 use wasm4pm::fast_discovery::{discover_astar_from_log, discover_hill_climbing_from_log};
+use wasm4pm::generalization::compute_quality;
 use wasm4pm::genetic_discovery::{
     discover_aco_algorithm_from_log, discover_genetic_algorithm_from_log,
     discover_pso_algorithm_from_log,
 };
-use wasm4pm::generalization::compute_quality;
 use wasm4pm::hierarchical::{discover_hierarchical, DfgChunker, HierarchicalConfig};
 use wasm4pm::ilp_discovery::{discover_ilp_petri_net_from_log, discover_optimized_dfg_from_log};
 use wasm4pm::log_to_trie::discover_prefix_tree_inner;
 use wasm4pm::ml::classification::extract_features;
 use wasm4pm::ml::clustering::kmeans_internal;
-use wasm4pm::algorithms::FootprintRelation;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::montecarlo::{run_monte_carlo_simulation, MonteCarloConfig};
 use wasm4pm::more_discovery::{
@@ -83,8 +83,11 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
                 // Staggered timestamps so temporal algorithms have real data
                 attrs.insert(
                     "time:timestamp".to_string(),
-                    AttributeValue::Date(format!("2024-01-0{}T{:02}:00:00Z",
-                        (case_idx % 9) + 1, i)),
+                    AttributeValue::Date(format!(
+                        "2024-01-0{}T{:02}:00:00Z",
+                        (case_idx % 9) + 1,
+                        i
+                    )),
                 );
                 attrs.insert(
                     "org:resource".to_string(),
@@ -102,6 +105,12 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
 /// Standard log used by most tests:
 ///   10× [Register → Approve → Close]
 ///    5× [Register → Reject  → Close]
+fn admitted_log(
+    log: EventLog,
+) -> wasm4pm_compat::evidence::Evidence<EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
+}
+
 fn standard_log() -> EventLog {
     build_log(&[
         (10, &["Register", "Approve", "Close"]),
@@ -148,7 +157,7 @@ fn loop_log() -> EventLog {
 #[test]
 fn dfg_edges_non_empty_on_standard_log() {
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(!dfg.edges.is_empty(), "DFG must have at least one edge");
 }
 
@@ -156,12 +165,13 @@ fn dfg_edges_non_empty_on_standard_log() {
 fn dfg_all_edge_frequencies_positive() {
     // Rank 1: frequency is a count, must be ≥ 1
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     for edge in &dfg.edges {
         assert!(
             edge.frequency >= 1,
             "DFG edge {}→{} has frequency 0 — impossible",
-            edge.from, edge.to
+            edge.from,
+            edge.to
         );
     }
 }
@@ -170,7 +180,7 @@ fn dfg_all_edge_frequencies_positive() {
 fn dfg_nodes_contain_all_activities() {
     // Rank 2: every activity in the log must appear as a node
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let node_ids: std::collections::HashSet<&str> =
         dfg.nodes.iter().map(|n| n.id.as_str()).collect();
     for expected in ["Register", "Approve", "Reject", "Close"] {
@@ -185,7 +195,7 @@ fn dfg_nodes_contain_all_activities() {
 fn dfg_minimal_log_one_trace_produces_output() {
     // Edge case: single-trace single-event log — nodes must still be produced
     let log = minimal_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // A single-event trace has no directly-follows relation, but a node exists
     assert!(
         !dfg.nodes.is_empty() || dfg.edges.is_empty(),
@@ -197,7 +207,7 @@ fn dfg_minimal_log_one_trace_produces_output() {
 fn optimized_dfg_is_subset_of_dfg() {
     // Rank 1: optimized DFG filters edges → can only have ≤ edges than raw DFG
     let log = varied_log();
-    let raw_dfg = discover_dfg_from_log(&log, "concept:name");
+    let raw_dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let opt_dfg = discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5);
     assert!(
         opt_dfg.edges.len() <= raw_dfg.edges.len(),
@@ -213,14 +223,17 @@ fn optimized_dfg_preserves_high_frequency_edges() {
     let log = standard_log(); // Register→Approve (10×), Register→Reject (5×)
     let opt_dfg = discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5);
     // At minimum the most frequent edge should remain
-    assert!(!opt_dfg.edges.is_empty(), "Optimized DFG must not be empty for non-trivial log");
+    assert!(
+        !opt_dfg.edges.is_empty(),
+        "Optimized DFG must not be empty for non-trivial log"
+    );
 }
 
 #[test]
 fn simd_streaming_dfg_matches_standard_dfg_structure() {
     // Rank 1: SIMD DFG and standard DFG must report the same set of activities
     let log = standard_log();
-    let standard = discover_dfg_from_log(&log, "concept:name");
+    let standard = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Build the SIMD DFG using the struct API (native-safe)
     let mut simd = SimdStreamingDfg::new();
@@ -233,9 +246,10 @@ fn simd_streaming_dfg_matches_standard_dfg_structure() {
             .events
             .iter()
             .filter_map(|ev| {
-                ev.attributes.get(activity_key)?.as_string().and_then(|act| {
-                    vocab_ref.iter().position(|&v| v == act).map(|i| i as u32)
-                })
+                ev.attributes
+                    .get(activity_key)?
+                    .as_string()
+                    .and_then(|act| vocab_ref.iter().position(|&v| v == act).map(|i| i as u32))
             })
             .collect();
         if !seq.is_empty() {
@@ -260,7 +274,7 @@ fn simd_streaming_dfg_matches_standard_dfg_structure() {
 fn simd_streaming_dfg_edge_count_matches_standard() {
     // Rank 1: same input → same edge set regardless of implementation
     let log = standard_log();
-    let standard = discover_dfg_from_log(&log, "concept:name");
+    let standard = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let mut simd = SimdStreamingDfg::new();
     let activity_key = "concept:name";
@@ -272,9 +286,10 @@ fn simd_streaming_dfg_edge_count_matches_standard() {
             .events
             .iter()
             .filter_map(|ev| {
-                ev.attributes.get(activity_key)?.as_string().and_then(|act| {
-                    vocab_ref.iter().position(|&v| v == act).map(|i| i as u32)
-                })
+                ev.attributes
+                    .get(activity_key)?
+                    .as_string()
+                    .and_then(|act| vocab_ref.iter().position(|&v| v == act).map(|i| i as u32))
             })
             .collect();
         if !seq.is_empty() {
@@ -296,19 +311,32 @@ fn simd_streaming_dfg_edge_count_matches_standard() {
 fn hierarchical_dfg_produces_edges() {
     // Rank 2: hierarchical chunking must produce at least the edges the DFG sees
     let log = standard_log();
-    let config = HierarchicalConfig { num_chunks: 3, max_chunk_events: None };
+    let config = HierarchicalConfig {
+        num_chunks: 3,
+        max_chunk_events: None,
+    };
     let result = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
-    assert!(!result.edge_counts.is_empty(), "Hierarchical DFG must discover edges");
+    assert!(
+        !result.edge_counts.is_empty(),
+        "Hierarchical DFG must discover edges"
+    );
 }
 
 #[test]
 fn hierarchical_dfg_all_edge_counts_positive() {
     // Rank 1: edge counts are frequencies; must be ≥ 1
     let log = standard_log();
-    let config = HierarchicalConfig { num_chunks: 2, max_chunk_events: None };
+    let config = HierarchicalConfig {
+        num_chunks: 2,
+        max_chunk_events: None,
+    };
     let result = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
     for (edge_key, count) in &result.edge_counts {
-        assert!(*count >= 1, "Edge '{:?}' has count 0 — impossible", edge_key);
+        assert!(
+            *count >= 1,
+            "Edge '{:?}' has count 0 — impossible",
+            edge_key
+        );
     }
 }
 
@@ -319,7 +347,7 @@ fn hierarchical_dfg_all_edge_counts_positive() {
 #[test]
 fn alpha_plus_plus_produces_petri_net() {
     let log = standard_log();
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let pn = discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.0)
         .expect("Alpha++ must succeed on non-empty log");
     assert!(
         !pn.places.is_empty() && !pn.transitions.is_empty(),
@@ -331,7 +359,7 @@ fn alpha_plus_plus_produces_petri_net() {
 fn alpha_plus_plus_transitions_match_activities() {
     // Rank 2: every visible activity must correspond to at least one transition
     let log = standard_log();
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let pn = discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.0)
         .expect("Alpha++ must succeed");
     // Alpha++ transitions have a String `label` (not Option) and `is_invisible: Option<bool>`
     let trans_labels: std::collections::HashSet<&str> =
@@ -349,14 +377,17 @@ fn heuristic_miner_produces_dfg() {
     // Rank 2: heuristic miner with permissive threshold must produce output
     let log = standard_log();
     let dfg = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
-    assert!(!dfg.nodes.is_empty(), "Heuristic miner must produce at least one node");
+    assert!(
+        !dfg.nodes.is_empty(),
+        "Heuristic miner must produce at least one node"
+    );
 }
 
 #[test]
 fn heuristic_miner_fewer_edges_than_raw_dfg() {
     // Rank 1: heuristic miner filters low-confidence relations → edges ≤ raw DFG
     let log = standard_log();
-    let raw = discover_dfg_from_log(&log, "concept:name");
+    let raw = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let hm = discover_heuristic_miner_from_log(&log, "concept:name", 0.8);
     assert!(
         hm.edges.len() <= raw.edges.len(),
@@ -382,18 +413,24 @@ fn heuristic_miner_strict_threshold_prunes_to_main_path() {
 fn inductive_miner_produces_process_tree_json() {
     // Rank 2: inductive miner returns a non-empty JSON process tree string
     let log = standard_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
-    assert!(!tree_json.is_empty(), "Inductive miner must produce a non-empty process tree");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
+    assert!(
+        !tree_json.is_empty(),
+        "Inductive miner must produce a non-empty process tree"
+    );
     // Must be valid JSON
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&tree_json);
-    assert!(parsed.is_ok(), "Inductive miner output must be valid JSON: {tree_json}");
+    assert!(
+        parsed.is_ok(),
+        "Inductive miner output must be valid JSON: {tree_json}"
+    );
 }
 
 #[test]
 fn inductive_miner_detects_parallel_structure() {
     // Rank 2: parallel log (X‖Y) must produce a tree with operator indicating AND
     let log = parallel_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(
         !tree_json.is_empty(),
         "Inductive miner must handle parallel-activity log"
@@ -409,7 +446,7 @@ fn inductive_miner_detects_parallel_structure() {
 fn hill_climbing_edge_count_does_not_exceed_dfg() {
     // Rank 1: hill climbing prunes edges — count can only stay or decrease
     let log = standard_log();
-    let raw = discover_dfg_from_log(&log, "concept:name");
+    let raw = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(
         hc.edges.len() <= raw.edges.len(),
@@ -443,7 +480,10 @@ fn astar_terminates_with_valid_output() {
     let log = standard_log();
     let (dfg, iters) = discover_astar_from_log(&log, "concept:name", 100);
     assert!(!dfg.nodes.is_empty(), "A* must produce nodes");
-    assert!(iters <= 100, "A* must use ≤ max_iterations iterations; got {iters}");
+    assert!(
+        iters <= 100,
+        "A* must use ≤ max_iterations iterations; got {iters}"
+    );
 }
 
 #[test]
@@ -455,7 +495,8 @@ fn astar_more_iterations_never_fewer_edges() {
     assert!(
         dfg_100.edges.len() >= dfg_1.edges.len(),
         "A*(100 iter) edges {} < A*(1 iter) edges {}",
-        dfg_100.edges.len(), dfg_1.edges.len()
+        dfg_100.edges.len(),
+        dfg_1.edges.len()
     );
 }
 
@@ -476,7 +517,10 @@ fn aco_fitness_in_range() {
 fn aco_produces_non_empty_output() {
     let log = varied_log();
     if let Some((dfg, _)) = discover_aco_algorithm_from_log(&log, "concept:name", 5, 5) {
-        assert!(!dfg.nodes.is_empty(), "ACO must produce at least one node when it returns Some");
+        assert!(
+            !dfg.nodes.is_empty(),
+            "ACO must produce at least one node when it returns Some"
+        );
     }
 }
 
@@ -511,9 +555,8 @@ fn pso_deterministic_with_same_seed() {
 fn genetic_algorithm_fitness_in_range() {
     // Rank 1: GA fitness ∈ [0, 1]
     let log = standard_log();
-    let (_, fitness) =
-        discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20)
-            .expect("GA must succeed on non-empty log");
+    let (_, fitness) = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20)
+        .expect("GA must succeed on non-empty log");
     assert!(
         (0.0..=1.0).contains(&fitness),
         "GA fitness {fitness:.4} outside [0, 1]"
@@ -526,8 +569,8 @@ fn genetic_algorithm_more_generations_never_worse() {
     let log = standard_log();
     let (_, f1) =
         discover_genetic_algorithm_from_log(&log, "concept:name", 10, 1).expect("GA must succeed");
-    let (_, f100) =
-        discover_genetic_algorithm_from_log(&log, "concept:name", 10, 100).expect("GA must succeed");
+    let (_, f100) = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 100)
+        .expect("GA must succeed");
     assert!(
         f100 >= f1 - 1e-9,
         "GA: 100-gen fitness {f100:.4} < 1-gen fitness {f1:.4} — elitism violated"
@@ -554,9 +597,15 @@ fn ilp_petri_net_has_source_and_sink() {
     // Rank 2: every sound Petri net must have at least one source place (with marking)
     let log = standard_log();
     let (pn, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
-    let has_source = pn.places.iter().any(|p| p.marking.map_or(false, |m| m > 0));
-    assert!(has_source, "ILP Petri net must have a source place with initial marking");
-    assert!(!pn.transitions.is_empty(), "ILP Petri net must have transitions");
+    let has_source = pn.places.iter().any(|p| p.marking.is_some_and(|m| m > 0));
+    assert!(
+        has_source,
+        "ILP Petri net must have a source place with initial marking"
+    );
+    assert!(
+        !pn.transitions.is_empty(),
+        "ILP Petri net must have transitions"
+    );
 }
 
 #[test]
@@ -598,7 +647,11 @@ fn declare_discovery_produces_constraints() {
     for trace in &log.traces {
         let mut seen = std::collections::HashSet::new();
         for ev in &trace.events {
-            if let Some(act) = ev.attributes.get("concept:name").and_then(|v| v.as_string()) {
+            if let Some(act) = ev
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+            {
                 if seen.insert(act.to_string()) {
                     *counts.entry(act.to_string()).or_insert(0) += 1;
                 }
@@ -629,7 +682,7 @@ fn footprints_causal_antisymmetric() {
     // Rank 1: matrix is Vec<Vec<FootprintRelation>> indexed by activity position.
     // If fp.matrix[i][j] == DirectlyFollows then fp.matrix[j][i] must NOT also be DirectlyFollows.
     let log = standard_log();
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
     let n = fp.activities.len();
     for i in 0..n {
         for j in 0..n {
@@ -640,8 +693,10 @@ fn footprints_causal_antisymmetric() {
                     assert!(
                         !matches!(ba, FootprintRelation::Causal),
                         "Footprint antisymmetry violated: {}→{} and {}→{} both Causal",
-                        fp.activities[i], fp.activities[j],
-                        fp.activities[j], fp.activities[i]
+                        fp.activities[i],
+                        fp.activities[j],
+                        fp.activities[j],
+                        fp.activities[i]
                     );
                 }
             }
@@ -653,11 +708,19 @@ fn footprints_causal_antisymmetric() {
 fn footprints_matrix_dimensions_match_activities() {
     // Rank 1: matrix must be n×n where n = number of activities
     let log = standard_log();
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
     let n = fp.activities.len();
-    assert_eq!(fp.matrix.len(), n, "Footprint matrix row count must equal activity count");
+    assert_eq!(
+        fp.matrix.len(),
+        n,
+        "Footprint matrix row count must equal activity count"
+    );
     for row in &fp.matrix {
-        assert_eq!(row.len(), n, "Each footprint matrix row must have n entries");
+        assert_eq!(
+            row.len(),
+            n,
+            "Each footprint matrix row must have n entries"
+        );
     }
 }
 
@@ -720,7 +783,10 @@ fn generalization_quality_metrics_in_range() {
                 q.generalization
             );
             // num_transitions must equal activities found in log
-            assert!(q.num_transitions > 0, "Quality report must count transitions");
+            assert!(
+                q.num_transitions > 0,
+                "Quality report must count transitions"
+            );
         }
         Err(_) => {
             // Degenerate Petri net from ILP on small log — acceptable
@@ -739,7 +805,10 @@ fn handover_network_produces_json() {
     let json = discover_handover_network_from_log(&log, "org:resource");
     assert!(!json.is_empty(), "Handover network JSON must be non-empty");
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&json);
-    assert!(parsed.is_ok(), "Handover network must be valid JSON: {json}");
+    assert!(
+        parsed.is_ok(),
+        "Handover network must be valid JSON: {json}"
+    );
 }
 
 #[test]
@@ -759,20 +828,35 @@ fn working_together_network_produces_json() {
     // Rank 2: must produce valid JSON
     let log = standard_log();
     let json = discover_working_together_network_from_log(&log, "org:resource");
-    assert!(!json.is_empty(), "Working-together network JSON must be non-empty");
+    assert!(
+        !json.is_empty(),
+        "Working-together network JSON must be non-empty"
+    );
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&json);
-    assert!(parsed.is_ok(), "Working-together network must be valid JSON: {json}");
+    assert!(
+        parsed.is_ok(),
+        "Working-together network must be valid JSON: {json}"
+    );
 }
 
 #[test]
 fn social_networks_single_resource_has_no_handover() {
     // Rank 1: a log where all events share the same resource has no handover edges
     let mut log = EventLog::new();
-    let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+    let mut trace = Trace {
+        attributes: HashMap::new(),
+        events: Vec::new(),
+    };
     for act in ["A", "B", "C"] {
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
-        attrs.insert("org:resource".to_string(), AttributeValue::String("alice".to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(act.to_string()),
+        );
+        attrs.insert(
+            "org:resource".to_string(),
+            AttributeValue::String("alice".to_string()),
+        );
         trace.events.push(Event { attributes: attrs });
     }
     log.traces.push(trace);
@@ -816,8 +900,7 @@ fn temporal_profile_durations_are_non_negative() {
 fn performance_spectrum_produces_output() {
     // Rank 2: performance spectrum on a log with timestamps must produce some result
     let log = standard_log();
-    let spec =
-        discover_performance_spectrum(&log, "Register", "concept:name", "time:timestamp");
+    let spec = discover_performance_spectrum(&log, "Register", "concept:name", "time:timestamp");
     // PerformanceSpectrumResult — struct must be non-error (no panic)
     // Existence of the result is sufficient for this integration test
     let _ = spec; // if it panicked we'd fail the test
@@ -837,7 +920,10 @@ fn transition_system_states_are_non_empty() {
     // Rank 2: a transition system from a non-empty log must have states
     let log = standard_log();
     let ts = discover_transition_system(&log, "concept:name", 1, "forward");
-    assert!(!ts.states.is_empty(), "Transition system must have at least one state");
+    assert!(
+        !ts.states.is_empty(),
+        "Transition system must have at least one state"
+    );
 }
 
 #[test]
@@ -901,7 +987,11 @@ fn kmeans_inertia_is_non_negative() {
         return;
     }
     let result = kmeans_internal(&features, 3);
-    assert!(result.inertia >= 0.0, "K-Means inertia must be ≥ 0; got {}", result.inertia);
+    assert!(
+        result.inertia >= 0.0,
+        "K-Means inertia must be ≥ 0; got {}",
+        result.inertia
+    );
 }
 
 #[test]
@@ -932,8 +1022,8 @@ fn anomaly_kmeans_scores_from_features() {
     // For each point, compute distance to its centroid
     for (i, &assignment) in result.assignments.iter().enumerate() {
         let centroid = result.centroids[assignment];
-        let dist_sq = (features[i][0] - centroid[0]).powi(2)
-            + (features[i][1] - centroid[1]).powi(2);
+        let dist_sq =
+            (features[i][0] - centroid[0]).powi(2) + (features[i][1] - centroid[1]).powi(2);
         assert!(
             dist_sq >= 0.0,
             "Squared distance for feature {i} must be ≥ 0; got {dist_sq}"
@@ -946,7 +1036,7 @@ fn anomaly_inertia_is_sum_of_squared_distances() {
     // Rank 1: inertia = Σ squared distances from points to their centroids
     let features: Vec<[f64; 2]> = vec![[0.0, 0.0], [1.0, 0.0], [0.5, 0.5]];
     let result = kmeans_internal(&features, 1); // k=1: one centroid = mean
-    // Inertia must be positive (points spread around centroid)
+                                                // Inertia must be positive (points spread around centroid)
     assert!(result.inertia >= 0.0, "Inertia must be ≥ 0");
     // With k=1, inertia equals variance scaled by n
     assert!(result.inertia.is_finite(), "Inertia must be finite");
@@ -962,7 +1052,11 @@ fn ml_cluster_k_clamped_to_n() {
         "K-Means must clamp k to n; requested 10, got k={}",
         result.k
     );
-    assert_eq!(result.assignments.len(), 2, "Must still assign all 2 points");
+    assert_eq!(
+        result.assignments.len(),
+        2,
+        "Must still assign all 2 points"
+    );
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -986,8 +1080,8 @@ fn prefix_tree_variant_count_matches_unique_traces() {
 fn prefix_tree_max_depth_equals_longest_trace() {
     // Rank 1: max_depth = length of the longest trace
     let log = build_log(&[(3, &["A", "B", "C", "D", "E"])]);
-    let result = discover_prefix_tree_inner(&log, "concept:name", None)
-        .expect("Prefix tree must succeed");
+    let result =
+        discover_prefix_tree_inner(&log, "concept:name", None).expect("Prefix tree must succeed");
     assert_eq!(
         result.max_depth, 5,
         "Max depth should equal longest trace length (5); got {}",
@@ -1034,8 +1128,7 @@ fn monte_carlo_sojourn_time_is_non_negative() {
         random_seed: 42,
         ..Default::default()
     };
-    let report = run_monte_carlo_simulation(&log, &config)
-        .expect("Monte Carlo must succeed");
+    let report = run_monte_carlo_simulation(&log, &config).expect("Monte Carlo must succeed");
     assert!(
         report.avg_sojourn_time_ms >= 0.0,
         "Monte Carlo avg sojourn time must be ≥ 0; got {}",
@@ -1047,7 +1140,11 @@ fn monte_carlo_sojourn_time_is_non_negative() {
 fn monte_carlo_deterministic_with_same_seed() {
     // Rank 1: seeded simulation must give identical avg sojourn time
     let log = standard_log();
-    let config = MonteCarloConfig { num_cases: 20, random_seed: 42, ..Default::default() };
+    let config = MonteCarloConfig {
+        num_cases: 20,
+        random_seed: 42,
+        ..Default::default()
+    };
     let r1 = run_monte_carlo_simulation(&log, &config).expect("MC must succeed");
     let r2 = run_monte_carlo_simulation(&log, &config).expect("MC must succeed");
     assert_eq!(
@@ -1064,25 +1161,25 @@ fn monte_carlo_deterministic_with_same_seed() {
 fn all_discovery_algorithms_handle_loop_log_without_panic() {
     // Rank 1 (safety): no algorithm may panic on a log with duplicate activities
     let log = loop_log();
-    let _ = discover_dfg_from_log(&log, "concept:name");
+    let _ = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_heuristic_miner_from_log(&log, "concept:name", 0.3);
-    let _ = discover_inductive_miner_from_log(&log, "concept:name");
+    let _ = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_hill_climbing_from_log(&log, "concept:name");
     let _ = discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5);
     let (_, _) = discover_simulated_annealing_from_log(&log, "concept:name", 0.5, 0.9);
     let (_, _) = discover_astar_from_log(&log, "concept:name", 20);
     let _ = discover_aco_algorithm_from_log(&log, "concept:name", 5, 5); // returns Option
     let _ = discover_pso_algorithm_from_log(&log, "concept:name", 5, 5); // returns Option
-    // All above complete without panicking → test passes
+                                                                         // All above complete without panicking → test passes
 }
 
 #[test]
 fn all_discovery_algorithms_handle_single_trace_log() {
     // Rank 1 (safety): boundary log — one trace, three events
     let log = build_log(&[(1, &["A", "B", "C"])]);
-    let _ = discover_dfg_from_log(&log, "concept:name");
+    let _ = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_heuristic_miner_from_log(&log, "concept:name", 0.5);
-    let _ = discover_inductive_miner_from_log(&log, "concept:name");
+    let _ = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_hill_climbing_from_log(&log, "concept:name");
     let _ = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.9);
     let _ = discover_astar_from_log(&log, "concept:name", 10);
@@ -1096,7 +1193,7 @@ fn dfg_edge_frequencies_sum_is_consistent_with_trace_count() {
     //   both edges A→B and B→C must have frequency N.
     let n = 8;
     let log = build_log(&[(n, &["A", "B", "C"])]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B");
     let bc = dfg.edges.iter().find(|e| e.from == "B" && e.to == "C");
     assert!(ab.is_some(), "Edge A→B must exist");
@@ -1120,14 +1217,26 @@ fn fitness_order_preserved_across_algorithms() {
     // Rank 2: all algorithms producing fitness must return values in [0, 1]
     let log = standard_log();
     let (_, ilp_f, ilp_p) = discover_ilp_petri_net_from_log(&log, "concept:name");
-    let (_, ga_f) = discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20)
-        .expect("GA must succeed");
+    let (_, ga_f) =
+        discover_genetic_algorithm_from_log(&log, "concept:name", 10, 20).expect("GA must succeed");
     let (_, sa_f) = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.99);
 
-    assert!((0.0..=1.0).contains(&ilp_f), "ILP fitness out of range: {ilp_f}");
-    assert!((0.0..=1.0).contains(&ilp_p), "ILP precision out of range: {ilp_p}");
-    assert!((0.0..=1.0).contains(&ga_f),  "GA  fitness out of range: {ga_f}");
-    assert!((0.0..=1.0).contains(&sa_f),  "SA  fitness out of range: {sa_f}");
+    assert!(
+        (0.0..=1.0).contains(&ilp_f),
+        "ILP fitness out of range: {ilp_f}"
+    );
+    assert!(
+        (0.0..=1.0).contains(&ilp_p),
+        "ILP precision out of range: {ilp_p}"
+    );
+    assert!(
+        (0.0..=1.0).contains(&ga_f),
+        "GA  fitness out of range: {ga_f}"
+    );
+    assert!(
+        (0.0..=1.0).contains(&sa_f),
+        "SA  fitness out of range: {sa_f}"
+    );
 }
 
 #[test]
@@ -1137,11 +1246,20 @@ fn social_networks_produce_no_self_edges_for_sequential_single_resource() {
     //   The working-together network may have self-edges removed.
     let mut log = EventLog::new();
     for i in 0..3 {
-        let mut trace = Trace { attributes: HashMap::new(), events: Vec::new() };
+        let mut trace = Trace {
+            attributes: HashMap::new(),
+            events: Vec::new(),
+        };
         for act in ["A", "B"] {
             let mut attrs = HashMap::new();
-            attrs.insert("concept:name".to_string(), AttributeValue::String(act.to_string()));
-            attrs.insert("org:resource".to_string(), AttributeValue::String(format!("agent-{i}")));
+            attrs.insert(
+                "concept:name".to_string(),
+                AttributeValue::String(act.to_string()),
+            );
+            attrs.insert(
+                "org:resource".to_string(),
+                AttributeValue::String(format!("agent-{i}")),
+            );
             trace.events.push(Event { attributes: attrs });
         }
         log.traces.push(trace);
@@ -1165,8 +1283,11 @@ fn social_networks_produce_no_self_edges_for_sequential_single_resource() {
 fn inductive_miner_handles_varied_log_without_panic() {
     // Rank 1 (safety): varied log with 4 variants must produce valid JSON
     let log = varied_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
-    assert!(!tree_json.is_empty(), "Inductive miner must produce output on varied log");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
+    assert!(
+        !tree_json.is_empty(),
+        "Inductive miner must produce output on varied log"
+    );
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&tree_json);
     assert!(parsed.is_ok(), "Inductive miner output must be valid JSON");
 }
@@ -1174,9 +1295,9 @@ fn inductive_miner_handles_varied_log_without_panic() {
 #[test]
 fn prefix_tree_minimal_log_single_variant() {
     // Rank 2: a log with one unique trace must produce exactly 1 variant
-    let log = build_log(&[(5, &["A", "B", "C"])]);  // 5 identical traces
-    let result = discover_prefix_tree_inner(&log, "concept:name", None)
-        .expect("Prefix tree must succeed");
+    let log = build_log(&[(5, &["A", "B", "C"])]); // 5 identical traces
+    let result =
+        discover_prefix_tree_inner(&log, "concept:name", None).expect("Prefix tree must succeed");
     assert_eq!(
         result.variants, 1,
         "Log with one unique trace pattern must produce exactly 1 variant; got {}",

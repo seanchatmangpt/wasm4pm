@@ -60,25 +60,25 @@
 //! - `wasm4pm/wasm4pm/src/prediction_drift.rs` (Drift detection)
 //! - `wasm4pm/wasm4pm/src/prediction_resource.rs` (UCB1 bandit, queue delay)
 
-mod types;
 mod fitness;
+mod types;
 
 // Re-export public types
-pub use types::*;
 pub use fitness::*;
+pub use types::*;
 
-pub mod genetic;
-pub mod pso;
 pub mod annealing;
-pub mod feature_importance;
 pub mod anomaly;
-pub mod prediction;
 pub mod bandit;
 pub mod drift;
+pub mod feature_importance;
+pub mod genetic;
+pub mod prediction;
+pub mod pso;
 
 // Re-export module items
+pub use anomaly::*;
 pub use bandit::*;
 pub use drift::*;
-pub use anomaly::*;
 pub use genetic::rand_f64;
 pub use genetic::seed_rng;

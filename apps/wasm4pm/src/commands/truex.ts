@@ -705,10 +705,10 @@ const verify = defineCommand({
   },
 });
 
-// ─── Legacy flat-command shim (keeps backward compatibility) ──────────────────
+// ───  flat-command bridge (keeps baseline admissibility) ──────────────────
 // Old form: wpm truex verify envelope.json
 // New form: wpm truex verify envelope.json  (subcommand)
-// The shim detects the old positional-action pattern and routes accordingly.
+// The bridge detects the old positional-action pattern and routes accordingly.
 
 export const truex = defineCommand({
   meta: {

@@ -238,7 +238,7 @@ describe('toOcelLog(): wpm trace conform integration', () => {
     const cliPath = '/Users/sac/wasm4pm/apps/wasm4pm/dist/cli.js';
 
     try {
-      execSync(`node ${cliPath} trace conform -m ${modelPath} -i ${ocelPath} --format json`, {
+      execSync(`node --experimental-wasm-modules ${cliPath} trace conform -m ${modelPath} -i ${ocelPath} --format json`, {
         encoding: 'utf8',
         timeout: 15_000,
       });

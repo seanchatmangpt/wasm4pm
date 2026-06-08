@@ -218,13 +218,19 @@ impl CognitionBreed for Prolog {
         // If goals are provided, query the goal predicate/value. Otherwise query
         // the intent predicate, asking whether ANY value is admitted (output_mask=1).
         let (q_pred, q_args, q_binding, q_output) = if let Some(g) = input.goals.first() {
-            let pid = pred_for_key.get(&g.predicate).copied().unwrap_or(PredicateId(1));
+            let pid = pred_for_key
+                .get(&g.predicate)
+                .copied()
+                .unwrap_or(PredicateId(1));
             let term_id = kernel.catalog.intern_term(&g.value);
             // Re-add term mapping after intern (catalog mutated).
             (pid, vec![term_id], 0b1u8, 0u8)
         } else if let Some(f) = input.facts.first() {
             let pid = pred_for_key.get(&f.key).copied().unwrap_or(PredicateId(1));
-            let term_id = kernel.catalog.term_id(&f.value).unwrap_or(prolog8::TermId(0));
+            let term_id = kernel
+                .catalog
+                .term_id(&f.value)
+                .unwrap_or(prolog8::TermId(0));
             (pid, vec![term_id], 0b1u8, 0u8)
         } else {
             // Pure existence query against intent predicate.
@@ -251,7 +257,10 @@ impl CognitionBreed for Prolog {
         trace.push(TraceStep {
             step: step_no,
             kind: "kernel-query".into(),
-            detail: format!("pred_id={} binding_mask={:#b}", q.atom.pred_id.0, q.atom.binding_mask),
+            detail: format!(
+                "pred_id={} binding_mask={:#b}",
+                q.atom.pred_id.0, q.atom.binding_mask
+            ),
             depth: 0,
         });
         step_no += 1;
@@ -421,8 +430,14 @@ mod tests {
             intent: "color".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "color".into(), value: "red".into() },
-                Fact { key: "color".into(), value: "green".into() },
+                Fact {
+                    key: "color".into(),
+                    value: "red".into(),
+                },
+                Fact {
+                    key: "color".into(),
+                    value: "green".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -441,10 +456,7 @@ mod tests {
         );
         assert!(out.explanation.contains("denied"));
         // The kernel-query step must record the right predicate.
-        assert!(out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "kernel-query"));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "kernel-query"));
     }
 
     /// Rank-2: the breed must intern every distinct fact key as a distinct
@@ -458,8 +470,14 @@ mod tests {
             intent: "parent".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "parent".into(), value: "alice".into() },
-                Fact { key: "sibling".into(), value: "alice".into() },
+                Fact {
+                    key: "parent".into(),
+                    value: "alice".into(),
+                },
+                Fact {
+                    key: "sibling".into(),
+                    value: "alice".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -474,8 +492,11 @@ mod tests {
             state: vec![],
         };
         let out = breed.run(&input).expect("run ok");
-        assert!(out.selected.is_none(),
-            "sibling=bob is not in catalog; must deny, got {:?}", out.selected);
+        assert!(
+            out.selected.is_none(),
+            "sibling=bob is not in catalog; must deny, got {:?}",
+            out.selected
+        );
         // intern-fact trace must record BOTH facts (predicate separation).
         let interned: usize = out
             .inference_trace

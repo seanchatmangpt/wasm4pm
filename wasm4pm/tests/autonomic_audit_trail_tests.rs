@@ -2,9 +2,7 @@
 //!
 //! Validates event recording, chain verification, hash integrity, and timeline rendering.
 
-use wasm4pm::autonomic_audit_trail::{
-    AutonomicAuditTrail, AuditEventType, AuditPhase,
-};
+use wasm4pm::autonomic_audit_trail::{AuditEventType, AuditPhase, AutonomicAuditTrail};
 
 #[test]
 fn test_event_recording() {
@@ -21,7 +19,10 @@ fn test_event_recording() {
     assert_eq!(trail.event_count(), 1);
 
     let events = trail.get_events();
-    assert_eq!(events[0].event_type, AuditEventType::AgentSelected("QLearning".to_string()));
+    assert_eq!(
+        events[0].event_type,
+        AuditEventType::AgentSelected("QLearning".to_string())
+    );
     assert_eq!(events[0].cycle_count, 100);
     assert_eq!(events[0].phase, AuditPhase::Decision);
 }
@@ -94,7 +95,10 @@ fn test_hash_integrity() {
     let event = &events[0];
 
     // Hash should be non-empty and deterministic
-    assert!(!event.event_hash.is_empty(), "Event hash should be non-empty");
+    assert!(
+        !event.event_hash.is_empty(),
+        "Event hash should be non-empty"
+    );
     assert_eq!(event.event_hash.len(), 64, "BLAKE3 hex should be 64 chars");
 
     // Hash should be deterministic
@@ -107,7 +111,10 @@ fn test_hash_integrity() {
     );
 
     let events2 = trail2.get_events();
-    assert_eq!(event.event_hash, events2[0].event_hash, "Hash should be deterministic");
+    assert_eq!(
+        event.event_hash, events2[0].event_hash,
+        "Hash should be deterministic"
+    );
 }
 
 #[test]
@@ -145,11 +152,26 @@ fn test_timeline_rendering() {
     let timeline = trail.export_timeline();
 
     // Verify timeline format
-    assert!(timeline.contains("Autonomic Audit Trail"), "Should have title");
-    assert!(timeline.contains("agent_selected"), "Should contain agent_selected event");
-    assert!(timeline.contains("spc_rule_fired"), "Should contain spc_rule_fired event");
-    assert!(timeline.contains("circuit_transitioned"), "Should contain circuit_transitioned event");
-    assert!(timeline.contains("recovery_completed"), "Should contain recovery_completed event");
+    assert!(
+        timeline.contains("Autonomic Audit Trail"),
+        "Should have title"
+    );
+    assert!(
+        timeline.contains("agent_selected"),
+        "Should contain agent_selected event"
+    );
+    assert!(
+        timeline.contains("spc_rule_fired"),
+        "Should contain spc_rule_fired event"
+    );
+    assert!(
+        timeline.contains("circuit_transitioned"),
+        "Should contain circuit_transitioned event"
+    );
+    assert!(
+        timeline.contains("recovery_completed"),
+        "Should contain recovery_completed event"
+    );
     assert!(timeline.contains("Checksum"), "Should show checksum");
     assert!(
         timeline.contains("Chain verified: true"),
@@ -190,7 +212,10 @@ fn test_all_event_types() {
         );
     }
 
-    assert!(trail.verify_chain(), "All event types should form valid chain");
+    assert!(
+        trail.verify_chain(),
+        "All event types should form valid chain"
+    );
     assert_eq!(trail.event_count(), 6);
 
     // Export timeline and verify all types appear
@@ -222,10 +247,9 @@ fn test_large_audit_trail() {
     for i in 0..100 {
         let event_type = match i % 4 {
             0 => AuditEventType::AgentSelected(format!("Agent{}", i % 5)),
-            1 => AuditEventType::SpcRuleFired(
-                format!("rule_{}", i % 4),
-                format!("metric_{}", i % 3),
-            ),
+            1 => {
+                AuditEventType::SpcRuleFired(format!("rule_{}", i % 4), format!("metric_{}", i % 3))
+            }
             2 => AuditEventType::CircuitTransitioned("Closed".to_string(), "Open".to_string()),
             _ => AuditEventType::RecoveryCompleted(true, -1),
         };
@@ -272,6 +296,10 @@ fn test_phase_tracking() {
 
     let events = trail.get_events();
     for (idx, phase) in phases.iter().enumerate() {
-        assert_eq!(events[idx].phase, *phase, "Phase should match at index {}", idx);
+        assert_eq!(
+            events[idx].phase, *phase,
+            "Phase should match at index {}",
+            idx
+        );
     }
 }

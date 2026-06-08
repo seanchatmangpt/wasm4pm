@@ -1,12 +1,14 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
+use wasm_bindgen::prelude::*;
 
 /// ROC AUC (Area Under ROC Curve) for binary classification
 /// Returns AUC score in [0, 1] where 1 = perfect classifier
 #[wasm_bindgen(js_name = "rocAucScore")]
 pub fn roc_auc_score(y_true: &[f64], y_scores: &[f64]) -> Result<f64, JsError> {
     if y_true.len() != y_scores.len() {
-        return Err(JsError::new("y_true and y_scores must have the same length"));
+        return Err(JsError::new(
+            "y_true and y_scores must have the same length",
+        ));
     }
     if y_true.is_empty() {
         return Err(JsError::new("arrays must not be empty"));
@@ -25,7 +27,8 @@ pub fn roc_auc_impl(y_true: &[f64], y_scores: &[f64]) -> Result<f64, MlError> {
     }
 
     // Sort by score descending.
-    let mut indexed: Vec<(usize, f64)> = y_scores.iter().enumerate().map(|(i, s)| (i, *s)).collect();
+    let mut indexed: Vec<(usize, f64)> =
+        y_scores.iter().enumerate().map(|(i, s)| (i, *s)).collect();
     indexed.sort_unstable_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
     // Process tied-score groups together so the trapezoidal area is symmetric.
@@ -121,7 +124,8 @@ mod tests {
         let auc = roc_auc_impl(&y_true, &y_scores).unwrap();
         assert!(
             (auc - 0.5).abs() < 1e-10,
-            "Random classifier AUC must be 0.5 (got {})", auc
+            "Random classifier AUC must be 0.5 (got {})",
+            auc
         );
     }
 
@@ -131,14 +135,18 @@ mod tests {
         // y_proba layout: [p(c0|s), p(c1|s)] per sample
         // Good predictions: high prob for the correct class.
         let y_proba = vec![
-            0.9, 0.1,  // sample 0, true class 0 -> prob 0.9
-            0.1, 0.9,  // sample 1, true class 1 -> prob 0.9
-            0.8, 0.2,  // sample 2, true class 0 -> prob 0.8
-            0.2, 0.8,  // sample 3, true class 1 -> prob 0.8
+            0.9, 0.1, // sample 0, true class 0 -> prob 0.9
+            0.1, 0.9, // sample 1, true class 1 -> prob 0.9
+            0.8, 0.2, // sample 2, true class 0 -> prob 0.8
+            0.2, 0.8, // sample 3, true class 1 -> prob 0.8
         ];
         // Use the pure-Rust impl to avoid wasm-bindgen panic on native targets.
         let loss = log_loss_impl(&y_true, &y_proba, 2).unwrap();
-        assert!(loss < 0.5, "Good predictions should yield low loss (got {})", loss);
+        assert!(
+            loss < 0.5,
+            "Good predictions should yield low loss (got {})",
+            loss
+        );
     }
 
     #[test]

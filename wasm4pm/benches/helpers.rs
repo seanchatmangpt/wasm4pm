@@ -46,7 +46,9 @@ pub struct LogShape {
 /// Full mode (opt-in):  4 input sizes, statistical sampling, ~minutes per binary.
 #[inline]
 pub fn is_fast_mode() -> bool {
-    !std::env::var("BENCH_FULL").map(|v| v == "1").unwrap_or(false)
+    !std::env::var("BENCH_FULL")
+        .map(|v| v == "1")
+        .unwrap_or(false)
 }
 
 /// Apply fast-mode overrides to a Criterion group (default).

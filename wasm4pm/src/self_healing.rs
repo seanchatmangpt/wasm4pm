@@ -62,7 +62,9 @@ pub fn with_clock_lock<F, R>(f: F) -> R
 where
     F: FnOnce() -> R,
 {
-    let _guard = CLOCK_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let _guard = CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     f()
 }
 
@@ -146,11 +148,11 @@ impl std::error::Error for SelfHealingError {}
 #[allow(dead_code)]
 pub enum CircuitState {
     /// Normal operation — requests flow through.
-    Closed   = 0,
+    Closed = 0,
     /// Testing if recovery is possible.
     HalfOpen = 1,
     /// Failing — reject requests.
-    Open     = 2,
+    Open = 2,
 }
 
 /// Circuit breaker configuration.
@@ -268,20 +270,17 @@ impl CircuitBreaker {
     /// Create new circuit breaker with default config.
     #[allow(dead_code)]
     pub fn new() -> Self {
-        Self::with_config(CircuitBreakerConfig::default())
+        Self::with_config(CircuitBreakerConfig::default()).expect("Default config must be valid")
     }
 
     /// Create new circuit breaker with custom config.
     /// Validates configuration before construction.
-    ///
-    /// # Panics
-    /// Panics if config validation fails (invalid threshold or timeout values).
     #[allow(dead_code)]
-    pub fn with_config(config: CircuitBreakerConfig) -> Self {
+    pub fn with_config(config: CircuitBreakerConfig) -> Result<Self, String> {
         if let Err(e) = config.validate() {
-            panic!("Invalid circuit breaker config: {}", e);
+            return Err(format!("Invalid circuit breaker config: {}", e));
         }
-        Self {
+        Ok(Self {
             config,
             state: CircuitState::Closed,
             failure_count: 0,
@@ -289,7 +288,7 @@ impl CircuitBreaker {
             last_state_change_ms: now_ms(),
             transition_count: 0,
             last_transition_reason: "initialization".to_string(),
-        }
+        })
     }
 
     /// Create circuit breaker from JSON configuration string.
@@ -305,7 +304,7 @@ impl CircuitBreaker {
         let config_json: CircuitBreakerConfigJson = serde_json::from_str(json)
             .map_err(|e| format!("Invalid circuit breaker config: {}", e))?;
 
-        Ok(Self::with_config(config_json.into()))
+        Self::with_config(config_json.into())
     }
 
     /// Record a successful call.
@@ -406,14 +405,18 @@ impl CircuitBreaker {
 
         let elapsed = now_ms().saturating_sub(self.last_state_change_ms);
         // Per-state timeout thresholds; Closed never times out.
-        let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
+        let timeouts: [u64; 3] = [
+            u64::MAX,
+            self.config.half_open_timeout_ms,
+            self.config.open_timeout_ms,
+        ];
         let timed_out = elapsed >= timeouts[self.state as usize];
         let timeout_threshold = timeouts[self.state as usize];
 
         let (next_state, allow) = match (self.state, timed_out) {
-            (CircuitState::Open, true)     => (CircuitState::HalfOpen, true),
+            (CircuitState::Open, true) => (CircuitState::HalfOpen, true),
             (CircuitState::HalfOpen, true) => (CircuitState::Open, false),
-            (s, _)                         => (s, s != CircuitState::Open),
+            (s, _) => (s, s != CircuitState::Open),
         };
         if next_state != self.state {
             self.transition_to(next_state);
@@ -523,13 +526,9 @@ impl CircuitBreaker {
         // Determine transition reason and timeout threshold
         let (transition_reason, timeout_threshold_ms) = match (prev_state, new_state) {
             // Success-based transitions
-            (CircuitState::HalfOpen, CircuitState::Closed) => {
-                ("success_threshold_reached", 0u64)
-            }
+            (CircuitState::HalfOpen, CircuitState::Closed) => ("success_threshold_reached", 0u64),
             // Failure-based transitions
-            (CircuitState::Closed, CircuitState::Open) => {
-                ("failure_threshold_reached", 0u64)
-            }
+            (CircuitState::Closed, CircuitState::Open) => ("failure_threshold_reached", 0u64),
             // Timeout-based transitions
             (CircuitState::Open, CircuitState::HalfOpen) => {
                 let threshold = self.config.open_timeout_ms;
@@ -540,9 +539,7 @@ impl CircuitBreaker {
                 ("timeout_expired_recovery_failed", threshold)
             }
             // Explicit resets (shouldn't happen, but covered for completeness)
-            (CircuitState::Closed, CircuitState::Closed) => {
-                ("no_transition", 0u64)
-            }
+            (CircuitState::Closed, CircuitState::Closed) => ("no_transition", 0u64),
             (CircuitState::Open, CircuitState::Open) => {
                 ("no_transition", self.config.open_timeout_ms)
             }
@@ -1111,7 +1108,7 @@ impl Default for SelfHealingManager {
 
 #[cfg(test)]
 mod circuit_breaker_config_tests {
-    use super::{CircuitBreaker, CircuitBreakerConfig, CircuitState, reset_clock, advance_clock};
+    use super::{advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState};
 
     #[test]
     fn test_circuit_breaker_from_json() {
@@ -1183,7 +1180,6 @@ mod circuit_breaker_config_tests {
     // --- Configuration validation tests ---
 
     #[test]
-    #[should_panic(expected = "failure_threshold must be > 0")]
     fn test_circuit_breaker_rejects_zero_failure_threshold() {
         let config = CircuitBreakerConfig {
             failure_threshold: 0,
@@ -1191,11 +1187,11 @@ mod circuit_breaker_config_tests {
             open_timeout_ms: 60_000,
             half_open_timeout_ms: 30_000,
         };
-        let _ = CircuitBreaker::with_config(config);
+        let result = CircuitBreaker::with_config(config);
+        assert!(result.is_err());
     }
 
     #[test]
-    #[should_panic(expected = "success_threshold must be > 0")]
     fn test_circuit_breaker_rejects_zero_success_threshold() {
         let config = CircuitBreakerConfig {
             failure_threshold: 5,
@@ -1203,11 +1199,11 @@ mod circuit_breaker_config_tests {
             open_timeout_ms: 60_000,
             half_open_timeout_ms: 30_000,
         };
-        let _ = CircuitBreaker::with_config(config);
+        let result = CircuitBreaker::with_config(config);
+        assert!(result.is_err());
     }
 
     #[test]
-    #[should_panic(expected = "open_timeout_ms must be > 0")]
     fn test_circuit_breaker_rejects_zero_open_timeout() {
         let config = CircuitBreakerConfig {
             failure_threshold: 5,
@@ -1215,11 +1211,11 @@ mod circuit_breaker_config_tests {
             open_timeout_ms: 0,
             half_open_timeout_ms: 30_000,
         };
-        let _ = CircuitBreaker::with_config(config);
+        let result = CircuitBreaker::with_config(config);
+        assert!(result.is_err());
     }
 
     #[test]
-    #[should_panic(expected = "half_open_timeout_ms must be > 0")]
     fn test_circuit_breaker_rejects_zero_half_open_timeout() {
         let config = CircuitBreakerConfig {
             failure_threshold: 5,
@@ -1227,7 +1223,8 @@ mod circuit_breaker_config_tests {
             open_timeout_ms: 60_000,
             half_open_timeout_ms: 0,
         };
-        let _ = CircuitBreaker::with_config(config);
+        let result = CircuitBreaker::with_config(config);
+        assert!(result.is_err());
     }
 
     // --- Transition counting and thrashing detection ---
@@ -1236,7 +1233,7 @@ mod circuit_breaker_config_tests {
     fn test_circuit_breaker_transition_count_increments() {
         reset_clock();
         let config = CircuitBreakerConfig::default();
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         assert_eq!(breaker.transition_count(), 0);
 
@@ -1244,7 +1241,10 @@ mod circuit_breaker_config_tests {
         for _ in 0..5 {
             breaker.record_failure();
         }
-        assert!(breaker.transition_count() > 0, "Transition count should increment");
+        assert!(
+            breaker.transition_count() > 0,
+            "Transition count should increment"
+        );
 
         // Track initial count
         let count_after_open = breaker.transition_count();
@@ -1254,8 +1254,10 @@ mod circuit_breaker_config_tests {
         let _ = breaker.allow_request();
 
         // Transition count should have incremented
-        assert!(breaker.transition_count() > count_after_open,
-            "Transition count should increase on Open → HalfOpen");
+        assert!(
+            breaker.transition_count() > count_after_open,
+            "Transition count should increase on Open → HalfOpen"
+        );
     }
 
     #[test]
@@ -1267,7 +1269,7 @@ mod circuit_breaker_config_tests {
             open_timeout_ms: 1_000,
             half_open_timeout_ms: 1_000,
         };
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Simulate rapid transitions (thrashing scenario)
         // Cycle: failure→Open→timeout probe→HalfOpen→success→Closed
@@ -1290,14 +1292,18 @@ mod circuit_breaker_config_tests {
         }
 
         // Should have detected multiple transitions
-        assert!(breaker.transition_count() > 3, "Should have multiple transitions, got {}", breaker.transition_count());
+        assert!(
+            breaker.transition_count() > 3,
+            "Should have multiple transitions, got {}",
+            breaker.transition_count()
+        );
     }
 
     #[test]
     fn test_circuit_breaker_transition_reason_updated() {
         reset_clock();
         let config = CircuitBreakerConfig::default();
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         assert_eq!(breaker.last_transition_reason(), "initialization");
 
@@ -1307,14 +1313,17 @@ mod circuit_breaker_config_tests {
         }
 
         // Reason should now reflect the failure-based transition
-        assert_eq!(breaker.last_transition_reason(), "failure_threshold_reached");
+        assert_eq!(
+            breaker.last_transition_reason(),
+            "failure_threshold_reached"
+        );
     }
 
     #[test]
     fn test_circuit_breaker_json_state_persists_transition_count() {
         reset_clock();
         let config = CircuitBreakerConfig::default();
-        let mut breaker = CircuitBreaker::with_config(config);
+        let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
         // Trigger a transition
         for _ in 0..5 {
@@ -1327,9 +1336,15 @@ mod circuit_breaker_config_tests {
         let json_state = breaker.to_state_json();
         let restored = CircuitBreaker::from_state_json(json_state);
 
-        assert_eq!(restored.transition_count(), original_count,
-            "Transition count should be preserved through JSON serialization");
-        assert_eq!(restored.last_transition_reason(), "failure_threshold_reached",
-            "Transition reason should be preserved through JSON serialization");
+        assert_eq!(
+            restored.transition_count(),
+            original_count,
+            "Transition count should be preserved through JSON serialization"
+        );
+        assert_eq!(
+            restored.last_transition_reason(),
+            "failure_threshold_reached",
+            "Transition reason should be preserved through JSON serialization"
+        );
     }
 }

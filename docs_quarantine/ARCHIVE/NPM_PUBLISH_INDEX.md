@@ -190,8 +190,8 @@ If issues arise (unlikely):
 
 ```bash
 # Deprecate published version (soft rollback)
-npm deprecate @wasm4pm/cli@26.4.16 "Deprecated: See v26.4.17"
-npm deprecate wasm4pm@26.4.16 "Deprecated: See v26.4.17"
+npm deprecate @wasm4pm/cli@26.4.16 "Removed: See v26.4.17"
+npm deprecate wasm4pm@26.4.16 "Removed: See v26.4.17"
 
 # For catastrophic issues only (within 72 hours)
 npm unpublish @wasm4pm/cli@26.4.16 --force

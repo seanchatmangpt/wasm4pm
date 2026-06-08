@@ -81,28 +81,36 @@ mod tests {
     #[test]
     fn low_risk_maps_to_single() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Low)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Low))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::Single);
     }
 
     #[test]
     fn medium_risk_maps_to_pipeline() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Medium)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Medium))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::Pipeline);
     }
 
     #[test]
     fn high_risk_maps_to_reviewloop() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Intake, RiskLevel::High)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Intake, RiskLevel::High))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::ReviewLoop);
     }
 
     #[test]
     fn critical_risk_maps_to_debate() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Critical)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Intake, RiskLevel::Critical))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::Debate);
     }
 
@@ -110,28 +118,36 @@ mod tests {
     fn validate_phase_overrides_to_reviewloop_regardless_of_risk() {
         let d = DefaultTaskDecomposer;
         // Even Low risk — Validate always forces ReviewLoop
-        let t = d.choose_topology(&task(WorkflowPhase::Validate, RiskLevel::Low)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Validate, RiskLevel::Low))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::ReviewLoop);
     }
 
     #[test]
     fn escalate_phase_overrides_to_debate() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Escalate, RiskLevel::Low)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Escalate, RiskLevel::Low))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::Debate);
     }
 
     #[test]
     fn execute_high_risk_uses_reviewloop() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Execute, RiskLevel::High)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Execute, RiskLevel::High))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::ReviewLoop);
     }
 
     #[test]
     fn execute_low_risk_uses_single() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Execute, RiskLevel::Low)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Execute, RiskLevel::Low))
+            .unwrap();
         assert_eq!(t.topology, SwarmTopology::Single);
     }
 
@@ -155,7 +171,9 @@ mod tests {
     #[test]
     fn reason_codes_include_risk_and_phase() {
         let d = DefaultTaskDecomposer;
-        let t = d.choose_topology(&task(WorkflowPhase::Plan, RiskLevel::Medium)).unwrap();
+        let t = d
+            .choose_topology(&task(WorkflowPhase::Plan, RiskLevel::Medium))
+            .unwrap();
         assert!(t.reason_codes.iter().any(|r| r.starts_with("risk:")));
         assert!(t.reason_codes.iter().any(|r| r.starts_with("phase:")));
     }
@@ -165,6 +183,9 @@ mod tests {
         // Property: empty/default input must never panic
         let d = DefaultTaskDecomposer;
         let result = d.choose_topology(&TaskContext::default());
-        assert!(result.is_ok(), "default TaskContext must not panic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "default TaskContext must not panic: {result:?}"
+        );
     }
 }

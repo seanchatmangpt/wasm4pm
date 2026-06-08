@@ -116,21 +116,21 @@ else
     fi
 fi
 
-# ── Check 8: TS facade present ────────────────────────────────────────────────
-echo "8. TS facade present..."
+# ── Check 8: TS boundary present ────────────────────────────────────────────────
+echo "8. TS boundary present..."
 TS_INDEX="packages/cognition/src/index.ts"
 TS_INIT="packages/cognition/src/init.ts"
 TS_OK=1
 if [ ! -f "$TS_INDEX" ]; then
-    fail "TS facade missing: $TS_INDEX"
+    fail "TS boundary missing: $TS_INDEX"
     TS_OK=0
 fi
 if [ ! -f "$TS_INIT" ]; then
-    fail "TS facade missing: $TS_INIT"
+    fail "TS boundary missing: $TS_INIT"
     TS_OK=0
 fi
 if [ "$TS_OK" -eq 1 ]; then
-    pass "TS facade present (packages/cognition/src/index.ts + init.ts)"
+    pass "TS boundary present (packages/cognition/src/index.ts + init.ts)"
 fi
 
 # ── Check 9: CLI integration present and stub-free ────────────────────────────

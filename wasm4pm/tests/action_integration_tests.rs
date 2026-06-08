@@ -453,4 +453,3 @@ fn test_orchestrator_cycle_accumulates_reward() {
 
     assert_eq!(orch.telemetry().cycle_count, 5);
 }
-

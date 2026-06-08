@@ -258,7 +258,7 @@ fn bench_simd_token_replay(c: &mut Criterion) {
         let log = generate_event_log(&shape);
 
         // Build DFG-based Petri net
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
         let activities = ["A", "B", "C", "D"];
         for (i, &act) in activities.iter().enumerate() {
             dfg.nodes.push(DFGNode {
@@ -275,44 +275,16 @@ fn bench_simd_token_replay(c: &mut Criterion) {
             });
         }
 
-        let net = SimdPetriNet::from_dfg(&dfg);
+        let net = SimdPetriNet::from_dfg(&dfg).expect("Failed to build SimdPetriNet");
 
-        // Pre-compute traces once (outside the benchmark loop)
-        let mut all_activities: Vec<String> = Vec::new();
-        let mut trace_offsets: Vec<usize> = vec![0];
-
-        for trace in &log.traces {
-            for event in &trace.events {
-                if let Some(activity) = event
-                    .attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| v.as_string())
-                {
-                    all_activities.push(activity.to_owned());
-                }
-            }
-            trace_offsets.push(all_activities.len());
-        }
-
-        let total_events: usize = all_activities.len();
+        let col = log.to_columnar(ACTIVITY_KEY);
+        let total_events: usize = col.events.len();
         group.throughput(Throughput::Elements(total_events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", num_cases),
-            &(all_activities, trace_offsets),
-            |_b, (acts, offsets)| {
-                let mut traces: Vec<Vec<&str>> = Vec::new();
-                for i in 0..offsets.len() - 1 {
-                    let start = offsets[i];
-                    let end = offsets[i + 1];
-                    let trace_activities: Vec<&str> =
-                        acts[start..end].iter().map(|s| s.as_ref()).collect();
-                    traces.push(trace_activities);
-                }
-                let result = net.replay_log(black_box(&traces));
-                let hash = blake3::hash(format!("{:?}", result).as_bytes());
-                black_box(hash);
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("cases", num_cases), &col, |_b, col| {
+            let result = net.replay_log(black_box(col));
+            let hash = blake3::hash(format!("{:?}", result).as_bytes());
+            black_box(hash);
+        });
     }
     group.finish();
 }

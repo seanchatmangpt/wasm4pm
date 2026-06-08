@@ -3,6 +3,7 @@
 /// Renders POWL models as SVG with colored operator nodes and activity labels.
 use crate::powl_arena::PowlArena;
 use std::fmt::Write;
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 /// Color scheme for operator nodes
 const COLORS: &[&str] = &[
@@ -72,7 +73,7 @@ fn get_children(arena: &PowlArena, idx: u32) -> Vec<u32> {
             .nodes
             .iter()
             .filter_map(|n| match n {
-                wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+                ChoiceGraphNode::SubModel(idx) => Some(*idx),
                 _ => None,
             })
             .collect(),

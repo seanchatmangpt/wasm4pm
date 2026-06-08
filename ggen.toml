@@ -1,0 +1,50 @@
+# wasm4pm ggen.toml — Constitutional Equation: wasm4pm substrate = mu(wasm4pm-compat.ttl)
+#
+# The ontology IS the specification. ggen IS the compiler.
+# The Rust files ARE the compiled output — no "generated/" subfolder.
+# Generated code and hand-written code are the same kind of source.
+# To change a type: change the TTL. To see the change: run ggen sync.
+
+[project]
+name        = "wasm4pm"
+version     = "26.6.3"
+description = "Process mining platform substrate — generated from wasm4pm-compat ontology"
+authors     = ["Sean Chatman"]
+license     = "MIT"
+
+[ontology]
+source = "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl"
+additional = [
+  "../wasm4pm-compat/ggen/ontology/papers.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl",
+]
+standard_only = false
+
+[generation]
+output_dir = "."
+
+[inference]
+enabled = true
+rules = [
+  { name = "alive-gate", construct = "CONSTRUCT { ?s a ?class } WHERE { ?s a ?class }" }
+]
+
+[[packs]]
+name     = "wasm4pm-compat"
+registry = "local"
+path     = "../wasm4pm-compat/ggen"
+
+# ---------------------------------------------------------------------------
+# Rule: witness-markers
+# Writes witness_marker!() calls directly into wasm4pm-compat/src/witnesses.rs.
+# No "generated/" folder — the output IS the source, compiled from the ontology.
+# The template produces code identical to hand-written witness_marker!() calls.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "witness-markers"
+query       = { file = "ggen/queries/extract-witnesses-full.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates/witness-marker.tera" }
+output_file = "../wasm4pm-compat/src/witnesses.rs"
+mode        = "Overwrite"

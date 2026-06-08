@@ -4,8 +4,8 @@
 //!
 //! Provides a generic PSO algorithm for continuous optimization.
 
-use crate::optimization::types::*;
 use crate::optimization::fitness::*;
+use crate::optimization::types::*;
 use wasm_bindgen::prelude::*;
 
 /// Re-use the RNG from genetic module
@@ -65,7 +65,9 @@ struct Particle {
 impl Particle {
     fn new(dimension: usize, bounds: Option<(f64, f64)>) -> Self {
         let (min, max) = bounds.unwrap_or((-5.0, 5.0));
-        let position: Vec<f64> = (0..dimension).map(|_| rand_f64() * (max - min) + min).collect();
+        let position: Vec<f64> = (0..dimension)
+            .map(|_| rand_f64() * (max - min) + min)
+            .collect();
         let velocity: Vec<f64> = (0..dimension).map(|_| rand_f64() * 2.0 - 1.0).collect();
 
         Self {
@@ -203,9 +205,7 @@ impl PSO {
 
             // Check convergence (swarm has clustered)
             let avg_position: Vec<f64> = (0..dimension)
-                .map(|i| {
-                    swarm.iter().map(|p| p.position[i]).sum::<f64>() / swarm.len() as f64
-                })
+                .map(|i| swarm.iter().map(|p| p.position[i]).sum::<f64>() / swarm.len() as f64)
                 .collect();
 
             let diversity: f64 = swarm
@@ -246,8 +246,8 @@ impl Default for PSO {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::genetic::seed_rng;
+    use super::*;
 
     // Sphere function: minimize sum(x^2)
     fn sphere_function(genes: &[f64]) -> f64 {
@@ -265,7 +265,11 @@ mod tests {
         let result = pso.optimize(&fitness, 2);
 
         // Should find a solution near the origin (0, 0)
-        assert!(result.best.fitness > -50.0, "Fitness too low: {}", result.best.fitness);
+        assert!(
+            result.best.fitness > -50.0,
+            "Fitness too low: {}",
+            result.best.fitness
+        );
         assert!(result.iterations <= 50);
     }
 

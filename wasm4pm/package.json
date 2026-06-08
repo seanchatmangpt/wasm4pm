@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/core",
-  "version": "26.5.29",
+  "version": "26.6.5",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "wasm-pack build --target bundler --mode no-install",
+    "build": "wasm-pack build --target bundler --mode no-install --all-features",
     "build:nodejs": "wasm-pack build --target nodejs --mode no-install --release --features cloud",
     "build:web": "wasm-pack build --target web --mode no-install",
     "build:all": "npm run build && npm run build:web && npm run build:nodejs",

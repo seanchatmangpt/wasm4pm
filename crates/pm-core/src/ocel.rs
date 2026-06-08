@@ -16,10 +16,10 @@
 
 extern crate alloc;
 
+use crate::primitives::{ActivityName, ObjectId, ObjectType, TimestampNs};
 use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::primitives::{ActivityName, ObjectId, ObjectType, TimestampNs};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -28,13 +28,17 @@ use serde::{Deserialize, Serialize};
 #[repr(transparent)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct OcelEventId(pub String);
+pub struct OCELEventId(pub String);
 
-impl From<String> for OcelEventId {
-    fn from(s: String) -> Self { OcelEventId(s) }
+impl From<String> for OCELEventId {
+    fn from(s: String) -> Self {
+        OCELEventId(s)
+    }
 }
-impl From<&str> for OcelEventId {
-    fn from(s: &str) -> Self { OcelEventId(String::from(s)) }
+impl From<&str> for OCELEventId {
+    fn from(s: &str) -> Self {
+        OCELEventId(String::from(s))
+    }
 }
 
 /// Qualifier label for event-object and object-object relations.
@@ -46,7 +50,9 @@ impl From<&str> for OcelEventId {
 pub struct Qualifier(pub String);
 
 impl From<&str> for Qualifier {
-    fn from(s: &str) -> Self { Qualifier(String::from(s)) }
+    fn from(s: &str) -> Self {
+        Qualifier(String::from(s))
+    }
 }
 
 /// An event in the OCEL: e ∈ E with activity a ∈ A and timestamp t ∈ T.
@@ -54,8 +60,8 @@ impl From<&str> for Qualifier {
 /// Formal: EA(e) = (a, t) (Ghahfarokhi et al. 2021 §2 Def. 1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct OcelEvent {
-    pub id: OcelEventId,
+pub struct OCELEvent {
+    pub id: OCELEventId,
     /// EA(e).activity — the activity label.
     pub activity: ActivityName,
     /// EA(e).timestamp — nanoseconds since Unix epoch.
@@ -69,7 +75,7 @@ pub struct OcelEvent {
 /// Formal: OA(o) = ot (Ghahfarokhi et al. 2021 §2 Def. 1).
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct OcelObject {
+pub struct OCELObject {
     pub id: ObjectId,
     /// OA(o) — object type.
     pub object_type: ObjectType,
@@ -83,7 +89,7 @@ pub struct OcelObject {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct E2ORelation {
-    pub event_id: OcelEventId,
+    pub event_id: OCELEventId,
     pub object_id: ObjectId,
     pub qualifier: Qualifier,
 }
@@ -108,9 +114,9 @@ pub struct O2ORelation {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ObjectCentricEventLog {
     /// E — event set.
-    pub events: BTreeMap<OcelEventId, OcelEvent>,
+    pub events: BTreeMap<OCELEventId, OCELEvent>,
     /// O — object set.
-    pub objects: BTreeMap<ObjectId, OcelObject>,
+    pub objects: BTreeMap<ObjectId, OCELObject>,
     /// E2O — event-to-object relations, sorted for determinism.
     pub e2o: BTreeSet<E2ORelation>,
     /// O2O — object-to-object relations, sorted for determinism.
@@ -129,20 +135,26 @@ impl ObjectCentricEventLog {
 
     /// All distinct object types in the log (OT).
     pub fn object_types(&self) -> BTreeSet<ObjectType> {
-        self.objects.values().map(|o| o.object_type.clone()).collect()
+        self.objects
+            .values()
+            .map(|o| o.object_type.clone())
+            .collect()
     }
 
     /// Objects related to a given event (via E2O), with their qualifiers.
-    pub fn objects_for_event(&self, event_id: &OcelEventId) -> Vec<(&ObjectId, &Qualifier)> {
-        self.e2o.iter()
+    pub fn objects_for_event(&self, event_id: &OCELEventId) -> Vec<(&ObjectId, &Qualifier)> {
+        self.e2o
+            .iter()
             .filter(|r| &r.event_id == event_id)
             .map(|r| (&r.object_id, &r.qualifier))
             .collect()
     }
 
     /// Events related to a given object (via E2O), sorted by timestamp.
-    pub fn events_for_object(&self, object_id: &ObjectId) -> Vec<&OcelEvent> {
-        let mut evts: Vec<&OcelEvent> = self.e2o.iter()
+    pub fn events_for_object(&self, object_id: &ObjectId) -> Vec<&OCELEvent> {
+        let mut evts: Vec<&OCELEvent> = self
+            .e2o
+            .iter()
             .filter(|r| &r.object_id == object_id)
             .filter_map(|r| self.events.get(&r.event_id))
             .collect();
@@ -152,5 +164,7 @@ impl ObjectCentricEventLog {
 }
 
 impl Default for ObjectCentricEventLog {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

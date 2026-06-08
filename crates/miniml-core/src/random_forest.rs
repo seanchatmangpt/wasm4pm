@@ -1,7 +1,7 @@
-use wasm_bindgen::prelude::*;
+use crate::decision_tree::{decision_tree_impl, DecisionTreeModel};
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get, Rng};
-use crate::decision_tree::{DecisionTreeModel, decision_tree_impl};
+use crate::matrix::{mat_get, validate_matrix, Rng};
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 pub struct RandomForestModel {
@@ -14,10 +14,14 @@ pub struct RandomForestModel {
 #[wasm_bindgen]
 impl RandomForestModel {
     #[wasm_bindgen(getter, js_name = "nTrees")]
-    pub fn n_trees(&self) -> usize { self.n_trees }
+    pub fn n_trees(&self) -> usize {
+        self.n_trees
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     /// Predict using majority vote (classification) or averaging (regression)
     #[wasm_bindgen]
@@ -31,7 +35,9 @@ impl RandomForestModel {
                 .collect();
 
             // Collect predictions from all trees (using predict_single to avoid allocation)
-            let predictions: Vec<f64> = self.trees.iter()
+            let predictions: Vec<f64> = self
+                .trees
+                .iter()
                 .map(|tree| tree.predict_single(&point))
                 .collect();
 
@@ -40,7 +46,10 @@ impl RandomForestModel {
                 let mut counts: Vec<(f64, usize)> = Vec::new();
                 for &pred in &predictions {
                     let pred_rounded = pred.round();
-                    if let Some(entry) = counts.iter_mut().find(|(k, _)| (*k - pred_rounded).abs() < 1e-10) {
+                    if let Some(entry) = counts
+                        .iter_mut()
+                        .find(|(k, _)| (*k - pred_rounded).abs() < 1e-10)
+                    {
                         entry.1 += 1;
                     } else {
                         counts.push((pred_rounded, 1));
@@ -78,12 +87,18 @@ impl RandomForestModel {
             }
         }
         counts.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
-        counts.iter().flat_map(|&(cls, cnt)| [cls, cnt as f64 / n_trees]).collect()
+        counts
+            .iter()
+            .flat_map(|&(cls, cnt)| [cls, cnt as f64 / n_trees])
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("RandomForest(trees={}, features={})", self.n_trees, self.n_features)
+        format!(
+            "RandomForest(trees={}, features={})",
+            self.n_trees, self.n_features
+        )
     }
 }
 
@@ -132,7 +147,14 @@ pub fn random_forest_impl(
         // Build tree (feature bagging is implicit — decision tree considers all features;
         // for true feature bagging we'd need to modify the tree builder, but for WASM size
         // we use bootstrap sampling which is the main source of randomness)
-        match decision_tree_impl(&boot_data, n_features, &boot_targets, max_depth, min_samples_split, is_classifier) {
+        match decision_tree_impl(
+            &boot_data,
+            n_features,
+            &boot_targets,
+            max_depth,
+            min_samples_split,
+            is_classifier,
+        ) {
             Ok(tree) => trees.push(tree),
             Err(_) => continue, // Skip failed trees (e.g., all same class in bootstrap)
         }
@@ -159,8 +181,16 @@ pub fn random_forest_classify(
     max_depth: usize,
     min_samples_split: usize,
 ) -> Result<RandomForestModel, JsError> {
-    random_forest_impl(data, n_features, labels, n_trees, max_depth, min_samples_split, true)
-        .map_err(|e| JsError::new(&e.message))
+    random_forest_impl(
+        data,
+        n_features,
+        labels,
+        n_trees,
+        max_depth,
+        min_samples_split,
+        true,
+    )
+    .map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "randomForestRegress")]
@@ -172,8 +202,16 @@ pub fn random_forest_regress(
     max_depth: usize,
     min_samples_split: usize,
 ) -> Result<RandomForestModel, JsError> {
-    random_forest_impl(data, n_features, targets, n_trees, max_depth, min_samples_split, false)
-        .map_err(|e| JsError::new(&e.message))
+    random_forest_impl(
+        data,
+        n_features,
+        targets,
+        n_trees,
+        max_depth,
+        min_samples_split,
+        false,
+    )
+    .map_err(|e| JsError::new(&e.message))
 }
 
 #[cfg(test)]
@@ -184,8 +222,7 @@ mod tests {
     fn test_classification() {
         // XOR-like pattern
         let data = vec![
-            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,
-            0.1, 0.1,  1.1, 1.1,  0.1, 1.1,  1.1, 0.1,
+            0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0, 0.1, 0.1, 1.1, 1.1, 0.1, 1.1, 1.1, 0.1,
         ];
         let labels = vec![0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0];
         let model = random_forest_impl(&data, 2, &labels, 10, 5, 2, true).unwrap();
@@ -225,9 +262,7 @@ mod tests {
 
     #[test]
     fn test_deterministic() {
-        let data = vec![
-            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,
-        ];
+        let data = vec![0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0];
         let labels = vec![0.0, 0.0, 1.0, 1.0];
 
         let m1 = random_forest_impl(&data, 2, &labels, 5, 3, 2, true).unwrap();

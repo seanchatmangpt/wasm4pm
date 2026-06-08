@@ -26,10 +26,7 @@ use crate::state::{get_or_init_state, StoredObject};
 /// because XES events are not guaranteed chronologically ordered. The
 /// first/last reading is order-sensitive and can yield zero or negative
 /// durations on permuted logs — a silent statistical-analysis defect.
-fn extract_case_durations_internal(
-    log: &crate::models::EventLog,
-    timestamp_key: &str,
-) -> Vec<f64> {
+fn extract_case_durations_internal(log: &crate::models::EventLog, timestamp_key: &str) -> Vec<f64> {
     let mut durations = Vec::new();
     for trace in &log.traces {
         let timestamps: Vec<i64> = trace
@@ -185,9 +182,7 @@ pub fn compare_cohort_durations(
     state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog"))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -217,7 +212,9 @@ pub fn compare_cohort_durations(
         for k in &sorted_keys {
             if groups[*k].len() >= 2 {
                 chosen.push(*k);
-                if chosen.len() == 2 { break; }
+                if chosen.len() == 2 {
+                    break;
+                }
             } else {
                 skipped_too_small.push((*k).clone());
             }
@@ -295,9 +292,7 @@ pub fn compare_resource_performance(
     state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog"))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -316,7 +311,8 @@ pub fn compare_resource_performance(
             .collect();
 
         if filtered.len() < 2 {
-            let msg = json!({"error": "Need at least 2 resource groups with >=2 observations each"});
+            let msg =
+                json!({"error": "Need at least 2 resource groups with >=2 observations each"});
             return Err(JsValue::from_str(&msg.to_string()));
         }
 
@@ -457,8 +453,7 @@ mod tests {
             traces: vec![],
             attributes: Default::default(),
         };
-        let result =
-            extract_durations_by_case_attribute_internal(&log, "cohort", "time:timestamp");
+        let result = extract_durations_by_case_attribute_internal(&log, "cohort", "time:timestamp");
         assert!(result.is_empty());
     }
 
@@ -473,10 +468,12 @@ mod tests {
     fn mk_trace(ts: &[i64], cohort: Option<&str>) -> Trace {
         let mut tattrs = HashMap::new();
         if let Some(c) = cohort {
-            tattrs.insert("cohort".to_string(),
-                          AttributeValue::String(c.to_string()));
+            tattrs.insert("cohort".to_string(), AttributeValue::String(c.to_string()));
         }
-        Trace { attributes: tattrs, events: ts.iter().map(|&t| mk_ev(t)).collect() }
+        Trace {
+            attributes: tattrs,
+            events: ts.iter().map(|&t| mk_ev(t)).collect(),
+        }
     }
 
     /// Rank-1: case duration must be permutation-invariant. The pre-fix
@@ -491,10 +488,15 @@ mod tests {
             traces: vec![mk_trace(&[5000, 1000, 3000], None)],
             attributes: Default::default(),
         };
-        assert_eq!(extract_case_durations_internal(&sorted, "time:timestamp"),
-                   vec![4000.0]);
-        assert_eq!(extract_case_durations_internal(&permuted, "time:timestamp"),
-                   vec![4000.0], "permuted log must yield same duration");
+        assert_eq!(
+            extract_case_durations_internal(&sorted, "time:timestamp"),
+            vec![4000.0]
+        );
+        assert_eq!(
+            extract_case_durations_internal(&permuted, "time:timestamp"),
+            vec![4000.0],
+            "permuted log must yield same duration"
+        );
     }
 
     /// Rank-2: cohort grouping must expose all groups; pre-fix WASM silently
@@ -503,14 +505,16 @@ mod tests {
     fn test_cohort_grouping_preserves_all_groups() {
         let log = crate::models::EventLog {
             traces: vec![
-                mk_trace(&[0, 1000], Some("A")), mk_trace(&[0, 1100], Some("A")),
-                mk_trace(&[0, 2000], Some("B")), mk_trace(&[0, 2100], Some("B")),
-                mk_trace(&[0, 3000], Some("C")), mk_trace(&[0, 3100], Some("C")),
+                mk_trace(&[0, 1000], Some("A")),
+                mk_trace(&[0, 1100], Some("A")),
+                mk_trace(&[0, 2000], Some("B")),
+                mk_trace(&[0, 2100], Some("B")),
+                mk_trace(&[0, 3000], Some("C")),
+                mk_trace(&[0, 3100], Some("C")),
             ],
             attributes: Default::default(),
         };
-        let groups = extract_durations_by_case_attribute_internal(
-            &log, "cohort", "time:timestamp");
+        let groups = extract_durations_by_case_attribute_internal(&log, "cohort", "time:timestamp");
         assert_eq!(groups.len(), 3);
         for k in &["A", "B", "C"] {
             assert_eq!(groups.get(*k).map(|v| v.len()), Some(2));

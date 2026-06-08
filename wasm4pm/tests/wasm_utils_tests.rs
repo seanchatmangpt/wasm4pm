@@ -4,10 +4,10 @@
 
 extern crate wasm4pm;
 
+use std::collections::HashMap;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::state::get_or_init_state;
 use wasm4pm::wasm_utils::*;
-use std::collections::HashMap;
 
 /// Create a minimal test event log with configurable activities and traces.
 fn create_test_eventlog() -> EventLog {
@@ -23,24 +23,42 @@ fn create_test_eventlog() -> EventLog {
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
-                    attrs.insert("timestamp".to_string(), AttributeValue::String("2024-01-01T10:00:00".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("A".to_string()),
+                    );
+                    attrs.insert(
+                        "timestamp".to_string(),
+                        AttributeValue::String("2024-01-01T10:00:00".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
-                    attrs.insert("timestamp".to_string(), AttributeValue::String("2024-01-01T10:01:00".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("B".to_string()),
+                    );
+                    attrs.insert(
+                        "timestamp".to_string(),
+                        AttributeValue::String("2024-01-01T10:01:00".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("C".to_string()));
-                    attrs.insert("timestamp".to_string(), AttributeValue::String("2024-01-01T10:02:00".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("C".to_string()),
+                    );
+                    attrs.insert(
+                        "timestamp".to_string(),
+                        AttributeValue::String("2024-01-01T10:02:00".to_string()),
+                    );
                     attrs
                 },
             },
@@ -54,28 +72,40 @@ fn create_test_eventlog() -> EventLog {
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("A".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("C".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("C".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("B".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("C".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("C".to_string()),
+                    );
                     attrs
                 },
             },
@@ -89,21 +119,30 @@ fn create_test_eventlog() -> EventLog {
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("B".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("B".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("B".to_string()),
+                    );
                     attrs
                 },
             },
             Event {
                 attributes: {
                     let mut attrs = HashMap::new();
-                    attrs.insert("concept:name".to_string(), AttributeValue::String("A".to_string()));
+                    attrs.insert(
+                        "concept:name".to_string(),
+                        AttributeValue::String("A".to_string()),
+                    );
                     attrs
                 },
             },
@@ -133,8 +172,7 @@ fn test_hash_xes_content_produces_hex_string() {
     assert_eq!(hash.len(), 16, "FNV-1a should be 16 hex chars");
 
     // Verify it's valid hex
-    let _: u64 = u64::from_str_radix(&hash, 16)
-        .expect("Hash should be valid hex");
+    let _: u64 = u64::from_str_radix(&hash, 16).expect("Hash should be valid hex");
 }
 
 #[test]
@@ -149,7 +187,11 @@ fn test_hash_xes_content_deterministic() {
 fn test_hash_xes_content_empty_string() {
     let empty = "";
     let hash = hash_xes_content(empty);
-    assert_eq!(hash.len(), 16, "Even empty string should produce 16-char hash");
+    assert_eq!(
+        hash.len(),
+        16,
+        "Even empty string should produce 16-char hash"
+    );
 }
 
 #[test]
@@ -167,10 +209,12 @@ fn test_jaccard_distance_identical_sets() {
     let set1 = vec!["A", "B", "C"];
     let set1_json = serde_json::to_string(&set1).unwrap();
 
-    let dist = jaccard_distance(&set1_json, &set1_json)
-        .expect("jaccard_distance should succeed");
+    let dist = jaccard_distance(&set1_json, &set1_json).expect("jaccard_distance should succeed");
 
-    assert!((dist - 0.0).abs() < 1e-10, "Identical sets should have distance 0");
+    assert!(
+        (dist - 0.0).abs() < 1e-10,
+        "Identical sets should have distance 0"
+    );
 }
 
 #[test]
@@ -180,10 +224,12 @@ fn test_jaccard_distance_disjoint_sets() {
     let set1_json = serde_json::to_string(&set1).unwrap();
     let set2_json = serde_json::to_string(&set2).unwrap();
 
-    let dist = jaccard_distance(&set1_json, &set2_json)
-        .expect("jaccard_distance should succeed");
+    let dist = jaccard_distance(&set1_json, &set2_json).expect("jaccard_distance should succeed");
 
-    assert!((dist - 1.0).abs() < 1e-10, "Disjoint sets should have distance 1");
+    assert!(
+        (dist - 1.0).abs() < 1e-10,
+        "Disjoint sets should have distance 1"
+    );
 }
 
 #[test]
@@ -193,8 +239,7 @@ fn test_jaccard_distance_partial_overlap() {
     let set1_json = serde_json::to_string(&set1).unwrap();
     let set2_json = serde_json::to_string(&set2).unwrap();
 
-    let dist = jaccard_distance(&set1_json, &set2_json)
-        .expect("jaccard_distance should succeed");
+    let dist = jaccard_distance(&set1_json, &set2_json).expect("jaccard_distance should succeed");
 
     // Union: {A, B, C, D} = 4, Intersection: {B, C} = 2
     // Distance = 1 - (2/4) = 0.5
@@ -206,8 +251,7 @@ fn test_ewma_series_constant_values() {
     let values = vec![3.0, 3.0, 3.0, 3.0];
     let values_json = serde_json::to_string(&values).unwrap();
 
-    let result = ewma_series(&values_json, 0.5)
-        .expect("ewma_series should succeed");
+    let result = ewma_series(&values_json, 0.5).expect("ewma_series should succeed");
 
     // On native targets, to_js_str returns a JSON string
     // We'd need to parse it to verify the values
@@ -220,8 +264,7 @@ fn test_ewma_series_empty_input() {
     let values: Vec<f64> = vec![];
     let values_json = serde_json::to_string(&values).unwrap();
 
-    let result = ewma_series(&values_json, 0.5)
-        .expect("ewma_series should handle empty input");
+    let result = ewma_series(&values_json, 0.5).expect("ewma_series should handle empty input");
 
     // Should return empty array
     let _smoothed = result;
@@ -243,7 +286,9 @@ fn test_ewma_series_invalid_json() {
 fn test_identify_high_variance_activities_basic() {
     let log = create_test_eventlog();
     let state = get_or_init_state();
-    let handle = state.store_object(wasm4pm::state::StoredObject::EventLog(log)).unwrap();
+    let handle = state
+        .store_object(wasm4pm::state::StoredObject::EventLog(log))
+        .unwrap();
 
     let result = identify_high_variance_activities(&handle, "concept:name", 0.5)
         .expect("identify_high_variance_activities should succeed");

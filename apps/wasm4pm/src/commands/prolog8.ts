@@ -153,7 +153,7 @@ const showCmd = defineCommand({
         p.log('');
         p.log('Prolog8 — Horn-Clause Inference Engine');
         p.log('=======================================');
-        const version = cobj['version'] ?? '26.5.29';
+        const version = cobj['version'] ?? '26.6.5';
         const byteCapStr = caps2
           ? `arity ≤ ${caps2['arity']}, body ≤ ${caps2['body']} atoms, answers ≤ ${caps2['max_answers']}`
           : 'arity ≤ 8, body ≤ 8 atoms, answers ≤ 128';

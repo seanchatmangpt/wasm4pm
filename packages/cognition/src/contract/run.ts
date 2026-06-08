@@ -66,7 +66,7 @@ export async function runContract(
       );
     }
     // Field-contract guard — refuses any fabricated or misshapen output from WASM
-    // (e.g. missing run_id, wrong replay_pointer prefix, extra legacy fields).
+    // (e.g. missing run_id, wrong replay_pointer prefix, extra  fields).
     const result = assertContractResult(parsed);
     capturedRunId = result.run_id;
     return result;

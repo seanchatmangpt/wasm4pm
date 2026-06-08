@@ -1,6 +1,6 @@
 # Architecture Overview
 
-wasm4pm is a process mining platform with a real Rust cognition kernel. **60** high-performance algorithms compile to WebAssembly. **9** old-AI breeds (ELIZA, MYCIN, STRIPS, Prolog, CBR, DENDRAL, GPS, SOAR, Hearsay-II) run natively in Rust, exposed through a thin TypeScript facade, surfaced through a single CLI binary (`wpm`).
+wasm4pm is a process mining platform with a real Rust cognition kernel. **60** high-performance algorithms compile to WebAssembly. **9** old-AI breeds (ELIZA, MYCIN, STRIPS, Prolog, CBR, DENDRAL, GPS, SOAR, Hearsay-II) run natively in Rust, exposed through a thin TypeScript boundary, surfaced through a single CLI binary (`wpm`).
 
 The doctrine: **Old AI is the factory. LLMs are the brochure.**
 
@@ -19,7 +19,7 @@ graph TB
 | Layer | Responsibility |
 |-------|----------------|
 | **`apps/wasm4pm`** | CLI commands, OTEL spans, output formatting, config resolution |
-| **`packages/kernel`** | Versioned API facade — `Kernel.discover()`, registry, receipt hashing |
+| **`packages/kernel`** | Versioned API boundary — `Kernel.discover()`, registry, receipt hashing |
 | **`packages/engine`** | WASM loader, init lifecycle, backend selection |
 | **`wasm4pm/` (Cargo)** | Algorithm implementations, Truex canonicalization, cognition kernel |
 | **`packages/contracts`** | Algorithm registry templates, alias resolution, typed failure codes |

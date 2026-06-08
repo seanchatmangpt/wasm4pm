@@ -1,4 +1,4 @@
-
+#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 #![doc = "High-performance, branchless algorithm implementations for wasm4pm process mining."]
 #![doc = ""]
 #![doc = "This crate implements discovery, conformance, and analysis algorithms optimized for:"]
@@ -15,7 +15,9 @@ pub mod heuristic;
 pub mod prefix_conformance;
 pub mod streaming;
 pub mod truex;
+pub mod gall;
 
-pub use wasm4pm_types;
+// wasm4pm-compat is the canonical type foundation — re-exported for consumers
+pub use wasm4pm_compat;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

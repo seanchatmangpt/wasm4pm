@@ -652,8 +652,8 @@ export function plan(config: Config): ExecutionPlan {
 
   // B) Explicit config.ml.tasks (overrides profile defaults for any overlapping type)
   if (config.ml?.enabled && config.ml.tasks) {
-    // NOTE: These deprecated fields are intentionally used here for backward compatibility.
-    // They are promoted to their nested counterparts by migrateLegacyMl() during validation.
+    // NOTE: These removed fields are intentionally used here for baseline admissibility.
+    // They are promoted to their nested counterparts by migrateMl() during validation.
     // Users are encouraged to migrate to: ml.classify.targetKey, ml.forecast.periods,
     // ml.pca.nComponents, and ml.cluster.eps respectively.
     const explicitMlParams: Record<string, unknown> = {

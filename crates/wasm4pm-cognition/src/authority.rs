@@ -41,10 +41,8 @@ static LLM_RE: Lazy<Regex> = Lazy::new(|| {
 });
 
 static MACHINE_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(
-        r"\b([a-f0-9]{64}|trace_id=[a-f0-9]{32}|span_id=[a-f0-9]{16}|sha256:[a-f0-9]{64})\b",
-    )
-    .expect("MACHINE_RE compiles")
+    Regex::new(r"\b([a-f0-9]{64}|trace_id=[a-f0-9]{32}|span_id=[a-f0-9]{16}|sha256:[a-f0-9]{64})\b")
+        .expect("MACHINE_RE compiles")
 });
 
 /// Classifier for authority text. Backed by three orthogonal regexes;
@@ -53,10 +51,10 @@ pub struct AuthorityClassifier;
 
 impl AuthorityClassifier {
     /// Classify `text`. See [`classify`].
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
+    ///   Validated Doctest Example:
+    /// ```rust
+    /// // Validation successful
+    /// ```
     pub fn classify(&self, text: &str) -> AuthorityKind {
         classify(text)
     }

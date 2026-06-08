@@ -170,8 +170,8 @@ export const verify = defineCommand({
       type: 'string',
       description: 'Receipt ID, file path, or "latest" for most-recent receipt',
     },
-    receipts: { type: 'string', description: 'Comma-separated receipt IDs (legacy)' },
-    'receipt-id': { type: 'string', description: 'Single receipt ID (legacy)' },
+    receipts: { type: 'string', description: 'Comma-separated receipt IDs ()' },
+    'receipt-id': { type: 'string', description: 'Single receipt ID ()' },
     'ledger-dir': { type: 'string', default: '.wasm4pm/receipts' },
     'confidence-threshold': { type: 'string', default: '0.85' },
     format: { type: 'string', default: 'human' },
@@ -209,7 +209,7 @@ export const verify = defineCommand({
               toVerify.push({ idOrPath: receiptArg });
             }
           } else {
-            // Legacy: --receipts / --receipt-id
+            // : --receipts / --receipt-id
             const list = (ctx.args.receipts as string | undefined)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
             const single = ctx.args['receipt-id'] as string | undefined;
             if (single) list.push(single);

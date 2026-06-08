@@ -12,8 +12,8 @@
 //! 9. CoExistence: Both A and B occur in same trace
 //! 10. NotCoExistence: A and B do NOT both occur in same trace
 
-use wasm4pm::models::{EventLog, Trace, Event, AttributeValue};
 use std::collections::HashMap;
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 
 fn attr(k: &str, v: &str) -> (String, AttributeValue) {
     (k.to_string(), AttributeValue::String(v.to_string()))
@@ -24,7 +24,10 @@ fn make_trace(events: Vec<&str>) -> Trace {
     for activity in events.iter() {
         let mut event = Event::default();
         let mut attrs = HashMap::new();
-        attrs.insert("concept:name".to_string(), AttributeValue::String(activity.to_string()));
+        attrs.insert(
+            "concept:name".to_string(),
+            AttributeValue::String(activity.to_string()),
+        );
         event.attributes = attrs;
         trace.events.push(event);
     }
@@ -155,11 +158,7 @@ fn test_chain_precedence_violation() {
 #[test]
 fn test_coexistence_perfect() {
     // CoExistence: A and B both occur in same trace
-    let log = make_log(vec![
-        vec!["A", "B"],
-        vec!["A", "X", "B"],
-        vec!["B", "A"],
-    ]);
+    let log = make_log(vec![vec!["A", "B"], vec!["A", "X", "B"], vec!["B", "A"]]);
 
     // All traces have both A and B
     assert_eq!(log.traces.len(), 3);
@@ -192,11 +191,7 @@ fn test_coexistence_violation_missing_b() {
 #[test]
 fn test_not_coexistence_perfect() {
     // NotCoExistence: A and B do NOT both occur
-    let log = make_log(vec![
-        vec!["A", "C"],
-        vec!["B", "D"],
-        vec!["C", "A"],
-    ]);
+    let log = make_log(vec![vec!["A", "C"], vec!["B", "D"], vec!["C", "A"]]);
 
     // No trace has both A and B
     assert_eq!(log.traces.len(), 3);
@@ -217,11 +212,7 @@ fn test_not_coexistence_violation() {
 #[test]
 fn test_existence_perfect() {
     // Existence: Activity must occur
-    let log = make_log(vec![
-        vec!["A", "B"],
-        vec!["A", "C"],
-        vec!["A", "D"],
-    ]);
+    let log = make_log(vec![vec!["A", "B"], vec!["A", "C"], vec!["A", "D"]]);
 
     // All traces have A
     assert_eq!(log.traces.len(), 3);
@@ -242,11 +233,7 @@ fn test_existence_violation() {
 #[test]
 fn test_absence_perfect() {
     // Absence: Activity must NOT occur
-    let log = make_log(vec![
-        vec!["B", "C"],
-        vec!["D", "E"],
-        vec!["F", "G"],
-    ]);
+    let log = make_log(vec![vec!["B", "C"], vec!["D", "E"], vec!["F", "G"]]);
 
     // No trace has A
     assert_eq!(log.traces.len(), 3);
@@ -292,11 +279,7 @@ fn test_precedence_violation() {
 #[test]
 fn test_init_perfect() {
     // Init: First activity must be A
-    let log = make_log(vec![
-        vec!["A", "B", "C"],
-        vec!["A", "X", "Y"],
-        vec!["A"],
-    ]);
+    let log = make_log(vec![vec!["A", "B", "C"], vec!["A", "X", "Y"], vec!["A"]]);
 
     // All traces start with A
     assert_eq!(log.traces.len(), 3);

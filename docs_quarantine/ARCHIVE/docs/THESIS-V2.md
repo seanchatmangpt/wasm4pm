@@ -198,7 +198,7 @@ The monorepo was consolidated from 16 packages to 9 in the v26.4.7 release cycle
 | ------------------------ | ------------------------------------------------------------------------------------ |
 | `@wasm4pm/contracts`       | Shared types, receipts, errors, plans, hashing, algorithm registry, prediction tasks |
 | `@wasm4pm/engine`          | Engine lifecycle state machine (8 states)                                            |
-| `@wasm4pm/kernel`          | WASM facade — 22 discovery + 6 ML algorithms, streaming via `stream()`               |
+| `@wasm4pm/kernel`          | WASM boundary — 22 discovery + 6 ML algorithms, streaming via `stream()`               |
 | `@wasm4pm/config`          | Zod-validated config, 5-layer precedence, provenance tracking                        |
 | `@wasm4pm/planner`         | `plan(config)` → `ExecutionPlan`, 4 profiles: fast/balanced/quality/stream           |
 | `@wasm4pm/observability`   | 3-layer output: CLI human, JSONL machine, OTEL spans                                 |

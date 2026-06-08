@@ -1,8 +1,10 @@
-use wasm4pm::state::{get_or_init_state, StoredObject};
-use wasm4pm::autoprocess::{AutoProcessAgent, CircuitState};
-use wasm4pm_types::event_log::{EventLog, Trace, Event, AttributeValue, XESEditableAttribute};
 use fake::Fake;
 use proptest::prelude::*;
+use wasm4pm::autoprocess::{AutoProcessAgent, CircuitState};
+use wasm4pm::state::{get_or_init_state, StoredObject};
+// TODO: wasm4pm_compat needs wasm4pm_compat::event_log::AttributeValue, wasm4pm_compat::event_log::Event, wasm4pm_compat::event_log::EventLog, wasm4pm_compat::event_log::Trace, wasm4pm_compat::event_log::XESEditableAttribute
+// use wasm4pm_compat::event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
+use wasm4pm_compat::event_log::{Event, EventLog, Trace};
 
 #[cfg(test)]
 mod global_adversarial {
@@ -22,8 +24,10 @@ mod global_adversarial {
         // 2. Poisoned null bytes or whitespace in handle
         let log = EventLog::new(vec![], Vec::new());
         let wasm4pm_log: wasm4pm::models::EventLog = log.into();
-        let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
-        
+        let handle = state
+            .store_object(StoredObject::EventLog(wasm4pm_log))
+            .unwrap();
+
         let poisoned = format!("{}\0", handle);
         assert!(state.get_object(&poisoned).unwrap().is_none());
 
@@ -37,7 +41,7 @@ mod global_adversarial {
     fn test_global_mape_k_meltdown() {
         use wasm4pm::RlState;
         let mut agent = AutoProcessAgent::with_config(0.5, 0.9, 5, 100);
-        
+
         let state = RlState {
             health_level: 2,
             event_rate_q: 4,
@@ -57,7 +61,11 @@ mod global_adversarial {
         }
 
         // Post-condition: After 5 failures (per config), circuit MUST be Open.
-        assert_eq!(agent.circuit_state(), CircuitState::Open, "MAPE-K loop failed to trip circuit during feedback meltdown");
+        assert_eq!(
+            agent.circuit_state(),
+            CircuitState::Open,
+            "MAPE-K loop failed to trip circuit during feedback meltdown"
+        );
     }
 
     /// Contract: Feature interplay must not allow "Zombie States" in the registry.
@@ -67,10 +75,12 @@ mod global_adversarial {
         let state = get_or_init_state();
         let log = EventLog::new(vec![], Vec::new());
         let wasm4pm_log: wasm4pm::models::EventLog = log.into();
-        let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
-        
+        let handle = state
+            .store_object(StoredObject::EventLog(wasm4pm_log))
+            .unwrap();
+
         state.clear_all().unwrap();
-        
+
         // Post-condition: Old handle must be invalid immediately
         let res = state.get_object(&handle).unwrap();
         assert!(res.is_none());

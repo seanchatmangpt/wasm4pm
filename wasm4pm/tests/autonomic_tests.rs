@@ -287,7 +287,9 @@ mod spc_tests {
         let data_8: Vec<ChartData> = (0..8).map(|_| above_cl()).collect();
         let alerts_8 = check_western_electric_rules(&data_8);
         assert!(
-            !alerts_8.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+            !alerts_8
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Shift { .. })),
             "Rule 2 must not fire on only 8 consecutive points; got {:?}",
             alerts_8
         );
@@ -331,7 +333,9 @@ mod spc_tests {
         // last 6 = 10, 10, 11, 12, 13, 14 — not strictly increasing (10==10) → no Rule 3
         let alerts_five = check_western_electric_rules(&five_inc_only);
         assert!(
-            !alerts_five.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+            !alerts_five
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Trend { .. })),
             "Rule 3 must not fire when only 5 consecutive points are increasing; got {:?}",
             alerts_five
         );
@@ -369,7 +373,9 @@ mod spc_tests {
         };
         let alerts_one = check_western_electric_rules(&one_of_three);
         assert!(
-            !alerts_one.iter().any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
+            !alerts_one
+                .iter()
+                .any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
             "Rule 4 must not fire when only 1 of 3 points is beyond 2σ; got {:?}",
             alerts_one
         );
@@ -442,7 +448,9 @@ mod spc_tests {
             let data = vec![chart(invalid, 10.0, 5.0, 0.0)];
             let alerts = check_western_electric_rules(&data);
             assert!(
-                alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+                alerts
+                    .iter()
+                    .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
                 "non-finite value {} must trigger Rule 1 OutOfControl alert; got {:?}",
                 invalid,
                 alerts
@@ -612,7 +620,7 @@ mod spc_tests {
 
     #[test]
     fn test_inverse_normal_cdf_roundtrip() {
-        for p in [0.1, 0.5, 0.9] {
+        for p in [0.1f64, 0.5, 0.9] {
             let z = inverse_normal_cdf(p);
             let p_back = normal_cdf(z);
             assert!(

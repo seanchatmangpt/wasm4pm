@@ -178,7 +178,8 @@ export class Wasm4pmMCPServer {
             },
             model_json: {
               type: 'string',
-              description: 'Opaque Petri Net handle returned by a discovery tool in the same session (e.g., from discover_alpha_plus_plus). Not raw JSON.',
+              description:
+                'Opaque Petri Net handle returned by a discovery tool in the same session (e.g., from discover_alpha_plus_plus). Not raw JSON.',
             },
           },
           required: ['xes_content', 'model_json'],
@@ -629,7 +630,8 @@ export class Wasm4pmMCPServer {
             },
             num_chunks: {
               type: 'number',
-              description: 'Number of trace-window chunks to split the log into. Default: 3. Minimum: 1.',
+              description:
+                'Number of trace-window chunks to split the log into. Default: 3. Minimum: 1.',
             },
           },
           required: ['xes_content'],
@@ -1133,7 +1135,11 @@ export class Wasm4pmMCPServer {
               result = wasm.discover_dfg(logHandle, 'concept:name');
             }
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1143,7 +1149,11 @@ export class Wasm4pmMCPServer {
           try {
             result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1153,7 +1163,11 @@ export class Wasm4pmMCPServer {
           try {
             result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1163,9 +1177,18 @@ export class Wasm4pmMCPServer {
           try {
             const popSize = (input.population_size as number) ?? 50;
             const generations = (input.generations as number) ?? 100;
-            result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
+            result = wasm.discover_genetic_algorithm(
+              logHandle,
+              'concept:name',
+              popSize,
+              generations
+            );
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1175,7 +1198,11 @@ export class Wasm4pmMCPServer {
           try {
             result = wasm.analyze_trace_variants(logHandle, 'concept:name');
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1187,7 +1214,11 @@ export class Wasm4pmMCPServer {
             const netHandle = input.model_json as string;
             result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1197,7 +1228,11 @@ export class Wasm4pmMCPServer {
           try {
             result = wasm.analyze_event_statistics(logHandle);
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1206,9 +1241,18 @@ export class Wasm4pmMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const threshold = BigInt((input.threshold as number) ?? 3600);
-            result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
+            result = wasm.detect_bottlenecks(
+              logHandle,
+              'concept:name',
+              'time:timestamp',
+              threshold
+            );
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1255,7 +1299,11 @@ export class Wasm4pmMCPServer {
             ];
             result = this.compareAlgorithms(logHandle, algorithms);
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1701,7 +1749,7 @@ export class Wasm4pmMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             // num_chunks replaces the old max_depth parameter in the schema
-            const numChunks = ((input.num_chunks as number) ?? (input.max_depth as number) ?? 3);
+            const numChunks = (input.num_chunks as number) ?? (input.max_depth as number) ?? 3;
             result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', numChunks);
           } finally {
             try {
@@ -1723,9 +1771,12 @@ export class Wasm4pmMCPServer {
           try {
             const sampleRate = (input.sample_rate as number) ?? 1.0;
             const rawTraces = wasm.get_traces(logHandle, 'concept:name');
-            const traces: string[][] = typeof rawTraces === 'string'
-              ? JSON.parse(rawTraces)
-              : Array.isArray(rawTraces) ? rawTraces : [];
+            const traces: string[][] =
+              typeof rawTraces === 'string'
+                ? JSON.parse(rawTraces)
+                : Array.isArray(rawTraces)
+                  ? rawTraces
+                  : [];
             for (const trace of traces) {
               if (sampleRate >= 1.0 || Math.random() < sampleRate) {
                 wasm.streaming_log_add_trace(streamHandle, trace);
@@ -1733,8 +1784,16 @@ export class Wasm4pmMCPServer {
             }
             result = wasm.streaming_log_estimate_dfg(streamHandle);
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
-            try { wasm.free_streaming_log(streamHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+            try {
+              wasm.free_streaming_log(streamHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -1750,26 +1809,35 @@ export class Wasm4pmMCPServer {
           let engineHandle: string | null = null;
           try {
             const requestedAlgo = (input.algorithm as string) || 'dfg';
-            // Map legacy / alias names to valid smart_engine algorithm names
+            // Map  / alias names to valid smart_engine algorithm names
             const algoMap: Record<string, string> = {
-              'auto': 'dfg',
-              'heuristic': 'heuristic_miner',
-              'heuristics': 'heuristic_miner',
-              'optimized': 'optimized_dfg',
-              'alpha_plus_plus': 'dfg',  // not supported; fall back to dfg
-              'genetic': 'dfg',           // not supported; fall back to dfg
-              'ilp': 'dfg',              // not supported; fall back to dfg
-              'inductive': 'dfg',        // not supported; fall back to dfg
+              auto: 'dfg',
+              heuristic: 'heuristic_miner',
+              heuristics: 'heuristic_miner',
+              optimized: 'optimized_dfg',
+              alpha_plus_plus: 'dfg', // not supported; fall back to dfg
+              genetic: 'dfg', // not supported; fall back to dfg
+              ilp: 'dfg', // not supported; fall back to dfg
+              inductive: 'dfg', // not supported; fall back to dfg
             };
             const algorithm = algoMap[requestedAlgo] ?? requestedAlgo;
             const rawTraces = wasm.get_traces(logHandle, 'concept:name');
-            const tracesJson = typeof rawTraces === 'string' ? rawTraces : JSON.stringify(rawTraces);
+            const tracesJson =
+              typeof rawTraces === 'string' ? rawTraces : JSON.stringify(rawTraces);
             engineHandle = String(wasm.smart_engine_create());
             result = wasm.smart_engine_run(engineHandle, algorithm, tracesJson);
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
             if (engineHandle !== null) {
-              try { wasm.smart_engine_destroy(engineHandle); } catch { /* best-effort */ }
+              try {
+                wasm.smart_engine_destroy(engineHandle);
+              } catch {
+                /* best-effort */
+              }
             }
           }
           break;
@@ -2103,7 +2171,11 @@ export class Wasm4pmMCPServer {
             const raw = wasm.compute_network_metrics(logHandle, resourceKey);
             result = typeof raw === 'string' ? JSON.parse(raw) : raw;
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -2115,7 +2187,11 @@ export class Wasm4pmMCPServer {
             const raw = wasm.compute_clustering_coefficient(logHandle, resourceKey);
             result = typeof raw === 'string' ? JSON.parse(raw) : raw;
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }
@@ -2127,7 +2203,11 @@ export class Wasm4pmMCPServer {
             const raw = wasm.detect_communities(logHandle, resourceKey);
             result = typeof raw === 'string' ? JSON.parse(raw) : raw;
           } finally {
-            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
           }
           break;
         }

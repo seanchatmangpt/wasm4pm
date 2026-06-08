@@ -37,10 +37,10 @@ INTEGRATION POINTS:
   - wasm4pm/src/lib.rs: New WASM functions accepting trace context
   - crates/wasm4pm-algos/src/discovery.rs: Use inherited trace_id
 
-BACKWARD COMPATIBILITY:
+baseline admissibility:
   - Old discover_dfg(handle, key) still works
   - New discover_dfg_with_trace(input_json) added as alternative
-  - 6-month deprecation period, then sunset old functions
+  - 6-month removal period, then sunset old functions
 
 CONFLICT RESOLUTIONS:
   ✓ WASM signature mismatch → Add new variant functions
@@ -289,10 +289,10 @@ PHASE 3 (1 day):
 CONFLICT RESOLUTIONS
 ================================================================================
 
-1. WASM Signature Backward Compatibility
+1. WASM Signature baseline admissibility
    Conflict: New trace_context param breaks existing discover_dfg(handle, key)
    Resolution: Add discover_dfg_with_trace() variant; deprecate old
-   Timeline: 6 months deprecation, then sunset
+   Timeline: 6 months removal, then sunset
 
 2. Rust Tracing Crate Integration
    Conflict: Rust tracing lib doesn't natively support distributed trace IDs

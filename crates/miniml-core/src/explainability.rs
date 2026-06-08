@@ -161,9 +161,21 @@ pub fn shap_values(
     // 2. Evaluate model on each coalition
     // 3. Weighted linear regression to get SHAP values
 
+    // Compute actual background mean for all features
+    let mut bg_means = vec![0.0; n_features];
+    for f in 0..n_features {
+        bg_means[f] = (0..n_samples)
+            .map(|i| x_background[i * n_features + f])
+            .sum::<f64>()
+            / n_samples as f64;
+    }
+
+    let bg_mean_array = js_sys::Float64Array::new_with_length(n_features as u32);
+    bg_mean_array.copy_from(&bg_means);
+
     // For now, use a simpler permutation-based approach
     let base_prediction = predict_fn
-        .call1(&JsValue::NULL, &JsValue::from_f64(0.0)) // Background prediction placeholder
+        .call1(&JsValue::NULL, &bg_mean_array) // Compute actual baseline prediction from background means
         .ok()
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
@@ -173,16 +185,14 @@ pub fn shap_values(
         let mut x_perturbed = x.to_vec();
 
         // Perturb feature to background mean
-        let feature_mean: f64 = (0..n_samples)
-            .map(|i| x_background[i * n_features + feature_idx])
-            .sum::<f64>()
-            / n_samples as f64;
+        x_perturbed[feature_idx] = bg_means[feature_idx];
 
-        x_perturbed[feature_idx] = feature_mean;
+        let js_array = js_sys::Float64Array::new_with_length(n_features as u32);
+        js_array.copy_from(&x_perturbed);
 
         // Get prediction with perturbed feature
         let prediction_perturbed = predict_fn
-            .call1(&JsValue::NULL, &JsValue::from_f64(x_perturbed[feature_idx]))
+            .call1(&JsValue::NULL, &js_array)
             .ok()
             .and_then(|v| v.as_f64())
             .unwrap_or(0.0);
@@ -208,13 +218,17 @@ pub fn lime_explain(
     predict_fn: &js_sys::Function,
     kernel_width: f64,
 ) -> Result<JsValue, JsError> {
+    let js_array_orig = js_sys::Float64Array::new_with_length(n_features as u32);
+    js_array_orig.copy_from(x);
+
     let original_prediction = predict_fn
-        .call1(&JsValue::NULL, &JsValue::from_f64(x[0]))
+        .call1(&JsValue::NULL, &js_array_orig)
         .ok()
         .and_then(|v| v.as_f64())
         .unwrap_or(0.0);
 
     let mut feature_importance = vec![0.0; n_features];
+    let mut total_variation = 0.0;
 
     // Generate perturbed samples around instance
     for feature_idx in 0..n_features {
@@ -226,15 +240,19 @@ pub fn lime_explain(
             let mut x_perturbed = x.to_vec();
             x_perturbed[feature_idx] += perturbation;
 
+            let js_array_pert = js_sys::Float64Array::new_with_length(n_features as u32);
+            js_array_pert.copy_from(&x_perturbed);
+
             // Get prediction
             let prediction = predict_fn
-                .call1(&JsValue::NULL, &JsValue::from_f64(x_perturbed[feature_idx]))
+                .call1(&JsValue::NULL, &js_array_pert)
                 .ok()
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.0);
 
             // Accumulate difference
             total_diff += (original_prediction - prediction).abs();
+            total_variation += total_diff;
         }
 
         // Average importance
@@ -249,10 +267,15 @@ pub fn lime_explain(
         }
     }
 
+    // Compute heuristic local model confidence based on neighborhood variance stability
+    // R^2 of local surrogate can be approximated inversely to prediction volatility.
+    let avg_variation = total_variation / (n_samples * n_features) as f64;
+    let confidence = 1.0 / (1.0 + avg_variation);
+
     let explanation = Explanation::new(n_features)
         .with_prediction(original_prediction)
         .with_importance(feature_importance)
-        .with_confidence(0.8); // Placeholder confidence
+        .with_confidence(confidence);
 
     serde_wasm_bindgen::to_value(&explanation)
         .map_err(|e| JsError::new(&format!("Failed to convert explanation: {}", e)))
@@ -286,7 +309,11 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
         let best_idx = remaining
             .iter()
             .copied()
-            .max_by(|&a, &b| x[a].abs().partial_cmp(&x[b].abs()).unwrap_or(std::cmp::Ordering::Equal))
+            .max_by(|&a, &b| {
+                x[a].abs()
+                    .partial_cmp(&x[b].abs())
+                    .unwrap_or(std::cmp::Ordering::Equal)
+            })
             .unwrap();
 
         remaining.retain(|&f| f != best_idx);
@@ -331,8 +358,7 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
 /// * `n_features` - Number of features
 #[wasm_bindgen]
 pub fn decision_path(x: &[f64], n_features: usize) -> Result<JsValue, JsError> {
-    let path = decision_path_impl(x, n_features)
-        .map_err(|e| JsError::new(&e))?;
+    let path = decision_path_impl(x, n_features).map_err(|e| JsError::new(&e))?;
 
     serde_wasm_bindgen::to_value(&path)
         .map_err(|e| JsError::new(&format!("Failed to convert path: {}", e)))
@@ -344,10 +370,7 @@ pub fn decision_path(x: &[f64], n_features: usize) -> Result<JsValue, JsError> {
 /// * `predictions` - Collection of predictions (e.g., from bootstrap)
 /// * `confidence` - Confidence level (0-1)
 #[wasm_bindgen]
-pub fn prediction_interval(
-    predictions: &[f64],
-    confidence: f64,
-) -> Result<js_sys::Array, JsError> {
+pub fn prediction_interval(predictions: &[f64], confidence: f64) -> Result<js_sys::Array, JsError> {
     if predictions.is_empty() {
         return Err(JsError::new("No predictions provided"));
     }
@@ -405,11 +428,8 @@ pub fn generate_counterfactual(
 
     let counterfactual_prediction = prediction + (max_impact * 0.1 * prediction.signum());
 
-    let feature_names_vec = feature_names.unwrap_or_else(|| {
-        (0..x.len())
-            .map(|i| format!("feature_{}", i))
-            .collect()
-    });
+    let feature_names_vec =
+        feature_names.unwrap_or_else(|| (0..x.len()).map(|i| format!("feature_{}", i)).collect());
 
     let explanation = format!(
         "Decrease {} from {:.2} to {:.2} to change prediction from {:.2} to {:.2}",
@@ -450,12 +470,7 @@ mod tests {
 
     #[test]
     fn test_counterfactual_creation() {
-        let cf = Counterfactual::new(
-            0.8,
-            0.2,
-            vec![0, 2],
-            vec![0.5, -0.3],
-        );
+        let cf = Counterfactual::new(0.8, 0.2, vec![0, 2], vec![0.5, -0.3]);
 
         assert_eq!(cf.original_prediction, 0.8);
         assert_eq!(cf.counterfactual_prediction, 0.2);
@@ -486,7 +501,10 @@ mod tests {
         // A 4-feature instance should produce at least one decision node
         let x = vec![1.0, -2.0, 0.5, -0.1];
         let nodes = decision_path_impl(&x, 4).expect("decision_path_impl should succeed");
-        assert!(!nodes.is_empty(), "should return at least one decision node");
+        assert!(
+            !nodes.is_empty(),
+            "should return at least one decision node"
+        );
     }
 
     #[test]
@@ -494,7 +512,10 @@ mod tests {
         // Feature 2 has the largest absolute value (10.0) — should appear first in path
         let x = vec![0.1, 0.2, 10.0, 0.05];
         let nodes = decision_path_impl(&x, 4).unwrap();
-        assert_eq!(nodes[0].feature_index, 2, "largest-magnitude feature should be selected first");
+        assert_eq!(
+            nodes[0].feature_index, 2,
+            "largest-magnitude feature should be selected first"
+        );
     }
 
     #[test]
@@ -503,7 +524,10 @@ mod tests {
         let x = vec![5.0];
         let nodes = decision_path_impl(&x, 1).unwrap();
         assert_eq!(nodes.len(), 1);
-        assert!(nodes[0].decision.contains('>'), "positive value should take 'goes right' branch");
+        assert!(
+            nodes[0].decision.contains('>'),
+            "positive value should take 'goes right' branch"
+        );
     }
 
     #[test]
@@ -512,7 +536,10 @@ mod tests {
         let x = vec![-3.0];
         let nodes = decision_path_impl(&x, 1).unwrap();
         assert_eq!(nodes.len(), 1);
-        assert!(nodes[0].decision.contains("<="), "negative value should take 'goes left' branch");
+        assert!(
+            nodes[0].decision.contains("<="),
+            "negative value should take 'goes left' branch"
+        );
     }
 
     #[test]

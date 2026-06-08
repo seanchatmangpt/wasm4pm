@@ -22,9 +22,7 @@ const ACTIVITY_KEY: &str = "concept:name";
 const TIMESTAMP_KEY: &str = "time:timestamp";
 
 /// Build an EventLog from a list of (case_id, [(activity, timestamp_offset_secs)]) tuples.
-fn make_log_with_timestamps(
-    traces: &[(&str, &[(&str, u64)])],
-) -> EventLog {
+fn make_log_with_timestamps(traces: &[(&str, &[(&str, u64)])]) -> EventLog {
     let mut log = EventLog::new();
     for (case_id, events) in traces {
         let mut trace = Trace {
@@ -47,9 +45,7 @@ fn make_log_with_timestamps(
             attrs.insert(
                 TIMESTAMP_KEY.to_string(),
                 // Use absolute second offset from epoch in ISO 8601 form
-                AttributeValue::String(
-                    format!("2024-01-01T00:{:02}:{:02}Z", secs / 60, secs % 60),
-                ),
+                AttributeValue::String(format!("2024-01-01T00:{:02}:{:02}Z", secs / 60, secs % 60)),
             );
             trace.events.push(Event { attributes: attrs });
         }
@@ -70,7 +66,10 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
                     .enumerate()
                     .map(|(j, &a)| (a, j as u64 * 60))
                     .collect();
-                (Box::leak(format!("case{}", i).into_boxed_str()) as &str, Box::leak(events.into_boxed_slice()) as &[_])
+                (
+                    Box::leak(format!("case{}", i).into_boxed_str()) as &str,
+                    Box::leak(events.into_boxed_slice()) as &[_],
+                )
             })
             .collect::<Vec<_>>(),
     )
@@ -186,18 +185,14 @@ fn compute_edge_frequencies(log: &EventLog) -> HashMap<(String, String), usize> 
             .events
             .iter()
             .filter_map(|e| {
-                e.attributes
-                    .get(ACTIVITY_KEY)
-                    .and_then(|v| match v {
-                        AttributeValue::String(s) => Some(s.clone()),
-                        _ => None,
-                    })
+                e.attributes.get(ACTIVITY_KEY).and_then(|v| match v {
+                    AttributeValue::String(s) => Some(s.clone()),
+                    _ => None,
+                })
             })
             .collect();
         for pair in activities.windows(2) {
-            *freqs
-                .entry((pair[0].clone(), pair[1].clone()))
-                .or_insert(0) += 1;
+            *freqs.entry((pair[0].clone(), pair[1].clone())).or_insert(0) += 1;
         }
     }
     freqs
@@ -392,7 +387,10 @@ fn out_of_order_events_produce_backwards_edges() {
 
     let freqs = compute_edge_frequencies(&out_of_order_log);
 
-    let b_to_a = freqs.get(&("B".to_string(), "A".to_string())).copied().unwrap_or(0);
+    let b_to_a = freqs
+        .get(&("B".to_string(), "A".to_string()))
+        .copied()
+        .unwrap_or(0);
 
     assert!(
         b_to_a > 0,
@@ -402,7 +400,10 @@ fn out_of_order_events_produce_backwards_edges() {
     );
 
     // And A→C should also appear (from the second half of the trace)
-    let a_to_c = freqs.get(&("A".to_string(), "C".to_string())).copied().unwrap_or(0);
+    let a_to_c = freqs
+        .get(&("A".to_string(), "C".to_string()))
+        .copied()
+        .unwrap_or(0);
     assert!(
         a_to_c > 0,
         "Out-of-order trace B,A,C must produce A→C edge. A→C count = {}",
@@ -499,26 +500,12 @@ fn bottleneck_activity_identifiable_from_timing() {
             "case0",
             vec![
                 ("A", 0u64),
-                ("B", 1u64),   // 1s after A
-                ("C", 61u64),  // 60s after B — B is the slow step
+                ("B", 1u64),  // 1s after A
+                ("C", 61u64), // 60s after B — B is the slow step
             ],
         ),
-        (
-            "case1",
-            vec![
-                ("A", 0u64),
-                ("B", 1u64),
-                ("C", 61u64),
-            ],
-        ),
-        (
-            "case2",
-            vec![
-                ("A", 0u64),
-                ("B", 2u64),
-                ("C", 62u64),
-            ],
-        ),
+        ("case1", vec![("A", 0u64), ("B", 1u64), ("C", 61u64)]),
+        ("case2", vec![("A", 0u64), ("B", 2u64), ("C", 62u64)]),
     ];
 
     let mut log = EventLog::new();
@@ -542,11 +529,7 @@ fn bottleneck_activity_identifiable_from_timing() {
             );
             attrs.insert(
                 TIMESTAMP_KEY.to_string(),
-                AttributeValue::String(format!(
-                    "2024-01-01T00:{:02}:{:02}Z",
-                    secs / 60,
-                    secs % 60
-                )),
+                AttributeValue::String(format!("2024-01-01T00:{:02}:{:02}Z", secs / 60, secs % 60)),
             );
             trace.events.push(Event { attributes: attrs });
         }

@@ -393,7 +393,8 @@ fn action_restart(_context: &ExecutionContext) -> DispatchResult {
     #[cfg(feature = "cloud")]
     {
         crate::SPC_HISTORY.with(|h| h.borrow_mut().clear());
-        crate::CIRCUIT_BREAKER.with(|cb| *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new());
+        crate::CIRCUIT_BREAKER
+            .with(|cb| *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new());
     }
 
     Ok(DispatchOutcome::RestartInitiated {
@@ -440,7 +441,7 @@ mod tests {
             assert_eq!(timeout_ms, 60000); // doubled
             assert_eq!(batch_size, 1000); // unchanged
         } else {
-            panic!("Expected Scaled outcome");
+            unreachable!("Expected Scaled outcome");
         }
     }
 
@@ -467,7 +468,7 @@ mod tests {
             assert_eq!(timeout_ms, 60000); // doubled
             assert_eq!(batch_size, 500); // halved
         } else {
-            panic!("Expected Scaled outcome");
+            unreachable!("Expected Scaled outcome");
         }
     }
 
@@ -485,20 +486,20 @@ mod tests {
 
         if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
             assert_eq!(attempt, 3); // next attempt
-            // Exponential: 1000 * 2^2 = 4000 base, plus stochastic jitter
-            // in [0, base_backoff_ms] = [0, 1000]. The pre-existing test
-            // asserted `delay_ms == 4500` from when jitter was the
-            // deterministic value `base_backoff_ms / 2`; jitter is now
-            // `fastrand::u32(0..=base_backoff_ms)` so we assert the
-            // documented Rank-1 mathematical bound instead, which is the
-            // value the implementation guarantees rather than one
-            // particular sample.
+                                    // Exponential: 1000 * 2^2 = 4000 base, plus stochastic jitter
+                                    // in [0, base_backoff_ms] = [0, 1000]. The pre-existing test
+                                    // asserted `delay_ms == 4500` from when jitter was the
+                                    // deterministic value `base_backoff_ms / 2`; jitter is now
+                                    // `fastrand::u32(0..=base_backoff_ms)` so we assert the
+                                    // documented Rank-1 mathematical bound instead, which is the
+                                    // value the implementation guarantees rather than one
+                                    // particular sample.
             assert!(
                 (4000..=5000).contains(&delay_ms),
                 "delay {delay_ms} must lie within [4000, 5000] (exponential + jitter bound)"
             );
         } else {
-            panic!("Expected RetryInitiated outcome");
+            unreachable!("Expected RetryInitiated outcome");
         }
     }
 
@@ -537,7 +538,7 @@ mod tests {
                     delay_ms
                 );
             } else {
-                panic!("expected RetryInitiated, got {:?}", result);
+                unreachable!("expected RetryInitiated, got {:?}", result);
             }
         }
     }
@@ -596,7 +597,7 @@ mod tests {
                     health_level
                 );
             } else {
-                panic!("Expected Scaled outcome at health_level={}", health_level);
+                unreachable!("Expected Scaled outcome at health_level={}", health_level);
             }
         }
     }

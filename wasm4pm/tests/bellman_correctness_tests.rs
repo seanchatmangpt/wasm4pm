@@ -733,5 +733,4 @@ fn test_a5_learning_rate_scales_q_update_magnitude() {
         expected_small,
         delta_small
     );
-
 }

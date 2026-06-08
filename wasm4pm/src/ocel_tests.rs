@@ -256,7 +256,7 @@ mod tests {
         if let Some(AttributeValue::String(status)) = obj.attributes.get("status") {
             assert_eq!(status, "pending");
         } else {
-            panic!("Expected String attribute for 'status'");
+            unreachable!("Expected String attribute for 'status'");
         }
     }
 }

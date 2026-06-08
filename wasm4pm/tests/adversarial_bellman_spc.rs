@@ -34,7 +34,9 @@
 //!   cargo test --test adversarial_bellman_spc --features cloud
 
 use wasm4pm::reinforcement::QLearning;
-use wasm4pm::spc::{check_western_electric_rules, ChartData, ShiftDirection, SpecialCause, TrendDirection};
+use wasm4pm::spc::{
+    check_western_electric_rules, ChartData, ShiftDirection, SpecialCause, TrendDirection,
+};
 use wasm4pm::{create_rl_state, RlAction, RlState};
 
 // ---------------------------------------------------------------------------
@@ -88,7 +90,7 @@ fn spc_point(ts: &str, value: f64, cl: f64, sigma: f64) -> ChartData {
 #[test]
 fn a1_nonterminal_update_moves_q_toward_target() {
     let agent = seeded_greedy_agent();
-    let s = rl_state(2);      // degraded
+    let s = rl_state(2); // degraded
     let s_next = rl_state(1); // warning (improved, different health_level → s≠s')
 
     // Enforce s ≠ s' precondition.
@@ -211,7 +213,7 @@ fn a2_terminal_update_target_equals_reward_no_bootstrap() {
 #[test]
 fn a3_fm1_regression_nonterminal_uses_next_state_not_current_state() {
     let agent = seeded_greedy_agent();
-    let s = rl_state(2);      // current: degraded
+    let s = rl_state(2); // current: degraded
     let s_next = rl_state(1); // next: warning (distinct from s)
 
     // Verify s ≠ s_next (the FM-1 bug makes them equal).
@@ -291,7 +293,11 @@ fn c1_rule1_fires_at_exactly_the_3sigma_outlier_point() {
     // 10 stable points (alternating above/below CL by ±0.3σ), then the outlier.
     let mut data: Vec<ChartData> = (0..10)
         .map(|i| {
-            let offset = if i % 2 == 0 { 0.3 * sigma } else { -0.3 * sigma };
+            let offset = if i % 2 == 0 {
+                0.3 * sigma
+            } else {
+                -0.3 * sigma
+            };
             spc_point(&format!("stable-{}", i), cl + offset, cl, sigma)
         })
         .collect();
@@ -300,7 +306,9 @@ fn c1_rule1_fires_at_exactly_the_3sigma_outlier_point() {
     // Before outlier is included: no Rule 1 alert.
     let alerts_before = check_western_electric_rules(&data[..10]);
     assert!(
-        !alerts_before.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+        !alerts_before
+            .iter()
+            .any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
         "C1 FAILED: Rule 1 must NOT fire on stable data without outlier in the window"
     );
 
@@ -322,8 +330,7 @@ fn c1_rule1_fires_at_exactly_the_3sigma_outlier_point() {
         assert_eq!(
             *value, outlier,
             "C1 FAILED: OutOfControl value must be exactly the outlier ({}). Got {}",
-            outlier,
-            value
+            outlier, value
         );
         assert_eq!(
             *ucl,
@@ -378,7 +385,9 @@ fn c2_rule2_fires_at_exactly_ninth_consecutive_same_side_point() {
     for window_end in 9..=16 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Shift { .. })),
             "C2 FAILED: Rule 2 must NOT fire at window_end={} \
              (trailing 9 still contains a below-CL point at index 7)",
             window_end
@@ -463,7 +472,9 @@ fn c3_rule3_fires_at_exactly_sixth_consecutive_trending_point() {
     for window_end in 9..=10 {
         let alerts = check_western_electric_rules(&data[..window_end]);
         assert!(
-            !alerts.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+            !alerts
+                .iter()
+                .any(|a| matches!(a, SpecialCause::Trend { .. })),
             "C3 FAILED: Rule 3 must NOT fire at window_end={} \
              (trailing 6 still spans the decreasing-to-increasing inflection)",
             window_end
@@ -500,7 +511,9 @@ fn c3_rule3_fires_at_exactly_sixth_consecutive_trending_point() {
     // 56.0 == 56.0 is NOT strictly greater — plateau breaks the trend.
     let alerts_at_12 = check_western_electric_rules(&data[..12]);
     assert!(
-        !alerts_at_12.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+        !alerts_at_12
+            .iter()
+            .any(|a| matches!(a, SpecialCause::Trend { .. })),
         "C3 FAILED: Rule 3 must NOT fire when a plateau breaks the monotone trend (length=12)"
     );
 }

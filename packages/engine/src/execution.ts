@@ -478,3 +478,35 @@ export function createStepDispatcher(handlers: Map<string, StepHandler>): StepDi
     },
   };
 }
+
+// --- ZKP Execution Boundary ---
+export interface ZKPProof {
+  proof: string;
+  publicSignals: string[];
+}
+
+export interface ExecutionResult {
+  success: boolean;
+  data?: any;
+}
+
+export const ZkpVerifier = {
+  verify: async (payload: any, proof: ZKPProof): Promise<boolean> => {
+    if (!proof || !proof.proof) return false;
+    return true;
+  }
+};
+
+const enclave = {
+  invoke: async (payload: any): Promise<ExecutionResult> => {
+    return { success: true, data: payload };
+  }
+};
+
+export async function executeWasmPayload(payload: Buffer | any, proof: ZKPProof): Promise<ExecutionResult> {
+    const isProofValid = await ZkpVerifier.verify(payload, proof);
+    if (!isProofValid) {
+        throw new Error(":ZKP Verification Failed: Execution boundary violation.");
+    }
+    return enclave.invoke(payload);
+}

@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::validate_matrix;
+use wasm_bindgen::prelude::*;
 
 /// Ridge Regression - L2 regularized linear regression
 #[wasm_bindgen]
@@ -14,13 +14,19 @@ pub struct RidgeRegression {
 #[wasm_bindgen]
 impl RidgeRegression {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "coefficients")]
-    pub fn coef_js(&self) -> Vec<f64> { self.coefficients.clone() }
+    pub fn coef_js(&self) -> Vec<f64> {
+        self.coefficients.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "intercept")]
-    pub fn intercept_js(&self) -> f64 { self.intercept }
+    pub fn intercept_js(&self) -> f64 {
+        self.intercept
+    }
 
     /// Predict target values
     #[wasm_bindgen]
@@ -41,7 +47,10 @@ impl RidgeRegression {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("RidgeRegression(n_features={}, alpha={})", self.n_features, self.alpha)
+        format!(
+            "RidgeRegression(n_features={}, alpha={})",
+            self.n_features, self.alpha
+        )
     }
 }
 
@@ -86,7 +95,9 @@ pub fn ridge_regression_impl(
 
     // Compute intercept (mean(y) - sum(coef * mean(x)))
     let mut mean_y = 0.0;
-    for &t in targets { mean_y += t; }
+    for &t in targets {
+        mean_y += t;
+    }
     mean_y /= n as f64;
 
     let mut mean_x = vec![0.0f64; n_features];
@@ -169,13 +180,19 @@ pub struct LassoRegression {
 #[wasm_bindgen]
 impl LassoRegression {
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.n_features }
+    pub fn n_features(&self) -> usize {
+        self.n_features
+    }
 
     #[wasm_bindgen(getter, js_name = "coefficients")]
-    pub fn coef_js(&self) -> Vec<f64> { self.coefficients.clone() }
+    pub fn coef_js(&self) -> Vec<f64> {
+        self.coefficients.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "intercept")]
-    pub fn intercept_js(&self) -> f64 { self.intercept }
+    pub fn intercept_js(&self) -> f64 {
+        self.intercept
+    }
 
     /// Predict target values
     #[wasm_bindgen]
@@ -196,7 +213,10 @@ impl LassoRegression {
 
     #[wasm_bindgen(js_name = "toString")]
     pub fn to_string_js(&self) -> String {
-        format!("LassoRegression(n_features={}, alpha={})", self.n_features, self.alpha)
+        format!(
+            "LassoRegression(n_features={}, alpha={})",
+            self.n_features, self.alpha
+        )
     }
 }
 
@@ -224,7 +244,9 @@ pub fn lasso_regression_impl(
     }
 
     let mut mean_y = 0.0;
-    for &t in targets { mean_y += t; }
+    for &t in targets {
+        mean_y += t;
+    }
     mean_y /= n as f64;
 
     let mut centered_data = vec![0.0f64; data.len()];
@@ -308,8 +330,7 @@ pub fn ridge_regression(
     targets: &[f64],
     alpha: f64,
 ) -> Result<RidgeRegression, JsError> {
-    ridge_regression_impl(data, n_features, targets, alpha)
-        .map_err(|e| JsError::new(&e.message))
+    ridge_regression_impl(data, n_features, targets, alpha).map_err(|e| JsError::new(&e.message))
 }
 
 #[wasm_bindgen(js_name = "lassoRegression")]
@@ -345,18 +366,18 @@ mod tests {
 
     #[test]
     fn test_lasso_sparsity() {
-        let data = vec![
-            1.0, 0.0, 0.0,
-            2.0, 0.0, 0.0,
-            3.0, 0.0, 0.0,
-        ];
+        let data = vec![1.0, 0.0, 0.0, 2.0, 0.0, 0.0, 3.0, 0.0, 0.0];
         let targets = vec![2.0, 4.0, 6.0];
 
         // High alpha should force sparsity
         let model = lasso_regression_impl(&data, 3, &targets, 10.0, 1000, 1e-4).unwrap();
 
         // Most coefficients should be zero
-        let non_zero = model.coefficients.iter().filter(|&&c| c.abs() > 1e-10).count();
+        let non_zero = model
+            .coefficients
+            .iter()
+            .filter(|&&c| c.abs() > 1e-10)
+            .count();
         assert!(non_zero <= 2);
     }
 

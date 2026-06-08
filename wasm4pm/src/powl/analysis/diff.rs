@@ -1,4 +1,5 @@
 //! Structural and behavioral diff between two POWL models.
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 use crate::powl::footprints::{self};
 use crate::powl_arena::{PowlArena, PowlNode};
@@ -85,7 +86,7 @@ fn cg_submodel_children(cg: &crate::powl_arena::ChoiceGraphPowlNode) -> Vec<u32>
         .nodes
         .iter()
         .filter_map(|n| match n {
-            wasm4pm_types::ChoiceGraphNode::SubModel(idx) => Some(*idx),
+            ChoiceGraphNode::SubModel(idx) => Some(*idx),
             _ => None,
         })
         .collect()

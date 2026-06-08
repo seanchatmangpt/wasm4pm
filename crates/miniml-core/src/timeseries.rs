@@ -132,7 +132,7 @@ pub enum TrendDirection {
 pub struct TrendAnalysis {
     direction: TrendDirection,
     slope: f64,
-    strength: f64,  // 0-1, based on R²
+    strength: f64, // 0-1, based on R²
     forecast: Vec<f64>,
 }
 
@@ -167,7 +167,9 @@ impl TrendAnalysis {
 #[wasm_bindgen(js_name = "trendForecast")]
 pub fn trend_forecast(data: &[f64], periods: usize) -> Result<TrendAnalysis, JsError> {
     if data.len() < 2 {
-        return Err(JsError::new("Need at least 2 data points for trend analysis"));
+        return Err(JsError::new(
+            "Need at least 2 data points for trend analysis",
+        ));
     }
 
     let n = data.len();
@@ -187,7 +189,11 @@ pub fn trend_forecast(data: &[f64], periods: usize) -> Result<TrendAnalysis, JsE
         denominator += x_diff * x_diff;
     }
 
-    let slope = if denominator == 0.0 { 0.0 } else { numerator / denominator };
+    let slope = if denominator == 0.0 {
+        0.0
+    } else {
+        numerator / denominator
+    };
     let intercept = y_mean - slope * x_mean;
 
     // Calculate R² for strength
@@ -200,7 +206,11 @@ pub fn trend_forecast(data: &[f64], periods: usize) -> Result<TrendAnalysis, JsE
         ss_tot += (data[i] - y_mean).powi(2);
     }
 
-    let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };
+    let r_squared = if ss_tot == 0.0 {
+        1.0
+    } else {
+        1.0 - (ss_res / ss_tot)
+    };
 
     // Determine direction
     let direction = if slope.abs() < 1e-10 {
@@ -337,20 +347,31 @@ pub struct SeasonalDecomposition {
 #[wasm_bindgen]
 impl SeasonalDecomposition {
     #[wasm_bindgen(getter)]
-    pub fn period(&self) -> usize { self.period }
+    pub fn period(&self) -> usize {
+        self.period
+    }
 
     #[wasm_bindgen(js_name = "getTrend")]
-    pub fn get_trend(&self) -> Vec<f64> { self.trend.clone() }
+    pub fn get_trend(&self) -> Vec<f64> {
+        self.trend.clone()
+    }
 
     #[wasm_bindgen(js_name = "getSeasonal")]
-    pub fn get_seasonal(&self) -> Vec<f64> { self.seasonal.clone() }
+    pub fn get_seasonal(&self) -> Vec<f64> {
+        self.seasonal.clone()
+    }
 
     #[wasm_bindgen(js_name = "getResidual")]
-    pub fn get_residual(&self) -> Vec<f64> { self.residual.clone() }
+    pub fn get_residual(&self) -> Vec<f64> {
+        self.residual.clone()
+    }
 }
 
 /// Decompose time series into trend + seasonal + residual (additive)
-pub fn seasonal_decompose_impl(data: &[f64], period: usize) -> Result<SeasonalDecomposition, MlError> {
+pub fn seasonal_decompose_impl(
+    data: &[f64],
+    period: usize,
+) -> Result<SeasonalDecomposition, MlError> {
     let n = data.len();
     if period < 2 || period >= n {
         return Err(MlError::new("period must be >= 2 and < data length"));
@@ -379,15 +400,28 @@ pub fn seasonal_decompose_impl(data: &[f64], period: usize) -> Result<SeasonalDe
 
     // Center seasonal component (subtract mean)
     let s_mean: f64 = seasonal_avg.iter().sum::<f64>() / period as f64;
-    for v in seasonal_avg.iter_mut() { *v -= s_mean; }
+    for v in seasonal_avg.iter_mut() {
+        *v -= s_mean;
+    }
 
     // Build full seasonal and residual
     let seasonal: Vec<f64> = (0..n).map(|i| seasonal_avg[i % period]).collect();
-    let residual: Vec<f64> = (0..n).map(|i| {
-        if trend[i].is_nan() { f64::NAN } else { data[i] - trend[i] - seasonal[i] }
-    }).collect();
+    let residual: Vec<f64> = (0..n)
+        .map(|i| {
+            if trend[i].is_nan() {
+                f64::NAN
+            } else {
+                data[i] - trend[i] - seasonal[i]
+            }
+        })
+        .collect();
 
-    Ok(SeasonalDecomposition { trend, seasonal, residual, period })
+    Ok(SeasonalDecomposition {
+        trend,
+        seasonal,
+        residual,
+        period,
+    })
 }
 
 #[wasm_bindgen(js_name = "seasonalDecompose")]
@@ -403,7 +437,9 @@ pub fn autocorrelation(data: &[f64], max_lag: usize) -> Vec<f64> {
     let mean = data.iter().sum::<f64>() / n as f64;
 
     let var: f64 = data.iter().map(|&x| (x - mean).powi(2)).sum();
-    if var == 0.0 { return vec![1.0; max_lag + 1]; }
+    if var == 0.0 {
+        return vec![1.0; max_lag + 1];
+    }
 
     let mut result = Vec::with_capacity(max_lag + 1);
     for lag in 0..=max_lag {
@@ -427,10 +463,14 @@ pub struct SeasonalityInfo {
 #[wasm_bindgen]
 impl SeasonalityInfo {
     #[wasm_bindgen(getter)]
-    pub fn period(&self) -> usize { self.period }
+    pub fn period(&self) -> usize {
+        self.period
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn strength(&self) -> f64 { self.strength }
+    pub fn strength(&self) -> f64 {
+        self.strength
+    }
 }
 
 /// Auto-detect seasonality period by finding peak autocorrelation
@@ -448,11 +488,15 @@ pub fn detect_seasonality(data: &[f64]) -> Result<SeasonalityInfo, JsError> {
     let mut best_lag = 2;
     let mut best_val = f64::NEG_INFINITY;
     for lag in 2..acf.len() {
-        if lag >= 2 && lag < acf.len() - 1
-            && acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > best_val {
-                best_val = acf[lag];
-                best_lag = lag;
-            }
+        if lag >= 2
+            && lag < acf.len() - 1
+            && acf[lag] > acf[lag - 1]
+            && acf[lag] > acf[lag + 1]
+            && acf[lag] > best_val
+        {
+            best_val = acf[lag];
+            best_lag = lag;
+        }
     }
 
     Ok(SeasonalityInfo {
@@ -562,7 +606,9 @@ mod tests {
     #[test]
     fn test_autocorrelation() {
         // Perfect sine wave with period 4
-        let data: Vec<f64> = (0..20).map(|i| (i as f64 * std::f64::consts::PI / 2.0).sin()).collect();
+        let data: Vec<f64> = (0..20)
+            .map(|i| (i as f64 * std::f64::consts::PI / 2.0).sin())
+            .collect();
         let acf = autocorrelation(&data, 10);
         assert!((acf[0] - 1.0).abs() < 1e-10); // Lag 0 is always 1
         assert!(acf[4] > 0.5); // Period 4 should have high correlation
@@ -573,7 +619,9 @@ mod tests {
         // Weekly pattern repeated
         let base = vec![10.0, 12.0, 15.0, 20.0, 18.0, 14.0, 11.0];
         let mut data = Vec::new();
-        for _ in 0..8 { data.extend_from_slice(&base); }
+        for _ in 0..8 {
+            data.extend_from_slice(&base);
+        }
         let info = detect_seasonality(&data).unwrap();
         assert_eq!(info.period, 7);
         assert!(info.strength > 0.5);

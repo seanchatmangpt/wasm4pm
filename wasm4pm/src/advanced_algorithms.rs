@@ -17,8 +17,8 @@ pub fn discover_heuristic_miner_from_log(
     log: &EventLog,
     activity_key: &str,
     dependency_threshold: f64,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -30,10 +30,8 @@ pub fn discover_heuristic_miner_from_log(
 
     // Pre-size the follows map: n² / 4 is a practical upper bound for sparse DFGs.
     let n = col.vocab.len();
-    let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::with_capacity_and_hasher(
-        n.saturating_mul(n) / 4 + 1,
-        Default::default(),
-    );
+    let mut follows: FxHashMap<(u32, u32), usize> =
+        FxHashMap::with_capacity_and_hasher(n.saturating_mul(n) / 4 + 1, Default::default());
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -120,7 +118,7 @@ pub fn discover_heuristic_miner(
             );
             let dfg = discover_heuristic_miner_from_log(log, activity_key, dependency_threshold);
             Ok((dfg, log_size))
-        },
+        }
         Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
@@ -139,7 +137,7 @@ pub fn discover_heuristic_miner(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({

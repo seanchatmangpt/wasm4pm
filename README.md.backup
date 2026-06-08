@@ -21,7 +21,7 @@
 Process mining extracts actionable insights from event logs by discovering process models, detecting deviations, and analyzing performance bottlenecks. **wasm4pm** makes this accessible to JavaScript developers with near-native performance, plus professional CLI tools, HTTP APIs, and observability for enterprise deployments.
 
 ### Version 26.4.28 (April 2026)
-**High-Performance Rust CLI:** New `wpm` (wasm4pm) Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the legacy TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
+**High-Performance Rust CLI:** New `wpm` (wasm4pm) Rust CLI for system diagnostics, process discovery, and conformance checking. Replaces the  TypeScript CLI with nanosecond-latency architecture. Includes `doctor`, `wizard`, `telco`, and `mining` commands.
 
 ### Version 26.4.15 (April 2026)
 **Van der Aalst Agents:** 8 autonomous adversarial agents for manufacturing integrity validation using process mining principles (soundness, conformance, multi-surface corroboration). New `wpm agent` commands: execute, list, audit, status, register.
@@ -49,7 +49,7 @@ Process mining extracts actionable insights from event logs by discovering proce
 **Deployment Profiles Reorganized:** Renamed "cloud" profile to "browser" (default, all 41 algorithms, 2.78MB) and "browser" profile to "mobile" (minimal, 500KB, 82% smaller). Choose from 5 optimized WASM builds: mobile ~500KB, edge ~1.5MB, fog ~2.0MB, iot ~1.0MB, browser ~2.78MB (default). Zero breaking changes — `npm run build` now builds the full browser profile.
 
 ### Version 26.4.5 (April 2026)
-**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% backward compatibility. Introduces professional CLI tool (wasm4pm), configuration management, HTTP service layer, and comprehensive observability.
+**Major Release:** Added 10 new packages (engine, config, service, observability, contracts, types, kernel, planner, templates, testing) while maintaining 100% baseline admissibility. Introduces professional CLI tool (wasm4pm), configuration management, HTTP service layer, and comprehensive observability.
 
 ## 🚀 Key Capabilities
 

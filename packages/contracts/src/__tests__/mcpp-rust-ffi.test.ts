@@ -156,7 +156,7 @@ describe("MCPP Integration: Model Types (PetriNet)", () => {
  *   - canonical_json function for deterministic hashing
  *
  * VERIFICATION: wasm4pm/src/lib.rs exports:
- *   pub use wasm4pm_types as data_types;
+ *   pub use wasm4pm_compat as data_types;
  *   wasm4pm-types/src/lib.rs exports:
  *   pub mod hash;
  *   wasm4pm-types/src/hash.rs exports:

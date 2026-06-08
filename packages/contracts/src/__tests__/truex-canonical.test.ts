@@ -33,11 +33,23 @@ describe('canonicalStringify', () => {
     expect(canonicalStringify(a)).toBe(canonicalStringify(b));
   });
 
-  // TODO(test): add test that canonicalStringify of an object with number, boolean,
-  // and null values produces valid JSON (edge case: JSON.stringify handles these
-  // natively but a custom serializer might coerce them to strings).
+  it('preserves number, boolean, and null values as valid JSON primitives', () => {
+    // Edge case: custom serializers may coerce primitives to strings; verify they are not.
+    const input = { z: null, a: true, m: 42 };
+    const result = canonicalStringify(input);
+    const parsed = JSON.parse(result);
+    expect(parsed.a).toBe(true);
+    expect(parsed.m).toBe(42);
+    expect(parsed.z).toBeNull();
+    // Keys must still be sorted lexicographically
+    expect(result).toBe('{"a":true,"m":42,"z":null}');
+  });
 
-  // TODO(test): add test that events without an ocel:id field are handled
-  // gracefully (either sorted last, sorted by stringified content, or throw a
-  // typed error — the current behavior is undocumented).
+  it('handles events without an ocel:id field by sorting remaining keys', () => {
+    // Undocumented edge case: events lacking ocel:id must still be deterministically ordered.
+    const input = { 'ocel:type': 'Order', 'ocel:time': '2026-01-01' };
+    const result = canonicalStringify(input);
+    // Should not throw, and keys should be lexicographically sorted.
+    expect(result).toBe('{"ocel:time":"2026-01-01","ocel:type":"Order"}');
+  });
 });

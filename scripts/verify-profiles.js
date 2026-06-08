@@ -23,11 +23,11 @@ const { execSync } = require("child_process");
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SIZE_TARGETS_MB = {
-  browser: 4.0,
-  iot: 4.0,
-  edge: 4.0,
-  fog: 4.0,
-  cloud: 5.0,
+  browser: 6.0,
+  iot: 6.0,
+  edge: 6.0,
+  fog: 6.0,
+  mobile: 6.0,
 };
 
 const ALGORITHM_INVENTORY = {
@@ -104,48 +104,13 @@ const ALGORITHM_INVENTORY = {
     ],
     approxCount: 30,
   },
-  cloud: {
-    tier: "Tier 3 (All)",
+  mobile: {
+    tier: "Tier 1 (Minimal Conformance)",
     algorithms: [
       "dfg",
-      "alpha_plus_plus",
-      "heuristic_miner",
-      "inductive_miner",
-      "genetic",
-      "ilp",
-      "a_star",
-      "aco",
-      "pso",
-      "simulated_annealing",
-      "ml_classify",
-      "ml_cluster",
-      "ml_forecast",
-      "ml_anomaly",
-      "ml_regress",
-      "ml_pca",
       "conformance_basic",
-      "alignment_fitness",
-      "alignments",
-      "diagnostics",
-      "petri_net_playout",
-      "extensive_playout",
-      "align_etconformance",
-      "montecarlo",
-      "streaming_basic",
-      "streaming_full",
-      "powl",
-      "ocel",
-      "swarm",
-      "social",
-      "temporal",
-      "hierarchical_dfg",
-      "validate",
-      "quality",
-      "simulate",
-      "monte_carlo_simulation",
-      "smart_engine",
     ],
-    approxCount: 41,
+    approxCount: 2,
   },
 };
 

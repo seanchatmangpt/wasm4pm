@@ -1,15 +1,15 @@
-use crate::models::{OCEL, DirectlyFollowsGraph, DFGNode, DirectlyFollowsRelation};
-use std::collections::HashMap;
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation, OCEL};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Object-Centric Directly Follows Graph (OC-DFG)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCDirectlyFollowsGraph {
+pub struct OCDFG {
     /// Mapping from object type to its specific Directly-Follows Graph
-    pub dfgs: HashMap<String, DirectlyFollowsGraph>,
+    pub dfgs: HashMap<String, DFG>,
 }
 
-impl OCDirectlyFollowsGraph {
+impl OCDFG {
     /// Discover an OC-DFG from an OCEL log.
     ///
     /// Groups events by object ID, sorts them, and aggregates per object type.
@@ -17,7 +17,9 @@ impl OCDirectlyFollowsGraph {
         let mut dfgs = HashMap::new();
 
         // 1. Map object ID to its type
-        let obj_to_type: HashMap<String, String> = ocel.objects.iter()
+        let obj_to_type: HashMap<String, String> = ocel
+            .objects
+            .iter()
             .map(|o| (o.id.clone(), o.object_type.clone()))
             .collect();
 
@@ -25,13 +27,16 @@ impl OCDirectlyFollowsGraph {
         let mut object_sequences: HashMap<String, Vec<usize>> = HashMap::new();
         for (idx, event) in ocel.events.iter().enumerate() {
             for obj_id in event.all_object_ids() {
-                object_sequences.entry(obj_id.to_string()).or_default().push(idx);
+                object_sequences
+                    .entry(obj_id.to_string())
+                    .or_default()
+                    .push(idx);
             }
         }
 
         // 3. For each object type, build a DFG
         for ot in &ocel.object_types {
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
             let mut activity_freq: HashMap<String, usize> = HashMap::new();
             let mut edge_freq: HashMap<(String, String), usize> = HashMap::new();
             let mut start_acts: HashMap<String, usize> = HashMap::new();
@@ -44,7 +49,8 @@ impl OCDirectlyFollowsGraph {
                     let mut sorted_indices = indices.clone();
                     sorted_indices.sort_by_key(|&idx| &ocel.events[idx].timestamp);
 
-                    let activities: Vec<String> = sorted_indices.iter()
+                    let activities: Vec<String> = sorted_indices
+                        .iter()
                         .map(|&idx| ocel.events[idx].event_type.clone())
                         .collect();
 
@@ -60,7 +66,9 @@ impl OCDirectlyFollowsGraph {
                     }
 
                     for pair in activities.windows(2) {
-                        *edge_freq.entry((pair[0].clone(), pair[1].clone())).or_insert(0) += 1;
+                        *edge_freq
+                            .entry((pair[0].clone(), pair[1].clone()))
+                            .or_insert(0) += 1;
                     }
                 }
             }

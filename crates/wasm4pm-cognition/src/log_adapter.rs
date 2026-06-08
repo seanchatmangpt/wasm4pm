@@ -93,23 +93,66 @@ fn derive_facts(
     } else {
         "small"
     };
-    facts.push(Fact { key: "scale".to_string(), value: scale.to_string() });
-    facts.push(Fact { key: "trace_count".to_string(), value: traces.to_string() });
-    facts.push(Fact { key: "activity_count".to_string(), value: activities.to_string() });
+    facts.push(Fact {
+        key: "scale".to_string(),
+        value: scale.to_string(),
+    });
+    facts.push(Fact {
+        key: "trace_count".to_string(),
+        value: traces.to_string(),
+    });
+    facts.push(Fact {
+        key: "activity_count".to_string(),
+        value: activities.to_string(),
+    });
 
     // Variant diversity: variants / traces ∈ [0, 1]
-    let diversity = if traces > 0 { variants as f64 / traces as f64 } else { 0.0 };
-    let diversity_level = if diversity > 0.5 { "high" } else if diversity > 0.1 { "medium" } else { "low" };
-    facts.push(Fact { key: "variant_diversity".to_string(), value: diversity_level.to_string() });
-    facts.push(Fact { key: "variant_count".to_string(), value: variants.to_string() });
+    let diversity = if traces > 0 {
+        variants as f64 / traces as f64
+    } else {
+        0.0
+    };
+    let diversity_level = if diversity > 0.5 {
+        "high"
+    } else if diversity > 0.1 {
+        "medium"
+    } else {
+        "low"
+    };
+    facts.push(Fact {
+        key: "variant_diversity".to_string(),
+        value: diversity_level.to_string(),
+    });
+    facts.push(Fact {
+        key: "variant_count".to_string(),
+        value: variants.to_string(),
+    });
 
     // Rework: are there loops/repeated activities?
-    let rework_level = if rework_ratio > 0.3 { "high" } else if rework_ratio > 0.05 { "medium" } else { "none" };
-    facts.push(Fact { key: "rework".to_string(), value: rework_level.to_string() });
+    let rework_level = if rework_ratio > 0.3 {
+        "high"
+    } else if rework_ratio > 0.05 {
+        "medium"
+    } else {
+        "none"
+    };
+    facts.push(Fact {
+        key: "rework".to_string(),
+        value: rework_level.to_string(),
+    });
 
     // Complexity: mean trace length
-    let complexity = if mean_trace_len > 20.0 { "complex" } else if mean_trace_len > 5.0 { "moderate" } else { "simple" };
-    facts.push(Fact { key: "trace_complexity".to_string(), value: complexity.to_string() });
+    let complexity = if mean_trace_len > 20.0 {
+        "complex"
+    } else if mean_trace_len > 5.0 {
+        "moderate"
+    } else {
+        "simple"
+    };
+    facts.push(Fact {
+        key: "trace_complexity".to_string(),
+        value: complexity.to_string(),
+    });
 
     // Top activities as named facts
     for (i, act) in top_activities.iter().take(5).enumerate() {
@@ -132,9 +175,18 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "dfg".to_string(),
             outcome_score: 0.9,
             facts: vec![
-                Fact { key: "scale".to_string(), value: "small".to_string() },
-                Fact { key: "variant_diversity".to_string(), value: "low".to_string() },
-                Fact { key: "trace_complexity".to_string(), value: "simple".to_string() },
+                Fact {
+                    key: "scale".to_string(),
+                    value: "small".to_string(),
+                },
+                Fact {
+                    key: "variant_diversity".to_string(),
+                    value: "low".to_string(),
+                },
+                Fact {
+                    key: "trace_complexity".to_string(),
+                    value: "simple".to_string(),
+                },
             ],
         },
         Case {
@@ -143,8 +195,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "heuristic_miner".to_string(),
             outcome_score: 0.8,
             facts: vec![
-                Fact { key: "variant_diversity".to_string(), value: "high".to_string() },
-                Fact { key: "rework".to_string(), value: "none".to_string() },
+                Fact {
+                    key: "variant_diversity".to_string(),
+                    value: "high".to_string(),
+                },
+                Fact {
+                    key: "rework".to_string(),
+                    value: "none".to_string(),
+                },
             ],
         },
         Case {
@@ -152,18 +210,20 @@ fn anchor_cases() -> Vec<Case> {
             intent: "process with significant rework loops".to_string(),
             architecture: "inductive_miner".to_string(),
             outcome_score: 0.85,
-            facts: vec![
-                Fact { key: "rework".to_string(), value: "high".to_string() },
-            ],
+            facts: vec![Fact {
+                key: "rework".to_string(),
+                value: "high".to_string(),
+            }],
         },
         Case {
             id: "large_scale_fast".to_string(),
             intent: "large log, speed priority".to_string(),
             architecture: "dfg".to_string(),
             outcome_score: 0.95,
-            facts: vec![
-                Fact { key: "scale".to_string(), value: "large".to_string() },
-            ],
+            facts: vec![Fact {
+                key: "scale".to_string(),
+                value: "large".to_string(),
+            }],
         },
         Case {
             id: "conformance_focused".to_string(),
@@ -171,8 +231,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "ilp".to_string(),
             outcome_score: 0.9,
             facts: vec![
-                Fact { key: "trace_complexity".to_string(), value: "moderate".to_string() },
-                Fact { key: "rework".to_string(), value: "none".to_string() },
+                Fact {
+                    key: "trace_complexity".to_string(),
+                    value: "moderate".to_string(),
+                },
+                Fact {
+                    key: "rework".to_string(),
+                    value: "none".to_string(),
+                },
             ],
         },
         Case {
@@ -181,8 +247,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "genetic_algorithm".to_string(),
             outcome_score: 0.85,
             facts: vec![
-                Fact { key: "trace_complexity".to_string(), value: "complex".to_string() },
-                Fact { key: "scale".to_string(), value: "medium".to_string() },
+                Fact {
+                    key: "trace_complexity".to_string(),
+                    value: "complex".to_string(),
+                },
+                Fact {
+                    key: "scale".to_string(),
+                    value: "medium".to_string(),
+                },
             ],
         },
         Case {
@@ -191,8 +263,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "simd_streaming_dfg".to_string(),
             outcome_score: 0.9,
             facts: vec![
-                Fact { key: "scale".to_string(), value: "large".to_string() },
-                Fact { key: "variant_diversity".to_string(), value: "low".to_string() },
+                Fact {
+                    key: "scale".to_string(),
+                    value: "large".to_string(),
+                },
+                Fact {
+                    key: "variant_diversity".to_string(),
+                    value: "low".to_string(),
+                },
             ],
         },
         Case {
@@ -201,8 +279,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "a_star".to_string(),
             outcome_score: 0.8,
             facts: vec![
-                Fact { key: "scale".to_string(), value: "medium".to_string() },
-                Fact { key: "variant_diversity".to_string(), value: "medium".to_string() },
+                Fact {
+                    key: "scale".to_string(),
+                    value: "medium".to_string(),
+                },
+                Fact {
+                    key: "variant_diversity".to_string(),
+                    value: "medium".to_string(),
+                },
             ],
         },
         Case {
@@ -211,8 +295,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "pso".to_string(),
             outcome_score: 0.75,
             facts: vec![
-                Fact { key: "trace_complexity".to_string(), value: "moderate".to_string() },
-                Fact { key: "variant_diversity".to_string(), value: "medium".to_string() },
+                Fact {
+                    key: "trace_complexity".to_string(),
+                    value: "moderate".to_string(),
+                },
+                Fact {
+                    key: "variant_diversity".to_string(),
+                    value: "medium".to_string(),
+                },
             ],
         },
         Case {
@@ -221,8 +311,14 @@ fn anchor_cases() -> Vec<Case> {
             architecture: "heuristic_miner".to_string(),
             outcome_score: 0.7,
             facts: vec![
-                Fact { key: "trace_complexity".to_string(), value: "moderate".to_string() },
-                Fact { key: "rework".to_string(), value: "medium".to_string() },
+                Fact {
+                    key: "trace_complexity".to_string(),
+                    value: "moderate".to_string(),
+                },
+                Fact {
+                    key: "rework".to_string(),
+                    value: "medium".to_string(),
+                },
             ],
         },
     ]
@@ -233,7 +329,10 @@ fn discovery_rules() -> Vec<Rule> {
     vec![
         Rule {
             id: "r1_large_fast".to_string(),
-            premise: vec!["scale:large".to_string(), "variant_diversity:low".to_string()],
+            premise: vec![
+                "scale:large".to_string(),
+                "variant_diversity:low".to_string(),
+            ],
             conclusion: "prefer:dfg".to_string(),
             certainty: 0.9,
         },
@@ -245,7 +344,10 @@ fn discovery_rules() -> Vec<Rule> {
         },
         Rule {
             id: "r3_audit_ilp".to_string(),
-            premise: vec!["trace_complexity:moderate".to_string(), "rework:none".to_string()],
+            premise: vec![
+                "trace_complexity:moderate".to_string(),
+                "rework:none".to_string(),
+            ],
             conclusion: "prefer:ilp".to_string(),
             certainty: 0.8,
         },
@@ -257,7 +359,10 @@ fn discovery_rules() -> Vec<Rule> {
         },
         Rule {
             id: "r5_small_alpha".to_string(),
-            premise: vec!["scale:small".to_string(), "variant_diversity:low".to_string()],
+            premise: vec![
+                "scale:small".to_string(),
+                "variant_diversity:low".to_string(),
+            ],
             conclusion: "prefer:alpha_plus_plus".to_string(),
             certainty: 0.7,
         },
@@ -298,9 +403,18 @@ fn current_state(
     mean_trace_len: f64,
 ) -> Vec<StateAtom> {
     vec![
-        StateAtom { predicate: "trace_count".to_string(), value: traces.to_string() },
-        StateAtom { predicate: "activity_count".to_string(), value: activities.to_string() },
-        StateAtom { predicate: "variant_count".to_string(), value: variants.to_string() },
+        StateAtom {
+            predicate: "trace_count".to_string(),
+            value: traces.to_string(),
+        },
+        StateAtom {
+            predicate: "activity_count".to_string(),
+            value: activities.to_string(),
+        },
+        StateAtom {
+            predicate: "variant_count".to_string(),
+            value: variants.to_string(),
+        },
         StateAtom {
             predicate: "has_rework".to_string(),
             value: (rework_ratio > 0.05).to_string(),

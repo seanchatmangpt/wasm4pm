@@ -344,7 +344,7 @@ Trace: abc123...
 - ✅ **Pro:** Full distributed trace correlation, causal chain visible
 - ✅ **Pro:** Can see WASM execution nested under CLI span
 - ⚠️ **Con:** Requires modifying every WASM export signature (context parameter)
-- ⚠️ **Con:** Backward compatibility: old WASM binaries won't accept context parameter
+- ⚠️ **Con:** baseline admissibility: old WASM binaries won't accept context parameter
 - ⚠️ **Con:** WASM-bindgen serialization overhead (small for context, ~200 bytes)
 
 **Priority:** HIGH (enables full causal tracing)

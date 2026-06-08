@@ -36,8 +36,8 @@
 use std::collections::{HashMap, HashSet};
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
-    PetriNetTransition, Trace,
+    AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
+    Trace,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -46,9 +46,18 @@ use wasm4pm::models::{
 
 fn make_event(case_id: &str, activity: &str, timestamp: &str) -> Event {
     let mut attrs = HashMap::new();
-    attrs.insert("concept:name".to_string(), AttributeValue::String(activity.to_string()));
-    attrs.insert("case:concept:name".to_string(), AttributeValue::String(case_id.to_string()));
-    attrs.insert("time:timestamp".to_string(), AttributeValue::String(timestamp.to_string()));
+    attrs.insert(
+        "concept:name".to_string(),
+        AttributeValue::String(activity.to_string()),
+    );
+    attrs.insert(
+        "case:concept:name".to_string(),
+        AttributeValue::String(case_id.to_string()),
+    );
+    attrs.insert(
+        "time:timestamp".to_string(),
+        AttributeValue::String(timestamp.to_string()),
+    );
     Event { attributes: attrs }
 }
 
@@ -59,7 +68,9 @@ fn make_log_with_cases(cases: &[(&str, &[&str])]) -> EventLog {
         let events = activities
             .iter()
             .enumerate()
-            .map(|(idx, &activity)| make_event(case_id, activity, &format!("2024-01-01T{:02}:00:00Z", idx)))
+            .map(|(idx, &activity)| {
+                make_event(case_id, activity, &format!("2024-01-01T{:02}:00:00Z", idx))
+            })
             .collect();
         traces_map.insert(case_id.to_string(), events);
     }
@@ -82,20 +93,60 @@ fn simple_petri_net() -> PetriNet {
     // Simple model: Start → A → B → End
     PetriNet {
         places: vec![
-            PetriNetPlace { id: "i".to_string(), label: "start".to_string(), marking: None },
-            PetriNetPlace { id: "p1".to_string(), label: "p1".to_string(), marking: None },
-            PetriNetPlace { id: "p2".to_string(), label: "p2".to_string(), marking: None },
-            PetriNetPlace { id: "f".to_string(), label: "end".to_string(), marking: None },
+            PetriNetPlace {
+                id: "i".to_string(),
+                label: "start".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p1".to_string(),
+                label: "p1".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p2".to_string(),
+                label: "p2".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "f".to_string(),
+                label: "end".to_string(),
+                marking: None,
+            },
         ],
         transitions: vec![
-            PetriNetTransition { id: "A".to_string(), label: "A".to_string(), is_invisible: None },
-            PetriNetTransition { id: "B".to_string(), label: "B".to_string(), is_invisible: None },
+            PetriNetTransition {
+                id: "A".to_string(),
+                label: "A".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "B".to_string(),
+                label: "B".to_string(),
+                is_invisible: None,
+            },
         ],
         arcs: vec![
-            PetriNetArc { from: "i".to_string(), to: "A".to_string(), weight: None },
-            PetriNetArc { from: "A".to_string(), to: "p1".to_string(), weight: None },
-            PetriNetArc { from: "p1".to_string(), to: "B".to_string(), weight: None },
-            PetriNetArc { from: "B".to_string(), to: "f".to_string(), weight: None },
+            PetriNetArc {
+                from: "i".to_string(),
+                to: "A".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "A".to_string(),
+                to: "p1".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p1".to_string(),
+                to: "B".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "B".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
         ],
         initial_marking: {
             let mut m = HashMap::new();
@@ -133,8 +184,10 @@ fn gap1_case_id_continuity_proof() {
     // **Invariant:** Fitness must account for case fragmentation.
     // If parser doesn't enforce trace contiguity, fitness is meaningless.
     // For now, verify fitness is at least bounded.
-    assert!(result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
-            "fitness must be bounded even with non-contiguous cases");
+    assert!(
+        result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
+        "fitness must be bounded even with non-contiguous cases"
+    );
 
     // **Recommendation:** Fitness computation should verify all events for a case_id
     // are contiguous. If not, return fitness=null with explicit violation.
@@ -175,8 +228,14 @@ fn gap1_duplicate_case_ids_invalid() {
     // Current code: May treat as two separate cases (case_count=2) or merge them (case_count=1).
     // Both interpretations could be wrong without explicit schema validation.
 
-    assert!(result.case_fitness.len() >= 1, "must have at least one case result");
-    println!("Duplicate case IDs: {} cases reported", result.case_fitness.len());
+    assert!(
+        result.case_fitness.len() >= 1,
+        "must have at least one case result"
+    );
+    println!(
+        "Duplicate case IDs: {} cases reported",
+        result.case_fitness.len()
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -202,7 +261,7 @@ fn gap2_missing_vs_consumed_asymmetry() {
 
     let log = make_log_with_cases(&[
         ("case1", &["A", "B", "C"]), // Extra C
-        ("case2", &["A"]), // Missing B
+        ("case2", &["A"]),           // Missing B
     ]);
 
     let net = simple_petri_net(); // Expects A→B
@@ -237,9 +296,14 @@ fn gap2_zero_denominator_guard() {
     let result = token_replay_pure(&log, &net, "concept:name");
 
     // **Invariant:** Fitness must be well-defined (finite, not NaN).
-    assert!(result.avg_fitness.is_finite(), "fitness must be finite, not NaN/Inf");
-    assert!(result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
-            "fitness must be in [0.0, 1.0]");
+    assert!(
+        result.avg_fitness.is_finite(),
+        "fitness must be finite, not NaN/Inf"
+    );
+    assert!(
+        result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
+        "fitness must be in [0.0, 1.0]"
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -260,23 +324,75 @@ fn gap3_precision_without_generalization_proof() {
     // Model that allows A→B→C (C is an "escaping edge" not in log)
     let net = PetriNet {
         places: vec![
-            PetriNetPlace { id: "i".to_string(), label: "start".to_string(), marking: None },
-            PetriNetPlace { id: "p1".to_string(), label: "p1".to_string(), marking: None },
-            PetriNetPlace { id: "p2".to_string(), label: "p2".to_string(), marking: None },
-            PetriNetPlace { id: "f".to_string(), label: "end".to_string(), marking: None },
+            PetriNetPlace {
+                id: "i".to_string(),
+                label: "start".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p1".to_string(),
+                label: "p1".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p2".to_string(),
+                label: "p2".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "f".to_string(),
+                label: "end".to_string(),
+                marking: None,
+            },
         ],
         transitions: vec![
-            PetriNetTransition { id: "A".to_string(), label: "A".to_string(), is_invisible: None },
-            PetriNetTransition { id: "B".to_string(), label: "B".to_string(), is_invisible: None },
-            PetriNetTransition { id: "C".to_string(), label: "C".to_string(), is_invisible: None },
+            PetriNetTransition {
+                id: "A".to_string(),
+                label: "A".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "B".to_string(),
+                label: "B".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "C".to_string(),
+                label: "C".to_string(),
+                is_invisible: None,
+            },
         ],
         arcs: vec![
-            PetriNetArc { from: "i".to_string(), to: "A".to_string(), weight: None },
-            PetriNetArc { from: "A".to_string(), to: "p1".to_string(), weight: None },
-            PetriNetArc { from: "p1".to_string(), to: "B".to_string(), weight: None },
-            PetriNetArc { from: "p1".to_string(), to: "C".to_string(), weight: None }, // Alternative: C
-            PetriNetArc { from: "B".to_string(), to: "f".to_string(), weight: None },
-            PetriNetArc { from: "C".to_string(), to: "f".to_string(), weight: None },
+            PetriNetArc {
+                from: "i".to_string(),
+                to: "A".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "A".to_string(),
+                to: "p1".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p1".to_string(),
+                to: "B".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p1".to_string(),
+                to: "C".to_string(),
+                weight: None,
+            }, // Alternative: C
+            PetriNetArc {
+                from: "B".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "C".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
         ],
         initial_marking: {
             let mut m = HashMap::new();
@@ -310,19 +426,55 @@ fn gap3_duplicate_edge_precision_undefined() {
     // Model with multiple transitions labeled "A" (creates ambiguity)
     let net = PetriNet {
         places: vec![
-            PetriNetPlace { id: "i".to_string(), label: "start".to_string(), marking: None },
-            PetriNetPlace { id: "p1".to_string(), label: "p1".to_string(), marking: None },
-            PetriNetPlace { id: "f".to_string(), label: "end".to_string(), marking: None },
+            PetriNetPlace {
+                id: "i".to_string(),
+                label: "start".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p1".to_string(),
+                label: "p1".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "f".to_string(),
+                label: "end".to_string(),
+                marking: None,
+            },
         ],
         transitions: vec![
-            PetriNetTransition { id: "A1".to_string(), label: "A".to_string(), is_invisible: None },
-            PetriNetTransition { id: "A2".to_string(), label: "A".to_string(), is_invisible: None }, // Duplicate!
+            PetriNetTransition {
+                id: "A1".to_string(),
+                label: "A".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "A2".to_string(),
+                label: "A".to_string(),
+                is_invisible: None,
+            }, // Duplicate!
         ],
         arcs: vec![
-            PetriNetArc { from: "i".to_string(), to: "A1".to_string(), weight: None },
-            PetriNetArc { from: "i".to_string(), to: "A2".to_string(), weight: None },
-            PetriNetArc { from: "A1".to_string(), to: "f".to_string(), weight: None },
-            PetriNetArc { from: "A2".to_string(), to: "f".to_string(), weight: None },
+            PetriNetArc {
+                from: "i".to_string(),
+                to: "A1".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "i".to_string(),
+                to: "A2".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "A1".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "A2".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
         ],
         initial_marking: {
             let mut m = HashMap::new();
@@ -342,7 +494,10 @@ fn gap3_duplicate_edge_precision_undefined() {
     // **Invariant:** Precision must handle duplicate labels (silent transitions or
     // non-determinism). Current code: May crash or return undefined behavior.
 
-    assert!(result.avg_fitness >= 0.0, "must handle duplicate transitions");
+    assert!(
+        result.avg_fitness >= 0.0,
+        "must handle duplicate transitions"
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -366,27 +521,95 @@ fn gap4_quality_metric_interdependence() {
 
     let net = PetriNet {
         places: vec![
-            PetriNetPlace { id: "i".to_string(), label: "start".to_string(), marking: None },
-            PetriNetPlace { id: "p1".to_string(), label: "p1".to_string(), marking: None },
-            PetriNetPlace { id: "p2".to_string(), label: "p2".to_string(), marking: None },
-            PetriNetPlace { id: "p3".to_string(), label: "p3".to_string(), marking: None },
-            PetriNetPlace { id: "f".to_string(), label: "end".to_string(), marking: None },
+            PetriNetPlace {
+                id: "i".to_string(),
+                label: "start".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p1".to_string(),
+                label: "p1".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p2".to_string(),
+                label: "p2".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "p3".to_string(),
+                label: "p3".to_string(),
+                marking: None,
+            },
+            PetriNetPlace {
+                id: "f".to_string(),
+                label: "end".to_string(),
+                marking: None,
+            },
         ],
         transitions: vec![
-            PetriNetTransition { id: "A".to_string(), label: "A".to_string(), is_invisible: None },
-            PetriNetTransition { id: "B".to_string(), label: "B".to_string(), is_invisible: None },
-            PetriNetTransition { id: "C".to_string(), label: "C".to_string(), is_invisible: None },
-            PetriNetTransition { id: "D".to_string(), label: "D".to_string(), is_invisible: None },
+            PetriNetTransition {
+                id: "A".to_string(),
+                label: "A".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "B".to_string(),
+                label: "B".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "C".to_string(),
+                label: "C".to_string(),
+                is_invisible: None,
+            },
+            PetriNetTransition {
+                id: "D".to_string(),
+                label: "D".to_string(),
+                is_invisible: None,
+            },
         ],
         arcs: vec![
-            PetriNetArc { from: "i".to_string(), to: "A".to_string(), weight: None },
-            PetriNetArc { from: "A".to_string(), to: "p1".to_string(), weight: None },
-            PetriNetArc { from: "p1".to_string(), to: "B".to_string(), weight: None },
-            PetriNetArc { from: "B".to_string(), to: "p2".to_string(), weight: None },
-            PetriNetArc { from: "p2".to_string(), to: "C".to_string(), weight: None },
-            PetriNetArc { from: "C".to_string(), to: "p3".to_string(), weight: None },
-            PetriNetArc { from: "p3".to_string(), to: "D".to_string(), weight: None },
-            PetriNetArc { from: "D".to_string(), to: "f".to_string(), weight: None },
+            PetriNetArc {
+                from: "i".to_string(),
+                to: "A".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "A".to_string(),
+                to: "p1".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p1".to_string(),
+                to: "B".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "B".to_string(),
+                to: "p2".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p2".to_string(),
+                to: "C".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "C".to_string(),
+                to: "p3".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "p3".to_string(),
+                to: "D".to_string(),
+                weight: None,
+            },
+            PetriNetArc {
+                from: "D".to_string(),
+                to: "f".to_string(),
+                weight: None,
+            },
         ],
         initial_marking: {
             let mut m = HashMap::new();
@@ -406,7 +629,10 @@ fn gap4_quality_metric_interdependence() {
     // The key issue: conformance reports fitness alone without checking generalization.
     // A model that accepts ONLY A→B→C→D (and rejects A→C or A→B→D) is overfitted.
     // Current code: Computes fitness correctly but doesn't flag overfitting.
-    assert!(result.avg_fitness >= 0.8, "fitness indicates good match for conforming sequence");
+    assert!(
+        result.avg_fitness >= 0.8,
+        "fitness indicates good match for conforming sequence"
+    );
 
     // **GAP-4-A Critical Finding:** No metric measures generalization.
     // Fitness of 0.875 looks good, but model might be overfitted.
@@ -432,7 +658,10 @@ fn gap4_low_fitness_high_precision_indicates_restrictive_model() {
 
     // **Invariant:** fitness < precision indicates model is too restrictive.
     // (fitness measures log coverage; precision measures model coverage)
-    assert!(result.avg_fitness < 1.0, "log has extra activity not in model");
+    assert!(
+        result.avg_fitness < 1.0,
+        "log has extra activity not in model"
+    );
 
     // **Recommendation:** Add quality advice:
     // if (fitness < 0.85 && precision >= 0.85) {
@@ -462,10 +691,16 @@ fn gap5_threshold_lacks_confidence_interval() {
     // Case 2: 1000 traces, 850 conforming → fitness = 0.85 (meets threshold)
     let mut large_cases: Vec<(&str, &[&str])> = vec![];
     for i in 0..850 {
-        large_cases.push((Box::leak(format!("case{}", i).into_boxed_str()), &["A", "B"][..]));
+        large_cases.push((
+            Box::leak(format!("case{}", i).into_boxed_str()),
+            &["A", "B"][..],
+        ));
     }
     for i in 850..1000 {
-        large_cases.push((Box::leak(format!("case{}", i).into_boxed_str()), &["A", "X"][..]));
+        large_cases.push((
+            Box::leak(format!("case{}", i).into_boxed_str()),
+            &["A", "X"][..],
+        ));
     }
 
     let net = simple_petri_net();
@@ -491,8 +726,8 @@ fn gap5_variance_in_per_trace_fitness_masked() {
     let log = make_log_with_cases(&[
         ("case1", &["A", "B"]), // Conforming (fitness=1.0)
         ("case2", &["A", "B"]), // Conforming (fitness=1.0)
-        ("case3", &["X"]), // Highly non-conforming (fitness~=0.1)
-        ("case4", &["X"]), // Highly non-conforming (fitness~=0.1)
+        ("case3", &["X"]),      // Highly non-conforming (fitness~=0.1)
+        ("case4", &["X"]),      // Highly non-conforming (fitness~=0.1)
     ]);
 
     let net = simple_petri_net();
@@ -502,7 +737,10 @@ fn gap5_variance_in_per_trace_fitness_masked() {
     // But "half perfect, half terrible" is very different from "all mediocre".
     // Current reporting: May say "55% conforming" without noting bimodal distribution.
 
-    assert!(result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0, "bounded fitness");
+    assert!(
+        result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
+        "bounded fitness"
+    );
 
     // **Recommendation:** Report histogram of per-trace fitness, not just mean:
     // { "avg_fitness": 0.55, "percentile_10": 0.1, "percentile_50": 0.55, "percentile_90": 1.0 }
@@ -532,11 +770,12 @@ fn gap_integration_model_truth_requires_all_proofs() {
     // 4. GAP-4: fitness, precision, generalization independently validated ✓ (required)
     // 5. GAP-5: fitness threshold has confidence interval ✓ (required)
 
-    assert!(result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
-            "fitness is bounded (GAP-2)");
+    assert!(
+        result.avg_fitness >= 0.0 && result.avg_fitness <= 1.0,
+        "fitness is bounded (GAP-2)"
+    );
 
-    assert!(result.case_fitness.len() == 3,
-            "case count correct (GAP-1)");
+    assert!(result.case_fitness.len() == 3, "case count correct (GAP-1)");
 
     // **Collective finding:** To prove "this process is lawful", ALL 5 must be addressed.
     // Current code addresses some but not all. Gap audit complete.

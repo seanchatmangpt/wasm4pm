@@ -18,10 +18,10 @@
 //! // result.precision  → 0.0–1.0
 //! ```
 
+use crate::conformance_guards;
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
-use crate::conformance_guards;
 use hashbrown::{HashMap, HashSet};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -54,8 +54,7 @@ impl PetriNetLookup {
             HashMap::with_capacity(petri_net.arcs.len());
         let mut transition_outputs: HashMap<String, Vec<(String, usize)>> =
             HashMap::with_capacity(petri_net.arcs.len());
-        let mut place_idx: HashMap<String, usize> =
-            HashMap::with_capacity(petri_net.places.len());
+        let mut place_idx: HashMap<String, usize> = HashMap::with_capacity(petri_net.places.len());
 
         // Build sorted label index (replaces activity_to_transition HashMap)
         let mut label_map: HashMap<String, Vec<usize>> =
@@ -65,8 +64,7 @@ impl PetriNetLookup {
                 label_map.entry(trans.label.clone()).or_default().push(idx);
             }
         }
-        let mut sorted_label_index: Vec<(String, Vec<usize>)> =
-            label_map.into_iter().collect();
+        let mut sorted_label_index: Vec<(String, Vec<usize>)> = label_map.into_iter().collect();
         sorted_label_index.sort_by(|a, b| a.0.cmp(&b.0));
 
         // Pre-filter invisible transitions for fixpoint firing
@@ -216,14 +214,8 @@ fn replay_log(
             // Load initial marking into bitmask (each place holds 0 or 1 token for
             // the bitmask path; multi-token places fall back via the Vec path above).
             // We only use the bitmask when every initial count is ≤ 1.
-            let all_single = petri_net
-                .initial_marking
-                .values()
-                .all(|&c| c <= 1)
-                && petri_net
-                    .arcs
-                    .iter()
-                    .all(|a| a.weight.unwrap_or(1) == 1);
+            let all_single = petri_net.initial_marking.values().all(|&c| c <= 1)
+                && petri_net.arcs.iter().all(|a| a.weight.unwrap_or(1) == 1);
 
             if all_single {
                 for (place_id, &count) in &petri_net.initial_marking {
@@ -233,7 +225,12 @@ fn replay_log(
                         }
                     }
                 }
-                fire_invisible_bitmask(&lookup.invisible_indices, &lookup.trans_in_masks, &lookup.trans_out_masks, &mut marking);
+                fire_invisible_bitmask(
+                    &lookup.invisible_indices,
+                    &lookup.trans_in_masks,
+                    &lookup.trans_out_masks,
+                    &mut marking,
+                );
 
                 for (event_idx, event) in trace.events.iter().enumerate() {
                     let activity = event
@@ -253,7 +250,10 @@ fn replay_log(
                         }
                     };
 
-                    let trans_idx = match lookup.sorted_label_index.binary_search_by_key(&activity_label, |(l, _)| l.as_str()) {
+                    let trans_idx = match lookup
+                        .sorted_label_index
+                        .binary_search_by_key(&activity_label, |(l, _)| l.as_str())
+                    {
                         Ok(pos) => lookup.sorted_label_index[pos].1[0],
                         Err(_) => {
                             deviations.push(TokenReplayDeviation {
@@ -308,7 +308,12 @@ fn replay_log(
                             }
                         }
                     }
-                    fire_invisible_bitmask(&lookup.invisible_indices, &lookup.trans_in_masks, &lookup.trans_out_masks, &mut marking);
+                    fire_invisible_bitmask(
+                        &lookup.invisible_indices,
+                        &lookup.trans_in_masks,
+                        &lookup.trans_out_masks,
+                        &mut marking,
+                    );
                 }
 
                 let tokens_remaining = rank_u64(marking, petri_net.places.len().saturating_sub(1));
@@ -320,7 +325,8 @@ fn replay_log(
                         let bit = lookup
                             .place_idx
                             .get(place)
-                            .map_or(0, |&idx| (marking >> idx) & 1) as usize;
+                            .map_or(0, |&idx| (marking >> idx) & 1)
+                            as usize;
                         if bit != *expected {
                             matches = false;
                             break;
@@ -386,7 +392,10 @@ fn replay_log(
                 }
             };
 
-            let trans_idx = match lookup.sorted_label_index.binary_search_by_key(&activity_label, |(l, _)| l.as_str()) {
+            let trans_idx = match lookup
+                .sorted_label_index
+                .binary_search_by_key(&activity_label, |(l, _)| l.as_str())
+            {
                 Ok(pos) => lookup.sorted_label_index[pos].1[0],
                 Err(_) => {
                     deviations.push(TokenReplayDeviation {

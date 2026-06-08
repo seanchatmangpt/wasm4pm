@@ -5,7 +5,7 @@
 //! orchestrator across multiple cycles, verifying that Bellman updates occur
 //! and learning progresses (indirect verification of Q-delta instrumentation).
 
-use wasm4pm::rl_orchestrator::{RlOrchestrator, compute_reward};
+use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
 use wasm4pm::RlState;
 
 fn make_state(health: u8, event_rate_q: u8) -> RlState {
@@ -152,7 +152,10 @@ fn multiple_cycles_accumulate_state() {
     }
 
     let final_cycle_count = orch.telemetry().cycle_count;
-    assert_eq!(final_cycle_count, 5, "After 5 cycles, cycle_count should be 5");
+    assert_eq!(
+        final_cycle_count, 5,
+        "After 5 cycles, cycle_count should be 5"
+    );
 }
 
 #[test]

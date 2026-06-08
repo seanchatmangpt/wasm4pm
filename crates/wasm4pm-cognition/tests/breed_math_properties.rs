@@ -54,7 +54,11 @@ fn jaccard_bounded_in_zero_to_one() {
 fn jaccard_half_overlap_is_one_third() {
     // {x,y} ∩ {y,z} = {y}, ∪ = {x,y,z}, jaccard = 1/3.
     let r = jaccard(&set_of(&["x", "y"]), &set_of(&["y", "z"]));
-    assert!((r - (1.0_f32 / 3.0)).abs() < 1e-6, "expected ≈ 1/3, got {}", r);
+    assert!(
+        (r - (1.0_f32 / 3.0)).abs() < 1e-6,
+        "expected ≈ 1/3, got {}",
+        r
+    );
 }
 
 // ── noisy_or (hearsay.rs:28-33) ───────────────────────────────────────────────
@@ -68,7 +72,11 @@ fn noisy_or_commutativity() {
 #[test]
 fn noisy_or_identity_with_zero() {
     for x in [0.0_f32, 0.1, 0.5, 0.7, 1.0] {
-        assert!((noisy_or(x, 0.0) - x).abs() < 1e-6, "identity broken at x={}", x);
+        assert!(
+            (noisy_or(x, 0.0) - x).abs() < 1e-6,
+            "identity broken at x={}",
+            x
+        );
     }
 }
 
@@ -86,7 +94,10 @@ fn noisy_or_monotone_no_smaller_than_max_input() {
         for b in [0.0_f32, 0.25, 0.5, 0.75, 0.99] {
             let r = noisy_or(a, b);
             let m = a.max(b);
-            assert!(r + 1e-6 >= m, "monotone violated: noisy_or({a},{b})={r} < max={m}");
+            assert!(
+                r + 1e-6 >= m,
+                "monotone violated: noisy_or({a},{b})={r} < max={m}"
+            );
             assert!((0.0..=1.0).contains(&r), "out of bounds: {}", r);
         }
     }

@@ -2,6 +2,7 @@
 
 use crate::powl_arena::{PowlArena, PowlNode};
 use std::collections::HashMap;
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 /// Replace activity labels in a POWL subtree according to a dictionary.
 pub fn apply(
@@ -91,26 +92,19 @@ pub fn apply(
             let mut new_nodes = Vec::with_capacity(cg.graph.nodes.len());
             for n in cg.graph.nodes.clone().into_iter() {
                 match n {
-                    wasm4pm_types::ChoiceGraphNode::Start => {
-                        new_nodes.push(wasm4pm_types::ChoiceGraphNode::Start)
+                    ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
+                    ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
+                    ChoiceGraphNode::Activity(l) => {
+                        let new_label = label_map.get(l.as_str()).cloned().unwrap_or(l);
+                        new_nodes.push(ChoiceGraphNode::Activity(new_label))
                     }
-                    wasm4pm_types::ChoiceGraphNode::End => {
-                        new_nodes.push(wasm4pm_types::ChoiceGraphNode::End)
-                    }
-                    wasm4pm_types::ChoiceGraphNode::Activity(l) => {
-                        let new_label = label_map
-                            .get(l.as_str())
-                            .cloned()
-                            .unwrap_or(l);
-                        new_nodes.push(wasm4pm_types::ChoiceGraphNode::Activity(new_label))
-                    }
-                    wasm4pm_types::ChoiceGraphNode::SubModel(child) => {
+                    ChoiceGraphNode::SubModel(child) => {
                         let new_child = apply(arena, child, label_map, dest_arena);
-                        new_nodes.push(wasm4pm_types::ChoiceGraphNode::SubModel(new_child));
+                        new_nodes.push(ChoiceGraphNode::SubModel(new_child));
                     }
                 }
             }
-            let new_graph = wasm4pm_types::ChoiceGraph {
+            let new_graph = ChoiceGraph {
                 nodes: new_nodes,
                 edges: cg.graph.edges.clone(),
                 start_idx: cg.graph.start_idx,

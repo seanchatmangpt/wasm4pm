@@ -1,4 +1,19 @@
-#![allow(dead_code, unused_variables, unused_assignments, unused_mut)]
+#![allow(
+    dead_code,
+    unused_variables,
+    unused_assignments,
+    unused_mut,
+    clippy::all,
+    unused_imports,
+    removed,
+    unused_features
+)]
+#![feature(generic_const_exprs)]
+#![feature(adt_const_params)]
+#![feature(const_trait_impl)]
+#![feature(min_specialization)]
+#![feature(portable_simd)]
+#![allow(incomplete_features)]
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -78,33 +93,44 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
+/// baseline for bcinr.
+pub mod bcinr_compat;
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
-/// Compatibility layer for bcinr.
-pub mod bcinr_compat;
+/// Compile-checked API probe for wasm4pm-compat integration.
+pub mod compat_api_probe;
+/// Conformance Authority Module — A* alignment, fitness/precision metrics, admission gates (v30.1.2)
+pub mod conformance_authority;
 /// Structured error types and JS interop helpers.
 pub mod error;
-/// Event log I/O utilities (XES import/export, binary format).
-pub mod io;
-/// High-level ML algorithm dispatchers (remaining-time, outcome, anomaly).
-pub mod ml_algorithms;
-/// Core data models: `EventLog`, `OCEL`, `DFG`, `PetriNet`, etc.
-pub mod models;
-/// Formal WF-net soundness + structural predicates (Separable WF-net paper, Defs 3.1–3.13).
-pub mod soundness;
-/// WF-net → POWL 2.0 translation (Separable WF-net paper, Section 4: Partition_MG / Partition_SM).
-pub mod wf_to_powl;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
+/// Graduation intake module bridging the baseline.
+pub mod graduation;
+/// Event log I/O utilities (XES import/export, binary format).
+pub mod io;
+/// Lifecycle State Machine module — WASM4PM autonomic control flow.
+pub mod lifecycle;
+pub mod lsa;
+/// High-level ML algorithm dispatchers (remaining-time, outcome, anomaly).
+pub mod ml_algorithms;
+/// Process-Model Registry module.
+pub mod model_registry;
+/// Core data models: `EventLog`, `OCEL`, `DFG`, `PetriNet`, etc.
+pub mod models;
+/// Adversarial receipt doctor validation and truth verification.
+pub mod receipt;
+/// Process Replay Authority Module — token-based replay, simulation, and execution profiling.
+pub mod replay;
+/// Formal WF-net soundness + structural predicates (Separable WF-net paper, Defs 3.1–3.13).
+pub mod soundness;
 /// Global stored-object state (handles, object pool, arena management).
 pub mod state;
 /// Shared type aliases and newtype wrappers.
 pub mod types;
-/// Adversarial receipt doctor validation and truth verification.
-pub mod receipt;
-/// Process-Model Registry module.
-pub mod model_registry;
+/// WF-net → POWL 2.0 translation (Separable WF-net paper, Section 4: Partition_MG / Partition_SM).
+pub mod wf_to_powl;
 
 #[cfg(feature = "ocel")]
 pub mod ocpq_parser;
@@ -299,16 +325,15 @@ pub mod gate_validator;
 pub mod algorithms;
 #[cfg(feature = "conformance_basic")]
 pub mod analysis;
-pub mod testing;
 pub mod binary_format;
 pub mod branchless;
 pub mod cache;
 pub mod capability_registry;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
-pub mod conformance_reporting;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance_guards;
+pub mod conformance_reporting;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
@@ -332,6 +357,7 @@ pub mod hot_kernels;
 pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
+pub mod network_metrics;
 pub mod parallel_executor;
 #[cfg(all(feature = "conformance_basic", feature = "discovery_advanced"))]
 pub mod pattern_analysis;
@@ -344,7 +370,7 @@ pub mod rl_state_serialization;
 #[cfg(feature = "discovery_advanced")]
 pub mod smart_engine;
 pub mod social_network;
-pub mod network_metrics;
+pub mod testing;
 pub mod text_encoding;
 pub mod utilities;
 pub mod wasm_utils;
@@ -389,8 +415,20 @@ pub mod transition_system;
 pub mod generalization;
 
 // ML/Prediction (gated by ml feature)
+#[cfg(feature = "miniml")]
+pub mod actor_envelope;
 #[cfg(feature = "ml")]
 pub mod anomaly;
+#[cfg(feature = "miniml")]
+pub mod automembrane;
+#[cfg(feature = "miniml")]
+pub mod automl_envelope;
+#[cfg(feature = "miniml")]
+pub mod benchmark_runner;
+#[cfg(feature = "miniml")]
+pub mod drift_manager;
+#[cfg(feature = "miniml")]
+pub mod object_envelope;
 #[cfg(feature = "ml")]
 pub mod prediction;
 #[cfg(feature = "ml")]
@@ -409,22 +447,10 @@ pub mod prediction_remaining_time;
 pub mod prediction_resource;
 #[cfg(feature = "miniml")]
 pub mod prediction_rf;
-#[cfg(all(feature = "ml", feature = "miniml"))]
-pub mod statistical_analysis;
-#[cfg(feature = "miniml")]
-pub mod automembrane;
-#[cfg(feature = "miniml")]
-pub mod benchmark_runner;
-#[cfg(feature = "miniml")]
-pub mod actor_envelope;
-#[cfg(feature = "miniml")]
-pub mod object_envelope;
 #[cfg(feature = "miniml")]
 pub mod route_envelope;
-#[cfg(feature = "miniml")]
-pub mod automl_envelope;
-#[cfg(feature = "miniml")]
-pub mod drift_manager;
+#[cfg(all(feature = "ml", feature = "miniml"))]
+pub mod statistical_analysis;
 #[cfg(feature = "miniml")]
 pub mod time_envelope;
 
@@ -580,8 +606,8 @@ pub use rl_stability_monitor::RlStabilityMonitor;
 pub mod rl_dimensionality_analysis;
 #[cfg(feature = "cloud")]
 pub use rl_dimensionality_analysis::{
-    analyze_dimension_usage, format_dimensionality_report, DimensionalityAnalyzer,
-    DimensionUsageReport, StateClustering,
+    analyze_dimension_usage, format_dimensionality_report, DimensionUsageReport,
+    DimensionalityAnalyzer, StateClustering,
 };
 
 // Action Dispatch Layer — converts RL action labels to executable operations
@@ -641,13 +667,14 @@ pub mod ml;
 #[cfg(feature = "cognition")]
 pub use wasm4pm_cognition as cognition;
 
-// Types substrate re-export — surfaces `wasm4pm_types` (hash, BLAKE3 helpers,
-// canonical JSON) as `wasm4pm::data_types`. Downstream crates that need
+// Types substrate re-export — surfaces `wasm4pm_compat` (the canonical type
+// foundation: hash, BLAKE3 helpers, canonical JSON, and cross-crate
+// baseline) as `wasm4pm::data_types`. Downstream crates that need
 // canonical receipt serialization can reach
 // `wasm4pm::data_types::hash::canonical_json` via the single wasm4pm
 // dependency. (The name `types` is already taken by an internal WASM bindings
 // module at this crate root.)
-pub use wasm4pm_types as data_types;
+pub use wasm4pm_compat as data_types;
 
 // GPU-accelerated LinUCB contextual bandit for algorithm selection
 // (van der Aalst: resource/intervention prediction perspective)
@@ -675,9 +702,9 @@ pub mod oc_orchestrator;
 pub use autonomic_audit_trail::*;
 
 // Convenience re-exports for WASM API (Gap-1)
-pub use xes_format::{load_eventlog_from_xes, load_eventlog_from_xes_cached};
 pub use discovery::discover_dfg;
 pub use state::delete_object;
+pub use xes_format::{load_eventlog_from_xes, load_eventlog_from_xes_cached};
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
@@ -1251,6 +1278,10 @@ pub fn autonomic_execute_cycle(
 
     // SPC: multi-dimensional (event rate, trace duration, activity frequency)
     let mut all_special_causes: Vec<String> = Vec::new();
+    // OBS-GAP-2 FIX: track classified rule types so the primary rule type can be
+    // emitted in the RL action correlation span. Preserves type information that
+    // would otherwise be lost in scalar spc_alert_level quantization.
+    let mut spc_rule_types: Vec<&'static str> = Vec::new();
     let mut spc_results = serde_json::Map::new();
 
     // SPC on event rate (events per trace)
@@ -1292,8 +1323,14 @@ pub fn autonomic_execute_cycle(
                     let z_score = if chart_data.len() > 0 {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
-                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
-                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
+                            / data_values.len() as f64)
+                            .sqrt();
+                        if std > 0.0 {
+                            ((value - mean) / std).abs()
+                        } else {
+                            0.0
+                        }
                     } else {
                         0.0
                     };
@@ -1305,7 +1342,7 @@ pub fn autonomic_execute_cycle(
                             ("outlier_value", format!("{:.2}", value)),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Shift { direction, count } => {
                     // Rule 2: 9+ consecutive points on one side of CL
                     let direction_str = match direction {
@@ -1320,7 +1357,7 @@ pub fn autonomic_execute_cycle(
                             ("consecutive_points", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Trend { direction, count } => {
                     // Rule 3: 6+ consecutive increasing/decreasing points
                     let direction_str = match direction {
@@ -1335,7 +1372,7 @@ pub fn autonomic_execute_cycle(
                             ("monotonic_sequence_length", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::TwoOfThree { direction } => {
                     // Rule 4: 2 of 3 consecutive points beyond 2σ on same side
                     let direction_str = match direction {
@@ -1345,19 +1382,33 @@ pub fn autonomic_execute_cycle(
                     (
                         "rule_4_two_of_three",
                         4u8,
-                        vec![
-                            ("direction", direction_str.to_string()),
-                        ],
+                        vec![("direction", direction_str.to_string())],
                     )
-                },
+                }
             };
 
             // Emit detailed OTEL span with classified rule type
             let current_cycle = 0u64; // PERF: wire with_orch() accessor
-            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
-            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
-            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
-            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+            let spc_value = if let Some(last_chart) = chart_data.last() {
+                last_chart.value
+            } else {
+                0.0
+            };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() {
+                last_chart.ucl
+            } else {
+                0.0
+            };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() {
+                last_chart.lcl
+            } else {
+                0.0
+            };
+            let spc_cl = if let Some(last_chart) = chart_data.last() {
+                last_chart.cl
+            } else {
+                0.0
+            };
 
             let sigma_distance = if spc_cl > 0.0 {
                 ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
@@ -1383,6 +1434,7 @@ pub fn autonomic_execute_cycle(
             );
 
             all_special_causes.push(format!("event_rate: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1428,8 +1480,14 @@ pub fn autonomic_execute_cycle(
                     let z_score = if chart_data.len() > 0 {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
-                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
-                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
+                            / data_values.len() as f64)
+                            .sqrt();
+                        if std > 0.0 {
+                            ((value - mean) / std).abs()
+                        } else {
+                            0.0
+                        }
                     } else {
                         0.0
                     };
@@ -1441,7 +1499,7 @@ pub fn autonomic_execute_cycle(
                             ("outlier_value", format!("{:.2}", value)),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Shift { direction, count } => {
                     let direction_str = match direction {
                         spc::ShiftDirection::Above => "above",
@@ -1455,7 +1513,7 @@ pub fn autonomic_execute_cycle(
                             ("consecutive_points", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Trend { direction, count } => {
                     let direction_str = match direction {
                         spc::TrendDirection::Increasing => "increasing",
@@ -1469,7 +1527,7 @@ pub fn autonomic_execute_cycle(
                             ("monotonic_sequence_length", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::TwoOfThree { direction } => {
                     let direction_str = match direction {
                         spc::ShiftDirection::Above => "above",
@@ -1478,18 +1536,32 @@ pub fn autonomic_execute_cycle(
                     (
                         "rule_4_two_of_three",
                         4u8,
-                        vec![
-                            ("direction", direction_str.to_string()),
-                        ],
+                        vec![("direction", direction_str.to_string())],
                     )
-                },
+                }
             };
 
             let current_cycle = 0u64; // PERF: wire with_orch() accessor
-            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
-            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
-            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
-            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+            let spc_value = if let Some(last_chart) = chart_data.last() {
+                last_chart.value
+            } else {
+                0.0
+            };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() {
+                last_chart.ucl
+            } else {
+                0.0
+            };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() {
+                last_chart.lcl
+            } else {
+                0.0
+            };
+            let spc_cl = if let Some(last_chart) = chart_data.last() {
+                last_chart.cl
+            } else {
+                0.0
+            };
 
             let sigma_distance = if spc_cl > 0.0 {
                 ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
@@ -1514,6 +1586,7 @@ pub fn autonomic_execute_cycle(
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("trace_duration: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1559,8 +1632,14 @@ pub fn autonomic_execute_cycle(
                     let z_score = if chart_data.len() > 0 {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
                         let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
-                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
-                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>()
+                            / data_values.len() as f64)
+                            .sqrt();
+                        if std > 0.0 {
+                            ((value - mean) / std).abs()
+                        } else {
+                            0.0
+                        }
                     } else {
                         0.0
                     };
@@ -1572,7 +1651,7 @@ pub fn autonomic_execute_cycle(
                             ("outlier_value", format!("{:.2}", value)),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Shift { direction, count } => {
                     let direction_str = match direction {
                         spc::ShiftDirection::Above => "above",
@@ -1586,7 +1665,7 @@ pub fn autonomic_execute_cycle(
                             ("consecutive_points", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::Trend { direction, count } => {
                     let direction_str = match direction {
                         spc::TrendDirection::Increasing => "increasing",
@@ -1600,7 +1679,7 @@ pub fn autonomic_execute_cycle(
                             ("monotonic_sequence_length", count.to_string()),
                         ],
                     )
-                },
+                }
                 spc::SpecialCause::TwoOfThree { direction } => {
                     let direction_str = match direction {
                         spc::ShiftDirection::Above => "above",
@@ -1609,18 +1688,32 @@ pub fn autonomic_execute_cycle(
                     (
                         "rule_4_two_of_three",
                         4u8,
-                        vec![
-                            ("direction", direction_str.to_string()),
-                        ],
+                        vec![("direction", direction_str.to_string())],
                     )
-                },
+                }
             };
 
             let current_cycle = 0u64; // PERF: wire with_orch() accessor
-            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
-            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
-            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
-            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+            let spc_value = if let Some(last_chart) = chart_data.last() {
+                last_chart.value
+            } else {
+                0.0
+            };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() {
+                last_chart.ucl
+            } else {
+                0.0
+            };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() {
+                last_chart.lcl
+            } else {
+                0.0
+            };
+            let spc_cl = if let Some(last_chart) = chart_data.last() {
+                last_chart.cl
+            } else {
+                0.0
+            };
 
             let sigma_distance = if spc_cl > 0.0 {
                 ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
@@ -1645,6 +1738,7 @@ pub fn autonomic_execute_cycle(
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1752,6 +1846,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert("event_rate_historical".to_string(), serde_json::json!("OK"));
@@ -1799,6 +1894,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert(
@@ -1849,6 +1945,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert(
@@ -2033,6 +2130,30 @@ pub fn autonomic_execute_cycle(
         _ => "unknown action; fallback applied",
     };
 
+    // OBS-GAP-2 FIX: emit primary SPC rule type so Jaeger can correlate
+    // rule_type → action_selected without a separate SPC span lookup.
+    let spc_primary_rule_type = spc_rule_types.first().copied().unwrap_or("none");
+
+    // OBS-GAP-3 FIX: emit circuit_recovery_signal when circuit transitions
+    // from Open/HalfOpen to Closed (recovery event), enabling Jaeger queries
+    // like "circuit_recovery_signal=true AND health_improved=true".
+    let circuit_recovery_signal = circuit_state.contains("Closed") && circuit_allowed;
+
+    // OBS-GAP-2 FIX: validate action-rule alignment for Rank-2 oracle auditing.
+    // Correct rule-to-action mapping per domain contract:
+    //   rule_1_outlier  → Retry or Scale (transient spike)
+    //   rule_2_shift    → Scale or Fallback (sustained shift)
+    //   rule_3_trend    → Scale or Restart (monotonic trend)
+    //   rule_4_two_of_three → Scale or Continue (borderline pattern)
+    let action_matches_spc_rule = match (spc_primary_rule_type, action_label.as_str()) {
+        ("rule_1_outlier", "Retry" | "Scale") => true,
+        ("rule_2_shift", "Scale" | "Fallback") => true,
+        ("rule_3_trend", "Scale" | "Restart") => true,
+        ("rule_4_two_of_three", "Scale" | "Continue") => true,
+        ("none", _) => true, // No SPC alert: any action is valid
+        _ => false,
+    };
+
     tracing::info!(
         target: "autonomic",
         action = %action_label,
@@ -2043,8 +2164,13 @@ pub fn autonomic_execute_cycle(
         cycle = %cycle_count,
         health = %health_state_val,
         spc_alerts = %all_special_causes.len(),
+        // OBS-GAP-2: primary rule type and action-rule alignment
+        spc_primary_rule_type = spc_primary_rule_type,
+        action_matches_spc_rule = action_matches_spc_rule,
         circuit_state = %circuit_state,
         circuit_allowed = %circuit_allowed,
+        // OBS-GAP-3: circuit recovery signal for causality correlation
+        circuit_recovery_signal = circuit_recovery_signal,
         guard_pass = %guard_pass,
         service_name = "wpm",
         status = if guard_pass && circuit_allowed { "ok" } else { "warning" },
@@ -2132,7 +2258,10 @@ pub fn autonomic_execute_cycle(
                 *la.borrow_mut() = fallback_algo.clone();
             });
             (
-                format!("fallback: switch to {}, reduce event budget 10%", fallback_algo),
+                format!(
+                    "fallback: switch to {}, reduce event budget 10%",
+                    fallback_algo
+                ),
                 "fallback".to_string(),
             )
         }
@@ -2705,7 +2834,10 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
             if num_q_tables > 0 {
                 let (restored, skipped) = orch_ref.restore_all_q_tables(state.agent_q_tables);
                 restoration_status = if skipped > 0 {
-                    format!("; {} Q-tables restored, {} skipped (policy divergence risk)", restored, skipped)
+                    format!(
+                        "; {} Q-tables restored, {} skipped (policy divergence risk)",
+                        restored, skipped
+                    )
                 } else {
                     format!("; all {} Q-tables restored successfully", restored)
                 };
@@ -2713,7 +2845,10 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
 
             Ok::<String, JsValue>(format!(
                 "Restored RL state from cycle {} (agent {}, linucb={}){}",
-                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, restoration_status
+                state.telemetry.cycle_count,
+                state.active_agent,
+                state.linucb_enabled,
+                restoration_status
             ))
         })
         .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
@@ -3282,7 +3417,9 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
         wasm4pm_algos::truex::VerificationResult::ReceiptLaundered => "ReceiptLaundered",
         wasm4pm_algos::truex::VerificationResult::BoundaryMissing => "BoundaryMissing",
         wasm4pm_algos::truex::VerificationResult::SummaryOnlyProof => "SummaryOnlyProof",
-        wasm4pm_algos::truex::VerificationResult::CanonicalizationMismatch => "CanonicalizationMismatch",
+        wasm4pm_algos::truex::VerificationResult::CanonicalizationMismatch => {
+            "CanonicalizationMismatch"
+        }
         wasm4pm_algos::truex::VerificationResult::ReplayDetected => "ReplayDetected",
         wasm4pm_algos::truex::VerificationResult::InvalidTransition => "InvalidTransition",
         wasm4pm_algos::truex::VerificationResult::IncompletePath => "IncompletePath",
@@ -3313,3 +3450,4 @@ pub fn evaluate_ocpq(ocel_json: &str, query_str: &str) -> Result<String, JsValue
     serde_json::to_string(&verdict)
         .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
 }
+pub mod gall;

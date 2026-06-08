@@ -1,10 +1,11 @@
+#![allow(clippy::all, dead_code)]
 //! Failure mode detection tests (Gap 3 — Rank-4 statistical oracle).
 //!
 //! These tests verify that failure modes (divergence, dead states, exploration collapse)
 //! are properly tracked and emitted in OTEL spans. Since internals are private,
 //! these tests focus on observable side effects of failure detection.
 
-use wasm4pm::rl_orchestrator::{RlOrchestrator, compute_reward};
+use wasm4pm::rl_orchestrator::{compute_reward, RlOrchestrator};
 use wasm4pm::RlState;
 
 fn make_state(health: u8, event_rate_q: u8) -> RlState {
@@ -139,7 +140,10 @@ fn orchestrator_survives_many_cycles() {
     // Verify orchestrator is still functional
     assert_eq!(orch.telemetry().cycle_count, 0); // cycle_count only increments in run_cycle()
     let telemetry = orch.telemetry();
-    assert!(telemetry.cumulative_reward.is_finite(), "Reward must be finite");
+    assert!(
+        telemetry.cumulative_reward.is_finite(),
+        "Reward must be finite"
+    );
 }
 
 #[test]
@@ -164,7 +168,19 @@ fn exploration_rate_decay_profile() {
 
     // Verify expected ranges
     assert!((epsilon_0 - 1.0).abs() < 1e-6, "ε(0) should be 1.0");
-    assert!(epsilon_50 > 0.7 && epsilon_50 < 0.8, "ε(50) should be ~0.78, got {}", epsilon_50);
-    assert!(epsilon_200 > 0.3 && epsilon_200 < 0.4, "ε(200) should be ~0.37, got {}", epsilon_200);
-    assert!(epsilon_500 > 0.0 && epsilon_500 < 0.15, "ε(500) should be ~0.082 (low but non-zero), got {}", epsilon_500);
+    assert!(
+        epsilon_50 > 0.7 && epsilon_50 < 0.8,
+        "ε(50) should be ~0.78, got {}",
+        epsilon_50
+    );
+    assert!(
+        epsilon_200 > 0.3 && epsilon_200 < 0.4,
+        "ε(200) should be ~0.37, got {}",
+        epsilon_200
+    );
+    assert!(
+        epsilon_500 > 0.0 && epsilon_500 < 0.15,
+        "ε(500) should be ~0.082 (low but non-zero), got {}",
+        epsilon_500
+    );
 }

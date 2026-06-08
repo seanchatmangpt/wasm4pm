@@ -11,7 +11,7 @@
 //! The A* score combines actual cost (edges removed) with estimated cost
 //! to reach an optimal model.
 
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };
@@ -87,14 +87,14 @@ impl StreamingAStarBuilder {
     /// 2. Compute A* score: fitness + weight * precision
     /// 3. Prune edges below the median A* score
     /// 4. Recompute fitness on pruned graph
-    pub fn to_dfg(&self) -> DirectlyFollowsGraph {
+    pub fn to_dfg(&self) -> DFG {
         if self.edge_counts.is_empty() {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         let total_possible = self.event_count.saturating_sub(self.trace_count);
         if total_possible == 0 {
-            return DirectlyFollowsGraph::new();
+            return DFG::new();
         }
 
         // Compute A* score for each edge
@@ -118,11 +118,7 @@ impl StreamingAStarBuilder {
                 // The true reverse-direction count is the forward count of the swapped edge,
                 // which lives in `edge_counts[(to,from)]`. Fall back to 0 when the reverse
                 // edge was never observed (high-precision case).
-                let reverse = self
-                    .edge_counts
-                    .get(&(to, from))
-                    .copied()
-                    .unwrap_or(0);
+                let reverse = self.edge_counts.get(&(to, from)).copied().unwrap_or(0);
                 let precision = if count + reverse > 0 {
                     1.0 - (reverse as f64 / (count + reverse) as f64)
                 } else {
@@ -154,7 +150,7 @@ impl StreamingAStarBuilder {
             .collect();
 
         // Build DFG from pruned edges
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
 
         dfg.nodes = self
             .interner
@@ -193,7 +189,7 @@ impl StreamingAStarBuilder {
 }
 
 impl StreamingAlgorithm for StreamingAStarBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         Self::new()

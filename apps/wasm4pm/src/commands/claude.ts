@@ -26,7 +26,7 @@ export function verifyEventChain(events: Record<string, unknown>[]): {
   let prev = '0'.repeat(64);
   for (let i = 0; i < events.length; i++) {
     const ev = events[i];
-    // Skip legacy pre-hashing entries (non-object fragments from old jq -n format)
+    // Skip  pre-hashing entries (non-object fragments from old jq -n format)
     if (!ev || typeof ev !== 'object' || Array.isArray(ev)) continue;
     const storedEH = ev['event_hash'] as string | undefined;
     const storedCH = ev['chain_hash'] as string | undefined;

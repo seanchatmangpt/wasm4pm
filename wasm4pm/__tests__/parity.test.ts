@@ -108,7 +108,7 @@ afterAll(() => {
  */
 function extractActivities(model: Record<string, unknown>): Set<string> {
   if (Array.isArray(model.nodes)) {
-    // DFG: nodes may be string[] (legacy) or {id|label}[] (current)
+    // DFG: nodes may be string[] () or {id|label}[] (current)
     return new Set(
       (model.nodes as Array<string | { id?: string; label?: string }>).map((n) =>
         typeof n === 'string' ? n : (n.label ?? n.id ?? '')

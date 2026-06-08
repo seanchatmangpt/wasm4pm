@@ -26,8 +26,8 @@ use helpers::*;
 /// Load a real-world process log from XES file.
 #[allow(dead_code)]
 fn load_xes_log(path: &str) -> Result<EventLog, String> {
-    let content = std::fs::read_to_string(path)
-        .map_err(|e| format!("Failed to read XES file: {}", e))?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| format!("Failed to read XES file: {}", e))?;
 
     // Simple XES parsing: extract attributes and timestamps
     let mut log = EventLog::new();
@@ -47,8 +47,7 @@ fn load_xes_log(path: &str) -> Result<EventLog, String> {
             if attr_line.contains("<string key=\"case:concept:name\"") {
                 if let Some(start) = attr_line.find("value=\"") {
                     if let Some(end) = attr_line[start + 7..].find('"') {
-                        case_id =
-                            attr_line[start + 7..start + 7 + end].to_string();
+                        case_id = attr_line[start + 7..start + 7 + end].to_string();
                         trace.attributes.insert(
                             "case:concept:name".to_string(),
                             AttributeValue::String(case_id.clone()),
@@ -73,15 +72,13 @@ fn load_xes_log(path: &str) -> Result<EventLog, String> {
                 if attr_line.contains("<string key=\"concept:name\"") {
                     if let Some(start) = attr_line.find("value=\"") {
                         if let Some(end) = attr_line[start + 7..].find('"') {
-                            activity_name =
-                                attr_line[start + 7..start + 7 + end].to_string();
+                            activity_name = attr_line[start + 7..start + 7 + end].to_string();
                         }
                     }
                 } else if attr_line.contains("<date key=\"time:timestamp\"") {
                     if let Some(start) = attr_line.find("value=\"") {
                         if let Some(end) = attr_line[start + 7..].find('"') {
-                            timestamp =
-                                attr_line[start + 7..start + 7 + end].to_string();
+                            timestamp = attr_line[start + 7..start + 7 + end].to_string();
                         }
                     }
                 }
@@ -93,10 +90,9 @@ fn load_xes_log(path: &str) -> Result<EventLog, String> {
                     AttributeValue::String(activity_name),
                 );
                 if !timestamp.is_empty() {
-                    event.attributes.insert(
-                        TIMESTAMP_KEY.to_string(),
-                        AttributeValue::Date(timestamp),
-                    );
+                    event
+                        .attributes
+                        .insert(TIMESTAMP_KEY.to_string(), AttributeValue::Date(timestamp));
                 }
                 trace.events.push(event);
             }
@@ -193,8 +189,7 @@ fn evaluate_next_activity(log: &EventLog) -> NextActivityAccuracy {
     };
 
     // Build n-gram model on training set
-    let mut bigram_counts: HashMap<Vec<String>, HashMap<String, usize>> =
-        HashMap::new();
+    let mut bigram_counts: HashMap<Vec<String>, HashMap<String, usize>> = HashMap::new();
     for trace in &train_log.traces {
         let activities: Vec<String> = trace
             .events
@@ -219,8 +214,7 @@ fn evaluate_next_activity(log: &EventLog) -> NextActivityAccuracy {
     }
 
     // Normalize to probabilities
-    let mut probabilities: HashMap<Vec<String>, Vec<(String, f64)>> =
-        HashMap::new();
+    let mut probabilities: HashMap<Vec<String>, Vec<(String, f64)>> = HashMap::new();
     for (prefix, counts) in &bigram_counts {
         let total: usize = counts.values().sum();
         let mut preds: Vec<_> = counts
@@ -278,11 +272,7 @@ fn evaluate_next_activity(log: &EventLog) -> NextActivityAccuracy {
                         .map(|(_, p)| -p * p.ln())
                         .sum();
                     let max_ent = (preds.len().min(10) as f64).ln();
-                    let norm_ent = if max_ent > 0.0 {
-                        ent / max_ent
-                    } else {
-                        0.0
-                    };
+                    let norm_ent = if max_ent > 0.0 { ent / max_ent } else { 0.0 };
                     accuracy.entropy_sum += norm_ent;
                 }
             }
@@ -321,8 +311,8 @@ impl RemainingTimeAccuracy {
         if self.errors.is_empty() {
             0.0
         } else {
-            let mse: f64 = self.errors.iter().map(|e| e * e).sum::<f64>()
-                / self.errors.len() as f64;
+            let mse: f64 =
+                self.errors.iter().map(|e| e * e).sum::<f64>() / self.errors.len() as f64;
             mse.sqrt()
         }
     }
@@ -332,7 +322,8 @@ impl RemainingTimeAccuracy {
             0.0
         } else {
             let n = self.errors.len() as f64;
-            let sum: f64 = self.errors
+            let sum: f64 = self
+                .errors
                 .iter()
                 .enumerate()
                 .map(|(i, _)| {
@@ -431,10 +422,7 @@ fn evaluate_remaining_time(log: &EventLog) -> RemainingTimeAccuracy {
         }
     }
 
-    let global_mean: f64 = bucket_times
-        .values()
-        .flat_map(|v| v.iter())
-        .sum::<f64>()
+    let global_mean: f64 = bucket_times.values().flat_map(|v| v.iter()).sum::<f64>()
         / bucket_times.values().map(|v| v.len()).sum::<usize>() as f64;
 
     // Evaluate on test set
@@ -467,10 +455,8 @@ fn evaluate_remaining_time(log: &EventLog) -> RemainingTimeAccuracy {
                 let true_remaining = (trace_end_ts - ts) as f64;
                 if let Some(activity) = activities.get(prefix_len) {
                     let key = format!("{}|{}", activity, prefix_len);
-                    let predicted_remaining = bucket_means
-                        .get(&key)
-                        .copied()
-                        .unwrap_or(global_mean);
+                    let predicted_remaining =
+                        bucket_means.get(&key).copied().unwrap_or(global_mean);
 
                     accuracy.errors.push(predicted_remaining - true_remaining);
                     accuracy.total_predictions += 1;
@@ -583,11 +569,8 @@ fn evaluate_outcome(log: &EventLog) -> OutcomeAccuracy {
 
     // Build simple predictor: if #events > median_events, predict "long"
     let train_median_events = {
-        let mut event_counts: Vec<usize> = train_log
-            .traces
-            .iter()
-            .map(|t| t.events.len())
-            .collect();
+        let mut event_counts: Vec<usize> =
+            train_log.traces.iter().map(|t| t.events.len()).collect();
         event_counts.sort();
         event_counts[event_counts.len() / 2]
     };
@@ -726,8 +709,7 @@ fn evaluate_drift(log: &EventLog) -> DriftAccuracy {
         accuracy.detections.push((idx, is_anomaly));
 
         // True anomalies: traces with >3x trace length variance
-        if trace.events.len() > log.traces.iter().map(|t| t.events.len()).max().unwrap_or(1) * 2
-        {
+        if trace.events.len() > log.traces.iter().map(|t| t.events.len()).max().unwrap_or(1) * 2 {
             accuracy.true_anomalies.insert(idx);
         }
     }
@@ -874,7 +856,7 @@ fn evaluate_resource(log: &EventLog) -> ResourceAccuracy {
 
     for trace in &test_log.traces {
         let predicted_queue = trace.events.len() as f64 * 10.0; // Arbitrary scaling
-        let actual_queue = (mean_train_duration * 10.0);
+        let actual_queue = mean_train_duration * 10.0;
         accuracy
             .queue_predictions
             .push((predicted_queue, actual_queue));

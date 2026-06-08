@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
-use crate::models::DirectlyFollowsGraph;
+use crate::models::DFG;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::streaming::{
     StreamingAlgorithm, StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder,
@@ -181,7 +181,7 @@ impl StreamingPipeline {
     }
 
     /// Get DFG snapshot if DFG is active.
-    pub fn dfg_snapshot(&self) -> Option<DirectlyFollowsGraph> {
+    pub fn dfg_snapshot(&self) -> Option<DFG> {
         self.dfg.as_ref().map(|d| d.snapshot())
     }
 
@@ -290,9 +290,9 @@ pub struct PipelineStats {
 /// Final results from the streaming pipeline after finalization.
 #[derive(Debug, Clone)]
 pub struct PipelineResult {
-    pub dfg: Option<DirectlyFollowsGraph>,
-    pub skeleton: Option<DirectlyFollowsGraph>,
-    pub heuristic: Option<DirectlyFollowsGraph>,
+    pub dfg: Option<DFG>,
+    pub skeleton: Option<DFG>,
+    pub heuristic: Option<DFG>,
     pub total_events: usize,
     pub total_traces: usize,
 }

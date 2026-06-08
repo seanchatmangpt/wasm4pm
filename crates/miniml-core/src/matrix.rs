@@ -25,19 +25,25 @@ pub fn mat_get(data: &[f64], n_features: usize, row: usize, col: usize) -> f64 {
 pub fn euclidean_dist_sq(data: &[f64], n_features: usize, a: usize, b: usize) -> f64 {
     let start_a = a * n_features;
     let start_b = b * n_features;
-    euclidean_dist_sq_raw(&data[start_a..start_a + n_features], &data[start_b..start_b + n_features])
+    euclidean_dist_sq_raw(
+        &data[start_a..start_a + n_features],
+        &data[start_b..start_b + n_features],
+    )
 }
 
 /// Squared Euclidean distance between two slices
 pub fn euclidean_dist_sq_raw(a: &[f64], b: &[f64]) -> f64 {
-    a.iter().zip(b.iter()).map(|(&x, &y)| (x - y) * (x - y)).sum()
+    a.iter()
+        .zip(b.iter())
+        .map(|(&x, &y)| (x - y) * (x - y))
+        .sum()
 }
 
 /// Euclidean distance between a row and a point
 pub fn dist_to_point(data: &[f64], n_features: usize, row: usize, point: &[f64]) -> f64 {
     let start = row * n_features;
     let row_data = &data[start..start + n_features];
-    
+
     let mut sum = 0.0;
     for (&d_val, &p_val) in row_data.iter().zip(point.iter().take(n_features)) {
         let d = d_val - p_val;
@@ -53,7 +59,9 @@ pub struct Rng {
 
 impl Rng {
     pub fn new(seed: u64) -> Self {
-        Self { state: if seed == 0 { 1 } else { seed } }
+        Self {
+            state: if seed == 0 { 1 } else { seed },
+        }
     }
 
     /// Seed from data (deterministic)
@@ -76,7 +84,9 @@ impl Rng {
 
     /// Random usize in [0, max)
     pub fn next_usize(&mut self, max: usize) -> usize {
-        if max == 0 { return 0; }
+        if max == 0 {
+            return 0;
+        }
         (self.next_u64() % max as u64) as usize
     }
 

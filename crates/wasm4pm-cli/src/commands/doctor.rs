@@ -1,7 +1,7 @@
 use colored::*;
-use wasm4pm_cli::io::Io;
 use std::path::Path;
 use std::process::Command;
+use wasm4pm_cli::io::Io;
 
 pub fn run(verbose: bool) -> anyhow::Result<()> {
     let io = Io::new(verbose);

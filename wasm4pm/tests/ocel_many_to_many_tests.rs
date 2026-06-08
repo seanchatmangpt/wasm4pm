@@ -15,10 +15,10 @@
 #[cfg(feature = "feature-ocel")]
 mod ocel_m2m_tests {
     use std::collections::HashMap;
+    use wasm4pm::discovery::discover_ocel_dfg_pure;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_flatten::measure_flattening_loss;
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
-    use wasm4pm::discovery::discover_ocel_dfg_pure;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -194,8 +194,7 @@ mod ocel_m2m_tests {
         let report = measure_flattening_loss(&ocel, "order");
 
         assert_eq!(
-            report.event_duplication_count,
-            0,
+            report.event_duplication_count, 0,
             "1-to-1 OCEL must have event_duplication_count == 0 (got {}). \
              Each event references exactly one object.",
             report.event_duplication_count
@@ -316,7 +315,11 @@ mod ocel_m2m_tests {
     fn ocel_valid_lifecycle_no_violations() {
         // Rank 2 domain contract: valid lifecycle must pass validation
         let ocel = OCEL {
-            event_types: vec!["Create".to_string(), "Process".to_string(), "Close".to_string()],
+            event_types: vec![
+                "Create".to_string(),
+                "Process".to_string(),
+                "Close".to_string(),
+            ],
             object_types: vec!["case".to_string()],
             events: vec![
                 OCELEvent {

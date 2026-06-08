@@ -716,7 +716,7 @@ mod serde_declare_template {
 pub struct DeclareConstraint {
     /// The LTL-encoded template for this constraint.
     ///
-    /// Replaces the stringly-typed `template: String` field in the legacy
+    /// Replaces the stringly-typed `template: String` field in the 
     /// wasm4pm model.
     pub template: DeclareTemplate,
 
@@ -1191,7 +1191,7 @@ mod tests {
         ];
         for name in &names {
             let t = DeclareTemplate::from_canonical_name(name)
-                .unwrap_or_else(|| panic!("unknown template: {}", name));
+                .unwrap_or_else(|| unreachable!("unknown template: {}", name));
             assert_eq!(t.canonical_name(), *name, "roundtrip failed for {}", name);
         }
     }

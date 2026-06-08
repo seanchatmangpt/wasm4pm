@@ -1,0 +1,13 @@
+
+\chapter{The Deterministic Execution Authority: WASM4PM}
+\section{WebAssembly Execution Space}
+Let WASM linear memory be $\mathbb{M}_{wasm} = \{0,1\}^{8N}$, partitioned into typed regions $R_i$. A bounded kernel $K: \mathbb{M}_{wasm}^{adm} \to \mathbb{M}_{wasm}^{adm}$ executes with no dynamic allocation in the critical path ($\Delta heap(K)=0$) and bounded branch entropy ($H_{\mathrm{branch}}(K) \le \epsilon$).
+
+WASM serves not merely as a fast engine, but as the execution authority ($\mu$) where admitted claims become receipted consequence.
+
+\section{Discovery as Differential Graph Optimization}
+Process discovery inside \texttt{wasm4pm} operates as differential optimization. For event log $L$, we define a weighted Directed-Follows Graph $\widetilde{D}_{ij} = D_{ij} s_{\alpha,\beta}(D_{ij})$. The optimal discovered model minimizes the objective:
+\begin{equation}
+M^{\star} = \arg\min_{M \in \mathcal{M}} \left[ -\log P(L\mid M) + \lambda_1 \mathrm{C}(M) + \lambda_2 \mathrm{U}(M) - \lambda_3 \mathrm{P}(M) \right]
+\end{equation}
+This execution transforms graph weights through inductive cuts into POWL geometries, culminating in Petri Nets evaluated by A* conformance.

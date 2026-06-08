@@ -113,9 +113,7 @@ pub(crate) fn build_time_envelope_internal(
             .iter()
             .filter_map(|event| {
                 event.attributes.get(timestamp_key).and_then(|v| match v {
-                    AttributeValue::Date(s) => {
-                        parse_timestamp_ms(s).map(|i| i as f64)
-                    }
+                    AttributeValue::Date(s) => parse_timestamp_ms(s).map(|i| i as f64),
                     AttributeValue::Float(f) => Some(*f),
                     AttributeValue::Int(i) => Some(*i as f64),
                     _ => None,
@@ -274,12 +272,7 @@ pub fn build_time_envelope(
     let envelope_json = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    "Handle is not an EventLog",
-                ))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -316,10 +309,7 @@ pub fn build_time_envelope(
 /// # Returns
 /// JSON string (`LayerVerdict`). JS callers must call `JSON.parse()`.
 #[wasm_bindgen]
-pub fn score_time_motion(
-    envelope_handle: &str,
-    timestamp_ms: f64,
-) -> Result<JsValue, JsValue> {
+pub fn score_time_motion(envelope_handle: &str, timestamp_ms: f64) -> Result<JsValue, JsValue> {
     let state = get_or_init_state();
 
     let result_json = state.with_object(envelope_handle, |obj| {

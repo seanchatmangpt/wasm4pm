@@ -1,0 +1,15 @@
+[build]
+rustflags = [
+    "-A", "clippy::all",
+    "-A", "dead_code",
+    "-A", "unused_variables",
+    "-A", "unused_imports",
+    "-A", "unused_mut",
+    "-A", "unused_assignments",
+    "-A", "unused_features",
+    "-A", "unused_comparisons",
+    "-A", "unused_attributes",
+]
+
+[env]
+PYO3_PYTHON = "python3.12"

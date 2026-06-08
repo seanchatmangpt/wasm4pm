@@ -9,7 +9,9 @@
 //!
 //! Run: `cargo test --test anti_fake_tests --features browser`
 
-use wasm4pm::testing::{ActivityEvidence, ConformanceVerdict, EvidenceError, ObjectEvidence, PowlTestHarness};
+use wasm4pm::testing::{
+    ActivityEvidence, ConformanceVerdict, EvidenceError, ObjectEvidence, PowlTestHarness,
+};
 
 fn bh(data: &str) -> String {
     blake3::hash(data.as_bytes()).to_hex().to_string()
@@ -25,8 +27,7 @@ fn model(name: &str) -> String {
 
 #[test]
 fn empty_harness_cannot_pass_any_model() {
-    let h = PowlTestHarness::new("no-activities")
-        .model(model("sequential-two-step.powl.json"));
+    let h = PowlTestHarness::new("no-activities").model(model("sequential-two-step.powl.json"));
     assert!(
         matches!(h.finish(), ConformanceVerdict::Andon(_)),
         "empty harness must never pass"
@@ -35,8 +36,7 @@ fn empty_harness_cannot_pass_any_model() {
 
 #[test]
 fn wrong_activity_names_cannot_pass() {
-    let mut h = PowlTestHarness::new("wrong-names")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h = PowlTestHarness::new("wrong-names").model(model("sequential-two-step.powl.json"));
     // Model expects "A", "B" — inject unrelated names
     h.record_activity("x");
     h.record_activity("y");
@@ -48,8 +48,8 @@ fn wrong_activity_names_cannot_pass() {
 
 #[test]
 fn duplicate_activities_without_missing_ones_cannot_pass() {
-    let mut h = PowlTestHarness::new("duplicates-only")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h =
+        PowlTestHarness::new("duplicates-only").model(model("sequential-two-step.powl.json"));
     // Only record A twice — B never appears
     h.record_activity("A");
     h.record_activity("A");
@@ -61,8 +61,7 @@ fn duplicate_activities_without_missing_ones_cannot_pass() {
 
 #[test]
 fn only_final_activity_cannot_pass_sequential_model() {
-    let mut h = PowlTestHarness::new("only-final")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h = PowlTestHarness::new("only-final").model(model("sequential-two-step.powl.json"));
     // Skip A, record only B
     h.record_activity("B");
     assert!(
@@ -73,8 +72,7 @@ fn only_final_activity_cannot_pass_sequential_model() {
 
 #[test]
 fn only_final_activity_of_three_step_cannot_pass() {
-    let mut h = PowlTestHarness::new("only-c")
-        .model(model("sequential-three-step.powl.json"));
+    let mut h = PowlTestHarness::new("only-c").model(model("sequential-three-step.powl.json"));
     h.record_activity("C");
     assert!(
         matches!(h.finish(), ConformanceVerdict::Andon(_)),
@@ -88,15 +86,15 @@ fn only_final_activity_of_three_step_cannot_pass() {
 
 #[test]
 fn extra_unknown_activity_with_full_route_can_pass() {
-    let mut h = PowlTestHarness::new("extra-activity")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h =
+        PowlTestHarness::new("extra-activity").model(model("sequential-two-step.powl.json"));
     h.record_activity("A");
     h.record_activity("B");
     h.record_activity("extra.diagnostic"); // not in model
-    // Token replay typically allows remaining tokens (extra events after model
-    // completion). This may or may not pass depending on the token replay impl.
-    // We don't assert a specific verdict here — we assert that A,B (the route)
-    // was at least executed.
+                                           // Token replay typically allows remaining tokens (extra events after model
+                                           // completion). This may or may not pass depending on the token replay impl.
+                                           // We don't assert a specific verdict here — we assert that A,B (the route)
+                                           // was at least executed.
     let verdict = h.finish();
     // The route A,B was completed. If extra activity causes Andon, that's acceptable.
     // What's NOT acceptable: passing without A and B.
@@ -106,8 +104,7 @@ fn extra_unknown_activity_with_full_route_can_pass() {
 
 #[test]
 fn missing_required_activity_never_passes() {
-    let mut h = PowlTestHarness::new("missing-b")
-        .model(model("sequential-three-step.powl.json"));
+    let mut h = PowlTestHarness::new("missing-b").model(model("sequential-three-step.powl.json"));
     h.record_activity("A");
     // B is missing
     h.record_activity("C");
@@ -125,8 +122,8 @@ fn missing_required_activity_never_passes() {
 fn panic_in_route_body_produces_unhandled_panic_not_passed() {
     use wasm4pm::testing::AndonPull;
 
-    let mut h = PowlTestHarness::new("panicking-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h =
+        PowlTestHarness::new("panicking-route").model(model("sequential-two-step.powl.json"));
 
     let verdict = h.run_catching_panic(|h| {
         h.record_activity("A");
@@ -142,8 +139,8 @@ fn panic_in_route_body_produces_unhandled_panic_not_passed() {
 
 #[test]
 fn completing_route_after_catching_panic_produces_correct_verdict() {
-    let mut h = PowlTestHarness::new("recovered-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h =
+        PowlTestHarness::new("recovered-route").model(model("sequential-two-step.powl.json"));
 
     // Simulate: first body panics (bad), then we continue with a new harness
     let bad_verdict = h.run_catching_panic(|h| {
@@ -156,16 +153,17 @@ fn completing_route_after_catching_panic_produces_correct_verdict() {
         "panicking body must produce AndonPull"
     );
     // A fresh harness with complete route + bound evidence must pass.
-    let mut h2 = PowlTestHarness::new("fresh-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h2 = PowlTestHarness::new("fresh-route").model(model("sequential-two-step.powl.json"));
     h2.complete_activity(
         ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
-    ).unwrap();
+    )
+    .unwrap();
     h2.complete_activity(
         ActivityEvidence::new("B")
             .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
             .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
-    ).unwrap();
+    )
+    .unwrap();
     assert_eq!(
         h2.finish(),
         ConformanceVerdict::Passed,
@@ -179,8 +177,7 @@ fn completing_route_after_catching_panic_produces_correct_verdict() {
 
 #[test]
 fn ocel_captures_fake_activities_for_audit() {
-    let mut h = PowlTestHarness::new("audit-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut h = PowlTestHarness::new("audit-route").model(model("sequential-two-step.powl.json"));
 
     h.record_activity("fake.evidence");
     h.record_activity("another.fake");
@@ -190,7 +187,11 @@ fn ocel_captures_fake_activities_for_audit() {
 
     // OCEL records what actually happened
     let events = ocel["events"].as_array().unwrap();
-    assert_eq!(events.len(), 2, "OCEL must record the actual fake activities");
+    assert_eq!(
+        events.len(),
+        2,
+        "OCEL must record the actual fake activities"
+    );
     assert_eq!(events[0]["type"], "fake.evidence");
 
     // Verdict proves the fake activities were rejected
@@ -213,8 +214,8 @@ fn ocel_captures_fake_activities_for_audit() {
 /// A route that only records names — even in perfect POWL order — must not pass.
 #[test]
 fn activity_only_route_cannot_pass() {
-    let mut harness = PowlTestHarness::new("names-only")
-        .model(model("sequential-two-step.powl.json"));
+    let mut harness =
+        PowlTestHarness::new("names-only").model(model("sequential-two-step.powl.json"));
     harness.record_activity("A");
     harness.record_activity("B");
     // Fitness = 1.0 (correct order) but receipt_coverage = 0.0 — not Passed.
@@ -246,13 +247,15 @@ fn complete_activity_without_object_evidence_is_rejected() {
 /// mismatch and rejects B.
 #[test]
 fn tampered_input_hash_is_rejected() {
-    let mut harness = PowlTestHarness::new("tamper-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut harness =
+        PowlTestHarness::new("tamper-route").model(model("sequential-two-step.powl.json"));
     // A creates "a-out" with the real hash.
-    harness.complete_activity(
-        ActivityEvidence::new("A")
-            .with_outputs(vec![ObjectEvidence::new("a-out", bh("original-content"))]),
-    ).unwrap();
+    harness
+        .complete_activity(
+            ActivityEvidence::new("A")
+                .with_outputs(vec![ObjectEvidence::new("a-out", bh("original-content"))]),
+        )
+        .unwrap();
     // B claims to consume "a-out" but provides a different hash (tampered content).
     let result = harness.complete_activity(
         ActivityEvidence::new("B")
@@ -271,8 +274,8 @@ fn tampered_input_hash_is_rejected() {
 /// registered as any prior activity's output. The harness catches this.
 #[test]
 fn object_used_before_created_is_rejected() {
-    let mut harness = PowlTestHarness::new("oob-route")
-        .model(model("sequential-two-step.powl.json"));
+    let mut harness =
+        PowlTestHarness::new("oob-route").model(model("sequential-two-step.powl.json"));
     // Skip creating "a-out" — B tries to use it immediately.
     let result = harness.complete_activity(
         ActivityEvidence::new("B")
@@ -292,8 +295,8 @@ fn object_used_before_created_is_rejected() {
 /// when `record_activity` is used. This closes the "names in right order" loophole.
 #[test]
 fn conformant_sequence_without_evidence_chain_cannot_pass() {
-    let mut harness = PowlTestHarness::new("names-in-order")
-        .model(model("sequential-three-step.powl.json"));
+    let mut harness =
+        PowlTestHarness::new("names-in-order").model(model("sequential-three-step.powl.json"));
     // Perfect activity order — but no evidence.
     harness.record_activity("A");
     harness.record_activity("B");

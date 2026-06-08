@@ -116,12 +116,7 @@ pub fn build_actor_envelope(
     let envelope_json = state.with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(l)) => l,
-            Some(_) => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    "Handle is not an EventLog",
-                ))
-            }
+            Some(_) => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not an EventLog")),
             None => {
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
@@ -158,7 +153,9 @@ pub fn build_actor_envelope(
                     .unwrap_or("")
                     .to_owned();
 
-                let acc = accumulators.entry(actor.clone()).or_insert_with(ActorAccumulator::new);
+                let acc = accumulators
+                    .entry(actor.clone())
+                    .or_insert_with(ActorAccumulator::new);
 
                 // Action count
                 *acc.action_counts.entry(action).or_insert(0) += 1;
@@ -166,16 +163,15 @@ pub fn build_actor_envelope(
 
                 // Hour-of-day from timestamp
                 if !timestamp_key.is_empty() {
-                    let ts_ms: Option<f64> = event.attributes.get(timestamp_key).and_then(|v| {
-                        match v {
+                    let ts_ms: Option<f64> =
+                        event.attributes.get(timestamp_key).and_then(|v| match v {
                             AttributeValue::Date(s) | AttributeValue::String(s) => {
                                 parse_timestamp_ms(s).map(|ms| ms as f64)
                             }
                             AttributeValue::Float(f) => Some(*f),
                             AttributeValue::Int(i) => Some(*i as f64),
                             _ => None,
-                        }
-                    });
+                        });
 
                     if let Some(ms) = ts_ms {
                         // hour from ms-since-epoch: (ms / 3_600_000) % 24
@@ -194,9 +190,7 @@ pub fn build_actor_envelope(
         if n_actors < 3 {
             return Err(wasm_err(
                 codes::INVALID_INPUT,
-                format!(
-                    "Need at least 3 distinct actors to build envelope; found {n_actors}"
-                ),
+                format!("Need at least 3 distinct actors to build envelope; found {n_actors}"),
             ));
         }
 
@@ -464,10 +458,7 @@ pub fn score_actor_motion_from_envelope(
                 layer: "actor".to_string(),
                 verdict: crate::automembrane::Verdict::RequireEvidence,
                 confidence: 1.0,
-                reason: format!(
-                    "Actor '{}' has no history in envelope",
-                    motion.actor
-                ),
+                reason: format!("Actor '{}' has no history in envelope", motion.actor),
                 evidence_used: vec![],
                 missing_evidence: vec!["actor_history".to_string()],
             };
@@ -556,10 +547,7 @@ mod tests {
             .map(|i| ActorProfile {
                 actor: format!("actor-{i}"),
                 role: None,
-                common_actions: vec![
-                    ("register".to_owned(), 10),
-                    ("approve".to_owned(), 5),
-                ],
+                common_actions: vec![("register".to_owned(), 10), ("approve".to_owned(), 5)],
                 active_hours: {
                     let mut h = [0u32; 24];
                     h[9] = 3;
@@ -627,7 +615,11 @@ mod tests {
         let envelope = make_envelope_with_n_actors(3);
         let profile = &envelope.profiles[0];
         // Hour 9 has count=3 → score should be 0.0
-        let hour_score: f64 = if profile.active_hours[9] == 0 { 1.0 } else { 0.0 };
+        let hour_score: f64 = if profile.active_hours[9] == 0 {
+            1.0
+        } else {
+            0.0
+        };
         assert_eq!(hour_score, 0.0);
     }
 
@@ -636,7 +628,11 @@ mod tests {
         let envelope = make_envelope_with_n_actors(3);
         let profile = &envelope.profiles[0];
         // Hour 3 has count=0 → score should be 1.0
-        let hour_score: f64 = if profile.active_hours[3] == 0 { 1.0 } else { 0.0 };
+        let hour_score: f64 = if profile.active_hours[3] == 0 {
+            1.0
+        } else {
+            0.0
+        };
         assert_eq!(hour_score, 1.0);
     }
 
@@ -668,7 +664,7 @@ mod tests {
             (0.3, "allow"),
             (0.4, "allow"), // boundary: > 0.4 triggers warn
             (0.5, "warn"),
-            (0.7, "warn"),  // boundary: > 0.7 triggers escalate
+            (0.7, "warn"), // boundary: > 0.7 triggers escalate
             (0.8, "escalate"),
             (1.0, "escalate"),
         ];

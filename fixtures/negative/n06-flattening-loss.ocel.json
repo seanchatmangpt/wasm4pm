@@ -1,7 +1,7 @@
 {
   "_comment": "NEGATIVE FIXTURE N06 — OCEL flattening loss (convergence + divergence). This log is VALID as an OCEL, but flattening it to a single object type 'Item' is LOSSY and cannot round-trip back to the object-centric log: (divergence) 'Create Order' references no Item so it is dropped; (convergence) 'Pick Items' references item-1 AND item-2 so it is duplicated into both Item cases. Oracle: at least one event is dropped (divergence) AND at least one event is duplicated across cases (convergence), so the flattened (case,event) incidence count is strictly greater than the count of events referencing the type — the projection cannot round-trip. There is NO minimal repair within flattening — the loss is inherent to projecting a many-to-many E2O graph onto one object type (van der Aalst, OCEL flattening). This fixture proves the flattening primitive must surface, not hide, the loss.",
   "expected_refusal": "ObjectLifecycleViolation",
-  "rejecting_primitive": "ocel_core::flatten (lossy convergence + divergence)",
+  "rejecting_primitive": "wasm4pm_compat::ocel::flatten (lossy convergence + divergence)",
   "flatten_to": "Item",
   "raw_event_count": 3,
   "expected_loss": {

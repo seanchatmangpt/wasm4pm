@@ -141,7 +141,7 @@ describe('diff: per-log error attribution', () => {
     const r = await run(['diff', '/no-log1.xes', XES, '--format', 'json']);
     expect(r.exitCode).toBe(2);
     const e = err(r);
-    // Error code is LOG1_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    // Error code is LOG1_NOT_FOUND (specific) or  SOURCE_ERROR (generic) — both acceptable.
     expect(['LOG1_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log1)');
   });
@@ -149,7 +149,7 @@ describe('diff: per-log error attribution', () => {
   it('missing log2 names log2 — proves both files are checked independently', async () => {
     const r = await run(['diff', XES, '/no-log2.xes', '--format', 'json']);
     const e = err(r);
-    // Error code is LOG2_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    // Error code is LOG2_NOT_FOUND (specific) or  SOURCE_ERROR (generic) — both acceptable.
     expect(['LOG2_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log2)');
   });

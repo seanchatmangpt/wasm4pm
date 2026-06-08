@@ -12,7 +12,9 @@
 //! - Rank 2 properties (domain contracts)
 
 use std::collections::HashMap;
-use wasm4pm::hierarchical::{discover_hierarchical, DfgChunker, DfgChunkResult, HierarchicalConfig};
+use wasm4pm::hierarchical::{
+    discover_hierarchical, DfgChunkResult, DfgChunker, HierarchicalConfig,
+};
 use wasm4pm::ml::pca::pca_internal;
 use wasm4pm::ml::regression::regression_internal;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -62,10 +64,7 @@ fn build_test_log(variants: &[(usize, &[&str])]) -> EventLog {
 
 /// Standard test log: 10 traces A→B→C, 5 traces A→B→D
 fn standard_log() -> EventLog {
-    build_test_log(&[
-        (10, &["A", "B", "C"]),
-        (5, &["A", "B", "D"]),
-    ])
+    build_test_log(&[(10, &["A", "B", "C"]), (5, &["A", "B", "D"])])
 }
 
 // ---------------------------------------------------------------------------
@@ -85,7 +84,10 @@ fn hierarchical_dfg_rank1_output_valid() {
     let result: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
 
     // Verify structure: edges should be present
-    assert!(!result.edge_counts.is_empty(), "Hierarchical DFG must discover edges");
+    assert!(
+        !result.edge_counts.is_empty(),
+        "Hierarchical DFG must discover edges"
+    );
 
     // Verify edge counts are positive
     for (_, count) in result.edge_counts.iter() {
@@ -103,15 +105,23 @@ fn hierarchical_dfg_rank1_determinism() {
         num_chunks: 2,
         max_chunk_events: None,
     };
-    let result1: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
-    let result2: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
+    let result1: DfgChunkResult =
+        discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
+    let result2: DfgChunkResult =
+        discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
 
     // Both should have identical edges
-    assert_eq!(result1.edge_counts.len(), result2.edge_counts.len(), "Edge counts must be identical");
+    assert_eq!(
+        result1.edge_counts.len(),
+        result2.edge_counts.len(),
+        "Edge counts must be identical"
+    );
 
     for ((src1, dst1), count1) in result1.edge_counts.iter() {
-        let count2 = result2.edge_counts.get(&(*src1, *dst1))
-            .expect(&format!("Edge ({}, {}) must exist in both runs", src1, dst1));
+        let count2 = result2.edge_counts.get(&(*src1, *dst1)).expect(&format!(
+            "Edge ({}, {}) must exist in both runs",
+            src1, dst1
+        ));
         assert_eq!(count1, count2, "Edge counts must be bit-identical");
     }
 }
@@ -131,8 +141,10 @@ fn hierarchical_dfg_rank2_chunk_independence() {
         max_chunk_events: None,
     };
 
-    let result_1chunk: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config_1);
-    let result_3chunks: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config_3);
+    let result_1chunk: DfgChunkResult =
+        discover_hierarchical::<DfgChunker>(&log, "concept:name", &config_1);
+    let result_3chunks: DfgChunkResult =
+        discover_hierarchical::<DfgChunker>(&log, "concept:name", &config_3);
 
     // Edge count should be the same (DFG is associative)
     assert_eq!(
@@ -143,9 +155,14 @@ fn hierarchical_dfg_rank2_chunk_independence() {
 
     // All edges should have the same counts
     for ((src, dst), count1) in result_1chunk.edge_counts.iter() {
-        let count3 = result_3chunks.edge_counts.get(&(*src, *dst))
+        let count3 = result_3chunks
+            .edge_counts
+            .get(&(*src, *dst))
             .expect("All edges from monolithic run must exist in chunked run");
-        assert_eq!(count1, count3, "Edge counts must match across chunk strategies");
+        assert_eq!(
+            count1, count3,
+            "Edge counts must match across chunk strategies"
+        );
     }
 }
 
@@ -155,7 +172,10 @@ fn hierarchical_dfg_scalability() {
     let variants = vec![
         (20, &["Register", "Review", "Approve", "Archive"][..]),
         (15, &["Register", "Review", "Reject", "Archive"][..]),
-        (10, &["Register", "Reassign", "Review", "Approve", "Archive"][..]),
+        (
+            10,
+            &["Register", "Reassign", "Review", "Approve", "Archive"][..],
+        ),
     ];
     let log = build_test_log(&variants);
 
@@ -166,7 +186,10 @@ fn hierarchical_dfg_scalability() {
     let result: DfgChunkResult = discover_hierarchical::<DfgChunker>(&log, "concept:name", &config);
 
     // Should discover multiple edges
-    assert!(result.edge_counts.len() >= 5, "Should discover multiple edges");
+    assert!(
+        result.edge_counts.len() >= 5,
+        "Should discover multiple edges"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -177,18 +200,19 @@ fn hierarchical_dfg_scalability() {
 fn pca_rank1_eigenvalues_positive() {
     // Rank 1: Mathematical theorem
     // Eigenvalues from PCA must be non-negative (variance is non-negative)
-    let features = vec![
-        [1.0, 2.0],
-        [2.0, 4.0],
-        [3.0, 6.0],
-        [4.0, 8.0],
-    ];
+    let features = vec![[1.0, 2.0], [2.0, 4.0], [3.0, 6.0], [4.0, 8.0]];
 
     let result = pca_internal(&features);
 
     // Both eigenvalues must be non-negative
-    assert!(result.eigenvalues[0] >= 0.0, "First eigenvalue must be non-negative");
-    assert!(result.eigenvalues[1] >= 0.0, "Second eigenvalue must be non-negative");
+    assert!(
+        result.eigenvalues[0] >= 0.0,
+        "First eigenvalue must be non-negative"
+    );
+    assert!(
+        result.eigenvalues[1] >= 0.0,
+        "Second eigenvalue must be non-negative"
+    );
 
     // Larger eigenvalue should come first (by convention)
     if result.eigenvalues[0] > 1e-10 || result.eigenvalues[1] > 1e-10 {
@@ -203,18 +227,15 @@ fn pca_rank1_eigenvalues_positive() {
 fn pca_rank1_explained_variance_sum() {
     // Rank 1: Mathematical theorem
     // Explained variance should sum to at most 1.0 (or be normalized fractions)
-    let features = vec![
-        [1.0, 3.0],
-        [2.0, 6.0],
-        [3.0, 9.0],
-        [4.0, 12.0],
-        [5.0, 15.0],
-    ];
+    let features = vec![[1.0, 3.0], [2.0, 6.0], [3.0, 9.0], [4.0, 12.0], [5.0, 15.0]];
 
     let result = pca_internal(&features);
 
     let total_variance = result.explained_variance[0] + result.explained_variance[1];
-    assert!(total_variance <= 1.0 + 1e-10, "Explained variance should not exceed 1.0");
+    assert!(
+        total_variance <= 1.0 + 1e-10,
+        "Explained variance should not exceed 1.0"
+    );
 
     // Both components should be non-negative
     assert!(result.explained_variance[0] >= 0.0);
@@ -225,12 +246,7 @@ fn pca_rank1_explained_variance_sum() {
 fn pca_rank2_determinism() {
     // Rank 2: Domain contract
     // Same feature matrix → identical PCA results
-    let features = vec![
-        [1.0, 5.0],
-        [2.0, 10.0],
-        [3.0, 15.0],
-        [4.0, 20.0],
-    ];
+    let features = vec![[1.0, 5.0], [2.0, 10.0], [3.0, 15.0], [4.0, 20.0]];
 
     let result1 = pca_internal(&features);
     let result2 = pca_internal(&features);
@@ -245,13 +261,7 @@ fn pca_rank2_determinism() {
 fn pca_rank1_perfect_correlation() {
     // Rank 1: Mathematical theorem
     // Perfectly correlated features (y = 2x) should have high variance on first component
-    let features = vec![
-        [1.0, 2.0],
-        [2.0, 4.0],
-        [3.0, 6.0],
-        [4.0, 8.0],
-        [5.0, 10.0],
-    ];
+    let features = vec![[1.0, 2.0], [2.0, 4.0], [3.0, 6.0], [4.0, 8.0], [5.0, 10.0]];
 
     let result = pca_internal(&features);
 
@@ -259,7 +269,10 @@ fn pca_rank1_perfect_correlation() {
     let total_var = result.eigenvalues[0] + result.eigenvalues[1];
     if total_var > 1e-10 {
         let ratio = result.eigenvalues[0] / total_var;
-        assert!(ratio > 0.95, "Perfectly correlated data should explain >95% with first component");
+        assert!(
+            ratio > 0.95,
+            "Perfectly correlated data should explain >95% with first component"
+        );
     }
 }
 
@@ -277,7 +290,10 @@ fn regression_rank1_r_squared_in_range() {
     let result = regression_internal(&x, &y);
 
     // Perfect linear relationship: R² should be 1.0
-    assert!(result.r_squared >= 0.99, "Perfect linear data should have R² ≈ 1.0");
+    assert!(
+        result.r_squared >= 0.99,
+        "Perfect linear data should have R² ≈ 1.0"
+    );
 }
 
 #[test]
@@ -290,8 +306,14 @@ fn regression_rank1_perfect_fit() {
     let result = regression_internal(&x, &y);
 
     assert!((result.slope - 2.0).abs() < 1e-10, "Slope should be 2.0");
-    assert!((result.intercept - 3.0).abs() < 1e-10, "Intercept should be 3.0");
-    assert!(result.r_squared > 0.9999, "Perfect fit should have R² > 0.9999");
+    assert!(
+        (result.intercept - 3.0).abs() < 1e-10,
+        "Intercept should be 3.0"
+    );
+    assert!(
+        result.r_squared > 0.9999,
+        "Perfect fit should have R² > 0.9999"
+    );
 }
 
 #[test]
@@ -305,8 +327,14 @@ fn regression_rank1_determinism() {
     let result2 = regression_internal(&x, &y);
 
     assert_eq!(result1.slope, result2.slope, "Slope must be deterministic");
-    assert_eq!(result1.intercept, result2.intercept, "Intercept must be deterministic");
-    assert_eq!(result1.r_squared, result2.r_squared, "R² must be deterministic");
+    assert_eq!(
+        result1.intercept, result2.intercept,
+        "Intercept must be deterministic"
+    );
+    assert_eq!(
+        result1.r_squared, result2.r_squared,
+        "R² must be deterministic"
+    );
 }
 
 #[test]
@@ -318,8 +346,14 @@ fn regression_rank2_positive_trend() {
 
     let result = regression_internal(&x, &y);
 
-    assert!(result.slope > 0.0, "Positive trend data should have positive slope");
-    assert!(result.r_squared > 0.9, "Positive trend data should have good R²");
+    assert!(
+        result.slope > 0.0,
+        "Positive trend data should have positive slope"
+    );
+    assert!(
+        result.r_squared > 0.9,
+        "Positive trend data should have good R²"
+    );
 }
 
 #[test]
@@ -331,8 +365,14 @@ fn regression_rank2_negative_trend() {
 
     let result = regression_internal(&x, &y);
 
-    assert!(result.slope < 0.0, "Negative trend data should have negative slope");
-    assert!(result.r_squared > 0.9, "Negative trend data should have good R²");
+    assert!(
+        result.slope < 0.0,
+        "Negative trend data should have negative slope"
+    );
+    assert!(
+        result.r_squared > 0.9,
+        "Negative trend data should have good R²"
+    );
 }
 
 #[test]

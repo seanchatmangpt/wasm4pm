@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
 use crate::error::MlError;
 use crate::matrix::Rng;
+use wasm_bindgen::prelude::*;
 
 // ============================================================
 // Structs
@@ -20,22 +20,34 @@ pub struct BayesianResult {
 #[wasm_bindgen]
 impl BayesianResult {
     #[wasm_bindgen(getter, js_name = "posteriorMean")]
-    pub fn posterior_mean(&self) -> f64 { self.posterior_mean }
+    pub fn posterior_mean(&self) -> f64 {
+        self.posterior_mean
+    }
 
     #[wasm_bindgen(getter, js_name = "posteriorStd")]
-    pub fn posterior_std(&self) -> f64 { self.posterior_std }
+    pub fn posterior_std(&self) -> f64 {
+        self.posterior_std
+    }
 
     #[wasm_bindgen(getter, js_name = "posteriorMedian")]
-    pub fn posterior_median(&self) -> f64 { self.posterior_median }
+    pub fn posterior_median(&self) -> f64 {
+        self.posterior_median
+    }
 
     #[wasm_bindgen(getter, js_name = "ciLower")]
-    pub fn ci_lower(&self) -> f64 { self.ci_lower }
+    pub fn ci_lower(&self) -> f64 {
+        self.ci_lower
+    }
 
     #[wasm_bindgen(getter, js_name = "ciUpper")]
-    pub fn ci_upper(&self) -> f64 { self.ci_upper }
+    pub fn ci_upper(&self) -> f64 {
+        self.ci_upper
+    }
 
     #[wasm_bindgen(getter, js_name = "nSamples")]
-    pub fn n_samples(&self) -> usize { self.n_samples }
+    pub fn n_samples(&self) -> usize {
+        self.n_samples
+    }
 }
 
 /// Bayesian linear regression with conjugate normal-inverse-gamma prior
@@ -51,19 +63,29 @@ pub struct BayesianLinearModel {
 #[wasm_bindgen]
 impl BayesianLinearModel {
     #[wasm_bindgen(getter)]
-    pub fn coefficients(&self) -> Vec<f64> { self.coefficients.clone() }
+    pub fn coefficients(&self) -> Vec<f64> {
+        self.coefficients.clone()
+    }
 
     #[wasm_bindgen(getter, js_name = "coefficientStd")]
-    pub fn coefficient_std(&self) -> Vec<f64> { self.coefficient_std.clone() }
+    pub fn coefficient_std(&self) -> Vec<f64> {
+        self.coefficient_std.clone()
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn intercept(&self) -> f64 { self.intercept }
+    pub fn intercept(&self) -> f64 {
+        self.intercept
+    }
 
     #[wasm_bindgen(getter, js_name = "interceptStd")]
-    pub fn intercept_std(&self) -> f64 { self.intercept_std }
+    pub fn intercept_std(&self) -> f64 {
+        self.intercept_std
+    }
 
     #[wasm_bindgen(getter, js_name = "nFeatures")]
-    pub fn n_features(&self) -> usize { self.coefficients.len() }
+    pub fn n_features(&self) -> usize {
+        self.coefficients.len()
+    }
 
     /// Predict for a single feature vector.
     #[wasm_bindgen]
@@ -88,10 +110,14 @@ pub struct BayesFactorResult {
 #[wasm_bindgen]
 impl BayesFactorResult {
     #[wasm_bindgen(getter, js_name = "bayesFactor")]
-    pub fn bayes_factor(&self) -> f64 { self.bayes_factor }
+    pub fn bayes_factor(&self) -> f64 {
+        self.bayes_factor
+    }
 
     #[wasm_bindgen(getter)]
-    pub fn interpretation(&self) -> String { self.interpretation.clone() }
+    pub fn interpretation(&self) -> String {
+        self.interpretation.clone()
+    }
 }
 
 // ============================================================
@@ -151,10 +177,11 @@ where
 
     let mean: f64 = samples.iter().sum::<f64>() / n as f64;
     let median = samples[n / 2];
-    let variance: f64 = samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
+    let variance: f64 =
+        samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
     let std = variance.sqrt();
 
-    let ci_lower = samples[(0.025 * n as f64) as usize ];
+    let ci_lower = samples[(0.025 * n as f64) as usize];
     let ci_upper = samples[((0.975 * n as f64) as usize).min(n - 1)];
 
     Ok(BayesianResult {
@@ -324,8 +351,16 @@ pub fn bayesian_estimate(
     // Default: estimate the mean of a standard normal
     let log_likelihood = |x: f64| -x * x / 2.0;
     let log_prior = |_x: f64| 0.0; // flat prior
-    bayesian_estimate_impl(log_likelihood, log_prior, n_samples, burn_in, seed, initial, proposal_sd)
-        .map_err(|e| JsValue::from_str(&e.message))
+    bayesian_estimate_impl(
+        log_likelihood,
+        log_prior,
+        n_samples,
+        burn_in,
+        seed,
+        initial,
+        proposal_sd,
+    )
+    .map_err(|e| JsValue::from_str(&e.message))
 }
 
 /// Bayesian linear regression with conjugate prior.
@@ -338,8 +373,15 @@ pub fn bayesian_linear_regression(
     prior_alpha: f64,
     prior_beta: f64,
 ) -> Result<BayesianLinearModel, JsValue> {
-    bayesian_linear_regression_impl(data, n_features, targets, prior_precision, prior_alpha, prior_beta)
-        .map_err(|e| JsValue::from_str(&e.message))
+    bayesian_linear_regression_impl(
+        data,
+        n_features,
+        targets,
+        prior_precision,
+        prior_alpha,
+        prior_beta,
+    )
+    .map_err(|e| JsValue::from_str(&e.message))
 }
 
 /// Interpret a Bayes factor.
@@ -454,12 +496,19 @@ mod tests {
         let log_likelihood = |x: f64| -x * x / 2.0;
         let log_prior = |_x: f64| 0.0;
 
-        let result = bayesian_estimate_impl(log_likelihood, log_prior, 10000, 1000, 42, 0.0, 1.0).unwrap();
+        let result =
+            bayesian_estimate_impl(log_likelihood, log_prior, 10000, 1000, 42, 0.0, 1.0).unwrap();
 
-        assert!((result.posterior_mean - 0.0).abs() < 0.15,
-            "posterior mean should be ~0, got {}", result.posterior_mean);
-        assert!((result.posterior_std - 1.0).abs() < 0.15,
-            "posterior std should be ~1, got {}", result.posterior_std);
+        assert!(
+            (result.posterior_mean - 0.0).abs() < 0.15,
+            "posterior mean should be ~0, got {}",
+            result.posterior_mean
+        );
+        assert!(
+            (result.posterior_std - 1.0).abs() < 0.15,
+            "posterior std should be ~1, got {}",
+            result.posterior_std
+        );
         assert!(result.ci_lower < result.ci_upper);
         assert!(result.ci_lower < 0.0 && result.ci_upper > 0.0);
     }
@@ -480,10 +529,16 @@ mod tests {
 
         let model = bayesian_linear_regression_impl(&data, 1, &targets, 0.01, 0.001, 1.0).unwrap();
 
-        assert!((model.intercept - 2.0).abs() < 2.0,
-            "intercept should be ~2, got {}", model.intercept);
-        assert!((model.coefficients[0] - 3.0).abs() < 2.0,
-            "coefficient should be ~3, got {}", model.coefficients[0]);
+        assert!(
+            (model.intercept - 2.0).abs() < 2.0,
+            "intercept should be ~2, got {}",
+            model.intercept
+        );
+        assert!(
+            (model.coefficients[0] - 3.0).abs() < 2.0,
+            "coefficient should be ~3, got {}",
+            model.coefficients[0]
+        );
     }
 
     #[test]
@@ -494,8 +549,11 @@ mod tests {
         let model = bayesian_linear_regression_impl(&data, 1, &targets, 0.01, 0.001, 1.0).unwrap();
         let pred = model.predict(&[3.0]);
 
-        assert!((pred - 7.0).abs() < 1.0,
-            "predict(3) should be ~7, got {}", pred);
+        assert!(
+            (pred - 7.0).abs() < 1.0,
+            "predict(3) should be ~7, got {}",
+            pred
+        );
     }
 
     #[test]
@@ -529,13 +587,7 @@ mod tests {
     #[test]
     fn test_bayesian_linear_regression_multivariate() {
         // y = 2*x1 + 3*x2 + 1
-        let data = vec![
-            1.0, 0.0,
-            0.0, 1.0,
-            1.0, 1.0,
-            2.0, 1.0,
-            1.0, 2.0,
-        ];
+        let data = vec![1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 2.0, 1.0, 1.0, 2.0];
         let targets = vec![3.0, 4.0, 6.0, 8.0, 9.0];
 
         let model = bayesian_linear_regression_impl(&data, 2, &targets, 0.01, 1.0, 1.0).unwrap();

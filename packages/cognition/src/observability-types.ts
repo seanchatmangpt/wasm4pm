@@ -1,4 +1,4 @@
-//! OTEL span typings for the cognition facade.
+//! OTEL span typings for the cognition boundary.
 //!
 //! Mirrors the minimal subset of the OTLP span shape used by callers and tests.
 //! No emit logic — only data definitions.

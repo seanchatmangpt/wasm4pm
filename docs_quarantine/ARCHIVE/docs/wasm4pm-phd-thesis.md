@@ -1181,7 +1181,7 @@ The TypeScript monorepo provides 10 packages organized by responsibility:
 packages/
 ├── contracts/    ← Leaf package (no deps): types, errors, receipts, hashing
 ├── config/       ← Zod-validated config with 5-layer precedence
-├── kernel/       ← WASM facade: 42 registered algorithms, run() API
+├── kernel/       ← WASM boundary: 42 registered algorithms, run() API
 ├── engine/       ← State machine: uninitialized → ready → running → watching
 ├── planner/      ← plan(config) → ExecutionPlan, 4 profiles
 ├── observability/← 3-layer output: CLI, JSONL, OTEL spans

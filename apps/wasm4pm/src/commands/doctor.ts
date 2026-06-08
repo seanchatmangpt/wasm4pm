@@ -4628,6 +4628,14 @@ export const doctor = defineCommand({
       type: 'boolean',
       description: 'Auto-fix safe issues: create missing .wasm4pm/results/ directory and scaffold wasm4pm.toml if absent',
     },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
+    },
   },
   async run(ctx) {
     if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {

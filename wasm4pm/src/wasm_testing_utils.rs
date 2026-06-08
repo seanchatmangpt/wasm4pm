@@ -253,7 +253,10 @@ pub fn validate_output_format(output_json: &str, algorithm: &str) -> Result<JsVa
     }
 
     let mut extra = Vec::new();
-    let all_allowed: Vec<&String> = required_fields.iter().chain(optional_fields.iter()).collect();
+    let all_allowed: Vec<&String> = required_fields
+        .iter()
+        .chain(optional_fields.iter())
+        .collect();
     for key in obj.keys() {
         if !all_allowed.contains(&key) {
             extra.push(key.clone());
@@ -372,27 +375,23 @@ pub fn get_algorithm_metadata(algorithm: &str) -> Result<JsValue, JsValue> {
 
 /// Run a discovery algorithm and return its output.
 fn run_discovery_algorithm(
-    _handle: &str,
-    _activity_key: &str,
+    handle: &str,
+    activity_key: &str,
     algorithm: &str,
 ) -> Result<Value, JsValue> {
-    // This is a simple dispatcher that calls existing discovery functions
-    // In a real implementation, this would call the actual algorithm functions
-    // For now, we return a mock structure that matches the algorithm's output
     match algorithm {
         "dfg" => {
-            // In reality, this would call discover_dfg(handle, activity_key)
-            // For testing, return a valid DFG structure
-            Ok(json!({
-                "nodes": [],
-                "edges": [],
-                "total_events": 0
-            }))
+            let js_val = crate::discovery::discover_dfg(handle, activity_key)?;
+            serde_wasm_bindgen::from_value(js_val).map_err(|e| JsValue::from_str(&e.to_string()))
         }
-        _ => Ok(json!({
-            "algorithm": algorithm,
-            "status": "success"
-        })),
+        "im" | "inductive" => {
+            let js_val = crate::more_discovery::discover_inductive_miner(handle, activity_key)?;
+            serde_wasm_bindgen::from_value(js_val).map_err(|e| JsValue::from_str(&e.to_string()))
+        }
+        _ => Err(JsValue::from_str(&format!(
+            "Unsupported algorithm in testing utility: {}",
+            algorithm
+        ))),
     }
 }
 
@@ -471,10 +470,9 @@ fn get_algorithm_schema_fields(algorithm: &str) -> (Vec<String>, Vec<String>) {
             vec!["places".to_string(), "transitions".to_string()],
             vec!["arcs".to_string()],
         ),
-        "process_tree" | "inductive_miner" => (
-            vec!["tree".to_string()],
-            vec!["children".to_string()],
-        ),
+        "process_tree" | "inductive_miner" => {
+            (vec!["tree".to_string()], vec!["children".to_string()])
+        }
         _ => (vec![], vec![]),
     }
 }

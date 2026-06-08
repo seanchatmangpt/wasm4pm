@@ -1300,7 +1300,7 @@ Fused-query execution engine. Consolidates multiple discovery passes (DFG, Causa
 
 **Technical Dissection:**
 - **Source Module**: `wasm4pm/src/smart_engine.rs`
-- **Core Function**: `SmartEngine` facade, integrating `LruCache`, `ConvergenceMonitor`, and `FusedMultiPass`.
+- **Core Function**: `SmartEngine` boundary, integrating `LruCache`, `ConvergenceMonitor`, and `FusedMultiPass`.
 - **Mechanism**: Provides a fused computation engine. Features cross-algorithm result caching to answer repeated queries instantly, a convergence monitor to allow early termination of iterative metaheuristics, and shared internal graph caching.
 - **Optimization Strategy**: The `FusedMultiPass` system computes a Directly-Follows Graph (DFG) exactly once per trace hash and shares it across all DFG-based algorithms. `ConvergenceMonitor` tracks metric improvements across a sliding window, halting iterations if the relative change drops below a set threshold.
 - **Safety Features**: Designed for single-threaded WASM safety using `RefCell` instead of `Mutex` to avoid deadlocks. Stores engine instances in a global static mapping handled via an opaque identifier.

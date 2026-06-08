@@ -130,8 +130,8 @@ pub fn oc_conformance_check_inner(ocel: &OCEL) -> Result<serde_json::Value, Stri
 #[wasm_bindgen]
 pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
     let ocel = get_ocel(ocel_handle)?;
-    let result = oc_conformance_check_inner(&ocel)
-        .map_err(|e| wasm_err(codes::INTERNAL_ERROR, &e))?;
+    let result =
+        oc_conformance_check_inner(&ocel).map_err(|e| wasm_err(codes::INTERNAL_ERROR, &e))?;
     to_js(&result)
 }
 
@@ -223,7 +223,7 @@ mod tests {
         // the outer structure (overall fitness = 1.0 for empty log).
         let ocel = OCEL {
             event_types: vec![],
-            object_types: vec![],   // no types → no alpha++ call
+            object_types: vec![], // no types → no alpha++ call
             events: vec![],
             objects: vec![],
             object_relations: vec![],

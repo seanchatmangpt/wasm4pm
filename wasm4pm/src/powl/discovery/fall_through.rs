@@ -1,4 +1,4 @@
-#![allow(deprecated)]
+#![allow(removed)]
 //! Fall-through strategies for inductive miner.
 //!
 //! 80/20: Simple fall-through when no cut is detected.
@@ -10,6 +10,7 @@ use super::choice_graph;
 use super::DiscoveryConfig;
 use crate::powl_arena::{BinaryRelation, Operator, PowlArena};
 use std::collections::{HashMap, HashSet};
+use wasm4pm_compat::powl::{ChoiceGraph, ChoiceGraphNode};
 
 // ---------------------------------------------------------------------------
 // 1. Choice Graph Fall-Through (MineDG)
@@ -196,10 +197,7 @@ pub fn choice_graph_v2_fall_through(
     if traces.is_empty() {
         return Err("No traces for choice graph v2 fall-through".to_string());
     }
-    let activities: HashSet<String> = traces
-        .iter()
-        .flat_map(|t| t.iter().cloned())
-        .collect();
+    let activities: HashSet<String> = traces.iter().flat_map(|t| t.iter().cloned()).collect();
     if activities.is_empty() {
         return Err("No activities found in traces".to_string());
     }
@@ -208,39 +206,22 @@ pub fn choice_graph_v2_fall_through(
         .iter()
         .flat_map(|t| t.windows(2).map(|w| (w[0].clone(), w[1].clone())))
         .collect();
-    let starts: HashSet<String> = traces
-        .iter()
-        .filter_map(|t| t.first().cloned())
-        .collect();
-    let ends: HashSet<String> = traces
-        .iter()
-        .filter_map(|t| t.last().cloned())
-        .collect();
+    let starts: HashSet<String> = traces.iter().filter_map(|t| t.first().cloned()).collect();
+    let ends: HashSet<String> = traces.iter().filter_map(|t| t.last().cloned()).collect();
     let has_empty_trace = traces.iter().any(|t| t.is_empty());
 
-    let cut = choice_graph::discover_choice_graph_v2(
-        &activities,
-        &dfg,
-        &starts,
-        &ends,
-        has_empty_trace,
-    )
-    .map_err(|e| format!("MineDG v2 failed: {}", e))?;
+    let cut =
+        choice_graph::discover_choice_graph_v2(&activities, &dfg, &starts, &ends, has_empty_trace)
+            .map_err(|e| format!("MineDG v2 failed: {}", e))?;
 
     // Replace each Activity-node in the cut graph with a SubModel sub-tree.
-    // SubModel = XOR of partition activities (placeholder for recursive PM×).
-    let mut new_nodes: Vec<wasm4pm_types::ChoiceGraphNode> =
-        Vec::with_capacity(cut.graph.nodes.len());
+    // SubModel = XOR of partition activities (fallback base case for recursive PM×).
+    let mut new_nodes: Vec<ChoiceGraphNode> = Vec::with_capacity(cut.graph.nodes.len());
     for (i, n) in cut.graph.nodes.iter().enumerate() {
         match n {
-            wasm4pm_types::ChoiceGraphNode::Start => {
-                new_nodes.push(wasm4pm_types::ChoiceGraphNode::Start)
-            }
-            wasm4pm_types::ChoiceGraphNode::End => {
-                new_nodes.push(wasm4pm_types::ChoiceGraphNode::End)
-            }
-            wasm4pm_types::ChoiceGraphNode::Activity(_)
-            | wasm4pm_types::ChoiceGraphNode::SubModel(_) => {
+            ChoiceGraphNode::Start => new_nodes.push(ChoiceGraphNode::Start),
+            ChoiceGraphNode::End => new_nodes.push(ChoiceGraphNode::End),
+            ChoiceGraphNode::Activity(_) | ChoiceGraphNode::SubModel(_) => {
                 let p_idx = cut.partition_for_node[i].expect("Activity node maps to partition");
                 let part = &cut.partition[p_idx];
                 let trans_indices: Vec<u32> = part
@@ -252,12 +233,11 @@ pub fn choice_graph_v2_fall_through(
                 } else {
                     arena.add_operator(Operator::Xor, trans_indices)
                 };
-                new_nodes.push(wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx));
+                new_nodes.push(ChoiceGraphNode::SubModel(sub_idx));
             }
         }
     }
-    let new_graph = wasm4pm_types::ChoiceGraph::new(new_nodes, cut.graph.edges.clone())
-        .map_err(|e| format!("post-substitution CG invalid: {}", e))?;
+    let new_graph = ChoiceGraph::new(new_nodes, cut.graph.edges.clone());
     Ok(arena.add_choice_graph(&new_graph))
 }
 
@@ -450,13 +430,45 @@ mod tests {
         // With cycles: B <-> C (choice), D <-> E (choice)
         // Expected: 3 partitions {A}, {B,C}, {D,E}, {F}
         let traces = vec![
-            vec!["A".to_string(), "B".to_string(), "D".to_string(), "F".to_string()],
-            vec!["A".to_string(), "B".to_string(), "E".to_string(), "F".to_string()],
-            vec!["A".to_string(), "C".to_string(), "D".to_string(), "F".to_string()],
-            vec!["A".to_string(), "C".to_string(), "E".to_string(), "F".to_string()],
+            vec![
+                "A".to_string(),
+                "B".to_string(),
+                "D".to_string(),
+                "F".to_string(),
+            ],
+            vec![
+                "A".to_string(),
+                "B".to_string(),
+                "E".to_string(),
+                "F".to_string(),
+            ],
+            vec![
+                "A".to_string(),
+                "C".to_string(),
+                "D".to_string(),
+                "F".to_string(),
+            ],
+            vec![
+                "A".to_string(),
+                "C".to_string(),
+                "E".to_string(),
+                "F".to_string(),
+            ],
             // Cycles within choices
-            vec!["A".to_string(), "B".to_string(), "C".to_string(), "D".to_string(), "F".to_string()],
-            vec!["A".to_string(), "C".to_string(), "B".to_string(), "E".to_string(), "F".to_string()],
+            vec![
+                "A".to_string(),
+                "B".to_string(),
+                "C".to_string(),
+                "D".to_string(),
+                "F".to_string(),
+            ],
+            vec![
+                "A".to_string(),
+                "C".to_string(),
+                "B".to_string(),
+                "E".to_string(),
+                "F".to_string(),
+            ],
         ];
         let mut arena = PowlArena::new();
         let config = DiscoveryConfig::default();
@@ -468,9 +480,7 @@ mod tests {
     #[test]
     fn test_choice_graph_minedg_no_cycles() {
         // Linear sequence: A -> B -> C (no cycles)
-        let traces = vec![
-            vec!["A".to_string(), "B".to_string(), "C".to_string()],
-        ];
+        let traces = vec![vec!["A".to_string(), "B".to_string(), "C".to_string()]];
         let mut arena = PowlArena::new();
         let config = DiscoveryConfig::default();
         let result = choice_graph_fall_through(&traces, &mut arena, &config);
@@ -534,8 +544,7 @@ mod tests {
             HashSet::from_iter(vec!["B".to_string(), "C".to_string()]),
             HashSet::from_iter(vec!["D".to_string()]),
         ];
-        let partition_edges: HashSet<(usize, usize)> =
-            HashSet::from_iter(vec![(0, 1), (1, 2)]);
+        let partition_edges: HashSet<(usize, usize)> = HashSet::from_iter(vec![(0, 1), (1, 2)]);
         let start_activities = HashSet::from_iter(vec!["A".to_string()]);
         let end_activities = HashSet::from_iter(vec!["D".to_string()]);
 

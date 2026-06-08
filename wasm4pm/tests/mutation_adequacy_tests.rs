@@ -393,7 +393,7 @@ fn test_mutation_4_circuit_breaker_step_counter_detected() {
         open_timeout_ms,
         half_open_timeout_ms: 30_000,
     };
-    let mut breaker = CircuitBreaker::with_config(config);
+    let mut breaker = CircuitBreaker::with_config(config).unwrap();
 
     // Step 3: Drive to Open
     breaker.record_failure();

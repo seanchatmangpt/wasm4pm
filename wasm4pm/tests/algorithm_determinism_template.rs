@@ -65,11 +65,7 @@ fn make_simple_test_log() -> models::EventLog {
     {
         let mut trace = models::Trace {
             attributes: Default::default(),
-            events: vec![
-                make_event("A", 1),
-                make_event("B", 2),
-                make_event("C", 3),
-            ],
+            events: vec![make_event("A", 1), make_event("B", 2), make_event("C", 3)],
         };
         log.traces.push(trace);
     }
@@ -78,11 +74,7 @@ fn make_simple_test_log() -> models::EventLog {
     {
         let mut trace = models::Trace {
             attributes: Default::default(),
-            events: vec![
-                make_event("A", 4),
-                make_event("B", 5),
-                make_event("D", 6),
-            ],
+            events: vec![make_event("A", 4), make_event("B", 5), make_event("D", 6)],
         };
         log.traces.push(trace);
     }
@@ -91,11 +83,7 @@ fn make_simple_test_log() -> models::EventLog {
     {
         let mut trace = models::Trace {
             attributes: Default::default(),
-            events: vec![
-                make_event("A", 7),
-                make_event("C", 8),
-                make_event("D", 9),
-            ],
+            events: vec![make_event("A", 7), make_event("C", 8), make_event("D", 9)],
         };
         log.traces.push(trace);
     }
@@ -123,7 +111,7 @@ fn make_event(activity: &str, timestamp_sec: i64) -> models::Event {
 /// Hash a DFG to a hex string for determinism verification.
 ///
 /// Uses BLAKE3 for consistency with receipt hashing in TypeScript.
-fn hash_dfg(dfg: &models::DirectlyFollowsGraph) -> String {
+fn hash_dfg(dfg: &models::DFG) -> String {
     let json = serde_json::to_string(dfg).expect("failed to serialize DFG");
     blake3::hash(json.as_bytes()).to_hex().to_string()
 }
@@ -149,8 +137,14 @@ fn assert_deterministic(algo: &str, hash1: &str, hash2: &str) {
 #[test]
 fn test_dfg_is_deterministic() {
     let log = make_simple_test_log();
-    let h1 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
-    let h2 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
+    let h1 = hash_dfg(&discovery::discover_dfg_from_log(
+        &admitted_log(log.clone()),
+        "concept:name",
+    ));
+    let h2 = hash_dfg(&discovery::discover_dfg_from_log(
+        &admitted_log(log.clone()),
+        "concept:name",
+    ));
     assert_deterministic("dfg", &h1, &h2);
 }
 
@@ -180,10 +174,12 @@ fn test_heuristic_miner_is_deterministic() {
 #[test]
 fn test_genetic_algorithm_is_deterministic() {
     let log = make_simple_test_log();
-    let (dfg1, fitness1) = genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10)
-        .expect("genetic_algorithm failed");
-    let (dfg2, fitness2) = genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10)
-        .expect("genetic_algorithm failed on second run");
+    let (dfg1, fitness1) =
+        genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10)
+            .expect("genetic_algorithm failed");
+    let (dfg2, fitness2) =
+        genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10)
+            .expect("genetic_algorithm failed on second run");
 
     let h1 = hash_dfg(&dfg1);
     let h2 = hash_dfg(&dfg2);
@@ -202,10 +198,12 @@ fn test_genetic_algorithm_is_deterministic() {
 #[test]
 fn test_pso_is_deterministic() {
     let log = make_simple_test_log();
-    let (dfg1, fitness1) = genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 15, 10)
-        .expect("pso failed");
-    let (dfg2, fitness2) = genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 15, 10)
-        .expect("pso failed on second run");
+    let (dfg1, fitness1) =
+        genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 15, 10)
+            .expect("pso failed");
+    let (dfg2, fitness2) =
+        genetic_discovery::discover_pso_algorithm_from_log(&log, "concept:name", 15, 10)
+            .expect("pso failed on second run");
 
     let h1 = hash_dfg(&dfg1);
     let h2 = hash_dfg(&dfg2);
@@ -222,10 +220,12 @@ fn test_pso_is_deterministic() {
 #[test]
 fn test_aco_is_deterministic() {
     let log = make_simple_test_log();
-    let (dfg1, fitness1) = genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
-        .expect("aco failed");
-    let (dfg2, fitness2) = genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
-        .expect("aco failed on second run");
+    let (dfg1, fitness1) =
+        genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
+            .expect("aco failed");
+    let (dfg2, fitness2) =
+        genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
+            .expect("aco failed on second run");
 
     let h1 = hash_dfg(&dfg1);
     let h2 = hash_dfg(&dfg2);
@@ -236,8 +236,10 @@ fn test_aco_is_deterministic() {
 #[test]
 fn test_simulated_annealing_is_deterministic() {
     let log = make_simple_test_log();
-    let (dfg1, _fitness1) = more_discovery::discover_simulated_annealing_from_log(&log, "concept:name", 50.0, 20.0);
-    let (dfg2, _fitness2) = more_discovery::discover_simulated_annealing_from_log(&log, "concept:name", 50.0, 20.0);
+    let (dfg1, _fitness1) =
+        more_discovery::discover_simulated_annealing_from_log(&log, "concept:name", 50.0, 20.0);
+    let (dfg2, _fitness2) =
+        more_discovery::discover_simulated_annealing_from_log(&log, "concept:name", 50.0, 20.0);
 
     let h1 = hash_dfg(&dfg1);
     let h2 = hash_dfg(&dfg2);
@@ -245,7 +247,7 @@ fn test_simulated_annealing_is_deterministic() {
     assert_deterministic("simulated_annealing", &h1, &h2);
 }
 
-/* 
+/*
 #[test]
 fn test_astar_is_deterministic() {
     let log = make_simple_test_log();
@@ -271,20 +273,28 @@ fn test_astar_is_deterministic() {
 /// collect() in snapshot(), eliminating FxHashMap iteration non-determinism.
 #[test]
 fn test_streaming_dfg_is_deterministic() {
-    use wasm4pm::streaming::{StreamingDfgBuilder, StreamingAlgorithm};
     use std::collections::HashMap;
+    use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
     let events = vec![
-        ("case1", "A"), ("case1", "B"), ("case1", "C"),
-        ("case2", "A"), ("case2", "C"), ("case2", "B"),
-        ("case3", "B"), ("case3", "A"), ("case3", "C"),
+        ("case1", "A"),
+        ("case1", "B"),
+        ("case1", "C"),
+        ("case2", "A"),
+        ("case2", "C"),
+        ("case2", "B"),
+        ("case3", "B"),
+        ("case3", "A"),
+        ("case3", "C"),
     ];
 
     let mut build_dfg = || {
         let mut stream = StreamingDfgBuilder::new();
         let mut open: HashMap<String, Vec<String>> = HashMap::new();
         for (case, activity) in &events {
-            open.entry(case.to_string()).or_default().push(activity.to_string());
+            open.entry(case.to_string())
+                .or_default()
+                .push(activity.to_string());
         }
         for (case, activities) in &open {
             for act in activities {
@@ -294,7 +304,9 @@ fn test_streaming_dfg_is_deterministic() {
         }
         let dfg = stream.snapshot();
         // Sort edges for stable comparison
-        let mut edge_strs: Vec<String> = dfg.edges.iter()
+        let mut edge_strs: Vec<String> = dfg
+            .edges
+            .iter()
             .map(|e| format!("{}->{}:{}", e.from, e.to, e.frequency))
             .collect();
         edge_strs.sort();
@@ -304,30 +316,17 @@ fn test_streaming_dfg_is_deterministic() {
     let h1 = build_dfg();
     let h2 = build_dfg();
     let h3 = build_dfg();
-    assert_eq!(h1, h2, "streaming_dfg snapshot not deterministic (run 1 vs 2)");
-    assert_eq!(h1, h3, "streaming_dfg snapshot not deterministic (run 1 vs 3)");
+    assert_eq!(
+        h1, h2,
+        "streaming_dfg snapshot not deterministic (run 1 vs 2)"
+    );
+    assert_eq!(
+        h1, h3,
+        "streaming_dfg snapshot not deterministic (run 1 vs 3)"
+    );
 }
 
 /// Template for testing algorithms that use unseeded fastrand.
-///
-/// This test is expected to FAIL until the underlying algorithm is fixed.
-#[test]
-#[ignore] // Remove after seeding fastrand in playout.rs
-fn test_playout_unseeded_fastrand_nondeterministic() {
-    // Playout uses global fastrand::usize(), fastrand::f64() without seed control.
-    // Each run produces different trace (random choices not seeded).
-    //
-    // Expected: FAIL with multiple unique traces
-    // Fix: Accept seed parameter, pass to fastrand::Rng::with_seed(seed)
-    //
-    // Once fixed, move to CATEGORY B and seed with parameter.
-    todo!("playout uses unseeded fastrand; traces are non-deterministic");
-}
-
-// ============================================================================
-// Batch Test Suite
-// ============================================================================
-
 /// Run all determinism tests and report results.
 ///
 /// This is for CI/CD integration:
@@ -342,24 +341,44 @@ fn test_all_determinism_batch() {
     println!("\n=== Algorithm Determinism Batch Test ===\n");
 
     let tests: Vec<(&str, Box<dyn Fn() -> bool>)> = vec![
-        ("dfg", Box::new(|| {
-            let log = make_simple_test_log();
-            let h1 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
-            let h2 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
-            h1 == h2
-        })),
-        ("genetic_algorithm", Box::new(|| {
-            let log = make_simple_test_log();
-            match (
-                genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10),
-                genetic_discovery::discover_genetic_algorithm_from_log(&log, "concept:name", 20, 10),
-            ) {
-                (Some((dfg1, _)), Some((dfg2, _))) => {
-                    hash_dfg(&dfg1) == hash_dfg(&dfg2)
+        (
+            "dfg",
+            Box::new(|| {
+                let log = make_simple_test_log();
+                let h1 = hash_dfg(&discovery::discover_dfg_from_log(
+                    &admitted_log(log.clone()),
+                    "concept:name",
+                ));
+                let h2 = hash_dfg(&discovery::discover_dfg_from_log(
+                    &admitted_log(log.clone()),
+                    "concept:name",
+                ));
+                h1 == h2
+            }),
+        ),
+        (
+            "genetic_algorithm",
+            Box::new(|| {
+                let log = make_simple_test_log();
+                match (
+                    genetic_discovery::discover_genetic_algorithm_from_log(
+                        &log,
+                        "concept:name",
+                        20,
+                        10,
+                    ),
+                    genetic_discovery::discover_genetic_algorithm_from_log(
+                        &log,
+                        "concept:name",
+                        20,
+                        10,
+                    ),
+                ) {
+                    (Some((dfg1, _)), Some((dfg2, _))) => hash_dfg(&dfg1) == hash_dfg(&dfg2),
+                    _ => false,
                 }
-                _ => false,
-            }
-        })),
+            }),
+        ),
     ];
 
     let mut passed = 0;
@@ -382,4 +401,14 @@ fn test_all_determinism_batch() {
     if failed > 0 {
         panic!("{} algorithm(s) failed determinism check", failed);
     }
+}
+
+fn admitted_log(
+    log: wasm4pm::models::EventLog,
+) -> wasm4pm_compat::evidence::Evidence<
+    wasm4pm::models::EventLog,
+    wasm4pm_compat::state::Admitted,
+    (),
+> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

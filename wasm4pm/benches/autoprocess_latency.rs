@@ -14,6 +14,9 @@ use std::time::Duration;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::RlState;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // =========================================================================
 // Benchmark: Perception (Encode 8D state to state_id)
 // =========================================================================
@@ -23,7 +26,11 @@ fn bench_perception_encode_state(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agent = AutoProcessAgent::new();
 
@@ -54,7 +61,11 @@ fn bench_decision_select_action(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let mut agent = AutoProcessAgent::new();
 
@@ -73,7 +84,11 @@ fn bench_decision_linucb_estimate(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agent = AutoProcessAgent::new();
     let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];
@@ -95,7 +110,11 @@ fn bench_protection_guard_eval(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agent = AutoProcessAgent::new();
 
@@ -124,7 +143,11 @@ fn bench_protection_circuit_advance(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let mut agent = AutoProcessAgent::new();
 
@@ -144,7 +167,11 @@ fn bench_protection_circuit_check(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agent = AutoProcessAgent::new();
 
@@ -164,7 +191,11 @@ fn bench_optimization_bellman_update(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let mut agent = AutoProcessAgent::new();
 
@@ -192,7 +223,11 @@ fn bench_amortized_cycle(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(100);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Budget target: 34ns per cycle amortized over 256 cycles
     group.significance_level(0.05);
@@ -259,7 +294,11 @@ fn bench_full_cycle(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(10000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     // Budget target: 34ns per cycle, with 10% margin → 30.6ns target
     group.significance_level(0.05);
@@ -317,7 +356,11 @@ fn bench_perception_batch(c: &mut Criterion) {
     group.measurement_time(Duration::from_secs(5));
     group.warm_up_time(Duration::from_secs(2));
     group.sample_size(1000);
-    if helpers::is_fast_mode() { helpers::fast_group(&mut group); } else { helpers::full_group(&mut group); }
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
 
     let agent = AutoProcessAgent::new();
 
