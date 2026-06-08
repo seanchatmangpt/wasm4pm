@@ -708,7 +708,7 @@ mod tests {
     /// deserialise; max_case_ms must default to 1.0 (not 0.0 → ÷0 in col4).
     #[test]
     fn test_snapshot_defaults() {
-        let  = r#"{"type":"rf_predictor","vocab":["A","B"],
+        let snapshot_json = r#"{"type":"rf_predictor","vocab":["A","B"],
             "training_data":[0.0,0.0,0.0,0.0,0.0,0.0,0.0],"training_labels":[0.0],
             "n_trees":3,"max_depth":3,"min_samples_split":2,
             "activity_key":"concept:name","n_samples":1,"n_features":7}"#;
