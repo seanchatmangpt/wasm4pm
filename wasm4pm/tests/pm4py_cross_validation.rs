@@ -207,7 +207,7 @@ const ROADTRAFFIC_END_ORACLE: &[(&str, usize)] = &[
 // ---------------------------------------------------------------------------
 
 fn dfg_to_edge_freq_map(
-    dfg: &wasm4pm::models::DirectlyFollowsGraph,
+    dfg: &wasm4pm::models::DFG,
 ) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()

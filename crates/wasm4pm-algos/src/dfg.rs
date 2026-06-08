@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use wasm4pm_compat::legacy_conformance::*;
-use wasm4pm_compat::legacy_error::*;
-use wasm4pm_compat::legacy_event_log::*;
-use wasm4pm_compat::legacy_models::*;
+use wasm4pm_compat::conformance::*;
+use wasm4pm_compat::error::*;
+use wasm4pm_compat::event_log::*;
+use wasm4pm_compat::models::*;
 
 /// Branchless Directly-Follows Graph discovery with columnar optimization
 /// Time complexity: O(n) where n = total events across all traces

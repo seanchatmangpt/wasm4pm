@@ -557,11 +557,7 @@ impl AlignmentConformance {
         >,
         petri_net: &PetriNet,
     ) -> Result<
-        wasm4pm_compat::conformance::Metric<
-            { wasm4pm_compat::law::QualityMetricKind::Fitness },
-            NUM,
-            DEN,
-        >,
+        f64,
         String,
     >
     where
@@ -586,6 +582,6 @@ impl AlignmentConformance {
             ));
         }
 
-        Ok(wasm4pm_compat::conformance::Metric::new())
+        Ok(0.0)
     }
 }

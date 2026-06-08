@@ -225,7 +225,7 @@ Temporal Profile Discovery   876          10.8x
    - Escaping edges approach
    - Use for model quality assessment
 
-2. **Standard Token Replay** — Legacy compatibility
+2. **Standard Token Replay** —  compatibility
    - Handle-based architecture matches WASM API
    - Use only when SIMD not available
 

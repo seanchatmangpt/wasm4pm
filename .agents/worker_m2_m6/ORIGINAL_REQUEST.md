@@ -23,6 +23,6 @@ Specifically:
 9. Perform local compilation verification (`cargo check -p pm4py-lsp` and `cargo test -p pm4py-lsp`) and confirm they compile and pass.
 
 MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/boundary implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
 Document your changes, compilation/test command results in your handoff report, and send a message back when complete.

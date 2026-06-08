@@ -81,6 +81,7 @@ interface QualityPayload {
     simplicity_score: number;
     assessment: string;
   };
+  explain_quality_dims?: boolean;
 }
 
 export const quality = defineCommand({
@@ -158,6 +159,22 @@ export const quality = defineCommand({
       description:
         'Print an educational explanation of each Van der Aalst quality dimension with score bars. ' +
         'Implies --format human.',
+    },
+    'explain-quality-dims': {
+      type: 'boolean',
+      description: 'Highlight relative metric importance and tradeoffs among Van der Aalst dimensions',
+    },
+    'guide-next-steps': {
+      type: 'boolean',
+      description: 'Emit contextual next-step suggestions after successful quality analysis',
+    },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
     },
   },
   async run(ctx) {
@@ -589,6 +606,7 @@ export const quality = defineCommand({
                   simplicity_score: complexityScore.simplicityScore,
                   assessment: complexityScore.assessment,
                 },
+                explain_quality_dims: Boolean(ctx.args['explain-quality-dims']),
               };
 
               const elapsedMs = Date.now() - t0;
@@ -609,6 +627,13 @@ export const quality = defineCommand({
                   if (comparison !== undefined) {
                     printComparisonTable(comparison, projection);
                   }
+                }
+                if (ctx.args['guide-next-steps'] && format === 'human') {
+                  projection.log('📊 Guided Next Steps:');
+                  projection.log('  1. Address quality deviations: run wpm conformance -i <log.xes> --diagnose-deviations');
+                  projection.log('  2. Benchmark alternative models: run wpm compare dfg,heuristic,genetic -i <log.xes>');
+                  projection.log('  3. Automate checks: configure quality gates in wasm4pm.toml');
+                  projection.log('');
                 }
               });
 
@@ -1153,6 +1178,23 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
     }
     projection.log('');
   }
+
+  projection.log('  Relative Importance & Tradeoffs:');
+  projection.log('    1. FITNESS (critical, target >= 0.85): Reflects model coverage. Optimizing fitness often degrades precision.');
+  projection.log('    2. PRECISION (high priority, target >= 0.80): Measures over-permissiveness. Avoid low precision (< 0.50).');
+  projection.log('    3. GENERALIZATION (medium priority, target >= 0.75): Measures ability to handle unseen traces. Avoid overfitting.');
+  projection.log('    4. SIMPLICITY (secondary priority, target >= 0.50): Measures readability. Complex models are hard to interpret.');
+  projection.log('');
+
+  if (payload.explain_quality_dims) {
+    projection.log('  Van der Aalst Quality Tradeoffs Deep Dive:');
+    projection.log('    • Fitness vs Precision: A model with 100% fitness can have poor precision (e.g., flower model allowing all paths).');
+    projection.log('      A tighter model increases precision but might decrease fitness by blocking some observed behaviors.');
+    projection.log('    • Generalization vs Simplicity: Simpler models (fewer places/arcs) generalize better to unseen cases by avoiding overfitting.');
+    projection.log('      However, oversimplifying (e.g., single-loop DFG) can collapse precision, allowing invalid traces.');
+    projection.log('    • Strategy: Maintain fitness >= 0.85 as a hard constraint, then maximize precision (target >= 0.80) while keeping simplicity acceptable.');
+    projection.log('');
+  }
 }
 
 /**
@@ -1272,6 +1314,13 @@ function printExplainQuality(payload: QualityPayload, projection: ConsoleProject
 
   projection.log('  Reference: van der Aalst, W.M.P. (2016). Process Mining, 2nd Ed. Springer.');
   projection.log('');
+
+  if (payload.explain_quality_dims) {
+    projection.log('  Van der Aalst Quality Tradeoffs Deep Dive:');
+    projection.log('    • Fitness vs Precision: Highly fit models can be underfit (low precision) if they permit too much behaviour.');
+    projection.log('    • Generalization vs Simplicity: Simple structures avoid overfitting (better generalization) but must not lose precision.');
+    projection.log('');
+  }
 }
 
 /**

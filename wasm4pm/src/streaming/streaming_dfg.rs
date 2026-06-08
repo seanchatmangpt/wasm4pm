@@ -4,7 +4,7 @@
 //! DFG construction for infinite event streams. All other streaming algorithms
 //! build on this pattern.
 
-use crate::models::DirectlyFollowsGraph;
+use crate::models::DFG;
 use crate::streaming::{ActivityInterner, Interner, StreamStats, StreamingAlgorithm};
 use rustc_hash::FxHashMap;
 
@@ -106,7 +106,7 @@ impl StreamingDfgBuilder {
 }
 
 impl StreamingAlgorithm for StreamingDfgBuilder {
-    type Model = DirectlyFollowsGraph;
+    type Model = DFG;
 
     fn new() -> Self {
         StreamingDfgBuilder {
@@ -165,7 +165,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
     }
 
     fn snapshot(&self) -> Self::Model {
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
 
         // Nodes
         dfg.nodes = self
@@ -248,7 +248,7 @@ impl Default for StreamingDfgBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    // DFGNode used indirectly via DirectlyFollowsGraph
+    // DFGNode used indirectly via DFG
 
     #[test]
     fn test_basic_streaming() {

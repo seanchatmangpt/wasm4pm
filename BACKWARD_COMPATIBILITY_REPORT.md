@@ -1,4 +1,4 @@
-# Backward Compatibility Assessment: ConformancePayload Envelope Wrapper
+# baseline admissibility Assessment: ConformancePayload Envelope Wrapper
 
 **Date:** 2026-05-30  
 **Change:** Wrap bare ConformancePayload in CommandResult envelope (JSON output)  
@@ -152,7 +152,7 @@ expect(json.payload.summary.conformance_rate).toBe(...);
 **Required update:** Must document:
 - Version where envelope was introduced
 - Migration path for external clients
-- Old format deprecated, new format required in next major
+- Old format removed, new format required in next major
 
 **Impact:** Affects downstream tools' upgrade strategies
 
@@ -246,7 +246,7 @@ Must change to:
 
 ---
 
-## Backward Compatibility Classification
+## baseline admissibility Classification
 
 | Category | Impact | Severity | Breaking? |
 |----------|--------|----------|-----------|
@@ -281,9 +281,9 @@ Must change to:
 
 ---
 
-### ✅ Option 2: Phased Rollout with Deprecation Period (RECOMMENDED)
+### ✅ Option 2: Phased Rollout with Removal Period (RECOMMENDED)
 
-#### Phase 1 (v26.5.0): Introduce new envelope format + deprecation warning
+#### Phase 1 (v26.5.0): Introduce new envelope format + removal warning
 
 **Release action:**
 ```typescript
@@ -291,11 +291,11 @@ Must change to:
 if (format === 'json') {
   const envelope = makeResult('conformance', payload, elapsedMs, exitCode);
   
-  // DEPRECATION: Also include flat payload for backward compatibility
+  // REMOVAL: Also include flat payload for baseline admissibility
   const backCompatPayload = {
     ...payload,
     // Warn consumers about upcoming change
-    __DEPRECATED_NOTICE__: 'Flat JSON structure deprecated; use .payload wrapper in v27.0.0'
+    __REMOVED_NOTICE__: 'Flat JSON structure removed; use .payload wrapper in v27.0.0'
   };
   
   process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
@@ -303,8 +303,8 @@ if (format === 'json') {
 ```
 
 **Update documentation:**
-- Update CHANGELOG.md: "Conformance JSON output now wrapped in CommandResult envelope; flat structure deprecated"
-- Update WASM_API.md: Show both old and new examples, mark old as deprecated
+- Update CHANGELOG.md: "Conformance JSON output now wrapped in CommandResult envelope; flat structure removed"
+- Update WASM_API.md: Show both old and new examples, mark old as removed
 - Update OpenAPI schema with version conditional
 
 **External communication:**
@@ -314,17 +314,17 @@ if (format === 'json') {
 **Testing:**
 - Update all 79 internal tests to use `.payload`
 - Lab tests: Update to expect wrapped format
-- Add compatibility test: Ensure flat access still works but emits deprecation warning
+- Add compatibility test: Ensure flat access still works but emits removal warning
 
 **Impact on external users:**
 - ✅ No immediate breakage (v26.5.0 still returns acceptable format)
-- ⚠️ Deprecation warning signals change coming
+- ⚠️ Removal warning signals change coming
 - Time to migrate: Until v27.0.0 (6-12 months)
 
-#### Phase 2 (v27.0.0): Remove backward compatibility, enforce envelope
+#### Phase 2 (v27.0.0): Remove baseline admissibility, enforce envelope
 
 **Release action:**
-- Remove `__DEPRECATED_NOTICE__` and flat-structure fallback
+- Remove `__REMOVED_NOTICE__` and flat-structure fallback
 - **Only** return wrapped envelope
 - Update all documentation to reference envelope format
 
@@ -340,7 +340,7 @@ if (format === 'json') {
 
 ---
 
-### Option 3: Soft Deprecation (ALTERNATIVE)
+### Option 3: Soft Removal (ALTERNATIVE)
 
 **Approach:** Add `--output-format` flag to choose between formats
 
@@ -425,28 +425,28 @@ const fitness = data.fitness; // Works with both old and new
 - [ ] **Documentation:**
   - [ ] Update `.github/schemas/openapi.json` with new envelope schema
   - [ ] Update `WASM_API.md` with before/after examples
-  - [ ] Update `CHANGELOG.md` with deprecation notice
+  - [ ] Update `CHANGELOG.md` with removal notice
   - [ ] Create `MIGRATION_GUIDE.md` for external users
-- [ ] **Deprecation warning:** Add `__DEPRECATED_NOTICE__` to Phase 1 output
-- [ ] **Release notes:** Emphasize deprecation timeline (v26.5.0 → v27.0.0)
+- [ ] **Removal warning:** Add `__REMOVED_NOTICE__` to Phase 1 output
+- [ ] **Release notes:** Emphasize removal timeline (v26.5.0 → v27.0.0)
 
 ### At Release Time (v26.5.0)
 
 - [ ] Update version to `26.5.0` in `package.json` (or appropriate version)
 - [ ] Merge PR with envelope changes + backward compat layer
 - [ ] Create GitHub release with:
-  - Deprecation notice (prominent)
+  - Removal notice (prominent)
   - Migration guide link
   - Timeline to removal (v27.0.0)
   - Examples of updated commands
 - [ ] Announce on issue tracker / mailing list
-- [ ] Post blog post / article about deprecation
+- [ ] Post blog post / article about removal
 
 ### At Major Release (v27.0.0 — ~6 months later)
 
-- [ ] Remove backward compatibility layer
+- [ ] Remove backward baseline
 - [ ] Enforce envelope-only output
-- [ ] Update all documentation to remove "deprecated" labels
+- [ ] Update all documentation to remove "removed" labels
 - [ ] Create release notes highlighting breaking change
 
 ---
@@ -455,7 +455,7 @@ const fitness = data.fitness; // Works with both old and new
 
 | Risk | Probability | Impact | Mitigation |
 |------|------------|--------|-----------|
-| External scripts break silently | **HIGH** | **HIGH** | Deprecation warning + 6mo timeline |
+| External scripts break silently | **HIGH** | **HIGH** | Removal warning + 6mo timeline |
 | Lab tests fail on first run | **CERTAIN** | **MEDIUM** | Update lab tests before release |
 | Users skip v26.5.0 (fear of breakage) | **MEDIUM** | **HIGH** | Clear communication + migration guide |
 | Downstream tools diverge (some update, some don't) | **HIGH** | **MEDIUM** | Provide automated migration scripts |
@@ -481,15 +481,15 @@ Is breaking change acceptable in current SLA?
 
 **The envelope wrapper is a breaking change** that requires:
 
-1. ✅ **Phase 1 (v26.5.0):** Introduce envelope with deprecation notice
-2. ✅ **Phase 2 (v27.0.0):** Remove deprecation, enforce envelope
+1. ✅ **Phase 1 (v26.5.0):** Introduce envelope with removal notice
+2. ✅ **Phase 2 (v27.0.0):** Remove removal, enforce envelope
 3. ✅ **Communicate:** Clear timeline, migration guide, examples
 4. ✅ **Test:** Update all internal and external tests
 5. ✅ **Document:** Update OpenAPI, WASM_API.md, CHANGELOG
 
 **Safe to merge on main?** ✅ **YES**, if:
 - Targeting next minor or major release (not patch)
-- Release notes include deprecation + migration guide
+- Release notes include removal + migration guide
 - Phase 2 removal is explicitly scheduled
 
 **Safe to release immediately?** ❌ **NO** — would break external users with no recourse
@@ -513,7 +513,7 @@ Is breaking change acceptable in current SLA?
 ### Documentation Updates
 - `.github/schemas/openapi.json` — Add ConformanceResponse envelope schema
 - `WASM_API.md` — Document new envelope structure, deprecate flat structure
-- `CHANGELOG.md` — Add deprecation notice and timeline
+- `CHANGELOG.md` — Add removal notice and timeline
 - `MIGRATION_GUIDE.md` — New file with external user migration instructions
 
 ### Optional: Helper Scripts

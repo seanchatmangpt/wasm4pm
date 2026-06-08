@@ -1809,7 +1809,7 @@ export class Wasm4pmMCPServer {
           let engineHandle: string | null = null;
           try {
             const requestedAlgo = (input.algorithm as string) || 'dfg';
-            // Map legacy / alias names to valid smart_engine algorithm names
+            // Map  / alias names to valid smart_engine algorithm names
             const algoMap: Record<string, string> = {
               auto: 'dfg',
               heuristic: 'heuristic_miner',

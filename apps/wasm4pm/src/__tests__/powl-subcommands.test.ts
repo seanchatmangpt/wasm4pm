@@ -783,7 +783,7 @@ describe('powl footprints — ordering matrix', () => {
 
 // ─── discover: existing subcommand backward-compatibility ────────────────────
 
-describe('powl discover — backward compatibility (no regressions)', () => {
+describe('powl discover — baseline admissibility (no regressions)', () => {
   it('discover still returns root, node_count, repr, variant fields', async () => {
     const result = await runCli([
       'powl',

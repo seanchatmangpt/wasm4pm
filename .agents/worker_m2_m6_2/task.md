@@ -25,4 +25,4 @@ Provide the exact outputs of:
 - `cargo test -p pm4py-lsp`
 Verify that no PM4Py concepts leak into `vendors/tower-lsp-max` core (the substrate must remain pure).
 
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/boundary implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.

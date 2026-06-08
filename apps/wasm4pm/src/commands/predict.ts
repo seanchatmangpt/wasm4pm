@@ -113,6 +113,14 @@ export const predict = defineCommand({
       type: 'boolean',
       description: 'Do not persist the result to .wasm4pm/results/',
     },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -1134,7 +1142,7 @@ function formatHumanOutput(
         p.log(`  Window ${String(i + 1).padStart(2)} (${windowLabel.padEnd(22)}): ⚠ Drift detected  (${bar})`);
       }
       p.log('');
-      // Legacy detail lines for each drift point
+      //  detail lines for each drift point
       for (const dp of sortedDrifts) {
         const pos = dp['position'] ?? '?';
         const dist =

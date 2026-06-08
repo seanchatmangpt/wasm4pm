@@ -550,11 +550,11 @@ fn non_wf_net_is_refused_with_reason() {
     );
 }
 
-// ─── Tests: WASM/JSON contract (exercised natively via the shim) ──────────────
+// ─── Tests: WASM/JSON contract (exercised natively via the bridge) ──────────────
 
 #[test]
 fn json_contract_reports_all_fields_positive() {
-    // The WASM export emits a fixed JSON shape; the native shim returns the same
+    // The WASM export emits a fixed JSON shape; the native bridge returns the same
     // string. Assert the contract fields exist and the positive verdict holds.
     let json = wf_net_to_powl_native(&seq_sound_net());
     let v: serde_json::Value = serde_json::from_str(&json).expect("valid JSON");

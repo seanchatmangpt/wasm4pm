@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use futures::FutureExt;
 use pm4py_lsp::analysis::PipelineFacts;
 use pm4py_lsp::diagnose_text;
@@ -180,7 +181,7 @@ async fn test_stress_s5_concurrent_did_change() {
     let mut futures: Vec<futures::future::BoxFuture<'_, ()>> = Vec::new();
 
     for i in 0..100 {
-        let uri = Url::parse(&format!("file:///doc_{}.py", i)).unwrap();
+        let uri = DocumentUri::from_str(&format!("file:///doc_{}.py", i)).unwrap();
         futures.push(
             async move {
                 // Call did_open first
@@ -234,13 +235,13 @@ async fn test_stress_s6_repeated_conformance_queries() {
     let backend = service.inner();
 
     // Set up a few documents in the backend
-    let uri1 = Url::parse("file:///doc1.py").unwrap();
+    let uri1 = DocumentUri::from_str("file:///doc1.py").unwrap();
     backend.documents.lock().await.insert(
         uri1.clone(),
         "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n".to_string(),
     );
 
-    let uri2 = Url::parse("file:///doc2.py").unwrap();
+    let uri2 = DocumentUri::from_str("file:///doc2.py").unwrap();
     backend.documents.lock().await.insert(
         uri2.clone(),
         "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\ndf = pm4py.format_dataframe(df)\n".to_string(),
@@ -248,13 +249,13 @@ async fn test_stress_s6_repeated_conformance_queries() {
 
     let snap_id = backend.max_snapshot().await.unwrap();
     let first = backend
-        .max_conformance_vector(snap_id.clone())
+        .max_conformance_vector(Some(snap_id.clone()))
         .await
         .unwrap();
 
     for i in 0..100 {
         let cv = backend
-            .max_conformance_vector(snap_id.clone())
+            .max_conformance_vector(Some(snap_id.clone()))
             .await
             .unwrap();
         assert_eq!(
@@ -289,7 +290,7 @@ async fn test_stress_s7_memory_leakage_control() {
 
     let mut uris = Vec::new();
     for i in 0..100 {
-        let uri = Url::parse(&format!("file:///doc_{}.py", i)).unwrap();
+        let uri = DocumentUri::from_str(&format!("file:///doc_{}.py", i)).unwrap();
         backend
             .did_open(DidOpenTextDocumentParams {
                 text_document: TextDocumentItem {
@@ -356,7 +357,7 @@ async fn test_stress_s8_deadlock_check() {
     let backend = service.inner();
 
     // Pre-populate documents so we have something to query
-    let uri = Url::parse("file:///deadlock_test.py").unwrap();
+    let uri = DocumentUri::from_str("file:///deadlock_test.py").unwrap();
     let text = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
     backend
         .documents
@@ -374,6 +375,7 @@ async fn test_stress_s8_deadlock_check() {
                     text_document: TextDocumentIdentifier { uri: uri_clone },
                     range: Range::default(),
                     context: CodeActionContext {
+version: None,
                         diagnostics: vec![Diagnostic {
                             range: Range::default(),
                             code: Some(NumberOrString::String(
@@ -390,6 +392,7 @@ async fn test_stress_s8_deadlock_check() {
                         work_done_token: None,
                     },
                     partial_result_params: PartialResultParams {
+is_partial_result_token_null: false,
                         partial_result_token: None,
                     },
                 };

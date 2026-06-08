@@ -32,7 +32,7 @@ export { isModelIR } from './model.js';
 export type { ResultEnvelope, ProvenanceChain, LatencyClass } from './result.js';
 export { isResultEnvelope, isProvenanceChain, deriveLatencyClass } from './result.js';
 
-// Result type and utilities (legacy Result<T> type for error handling)
+// Result type and utilities ( Result<T> type for error handling)
 export * from './result.js';
 
 // Connector contracts

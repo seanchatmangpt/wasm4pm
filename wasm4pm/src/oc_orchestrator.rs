@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use wasm4pm_compat::legacy_ocel::OCEL;
+use wasm4pm_compat::ocel::OCEL;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct OntologyDiscoveryAgent {

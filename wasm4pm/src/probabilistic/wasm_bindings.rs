@@ -83,7 +83,7 @@ pub fn streaming_log_add_trace(handle: usize, activities: &JsValue) -> Result<()
 
 /// Estimate the DFG from the StreamingLog and return it as a JSON string.
 ///
-/// Returns a `DirectlyFollowsGraph` serialized as JSON.
+/// Returns a `DFG` serialized as JSON.
 #[wasm_bindgen]
 pub fn streaming_log_estimate_dfg(handle: usize) -> Result<JsValue, JsValue> {
     with_store(|store| {

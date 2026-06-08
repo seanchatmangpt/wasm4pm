@@ -186,8 +186,8 @@ export declare function assertConfigValid(config: unknown): asserts config is Wa
  */
 export declare function resolveProfile(profile: ExecutionProfile): PipelineStep[];
 /**
- * Type alias for backward compatibility
- * @deprecated Use Wasm4pmConfig instead
+ * Type alias for baseline admissibility
+ * @removed Use Wasm4pmConfig instead
  */
 export type Wasm4pmConfig = Wasm4pmConfig;
 //# sourceMappingURL=config.d.ts.map

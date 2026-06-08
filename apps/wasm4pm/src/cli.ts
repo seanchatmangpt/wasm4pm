@@ -52,6 +52,8 @@ import models from './commands/models.js';
 import { suggest } from './commands/suggest.js';
 import { pipeline } from './commands/pipeline.js';
 import { oracle } from './commands/oracle.js';
+import { workflow } from './commands/workflow.js';
+import { selectAlgorithm } from './commands/select-algorithm.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -319,6 +321,8 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     models,
     pipeline,
     oracle,
+    workflow,
+    'select-algorithm': selectAlgorithm,
   },
 });
 
@@ -362,4 +366,6 @@ export {
   pipeline,
   prefixConformance,
   oracle,
+  workflow,
+  selectAlgorithm,
 };

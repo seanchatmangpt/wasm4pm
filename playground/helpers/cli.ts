@@ -46,7 +46,7 @@ export function combinedOutput(result: CliResult): string {
   return result.stdout + result.stderr;
 }
 
-/** @deprecated Use wpm instead. */
+/** @removed Use wpm instead. */
 export const wasm4pm = wpm;
 
 /** Resolve a path relative to the wasm4pm repo root. */

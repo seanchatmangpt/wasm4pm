@@ -244,14 +244,14 @@ impl StructuralNet {
     /// sink over the bipartite flow relation; a node is "on a source→sink path"
     /// iff it is both forward-reachable from source and backward-reachable from sink.
     #[must_use]
-    pub fn is_workflow_net(&self) -> WfNetCheck {
+    pub fn is_workflow_net(&self) -> PetriNetCheck {
         let source = self.unique_source();
         let sink = self.unique_sink();
 
         let (source_idx, sink_idx) = match (source, sink) {
             (Ok(s), Ok(k)) => (s, k),
             (s, k) => {
-                return WfNetCheck {
+                return PetriNetCheck {
                     is_wf_net: false,
                     source: s.ok().map(|i| self.places[i].clone()),
                     sink: k.ok().map(|i| self.places[i].clone()),
@@ -283,7 +283,7 @@ impl StructuralNet {
         }
 
         let connected = disconnected_places.is_empty() && disconnected_transitions.is_empty();
-        WfNetCheck {
+        PetriNetCheck {
             is_wf_net: connected,
             source: Some(self.places[source_idx].clone()),
             sink: Some(self.places[sink_idx].clone()),
@@ -632,7 +632,7 @@ fn push_unique(v: &mut Vec<usize>, x: usize) {
 
 /// Result of the WF-net structural check (Def 3.3).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WfNetCheck {
+pub struct PetriNetCheck {
     /// Whether the net satisfies all three WF-net conditions.
     pub is_wf_net: bool,
     /// Id of the unique source place, if exactly one exists.
@@ -761,7 +761,7 @@ fn soundness_json(net: &PetriNet) -> serde_json::Value {
     })
 }
 
-/// Native-target test shim: returns the soundness JSON string for a [`PetriNet`].
+/// Native-target test bridge: returns the soundness JSON string for a [`PetriNet`].
 /// Mirrors exactly what the WASM export emits, so the JSON contract is tested
 /// under `cargo test` even though `#[wasm_bindgen]` functions cannot be called natively.
 #[cfg(not(target_arch = "wasm32"))]

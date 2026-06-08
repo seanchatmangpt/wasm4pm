@@ -24,7 +24,7 @@ ${GREEN}0${RESET}     Success               Command completed successfully
 ${YELLOW}1${RESET}     Config Error         Invalid config file, missing required flags
 ${YELLOW}2${RESET}     Source Error         Invalid event log format, missing/unreadable file
 ${RED}3${RESET}     Execution Error      Algorithm failed, timeout, out of memory
-${RED}4${RESET}     Partial Failure      Some operations succeeded, some failed
+${RED}4${RESET}     Partial Failure      Some operations succeeded, some failed (e.g. in multi-algorithm comparisons or batch runs)
 ${RED}5${RESET}     System Error         I/O error, permission denied, system resource limits
 ${RED}6${RESET}     Conformance Fail     Fitness/precision below threshold (--assert-fitness, --assert-precision)
 
@@ -50,6 +50,12 @@ Validate source:
   fi
 
 ${BOLD}Common Patterns:${RESET}
+
+Batch comparison gate:
+  wpm compare dfg,heuristic,genetic -i log.xes
+  if [ $? -eq 4 ]; then
+    echo "Warning: At least one algorithm failed execution"
+  fi
 
 Shell script safe run:
   wpm run log.xes || exit $?  # Propagate exit code

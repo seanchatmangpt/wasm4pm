@@ -342,7 +342,7 @@ help:
 	@echo "  make doctor             — Run environment diagnostics"
 	@echo ""
 	@echo "Cognition Layer (diagrams #11,#12,#19,#25,#34-35,#39):"
-	@echo "  make cognition-build    — Full build: Rust + wasm-pack + TS facade + CLI"
+	@echo "  make cognition-build    — Full build: Rust + wasm-pack + TS boundary + CLI"
 	@echo "  make cognition-verify   — Full verify: type-check + tests + anti-fraud + adversarial (V1-V8)"
 	@echo "  make cognition-doctor   — Capability probe: 9-check registry vs runtime truth"
 	@echo "  make cognition-dod      — Definition of Done: 10-item checklist"

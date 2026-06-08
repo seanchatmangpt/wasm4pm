@@ -1,4 +1,4 @@
-//! Lazy WASM module loader for the cognition facade.
+//! Lazy WASM module loader for the cognition boundary.
 //!
 //! Singleton owns the only direct `import('wasm4pm-cognition')` site in this
 //! package — every wrapper goes through `WasmLoader.getInstance().get()`.

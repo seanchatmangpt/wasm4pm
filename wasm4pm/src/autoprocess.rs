@@ -374,7 +374,7 @@ impl AutoProcessAgent {
 
     /// Look up Q-value and return corresponding action with ε-greedy exploration.
     ///
-    /// This variant is kept for backward compatibility. New code should use
+    /// This variant is kept for baseline admissibility. New code should use
     /// `select_action_epsilon_greedy_with_reason`.
     #[inline(always)]
     pub fn select_action_epsilon_greedy(

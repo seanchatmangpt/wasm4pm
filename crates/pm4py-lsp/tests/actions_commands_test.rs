@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use pm4py_lsp::{diagnose_text, Backend};
 use serde_json::json;
 use std::collections::HashMap;
@@ -37,7 +38,7 @@ async fn test_format_dataframe_command() {
         }
     });
 
-    let uri = Url::parse("file:///test.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test.py").unwrap();
     let text = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
     backend
         .documents
@@ -72,7 +73,7 @@ async fn test_create_parity_fixture_command() {
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri = Url::parse("file:///test.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test.py").unwrap();
     let text = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
     backend
         .documents

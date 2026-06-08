@@ -21,7 +21,7 @@ The `pm4py-lsp` crate provides a Language Server Protocol (LSP) implementation s
 
 The implementation of `pm4py-lsp` strictly adheres to the `wasm4pm` monorepo conventions:
 
-1. **Workspace Inheritance:** Package metadata (version, edition, authors) and common dependencies (like `serde`, `wasm4pm-types`, `blake3`, `uuid`) are inherited directly from the root workspace `Cargo.toml`.
+1. **Workspace Inheritance:** Package metadata (version, edition, authors) and common dependencies (like `serde`, `wasm4pm-compat`, `blake3`, `uuid`) are inherited directly from the root workspace `Cargo.toml`.
 2. **Strict Linting:** The crate enforces high-quality Rust code via top-level directives: `#![forbid(unsafe_code)]` and `#![warn(clippy::all)]`.
 3. **Deterministic Hashing:** Document states are hashed using the BLAKE3 algorithm to generate a deterministic `SnapshotId`, ensuring consistent state tracking without relying on random UUIDs.
 4. **Receipt & Fixture Persistence (The One-Line Law):** In compliance with the repository's `AGENTS.md` mandate (*"No receipt, no claim"*), all tests and commands that generate parity fixtures or receipts write them directly to physical disk paths (`fixtures/pm4py-parity/` and `receipts/pm4py-lsp/`). Test harnesses are explicitly forbidden from cleaning up these directories to ensure that physical artifacts remain verifiable by the global release pipeline.

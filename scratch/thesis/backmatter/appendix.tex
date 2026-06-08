@@ -4,10 +4,10 @@
 The following code constitutes the core Directly-Follows Graph execution within the WASM substrate, demonstrating zero-copy evaluation.
 \begin{lstlisting}[language=Rust]
 use std::collections::HashMap;
-use wasm4pm_compat::legacy_event_log::*;
-use wasm4pm_compat::legacy_models::*;
-use wasm4pm_compat::legacy_error::*;
-use wasm4pm_compat::legacy_conformance::*;
+use wasm4pm_compat::event_log::*;
+use wasm4pm_compat::models::*;
+use wasm4pm_compat::error::*;
+use wasm4pm_compat::conformance::*;
 
 /// Branchless Directly-Follows Graph discovery with columnar optimization
 /// Time complexity: O(n) where n = total events across all traces

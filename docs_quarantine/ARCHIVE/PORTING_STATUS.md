@@ -8,9 +8,9 @@
 
 The wasm4pm Rust codebase has been reorganized into a **three-crate workspace**:
 
-1. **wasm4pm-types** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
+1. **wasm4pm-compat** — Canonical data structures (EventLog, DFG, PetriNet, ProvenanceChain)
 2. **wasm4pm-algos** — High-performance algorithm implementations with branchless patterns
-3. **wasm4pm** (wasm4pm/src) — WASM bindings and compatibility layer
+3. **wasm4pm** (wasm4pm/src) — WASM bindings and baseline
 
 All core discovery algorithms have been ported from `wasm4pm/src` into `wasm4pm-algos` using optimized branchless patterns for cache-friendly execution.
 
@@ -18,9 +18,9 @@ All core discovery algorithms have been ported from `wasm4pm/src` into `wasm4pm-
 
 ## Phase 1: Architecture Setup ✅
 
-### wasm4pm-types Crate (Complete)
+### wasm4pm-compat Crate (Complete)
 
-**Location:** `wasm4pm/crates/wasm4pm-types/`
+**Location:** `wasm4pm/crates/wasm4pm-compat/`
 
 | Component | Status | Files |
 |-----------|--------|-------|
@@ -127,7 +127,7 @@ cargo check --all
 # Run all tests (597 passing, 1 pre-existing failure)
 cargo test --all
 
-# Test wasm4pm-types in isolation
+# Test wasm4pm-compat in isolation
 cargo test -p wasm4pm-cli-types
 
 # Test wasm4pm-algos in isolation
@@ -152,11 +152,11 @@ wasm4pm WASM Bindings (wasm4pm/src/)
     ↓ (imported)
 wasm4pm-algos Algorithms (wasm4pm/crates/wasm4pm-algos/)
     ↓ (depends on)
-wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
+wasm4pm-compat Structures (wasm4pm/crates/wasm4pm-compat/)
 ```
 
 **Unidirectional dependencies:**
-- ✅ wasm4pm-algos imports wasm4pm-types
+- ✅ wasm4pm-algos imports wasm4pm-compat
 - ✅ wasm4pm (WASM) can import wasm4pm-algos
 - ✅ TypeScript packages import compiled WASM
 - ❌ No circular dependencies
@@ -211,7 +211,7 @@ wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
 **Workspace Compilation:**
 ```
 ✅ cargo check --all
-   Checking wasm4pm-types v26.4.10 — Finished
+   Checking wasm4pm-compat v26.4.10 — Finished
    Checking wasm4pm-algos v26.4.10 — Finished
    Checking wasm4pm v26.4.10 — Finished
 ```
@@ -221,7 +221,7 @@ wasm4pm-types Structures (wasm4pm/crates/wasm4pm-types/)
 ✅ 597 tests PASS
 ❌ 1 test FAIL (gpu::wgpu_binding — pre-existing, unrelated)
 
-wasm4pm-types: 18 tests PASS
+wasm4pm-compat: 18 tests PASS
 wasm4pm-algos: 12 tests PASS
 ```
 
@@ -236,10 +236,10 @@ e9b65e8d feat(algos): implement core discovery algorithms with branchless patter
 
 ```
 wasm4pm/Cargo.toml
-  - Added workspace members: crates/wasm4pm-types, crates/wasm4pm-algos
+  - Added workspace members: crates/wasm4pm-compat, crates/wasm4pm-algos
   - Shared version: 26.4.10
 
-wasm4pm/crates/wasm4pm-types/
+wasm4pm/crates/wasm4pm-compat/
   - NEW: Complete binary type layer (event_log, models, conformance, provenance, hash, error)
 
 wasm4pm/crates/wasm4pm-algos/

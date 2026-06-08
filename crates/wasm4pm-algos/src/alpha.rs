@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
-use wasm4pm_compat::legacy_conformance::*;
-use wasm4pm_compat::legacy_error::*;
-use wasm4pm_compat::legacy_event_log::*;
-use wasm4pm_compat::legacy_models::*;
+use wasm4pm_compat::conformance::*;
+use wasm4pm_compat::error::*;
+use wasm4pm_compat::event_log::*;
+use wasm4pm_compat::models::*;
 
 /// Alpha+ Miner - discovers Petri nets with implicit places handling
 /// Implements key relations: →, -|→, ||
@@ -76,7 +76,7 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
             .and_then(|e| e.get_activity(activity_key))
         {
             if let Some(trans_id) = activity_to_trans_id.get(&first_activity) {
-                net.arcs.push(Arc {
+                net.arcs.push(Arc { object_type: None,
                     from: source_id.clone(),
                     to: trans_id.clone(),
                     weight: Some(1),
@@ -93,7 +93,7 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
             .and_then(|e| e.get_activity(activity_key))
         {
             if let Some(trans_id) = activity_to_trans_id.get(&last_activity) {
-                net.arcs.push(Arc {
+                net.arcs.push(Arc { object_type: None,
                     from: trans_id.clone(),
                     to: sink_id.clone(),
                     weight: Some(1),
@@ -111,12 +111,12 @@ pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
             net.places.push(Place {
                 id: place_id.clone(),
             });
-            net.arcs.push(Arc {
+            net.arcs.push(Arc { object_type: None,
                 from: a_id.clone(),
                 to: place_id.clone(),
                 weight: Some(1),
             });
-            net.arcs.push(Arc {
+            net.arcs.push(Arc { object_type: None,
                 from: place_id,
                 to: b_id.clone(),
                 weight: Some(1),

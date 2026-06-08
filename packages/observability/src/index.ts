@@ -33,7 +33,7 @@ export * from './timing-verification.js';
 // Streaming bridge: wasm4pm StreamingLog → mcpp LIVE correlation events
 export * from './streaming-bridge.js';
 
-// Observability wrapper (facade)
+// Observability wrapper (boundary)
 export * from './observability-wrapper.js';
 
 export * from './observability.js';

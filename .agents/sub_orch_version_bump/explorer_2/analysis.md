@@ -52,7 +52,7 @@ These do not declare a local version string (they use `version.workspace = true`
 4. `crates/wasm4pm-cli/Cargo.toml`
 5. `crates/wasm4pm-cognition/Cargo.toml`
 6. `crates/wasm4pm-macros/Cargo.toml`
-7. `crates/wasm4pm-types/Cargo.toml`
+7. `crates/wasm4pm-compat/Cargo.toml`
 8. `crates/wasm4pm-utils/Cargo.toml`
 9. `tps-metrics/Cargo.toml`
 10. `wasm4pm/Cargo.toml`
@@ -71,7 +71,7 @@ Several Cargo files contain hardcoded versions in path dependency constraints. T
 
 1. **Root `Cargo.toml` (`[workspace.dependencies]`):**
    ```toml
-   wasm4pm-types = { version = "26.6.5", path = "crates/wasm4pm-types" }
+   wasm4pm-compat = { version = "26.6.5", path = "crates/wasm4pm-compat" }
    wasm4pm-algos = { version = "26.6.5", path = "crates/wasm4pm-algos" }
    wasm4pm-utils = { version = "26.6.5", path = "crates/wasm4pm-utils" }
    wasm4pm-cognition = { version = "26.6.5", path = "crates/wasm4pm-cognition" }

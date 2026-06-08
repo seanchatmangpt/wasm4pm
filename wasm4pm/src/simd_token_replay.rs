@@ -14,7 +14,7 @@
 //! - **[u32; 64] fixed array** for markings (zero allocation per trace)
 //! - **Branchless fire** for preset/postset batch updates
 
-use crate::models::{ColumnarLog, DFGNode, DirectlyFollowsGraph};
+use crate::models::{ColumnarLog, DFGNode, DFG};
 use rustc_hash::FxHashMap;
 
 /// Integer-encoded Petri net for SIMD token replay.
@@ -62,7 +62,7 @@ pub struct LogReplayResult {
 }
 
 impl SimdPetriNet {
-    pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Result<Self, String> {
+    pub fn from_dfg(dfg: &DFG) -> Result<Self, String> {
         let mut place_ids: FxHashMap<String, u32> = FxHashMap::default();
         let mut label_to_transitions: FxHashMap<String, Vec<u32>> = FxHashMap::default();
         let mut transition_labels: Vec<Option<String>> = Vec::new();
@@ -400,7 +400,7 @@ pub fn replay_log(log_handle: &str, activity_key: &str) -> String {
                 });
             let col = ColumnarLog::from_owned(&col_owned);
 
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
             let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
             let mut seen: FxHashMap<u32, usize> = FxHashMap::default();
 
@@ -556,7 +556,7 @@ mod source_place_tests {
 
 #[cfg(test)]
 #[allow(dead_code)]
-fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
+fn make_dfg(edges: &[(&str, &str)]) -> DFG {
     let mut node_names: Vec<&str> = Vec::new();
     let mut node_set: FxHashMap<&str, usize> = FxHashMap::default();
 
@@ -576,7 +576,7 @@ fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
         *edge_counts.entry((from, to)).or_insert(0) += 1;
     }
 
-    DirectlyFollowsGraph {
+    DFG {
         nodes: node_names
             .iter()
             .map(|&name| DFGNode {

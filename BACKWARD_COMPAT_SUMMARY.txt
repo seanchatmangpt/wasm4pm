@@ -1,5 +1,5 @@
 ================================================================================
-TRACK B-1: CONFORMANCE PAYLOAD ENVELOPE WRAPPER — BACKWARD COMPATIBILITY ASSESSMENT
+TRACK B-1: CONFORMANCE PAYLOAD ENVELOPE WRAPPER — baseline admissibility ASSESSMENT
 ================================================================================
 
 FINDING: ⚠️  BREAKING CHANGE — Requires phased rollout with migration period
@@ -43,14 +43,14 @@ RECOMMENDATION
 
 Phase 1 (v26.5.0):
   - Introduce envelope wrapper
-  - Keep __DEPRECATED_NOTICE__ field for backward compat
-  - Update CHANGELOG with deprecation timeline
+  - Keep __REMOVED_NOTICE__ field for backward compat
+  - Update CHANGELOG with removal timeline
   - Provide migration guide for external users
   - Update all internal tests to use .payload accessor
   - Update OpenAPI schema, WASM_API.md documentation
 
 Phase 2 (v27.0.0 — 6 months later):
-  - Remove backward compatibility layer
+  - Remove backward baseline
   - Enforce envelope-only output
   - Mark as major version (breaking change)
 
@@ -71,14 +71,14 @@ Tests (79 assertions total):
 Documentation:
   ⚠️  .github/schemas/openapi.json (add envelope schema)
   ⚠️  WASM_API.md (document new format, deprecate old)
-  ⚠️  CHANGELOG.md (deprecation notice + timeline)
+  ⚠️  CHANGELOG.md (removal notice + timeline)
   ⚠️  NEW: MIGRATION_GUIDE.md (external user instructions)
 
 SAFE TO MERGE?
 ━━━━━━━━━━━━
 ✅ YES, if:
   - Targeting v26.5.0 (next minor or major release, NOT patch)
-  - Release notes include deprecation notice + 6-month timeline
+  - Release notes include removal notice + 6-month timeline
   - All internal tests updated to use .payload accessor
   - Migration guide created for external users
   - OpenAPI/WASM_API.md updated with new format
@@ -87,7 +87,7 @@ SAFE TO MERGE?
   - Releasing as patch version (v26.4.x)
   - No migration guide for external users
   - Lab tests not updated
-  - No deprecation notice in release notes
+  - No removal notice in release notes
 
 DETAILED REPORT
 ━━━━━━━━━━━━━━
@@ -106,7 +106,7 @@ DECISION REQUIRED
 Confirm release strategy with maintainers before merge:
   □ Use Phase 1+2 approach (recommended)?
   □ Release as v26.5.0 minor version (not patch)?
-  □ Include deprecation warning in output?
+  □ Include removal warning in output?
   □ Publish migration guide with release?
 
 ================================================================================

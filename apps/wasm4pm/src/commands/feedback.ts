@@ -538,7 +538,7 @@ const analyzeCmd = defineCommand({
   },
 });
 
-// ─── Legacy algorithm-feedback subcommands (stats / clear / export) ───────────
+// ───  algorithm-feedback subcommands (stats / clear / export) ───────────
 
 interface FeedbackStatsPayload {
   schema: string;
@@ -742,9 +742,9 @@ const exportCmd = defineCommand({
  * - wpm feedback list                                    List all feedback
  * - wpm feedback summary                                 Summarise feedback
  * - wpm feedback analyze -i <log.xes>                   Auto-generate feedback from log
- * - wpm feedback stats [--algorithm <algo>]              Algorithm feedback stats (legacy)
- * - wpm feedback clear [--algorithm <algo>]              Clear algorithm feedback (legacy)
- * - wpm feedback export [--algorithm <algo>]             Export to CSV (legacy)
+ * - wpm feedback stats [--algorithm <algo>]              Algorithm feedback stats ()
+ * - wpm feedback clear [--algorithm <algo>]              Clear algorithm feedback ()
+ * - wpm feedback export [--algorithm <algo>]             Export to CSV ()
  */
 export const feedback = defineCommand({
   meta: {

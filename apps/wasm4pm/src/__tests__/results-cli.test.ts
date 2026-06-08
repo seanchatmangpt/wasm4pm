@@ -360,7 +360,7 @@ describe('wpm results: list JSON contract — id, path, timestamp fields', () =>
     expect(entry.timestamp).toBe(entry.savedAt);
   });
 
-  it('each result entry still exposes legacy fields (index, name, filepath, savedAt)', async () => {
+  it('each result entry still exposes  fields (index, name, filepath, savedAt)', async () => {
     await writeFixture(env.resultsDir, 'aco', '20260516T140000');
     const r = await runCli(['results', '--format', 'json'], env.tempDir);
     expect(r.exitCode).toBe(0);

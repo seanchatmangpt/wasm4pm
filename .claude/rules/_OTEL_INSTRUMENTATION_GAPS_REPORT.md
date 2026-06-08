@@ -578,7 +578,7 @@ All three gaps violate **Rank-1 (Mathematical)** and **Rank-2 (Domain Contract)*
 1. **Frequency tuning:** RL convergence every 10 cycles balances observability (don't miss learning phase) vs. span volume (avoid overwhelming Jaeger)
 2. **Action matching heuristic:** Document as domain-specific, not hard-coded truth. Subject to refinement based on real traces
 3. **MTBT window:** 50 cycles = ~1-2 minute window at 10 cycles/sec; adjustable based on autonomic loop frequency
-4. **Backward compatibility:** All spans are additive; no breaking changes to existing instrumentation
+4. **baseline admissibility:** All spans are additive; no breaking changes to existing instrumentation
 
 ---
 

@@ -192,7 +192,7 @@ impl From<usize> for Frequency {
 /// newtype.  Callers converting from millisecond-resolution sources must apply
 /// [`DurationNs::from_millis_f64`] before constructing this type.  Storing
 /// values in nanoseconds avoids the audit-finding of silent ms/ns confusion
-/// found in the legacy `wasm4pm` `ActivityPerformance` struct.
+/// found in the  `wasm4pm` `ActivityPerformance` struct.
 ///
 /// # Mathematical invariants
 /// - `count` ≥ 0 (trivially, `Frequency` is unsigned)
@@ -289,7 +289,7 @@ impl ActivityPerformance {
 ///
 /// # Relationship to wasm4pm `PerformanceSpectrumResult`
 /// - `target_activity` is an [`ActivityName`] newtype (was `String`).
-/// - `segments` replaces the `measurements` field of the legacy type, and each
+/// - `segments` replaces the `measurements` field of the  type, and each
 ///   entry uses typed [`DurationNs`] and [`ActivityName`] fields instead of raw
 ///   `f64 *_ms` / `String` pairs.
 ///

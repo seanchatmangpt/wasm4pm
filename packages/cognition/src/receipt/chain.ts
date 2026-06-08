@@ -1,4 +1,4 @@
-//! Receipt-chain types and lightweight verification facade.
+//! Receipt-chain types and lightweight verification boundary.
 //!
 //! The TS `ReceiptChain` class is a thin wrapper over `ReceiptLink[]` that
 //! implements sequential hash verification and replay pointer lookup in TS.

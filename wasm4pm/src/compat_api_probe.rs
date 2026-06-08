@@ -22,10 +22,10 @@ pub use compat::admission::{Admit, Refusal};
 
 // Verifying Structural Types
 pub use compat::declare::DeclareConstraint;
-pub use compat::dfg::DirectlyFollowsGraph;
-pub use compat::eventlog::{Event, EventLog, Trace};
-pub use compat::ocel::{OcelEvent, OcelLog, OcelObject};
-pub use compat::petri::{PetriNet, WfNet};
+pub use compat::dfg::DFG;
+pub use compat::event_log::{Event, EventLog, Trace};
+pub use compat::ocel::{OCELEvent, OCEL, OCELObject};
+pub use compat::petri::PetriNet;
 pub use compat::powl::PowlNode;
 pub use compat::process_tree::ProcessTree;
 

@@ -85,7 +85,7 @@
 - `wasm4pm/src/powl/discovery/fall_through.rs` (line 190)
 - `wasm4pm/src/powl/conversion/to_petri_net.rs` (line 221)
 - `wasm4pm/tests/choice_graph_paper.rs` (module docstring)
-- `crates/wasm4pm-types/src/choice_graph.rs` (module docstring)
+- `crates/wasm4pm-compat/src/choice_graph.rs` (module docstring)
 
 **Notes:** Cited with definition numbers in seven distinct source files. `wasm4pm/tests/choice_graph_paper.rs` is explicitly built around paper figures. This is the second-most-precisely pinned citation.
 
@@ -486,7 +486,7 @@ Ranked by: definition-number precision + number of source locations + formal obj
 
 - **Definitions cited:** 1 (ChoiceGraph), 4/5 (MineDG cut), Algorithm 1
 - **Source locations:** 7 distinct files including a dedicated test file (`choice_graph_paper.rs`)
-- **Implementation:** `powl/discovery/choice_graph.rs`, `powl_arena.rs`, `crates/wasm4pm-types/src/choice_graph.rs`
+- **Implementation:** `powl/discovery/choice_graph.rs`, `powl_arena.rs`, `crates/wasm4pm-compat/src/choice_graph.rs`
 - **Why strong:** Paper figures are recreated in tests; definition numbers appear in struct docstrings and discovery oracle comments.
 
 ### Rank 3 — C06: Rozinat & van der Aalst, Token Replay (2008)

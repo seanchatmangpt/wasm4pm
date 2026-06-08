@@ -1,4 +1,4 @@
-#![allow(deprecated)]
+#![allow(removed)]
 //! POWL (Partially Ordered Workflow Language) core data model.
 //!
 //! Mirrors the Python class hierarchy in `pm4py/objects/powl/obj.py`:
@@ -392,7 +392,7 @@ pub enum PowlNode {
     FrequentTransition(FrequentTransitionNode),
     StrictPartialOrder(StrictPartialOrderNode),
     OperatorPowl(OperatorPowlNode),
-    /// Legacy non-block-structured choice. Internal use only; prefer `ChoiceGraph` for new code.
+    ///  non-block-structured choice. Internal use only; prefer `ChoiceGraph` for new code.
     DecisionGraph(DecisionGraphNode),
     /// Spec-compliant choice graph (paper arXiv:2505.07052, Definition 1).
     ChoiceGraph(ChoiceGraphPowlNode),
@@ -577,7 +577,7 @@ impl PowlArena {
             end_idx: graph.end_idx,
         };
         let idx = self.nodes.len() as u32;
-        #[allow(deprecated)]
+        #[allow(removed)]
         self.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
             graph: normalized,
         }));

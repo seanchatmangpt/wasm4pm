@@ -13,7 +13,7 @@
 use std::collections::HashMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, DirectlyFollowsGraph, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
+    AttributeValue, DFG, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
     PetriNetTransition, Trace,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
@@ -97,7 +97,7 @@ fn abc_net() -> PetriNet {
 /// Build a batch DFG from an EventLog using the streaming builder.
 /// (Same approach as streaming_batch_equivalence_tests.rs — avoids the
 /// wasm_bindgen layer which is unavailable in native `cargo test`.)
-fn dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let mut builder = StreamingDfgBuilder::new();
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);

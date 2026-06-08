@@ -27,8 +27,8 @@ use wasm_bindgen::prelude::*;
 pub fn discover_dfg_from_log<W>(
     log: &AdmittedEventLog<W>,
     activity_key: &str,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
     let col_owned = log.value.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -162,14 +162,14 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
     })
 }
 
-/// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
+/// Pure-Rust OCEL DFG discovery: returns DFG without wasm-bindgen.
 ///
 /// This is the testable core of `discover_ocel_dfg`. Integration tests
 /// on native targets cannot call `#[wasm_bindgen]` functions, so they use
 /// this instead.
 #[must_use]
-pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DFG {
+    let mut dfg = DFG::new();
 
     // Get event types
     for event_type in &ocel.event_types {
@@ -278,7 +278,7 @@ fn bitmask_check(mask: u64, id: usize) -> bool {
 pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let mut result: FxHashMap<String, DirectlyFollowsGraph> = FxHashMap::default();
+            let mut result: FxHashMap<String, DFG> = FxHashMap::default();
 
             // Build sorted activity vocabulary for stable index assignment
             let mut activity_vocab: Vec<String> = {
@@ -317,7 +317,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
 
             // For each object type, discover a separate DFG
             for obj_type in &ocel.object_types {
-                let mut dfg = DirectlyFollowsGraph::new();
+                let mut dfg = DFG::new();
 
                 for name in &activity_vocab {
                     dfg.nodes.push(DFGNode {

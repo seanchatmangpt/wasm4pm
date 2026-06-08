@@ -75,7 +75,7 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
     const MISSING_EDGE_PENALTY_BITS: f64 = 10.0;
 
     get_or_init_state().with_object(model_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             let total_edges: usize = dfg.edges.iter().map(|e| e.frequency).sum();
             let total_f = total_edges.max(1) as f64;
 
@@ -110,7 +110,7 @@ pub fn score_anomaly(model_handle: &str, trace_json: &str) -> Result<JsValue, Js
                     .map_err(|e| crate::error::js_val(&e.to_string()))?,
             ))
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
         None => Err(crate::error::js_val("DFG handle not found")),
     })
 }

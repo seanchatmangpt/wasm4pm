@@ -88,7 +88,7 @@ Handlers provide:
 
 **Breaking Changes**: None
 
-**Backward Compatibility**: Yes - new package, no changes to existing APIs
+**baseline admissibility**: Yes - new package, no changes to existing APIs
 
 **Dependencies Added**:
   @wasm4pm/planner: for PlanStepType and PlanStep

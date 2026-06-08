@@ -59,7 +59,7 @@
       "model": "OCEL-v2 log (OCEDO/OCPQ Def.2 referential integrity)",
       "log": "order-1 O2O 'contains' -> item-99 (no such object)",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::validate (DANGLING_O2O)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::validate (DANGLING_O2O)",
       "minimal_counterexample": "delete the dangling O2O relationship (or declare item-99)"
     },
     {
@@ -70,7 +70,7 @@
       "model": "valid OCEL flattened to single object type 'Item'",
       "log": "Create Order references no Item (divergence drop); Pick Items references 2 Items (convergence duplicate)",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::flatten (lossy: dropped + duplicated events; not 1:1 with E2O incidences)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::flatten (lossy: dropped + duplicated events; not 1:1 with E2O incidences)",
       "minimal_counterexample": "none within flattening — loss is inherent to projecting a many-to-many E2O graph onto one object type; the primitive must surface the loss, not hide it"
     },
     {
@@ -114,7 +114,7 @@
       "model": "OCEL-v2 + cardinality window Order.max_count=1",
       "log": "two Order instances (order-1, order-2)",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::validate (CARDINALITY_MAX)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::validate (CARDINALITY_MAX)",
       "minimal_counterexample": "delete order-2 (count returns to 1)"
     },
     {
@@ -125,7 +125,7 @@
       "model": "OCEL-v2 + Order.terminated_by=[Receive Payment, Cancel Order]",
       "log": "order-1's last event is 'Send Invoice' (not a terminating event)",
       "expected_refusal": "LifecycleNotTerminated",
-      "rejecting_primitive": "object_types.terminated_by lifecycle check over ocel_core::flatten",
+      "rejecting_primitive": "object_types.terminated_by lifecycle check over wasm4pm_compat::ocel::flatten",
       "minimal_counterexample": "append a 'Receive Payment' event qualifying order-1"
     },
     {
@@ -136,7 +136,7 @@
       "model": "OCEL-v2 (OCPQ Def.2: every event qualifies >=1 object)",
       "log": "event e2 'Confirm Order' carries zero object references",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::validate (E2O_EMPTY; the route gate maps zero-object motion to ActivityOnlyFakeRoute)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::validate (E2O_EMPTY; the route gate maps zero-object motion to ActivityOnlyFakeRoute)",
       "minimal_counterexample": "add one E2O relationship to e2"
     },
     {
@@ -147,7 +147,7 @@
       "model": "OCEL-v2 (O is a set; ids unique)",
       "log": "order-1 declared twice in objects[]",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::validate (DUPLICATE_OBJECT_ID)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::validate (DUPLICATE_OBJECT_ID)",
       "minimal_counterexample": "rename the second object to order-2"
     },
     {
@@ -158,7 +158,7 @@
       "model": "OCEL-v2 (types declared up-front)",
       "log": "event e2 has undeclared type 'Teleport Order'",
       "expected_refusal": "ObjectLifecycleViolation",
-      "rejecting_primitive": "ocel_core::validate (UNDECLARED_EVENT_TYPE)",
+      "rejecting_primitive": "wasm4pm_compat::ocel::validate (UNDECLARED_EVENT_TYPE)",
       "minimal_counterexample": "declare 'Teleport Order' in eventTypes"
     }
   ]

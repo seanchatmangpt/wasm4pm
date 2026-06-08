@@ -67,7 +67,7 @@ struct RfPredictorSnapshot {
     /// Maximum trace length observed at training time. Persisted so that
     /// inference can use the same normalisation as training for col0
     /// (`prefix_len / max_trace_len`). Falls back to the prefix length when
-    /// missing (legacy snapshots) — see `predict_next_activity_rf`.
+    /// missing ( snapshots) — see `predict_next_activity_rf`.
     #[serde(default)]
     max_trace_len: usize,
     /// Maximum case duration in milliseconds observed at training time.
@@ -456,7 +456,7 @@ pub fn predict_next_activity_rf(model_handle: &str, prefix_json: &str) -> Result
         // through the *log's* longest trace) is well-defined when we persisted
         // `max_trace_len` at training time — using prefix_len here would force
         // col0 = 1.0 at every inference call, drifting away from the training
-        // distribution. Legacy snapshots (max_trace_len == 0) fall back to the
+        // distribution.  snapshots (max_trace_len == 0) fall back to the
         // conservative pre-fix behaviour.
         let vocab_size = snapshot.vocab.len();
         let prefix_len = prefix_ids.len();
@@ -704,15 +704,15 @@ mod tests {
         assert!(json.contains(r#""type":"rf_predictor""#));
     }
 
-    /// Rank-1: legacy snapshots without `max_trace_len`/`max_case_ms` must
+    /// Rank-1:  snapshots without `max_trace_len`/`max_case_ms` must
     /// deserialise; max_case_ms must default to 1.0 (not 0.0 → ÷0 in col4).
     #[test]
-    fn test_snapshot_legacy_defaults() {
-        let legacy = r#"{"type":"rf_predictor","vocab":["A","B"],
+    fn test_snapshot_defaults() {
+        let  = r#"{"type":"rf_predictor","vocab":["A","B"],
             "training_data":[0.0,0.0,0.0,0.0,0.0,0.0,0.0],"training_labels":[0.0],
             "n_trees":3,"max_depth":3,"min_samples_split":2,
             "activity_key":"concept:name","n_samples":1,"n_features":7}"#;
-        let snap: RfPredictorSnapshot = serde_json::from_str(legacy).expect("deserialise");
+        let snap: RfPredictorSnapshot = serde_json::from_str().expect("deserialise");
         assert_eq!(snap.max_trace_len, 0);
         assert!((snap.max_case_ms - 1.0).abs() < 1e-9);
     }

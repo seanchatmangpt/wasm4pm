@@ -71,7 +71,7 @@ impl ConformanceCache {
     /// `hash_model(a) == hash_model(b)` iff `a` and `b` represent the same
     /// DFG (same node ids/labels/frequencies, same edges, same start/end
     /// activities).
-    pub fn hash_model(dfg: &crate::models::DirectlyFollowsGraph) -> u64 {
+    pub fn hash_model(dfg: &crate::models::DFG) -> u64 {
         use rustc_hash::FxHasher;
         use std::hash::{Hash, Hasher};
 
@@ -264,7 +264,7 @@ pub fn conformance_cache_clear(handle: &str) -> Result<JsValue, JsValue> {
 /// Hash a DFG model for use as a cache key.
 #[wasm_bindgen]
 pub fn conformance_cache_hash_model(dfg_json: &str) -> Result<JsValue, JsValue> {
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: crate::models::DFG = serde_json::from_str(dfg_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid DFG JSON: {}", e)))?;
     let hash = ConformanceCache::hash_model(&dfg);
     to_js_str(&json!({ "hash": hash }))
@@ -348,7 +348,7 @@ mod tests {
 
     #[test]
     fn test_hash_model_deterministic() {
-        let mut dfg = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg = crate::models::DFG::new();
         dfg.nodes.push(crate::models::DFGNode {
             id: "A".to_string(),
             label: "A".to_string(),
@@ -377,7 +377,7 @@ mod tests {
     /// that should have been hits — defeating the cache's purpose).
     #[test]
     fn test_hash_model_invariant_under_node_permutation() {
-        let mut dfg_ab = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg_ab = crate::models::DFG::new();
         dfg_ab.nodes.push(crate::models::DFGNode {
             id: "A".into(),
             label: "A".into(),
@@ -389,7 +389,7 @@ mod tests {
             frequency: 3,
         });
 
-        let mut dfg_ba = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg_ba = crate::models::DFG::new();
         dfg_ba.nodes.push(crate::models::DFGNode {
             id: "B".into(),
             label: "B".into(),
@@ -414,14 +414,14 @@ mod tests {
     /// otherwise the cache returns the wrong conformance score.
     #[test]
     fn test_hash_model_sensitive_to_node_label() {
-        let mut dfg1 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg1 = crate::models::DFG::new();
         dfg1.nodes.push(crate::models::DFGNode {
             id: "n1".into(),
             label: "Register".into(),
             frequency: 10,
         });
 
-        let mut dfg2 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg2 = crate::models::DFG::new();
         dfg2.nodes.push(crate::models::DFGNode {
             id: "n1".into(),
             label: "Approve".into(), // different label, same id+freq
@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn test_hash_model_sensitive_to_start_end_activities() {
         let mk = |starts: &[(&str, usize)], ends: &[(&str, usize)]| {
-            let mut dfg = crate::models::DirectlyFollowsGraph::new();
+            let mut dfg = crate::models::DFG::new();
             for (k, v) in starts {
                 dfg.start_activities.insert((*k).to_string(), *v);
             }
@@ -475,13 +475,13 @@ mod tests {
     /// insertion orders for the same semantic content.
     #[test]
     fn test_hash_model_stable_across_hashmap_insertion_order() {
-        let mut dfg1 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg1 = crate::models::DFG::new();
         dfg1.start_activities.insert("A".into(), 1);
         dfg1.start_activities.insert("B".into(), 2);
         dfg1.end_activities.insert("Y".into(), 3);
         dfg1.end_activities.insert("Z".into(), 4);
 
-        let mut dfg2 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg2 = crate::models::DFG::new();
         dfg2.start_activities.insert("B".into(), 2);
         dfg2.start_activities.insert("A".into(), 1);
         dfg2.end_activities.insert("Z".into(), 4);
@@ -500,10 +500,10 @@ mod tests {
     /// prefix prevents start/end key swaps from hashing to the same value.
     #[test]
     fn test_hash_model_start_and_end_are_distinct_namespaces() {
-        let mut dfg1 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg1 = crate::models::DFG::new();
         dfg1.start_activities.insert("X".into(), 7);
 
-        let mut dfg2 = crate::models::DirectlyFollowsGraph::new();
+        let mut dfg2 = crate::models::DFG::new();
         dfg2.end_activities.insert("X".into(), 7);
 
         assert_ne!(

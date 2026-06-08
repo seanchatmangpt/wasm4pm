@@ -48,7 +48,7 @@
 - [x] All packages build without errors
 - [x] WASM builds successfully (release profile, SIMD enabled)
 - [x] TypeScript compilation clean (no errors)
-- [x] Warnings present but non-blocking (Rust static-mut-refs warnings, deprecated deps)
+- [x] Warnings present but non-blocking (Rust static-mut-refs warnings, removed deps)
 
 ### ⚠️ Tests Status
 **Note**: Test failures in `lab/` (published artifact tests) are expected pre-publish.
@@ -214,9 +214,9 @@ git push origin v26.4.23
 If issues arise post-publish, rollback steps:
 
 ```bash
-# Deprecate published version (marks as deprecated, not removed)
-npm deprecate @wasm4pm/cli@26.4.23 "Deprecated: See v26.4.17"
-npm deprecate wasm4pm@26.4.23 "Deprecated: See v26.4.17"
+# Deprecate published version (marks as removed, not removed)
+npm deprecate @wasm4pm/cli@26.4.23 "Removed: See v26.4.17"
+npm deprecate wasm4pm@26.4.23 "Removed: See v26.4.17"
 
 # Users still can install v26.4.23 if needed (with warning)
 # Publish v26.4.23a or v26.4.17 with fixes
@@ -270,7 +270,7 @@ echo "✅ All checks passed! Ready to publish."
 ### Non-Blocking Issues (Safe to Publish)
 1. **Rust static-mut-refs warnings** — From WASM bindings, non-critical
 2. **Lab test failures** — Expected pre-publish (tests published artifacts not yet published)
-3. **Deprecated subdependencies** — `glob@7.2.3`, `inflight@1.0.6` (old transitive deps, non-critical)
+3. **Removed subdependencies** — `glob@7.2.3`, `inflight@1.0.6` (old transitive deps, non-critical)
 4. **Peer dependency mismatches** — TypeScript version variance (dev-only, non-critical)
 
 ### Will Be Resolved Post-Publish

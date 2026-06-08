@@ -7,7 +7,7 @@
 //! type/function realizes so the test oracles are the paper, not the code
 //! (no FM-5 self-reference).
 //!
-//! Built on top of [`ocel_core::OCEL`] (the `L = (E, O, eval, oaval)` OCED of
+//! Built on top of [`wasm4pm_compat::ocel::OCEL`] (the `L = (E, O, eval, oaval)` OCED of
 //! agent A2), whose `e2o`, `o2o`, `event_set`, `object_set` and `time` surfaces
 //! supply the relations the BASIC predicates quantify over.
 //!
@@ -23,7 +23,7 @@
 
 use std::collections::BTreeMap;
 
-use ocel_core::OCEL;
+use wasm4pm_compat::ocel::OCEL;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "wasm")]

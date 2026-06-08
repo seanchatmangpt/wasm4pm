@@ -185,7 +185,7 @@ export function checkPowl2Conformance(
 ): ConformanceResult
 ```
 
-The third argument exists for one reason: to resolve `schema` paths inside `object_types` declarations relative to a known root, since the V2 schema layer reads JSON Schema files from disk. Defaulting to `process.cwd()` preserves backward compatibility.
+The third argument exists for one reason: to resolve `schema` paths inside `object_types` declarations relative to a known root, since the V2 schema layer reads JSON Schema files from disk. Defaulting to `process.cwd()` preserves baseline admissibility.
 
 ### 3.2 Schema Validation (Ajv, Lazy-Loaded)
 

@@ -5,7 +5,7 @@ Architecture diagrams: #11 (Phase 1 Tear-Down/Rebuild), #12 (Rust-to-TS Build Pi
 ## Overview
 
 The cognition build pipeline converts the `crates/wasm4pm-cognition` Rust crate into a
-WebAssembly binary, generates a thin TypeScript facade in `packages/cognition`, and wires
+WebAssembly binary, generates a thin TypeScript boundary in `packages/cognition`, and wires
 the result into the `wpm` CLI at `apps/wasm4pm/src/commands/cognition.ts`.
 
 ```
@@ -18,12 +18,12 @@ crates/wasm4pm-cognition/src/
         | wasm-pack build --target bundler  -> pkg-bundler/
         v
 packages/cognition/
-  (TS facade: init.ts + index.ts — zero business logic)
+  (TS boundary: init.ts + index.ts — zero business logic)
         |
         | pnpm build
         v
 apps/wasm4pm/src/commands/cognition.ts
-  (CLI command: delegates to TS facade, emits receipts)
+  (CLI command: delegates to TS boundary, emits receipts)
 ```
 
 ## Single-command entry points
@@ -80,7 +80,7 @@ wasm-pack build --target nodejs --features wasm --out-dir pkg
 ```
 
 Produces `pkg/wasm4pm_cognition.js` + `pkg/wasm4pm_cognition_bg.wasm`.
-This is the artifact consumed by the TS facade at test time and in Node.js environments.
+This is the artifact consumed by the TS boundary at test time and in Node.js environments.
 
 ### Stage 4 — wasm-pack bundler
 
@@ -90,13 +90,13 @@ wasm-pack build --target bundler --features wasm --out-dir pkg-bundler
 
 Produces the bundler-compatible artifact for browser/webpack/vite consumers.
 
-### Stage 5 — TS facade build
+### Stage 5 — TS boundary build
 
 ```bash
 cd packages/cognition && pnpm build
 ```
 
-The TS facade (`packages/cognition/src/index.ts`) is a thin delegation layer.
+The TS boundary (`packages/cognition/src/index.ts`) is a thin delegation layer.
 It must contain zero business logic — all computation happens in WASM.
 Zero-logic compliance is verified by `src/__tests__/zero-logic.test.ts`.
 
@@ -129,7 +129,7 @@ rustup target add wasm32-unknown-unknown
 ```
 
 **TS build fails with "cannot find module 'wasm4pm-cognition'"**: The pkg/ directory
-must be present before building the TS facade. Run stage 3 first:
+must be present before building the TS boundary. Run stage 3 first:
 ```bash
 cd crates/wasm4pm-cognition && cargo make wasm-pack-nodejs
 ```

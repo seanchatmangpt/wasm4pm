@@ -60,7 +60,7 @@ pub fn discover_astar(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -113,7 +113,7 @@ pub fn discover_hill_climbing(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
+        .store_object(StoredObject::DFG(current_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -130,7 +130,7 @@ pub fn discover_hill_climbing(
 /// Uses fitness-driven greedy pruning: try removing each edge (sorted for
 /// determinism); keep the removal if fitness does not decrease. First-improvement
 /// restart until no beneficial removal remains.
-pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -190,7 +190,7 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> Di
         }
     }
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
     dfg.nodes
         .extend(col.vocab.iter().enumerate().map(|(idx, act)| DFGNode {
             id: act.to_string(),
@@ -214,11 +214,11 @@ pub fn discover_astar_from_log(
     log: &EventLog,
     activity_key: &str,
     max_iterations: usize,
-) -> (DirectlyFollowsGraph, usize) {
+) -> (DFG, usize) {
     let activities = log.get_activities(activity_key);
     let directly_follows = log.get_directly_follows(activity_key);
 
-    let mut best_dfg = DirectlyFollowsGraph::new();
+    let mut best_dfg = DFG::new();
     for activity in &activities {
         best_dfg.nodes.push(DFGNode {
             id: activity.clone(),
@@ -238,7 +238,7 @@ pub fn discover_astar_from_log(
             None => break,
         };
         let total_df = directly_follows.len().max(1);
-        let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
+        let new_candidates: Vec<(DFG, f64)> = directly_follows
             .iter()
             .filter(|(from, to, _)| {
                 !current_dfg
@@ -747,7 +747,7 @@ pub fn analyze_activity_cooccurrence(
 /// gradient from an empty DFG — essential for incremental construction in A*.
 /// Fitness ∈ [0, 1]: 0 = no edges match any pair, 1 = all pairs covered exactly.
 fn evaluate_dfg_partial_fitness(
-    dfg: &DirectlyFollowsGraph,
+    dfg: &DFG,
     log: &EventLog,
     activity_key: &str,
 ) -> f64 {

@@ -11,7 +11,7 @@ Implement the stress test suite for `pm4py-lsp` in `crates/pm4py-lsp/tests/stres
 - Milestone: Stress Test Implementation
 
 ## 🔒 Key Constraints
-- Avoid cheating: No hardcoded test results, facade implementations, or circumventing.
+- Avoid cheating: No hardcoded test results, boundary implementations, or circumventing.
 - Mark heavy stress tests with `#[ignore = "stress gate"]`.
 - Run command: `DYLD_FRAMEWORK_PATH=/Applications/Xcode.app/Contents/Developer/Library/Frameworks cargo test -p pm4py-lsp --test stress_test -- --ignored`
 

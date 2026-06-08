@@ -46,7 +46,7 @@ Result Type (Enhanced):
 Main Exports:
   src/index.ts                         (updated)
     - Consolidated re-exports of all contracts
-    - Maintains backward compatibility with existing exports
+    - Maintains baseline admissibility with existing exports
 
 Test Suites:
   __tests__/connectors.test.ts         294 lines, 21 tests

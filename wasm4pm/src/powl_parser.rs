@@ -286,7 +286,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                 Some(p) => p,
                 None => continue,
             };
-            // Reject `-->` (legacy PO arrow): must be `->` only.
+            // Reject `-->` ( PO arrow): must be `->` only.
             if edge_tok.as_bytes().get(arrow_pos + 2) == Some(&b'>') {
                 return Err(format!(
                     "CG edge '{}': use `->` (not `-->`) — `-->` belongs to PO/DG grammar",

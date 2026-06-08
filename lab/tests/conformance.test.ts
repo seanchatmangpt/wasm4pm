@@ -459,7 +459,7 @@ describe('Conformance Validation - wasm4pm npm package', () => {
   });
 
   describe('12. API Stability', () => {
-    it('should maintain backward compatibility', () => {
+    it('should maintain baseline admissibility', () => {
       const stableAPI = [
         'discover_dfg',
         'analyze_event_statistics',

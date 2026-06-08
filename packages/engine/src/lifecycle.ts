@@ -11,7 +11,7 @@ import {
   TransitionValidator,
 } from './transitions.js';
 
-// Re-export for backward compatibility
+// Re-export for baseline admissibility
 export { TransitionValidator };
 
 /**

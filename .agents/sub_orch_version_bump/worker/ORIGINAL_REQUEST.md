@@ -5,7 +5,7 @@ The codebase is located at `/Users/sac/wasm4pm`.
 The Scope document is `/Users/sac/wasm4pm/.agents/sub_orch_version_bump/SCOPE.md` and Project document is `/Users/sac/wasm4pm/PROJECT.md`.
 
 MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/boundary implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
 Your task is to perform the version bump to 26.6.5 across the codebase, rebuild the WASM bundle, run all release checks, tests, and verification gates, and generate release certificates and verification evidence matching version 26.6.5.
 

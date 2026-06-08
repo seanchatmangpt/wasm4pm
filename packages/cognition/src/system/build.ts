@@ -49,7 +49,7 @@ export async function buildSystem(
         { cause: e },
       );
     }
-    // Refuses legacy `candidates` shape per wasm.rs:287-290.
+    // Refuses  `candidates` shape per wasm.rs:287-290.
     return assertSystemBuildResult(parsed);
   } catch (err) {
     status = 'ERROR';

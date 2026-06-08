@@ -350,26 +350,26 @@ pub type TypedPowl<W = wasm4pm_compat::witness::PowlPaper> = wasm4pm_compat::evi
 >;
 
 fn convert_attribute_value(
-    val: wasm4pm_compat::legacy_event_log::AttributeValue,
+    val: wasm4pm_compat::event_log::AttributeValue,
 ) -> Option<AttributeValue> {
     match val {
-        wasm4pm_compat::legacy_event_log::AttributeValue::String(s) => {
+        wasm4pm_compat::event_log::AttributeValue::String(s) => {
             Some(AttributeValue::String(s))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::Date(d) => {
+        wasm4pm_compat::event_log::AttributeValue::Date(d) => {
             Some(AttributeValue::Date(d.to_rfc3339()))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
-        wasm4pm_compat::legacy_event_log::AttributeValue::Float(f) => {
+        wasm4pm_compat::event_log::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
+        wasm4pm_compat::event_log::AttributeValue::Float(f) => {
             Some(AttributeValue::Float(f))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::Boolean(b) => {
+        wasm4pm_compat::event_log::AttributeValue::Boolean(b) => {
             Some(AttributeValue::Boolean(b))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::ID(id) => {
+        wasm4pm_compat::event_log::AttributeValue::ID(id) => {
             Some(AttributeValue::String(id.to_string()))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::List(l) => {
+        wasm4pm_compat::event_log::AttributeValue::List(l) => {
             let mut list = Vec::new();
             for attr in l {
                 if let Some(cv) = convert_attribute_value(attr.value) {
@@ -378,7 +378,7 @@ fn convert_attribute_value(
             }
             Some(AttributeValue::List(list))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::Container(c) => {
+        wasm4pm_compat::event_log::AttributeValue::Container(c) => {
             let mut map = HashMap::new();
             for attr in c {
                 if let Some(cv) = convert_attribute_value(attr.value) {
@@ -387,12 +387,12 @@ fn convert_attribute_value(
             }
             Some(AttributeValue::Container(map))
         }
-        wasm4pm_compat::legacy_event_log::AttributeValue::None() => None,
+        wasm4pm_compat::event_log::AttributeValue::None() => None,
     }
 }
 
 fn convert_attributes(
-    attrs: wasm4pm_compat::legacy_event_log::Attributes,
+    attrs: wasm4pm_compat::event_log::Attributes,
 ) -> HashMap<String, AttributeValue> {
     let mut map = HashMap::new();
     for attr in attrs {
@@ -403,8 +403,8 @@ fn convert_attributes(
     map
 }
 
-impl From<wasm4pm_compat::legacy_event_log::EventLog> for EventLog {
-    fn from(log: wasm4pm_compat::legacy_event_log::EventLog) -> Self {
+impl From<wasm4pm_compat::event_log::EventLog> for EventLog {
+    fn from(log: wasm4pm_compat::event_log::EventLog) -> Self {
         let mut traces = Vec::with_capacity(log.traces.len());
         for trace in log.traces {
             let mut events = Vec::with_capacity(trace.events.len());
@@ -773,8 +773,8 @@ impl OCELEvent {
             .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
     }
 
-    /// Extract object IDs from object_refs only (deprecated, use all_object_ids).
-    #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
+    /// Extract object IDs from object_refs only (removed, use all_object_ids).
+    
     pub fn get_object_ids(&self) -> Vec<String> {
         self.object_refs
             .iter()
@@ -963,7 +963,7 @@ pub struct DirectlyFollowsRelation {
 ///
 /// The DFG shows which activities directly follow each other in the event log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DirectlyFollowsGraph {
+pub struct DFG {
     /// Activities in the graph with their occurrence frequencies.
     pub nodes: Vec<DFGNode>,
     /// Directed edges representing directly-follows relations.
@@ -985,11 +985,11 @@ pub struct DFGNode {
     pub frequency: usize,
 }
 
-impl DirectlyFollowsGraph {
+impl DFG {
     /// Create a new empty Directly-Follows Graph.
     #[must_use]
     pub fn new() -> Self {
-        DirectlyFollowsGraph {
+        DFG {
             nodes: Vec::new(),
             edges: Vec::new(),
             start_activities: BTreeMap::new(),
@@ -1250,7 +1250,7 @@ pub struct StreamingConformanceChecker {
 
     // Petri Net Mode fields
     pub net: Option<crate::models::PetriNet>,
-    pub incidence: Option<wasm4pm_compat::petri::FlatIncidenceMatrix>,
+    pub incidence: Option<wasm4pm_compat::models::FlatIncidenceMatrix>,
 
     // Shared state
     pub open_traces: HashMap<String, OpenTraceState>,
@@ -1261,7 +1261,7 @@ pub struct StreamingConformanceChecker {
 impl StreamingConformanceChecker {
     /// Create a new checker from a Directly-Follows Graph.
     #[must_use]
-    pub fn from_dfg(dfg: DirectlyFollowsGraph) -> Self {
+    pub fn from_dfg(dfg: DFG) -> Self {
         let dfg_edges: std::collections::HashSet<(String, String)> = dfg
             .edges
             .iter()
@@ -1319,7 +1319,7 @@ impl StreamingConformanceChecker {
             }
         }
 
-        let incidence = wasm4pm_compat::petri::FlatIncidenceMatrix {
+        let incidence = wasm4pm_compat::models::FlatIncidenceMatrix {
             data,
             places_count: p_count,
             transitions_count: t_count,
@@ -1752,7 +1752,7 @@ impl Default for PetriNet {
     }
 }
 
-impl Default for DirectlyFollowsGraph {
+impl Default for DFG {
     fn default() -> Self {
         Self::new()
     }

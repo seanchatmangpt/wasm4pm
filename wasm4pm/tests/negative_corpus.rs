@@ -14,9 +14,9 @@
 //! about its own defect.
 //!
 //! Primitives exercised:
-//! - `ocel_core::validate::validate` — OCEDO / OCPQ Def. 2 meta-model invariants
+//! - `wasm4pm_compat::ocel::validate::validate` — OCEDO / OCPQ Def. 2 meta-model invariants
 //!   (E2O, dangling refs, id uniqueness, undeclared types, cardinality window).
-//! - `ocel_core::flatten::flatten` — lossy projection (convergence / divergence).
+//! - `wasm4pm_compat::ocel::flatten::flatten` — lossy projection (convergence / divergence).
 //! - `wasm4pm::soundness::analyze_petri_net` — Separable-WF-nets Def 3.5 soundness
 //!   + 1-bounded safety (dead transitions, unsafe markings).
 //! - `wasm4pm::wf_to_powl::{wf_net_language, powl_language}` — closed-form model
@@ -35,9 +35,9 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-use ocel_core::flatten::flatten;
-use ocel_core::validate::validate;
-use ocel_core::{ObjectTypeCardinality, OCEL};
+use wasm4pm_compat::ocel::flatten::flatten;
+use wasm4pm_compat::ocel::validate::validate;
+use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 
 use wasm4pm::foundry::{field_net, field_powl};
 use wasm4pm::models::PetriNet;
@@ -222,7 +222,7 @@ fn n09_nonconforming_powl_route_is_refused() {
 
 // ── N05 / N10 / N12 / N13 / N14: OCEL meta-model defects vs the validator ────
 //
-// Oracle: ocel_core::validate implements the OCEDO / OCPQ Def. 2 invariants
+// Oracle: wasm4pm_compat::ocel::validate implements the OCEDO / OCPQ Def. 2 invariants
 // independently of the fixtures. A clean log validates; each fixture must produce
 // the specific error code, and the declared refusal must be a lifecycle/object
 // structural violation.

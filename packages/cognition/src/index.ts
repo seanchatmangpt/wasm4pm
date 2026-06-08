@@ -1,4 +1,4 @@
-//! wasm4pm-cognition TypeScript facade
+//! wasm4pm-cognition TypeScript boundary
 //! Re-exports only; all cognition logic in Rust.
 
 export * from './init.js';

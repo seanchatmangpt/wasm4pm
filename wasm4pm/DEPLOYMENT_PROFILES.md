@@ -256,7 +256,7 @@ edge = ["basic", "advanced", "ml", "streaming_basic", "hand_rolled_stats"]
 fog = ["edge", "swarm", "streaming_full", "statrs", "ocel"]
 iot = ["minimal", "streaming_basic", "hand_rolled_stats"]
 browser = ["basic", "advanced", "ml", "streaming_full", "swarm", "statrs", "powl", "ocel"]
-cloud = ["browser"]  # Deprecated alias for backward compatibility
+cloud = ["browser"]  # Removed alias for baseline admissibility
 ```
 
 ## Algorithm Availability by Profile
@@ -311,9 +311,9 @@ npm run build:browser  # ~2.78MB (same as default, explicit, all features)
 
 **Key point:** Profile reorganization: "cloud" profile renamed to "browser" (default), and old "browser" profile renamed to "mobile" (minimal, 82% size reduction).
 
-## Backward Compatibility
+## baseline admissibility
 
-**Alias support:** `--features cloud` maps to `--features browser` for backward compatibility.
+**Alias support:** `--features cloud` maps to `--features browser` for baseline admissibility.
 
 **Migration path:**
 

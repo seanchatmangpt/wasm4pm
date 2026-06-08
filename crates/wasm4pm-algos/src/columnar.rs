@@ -9,8 +9,8 @@
 //! to `bcinr::api::bitset::jaccard_u64_slices` for constant-latency execution.
 
 use hashbrown::HashMap;
-use wasm4pm_compat::legacy_event_log::{AttributeValue, EventLog};
-use wasm4pm_compat::legacy_models::DFGEdge;
+use wasm4pm_compat::event_log::{AttributeValue, EventLog};
+use wasm4pm_compat::models::DFGEdge;
 
 /// Result of encoding an event log into columnar (integer-keyed) form.
 pub struct ColumnarEdgeCounts {
@@ -151,7 +151,7 @@ pub fn jaccard_similarity(a: &[u64], b: &[u64]) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm4pm_compat::legacy_event_log::{Event, EventLog, Trace};
+    use wasm4pm_compat::event_log::{Event, EventLog, Trace};
 
     fn make_log(traces: Vec<Vec<&str>>) -> EventLog {
         let traces = traces

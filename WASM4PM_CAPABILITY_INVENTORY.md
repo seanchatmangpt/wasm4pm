@@ -14,7 +14,7 @@ wasm4pm is a high-performance process mining system compiled to WebAssembly with
 All algorithms are invocable via:
 - **CLI:** `wpm` command-line tool (Rust)
 - **WASM API:** JavaScript/TypeScript (wasm-bindgen, 335 exports)
-- **Rust API:** Direct crate imports (pm-core, wasm4pm-algos, wasm4pm-types)
+- **Rust API:** Direct crate imports (pm-core, wasm4pm-algos, wasm4pm-compat)
 
 ---
 
@@ -445,7 +445,7 @@ const finalDfg = wasm.flush_streaming_dfg(stream);
 
 ```rust
 use wasm4pm_algos::{heuristic, conformance, alpha};
-use wasm4pm_types::{EventLog, DFG};
+use wasm4pm_compat::{EventLog, DFG};
 
 // Load event log
 let log: EventLog = serde_json::from_str(json_string)?;
@@ -461,8 +461,8 @@ println!("Fitness: {:.4}", result.fitness);
 
 **Crates to Import:**
 - `wasm4pm-algos` — Discovery & conformance algorithms
-- `wasm4pm-types` — Core type definitions (EventLog, DFG, PetriNet, etc.)
-- `wasm4pm` — High-level facade + receipts
+- `wasm4pm-compat` — Core type definitions (EventLog, DFG, PetriNet, etc.)
+- `wasm4pm` — High-level boundary + receipts
 - `pm-core` — Lower-level Petri net algebra
 
 ---
@@ -494,7 +494,7 @@ println!("Fitness: {:.4}", result.fitness);
 | Crate | Location | Purpose |
 |-------|----------|---------|
 | **pm-core** | `/crates/pm-core/src/` | Type definitions (PetriNet, DFG, Alignment, etc.) |
-| **wasm4pm-types** | `/crates/wasm4pm-types/src/` | Serialization types (EventLog, ConformanceResult, etc.) |
+| **wasm4pm-compat** | `/crates/wasm4pm-compat/src/` | Serialization types (EventLog, ConformanceResult, etc.) |
 | **wasm4pm-algos** | `/crates/wasm4pm-algos/src/` | Discovery, conformance, analysis algorithms (branchless, columnar) |
 | **wasm4pm-macros** | `/crates/wasm4pm-macros/src/` | Proc-macros for witness generation and attribute binding |
 | **wasm4pm-utils** | `/crates/wasm4pm-utils/src/` | Caching, interning, parse utilities |

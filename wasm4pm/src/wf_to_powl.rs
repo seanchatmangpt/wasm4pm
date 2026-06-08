@@ -1403,7 +1403,7 @@ pub fn wf_net_language(net: &PetriNet) -> Option<BTreeSet<Vec<String>>> {
 use wasm_bindgen::prelude::*;
 
 /// Build the deterministic JSON summary of a WF-net → POWL conversion, shared by
-/// the WASM export and the native test shim so the JSON contract is exercised on
+/// the WASM export and the native test bridge so the JSON contract is exercised on
 /// both targets.
 fn wf_to_powl_json(net: &PetriNet) -> serde_json::Value {
     let result = wf_net_to_powl_spec(net);
@@ -1416,7 +1416,7 @@ fn wf_to_powl_json(net: &PetriNet) -> serde_json::Value {
     })
 }
 
-/// Native-target test shim: returns the WF→POWL JSON string for a [`PetriNet`].
+/// Native-target test bridge: returns the WF→POWL JSON string for a [`PetriNet`].
 /// Mirrors exactly what the WASM export emits.
 #[cfg(not(target_arch = "wasm32"))]
 #[must_use]

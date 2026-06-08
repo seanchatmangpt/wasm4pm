@@ -500,6 +500,7 @@ impl LanguageServer for Backend {
             let receipt = max_protocol::Receipt {
                 receipt_id: receipt_id.clone(),
                 hash,
+                prev_receipt_hash: None,
             };
             self.receipts
                 .lock()
@@ -561,6 +562,7 @@ impl LanguageServer for Backend {
                 let receipt = max_protocol::Receipt {
                     receipt_id: receipt_id.clone(),
                     hash,
+                    prev_receipt_hash: None,
                 };
 
                 self.receipts
@@ -761,7 +763,7 @@ impl LanguageServer for Backend {
 
     async fn max_conformance_vector(
         &self,
-        _: max_protocol::SnapshotId,
+        _: Option<max_protocol::SnapshotId>,
     ) -> Result<max_protocol::ConformanceVector> {
         let mut admitted = Vec::new();
         let mut refused = Vec::new();
@@ -817,15 +819,15 @@ impl LanguageServer for Backend {
 
     async fn max_admission(
         &self,
-        axis: max_protocol::LawAxis,
-    ) -> Result<max_protocol::AdmissionResult> {
+    ) -> Result<serde_json::Value> {
         let snapshot_id = self.max_snapshot().await?.0;
         let receipt_id = format!("receipt-admission-{}", Uuid::new_v4());
-        let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, law_axis_to_str(&axis)));
+        let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, "pm4py.law.formatted"));
 
         let receipt = max_protocol::Receipt {
             receipt_id: receipt_id.clone(),
             hash: hash.clone(),
+            prev_receipt_hash: None,
         };
 
         // Physical Receipt Persistence
@@ -844,25 +846,26 @@ impl LanguageServer for Backend {
             .await
             .insert(receipt_id.clone(), receipt.clone());
 
-        Ok(max_protocol::AdmissionResult {
-            law_axis: axis,
-            decision: max_protocol::AdmissionDecision::Admitted,
-            rationale: "Admitted: PM4Py requirements verified successfully".to_string(),
-            receipt: Some(receipt),
-        })
+        Ok(serde_json::json!({
+            "law_axis": max_protocol::LawAxis::Custom("pm4py.law.formatted".to_string()),
+            "decision": max_protocol::AdmissionDecision::Admitted,
+            "rationale": "Admitted: PM4Py requirements verified successfully",
+            "receipt": receipt,
+        }))
     }
 
     async fn max_refusal(
         &self,
-        axis: max_protocol::LawAxis,
-    ) -> Result<max_protocol::RefusalResult> {
+        params: String,
+    ) -> Result<serde_json::Value> {
         let snapshot_id = self.max_snapshot().await?.0;
         let receipt_id = format!("receipt-refusal-{}", Uuid::new_v4());
-        let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, law_axis_to_str(&axis)));
+        let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, params));
 
         let receipt = max_protocol::Receipt {
             receipt_id: receipt_id.clone(),
             hash: hash.clone(),
+            prev_receipt_hash: None,
         };
 
         // Physical Receipt Persistence
@@ -881,21 +884,21 @@ impl LanguageServer for Backend {
             .await
             .insert(receipt_id.clone(), receipt.clone());
 
-        let repair_actions = if law_axis_to_str(&axis) == "pm4py.law.formatted" {
-            vec![max_protocol::RepairAction {
-                action_id: "pm4py-lsp.formatDataFrame".to_string(),
-                description: "Format DataFrame using pm4py".to_string(),
-            }]
+        let repair_actions = if params == "pm4py.law.formatted" {
+            vec![serde_json::json!({
+                "action_id": "pm4py-lsp.formatDataFrame",
+                "description": "Format DataFrame using pm4py",
+            })]
         } else {
             Vec::new()
         };
 
-        Ok(max_protocol::RefusalResult {
-            law_axis: axis,
-            rationale: "Refused: DataFrame must be formatted for PM4Py".to_string(),
-            receipt,
-            repair_actions,
-        })
+        Ok(serde_json::json!({
+            "law_axis": max_protocol::LawAxis::Custom(params),
+            "rationale": "Refused: DataFrame must be formatted for PM4Py",
+            "receipt": receipt,
+            "repair_actions": repair_actions,
+        }))
     }
 }
 

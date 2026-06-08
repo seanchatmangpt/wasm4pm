@@ -43,9 +43,9 @@ The most important finding: **a registry already exists and `living_diagnostic_c
 | PNML parse/serialize | **EXISTS** | `wasm4pm/src/pnml_io.rs:53 from_pnml(&str)->Result<PetriNet,String>`, `:213 to_pnml(&PetriNet)->String` (roxmltree) |
 | The canonical Gall PNML fixture | **EXISTS** | `fixtures/models/living_diagnostic_clear_v1.pnml` (6 transitions + ALIVE; see §3.1) |
 | SemVer validator | **EXISTS** | `model_registry.rs:218 validate_semver` |
-| POWL / Choice-Graph model types | **EXISTS** | `crates/wasm4pm-types/src/choice_graph.rs:29 ChoiceGraph` (+ validation `:75 new`, errors `:38`); `powl8_op.rs:17 Powl8Op` |
+| POWL / Choice-Graph model types | **EXISTS** | `crates/wasm4pm-compat/src/choice_graph.rs:29 ChoiceGraph` (+ validation `:75 new`, errors `:38`); `powl8_op.rs:17 Powl8Op` |
 | Choice-graph route fixtures (sibling of 6-link) | **EXISTS** | `routes/agent-proof-lifecycle.powl.json` (`collect_evidence→verify_evidence→emit_receipt`); `fixtures/real/trace-conform-agent-proof-lifecycle/model.powl.json` + `expected-conform.json` |
-| Declare constraint/model types (no checker) | **EXISTS (types only)** | `crates/wasm4pm-types/src/models.rs:555 DeclareConstraint`, `:573 DeclareModel` |
+| Declare constraint/model types (no checker) | **EXISTS (types only)** | `crates/wasm4pm-compat/src/models.rs:555 DeclareConstraint`, `:573 DeclareModel` |
 | Reachability/transition-system substrate | **EXISTS** | `wasm4pm/src/transition_system.rs:56 TransitionSystem`, `:34 TSState`, `:43 TSTransition`, `:85 discover_transition_system` |
 | Reachability graph artifact (worked example) | **EXISTS** | `reachability_graph.yaml` (8 markings, deadlock/liveness/boundedness analysis — *for a different net*, `lawful_dispatch_system`) |
 

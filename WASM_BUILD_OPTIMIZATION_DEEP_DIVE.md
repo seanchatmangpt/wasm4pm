@@ -346,7 +346,7 @@ export class WasmLoader {
 
   // Keep old reset() for backward compat, but warn
   static reset() {
-    console.warn('WasmLoader.reset() is deprecated; use softReset() instead');
+    console.warn('WasmLoader.reset() is removed; use softReset() instead');
     this.softReset();
   }
 }

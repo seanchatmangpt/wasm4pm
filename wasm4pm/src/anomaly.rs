@@ -44,7 +44,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
         .map_err(|e| crate::error::js_val(&format!("Invalid activities JSON: {}", e)))?;
 
     get_or_init_state().with_object(dfg_handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => {
+        Some(StoredObject::DFG(dfg)) => {
             if activities.len() < 2 {
                 return Ok(JsValue::from_f64(0.0));
             }
@@ -74,7 +74,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
             }
             Ok(JsValue::from_f64(cost_sum / steps as f64))
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a DirectlyFollowsGraph")),
+        Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
         None => Err(crate::error::js_val("DFG handle not found")),
     })
 }
@@ -88,12 +88,12 @@ pub fn discover_ml_anomaly(log_handle: &str, activity_key: &str) -> Result<JsVal
     let dfg_json = crate::discovery::discover_dfg(log_handle, activity_key)?;
 
     // 2. Store it
-    let dfg: crate::models::DirectlyFollowsGraph =
+    let dfg: crate::models::DFG =
         serde_json::from_str(&dfg_json.as_string().unwrap_or_default())
             .map_err(|e| crate::error::js_val(&format!("Failed to parse dfg: {}", e)))?;
 
     let dfg_handle = state
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_| crate::error::js_val("Failed to store DFG"))?;
 
     // 3. Score anomalies
@@ -122,13 +122,13 @@ pub fn score_log_anomalies(
     // Collect DFG edge frequencies
     let edge_data: Vec<(String, String, usize)> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DirectlyFollowsGraph(dfg)) => Ok(dfg
+            Some(StoredObject::DFG(dfg)) => Ok(dfg
                 .edges
                 .iter()
                 .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
                 .collect()),
             Some(_) => Err(crate::error::js_val(
-                "dfg_handle is not a DirectlyFollowsGraph",
+                "dfg_handle is not a DFG",
             )),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;

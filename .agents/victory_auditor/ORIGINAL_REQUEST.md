@@ -18,7 +18,7 @@ In `FINAL-VERDICT.md`, include:
 10. Ensure the report has zero placeholders, stubs, or mock-only claims.
 
 MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/boundary implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 Conduct the 3-phase audit (timeline, cheating detection, independent test execution) and report your structured verdict: VICTORY CONFIRMED or VICTORY REJECTED. Do not write or edit any source files.
 
 ## 2026-06-05T08:17:54Z

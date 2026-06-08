@@ -199,7 +199,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_heuristic_miner_otel_spans() {
-        println!("TODO: Add tracing to discover_heuristic_miner");
+        println!("Pending Instrumentation: Add tracing to discover_heuristic_miner");
         println!("  Required span: 'wasm4pm.discovery.heuristic_miner'");
         println!("  Required attributes: algorithm, log_size, activity_count, dependency_threshold, node_count, edge_count");
     }
@@ -208,7 +208,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_inductive_miner_otel_spans() {
-        println!("TODO: Add tracing to discover_inductive_miner");
+        println!("Pending Instrumentation: Add tracing to discover_inductive_miner");
         println!("  Required span: 'wasm4pm.discovery.inductive_miner'");
         println!(
             "  Required attributes: algorithm, log_size, activity_count, tree_nodes, tree_depth"
@@ -219,7 +219,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_hill_climbing_otel_spans() {
-        println!("TODO: Add tracing to discover_hill_climbing");
+        println!("Pending Instrumentation: Add tracing to discover_hill_climbing");
         println!("  Required span: 'wasm4pm.discovery.hill_climbing'");
         println!("  Required attributes: algorithm, log_size, activity_count, iterations_used, fitness_improvement, node_count, edge_count");
     }
@@ -228,7 +228,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_simulated_annealing_otel_spans() {
-        println!("TODO: Add tracing to discover_simulated_annealing");
+        println!("Pending Instrumentation: Add tracing to discover_simulated_annealing");
         println!("  Required span: 'wasm4pm.discovery.simulated_annealing'");
         println!("  Required attributes: algorithm, log_size, activity_count, initial_temperature, cooling_rate, final_temperature, accepted_moves");
     }
@@ -237,7 +237,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_astar_otel_spans() {
-        println!("TODO: Add tracing to discover_astar");
+        println!("Pending Instrumentation: Add tracing to discover_astar");
         println!("  Required span: 'wasm4pm.discovery.astar'");
         println!("  Required attributes: algorithm, log_size, activity_count, max_iterations, iterations_used, frontier_size, node_count, edge_count");
     }
@@ -246,7 +246,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Algorithm needs tracing instrumentation first"]
     fn test_discover_genetic_algorithm_otel_spans() {
-        println!("TODO: Add tracing to discover_genetic_algorithm");
+        println!("Pending Instrumentation: Add tracing to discover_genetic_algorithm");
         println!("  Required span: 'wasm4pm.discovery.genetic_algorithm'");
         println!("  Required attributes: algorithm, log_size, activity_count, population_size, generations, final_fitness, convergence_generation");
     }
@@ -331,7 +331,7 @@ mod discovery_otel_validation {
     #[test]
     #[ignore = "Requires complete OTEL integration and error scenarios"]
     fn test_discovery_error_spans() {
-        println!("TODO: Test error paths emit spans with status='error'");
+        println!("Pending Instrumentation: Test error paths emit spans with status='error'");
         println!("  Scenarios:");
         println!("    - Invalid eventlog handle");
         println!("    - Empty event log");

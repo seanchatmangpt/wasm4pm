@@ -8,7 +8,7 @@
  *   → quality-tier algorithms repeatedly during analysis. A silent 10× slowdown
  *   in the kernel dispatch layer breaks that tight feedback loop.
  *
- *   These tests guard the TypeScript Kernel facade overhead (dispatch, cache
+ *   These tests guard the TypeScript Kernel boundary overhead (dispatch, cache
  *   key hashing, OTEL span emission, result validation), NOT the WASM binary
  *   runtime. A deterministic stub is used so that the measured wall-clock time
  *   reflects only the TypeScript layer.
@@ -18,7 +18,7 @@
  *   companion `performance_baseline.json` records the tight measured values
  *   for human review and dashboard tracking.
  *
- * Oracle rank: Rank 2 (Domain contract — the kernel facade must not add more
+ * Oracle rank: Rank 2 (Domain contract — the kernel boundary must not add more
  * overhead than the ceiling defined in the baseline JSON).
  */
 
@@ -46,7 +46,7 @@ const CEILING_MS = {
 // ─── WASM stub ────────────────────────────────────────────────────────────────
 //
 // The stub simulates realistic WASM latency with a brief synchronous spin so
-// that the measured time reflects the kernel facade overhead, not just V8 JIT
+// that the measured time reflects the kernel boundary overhead, not just V8 JIT
 // noise.  It is deterministic: handle names encode the algorithm + log handle
 // so that cache-miss semantics are verifiable.
 
@@ -57,9 +57,9 @@ function buildPerfStub(): KernelWasmModule & {
   let dispatchCount = 0;
   let logCounter = 0;
 
-  // Build the WASM-conforming facade first, then attach the test-private counter
+  // Build the WASM-conforming boundary first, then attach the test-private counter
   // via Object.assign to avoid TS2353 (unknown property in satisfies check).
-  const wasmFacade = {
+  const wasmboundary = {
     init(): any { return Promise.resolve(); },
 
     load_eventlog_from_xes(_xes: string): string {
@@ -198,13 +198,13 @@ function buildPerfStub(): KernelWasmModule & {
   } satisfies KernelWasmModule;
 
   // Object.assign does not preserve getter descriptors — use defineProperty.
-  Object.defineProperty(wasmFacade, 'dispatchCount', {
+  Object.defineProperty(wasmboundary, 'dispatchCount', {
     get() { return dispatchCount; },
     enumerable: true,
     configurable: true,
   });
 
-  return wasmFacade as KernelWasmModule & {
+  return wasmboundary as KernelWasmModule & {
     dispatchCount: number;
     load_eventlog_from_xes(xes: string): string;
   };
@@ -213,7 +213,7 @@ function buildPerfStub(): KernelWasmModule & {
 // ─── Synthetic handle factory ──────────────────────────────────────────────────
 //
 // In production the event log is loaded from an XES string by the WASM layer.
-// For the kernel facade tests we call the stub's helper directly to obtain a
+// For the kernel boundary tests we call the stub's helper directly to obtain a
 // handle, then pass that handle to kernel.run().  This mirrors the production
 // call sequence: load_eventlog_from_xes → discover_*.
 

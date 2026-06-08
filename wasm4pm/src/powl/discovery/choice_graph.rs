@@ -132,12 +132,12 @@ fn build_partition_edges(
 
 /// Discover choice graph using the MineDG algorithm.
 ///
-/// **Deprecated.** Use [`discover_choice_graph_v2`] which returns a typed
+/// **Removed.** Use [`discover_choice_graph_v2`] which returns a typed
 /// `ChoiceGraphCut` validated against Definition 5 of arXiv:2505.07052.
-/// This function is preserved as a thin shim returning the legacy tuple shape
-/// for backward compatibility with downstream callers that have not yet
+/// This function is preserved as a thin bridge returning the  tuple shape
+/// for baseline admissibility with downstream callers that have not yet
 /// migrated.
-#[deprecated(note = "Use discover_choice_graph_v2 returning a validated ChoiceGraphCut")]
+
 pub fn discover_choice_graph(
     dfg: &HashSet<(String, String)>,
     activities: &HashSet<String>,

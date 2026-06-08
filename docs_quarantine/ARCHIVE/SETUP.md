@@ -174,7 +174,7 @@ node-linker=hoisted         # Optimize node_modules layout
 │   ├── ocel/
 │   ├── testing/
 │   └── templates/
-└── wasm4pm/                 # Legacy package (being migrated)
+└── wasm4pm/                 #  package (being migrated)
 ```
 
 ## Key Points for Teams

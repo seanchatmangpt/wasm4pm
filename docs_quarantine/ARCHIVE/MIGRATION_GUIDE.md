@@ -120,8 +120,8 @@ PLUS 10 NEW PACKAGES:
 - 🆕 Type-safe contracts (@wasm4pm/contracts)
 - 🆕 Engine lifecycle management (@wasm4pm/engine)
 
-### Deprecated (None)
-Nothing is deprecated. All existing APIs remain available.
+### Removed (None)
+Nothing is removed. All existing APIs remain available.
 
 ---
 

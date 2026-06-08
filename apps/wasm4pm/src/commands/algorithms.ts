@@ -17,6 +17,13 @@ const TIER_SPEED_RANGES: Record<Tier, [number, number]> = {
   stream: [0, 10],
 };
 
+const TIER_RATIONALE: Record<Tier, string> = {
+  stream: 'Best for real-time dashboards and edge devices; processes live events with minimal memory footprint.',
+  fast: 'Best for rapid, interactive exploration of large logs; optimized for developer feedback loops.',
+  balanced: 'Best for general-purpose batch analysis; balances structural precision with reasonable compute time.',
+  quality: 'Best for offline audits and compliance; captures complex concurrency and loops, but can be slow.',
+};
+
 type VdaLevel = 'high' | 'med' | 'low';
 
 interface VdaRating {
@@ -96,12 +103,27 @@ function analyseLogFile(filePath: string): {
 /**
  * Recommend an algorithm based on log statistics (Van der Aalst practitioner heuristics).
  */
-function recommendForLog(stats: {
-  traceCount: number;
-  uniqueVariants: number;
-  uniqueActivities: number;
-  avgTraceLength: number;
-}): { id: string; rationale: string } {
+function recommendForLog(
+  stats: {
+    traceCount: number;
+    uniqueVariants: number;
+    uniqueActivities: number;
+    avgTraceLength: number;
+  },
+  optimizeFor?: 'size' | 'time'
+): { id: string; rationale: string } {
+  if (optimizeFor === 'time') {
+    return {
+      id: 'dfg',
+      rationale: 'Optimized for speed (time) — DFG runs in O(n) and returns immediately.',
+    };
+  }
+  if (optimizeFor === 'size') {
+    return {
+      id: 'process_skeleton',
+      rationale: 'Optimized for minimal footprint (size) — Process Skeleton produces the most compact structural representation.',
+    };
+  }
   const variantRatio = stats.traceCount > 0 ? stats.uniqueVariants / stats.traceCount : 0;
 
   if (stats.traceCount === 0) {
@@ -149,13 +171,13 @@ export const algorithms = defineCommand({
       '  wpm algorithms --recommend log.xes      # recommend best algorithm for a log\n' +
       '  wpm algorithms --benchmark              # show speed benchmarks from registry\n' +
       '  wpm algorithms --test-all -i log.xes    # run all discovery algorithms on a fixture log\n' +
-      '  wpm algorithms --tier fast              # legacy: filter by speed tier\n' +
+      '  wpm algorithms --tier fast              # : filter by speed tier\n' +
       '  wpm algorithms --show-parameters dfg    # show parameters for a specific algorithm',
   },
   args: {
     tier: {
       type: 'string',
-      description: 'Filter by speed tier: fast, balanced, quality, stream (legacy flag, prefer --profile)',
+      description: 'Filter by speed tier: fast, balanced, quality, stream ( flag, prefer --profile)',
     },
     profile: {
       type: 'string',
@@ -168,6 +190,10 @@ export const algorithms = defineCommand({
     recommend: {
       type: 'string',
       description: 'Path to XES log file — recommend best algorithm based on log characteristics',
+    },
+    'recommend-for': {
+      type: 'string',
+      description: 'Optimize recommendation for: size (minimal model/memory) or time (fastest execution)',
     },
     benchmark: {
       type: 'boolean',
@@ -201,11 +227,19 @@ export const algorithms = defineCommand({
       type: 'string',
       description: 'Show parameters for a specific algorithm (e.g. --show-parameters heuristic_miner)',
     },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = Boolean(ctx.args.quiet);
-    // --profile takes precedence; --tier is kept for backward compatibility
+    // --profile takes precedence; --tier is kept for baseline admissibility
     const profileFilter = (ctx.args.profile as string | undefined) ?? (ctx.args.tier as string | undefined);
     const typeFilter = ctx.args.type as string | undefined;
     const recommendPath = ctx.args.recommend as string | undefined;
@@ -322,7 +356,8 @@ export const algorithms = defineCommand({
         emitResult(errResult, { format, verbose: false, quiet });
         return await exitWithFlush(errResult.exit_code);
       }
-      const rec = recommendForLog(stats);
+      const recommendFor = ctx.args['recommend-for'] as 'size' | 'time' | undefined;
+      const rec = recommendForLog(stats, recommendFor);
       const algoMeta = registry.get(rec.id);
 
       const payload = {
@@ -538,7 +573,7 @@ export const algorithms = defineCommand({
         emitResult(errResult, { format, verbose: false, quiet });
         return await exitWithFlush(errResult.exit_code);
       }
-      // Support both --profile (execution profile) and legacy --tier (speed range)
+      // Support both --profile (execution profile) and  --tier (speed range)
       const profileAlgos = registry.getForProfile(profileFilter as 'fast' | 'balanced' | 'quality' | 'stream');
       const profileIds = new Set(profileAlgos.map((a) => a.id));
       all = all.filter((a) => profileIds.has(a.id));
@@ -621,6 +656,7 @@ export const algorithms = defineCommand({
         if (!quiet) {
           p.log('');
           p.log(`  ${TIER_LABEL[tier]}`);
+          p.log(`  Rationale: ${TIER_RATIONALE[tier]}`);
         }
         for (const a of group) {
           p.log(

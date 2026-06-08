@@ -260,7 +260,7 @@ f03bed5cf9362c65600b627e1d00168c0b7375a7
 
 ### Fixed
 
-- `fix(miniml-core)`: bench typo `wminml::` → `miniml::` (latent E0432/E0433 hidden by upload-artifact deprecation)
+- `fix(miniml-core)`: bench typo `wminml::` → `miniml::` (latent E0432/E0433 hidden by upload-artifact removal)
 - `fix(doctor)`: correct project memory path encoding — preserve leading dash in encoded path
 - `fix(action_dispatch)`: gate cloud-only thread-locals in `action_restart`
 - `fix(proof-audit)`: correct Gate 2 grep exit code and fix Rust target paths
@@ -268,7 +268,7 @@ f03bed5cf9362c65600b627e1d00168c0b7375a7
 
 ### Changed (Breaking — release infrastructure)
 
-- **`actions/upload-artifact@v3` → `@v4`** across 3 workflow files (deprecated by GitHub 2024-04-16; had fail-fasted every CI run since v26.5.13).
+- **`actions/upload-artifact@v3` → `@v4`** across 3 workflow files (removed by GitHub 2024-04-16; had fail-fasted every CI run since v26.5.13).
 - `LogStats` field names corrected: `trace_count` / `event_count` → `total_cases` / `total_events`.
 
 ### Removed / Cleanup
@@ -284,7 +284,7 @@ f03bed5cf9362c65600b627e1d00168c0b7375a7
 ### CI/CD Hardening
 
 - Lint failures no longer silenced by `continue-on-error: true` in test/release/bench-regression workflows.
-- `.markdownlint.json` relaxed for 4 legacy-noise rules (MD034/040/059/060) to preserve strictness on new content.
+- `.markdownlint.json` relaxed for 4 noise rules (MD034/040/059/060) to preserve strictness on new content.
 - DoD pre-push verification confirmed for every commit on this release.
 
 ## [26.5.13] - 2026-05-13 — POWL 2.0, Cell8 Proof Gates, OTEL Phases A–C

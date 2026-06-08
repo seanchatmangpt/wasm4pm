@@ -10,7 +10,7 @@ We conducted a read-only investigation of the workspace and observed the followi
   * Sub-packages under `packages/` (e.g. `agents`, `cognition`, `contracts`) declare `"version": "26.5.29"`.
 * **Current Versions in `Cargo.toml`**:
   * Root `Cargo.toml` line 7: `version = "26.5.29"`
-  * Cargo workspace dependencies on internal packages reference version `"26.5.29"` (e.g. `wasm4pm-types = { version = "26.5.29", path = "crates/wasm4pm-types" }`).
+  * Cargo workspace dependencies on internal packages reference version `"26.5.29"` (e.g. `wasm4pm-compat = { version = "26.5.29", path = "crates/wasm4pm-compat" }`).
   * Stale dependencies: `wasm4pm/Cargo.toml` has dependencies on `wasm4pm-cognition`, `wasm4pm-macros`, and `miniml` pinned to `"26.5.28"`.
 * **Source/Script Hardcoded Versions**:
   * `packages/kernel/src/version-resolver.ts` line 14: `const PACKAGE_VERSION = '26.5.28';`

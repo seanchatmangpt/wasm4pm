@@ -255,7 +255,7 @@ describe('wpm autoprocess e2e', () => {
       const output = JSON.parse(result.stdout) as any;
       expect(output).toHaveProperty('status');
       expect(output.status).toBe('error');
-      // Error details in output.error.message (or output.message for legacy format)
+      // Error details in output.error.message (or output.message for  format)
       expect(output.error?.message ?? output.message).toBeTruthy();
     });
 

@@ -1,7 +1,7 @@
 {
   "_comment": "NEGATIVE FIXTURE N14 — undeclared event type. OCEDO requires every event's type to be declared up-front in eventTypes (types are the schema). Event e2 has type 'Teleport Order' which is not declared => UNDECLARED_EVENT_TYPE. Minimal counterexample: declare 'Teleport Order' in eventTypes (or correct e2's type).",
   "expected_refusal": "ObjectLifecycleViolation",
-  "rejecting_primitive": "ocel_core::validate (UNDECLARED_EVENT_TYPE)",
+  "rejecting_primitive": "wasm4pm_compat::ocel::validate (UNDECLARED_EVENT_TYPE)",
   "eventTypes": [
     { "name": "Create Order", "attributes": [] }
   ],

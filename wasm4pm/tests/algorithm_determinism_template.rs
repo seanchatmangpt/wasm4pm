@@ -111,7 +111,7 @@ fn make_event(activity: &str, timestamp_sec: i64) -> models::Event {
 /// Hash a DFG to a hex string for determinism verification.
 ///
 /// Uses BLAKE3 for consistency with receipt hashing in TypeScript.
-fn hash_dfg(dfg: &models::DirectlyFollowsGraph) -> String {
+fn hash_dfg(dfg: &models::DFG) -> String {
     let json = serde_json::to_string(dfg).expect("failed to serialize DFG");
     blake3::hash(json.as_bytes()).to_hex().to_string()
 }
@@ -327,25 +327,6 @@ fn test_streaming_dfg_is_deterministic() {
 }
 
 /// Template for testing algorithms that use unseeded fastrand.
-///
-/// This test is expected to FAIL until the underlying algorithm is fixed.
-#[test]
-#[ignore] // Remove after seeding fastrand in playout.rs
-fn test_playout_unseeded_fastrand_nondeterministic() {
-    // Playout uses global fastrand::usize(), fastrand::f64() without seed control.
-    // Each run produces different trace (random choices not seeded).
-    //
-    // Expected: FAIL with multiple unique traces
-    // Fix: Accept seed parameter, pass to fastrand::Rng::with_seed(seed)
-    //
-    // Once fixed, move to CATEGORY B and seed with parameter.
-    todo!("playout uses unseeded fastrand; traces are non-deterministic");
-}
-
-// ============================================================================
-// Batch Test Suite
-// ============================================================================
-
 /// Run all determinism tests and report results.
 ///
 /// This is for CI/CD integration:

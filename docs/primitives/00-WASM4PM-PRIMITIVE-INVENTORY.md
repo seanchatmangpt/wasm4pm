@@ -128,7 +128,7 @@ Modules: `wasm4pm/src/ml/`, `wasm4pm/src/social_network.rs`,
 
 ## Downstream Use
 
-Every primitive feeds into the `@wasm4pm/kernel` TypeScript facade, which routes calls
+Every primitive feeds into the `@wasm4pm/kernel` TypeScript boundary, which routes calls
 via `run(algorithmName, handle, params)`. The `@wasm4pm/planner` selects algorithms based
 on execution profile (fast / balanced / quality / stream). The `@wasm4pm/testing` harness
 validates parity and determinism across all registered algorithms.

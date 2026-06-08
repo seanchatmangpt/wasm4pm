@@ -17,7 +17,7 @@
 //! Gap: F / cross-backend parity
 
 use std::collections::HashMap;
-use wasm4pm::models::{AttributeValue, DirectlyFollowsGraph, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, DFG, Event, EventLog, Trace};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
@@ -58,7 +58,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
 }
 
 /// Build a DFG using `StreamingDfgBuilder` (canonical scalar streaming path).
-fn streaming_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn streaming_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let mut builder = StreamingDfgBuilder::new();
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);
@@ -73,7 +73,7 @@ fn streaming_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
 }
 
 /// Build a DFG using the `SimdStreamingDfg` path (SIMD / vectorised).
-fn simd_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn simd_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let col = log.to_columnar_owned(activity_key);
     let vocab_refs: Vec<&str> = col.vocab.iter().map(|s| s.as_str()).collect();
     let mut builder = SimdStreamingDfg::new();
@@ -82,14 +82,14 @@ fn simd_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
 }
 
 /// Build a batch DFG using the columnar approach (no wasm_bindgen).
-fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn batch_dfg(log: &EventLog, activity_key: &str) -> DFG {
     use rustc_hash::FxHashMap;
     use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
 
     let col_owned = log.to_columnar_owned(activity_key);
     let col = wasm4pm::models::ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
         id: act.to_owned(),
         label: act.to_owned(),
@@ -134,7 +134,7 @@ fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
 }
 
 /// Convert a DFG into an order-independent `(from, to) -> frequency` map for comparison.
-fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -142,7 +142,7 @@ fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> 
 }
 
 /// Convert a DFG into an order-independent node-frequency map for comparison.
-fn nodes_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<String, usize> {
+fn nodes_to_map(dfg: &DFG) -> HashMap<String, usize> {
     dfg.nodes
         .iter()
         .map(|n| (n.id.clone(), n.frequency))

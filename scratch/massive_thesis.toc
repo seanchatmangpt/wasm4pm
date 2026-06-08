@@ -7127,7 +7127,7 @@
 \contentsline {subsection}{\numberline {346.3.5}Stochastic Analysis of \texttt {default\_version}}{1414}{subsection.346.3.5}%
 \contentsline {subsection}{\numberline {346.3.6}Stochastic Analysis of \texttt {discover}}{1414}{subsection.346.3.6}%
 \contentsline {subsection}{\numberline {346.3.7}Stochastic Analysis of \texttt {get}}{1414}{subsection.346.3.7}%
-\contentsline {subsection}{\numberline {346.3.8}Stochastic Analysis of \texttt {deprecated\_all\_candidates\_returns\_empty}}{1415}{subsection.346.3.8}%
+\contentsline {subsection}{\numberline {346.3.8}Stochastic Analysis of \texttt {removed\_all\_candidates\_returns\_empty}}{1415}{subsection.346.3.8}%
 \contentsline {subsection}{\numberline {346.3.9}Stochastic Analysis of \texttt {validate}}{1415}{subsection.346.3.9}%
 \contentsline {chapter}{\numberline {347}Cohomological Architecture of \texttt {fs\_walk.rs}}{1417}{chapter.347}%
 \contentsline {section}{\numberline {347.1}Vector Bundles and Memory Topologies}{1417}{section.347.1}%
@@ -12249,7 +12249,7 @@
 \contentsline {subsection}{\numberline {637.2.2}Stochastic Analysis of \texttt {predict\_next\_activity\_rf}}{2455}{subsection.637.2.2}%
 \contentsline {subsection}{\numberline {637.2.3}Stochastic Analysis of \texttt {build\_feature\_vec}}{2456}{subsection.637.2.3}%
 \contentsline {subsection}{\numberline {637.2.4}Stochastic Analysis of \texttt {test\_feature\_vec\_temporal\_clamping}}{2456}{subsection.637.2.4}%
-\contentsline {subsection}{\numberline {637.2.5}Stochastic Analysis of \texttt {test\_snapshot\_legacy\_defaults}}{2456}{subsection.637.2.5}%
+\contentsline {subsection}{\numberline {637.2.5}Stochastic Analysis of \texttt {test\_snapshot\\_defaults}}{2456}{subsection.637.2.5}%
 \contentsline {subsection}{\numberline {637.2.6}Stochastic Analysis of \texttt {test\_snapshot\_round\_trip}}{2456}{subsection.637.2.6}%
 \contentsline {subsection}{\numberline {637.2.7}Stochastic Analysis of \texttt {test\_max\_case\_ms\_unsorted\_timestamps}}{2456}{subsection.637.2.7}%
 \contentsline {subsection}{\numberline {637.2.8}Stochastic Analysis of \texttt {test\_feature\_vec\_single\_event\_prefix}}{2456}{subsection.637.2.8}%

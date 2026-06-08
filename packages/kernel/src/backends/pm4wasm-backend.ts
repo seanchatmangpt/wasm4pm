@@ -789,6 +789,6 @@ export class Pm4wasmBackend implements MiningBackend {
    * In Phase 2, this will import from @wasm4pm/cli or equivalent.
    */
   private async loadWasmModule(): Promise<Pm4WasmModule> {
-    return await import('wasm4pm') as unknown as Pm4WasmModule;
+    return await import('@wasm4pm/core') as unknown as Pm4WasmModule;
   }
 }

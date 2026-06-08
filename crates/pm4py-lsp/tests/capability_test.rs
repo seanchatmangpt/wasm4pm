@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use pm4py_lsp::{create_parity_fixture, diagnose_text, Backend};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -56,7 +57,7 @@ async fn test_conformance_vector_shift() {
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri = Url::parse("file:///test.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test.py").unwrap();
 
     // Initial state: Refused (unformatted)
     let code_refused = r#"
@@ -72,7 +73,7 @@ df = pd.read_csv('log.csv')
 
     let snapshot_id = backend.max_snapshot().await.unwrap();
     let vector = backend
-        .max_conformance_vector(snapshot_id.clone())
+        .max_conformance_vector(Some(snapshot_id.clone()))
         .await
         .unwrap();
 
@@ -99,7 +100,7 @@ df = pm4py.format_dataframe(df)
         .await
         .insert(uri.clone(), code_admitted.to_string());
 
-    let vector_repaired = backend.max_conformance_vector(snapshot_id).await.unwrap();
+    let vector_repaired = backend.max_conformance_vector(Some(snapshot_id)).await.unwrap();
     assert!(vector_repaired
         .admitted
         .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())));
@@ -116,8 +117,8 @@ async fn test_snapshot_determinism() {
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri1 = Url::parse("file:///a.py").unwrap();
-    let uri2 = Url::parse("file:///b.py").unwrap();
+    let uri1 = DocumentUri::from_str("file:///a.py").unwrap();
+    let uri2 = DocumentUri::from_str("file:///b.py").unwrap();
 
     backend
         .documents
@@ -165,7 +166,7 @@ async fn test_physical_persistence() {
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri = Url::parse("file:///test.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test.py").unwrap();
     let code = r#"
 import pm4py
 import pandas as pd
@@ -256,7 +257,7 @@ async fn test_integration_dataframe_formatting() {
         }
     });
 
-    let uri = Url::parse("file:///test_integration.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test_integration.py").unwrap();
     let code_unformatted = "import pm4py\nimport pandas as pd\ndf = pd.read_csv('log.csv')\n";
 
     backend

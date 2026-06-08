@@ -153,6 +153,7 @@ pub fn play_out_tree(
     tree: &crate::powl_process_tree::ProcessTree,
     params: &PlayOutParameters,
 ) -> EventLog {
+    fastrand::seed(42);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
@@ -232,6 +233,7 @@ fn play_out_dfg_with_starts(
     end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
+    fastrand::seed(42);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
@@ -395,7 +397,7 @@ pub fn play_out_process_tree(
 #[wasm_bindgen]
 pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue> {
     // Parse the DFG from JSON
-    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(dfg_json)
+    let dfg: crate::models::DFG = serde_json::from_str(dfg_json)
         .map_err(|e| wasm_err(codes::INVALID_JSON, format!("Invalid DFG JSON: {}", e)))?;
 
     // Parse parameters with defaults

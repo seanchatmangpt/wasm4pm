@@ -525,11 +525,11 @@ fn fig2_net_is_sound() {
     assert!(r.is_free_choice, "Fig.2 is free-choice (Def 3.4)");
 }
 
-// ─── Tests: WASM/JSON contract (exercised on native via the shim) ─────────────
+// ─── Tests: WASM/JSON contract (exercised on native via the bridge) ─────────────
 
 #[test]
 fn json_contract_reports_all_fields() {
-    // The WASM export emits a fixed JSON shape; the native shim returns the same
+    // The WASM export emits a fixed JSON shape; the native bridge returns the same
     // string. Assert every contract field is present and that booleans agree
     // with the structured report for the sound sequence net.
     let net = seq_sound_net();

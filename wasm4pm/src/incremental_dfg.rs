@@ -23,7 +23,7 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::error::{self, codes};
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use crate::state;
 use crate::utilities::to_js_str;
 
@@ -98,13 +98,13 @@ impl IncrementalDFG {
         }
     }
 
-    /// Convert the incremental state into a full [`DirectlyFollowsGraph`].
+    /// Convert the incremental state into a full [`DFG`].
     ///
     /// Activities are rendered as `"activity_<id>"` strings because this
     /// struct operates on integer IDs. Use [`StreamingDFG`] for string
     /// labels.
-    pub fn snapshot(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn snapshot(&self) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes
         dfg.nodes = self
@@ -245,9 +245,9 @@ impl StreamingDFG {
         self.inner.end_trace();
     }
 
-    /// Convert to a full [`DirectlyFollowsGraph`] with human-readable labels.
-    pub fn snapshot(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    /// Convert to a full [`DFG`] with human-readable labels.
+    pub fn snapshot(&self) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes
         dfg.nodes = self

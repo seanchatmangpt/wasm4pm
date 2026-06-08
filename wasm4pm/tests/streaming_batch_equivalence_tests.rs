@@ -19,7 +19,7 @@
 //! Gap: F (streaming batch equivalence)
 
 use std::collections::HashMap;
-use wasm4pm::models::{AttributeValue, DirectlyFollowsGraph, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, DFG, Event, EventLog, Trace};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
@@ -62,7 +62,7 @@ fn make_log(traces: &[&[&str]]) -> EventLog {
 
 /// Convert an EventLog into a DFG using `StreamingDfgBuilder` (the canonical
 /// streaming implementation).
-fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let mut builder = StreamingDfgBuilder::new();
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);
@@ -77,7 +77,7 @@ fn streaming_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollows
 }
 
 /// Convert an EventLog into a DFG using `SimdStreamingDfg` (SIMD/scalar streaming).
-fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     let col = log.to_columnar_owned(activity_key);
     let vocab_refs: Vec<&str> = col.vocab.iter().map(|s| s.as_str()).collect();
     let mut builder = SimdStreamingDfg::new();
@@ -87,14 +87,14 @@ fn simd_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph
 
 /// Compute a batch DFG directly from an EventLog using the columnar approach
 /// (same logic as `discover_dfg` wasm_bindgen wrapper but without the JsValue layer).
-fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DFG {
     use rustc_hash::FxHashMap;
     use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
 
     let col_owned = log.to_columnar_owned(activity_key);
     let col = wasm4pm::models::ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
 
     // Pre-allocate nodes
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
@@ -141,7 +141,7 @@ fn batch_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGrap
 }
 
 /// Build an order-independent edge map `(from, to) -> frequency` from a DFG.
-fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -437,36 +437,4 @@ fn streaming_late_event_handled_deterministically() {
 // Test 6: streaming_conformance_matches_batch_conformance
 // ---------------------------------------------------------------------------
 
-/// Placeholder for streaming conformance equivalence.
-///
-/// A streaming conformance API (`streaming_conformance_begin` /
-/// `streaming_conformance_add_event` / `streaming_conformance_finalize`)
-/// exists in `wasm4pm::streaming_conformance` under the `streaming_full`
-/// feature flag.  That API operates event-by-event against a DFG handle,
-/// not against a PetriNet, so its fitness metric differs from
-/// `check_token_based_replay`.
-///
-/// TODO: once `streaming_full` is unconditionally available in integration
-/// tests (or the streaming conformance result is comparable to token replay),
-/// implement this test to assert |streaming_fitness - batch_fitness| < 0.001.
-///
-/// For now, this test verifies that the batch token-replay conformance module
-/// compiles and is importable from an integration test.
-#[test]
-#[ignore = "streaming conformance uses a different fitness model than batch token replay; \
-            implement once a compatible streaming fitness API is available (streaming_full feature)"]
-fn streaming_conformance_matches_batch_conformance() {
-    // Intended implementation sketch:
-    //
-    // 1. Build a simple log: 10 traces of A→B→C.
-    // 2. Discover a DFG with discover_dfg (batch) → store handle.
-    // 3. Run batch token replay via check_token_based_replay(log_handle, dfg_handle, ak).
-    // 4. Run streaming conformance via streaming_conformance_begin(dfg_handle) →
-    //    streaming_conformance_add_event per event →
-    //    streaming_conformance_finalize(handle).
-    // 5. Assert |batch_fitness - streaming_fitness| < 0.001.
-    //
-    // Blocked by: streaming_conformance returns a per-trace conformance dict,
-    // not a scalar fitness, making direct comparison non-trivial.
-    unimplemented!("streaming conformance fitness comparison not yet implemented");
-}
+

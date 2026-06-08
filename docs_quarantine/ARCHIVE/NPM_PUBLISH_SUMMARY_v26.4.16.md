@@ -46,7 +46,7 @@ publish-branch=main
 - **pnpm-lock.yaml**: Up-to-date ✅
 - **Size**: 108 KB
 - **Last updated**: 2026-04-16 20:31
-- **Peer warnings**: 2 unmet (deprecated subdependencies, not critical)
+- **Peer warnings**: 2 unmet (removed subdependencies, not critical)
 
 ### Version Consistency
 

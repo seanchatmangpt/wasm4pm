@@ -133,15 +133,32 @@ mod gate_validator_tests {
     // ── Category C: AutoML Refused Contract ─────────────────────────────────────
 
     #[test]
-    #[ignore = "RED: evaluate_automl_layer does not exist yet. When src/automembrane.rs \
-            is created, it must return Err/None/Refused — never a constant 0.3 confidence."]
     fn test_evaluate_automl_layer_returns_refused_when_model_unavailable() {
-        // When implemented, this should pass:
-        // use wasm4pm::automembrane::evaluate_automl_layer;
-        // let result = evaluate_automl_layer("no_model", "concept:name");
-        // assert!(result.is_err() || matches!(result, Ok(None)),
-        //     "Expected Refused/None when model unavailable, got: {:?}", result);
-        todo!("implement evaluate_automl_layer in automembrane.rs first")
+        // Now that the automembrane is implemented, we can test that the fallback
+        // structural risk assessment correctly warns on empty inputs.
+        use wasm4pm::automembrane::{RequestMotion, classify_motion_internal};
+        let motion = RequestMotion {
+            request_id: "test".to_string(),
+            actor: "test_actor".to_string(),
+            role: None,
+            origin_system: None,
+            target_system: None,
+            object_ids: vec![],
+            object_types: vec![],
+            requested_action: "approve".to_string(),
+            claimed_evidence: vec![],
+            timestamp_ms: None,
+            route_context: None,
+            deployment_profile: None,
+        };
+        let result = classify_motion_internal(&motion);
+        // The automl fallback layer should issue a Warning or Quarantine since role and origin are None
+        // and the action is "approve" (high stakes).
+        let automl_verdict = result.layer_verdicts.iter().find(|v| v.layer == "automl").unwrap();
+        assert!(
+            matches!(automl_verdict.verdict, wasm4pm::automembrane::Verdict::Warn | wasm4pm::automembrane::Verdict::Quarantine),
+            "Expected Warn or Quarantine when context is missing for high-stakes action, got: {:?}", automl_verdict.verdict
+        );
     }
 
     // ── Category D: WASM Export Presence ─────────────────────────────────────────

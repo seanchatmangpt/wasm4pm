@@ -261,7 +261,7 @@ fn bench_simd_token_replay(c: &mut Criterion) {
         let log = generate_event_log(&shape);
 
         // Build DFG-based Petri net
-        let mut dfg = DirectlyFollowsGraph::new();
+        let mut dfg = DFG::new();
         let activities = ["A", "B", "C", "D"];
         for (i, &act) in activities.iter().enumerate() {
             dfg.nodes.push(DFGNode {

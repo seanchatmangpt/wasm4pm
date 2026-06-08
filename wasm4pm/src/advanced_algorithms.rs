@@ -17,8 +17,8 @@ pub fn discover_heuristic_miner_from_log(
     log: &EventLog,
     activity_key: &str,
     dependency_threshold: f64,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -137,7 +137,7 @@ pub fn discover_heuristic_miner(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({

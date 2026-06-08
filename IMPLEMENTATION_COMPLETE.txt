@@ -154,7 +154,7 @@ RISK ASSESSMENT
 ================================================================================
 
 Breaking Changes:        ✅ None
-Backward Compatibility:  ✅ 100% (additive only)
+baseline admissibility:  ✅ 100% (additive only)
 Test Coverage:           ✅ 24 tests (100% of code paths)
 Performance Impact:      ✅ Negligible (<1ms overhead)
 Binary Size Impact:      ✅ ~5KB for new code
@@ -260,7 +260,7 @@ KEY FEATURES
    • Purely additive exports
    • No existing APIs modified
    • No breaking changes
-   • Full backward compatibility
+   • Full baseline admissibility
 
 ✅ Production Quality
    • 24 tests (unit + integration)

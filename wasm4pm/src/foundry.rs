@@ -42,7 +42,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use crate::wf_to_powl::{wf_net_language, wf_net_to_powl_spec, PowlSpec, WfToPowlResult};
-use ocel_core::{
+use wasm4pm_compat::ocel::{
     OCELAttributeValue, OCELEvent, OCELEventAttribute, OCELObject, OCELRelationship, OCELType,
     OCELTypeAttribute, ObjectTypeCardinality, OCEL,
 };

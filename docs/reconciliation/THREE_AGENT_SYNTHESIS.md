@@ -3,7 +3,7 @@
 **Branch:** `finish-wip-primitives`
 **Active workflow:** `wf_41df99e1-9a4` (MAIN build) — STILL RUNNING and writing the tree
 **Sibling orchestration:** `.agents/sentinel` — ACTIVE (do not delete)
-**Plan:** `/Users/sac/.claude/plans/you-re-right-delete-the-shimmying-tide.md`
+**Plan:** `/Users/sac/.claude/plans/you-re-right-delete-the-bridgemying-tide.md`
 **Verdict:** `READY_FOR_RECONCILIATION` (NOT ALIVE — this team lacks verification authority)
 
 This team is a **bounded 3-agent finish team**, not a heavy build. Operating law:

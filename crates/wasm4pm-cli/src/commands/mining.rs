@@ -6,9 +6,9 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use wasm4pm_algos::{conformance, heuristic};
 use wasm4pm_cli::io::{Io, Table};
-use wasm4pm_compat::legacy_event_log::EventLog;
-use wasm4pm_compat::legacy_import::xes::{import_xes, XESImportOptions};
-use wasm4pm_compat::legacy_models::DFG;
+use wasm4pm_compat::event_log::EventLog;
+use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
+use wasm4pm_compat::models::DFG;
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {

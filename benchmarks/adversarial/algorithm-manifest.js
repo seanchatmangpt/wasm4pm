@@ -86,7 +86,7 @@ export const ALGORITHM_MANIFEST = [
         outputType: 'dfg', // Actually DFG, not petrinet
         fitnessCapable: false,
         expectedLatencyBudgetMs: 30000,
-        description: 'Ant Colony Optimization (correct implementation, discover_ant_colony is deprecated)'
+        description: 'Ant Colony Optimization (correct implementation, discover_ant_colony is removed)'
     },
     {
         id: 'pso',

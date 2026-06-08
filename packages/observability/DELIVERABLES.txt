@@ -140,7 +140,7 @@ API_REFERENCE.md (300 lines)
   - Error handling guidelines
   - Performance table
   - Thread safety notes
-  - Backward compatibility notes
+  - baseline admissibility notes
 
 ================================================================================
 CONFIGURATION (3 files)

@@ -13,7 +13,7 @@ Restore repository files to committed state, verify git status is clean, and run
 ## 🔒 Key Constraints
 - CODE_ONLY network mode: no external web or service access.
 - Minimal change principle.
-- No dummy/facade implementations.
+- No dummy/boundary implementations.
 - Every release receipt must bind to package info, git commit, etc.
 - No blind `git add .`.
 

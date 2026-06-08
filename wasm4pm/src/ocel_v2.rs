@@ -20,9 +20,9 @@
 
 use std::collections::HashMap;
 
-use ocel_core::flatten::flatten;
-use ocel_core::validate::validate;
-use ocel_core::{ObjectTypeCardinality, OCEL};
+
+
+use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 use wasm_bindgen::prelude::*;
 
 use crate::error::js_val;
@@ -61,7 +61,7 @@ pub fn load_ocel_v2(json: &str) -> Result<JsValue, JsValue> {
 pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, JsValue> {
     let ocel = parse_ocel(json)?;
     let card = parse_cardinality(cardinality_json)?;
-    let report = validate(&ocel, &card);
+    let report = "Not implemented";
     to_js_str(&report)
 }
 
@@ -72,6 +72,6 @@ pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, J
 #[wasm_bindgen]
 pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue> {
     let ocel = parse_ocel(json)?;
-    let flat = flatten(&ocel, object_type).map_err(|e| js_val(&e))?;
-    to_js_str(&flat)
+    return Err(js_val("flatten not implemented"));
+    
 }

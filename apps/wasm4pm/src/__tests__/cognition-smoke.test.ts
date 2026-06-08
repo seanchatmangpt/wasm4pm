@@ -80,7 +80,7 @@ function buildWrapperScript(scenario: SmokeScenario): string {
     'run_step "cargo test -p wasm4pm-cognition --lib" bash -c "exit ' + s(scenario.step2) + '"',
     'run_step "cargo test -p prolog8 --lib" bash -c "exit ' + s(scenario.step3) + '"',
     'run_step "cognition-no-stub-scan.sh --quick" bash -c "exit ' + s(scenario.step4) + '"',
-    'run_step "node facade require" bash -c "exit ' + s(scenario.step5) + '"',
+    'run_step "node boundary require" bash -c "exit ' + s(scenario.step5) + '"',
     'run_step "wpm cognition adversarial detectors==8" bash -c "exit ' + s(scenario.step6) + '"',
     'overall_end=$(_ms)',
     'total_ms=$(( overall_end - overall_start ))',

@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use ocel_core::OCEL;
+use wasm4pm_compat::ocel::OCEL;
 use ocpq::{
     evaluate_constraint, evaluate_query, BasicPredicate, Binding, BindingBox, ChildSet,
     ConstraintPredicate, Edge, Node, QueryTree, VarDecl, VarKind,
@@ -541,12 +541,12 @@ fn double_confirm_makes_an_order_violate() {
     // confirm child set has size 2 ∉ [1,1] ⇒ violated. The other two stay ✓.
     // ⇒ satisfied=2, violated=1, and the violating order is exactly o_a.
     let mut log = order_to_cash_fig6();
-    log.events.push(ocel_core::OCELEvent {
+    log.events.push(wasm4pm_compat::ocel::OCELEvent {
         id: "ev_ca2".into(),
         event_type: "confirm order".into(),
         time: "2024-03-02T09:00:00Z".parse().unwrap(),
         attributes: vec![],
-        relationships: vec![ocel_core::OCELRelationship {
+        relationships: vec![wasm4pm_compat::ocel::OCELRelationship {
             object_id: "o_a".into(),
             qualifier: "order".into(),
         }],

@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use pm4py_lsp::Backend;
 use std::collections::HashMap;
 use tower_lsp_max::lsp_types::*;
@@ -26,7 +27,7 @@ async fn test_lsp_did_open_and_change() {
     let (service, _) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri = Url::parse("file:///main.py").unwrap();
+    let uri = DocumentUri::from_str("file:///main.py").unwrap();
 
     // did_open
     let open_params = DidOpenTextDocumentParams {

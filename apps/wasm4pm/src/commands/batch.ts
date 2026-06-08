@@ -391,10 +391,10 @@ export const batch = defineCommand({
       description: 'Directory, glob pattern, or comma-separated list of XES files',
       alias: 'i',
     },
-    // Legacy positional — kept for backward compatibility
+    //  positional — kept for baseline admissibility
     directory: {
       type: 'positional',
-      description: 'Directory containing XES/JSON event logs (legacy positional)',
+      description: 'Directory containing XES/JSON event logs ( positional)',
       required: false,
     },
     algorithm: {
@@ -410,7 +410,7 @@ export const batch = defineCommand({
     },
     workers: {
       type: 'string',
-      description: 'Alias for --parallel (legacy flag)',
+      description: 'Alias for --parallel ( flag)',
     },
     'continue-on-error': {
       type: 'boolean',

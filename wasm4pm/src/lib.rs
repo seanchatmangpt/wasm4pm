@@ -5,7 +5,7 @@
     unused_mut,
     clippy::all,
     unused_imports,
-    deprecated,
+    removed,
     unused_features
 )]
 #![feature(generic_const_exprs)]
@@ -93,7 +93,7 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
-/// Compatibility layer for bcinr.
+/// baseline for bcinr.
 pub mod bcinr_compat;
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
@@ -106,7 +106,7 @@ pub mod error;
 /// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
 #[cfg(feature = "ocel")]
 pub mod foundry;
-/// Graduation intake module bridging the compatibility layer.
+/// Graduation intake module bridging the baseline.
 pub mod graduation;
 /// Event log I/O utilities (XES import/export, binary format).
 pub mod io;
@@ -669,7 +669,7 @@ pub use wasm4pm_cognition as cognition;
 
 // Types substrate re-export — surfaces `wasm4pm_compat` (the canonical type
 // foundation: hash, BLAKE3 helpers, canonical JSON, and cross-crate
-// compatibility layer) as `wasm4pm::data_types`. Downstream crates that need
+// baseline) as `wasm4pm::data_types`. Downstream crates that need
 // canonical receipt serialization can reach
 // `wasm4pm::data_types::hash::canonical_json` via the single wasm4pm
 // dependency. (The name `types` is already taken by an internal WASM bindings
@@ -3450,3 +3450,4 @@ pub fn evaluate_ocpq(ocel_json: &str, query_str: &str) -> Result<String, JsValue
     serde_json::to_string(&verdict)
         .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
 }
+pub mod gall;

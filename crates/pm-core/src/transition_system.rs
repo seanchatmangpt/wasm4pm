@@ -274,7 +274,7 @@ mod serde_state_id {
 /// part of the minimal formal definition but is required for the Two-Step
 /// algorithm's weighting heuristics.
 ///
-/// `ActivityName` replaces the raw `String` in the legacy wasm4pm
+/// `ActivityName` replaces the raw `String` in the  wasm4pm
 /// `TSTransition.activity` field — a breaking but necessary fix noted in the
 /// module-level audit.
 ///
@@ -388,7 +388,7 @@ mod serde_ts_transition {
 /// - `initial` — the unique initial state `s₀ ∈ S` (Def 3.1). The caller is
 ///   responsible for ensuring `initial ∈ states.keys()`.
 /// - `accepting` — `BTreeSet<StateId>`: final/accepting states F ⊆ S
-///   (renamed from `final_states` in the legacy code to match standard
+///   (renamed from `final_states` in the  code to match standard
 ///   automata-theory notation). `BTreeSet` guarantees deterministic
 ///   enumeration.
 /// - `transitions` — `Vec<TsTransition>`: the transition relation → as an

@@ -13,7 +13,7 @@ Implement the unit and integration test fixes/gaps in `crates/pm4py-lsp/` for Mi
 ## 🔒 Key Constraints
 - CODE_ONLY network mode. No external HTTP.
 - Strict verification and testing.
-- No dummy/facade implementations.
+- No dummy/boundary implementations.
 - Write only to our own directory for metadata/handoffs.
 
 ## Current Parent

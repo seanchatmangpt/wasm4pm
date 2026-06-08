@@ -374,7 +374,7 @@ It is NOT thread-safe for (due to single-threaded WASM):
 - Raw WebAssembly code
 - Rust code with concurrent access
 
-## Backward Compatibility
+## baseline admissibility
 
 Version 26.4.5 and beyond:
 - ✅ Safe: Adding new optional configuration fields

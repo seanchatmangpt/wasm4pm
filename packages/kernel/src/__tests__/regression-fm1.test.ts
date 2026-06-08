@@ -6,7 +6,7 @@
  * Bug description (FM-1):
  *   When the WASM algorithm dispatcher used `next_state == state` in a
  *   Bellman-style update, the Q-table became self-referential.  The analogous
- *   risk in the Kernel facade is that two sequential `run()` calls with
+ *   risk in the Kernel boundary is that two sequential `run()` calls with
  *   *different* event logs but the *same* algorithm could return the same
  *   cached result if the cache key is mis-computed (e.g., only hashing the
  *   algorithm name rather than also hashing the log handle).
@@ -38,9 +38,9 @@ function buildFm1Stub(): KernelWasmModule & {
   let dfgCallCount = 0;
   let logHandleCounter = 0;
 
-  // Build the WASM-conforming facade first, then attach the test-private counter
+  // Build the WASM-conforming boundary first, then attach the test-private counter
   // via Object.assign to avoid TS2353 (unknown property in satisfies check).
-  const wasmFacade = {
+  const wasmboundary = {
     init(): any { return Promise.resolve(); },
 
     // XES loading helper invoked directly in tests.
@@ -107,13 +107,13 @@ function buildFm1Stub(): KernelWasmModule & {
   };
 
   // Object.assign does not preserve getter descriptors — use defineProperty.
-  Object.defineProperty(wasmFacade, 'dfgCallCount', {
+  Object.defineProperty(wasmboundary, 'dfgCallCount', {
     get() { return dfgCallCount; },
     enumerable: true,
     configurable: true,
   });
 
-  return wasmFacade as KernelWasmModule & {
+  return wasmboundary as KernelWasmModule & {
     dfgCallCount: number;
     load_eventlog_from_xes(xes: string): string;
   };

@@ -462,7 +462,7 @@ The convergence of seven theoretical frameworks suggests a patent portfolio of 3
 
 The addressable market spans three segments:
 
-- **Process Intelligence** ($4B annually): Replacing Celonis, UiPath, and legacy process mining tools with autonomous, WASM-deployed, browser-native process intelligence
+- **Process Intelligence** ($4B annually): Replacing Celonis, UiPath, and  process mining tools with autonomous, WASM-deployed, browser-native process intelligence
 - **Compliance Automation** ($5B annually): Replacing manual audit processes with zero-touch compliance via BLAKE3 receipt chains and external verifiability
 - **Autonomous Enterprise Operations** ($3B annually): The new market created by inverting the human-AI relationship
 

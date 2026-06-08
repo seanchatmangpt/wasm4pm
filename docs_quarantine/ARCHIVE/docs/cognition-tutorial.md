@@ -45,7 +45,7 @@ This target runs six stages in order:
 2. `cargo check -p wasm4pm-cognition --features wasm --target wasm32-unknown-unknown` — WASM type-check
 3. `wasm-pack build --target nodejs --features wasm --out-dir pkg` — Node.js WASM artifact
 4. `wasm-pack build --target bundler --features wasm --out-dir pkg-bundler` — bundler artifact
-5. `cd packages/cognition && pnpm build` — thin TypeScript facade
+5. `cd packages/cognition && pnpm build` — thin TypeScript boundary
 6. `cd apps/wasm4pm && pnpm build` — CLI build
 
 The Rust compilation is the slow step on a first build (30–60 seconds). Subsequent incremental
@@ -73,7 +73,7 @@ Expected output (all 9 checks pass):
 [OK] No stub tokens (todo!/unimplemented!/pub struct Stub) found
 [OK] Adversarial detector source file present
 [OK] wasm-bindgen exports present in src/wasm.rs
-[OK] TypeScript facade packages/cognition exists
+[OK] TypeScript boundary packages/cognition exists
 [OK] CLI command apps/wasm4pm/src/commands/cognition.ts exists
 9/9 checks pass.
 ```
@@ -144,7 +144,7 @@ Expected output (truncated):
 
 > **If you see exit code 3:** The WASM module is not fully wired to the cognition crate.
 > Run `make cognition-build` to rebuild. If the error says "cannot find module
-> '@wasm4pm/cognition'", the TypeScript facade build failed — see stage 5 in
+> '@wasm4pm/cognition'", the TypeScript boundary build failed — see stage 5 in
 > [`docs/cognition-build.md`](cognition-build.md).
 
 ### Understanding the output

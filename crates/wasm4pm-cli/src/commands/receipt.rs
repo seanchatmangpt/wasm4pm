@@ -32,7 +32,7 @@ pub enum ReceiptSubcommands {
     /// Generates the internal forensics report including raw hash comparisons.
     OperatorPrivateReport(OperatorPrivateReportArgs),
 
-    // Kept for backwards compatibility with legacy tests if needed
+    // Kept for backwards compatibility with  tests if needed
     Truthforge(TruthforgeArgs),
 }
 

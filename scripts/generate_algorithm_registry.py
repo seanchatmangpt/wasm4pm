@@ -448,8 +448,8 @@ def get_evidence_class(fn_name, criterion_measured, adversary_measured_set):
 def get_production_status(_fn_name, evidence_class, real_data_tested, feature_gate):
     if evidence_class in ("blocked_fake", "blocked_placeholder"):
         return "blocked"
-    if evidence_class == "deprecated":
-        return "deprecated"
+    if evidence_class == "removed":
+        return "removed"
     if evidence_class == "experimental":
         return "experimental"
     if real_data_tested:

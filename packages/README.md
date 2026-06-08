@@ -20,7 +20,7 @@ WASM Layer:       wasm4pm/ (Rust/WASM core)
 |---------|------|
 | `@wasm4pm/contracts` | Shared types, receipts, errors, plans, hashing (leaf, no deps) |
 | `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence |
-| `@wasm4pm/kernel` | WASM facade — 41 algorithms, `run()`, `stream()` |
+| `@wasm4pm/kernel` | WASM boundary — 41 algorithms, `run()`, `stream()` |
 | `@wasm4pm/engine` | Lifecycle state machine (uninitialized → watching / failed) |
 | `@wasm4pm/planner` | `plan(config)` → ExecutionPlan, `explain(config)` → string |
 | `@wasm4pm/observability` | 3-layer: CLI human, JSONL machine, OTEL spans |

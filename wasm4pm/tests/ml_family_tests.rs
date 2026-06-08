@@ -275,7 +275,7 @@ fn test_knn_metrics_perfect_three_class_classification() {
     assert!((m.macro_recall - 1.0).abs() < 1e-10);
     assert!((m.macro_f1 - 1.0).abs() < 1e-10);
 
-    // Cross-check: legacy `knn_internal` accuracy must equal the metric.
+    // Cross-check:  `knn_internal` accuracy must equal the metric.
     let acc = knn_internal(&train_x, &train_y, &test_x, &test_y, 3);
     assert!(
         (acc - m.accuracy).abs() < 1e-10,

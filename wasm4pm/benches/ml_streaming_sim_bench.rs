@@ -228,7 +228,7 @@ fn build_ngram_predictor_internal(log: &EventLog, activity_key: &str, n: usize) 
 }
 
 /// Build a DFG from an event log (internal version).
-fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::DirectlyFollowsGraph {
+fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::DFG {
     use std::collections::HashMap;
     use wasm4pm::models::{DFGNode, DirectlyFollowsRelation};
 
@@ -271,7 +271,7 @@ fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::Di
         }
     }
 
-    let mut dfg = wasm4pm::models::DirectlyFollowsGraph::new();
+    let mut dfg = wasm4pm::models::DFG::new();
     dfg.nodes = node_counts
         .into_iter()
         .map(|(id, freq)| DFGNode {

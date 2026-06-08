@@ -125,14 +125,14 @@ Spec **01** is the foundation: every other spec parses the OCEL that 01 produces
 
 ## 4. Phased milestone plan (mapped to existing crates)
 
-Crate dependency direction is fixed: `ocel-core` (leaf) ← `wasm4pm-types` ← `wasm4pm-algos` ← `wasm4pm` (engine) ← `wasm4pm-cli` (`wpm`). **All new oracle logic lands in `wasm4pm-algos` (pure Rust, no `wasm-bindgen`) or `wasm4pm-cli`** — never in the `wasm4pm` `cdylib` engine, so the oracle is reachable as a pure-Rust subprocess without a JS/WASM runtime (verified per 04 §12 A8, 07 §10 A7).
+Crate dependency direction is fixed: `ocel-core` (leaf) ← `wasm4pm-compat` ← `wasm4pm-algos` ← `wasm4pm` (engine) ← `wasm4pm-cli` (`wpm`). **All new oracle logic lands in `wasm4pm-algos` (pure Rust, no `wasm-bindgen`) or `wasm4pm-cli`** — never in the `wasm4pm` `cdylib` engine, so the oracle is reachable as a pure-Rust subprocess without a JS/WASM runtime (verified per 04 §12 A8, 07 §10 A7).
 
 ### Phase 0 — Foundation (spec 01)
 
 | Lands in | Module / artifact | Spec |
 |---|---|---|
 | `crates/ocel-core/` | serde aliases on `OCELEvent`/`OCELRelationship` (G1–G3); `intake::fold_ndjson` + `TailPolicy` + `FoldReport` (G4–G6); fix version drift `26.5.30 → version.workspace` (G7) | 01 §3–§5 |
-| `crates/wasm4pm-types/src/import/ocel/mod_ocel.rs` | `import_ocel_ndjson` delegates to `fold_ndjson_str`; delete dead `"name"` branch | 01 §5.5 |
+| `crates/wasm4pm-compat/src/import/ocel/mod_ocel.rs` | `import_ocel_ndjson` delegates to `fold_ndjson_str`; delete dead `"name"` branch | 01 §5.5 |
 | `crates/wasm4pm-cli/src/commands/` | `wpm oracle ingest` (emit `FoldReport` + OCEL summary JSON) | 01 §6 |
 | `fixtures/real/ggen-living-loop-6link/` | native `.ocel.jsonl` + `expected-ocel.json` + `expected-ingest.json` + truncated-tail variant (G8) | 01 §8 |
 

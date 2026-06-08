@@ -7,8 +7,8 @@
 "is this run's process-signature lawful, and did checkpoint N+1 leak into checkpoint N's gate" half of the Andon
 oracle. It is the judge-of-possibility leap for the hourly 10-agent loop, not a post-hoc audit.
 **Builds on (cited, real):** `wasm4pm-algos::dfg::discover_dfg` (`crates/wasm4pm-algos/src/dfg.rs:12`),
-`ConformanceResult` (`crates/wasm4pm-types/src/conformance.rs:62`),
-`DeclareConstraint`/`DeclareModel` (`crates/wasm4pm-types/src/models.rs:555/573`),
+`ConformanceResult` (`crates/wasm4pm-compat/src/conformance.rs:62`),
+`DeclareConstraint`/`DeclareModel` (`crates/wasm4pm-compat/src/models.rs:555/573`),
 `validate_ocel_object_lifecycles` + `LifecycleViolation` (`wasm4pm/src/ocel_io.rs:399/413`),
 the `ReceiptDoctor` refusal-finding shape (`wasm4pm/src/receipt.rs:33/56/63/77`),
 the `StreamingDeclareBuilder` template vocabulary (`wasm4pm/src/streaming/streaming_declare.rs:80/106/124/140`).
@@ -53,9 +53,9 @@ external-CLI-oracle boundary).
 | Asset | Citation | Reuse in this spec |
 |---|---|---|
 | **DFG discovery (variant substrate)** | `discover_dfg(log,key)->DFG` `crates/wasm4pm-algos/src/dfg.rs:12`; aggregates node/edge frequency per `Trace`, sets `start_activities`/`end_activities`. | The per-case activity-sequence extraction (`dfg.rs:21-25`, `e.get_activity(key)`) is exactly the variant-key projection — but DFG **aggregates** and never enumerates per-trace variants. Reuse the projection; build the enumeration. |
-| **Conformance metrics envelope** | `ConformanceResult{fitness,precision,generalization,simplicity,total_traces,fitting_traces,deviating_traces}` serde-ready, `crates/wasm4pm-types/src/conformance.rs:62`; `conformance_rate()` :107. | Variant-governance report embeds a `ConformanceResult` so the oracle's metrics line up with `wpm mining conformance`. |
-| **Declare constraint type** | `DeclareConstraint{constraint_type:String, activities:Vec<String>, condition:String}` + `DeclareModel{constraints,activities}`, `crates/wasm4pm-types/src/models.rs:555/573`. Serde-ready, `Default`. **No checker consumes it yet.** | The canonical container for the 6-link ordering law and the receipt-barrier law. We define a *checker* over it (TO BE BUILT). |
-| **Declare template vocabulary (reference)** | `StreamingDeclareBuilder::to_declare` emits `template:"response(A,B)"`, `"precedence(A,B)"`, `"coexistence(A,B)"` (`wasm4pm/src/streaming/streaming_declare.rs:106/124/140`). NOTE: that builder uses an **internal** constraint struct with a `template` field, distinct from `wasm4pm-types::DeclareConstraint` (`constraint_type` field). | Adopt the same template *names* (`response`, `precedence`, `succession`, `not_succession`, `absence`) as `DeclareConstraint.constraint_type` values so vocabulary is consistent across the codebase. |
+| **Conformance metrics envelope** | `ConformanceResult{fitness,precision,generalization,simplicity,total_traces,fitting_traces,deviating_traces}` serde-ready, `crates/wasm4pm-compat/src/conformance.rs:62`; `conformance_rate()` :107. | Variant-governance report embeds a `ConformanceResult` so the oracle's metrics line up with `wpm mining conformance`. |
+| **Declare constraint type** | `DeclareConstraint{constraint_type:String, activities:Vec<String>, condition:String}` + `DeclareModel{constraints,activities}`, `crates/wasm4pm-compat/src/models.rs:555/573`. Serde-ready, `Default`. **No checker consumes it yet.** | The canonical container for the 6-link ordering law and the receipt-barrier law. We define a *checker* over it (TO BE BUILT). |
+| **Declare template vocabulary (reference)** | `StreamingDeclareBuilder::to_declare` emits `template:"response(A,B)"`, `"precedence(A,B)"`, `"coexistence(A,B)"` (`wasm4pm/src/streaming/streaming_declare.rs:106/124/140`). NOTE: that builder uses an **internal** constraint struct with a `template` field, distinct from `wasm4pm-compat::DeclareConstraint` (`constraint_type` field). | Adopt the same template *names* (`response`, `precedence`, `succession`, `not_succession`, `absence`) as `DeclareConstraint.constraint_type` values so vocabulary is consistent across the codebase. |
 | **Per-object temporal-order violation** | `validate_ocel_object_lifecycles(&OCEL)->Vec<LifecycleViolation>` `wasm4pm/src/ocel_io.rs:413`; `LifecycleViolation{object_id,event_a_id,event_b_id,timestamp_a_ms,timestamp_b_ms}` :399. Operates on **shape 2.B** (`models.rs` OCEL, string timestamps). Pure Rust. | The raw substrate for leakage-by-timestamp: an event whose timestamp precedes its episode predecessor is a candidate barrier-violation. The *semantic* layer (which activity must precede which) is TO BE BUILT on top. |
 | **Refusal-finding verdict architecture** | `ReceiptTruthRefusal` enum (`receipt.rs:33`), `FindingSeverity{Deny,Warning}` :56, `ReceiptFinding{code,json_path,message,severity}` :63, `ReceiptDoctorState{Admitted,Refused}` :71, `ReceiptDoctorReport{state,findings,admitted}` :77. Pure Rust, `serde_json::Value` in / `Vec<finding>` out, wired to `wpm receipt`. | **Copy this shape verbatim** for the variant/leakage verdict. New refusal enum, same envelope discipline. |
 | **DFG node/edge model** | `DFG{nodes,edges,start_activities,end_activities}`, `DFGEdge::new(from,to,freq)` (used `dfg.rs:73`). | Drift detection compares two `DFG`s (current-hour vs. accepted baseline) by edge-set delta. |
@@ -82,12 +82,12 @@ external-CLI-oracle boundary).
 
 ### 3.1 Where the code goes (maps onto existing crates)
 
-Per the dependency direction (`00-STRUCTURE-MAP.md` §1: `wasm4pm-types ← wasm4pm-algos ← wasm4pm ← wasm4pm-cli`):
+Per the dependency direction (`00-STRUCTURE-MAP.md` §1: `wasm4pm-compat ← wasm4pm-algos ← wasm4pm ← wasm4pm-cli`):
 
 | Module | Home crate | Rationale |
 |---|---|---|
 | `variant` (T1–T4: `Variant`, `VariantSet`, `VariantPolicy`, `VariantSignature`, drift) | **`wasm4pm-algos`** (new `src/variant.rs`) | Pure Rust, link-safe, sits beside `dfg.rs`/`conformance.rs`; reuses `discover_dfg`'s projection. No wasm-bindgen. |
-| `declare_conformance` (T5: checker over `DeclareModel`) | **`wasm4pm-algos`** (new `src/declare_conformance.rs`) | Pure Rust; consumes `wasm4pm-types::DeclareModel`. |
+| `declare_conformance` (T5: checker over `DeclareModel`) | **`wasm4pm-algos`** (new `src/declare_conformance.rs`) | Pure Rust; consumes `wasm4pm-compat::DeclareModel`. |
 | `checkpoint` (T6–T7: `Checkpoint`, `CheckpointWindow`, `Barrier`, leakage rules) | **`wasm4pm-algos`** (new `src/checkpoint.rs`) | Pure Rust; depends only on `ocel-core` (the §2 carved crate) + `variant`/`declare_conformance`. |
 | `oracle::variant` verdict assembly (refusal enum + report) | **`wasm4pm`** engine OR `wasm4pm-algos` if it must stay link-safe. **Recommend `wasm4pm-algos`** so the verdict is reusable and the engine's wasm-bindgen does not contaminate it. | Mirrors `receipt.rs` shape but lives where ggen could one day link it. |
 | `wpm oracle <sub>` CLI + JSON envelope (T8) | **`wasm4pm-cli`** (new `src/commands/oracle.rs`) | The external-oracle boundary. Tests in `crates/wasm4pm-cli/tests/cli_tests.rs`. |
@@ -152,7 +152,7 @@ pub struct VariantPolicy {
     pub checkpoint: String,                         // "GGEN-TPL-001@001B"
     pub accepted: Vec<NamedSignature>,              // lawful signatures
     pub forbidden: Vec<NamedSignature>,             // explicitly illegal signatures
-    pub law: wasm4pm_types::DeclareModel,           // the ordering law (3.4)
+    pub law: wasm4pm_compat::DeclareModel,           // the ordering law (3.4)
 }
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct NamedSignature { pub name: String, pub signature: String, pub example: Vec<String> }
@@ -250,7 +250,7 @@ The **receipt-order barrier** (the dormancy law) is a separate, checkpoint-scope
 ```rust
 // crates/wasm4pm-algos/src/declare_conformance.rs  (T5, TO BE BUILT)
 /// Replay an episode's activity sequence against a DeclareModel. Returns the
-/// constraints it violates (empty = conforming). Pure Rust over wasm4pm-types::DeclareModel.
+/// constraints it violates (empty = conforming). Pure Rust over wasm4pm-compat::DeclareModel.
 pub fn check_declare(trace_activities: &[String], model: &DeclareModel) -> Vec<DeclareViolation>;
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DeclareViolation { pub constraint_type: String, pub activities: Vec<String>, pub condition: String }

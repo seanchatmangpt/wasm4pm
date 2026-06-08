@@ -518,9 +518,9 @@ describe('wpm validate — gap coverage', () => {
     });
   });
 
-  // ── 10. --output-format json flag (legacy alias) ──────────────────────────
+  // ── 10. --output-format json flag ( alias) ──────────────────────────
 
-  describe('--output-format json (legacy alias)', () => {
+  describe('--output-format json ( alias)', () => {
     it('--output-format json produces parseable JSON envelope', async () => {
       const p = await writeTmp(validXes('case-1', 2), 'test.xes');
       const result = await runCli(['validate', p, '--output-format', 'json', '--no-save']);

@@ -1,6 +1,6 @@
 //! Graduation intake path in wasm4pm.
 //!
-//! Consumes a `GraduationCandidate` from the compatibility layer,
+//! Consumes a `GraduationCandidate` from the baseline,
 //! validating its grounding and allowing execution to proceed.
 
 use wasm4pm_compat::engine_bridge::GraduationCandidate;

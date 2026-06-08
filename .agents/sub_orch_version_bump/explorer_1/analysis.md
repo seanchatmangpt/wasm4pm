@@ -56,7 +56,7 @@ Here is the list of Cargo crates:
 | `crates/wasm4pm-cli/Cargo.toml` | `wasm4pm-cli` | Inherits: `version.workspace = true` |
 | `crates/wasm4pm-cognition/Cargo.toml` | `wasm4pm-cognition` | Inherits: `version.workspace = true` |
 | `crates/wasm4pm-macros/Cargo.toml` | `wasm4pm-macros` | Inherits: `version.workspace = true` |
-| `crates/wasm4pm-types/Cargo.toml` | `wasm4pm-types` | Inherits: `version.workspace = true` |
+| `crates/wasm4pm-compat/Cargo.toml` | `wasm4pm-compat` | Inherits: `version.workspace = true` |
 | `crates/wasm4pm-utils/Cargo.toml` | `wasm4pm-utils` | Inherits: `version.workspace = true` |
 | `tps-metrics/Cargo.toml` | `tps-metrics` | Inherits: `version.workspace = true` |
 | `wasm4pm/Cargo.toml` | `wasm4pm` | Inherits: `version.workspace = true` |
@@ -67,7 +67,7 @@ Here is the list of Cargo crates:
 The following files contain hardcoded internal dependency references that must be updated synchronously:
 
 1. **Root `Cargo.toml` dependencies:**
-   - `wasm4pm-types = { version = "26.5.29", path = "crates/wasm4pm-types" }`
+   - `wasm4pm-compat = { version = "26.5.29", path = "crates/wasm4pm-compat" }`
    - `wasm4pm-algos = { version = "26.5.29", path = "crates/wasm4pm-algos" }`
    - `wasm4pm-utils = { version = "26.5.29", path = "crates/wasm4pm-utils" }`
    - `wasm4pm-cognition = { version = "26.5.29", path = "crates/wasm4pm-cognition" }`

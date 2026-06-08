@@ -324,10 +324,10 @@ describe('Invariant I-5: final state coherence', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 9. Backward compatibility — payload shape
+// 9. baseline admissibility — payload shape
 // ---------------------------------------------------------------------------
 
-describe('backward compatibility: no --full-quality', () => {
+describe('baseline admissibility: no --full-quality', () => {
   it('invariant_violations absent from payload when flag not used', () => {
     // Simulate the payload that would be built without --full-quality
     const payload: Record<string, unknown> = {

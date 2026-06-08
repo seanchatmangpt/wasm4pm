@@ -1,3 +1,4 @@
+use std::str::FromStr;
 use pm4py_lsp::Backend;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -54,7 +55,7 @@ async fn test_e2e_initialize_and_shutdown() {
 async fn test_e2e_did_open_triggers_diagnostics() {
     let (service, _socket) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
-    let uri = Url::parse("file:///open_diag.py").unwrap();
+    let uri = DocumentUri::from_str("file:///open_diag.py").unwrap();
 
     backend
         .did_open(DidOpenTextDocumentParams {
@@ -93,7 +94,7 @@ async fn test_e2e_did_open_triggers_diagnostics() {
 async fn test_e2e_did_change_updates_diagnostics() {
     let (service, _socket) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
-    let uri = Url::parse("file:///change_diag.py").unwrap();
+    let uri = DocumentUri::from_str("file:///change_diag.py").unwrap();
 
     // Open with unformatted content
     backend
@@ -162,7 +163,7 @@ async fn test_e2e_did_change_updates_diagnostics() {
 async fn test_e2e_code_action_repairs_diagnostic() {
     let (service, _socket) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
-    let uri = Url::parse("file:///action_repair.py").unwrap();
+    let uri = DocumentUri::from_str("file:///action_repair.py").unwrap();
 
     backend
         .did_open(DidOpenTextDocumentParams {
@@ -195,6 +196,7 @@ async fn test_e2e_code_action_repairs_diagnostic() {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
             range: diagnostic.range,
             context: CodeActionContext {
+version: None,
                 diagnostics: vec![diagnostic.clone()],
                 only: None,
                 trigger_kind: None,
@@ -255,8 +257,8 @@ async fn test_e2e_multiple_files_concurrent() {
     let (service, _socket) = LspService::new(|client| Backend::new(client));
     let backend = service.inner();
 
-    let uri_a = Url::parse("file:///concurrent_a.py").unwrap();
-    let uri_b = Url::parse("file:///concurrent_b.py").unwrap();
+    let uri_a = DocumentUri::from_str("file:///concurrent_a.py").unwrap();
+    let uri_b = DocumentUri::from_str("file:///concurrent_b.py").unwrap();
 
     // Open both files concurrently
     tokio::join!(
@@ -307,7 +309,7 @@ async fn test_e2e_multiple_files_concurrent() {
     // Conformance vector must reflect both files: A refused, B admitted
     drop(docs);
     let snapshot = backend.max_snapshot().await.unwrap();
-    let cv = backend.max_conformance_vector(snapshot).await.unwrap();
+    let cv = backend.max_conformance_vector(Some(snapshot)).await.unwrap();
     assert!(
         cv.refused
             .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())),
@@ -332,7 +334,7 @@ async fn test_e2e_close_removes_diagnostics() {
     });
 
     let backend = service.inner();
-    let uri = Url::parse("file:///close_clear.py").unwrap();
+    let uri = DocumentUri::from_str("file:///close_clear.py").unwrap();
 
     backend
         .did_open(DidOpenTextDocumentParams {
@@ -371,7 +373,7 @@ async fn test_e2e_close_removes_diagnostics() {
 
     // Conformance vector for an empty workspace has no refused axes for formatting
     let snapshot = backend.max_snapshot().await.unwrap();
-    let cv = backend.max_conformance_vector(snapshot).await.unwrap();
+    let cv = backend.max_conformance_vector(Some(snapshot)).await.unwrap();
     assert!(
         !cv.refused
             .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())),
@@ -427,7 +429,7 @@ async fn test_e2e_lsp_lifecycle() {
     let backend = service.inner();
 
     // 3. didOpen Python file with PM4Py + unformatted read_csv.
-    let uri = Url::parse("file:///test_e2e.py").unwrap();
+    let uri = DocumentUri::from_str("file:///test_e2e.py").unwrap();
     let code_unformatted = r#"
 import pm4py
 import pandas as pd
@@ -481,6 +483,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
         text_document: TextDocumentIdentifier { uri: uri.clone() },
         range: unformatted_diag.range.clone(),
         context: CodeActionContext {
+version: None,
             diagnostics: vec![unformatted_diag.clone()],
             only: None,
             trigger_kind: None,
@@ -636,7 +639,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
 
     // 11. Verify conformance vector is Admitted for formatting law.
     let snapshot_id_2 = backend.max_snapshot().await.unwrap();
-    let conformance_vector = backend.max_conformance_vector(snapshot_id_2).await.unwrap();
+    let conformance_vector = backend.max_conformance_vector(Some(snapshot_id_2)).await.unwrap();
     assert!(conformance_vector
         .admitted
         .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())));

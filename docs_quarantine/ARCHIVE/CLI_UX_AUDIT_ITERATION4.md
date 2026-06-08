@@ -370,7 +370,7 @@ Apply to all commands in `apps/wasm4pm/src/commands/*.ts`
 
 ---
 
-## Backward Compatibility
+## baseline admissibility
 
 All solutions are **additive** (no breaking changes):
 - Existing commands work unchanged

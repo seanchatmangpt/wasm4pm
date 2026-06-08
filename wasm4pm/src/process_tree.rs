@@ -95,7 +95,7 @@ impl From<&str> for ActivityName {
 ///
 /// `Or` is included for completeness from the IMf (Inductive Miner with
 /// frequency filtering) variant.  Replaces the stringly-typed
-/// `node_type: String` field in the legacy `wasm4pm ProcessTreeNode`.
+/// `node_type: String` field in the  `wasm4pm ProcessTreeNode`.
 ///
 /// # Copy semantics
 /// This is a `Copy` enum — no heap allocation.  Replacing a `String` operator
@@ -221,7 +221,7 @@ impl fmt::Display for ProcessTreeOperator {
 /// `Vec<ProcessTree>` children".
 ///
 /// # Replaces
-/// The legacy `ProcessTreeNode { node_type: String, children: Vec<ProcessTreeNode> }`
+/// The  `ProcessTreeNode { node_type: String, children: Vec<ProcessTreeNode> }`
 /// and the stringly-typed matching on `"SEQ"`, `"XOR"`, `"AND"`, `"OR"`,
 /// `"LOOP"` throughout the codebase.
 ///
@@ -518,9 +518,9 @@ impl fmt::Display for ProcessTree {
     }
 }
 
-// ─── Legacy compatibility shim ───────────────────────────────────────────────
+// ───  compatibility bridge ───────────────────────────────────────────────
 
-/// Legacy stringly-typed node kind kept for backward compatibility with code
+///  stringly-typed node kind kept for baseline admissibility with code
 /// that still uses the old `ProcessTreeNode` API.
 ///
 /// New code should prefer [`ProcessTree`] and [`ProcessTreeOperator`] directly.
@@ -534,7 +534,7 @@ pub enum NodeKind {
     Silent,
 }
 
-/// Legacy process tree node kept for backward compatibility.
+///  process tree node kept for baseline admissibility.
 ///
 /// Prefer [`ProcessTree`] for new code.  This type uses a stringly-typed
 /// [`NodeKind`] internally; the typed counterpart is [`ProcessTree`].
@@ -581,7 +581,7 @@ impl ProcessTreeNode {
         self
     }
 
-    /// Convert this legacy node into a typed [`ProcessTree`].
+    /// Convert this  node into a typed [`ProcessTree`].
     ///
     /// Unknown operator tags are mapped to [`ProcessTreeOperator::Sequence`]
     /// as a safe default.
@@ -608,7 +608,7 @@ use crate::models::EventLog;
 use serde_json::json;
 use wasm_bindgen::prelude::*;
 
-/// Recursively convert a legacy `ProcessTreeNode` to a JSON `serde_json::Value`.
+/// Recursively convert a  `ProcessTreeNode` to a JSON `serde_json::Value`.
 #[allow(dead_code)]
 fn node_to_json(node: &ProcessTreeNode) -> serde_json::Value {
     let children: Vec<serde_json::Value> = node.children.iter().map(node_to_json).collect();
@@ -948,7 +948,7 @@ mod tests {
         assert_eq!(t.children(), &[] as &[ProcessTree]);
     }
 
-    // Legacy compatibility tests
+    //  compatibility tests
 
     #[test]
     fn process_tree_node_into_typed_sequence() {

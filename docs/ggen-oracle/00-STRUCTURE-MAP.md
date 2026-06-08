@@ -23,9 +23,9 @@ From `/Users/sac/wasm4pm/Cargo.toml` line 4. These are the only crates that comp
 
 | Crate | Path | Role (cited) | Relevance to ggen oracle |
 |---|---|---|---|
-| `wasm4pm` | `wasm4pm/` | **The engine.** `crate-type = ["cdylib","rlib"]` (Cargo.toml line ~33); ~120 `pub mod`s in `wasm4pm/src/lib.rs` incl. `receipt`, `oc_conformance`, `ocel_io`, `ocel_flatten`, `oc_petri_net`, `streaming_conformance`, `prediction*`, `transition_system`, `discovery`, `conformance`. Most are `#[wasm_bindgen]` JS shims; the inner `*_inner` fns are pure Rust. | Holds the richest PM surface AND the OCEL `ReceiptDoctor`. But it depends on `wasm-bindgen` — **not** linkable by ggen. Oracle logic should be reachable from `wpm` CLI, or refactored into a pure crate. |
-| `wasm4pm-types` | `crates/wasm4pm-types/` | "Canonical types that all functions pass around" (`lib.rs` line 2): `EventLog`/`Trace`/`Event` (XES model), **OCEL 2.0** (`ocel.rs`), `DFG`/`PetriNet`/`DeclareModel` (`models.rs`), `ConformanceResult`/`TokenReplayResult` (`conformance.rs`), import (`import/`). | **This is where `ocel-core` is carved from** (GGEN-NEEDS §2). Source of the OCEL 2.0 type contract for the shared crate. |
-| `wasm4pm-algos` | `crates/wasm4pm-algos/` | "Branchless algorithm implementations" (`lib.rs` line 2): `dfg`, `alpha`, `heuristic`, `streaming`, `columnar`, `conformance`, `truex`. Re-exports `wasm4pm_types` (`lib.rs` line 18). | Pure Rust, no wasm-bindgen — **this is the link-safe home** for any oracle logic ggen might one day link, and the home of the canonical conformance fns named in GGEN-NEEDS. |
+| `wasm4pm` | `wasm4pm/` | **The engine.** `crate-type = ["cdylib","rlib"]` (Cargo.toml line ~33); ~120 `pub mod`s in `wasm4pm/src/lib.rs` incl. `receipt`, `oc_conformance`, `ocel_io`, `ocel_flatten`, `oc_petri_net`, `streaming_conformance`, `prediction*`, `transition_system`, `discovery`, `conformance`. Most are `#[wasm_bindgen]` JS bridges; the inner `*_inner` fns are pure Rust. | Holds the richest PM surface AND the OCEL `ReceiptDoctor`. But it depends on `wasm-bindgen` — **not** linkable by ggen. Oracle logic should be reachable from `wpm` CLI, or refactored into a pure crate. |
+| `wasm4pm-compat` | `crates/wasm4pm-compat/` | "Canonical types that all functions pass around" (`lib.rs` line 2): `EventLog`/`Trace`/`Event` (XES model), **OCEL 2.0** (`ocel.rs`), `DFG`/`PetriNet`/`DeclareModel` (`models.rs`), `ConformanceResult`/`TokenReplayResult` (`conformance.rs`), import (`import/`). | **This is where `ocel-core` is carved from** (GGEN-NEEDS §2). Source of the OCEL 2.0 type contract for the shared crate. |
+| `wasm4pm-algos` | `crates/wasm4pm-algos/` | "Branchless algorithm implementations" (`lib.rs` line 2): `dfg`, `alpha`, `heuristic`, `streaming`, `columnar`, `conformance`, `truex`. Re-exports `wasm4pm_compat` (`lib.rs` line 18). | Pure Rust, no wasm-bindgen — **this is the link-safe home** for any oracle logic ggen might one day link, and the home of the canonical conformance fns named in GGEN-NEEDS. |
 | `wasm4pm-cli` | `crates/wasm4pm-cli/` | Binary `wpm` (`Cargo.toml` `[[bin]] name = "wpm"`). Command tree in `src/main.rs`. | **The external-oracle boundary** (GGEN-NEEDS §5). All ggen↔wasm4pm adjudication crosses here via subprocess + JSON. |
 | `wasm4pm-utils` | `crates/wasm4pm-utils/` | Shared utilities. | Incidental. |
 | `wasm4pm-cognition` | `crates/wasm4pm-cognition/` | RL / cognition agents (optional dep of `wasm4pm`, feature-gated). | Out of scope. |
@@ -34,8 +34,8 @@ From `/Users/sac/wasm4pm/Cargo.toml` line 4. These are the only crates that comp
 | `miniml-core` (pkg `miniml`) | `crates/miniml-core/` | ML primitives. | Out of scope. |
 | `tps-metrics` | `tps-metrics/` | Metrics workspace member. | Out of scope. |
 
-**Dependency direction:** `wasm4pm-types` (leaf) ← `wasm4pm-algos` ← `wasm4pm` ← `wasm4pm-cli`.
-`ocel-core` must become a new leaf *below* `wasm4pm-types`.
+**Dependency direction:** `wasm4pm-compat` (leaf) ← `wasm4pm-algos` ← `wasm4pm` ← `wasm4pm-cli`.
+`ocel-core` must become a new leaf *below* `wasm4pm-compat`.
 
 ---
 
@@ -45,12 +45,12 @@ This is the single most important finding for the spec authors. **There is not o
 in wasm4pm; there are three, and ggen has a fourth.** Any spec that says "OCEL 2.0" must say
 *which* of these.
 
-### 2.A — Canonical OCEL 2.0 (`crates/wasm4pm-types/src/ocel.rs`) — the GGEN-NEEDS §2 target
+### 2.A — Canonical OCEL 2.0 (`crates/wasm4pm-compat/src/ocel.rs`) — the GGEN-NEEDS §2 target
 
 The clean, standard, serde-typed model. This is what `ocel-core` is carved from.
 
 ```rust
-// crates/wasm4pm-types/src/ocel.rs  (lines 6-85, verbatim shape)
+// crates/wasm4pm-compat/src/ocel.rs  (lines 6-85, verbatim shape)
 pub struct OCEL {
     #[serde(rename = "eventTypes")] pub event_types: Vec<OCELType>,
     #[serde(rename = "objectTypes")] pub object_types: Vec<OCELType>,
@@ -77,17 +77,17 @@ pub struct OCELObjectAttribute { pub name: String, pub value: OCELAttributeValue
 pub enum OCELAttributeValue { Integer(i64), Float(f64), Boolean(bool), Time(DateTime<FixedOffset>), String(String), #[default] Null }
 ```
 
-- Re-exported from `wasm4pm-types/src/lib.rs` line 32: `pub use ocel::{OCELEvent, OCELObject, OCEL};`
+- Re-exported from `wasm4pm-compat/src/lib.rs` line 32: `pub use ocel::{OCELEvent, OCELObject, OCEL};`
   (note: `OCELType`, `OCELRelationship`, `OCELAttributeValue` are **not** in the convenience
   re-export — `ocel-core` carving must re-export the full set so call sites don't break).
 - **Coupling to fix for `ocel-core`:** `ocel.rs` line 4 imports `crate::event_log::AttributeValue`
   and provides bidirectional `From` impls (lines 101-128). `event_log::AttributeValue`
-  (`crates/wasm4pm-types/src/event_log.rs` lines 6-18) is the XES model and pulls `uuid`.
+  (`crates/wasm4pm-compat/src/event_log.rs` lines 6-18) is the XES model and pulls `uuid`.
   GGEN-NEEDS §2 flagged this exactly. The `From<AttributeValue>` / `From<OCELAttributeValue>`
-  impls must move out of `ocel-core` (e.g. stay in `wasm4pm-types`) so `ocel-core` keeps only
+  impls must move out of `ocel-core` (e.g. stay in `wasm4pm-compat`) so `ocel-core` keeps only
   `serde`/`serde_json`/`chrono`.
 
-### 2.B — Legacy WASM OCEL (`wasm4pm/src/models.rs`) — used by the engine's `oc_*`/`ocel_*` fns
+### 2.B —  WASM OCEL (`wasm4pm/src/models.rs`) — used by the engine's `oc_*`/`ocel_*` fns
 
 A **different, untyped** OCEL used internally by the engine. **All of the object-centric
 analytics fns in §4 operate on THIS type, not 2.A.**
@@ -154,7 +154,7 @@ Closest to 2.C. **Furthest from 2.A** (the migration target).
 
 | Capability | Status | Citation |
 |---|---|---|
-| Whole-document OCEL 2.0 JSON → `OCEL` (2.A) | **EXISTS** | `crates/wasm4pm-types/src/import/ocel/mod_ocel.rs`: `import_ocel_json(&str) -> Result<OCEL, serde_json::Error>` (line 4), `import_ocel_json_slice(&[u8]) -> ...` (line 8). Thin `serde_json::from_str/slice`. Gated `#[cfg(feature="import")]` (`import/mod.rs`). |
+| Whole-document OCEL 2.0 JSON → `OCEL` (2.A) | **EXISTS** | `crates/wasm4pm-compat/src/import/ocel/mod_ocel.rs`: `import_ocel_json(&str) -> Result<OCEL, serde_json::Error>` (line 4), `import_ocel_json_slice(&[u8]) -> ...` (line 8). Thin `serde_json::from_str/slice`. Gated `#[cfg(feature="import")]` (`import/mod.rs`). |
 | XES import | **EXISTS** | `import/xes/{import_xes,stream_xes}.rs`; engine-side `wasm4pm::xes_format::load_eventlog_from_xes` (used by `autoprocess.rs` line 8, `audit.rs` line 9). |
 | Engine OCEL load/validate/export (2.B) | **EXISTS** | `wasm4pm/src/ocel_io.rs`: `load_ocel2_from_json` (line 33), `export_ocel2_to_json` (line 48), `validate_ocel` (line 65) — all `#[wasm_bindgen]`, return `JsValue`. |
 | **NDJSON / append-only event-stream reader** (GGEN-NEEDS §4a: `import_ocel_ndjson(reader) -> OCEL`, tolerate truncated last line, synthesize type decls) | **TO BE BUILT** | No `ndjson`/`jsonl`/line-delimited reader exists anywhere under `import/` or `ocel_io.rs`. This is the single biggest IO gap. |
@@ -187,7 +187,7 @@ pub fn check_conformance_alignment  (log: &EventLog, model: &PetriNet, activity_
 // + pub struct TraceAlignment { steps, total_cost }                  (conformance.rs:151)
 ```
 
-`ConformanceResult` (`crates/wasm4pm-types/src/conformance.rs:62`) is **serde-serializable**:
+`ConformanceResult` (`crates/wasm4pm-compat/src/conformance.rs:62`) is **serde-serializable**:
 `{ fitness: f64, precision: Option<f64>, generalization, simplicity, total_traces,
 fitting_traces, deviating_traces }` + `conformance_rate()`. `TokenReplayResult` similarly
 serde-serializable (line 4). **These are the JSON report payloads the oracle should emit.**
@@ -213,7 +213,7 @@ These are the richest and most oracle-relevant, but nearly all are `#[wasm_bindg
 | `discover_transition_system` | `wasm4pm/src/transition_system.rs:85` (+ `_from_handle` line 204); `TSState`/`TSTransition`/`TransitionSystem` (lines 34/43/56) | A reachability/state model — **the most promising existing substrate for prefix-completability** (does a reachable terminal state exist from the prefix-induced state?). No completability query exists on it yet. |
 | `play_petri_net` / `petri_net_playout` | `wasm4pm/src/petri_net_playout.rs:41/222`; `PlayoutConfig`/`PlayoutResult` (lines 15/33) | Generates traces a model *can* produce — the dual of prefix-completability; could seed a "is prefix in the playout language" check. |
 | `conformance_guards::guard_*` | `wasm4pm/src/conformance_guards.rs` lines 15/31/49/60/74/87 | Numeric safety guards (empty log, fitness bounds, zero-denominator), **not** semantic-ordering guards. |
-| `DeclareModel` / `DeclareConstraint` | `crates/wasm4pm-types/src/models.rs:555/573` | Declarative-constraint *types* exist; **no Declare conformance checker** found. A natural home for ggen's 6-link ordering law (`ReceiptEmitted` must follow `GatePassed`) as Declare `precedence`/`response` constraints — **TO BE BUILT**. |
+| `DeclareModel` / `DeclareConstraint` | `crates/wasm4pm-compat/src/models.rs:555/573` | Declarative-constraint *types* exist; **no Declare conformance checker** found. A natural home for ggen's 6-link ordering law (`ReceiptEmitted` must follow `GatePassed`) as Declare `precedence`/`response` constraints — **TO BE BUILT**. |
 
 ### 4.3 The receipt judge — `wasm4pm::receipt` (the existing "judge of possibility" analog)
 
@@ -333,7 +333,7 @@ exit-code + stdout-JSON** — but only `receipt`/`autoprocess` honor that today.
 | Real OCEL/POWL fixtures | `fixtures/real/<scenario>/` | Each scenario dir holds `expected-ocel.json` (shape 2.C), `expected-conform.json`, `model.powl.json`, sometimes `stack.ts.txt`. Two scenarios exist: `trace-conform-accepted`, `trace-conform-agent-proof-lifecycle`. **The agent-proof-lifecycle fixture is a `collect_evidence → verify_evidence → emit_receipt` chain — structurally a sibling of ggen's 6-link living-loop.** Reuse this convention for ggen oracle fixtures. |
 | XES corpora | `data/`, `fixtures/real/trace-conform-accepted/*.xes`, `tests/fixtures/BPI_2020_Travel_Permits_Actual.xes` | Standard PM benchmark logs (Sepsis, BPI, DomesticDeclarations, RepairExample). |
 | Unit tests | inline `#[cfg(test)] mod tests` in each algo file | e.g. `conformance.rs:397`, `dfg.rs:83`. Real `EventLog`/`PetriNet` construction, no mocks. |
-| TS proof harness (legacy/parallel) | `tests/proof/*.proof.ts` (vitest), `tests/archive/` | `ocel.proof.ts`, `receipt.proof.ts`, `release.proof.ts`, `rl.proof.ts`, `spc.proof.ts`. **These are the JS-side proof contracts**; the Rust oracle should not depend on them but should stay assertion-compatible where they overlap (OCEL/receipt). |
+| TS proof harness (/parallel) | `tests/proof/*.proof.ts` (vitest), `tests/archive/` | `ocel.proof.ts`, `receipt.proof.ts`, `release.proof.ts`, `rl.proof.ts`, `spc.proof.ts`. **These are the JS-side proof contracts**; the Rust oracle should not depend on them but should stay assertion-compatible where they overlap (OCEL/receipt). |
 | `data/DATASET-SUMMARY.txt` | repo root `data/` neighborhood | Inventory of corpora. |
 
 **A "bad-trace corpus" (impossible/forbidden OCEL logs for negative testing) does NOT exist.**
@@ -398,8 +398,8 @@ hashing (§4.4).
 
 ## 9. Concrete recommendations for the sibling specs (grounding map)
 
-1. **`ocel-core` carving** → carve from `crates/wasm4pm-types/src/ocel.rs` (shape 2.A, §2.A).
-   Leave the `From<event_log::AttributeValue>` impls behind in `wasm4pm-types`. Inherit
+1. **`ocel-core` carving** → carve from `crates/wasm4pm-compat/src/ocel.rs` (shape 2.A, §2.A).
+   Leave the `From<event_log::AttributeValue>` impls behind in `wasm4pm-compat`. Inherit
    `serde`/`serde_json`(preserve_order)/`chrono` from `[workspace.dependencies]`. Use
    `version.workspace = true`. Re-export the FULL type set (`OCELType`, `OCELRelationship`,
    `OCELAttributeValue` are missing from the current convenience re-export at `lib.rs:32`).
@@ -410,7 +410,7 @@ hashing (§4.4).
    proof assertions. Spell this out in the type-mapping spec.
 
 3. **NDJSON importer** (§3, GGEN-NEEDS §4a) → new `import_ocel_ndjson(reader) -> OCEL` beside
-   `import_ocel_json` in `crates/wasm4pm-types/src/import/ocel/`; fold one event per line,
+   `import_ocel_json` in `crates/wasm4pm-compat/src/import/ocel/`; fold one event per line,
    synthesize `eventTypes`/`objectTypes`, tolerate a truncated final line. Feature-gate under
    `import` like its siblings.
 

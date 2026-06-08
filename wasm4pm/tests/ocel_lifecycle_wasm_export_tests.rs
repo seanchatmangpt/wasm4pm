@@ -28,7 +28,7 @@
 #[cfg(feature = "feature-ocel")]
 mod ocel_lifecycle_wasm_export_tests {
     use std::collections::HashMap;
-    use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
+    use wasm4pm::advanced::ocdfg::OCDFG;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
 
@@ -73,7 +73,7 @@ mod ocel_lifecycle_wasm_export_tests {
     // Test 1: OC-DFG discover returns non-empty structure
     //
     // Regression guard against the serde_wasm_bindgen `{}` bug.
-    // On the pure-Rust path we verify OCDirectlyFollowsGraph::discover() produces
+    // On the pure-Rust path we verify OCDFG::discover() produces
     // a non-empty `dfgs` map — the same data that `discover_ocdfg_wasm` serialises.
     // -------------------------------------------------------------------------
     #[test]
@@ -84,7 +84,7 @@ mod ocel_lifecycle_wasm_export_tests {
             "2024-01-01T09:00:00Z",
             "2024-01-01T10:00:00Z",
         );
-        let ocdfg = OCDirectlyFollowsGraph::discover(&ocel);
+        let ocdfg = OCDFG::discover(&ocel);
 
         assert!(
             !ocdfg.dfgs.is_empty(),
@@ -105,7 +105,7 @@ mod ocel_lifecycle_wasm_export_tests {
     }
 
     // -------------------------------------------------------------------------
-    // Test 2: to_js_str produces valid JSON for OCDirectlyFollowsGraph
+    // Test 2: to_js_str produces valid JSON for OCDFG
     //
     // Verifies that serde_json can round-trip the struct.  If it cannot, the
     // `to_js_str` call would return an error rather than silently returning `{}`.
@@ -118,10 +118,10 @@ mod ocel_lifecycle_wasm_export_tests {
             "2024-01-01T09:00:00Z",
             "2024-01-01T10:00:00Z",
         );
-        let ocdfg = OCDirectlyFollowsGraph::discover(&ocel);
+        let ocdfg = OCDFG::discover(&ocel);
 
         let json_str = serde_json::to_string(&ocdfg)
-            .expect("OCDirectlyFollowsGraph must serialise without error");
+            .expect("OCDFG must serialise without error");
 
         assert_ne!(
             json_str, "{}",

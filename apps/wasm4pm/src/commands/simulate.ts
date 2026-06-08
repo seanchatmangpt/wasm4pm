@@ -378,7 +378,7 @@ export const simulate = defineCommand({
                   activityStatistics:
                     (sim.activity_statistics as Record<string, unknown> | undefined) ?? {},
                   variantCount: simulatedVariantCount,
-                  // legacy fields (kept for backward compat)
+                  //  fields (kept for backward compat)
                   traceCount: undefined as unknown,
                   traceLengths: undefined as any,
                   durations: undefined as any,

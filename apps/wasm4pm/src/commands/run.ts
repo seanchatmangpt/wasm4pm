@@ -5,7 +5,7 @@ import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan, getSuggestions } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
-import { emitResult, makeResult, makeErrorResult } from '../output.js';
+import { emitResult, makeResult, makeErrorResult, EmitOptions } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
@@ -36,7 +36,8 @@ export interface RunOptions {
   quiet?: boolean;
 }
 
-import { Kernel } from 'wasm4pm';
+import { Kernel, computeTimeout, classifyComplexity, detectAlgorithmTier } from 'wasm4pm';
+import { validateTimeout } from '../param-validators.js';
 
 /** All algorithms supported by wpm run, sourced dynamically from the registry. */
 export const ALGORITHMS = getRegistry().list().map(a => a.id);
@@ -51,12 +52,13 @@ export async function runDiscovery(
   wasm: Record<string, any>,
   algo: Algorithm,
   logHandle: string,
-  activityKey: string
+  activityKey: string,
+  parameters: Record<string, any> = {}
 ): Promise<{ raw: unknown; elapsedMs: number }> {
   const t0 = performance.now();
   const kernel = new Kernel(wasm as any);
   await kernel.init();
-  const raw = await kernel.runRaw(algo, logHandle, activityKey, {});
+  const raw = await kernel.runRaw(algo, logHandle, activityKey, parameters);
   const elapsedMs = performance.now() - t0;
   return { raw, elapsedMs };
 }
@@ -106,7 +108,7 @@ export const run = defineCommand({
     },
     format: {
       type: 'string',
-      description: 'Output format: human (default) or json',
+      description: 'Output format: human (default, rich console), json (detailed API payload), or csv (flat metrics table)',
     },
     verbose: {
       type: 'boolean',
@@ -203,12 +205,59 @@ export const run = defineCommand({
         'Automatically pick the best algorithm for the configured execution profile ' +
         '(fast | balanced | quality | stream). Ignores --algorithm flag when set.',
     },
+    parameters: {
+      type: 'string',
+      description: 'JSON string of algorithm parameters (e.g. \'{"dependency_threshold": 0.8}\').',
+    },
+    'guide-next-steps': {
+      type: 'boolean',
+      description: 'Emit contextual next-step suggestions after successful discovery',
+    },
+    'show-algo-params': {
+      type: 'string',
+      description: 'Show parameters for a specific algorithm',
+    },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
+    },
   },
   async run(ctx) {
-    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human' | 'csv') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
-    const emitOptions = { format, verbose, quiet };
+    const emitOptions = { format: format as any, verbose, quiet };
+
+    if (format !== 'json' && format !== 'human' && format !== 'csv') {
+      const errResult = makeErrorResult(
+        'run',
+        new Error(`Unknown output format "${format}". Valid: human, json, csv`),
+        EXIT_CODES.config_error,
+        'INVALID_FORMAT'
+      );
+      emitResult(errResult, emitOptions);
+      return await exitWithFlush(errResult.exit_code);
+    }
+
+    const timeoutResult = validateTimeout(ctx.args.timeout as string | undefined, 300);
+    if (!timeoutResult.valid) {
+      const errResult = makeErrorResult(
+        'run',
+        new Error(timeoutResult.error ?? 'Invalid timeout'),
+        EXIT_CODES.config_error,
+        'TIMEOUT_INVALID'
+      );
+      emitResult(errResult, emitOptions);
+      return await exitWithFlush(errResult.exit_code);
+    }
+    const currentTimeoutSecs = timeoutResult.value;
+    if (timeoutResult.wasClamped && !quiet && format === 'human') {
+      process.stderr.write(`⚠ ${timeoutResult.error}\n`);
+    }
 
     // Detect if this is a first-run for UX hints
     const isFirstRunResult = await isFirstRun().catch(() => false);
@@ -377,10 +426,172 @@ export const run = defineCommand({
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
               EXIT_CODES.source_error,
-              'ALGORITHM_NOT_FOUND'
+              'CONFIG_ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
+          }
+
+          // ── --show-algo-params ──────────────────────────────────────────────
+          if (ctx.args['show-algo-params']) {
+            const showParams = ctx.args['show-algo-params'] as string;
+            const registry = getRegistry();
+            const algo = registry.get(showParams);
+            if (!algo) {
+              process.stderr.write(`Algorithm not found: ${showParams}\n`);
+              return await exitWithFlush(EXIT_CODES.config_error);
+            }
+
+            const payload = {
+              algorithmId: algo.id,
+              algorithmName: algo.name,
+              parameters: algo.parameters.map(p => ({
+                name: p.name,
+                type: p.type,
+                description: p.description,
+                required: p.required,
+                default: p.default,
+                ...(p.min !== undefined && { min: p.min }),
+                ...(p.max !== undefined && { max: p.max }),
+                ...(p.options && { options: p.options }),
+              })),
+            };
+
+            const result = makeResult('algorithm-parameters', payload, 0, EXIT_CODES.success);
+            emitResult(result, { format: format as any, verbose: false, quiet }, (_res, p) => {
+              p.log('');
+              p.log(`Algorithm: ${algo.name} (${algo.id})`);
+              p.log(`Description: ${algo.description}`);
+              p.log('');
+
+              if (algo.parameters.length === 0) {
+                p.log('No parameters (activity_key is implicit).');
+                p.log('');
+                return;
+              }
+
+              p.log('Parameters:');
+              p.log('─'.repeat(100));
+              p.log(
+                `${'Name'.padEnd(25)} ${'Type'.padEnd(12)} ${'Required'.padEnd(10)} ${'Range / Options'.padEnd(30)} ${'Default'.padEnd(20)} Description`
+              );
+              p.log('─'.repeat(100));
+
+              for (const param of algo.parameters) {
+                const rangeOrOptions = param.options
+                  ? `[${param.options.join(', ')}]`
+                  : param.min !== undefined || param.max !== undefined
+                    ? `${param.min ?? '—'}..${param.max ?? '—'}`
+                    : '—';
+                const defaultStr = param.default !== undefined ? String(param.default) : '(none)';
+                const requiredStr = param.required ? 'yes' : 'no';
+
+                p.log(
+                  `${param.name.padEnd(25)} ${param.type.padEnd(12)} ${requiredStr.padEnd(10)} ${rangeOrOptions.padEnd(30)} ${defaultStr.padEnd(20)} ${param.description}`
+                );
+              }
+              p.log('─'.repeat(100));
+              p.log('');
+              p.log(`Usage example:`);
+              p.log(`  wpm run log.xes --algorithm ${algo.id} --parameters '{"${algo.parameters[0]?.name ?? 'activity_key'}":"concept:name"}'`);
+              p.log('');
+            });
+            return await exitWithFlush(EXIT_CODES.success);
+          }
+
+          let parsedParams: Record<string, any> = {};
+          if (ctx.args.parameters) {
+            try {
+              parsedParams = JSON.parse(ctx.args.parameters as string);
+            } catch {
+              const errResult = makeErrorResult(
+                'run',
+                new Error(`Invalid JSON in --parameters: "${ctx.args.parameters}"`),
+                EXIT_CODES.config_error,
+                'PARAMETERS_INVALID_JSON'
+              );
+              emitResult(errResult, emitOptions);
+              return await exitWithFlush(errResult.exit_code);
+            }
+          }
+
+          const algoMeta = getRegistry().get(resolvedAlgo);
+          if (algoMeta) {
+            for (const param of algoMeta.parameters) {
+              const val = parsedParams[param.name];
+              if (val === undefined) {
+                if (param.default !== undefined) {
+                  parsedParams[param.name] = param.default;
+                } else if (param.required) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Missing required parameter: "${param.name}" for algorithm "${resolvedAlgo}"`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_REQUIRED'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                continue;
+              }
+
+              if (param.type === 'number') {
+                const num = Number(val);
+                if (Number.isNaN(num)) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Parameter "${param.name}" must be a number (got "${val}")`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_INVALID_TYPE'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                if (param.min !== undefined && num < param.min) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Parameter "${param.name}" value ${num} is below minimum ${param.min}`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_OUT_OF_BOUNDS'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                if (param.max !== undefined && num > param.max) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Parameter "${param.name}" value ${num} is above maximum ${param.max}`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_OUT_OF_BOUNDS'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                parsedParams[param.name] = num;
+              } else if (param.type === 'boolean') {
+                if (typeof val !== 'boolean') {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Parameter "${param.name}" must be a boolean (got "${val}")`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_INVALID_TYPE'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+              } else if (param.type === 'select' && param.options) {
+                if (!param.options.includes(val)) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`Parameter "${param.name}" must be one of [${param.options.join(', ')}] (got "${val}")`),
+                    EXIT_CODES.config_error,
+                    'PARAMETER_INVALID_CHOICE'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+              }
+            }
           }
 
           // Step 3: Resolve input path (positional OR --file/-i)
@@ -770,9 +981,41 @@ export const run = defineCommand({
                 let lastError: unknown;
                 let succeeded = false;
 
+                let eventCount = 1000;
+                let traceCount = 100;
+                let activityCount = 10;
+                try {
+                  if (typeof wasm.analyze_event_statistics === 'function') {
+                    const statsRaw = wasm.analyze_event_statistics(logHandle);
+                    const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+                    eventCount = stats.total_events ?? stats.eventCount ?? 1000;
+                    traceCount = stats.total_cases ?? stats.traceCount ?? 100;
+                    activityCount = stats.unique_activities ?? stats.activityCount ?? 10;
+                  }
+                } catch { /* best effort */ }
+
+                const complexity = classifyComplexity(eventCount, activityCount, traceCount);
+                const algorithmTier = detectAlgorithmTier(resolvedAlgo);
+                const timeoutEst = computeTimeout({
+                  eventCount,
+                  complexity,
+                  algorithmTier,
+                  algorithmName: resolvedAlgo
+                });
+                const estimatedSecs = Math.round(timeoutEst.timeoutMs / 1000);
+
+                if (currentTimeoutSecs < estimatedSecs && !quiet && format === 'human') {
+                  process.stderr.write(
+                    `⚠ Warning: Configured timeout (${currentTimeoutSecs}s) is less than the estimated requirement ` +
+                    `(${estimatedSecs}s) for '${resolvedAlgo}' on this log (${eventCount} events, complexity: ${complexity}).\n` +
+                    `  To avoid premature termination, consider increasing the timeout:\n` +
+                    `    wpm run ${path.basename(inputPath)} --algorithm ${resolvedAlgo} --timeout ${estimatedSecs}\n\n`
+                  );
+                }
+
                 for (const algo of chain) {
                   try {
-                    const result = await runDiscovery(wasm, algo, logHandle, activityKey);
+                    const result = await runDiscovery(wasm, algo, logHandle, activityKey, parsedParams);
                     raw = result.raw;
                     elapsedMs = result.elapsedMs;
                     resolvedAlgoFinal = algo;
@@ -1230,6 +1473,19 @@ export const run = defineCommand({
               emitResult(cmdResult, emitOptions, (res, projection) => {
                 const p = res.payload as typeof payload;
 
+                if (format === 'csv') {
+                  const summary = extractModelSummary(p.model) || {};
+                  const nodesVal = summary['Nodes'] || summary['Places'] || '';
+                  const edgesVal = summary['Edges'] || summary['Transitions'] || '';
+                  const q = p.quality as { fitness?: number; precision?: number; simplicity?: number } | undefined;
+                  const fitVal = q?.fitness != null ? q.fitness.toFixed(3) : '';
+                  const precVal = q?.precision != null ? q.precision.toFixed(3) : '';
+                  const simpVal = q?.simplicity != null ? q.simplicity.toFixed(3) : '';
+                  projection.log('algorithm,input,elapsed_ms,nodes,edges,fitness,precision,simplicity');
+                  projection.log(`${p.algorithm},${p.input},${p.elapsedMs},${nodesVal},${edgesVal},${fitVal},${precVal},${simpVal}`);
+                  return;
+                }
+
                 // Preflight warnings
                 if (p.preflightWarnings && p.preflightWarnings.length > 0) {
                   for (const warn of p.preflightWarnings) {
@@ -1414,15 +1670,22 @@ export const run = defineCommand({
                   projection.log(`  \x1b[36m${story}\x1b[0m`);
                 }
 
-                // First-run UX hints
-                if (isFirstRunResult && format === 'human') {
+                // First-run UX hints or --guide-next-steps
+                if ((isFirstRunResult || ctx.args['guide-next-steps']) && format === 'human') {
                   const hints = formatFirstRunHints(
                     (p.quality as { fitness?: number } | undefined)?.fitness,
                     p.algorithm,
                     p.input,
                     savedPath
                   );
+                  if (ctx.args['guide-next-steps']) {
+                    projection.log('');
+                    projection.log('🎯 Guided Next Steps:');
+                  }
                   for (const hint of hints) {
+                    if (ctx.args['guide-next-steps'] && hint === '🎯 Process Model Discovered') {
+                      continue;
+                    }
                     projection.log(hint);
                   }
                 } else {
@@ -1545,8 +1808,8 @@ interface OcelDiscoveryOptions {
   activityKey: string;
   resolvedAlgo: Algorithm;
   ctx: { args: Record<string, unknown> };
-  emitOptions: { format: 'json' | 'human'; verbose: boolean; quiet: boolean };
-  format: 'json' | 'human';
+  emitOptions: EmitOptions;
+  format: 'json' | 'human' | 'csv';
   verbose: boolean;
   quiet: boolean;
 }

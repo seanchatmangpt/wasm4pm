@@ -79,7 +79,7 @@ pub fn discover_genetic_algorithm(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -100,7 +100,7 @@ pub fn discover_genetic_algorithm_from_log(
     activity_key: &str,
     population_size: usize,
     generations: usize,
-) -> Option<(DirectlyFollowsGraph, f64)> {
+) -> Option<(DFG, f64)> {
     // Parameter validation: prevent panics on index access at line 108
     if population_size < 2 {
         return None; // population_size must be >= 2 for genetic algorithm
@@ -201,7 +201,7 @@ pub fn discover_pso_algorithm(
         })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -222,7 +222,7 @@ pub fn discover_pso_algorithm_from_log(
     activity_key: &str,
     swarm_size: usize,
     iterations: usize,
-) -> Option<(DirectlyFollowsGraph, f64)> {
+) -> Option<(DFG, f64)> {
     // Parameter validation: prevent empty swarm or zero iterations
     if swarm_size < 1 {
         return None; // swarm_size must be >= 1
@@ -307,15 +307,15 @@ pub fn discover_pso_algorithm_from_log(
     ))
 }
 
-// Helper: Materialize a DirectlyFollowsGraph from edge set, vocabulary, and frequency maps.
+// Helper: Materialize a DFG from edge set, vocabulary, and frequency maps.
 // Uses actual observed frequencies to accurately reflect event density.
 fn edge_set_to_dfg(
     edge_set: &EdgeSet,
     vocab: &[String],
     edge_freq: &FxHashMap<(u32, u32), f64>,
     node_freq: &FxHashMap<u32, usize>,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
 
     for (idx, activity) in vocab.iter().enumerate() {
         dfg.nodes.push(DFGNode {
@@ -474,7 +474,7 @@ pub fn discover_aco_algorithm_from_log(
     activity_key: &str,
     ant_count: usize,
     iterations: usize,
-) -> Option<(DirectlyFollowsGraph, f64)> {
+) -> Option<(DFG, f64)> {
     // Parameter validation: prevent empty ant colony or zero iterations
     if ant_count < 1 {
         return None; // ant_count must be >= 1
@@ -634,7 +634,7 @@ pub fn discover_aco_algorithm(
         })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({

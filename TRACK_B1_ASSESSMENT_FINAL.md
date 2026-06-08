@@ -1,4 +1,4 @@
-# Track B-1: ConformancePayload Envelope Wrapper — Backward Compatibility Assessment
+# Track B-1: ConformancePayload Envelope Wrapper — baseline admissibility Assessment
 
 **Completed:** 2026-05-30  
 **Status:** ✅ Comprehensive assessment complete  
@@ -16,7 +16,7 @@
 | **Will lab tests fail?** | ✅ **YES** — External validation tests will fail on first run post-release |
 | **Safe to merge on main?** | ✅ **YES**, if released as v26.5.0 minor (not patch) with migration guide |
 | **Safe to release immediately?** | ❌ **NO** — External users would break with no migration path |
-| **Recommended approach?** | ✅ **Phase 1 + 2 rollout** with 6-month deprecation period |
+| **Recommended approach?** | ✅ **Phase 1 + 2 rollout** with 6-month removal period |
 
 ---
 
@@ -80,11 +80,11 @@ Migration effort: **~30-45 minutes** (automatable with sed/grep)
 
 **Release action:**
 - ✅ Wrap payload in CommandResult envelope
-- ✅ Include `__DEPRECATED_NOTICE__` for backward compatibility
+- ✅ Include `__REMOVED_NOTICE__` for baseline admissibility
 - ✅ Update all internal tests to use `.payload` accessor
 - ✅ Update OpenAPI, WASM_API.md documentation
 - ✅ Create MIGRATION_GUIDE.md for external users
-- ✅ Add deprecation notice to release notes with timeline
+- ✅ Add removal notice to release notes with timeline
 
 **Impact on external users:**
 - No immediate breakage
@@ -94,7 +94,7 @@ Migration effort: **~30-45 minutes** (automatable with sed/grep)
 **Requires:**
 ```
 Release notes must include:
-  "DEPRECATION: ConformancePayload JSON output format changing in v27.0.0
+  "REMOVAL: ConformancePayload JSON output format changing in v27.0.0
    Current format: { "schema": "...", "fitness": 0.85, ... }
    New format:    { "payload": { "schema": "...", "fitness": 0.85 }, ... }
    
@@ -105,7 +105,7 @@ Release notes must include:
 ### Phase 2: v27.0.0 (Next Major Release — ~6 months later)
 
 **Release action:**
-- ✅ Remove backward compatibility layer
+- ✅ Remove backward baseline
 - ✅ Enforce envelope-only output
 - ✅ Update all documentation
 - ✅ Mark as major version (signals breaking change)
@@ -152,8 +152,8 @@ Release notes must include:
 - [ ] **Update lab:** Modify `lab/tests/conformance.test.ts` for wrapped format
 - [ ] **Update docs:**
   - [ ] `.github/schemas/openapi.json` — add envelope schema
-  - [ ] `WASM_API.md` — document new format (mark old as deprecated)
-  - [ ] `CHANGELOG.md` — add deprecation notice
+  - [ ] `WASM_API.md` — document new format (mark old as removed)
+  - [ ] `CHANGELOG.md` — add removal notice
   - [ ] **NEW:** `MIGRATION_GUIDE.md` — external user instructions
 
 ### At Release (v26.5.0)
@@ -161,7 +161,7 @@ Release notes must include:
 - [ ] Update version number
 - [ ] Merge PR with envelope changes + backward compat layer
 - [ ] Create GitHub release with:
-  - Deprecation notice (prominent)
+  - Removal notice (prominent)
   - Migration guide link
   - Timeline: "v27.0.0 will enforce new format (breaking change)"
   - Before/after examples
@@ -169,9 +169,9 @@ Release notes must include:
 
 ### At Major Release (v27.0.0)
 
-- [ ] Remove `__DEPRECATED_NOTICE__` field
+- [ ] Remove `__REMOVED_NOTICE__` field
 - [ ] Enforce envelope-only output
-- [ ] Update documentation to remove deprecation labels
+- [ ] Update documentation to remove removal labels
 - [ ] Create release notes highlighting breaking change
 
 ---
@@ -180,7 +180,7 @@ Release notes must include:
 
 | Risk | Probability | Severity | Mitigation |
 |------|------------|----------|-----------|
-| External scripts fail silently | **HIGH** | **CRITICAL** | Deprecation warning + 6mo grace period |
+| External scripts fail silently | **HIGH** | **CRITICAL** | Removal warning + 6mo grace period |
 | Lab tests fail immediately | **CERTAIN** | **MEDIUM** | Update before release |
 | External tools diverge | **MEDIUM** | **MEDIUM** | Provide migration scripts |
 | Users skip v26.5.0 | **MEDIUM** | **HIGH** | Clear communication |
@@ -196,14 +196,14 @@ Release notes must include:
 - [ ] All 79 internal tests updated to use `.payload` accessor
 - [ ] Lab tests updated to expect wrapped format
 - [ ] MIGRATION_GUIDE.md created for external users
-- [ ] Release notes include deprecation notice + 6-month timeline
+- [ ] Release notes include removal notice + 6-month timeline
 - [ ] OpenAPI and WASM_API.md updated
 
 ### ❌ **NO**, if:
 - Releasing as patch version (v26.4.x)
 - Lab tests not updated before release
 - No migration guide for external users
-- No deprecation notice in release notes
+- No removal notice in release notes
 
 ---
 
@@ -211,7 +211,7 @@ Release notes must include:
 
 **Use Phase 1 + Phase 2 phased rollout:**
 
-1. **v26.5.0:** Introduce envelope with backward compat + deprecation warning
+1. **v26.5.0:** Introduce envelope with backward compat + removal warning
 2. **v27.0.0:** Remove backward compat, enforce envelope (6 months later)
 
 This approach:

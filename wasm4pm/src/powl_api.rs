@@ -167,7 +167,7 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             "is_skippable": t.is_skippable(),
             "is_repeatable": t.is_repeatable(),
             "is_unbounded": t.is_unbounded(),
-            // Legacy boolean fields kept for backward compat
+            //  boolean fields kept for backward compat
             "skippable": t.skippable,
             "selfloop": t.selfloop,
             "id": t.id,

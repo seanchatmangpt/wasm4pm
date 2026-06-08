@@ -162,7 +162,7 @@ fn evaluate_fitness_from_petri(log: &EventLog, model: &PetriNet, activity_key: &
 /// Fitness = average ratio of directly-follows pairs in each trace that appear in the DFG.
 fn evaluate_fitness_from_dfg(
     log: &EventLog,
-    dfg: &wasm4pm::models::DirectlyFollowsGraph,
+    dfg: &wasm4pm::models::DFG,
     activity_key: &str,
 ) -> f64 {
     use std::collections::HashSet;
@@ -416,7 +416,7 @@ fn test_fitness_summary_report() {
 
     // Directly-Follows Graph based (return DFG)
     eprintln!("DFG-BASED ALGORITHMS (graph conformance required):");
-    eprintln!("  dfg — returns DirectlyFollowsGraph");
+    eprintln!("  dfg — returns DFG");
     eprintln!("  process_skeleton — filtered DFG (no public export)");
     eprintln!("  heuristic_miner — returns DFG");
     eprintln!("  hill_climbing — returns DFG");

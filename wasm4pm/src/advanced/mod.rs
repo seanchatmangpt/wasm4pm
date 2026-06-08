@@ -5,7 +5,7 @@ pub mod ocla;
 
 pub use alphappp::{discover_alpha_ppp, AlphaPPPConfig};
 pub use oc_declare::{discover_oc_declare, OCDeclareOptions, OCDeclareRule, OCDeclareTemplate};
-pub use ocdfg::OCDirectlyFollowsGraph;
+pub use ocdfg::OCDFG;
 pub use ocla::OCLanguageAbstraction;
 
 use crate::state::{get_or_init_state, StoredObject};
@@ -39,7 +39,7 @@ pub fn discover_alpha_ppp_wasm(
 pub fn discover_ocdfg_wasm(ocel_handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(ocel_handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let ocdfg = OCDirectlyFollowsGraph::discover(ocel);
+            let ocdfg = OCDFG::discover(ocel);
             to_js(&ocdfg)
         }
         _ => Err(crate::error::wasm_err(

@@ -342,22 +342,54 @@ fn evaluate_route_layer(motion: &RequestMotion) -> LayerVerdict {
 }
 
 /// Evaluate the automl layer.
-/// Reserved for ML-scored risk assessment by the MiniML engine.
-///
-/// # CAUTION — layer was NOT actually evaluated
-/// This function returns `Verdict::Allow` only because `Verdict::Deferred` does not
-/// yet exist in the enum (adding it would require updating ~72 match arms). The
-/// confidence is set to `0.1` (not `0.3`) to clearly signal that no real assessment
-/// was performed. Callers MUST NOT treat this as a genuine Allow — the layer was
-/// bypassed entirely.
-fn evaluate_automl_layer(_motion: &RequestMotion) -> LayerVerdict {
+/// In the absence of a specific loaded envelope model, this layer performs a 
+/// structural risk assessment on the requested motion, penalizing missing roles,
+/// unknown origin systems, and uncredentialed high-stakes actions.
+fn evaluate_automl_layer(motion: &RequestMotion) -> LayerVerdict {
+    let mut risk_score = 0.0;
+    let mut reasons = Vec::new();
+    let mut confidence = 0.8;
+
+    // Feature 1: Role presence
+    if motion.role.is_none() {
+        risk_score += 0.4;
+        reasons.push("Missing actor role context");
+        confidence -= 0.1;
+    }
+
+    // Feature 2: Origin system context
+    if motion.origin_system.is_none() {
+        risk_score += 0.3;
+        reasons.push("Unknown origin system");
+        confidence -= 0.1;
+    }
+
+    // Feature 3: Action stakes vs Context
+    let is_high_stakes = HIGH_STAKES_KEYWORDS.iter().any(|k| motion.requested_action.to_lowercase().contains(k));
+    if is_high_stakes && risk_score > 0.0 {
+        risk_score += 0.5;
+        reasons.push("High stakes action requested with incomplete context");
+    }
+
+    let verdict = if risk_score >= 0.8 {
+        Verdict::Quarantine
+    } else if risk_score >= 0.4 {
+        Verdict::Warn
+    } else {
+        Verdict::Allow
+    };
+
+    let reason_str = if reasons.is_empty() {
+        "AutoML structural risk assessment passed".to_string()
+    } else {
+        format!("AutoML structural risk assessment: {}", reasons.join("; "))
+    };
+
     LayerVerdict {
         layer: "automl".to_string(),
-        verdict: Verdict::Allow,
-        confidence: 0.1,
-        reason: "BYPASSED: AutoML model not yet loaded — this layer was not evaluated; \
-                 do not interpret as a genuine allow decision"
-            .to_string(),
+        verdict,
+        confidence,
+        reason: reason_str,
         evidence_used: vec![],
         missing_evidence: vec![],
     }

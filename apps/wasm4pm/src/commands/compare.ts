@@ -453,9 +453,9 @@ export const compare = defineCommand({
   meta: {
     name: 'compare',
     description:
-      'Run multiple discovery algorithms on the same log side-by-side (14 discovery aliases; use wpm run -a for the full registry). ' +
-      'Compare execution time, model size (nodes/edges), and quality metrics. ' +
-      'Example: wpm compare dfg,heuristic,genetic -i process.xes',
+      'Run multiple discovery algorithms on the same log side-by-side. ' +
+      'Exits with code 4 (Partial Failure) if at least one algorithm fails but others succeed. ' +
+      'Example: wpm compare dfg,heuristic -i process.xes',
   },
   args: {
     algorithms: {
@@ -476,8 +476,16 @@ export const compare = defineCommand({
     },
     format: {
       type: 'string',
-      description: 'Output format (human or json)',
+      description: 'Output format: human (default, sparkline table), json (detailed payload), or csv (flat metrics table)',
       default: 'human',
+    },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
     },
     verbose: {
       type: 'boolean',
@@ -505,20 +513,20 @@ export const compare = defineCommand({
     },
   },
   async run(ctx) {
-    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human' | 'csv') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const showQuality = Boolean(ctx.args.quality);
-    const emitOptions = { format, verbose, quiet };
+    const emitOptions = { format: format as any, verbose, quiet };
 
     // Pre-WASM validation: reject unknown format values before loading WASM.
     // Doing this early avoids wasting time on WASM initialisation for a config error.
-    if (format !== 'json' && format !== 'human') {
+    if (format !== 'json' && format !== 'human' && format !== 'csv') {
       const result = makeErrorResult(
         'compare',
         new Error(
-          `Invalid --format value: '${format}'. Must be 'human' or 'json'.\n\n` +
-            `Usage:  wpm compare dfg,heuristic -i log.xes --format json`
+          `Invalid --format value: '${format}'. Must be 'human', 'json', or 'csv'.\n\n` +
+            `Usage:  wpm compare dfg,heuristic -i log.xes --format csv`
         ),
         EXIT_CODES.config_error,
         'INVALID_FORMAT'
@@ -842,6 +850,20 @@ export const compare = defineCommand({
                 const p = res.payload as typeof payload;
                 const s = p.comparisons;
 
+                if (format === 'csv') {
+                  projection.log('algorithm,nodes,edges,elapsed_ms,quality_tier,live_fitness,live_precision');
+                  for (const st of s) {
+                    const nodesVal = st.nodes >= 0 ? st.nodes : 'ERROR';
+                    const edgesVal = st.nodes >= 0 ? st.edges : '';
+                    const timeVal = st.nodes >= 0 ? st.elapsedMs.toFixed(1) : '';
+                    const qualVal = st.qualityTier;
+                    const fitVal = st.liveFitness != null ? st.liveFitness.toFixed(3) : '';
+                    const precVal = st.livePrecision != null ? st.livePrecision.toFixed(3) : '';
+                    projection.log(`${st.algorithm},${nodesVal},${edgesVal},${timeVal},${qualVal},${fitVal},${precVal}`);
+                  }
+                  return;
+                }
+
                 projection.info(`Comparing algorithms: ${algos.join(', ')}`);
                 projection.log('');
 
@@ -990,9 +1012,11 @@ export const compare = defineCommand({
 
                 // Partial failure notice
                 if (p.algorithm_errors && p.algorithm_errors.length > 0) {
-                  projection.log('  Algorithm errors (partial results):');
+                  projection.warn(`\n  ⚠ Command finished with PARTIAL FAILURE (Exit Code 4):`);
+                  projection.warn(`    ${s.filter(st => st.nodes >= 0).length} algorithm(s) succeeded, ${p.algorithm_errors.length} failed.`);
+                  projection.log('  Failed algorithm details:');
                   for (const e of p.algorithm_errors) {
-                    projection.warn(`    ${e}`);
+                    projection.warn(`    • ${e}`);
                   }
                   projection.log('');
                 }

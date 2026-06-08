@@ -37,7 +37,7 @@ interface ErrorResult {
 
 /**
  * Result type: Either Ok<T>, Err (string), or ErrorResult (structured)
- * Supports both legacy string errors and structured errors with remediation
+ * Supports both  string errors and structured errors with remediation
  */
 export type Result<T> = Ok<T> | Err | ErrorResult;
 

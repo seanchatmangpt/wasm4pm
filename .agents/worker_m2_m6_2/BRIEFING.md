@@ -13,7 +13,7 @@ Compile, verify, and document pm4py-lsp ensuring all cargo fmt, check, and test 
 ## 🔒 Key Constraints
 - CODE_ONLY network mode: no internet access.
 - Minimal change principle.
-- No dummy/facade implementations.
+- No dummy/boundary implementations.
 - No hardcoded test results.
 - Verification commands must pass.
 

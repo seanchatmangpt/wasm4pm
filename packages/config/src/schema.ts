@@ -6,7 +6,7 @@ import { ALGORITHM_IDS, PREDICTION_TASKS } from '@wasm4pm/contracts';
  *
  * Held at 1 across the v26.5.x ML/RL refactor: the new nested sub-sections
  * (`ml.classify`, `ml.cluster`, `ml.forecast`, `rl.convergence`,
- * `prediction.drift`) are purely additive, and the legacy flat fields
+ * `prediction.drift`) are purely additive, and the  flat fields
  * (`ml.method`, `ml.k`, `ml.eps`) continue to validate and are promoted into
  * the typed sub-sections by `validate()`. Bump only on a true breaking change.
  */
@@ -412,7 +412,7 @@ export const pcaConfigSchema = z
  *      [ml.classify] model = "decision_tree"
  *      [ml.cluster]  k = 5
  *
- *   2. Flat (legacy, schema v1):
+ *   2. Flat (, schema v1):
  *      [ml]
  *      enabled = true
  *      method  = "knn"
@@ -438,18 +438,18 @@ export const mlConfigSchema = z
     regress: regressConfigSchema.default({}),
     pca: pcaConfigSchema.default({}),
 
-    // --- Legacy flat fields (deprecated, kept for v1 compatibility) ---
-    /** @deprecated Use `ml.classify.model` / `ml.cluster.method` etc. */
+    // ---  flat fields (removed, kept for v1 compatibility) ---
+    /** @removed Use `ml.classify.model` / `ml.cluster.method` etc. */
     method: z.string().optional(),
-    /** @deprecated Use `ml.classify.k` or `ml.cluster.k`. */
+    /** @removed Use `ml.classify.k` or `ml.cluster.k`. */
     k: z.number().int().positive().optional(),
-    /** @deprecated Use `ml.classify.targetKey` or `ml.regress.targetKey`. */
+    /** @removed Use `ml.classify.targetKey` or `ml.regress.targetKey`. */
     targetKey: z.string().min(1).default('outcome'),
-    /** @deprecated Use `ml.forecast.periods`. */
+    /** @removed Use `ml.forecast.periods`. */
     forecastPeriods: z.number().int().positive().default(5),
-    /** @deprecated Use `ml.pca.nComponents`. */
+    /** @removed Use `ml.pca.nComponents`. */
     nComponents: z.number().int().positive().default(2),
-    /** @deprecated Use `ml.cluster.eps`. */
+    /** @removed Use `ml.cluster.eps`. */
     eps: z.number().positive().default(1.0),
   })
   .describe(
@@ -714,14 +714,14 @@ function formatZodErrors(error: z.ZodError, header = 'Configuration validation f
  * Validate a config object against the full schema. Returns the validated config
  * with defaults applied, or throws a descriptive error.
  *
- * Also performs schema-v1 → v2 migration: legacy flat `ml.method`/`ml.k`/`ml.eps`
+ * Also performs schema-v1 → v2 migration:  flat `ml.method`/`ml.k`/`ml.eps`
  * fields are promoted into the corresponding nested `ml.classify` / `ml.cluster`
  * sub-sections so downstream consumers can read a single canonical shape.
  */
 export function validate(config: unknown): z.infer<typeof configSchema> {
   try {
     const parsed = configSchema.parse(config);
-    return migrateLegacyMl(parsed);
+    return migrateMl(parsed);
   } catch (error) {
     if (error instanceof z.ZodError) {
       throw new Error(formatZodErrors(error));
@@ -745,18 +745,18 @@ export function validatePartial(config: unknown): Partial<z.infer<typeof configS
 }
 
 /**
- * Promote legacy flat `ml.method` / `ml.k` / `ml.eps` / `ml.forecastPeriods`
+ * Promote  flat `ml.method` / `ml.k` / `ml.eps` / `ml.forecastPeriods`
  * / `ml.nComponents` fields into their nested counterparts. Idempotent: if the
  * caller already supplied nested sub-sections, those win.
  *
- * These fields remain in the schema for backward compatibility with legacy configs.
- * The @deprecated markers encourage users to migrate to the nested forms.
+ * These fields remain in the schema for baseline admissibility with  configs.
+ * The @removed markers encourage users to migrate to the nested forms.
  */
-function migrateLegacyMl(cfg: z.infer<typeof configSchema>): z.infer<typeof configSchema> {
+function migrateMl(cfg: z.infer<typeof configSchema>): z.infer<typeof configSchema> {
   if (!cfg.ml) return cfg;
   const ml = cfg.ml;
 
-  // Forecast periods: legacy field overrides default but never an explicit nested value.
+  // Forecast periods:  field overrides default but never an explicit nested value.
   if (ml.forecastPeriods !== undefined && ml.forecast.periods === 5) {
     ml.forecast.periods = ml.forecastPeriods;
   }
@@ -773,7 +773,7 @@ function migrateLegacyMl(cfg: z.infer<typeof configSchema>): z.infer<typeof conf
     if (ml.classify.targetKey === 'outcome') ml.classify.targetKey = ml.targetKey;
     if (ml.regress.targetKey === 'outcome') ml.regress.targetKey = ml.targetKey;
   }
-  // Legacy `k` applies to classify + cluster.
+  //  `k` applies to classify + cluster.
   if (ml.k !== undefined) {
     if (ml.classify.k === 5) ml.classify.k = ml.k;
     if (ml.cluster.k === 5) ml.cluster.k = ml.k;

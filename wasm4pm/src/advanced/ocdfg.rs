@@ -1,15 +1,15 @@
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation, OCEL};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation, OCEL};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Object-Centric Directly Follows Graph (OC-DFG)
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCDirectlyFollowsGraph {
+pub struct OCDFG {
     /// Mapping from object type to its specific Directly-Follows Graph
-    pub dfgs: HashMap<String, DirectlyFollowsGraph>,
+    pub dfgs: HashMap<String, DFG>,
 }
 
-impl OCDirectlyFollowsGraph {
+impl OCDFG {
     /// Discover an OC-DFG from an OCEL log.
     ///
     /// Groups events by object ID, sorts them, and aggregates per object type.
@@ -36,7 +36,7 @@ impl OCDirectlyFollowsGraph {
 
         // 3. For each object type, build a DFG
         for ot in &ocel.object_types {
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
             let mut activity_freq: HashMap<String, usize> = HashMap::new();
             let mut edge_freq: HashMap<(String, String), usize> = HashMap::new();
             let mut start_acts: HashMap<String, usize> = HashMap::new();

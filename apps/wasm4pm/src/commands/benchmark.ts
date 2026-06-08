@@ -989,7 +989,7 @@ const benchmarkPerf = defineCommand({
         algorithm_list: algoList,
         runs_per_algorithm: nRuns,
         warmup: doWarmup,
-        // Legacy flat results array for existing consumers
+        //  flat results array for existing consumers
         results: algoResults.map((r) => ({
           algorithm: r.algorithm,
           mean_ms: Math.round(r.mean * 10) / 10,

@@ -1,7 +1,7 @@
 use std::fs;
 use wasm4pm::advanced::alphappp::{discover_alpha_ppp, AlphaPPPConfig};
 use wasm4pm::advanced::oc_declare::{discover_oc_declare, OCDeclareOptions};
-use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
+use wasm4pm::advanced::ocdfg::OCDFG;
 use wasm4pm::advanced::ocla::OCLanguageAbstraction;
 use wasm4pm::models::{EventLog, OCEL};
 use wasm4pm::xes_format::validate_and_parse_xes;
@@ -68,7 +68,7 @@ fn test_real_world_ocel_and_advanced_algorithms() {
     assert!(ocel.objects.len() > 0, "OCEL should have objects");
 
     // 2. Test OC-DFG Flattening and Discovery
-    let oc_dfg = OCDirectlyFollowsGraph::discover(&ocel);
+    let oc_dfg = OCDFG::discover(&ocel);
     assert!(
         oc_dfg.dfgs.len() > 0,
         "Should discover DFGs for object types"

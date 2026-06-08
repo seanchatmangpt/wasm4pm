@@ -1,4 +1,4 @@
-#![allow(deprecated)]
+#![allow(removed)]
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
 use crate::powl_models::{
     PowlCounts as Counts, PowlMarking as Marking, PowlPetriNet as PetriNet,

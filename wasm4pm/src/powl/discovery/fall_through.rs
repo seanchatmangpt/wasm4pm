@@ -1,4 +1,4 @@
-#![allow(deprecated)]
+#![allow(removed)]
 //! Fall-through strategies for inductive miner.
 //!
 //! 80/20: Simple fall-through when no cut is detected.

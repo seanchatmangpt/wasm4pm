@@ -18,7 +18,7 @@ use std::time::Duration;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation, Event,
+    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
     EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
@@ -32,7 +32,7 @@ use helpers::{bench_sizes, generate_event_log, make_handle, ACTIVITY_KEY};
 // ---------------------------------------------------------------------------
 
 /// Build an edge map from a DFG.
-fn edges_to_map(dfg: &DirectlyFollowsGraph) -> HashMap<(String, String), usize> {
+fn edges_to_map(dfg: &DFG) -> HashMap<(String, String), usize> {
     dfg.edges
         .iter()
         .map(|e| ((e.from.clone(), e.to.clone()), e.frequency))
@@ -56,7 +56,7 @@ fn jaccard_distance(
 }
 
 /// Build a streaming DFG from an EventLog (scalar streaming path).
-fn streaming_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn streaming_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let mut builder = StreamingDfgBuilder::new();
     for (idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("c{}", idx);
@@ -72,11 +72,11 @@ fn streaming_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
 
 /// Compute a batch DFG directly from an EventLog using the columnar approach
 /// (pure-Rust path — same as streaming_batch_equivalence_tests.rs oracle).
-fn batch_dfg(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+fn batch_dfg(log: &EventLog, activity_key: &str) -> DFG {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
 
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
         id: act.to_owned(),

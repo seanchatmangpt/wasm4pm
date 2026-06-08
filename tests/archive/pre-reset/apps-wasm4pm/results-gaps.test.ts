@@ -14,7 +14,7 @@
  *  G-A  --verify JSON payload: `verified` boolean field (integrity=ok → true)
  *  G-B  --verify JSON payload: `hash_match` boolean field (no mismatch → true)
  *  G-C  --verify JSON payload: `ref` field echoes the requested ref
- *  G-D  --verify on a legacy file without `output_hash` field (no_receipt, exit 0)
+ *  G-D  --verify on a  file without `output_hash` field (no_receipt, exit 0)
  *  G-E  --verify on a malformed-JSON result file exits source_error (2)
  *  G-F  list payload: `oldest` and `newest` ISO timestamp fields
  *  G-G  list payload: `oldest`/`newest` are null when no results exist
@@ -245,33 +245,33 @@ describe('G-A/B/C — --verify JSON payload: verified, hash_match, and ref field
   });
 });
 
-// ─── G-D: --verify on legacy file without output_hash field ──────────────────
+// ─── G-D: --verify on  file without output_hash field ──────────────────
 
-describe('G-D — --verify on legacy file without output_hash field', () => {
+describe('G-D — --verify on  file without output_hash field', () => {
   let env: TestEnv;
   beforeEach(async () => { env = await createTestEnv(); });
   afterEach(async () => { await env.cleanup(); });
 
-  it('G-D: exits 0 for a legacy file (no output_hash) — integrity=no_receipt', async () => {
+  it('G-D: exits 0 for a  file (no output_hash) — integrity=no_receipt', async () => {
     // withOutputHash=false simulates a pre-26.5.17 result file
-    await writeFixture(env.resultsDir, 'legacy-task', '20260518T100000', { withOutputHash: false });
+    await writeFixture(env.resultsDir, 'task', '20260518T100000', { withOutputHash: false });
     const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
   });
 
-  it('G-D: legacy file has integrity=no_receipt because no stored hash to compare', async () => {
+  it('G-D:  file has integrity=no_receipt because no stored hash to compare', async () => {
     await writeFixture(env.resultsDir, 'old-file', '20260518T110000', { withOutputHash: false });
     const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
     expect(payload.integrity).toBe('no_receipt');
-    // stored_output_hash is null for legacy files
+    // stored_output_hash is null for  files
     expect(payload.stored_output_hash).toBeNull();
   });
 
-  it('G-D: legacy file verify still computes recomputed_output_hash', async () => {
-    await writeFixture(env.resultsDir, 'legacy-hash', '20260518T120000', { withOutputHash: false });
+  it('G-D:  file verify still computes recomputed_output_hash', async () => {
+    await writeFixture(env.resultsDir, 'hash', '20260518T120000', { withOutputHash: false });
     const result = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;

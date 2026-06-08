@@ -13,7 +13,7 @@ Perform the final release checks, commit the updated release certificate, and ve
 ## 🔒 Key Constraints
 - CODE_ONLY network mode: No HTTP clients targeting external URLs.
 - Do not use `git add .`, use explicit paths.
-- No dummy/facade implementations or hardcoded test results.
+- No dummy/boundary implementations or hardcoded test results.
 
 ## Current Parent
 - Conversation ID: d5649440-942e-4913-88fc-abe15635f109

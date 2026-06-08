@@ -1,4 +1,4 @@
-//! Compatibility layer for `bcinr` functions missing in certain versions.
+//! baseline for `bcinr` functions missing in certain versions.
 //!
 //! Provides fallback implementations for `fnv1a_64` and `find_byte`
 //! to ensure build stability across environments.

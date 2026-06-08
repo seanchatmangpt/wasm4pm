@@ -194,19 +194,19 @@ pub enum CompatRefusal {
     /// A POWL validation refusal.
     Powl(wasm4pm_compat::powl::PowlRefusal),
     /// An EventLog validation refusal.
-    EventLog(wasm4pm_compat::eventlog::EventLogRefusal),
+    EventLog(String),
     /// A DFG validation refusal.
-    Dfg(wasm4pm_compat::dfg::DfgRefusal),
+    Dfg(String),
     /// A ProcessTree validation refusal.
     ProcessTree(wasm4pm_compat::process_tree::ProcessTreeRefusal),
     /// A Petri net validation refusal.
-    Petri(wasm4pm_compat::petri::PetriRefusal),
+    Petri(String),
     /// An OCEL validation refusal.
-    Ocel(wasm4pm_compat::ocel::OcelRefusal),
+    Ocel(String),
     /// An OCPQ validation refusal.
     Ocpq(wasm4pm_compat::ocpq::OcpqRefusal),
     /// A Conformance validation refusal.
-    Conformance(wasm4pm_compat::conformance::ConformanceRefusal),
+    Conformance(String),
 }
 
 impl std::fmt::Display for CompatRefusal {
@@ -223,3 +223,4 @@ impl std::fmt::Display for CompatRefusal {
         }
     }
 }
+

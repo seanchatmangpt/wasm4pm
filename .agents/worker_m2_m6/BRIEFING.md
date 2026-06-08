@@ -13,7 +13,7 @@ Implement the source code files and tests for pm4py-lsp under crates/pm4py-lsp/ 
 ## 🔒 Key Constraints
 - CODE_ONLY network mode: no internet access.
 - Minimal change principle.
-- No dummy/facade implementations.
+- No dummy/boundary implementations.
 - No hardcoded test results.
 - Verification commands must pass.
 

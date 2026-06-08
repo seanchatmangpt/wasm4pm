@@ -438,7 +438,7 @@ fn bench_ocel_pipeline_e2e(c: &mut Criterion) {
 // Public entry point (called from mod.rs)
 // ---------------------------------------------------------------------------
 
-pub fn bench_ocel_core(c: &mut Criterion) {
+pub fn bench_wasm4pm_compat::ocel(c: &mut Criterion) {
     bench_ocel_construction(c);
     bench_ocel_validation(c);
     bench_ocel_flatten(c);

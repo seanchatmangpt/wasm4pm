@@ -122,6 +122,9 @@ export interface ConformancePayload {
   };
   invariant_violations?: InvariantViolation[];
   invariant_status?: 'clean' | 'warnings' | 'critical';
+  explain_fitness?: boolean;
+  explain_ci?: boolean;
+  diagnose_deviations?: boolean;
 }
 
 const VALID_PRECISION_MODES = ['fast', 'lazy', 'full'] as const;
@@ -209,6 +212,26 @@ export const conformance = defineCommand({
       description:
         'Run 5-layer invariant audit (bounds, ordering, case-count, token balance, final-state coherence). ' +
         'Critical violations exit 4 (partial_failure); warnings are included in output but exit 0.',
+    },
+    'explain-fitness': {
+      type: 'boolean',
+      description: 'Explain fitness thresholds (default 0.80 vs academic 0.85) and interpret the current score',
+    },
+    'explain-ci': {
+      type: 'boolean',
+      description: 'Provide detailed statistical explanation for the fitness confidence interval',
+    },
+    'diagnose-deviations': {
+      type: 'boolean',
+      description: 'Provide detailed diagnostic remediation guide for detected conformance deviations',
+    },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output',
     },
   },
   async run(ctx) {
@@ -678,6 +701,9 @@ export const conformance = defineCommand({
                       confidence: diagnosis.confidence,
                     }
                   : undefined,
+                explain_fitness: Boolean(ctx.args['explain-fitness']),
+                explain_ci: Boolean(ctx.args['explain-ci']),
+                diagnose_deviations: Boolean(ctx.args['diagnose-deviations']),
               };
 
               // GAP-CONF-5: Always run 5-layer invariant audit for critical validations (I-1, I-2).
@@ -843,10 +869,49 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log(
     `  Fitness:   ${fitness.toFixed(3)}  ${fitnessPassFail}${colorReset} (threshold: ${threshold.toFixed(2)})${ciDisplay}`
   );
+  projection.log(`  → Threshold context: Fitness ≥0.85 meets the academic standard (excellent fit); ≥0.80 is acceptable for general business operations.`);
+
+  if (payload.explain_fitness) {
+    projection.log('');
+    projection.log('  Fitness Threshold Guide:');
+    projection.log('    • 0.85 (Van der Aalst Academic Standard): High-conformance benchmark for process mining.');
+    projection.log('      Achieving this suggests the process model represents the real process with high accuracy.');
+    projection.log('    • 0.80 (Default Business Threshold): Pragmatic target for operational execution.');
+    projection.log('      Suitable for most process discovery, automation, and general diagnostics.');
+    const interpretation = fitness >= 0.85 
+      ? 'EXCELLENT (meets both academic and operational targets)' 
+      : fitness >= 0.80 
+        ? 'ACCEPTABLE (meets operational target; fails academic benchmark)' 
+        : 'UNACCEPTABLE (violates both targets; model needs refinement)';
+    projection.log(`    • Current Score Assessment: ${fitness.toFixed(3)} is ${interpretation}.`);
+    projection.log('');
+  }
 
   // Warn if sample size is below recommended threshold
   if (payload.sample_size_warning) {
     projection.log(`  ⚠ ${payload.sample_size_warning}`);
+  }
+
+  if (payload.fitness_ci_lower !== undefined && payload.fitness_ci_upper !== undefined) {
+    const ciLower = payload.fitness_ci_lower;
+    const ciUpper = payload.fitness_ci_upper;
+    const ciWidth = ciUpper - ciLower;
+    const marginPct = ((ciWidth / 2) * 100).toFixed(0);
+
+    if (ciWidth <= 0.15) {
+      projection.log(`  → CI Diagnostic: Confidence interval [${ciLower.toFixed(3)}–${ciUpper.toFixed(3)}] is TIGHT (${marginPct}% margin). Model fitness is reliable.`);
+    } else {
+      projection.log(`  → CI Diagnostic: Confidence interval [${ciLower.toFixed(3)}–${ciUpper.toFixed(3)}] is WIDE (${marginPct}% margin). Run 20+ more traces to reduce uncertainty.`);
+    }
+  }
+
+  if (payload.explain_ci) {
+    projection.log('');
+    projection.log('  Statistical Confidence Interval (Agresti-Coull) Guide:');
+    projection.log('    • Method: Computes a 95% confidence interval for binomial proportion (successes = conforming cases, trials = total cases).');
+    projection.log('    • Purpose: Quantifies statistical uncertainty due to sample size. A small log yields a wide interval.');
+    projection.log('    • Rule of Thumb: If the interval is wide (e.g. >15% margin), trust the point estimate with caution. Obtain more traces to narrow the interval.');
+    projection.log('');
   }
 
   // Concrete implication lines — translate the score into practitioner language
@@ -994,6 +1059,55 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
       );
     }
     projection.log('');
+
+    if (deviatingTraces.length > 0 && payload.diagnose_deviations) {
+      let missingCount = 0;
+      let extraCount = 0;
+      let lateCount = 0;
+      let incompleteCount = 0;
+
+      for (const trace of deviatingTraces) {
+        if (trace.deviations.length === 0) {
+          incompleteCount++;
+        } else {
+          for (const dev of trace.deviations) {
+            const dtype = dev.deviation_type?.toLowerCase() ?? '';
+            if (dtype.includes('missing') || dtype.includes('model_move')) {
+              missingCount++;
+            } else if (dtype.includes('extra') || dtype.includes('log_move') || dtype.includes('skip')) {
+              extraCount++;
+            } else if (dtype.includes('late') || dtype.includes('reorder')) {
+              lateCount++;
+            } else {
+              extraCount++;
+            }
+          }
+        }
+      }
+
+      projection.log('  Deviation Diagnostics Report:');
+      projection.log(`    • Skips / Missing Steps:    ${missingCount} (log skipped activities mandated by the model)`);
+      projection.log(`    • Unexpected / Extra Steps: ${extraCount} (log performed activities not expected by the model)`);
+      projection.log(`    • Sequence / Late Steps:    ${lateCount} (activities occurred in wrong sequence)`);
+      projection.log(`    • Incomplete / Aborted:     ${incompleteCount} (cases terminated prior to final model state)`);
+      projection.log('');
+      
+      projection.log('  Remediation & Action Plan:');
+      if (missingCount > extraCount) {
+        projection.log('    → Interpretation: Model is too restrictive (expects activities that are skipped in practice).');
+        projection.log('    → Fix Strategy: Relax Petri net transitions, make missing activities optional, or re-run discovery with inductive_miner.');
+      } else if (extraCount > missingCount) {
+        projection.log('    → Interpretation: Log contains exceptional, noisy, or undocumented process paths.');
+        projection.log('    → Fix Strategy: Filter rare events from the log or use genetic_algorithm to capture complex trace variants.');
+      } else if (incompleteCount > 0) {
+        projection.log('    → Interpretation: Traces end prematurely before reaching the process finish milestone.');
+        projection.log('    → Fix Strategy: Check if log data was exported before completion, or adjust final marking requirements in the model.');
+      } else {
+        projection.log('    → Interpretation: Process steps are correct but executed out of sequence.');
+        projection.log('    → Fix Strategy: Introduce parallel blocks or concurrent transitions in the model.');
+      }
+      projection.log('');
+    }
   }
 
   // Invariant audit results (only shown when --full-quality was used)

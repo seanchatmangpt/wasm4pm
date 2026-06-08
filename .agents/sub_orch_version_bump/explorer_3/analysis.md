@@ -13,7 +13,7 @@ We located all `package.json` and `Cargo.toml` files in the repository. The mono
     *   `package.json` (Root) — `"version": "26.5.29"`
     *   `Cargo.toml` (Root) — `version = "26.5.29"` (under `[workspace.package]`)
 
-*   **Drift/Legacy Version References:**
+*   **Drift/ Version References:**
     *   `packages/kernel/src/version-resolver.ts` pins `'26.5.28'`.
     *   `wasm4pm/Cargo.toml` pins dependencies `@wasm4pm-cognition`, `@wasm4pm-macros`, and `miniml` at `26.5.28` (rather than workspace).
     *   `scripts/generate-capability-matrix.sh`, `scripts/substrate-cert.sh` default to version `26.5.28` in directories or scripts.
@@ -66,7 +66,7 @@ To safely bump the version train to **26.6.5** without introducing compile-time 
 *   [ ] **`Cargo.toml` (Root)**
     *   Change `version = "26.5.29"` (line 7) → `version = "26.6.5"`
     *   Change all `[workspace.dependencies]` version declarations to `"26.6.5"` (lines 25-33):
-        *   `wasm4pm-types = { version = "26.6.5", path = "crates/wasm4pm-types" }`
+        *   `wasm4pm-compat = { version = "26.6.5", path = "crates/wasm4pm-compat" }`
         *   `wasm4pm-algos = { version = "26.6.5", path = "crates/wasm4pm-algos" }`
         *   `wasm4pm-utils = { version = "26.6.5", path = "crates/wasm4pm-utils" }`
         *   `wasm4pm-cognition = { version = "26.6.5", path = "crates/wasm4pm-cognition" }`

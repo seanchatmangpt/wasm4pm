@@ -440,9 +440,9 @@ pub fn discover_optimized_dfg_from_log(
     activity_key: &str,
     fitness_weight: f64,
     simplicity_weight: f64,
-) -> DirectlyFollowsGraph {
+) -> DFG {
     let activities = log.get_activities(activity_key);
-    let mut dfg = DirectlyFollowsGraph::new();
+    let mut dfg = DFG::new();
 
     for activity in &activities {
         dfg.nodes.push(DFGNode {
@@ -529,7 +529,7 @@ pub fn discover_optimized_dfg(
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({

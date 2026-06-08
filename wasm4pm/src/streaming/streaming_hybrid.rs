@@ -11,7 +11,7 @@
 //! This provides a good trade-off: memory-efficient state accumulation with
 //! periodic full-model updates.
 
-use crate::models::DirectlyFollowsGraph;
+use crate::models::DFG;
 use crate::streaming::{StreamStats, StreamingAlgorithm, StreamingDfgBuilder};
 use std::marker::PhantomData;
 
@@ -22,7 +22,7 @@ pub trait BatchAlgorithm {
     type Model: Clone;
 
     /// Discover model from DFG.
-    fn discover_from_dfg(&self, dfg: &DirectlyFollowsGraph) -> Self::Model;
+    fn discover_from_dfg(&self, dfg: &DFG) -> Self::Model;
 }
 
 /// Hybrid streaming implementation.
@@ -41,14 +41,14 @@ pub trait BatchAlgorithm {
 /// ```rust
 /// use wasm4pm::streaming::streaming_hybrid::{StreamingHybrid, BatchAlgorithm};
 /// use wasm4pm::streaming::StreamingAlgorithm;
-/// use wasm4pm::models::DirectlyFollowsGraph;
+/// use wasm4pm::models::DFG;
 ///
 /// struct GeneticAlgorithm;
 ///
 /// impl BatchAlgorithm for GeneticAlgorithm {
-///     type Model = DirectlyFollowsGraph;
+///     type Model = DFG;
 ///
-///     fn discover_from_dfg(&self, dfg: &DirectlyFollowsGraph) -> Self::Model {
+///     fn discover_from_dfg(&self, dfg: &DFG) -> Self::Model {
 ///         // Run genetic algorithm on DFG
 ///         dfg.clone()
 ///     }
@@ -188,9 +188,9 @@ mod tests {
     struct MockBatchAlgorithm;
 
     impl BatchAlgorithm for MockBatchAlgorithm {
-        type Model = DirectlyFollowsGraph;
+        type Model = DFG;
 
-        fn discover_from_dfg(&self, dfg: &DirectlyFollowsGraph) -> Self::Model {
+        fn discover_from_dfg(&self, dfg: &DFG) -> Self::Model {
             // Simply return the DFG (in real algorithms, this would do work)
             dfg.clone()
         }

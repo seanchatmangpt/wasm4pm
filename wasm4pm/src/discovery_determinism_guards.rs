@@ -56,7 +56,7 @@ pub fn assert_determinism(result1: &(f64,), result2: &(f64,), algo_name: &str) {
 ///     population_size: usize,
 ///     generations: usize,
 ///     seed: Option<u64>,  // NEW
-/// ) -> Option<(DirectlyFollowsGraph, f64)> {
+/// ) -> Option<(DFG, f64)> {
 ///     let mut rng = StdRng::seed_from_u64(seed.unwrap_or(STOCHASTIC_ALGORITHM_SEED));
 ///     // ...
 /// }

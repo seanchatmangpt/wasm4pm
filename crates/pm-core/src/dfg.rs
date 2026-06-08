@@ -54,7 +54,7 @@ impl DfgEdge {
 /// other crates that depend on `pm-core`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct DirectlyFollowsGraph {
+pub struct DFG {
     /// A — activity set (nodes). Formal: A ⊆ A* (van der Aalst 2016 §2.1).
     pub activities: BTreeSet<ActivityName>,
     /// F × W — edge multiset with frequencies. Formal: W : F → ℕ.
@@ -65,10 +65,10 @@ pub struct DirectlyFollowsGraph {
     pub end_activities: BTreeMap<ActivityName, Frequency>,
 }
 
-impl DirectlyFollowsGraph {
+impl DFG {
     /// Construct an empty DFG.
     pub fn new() -> Self {
-        DirectlyFollowsGraph {
+        DFG {
             activities: BTreeSet::new(),
             edges: BTreeMap::new(),
             start_activities: BTreeMap::new(),
@@ -123,7 +123,7 @@ impl DirectlyFollowsGraph {
     }
 }
 
-impl Default for DirectlyFollowsGraph {
+impl Default for DFG {
     fn default() -> Self {
         Self::new()
     }

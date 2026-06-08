@@ -9,7 +9,7 @@
 //! memory usage (approximately 135KB regardless of log size).
 
 use super::{BloomFilter, CountMinSketch, HyperLogLog};
-use crate::models::{DFGNode, DirectlyFollowsGraph, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
 use rustc_hash::FxHashMap;
 
 /// Simple hash function for trace and activity strings.
@@ -235,13 +235,13 @@ impl StreamingLog {
         h
     }
 
-    /// Build an approximate [`DirectlyFollowsGraph`] from the current state.
+    /// Build an approximate [`DFG`] from the current state.
     ///
     /// Node frequencies are exact (kept in `node_freqs`).
     /// Edge frequencies are estimated from the Count-Min Sketch (may be
     /// slightly overestimated due to hash collisions).
-    pub fn estimate_dfg(&self) -> DirectlyFollowsGraph {
-        let mut dfg = DirectlyFollowsGraph::new();
+    pub fn estimate_dfg(&self) -> DFG {
+        let mut dfg = DFG::new();
 
         // Nodes with exact frequencies
         dfg.nodes = self

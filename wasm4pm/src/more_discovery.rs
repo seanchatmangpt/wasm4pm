@@ -686,7 +686,7 @@ pub fn discover_ant_colony(
     num_ants: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    // DEPRECATED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
+    // REMOVED: delegates to discover_aco_algorithm (proper ACO implementation with heuristic eta and all-ant pheromone deposit)
     crate::genetic_discovery::discover_aco_algorithm(
         eventlog_handle,
         activity_key,
@@ -747,7 +747,7 @@ pub fn discover_simulated_annealing(
     );
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
+        .store_object(StoredObject::DFG(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -766,14 +766,14 @@ pub fn discover_simulated_annealing_from_log(
     activity_key: &str,
     temperature: f64,
     cooling_rate: f64,
-) -> (DirectlyFollowsGraph, f64) {
+) -> (DFG, f64) {
     use std::collections::HashSet as HS;
 
     if temperature <= 0.0 {
-        return (DirectlyFollowsGraph::new(), 0.0); // invalid temperature
+        return (DFG::new(), 0.0); // invalid temperature
     }
     if cooling_rate <= 0.0 || cooling_rate >= 1.0 || !cooling_rate.is_finite() {
-        return (DirectlyFollowsGraph::new(), 0.0); // cooling_rate must be in (0, 1)
+        return (DFG::new(), 0.0); // cooling_rate must be in (0, 1)
     }
 
     let col_owned = log.to_columnar_owned(activity_key);
@@ -897,7 +897,7 @@ pub fn extract_process_skeleton(
             let activities = log.get_activities(activity_key);
             let directly_follows_vec = log.get_directly_follows(activity_key);
 
-            let mut dfg = DirectlyFollowsGraph::new();
+            let mut dfg = DFG::new();
 
             for activity in &activities {
                 dfg.nodes.push(DFGNode {
@@ -934,7 +934,7 @@ pub fn extract_process_skeleton(
     })?;
 
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg.clone()))
+        .store_object(StoredObject::DFG(dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -1076,14 +1076,14 @@ pub fn analyze_case_attributes(
 /// Marked inline(always) so the compiler can specialise it at each call site
 // Helper: Evaluate fitness of an edge set against columnar log (zero string allocation)
 #[inline]
-// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
+// Helper: Materialize a DFG from edge set and vocabulary
 fn edge_set_to_dfg(
     edge_set: &HashSet<(u32, u32)>,
     vocab: &[String],
     edge_freq: &FxHashMap<(u32, u32), f64>,
     node_freq: &FxHashMap<u32, usize>,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
 
     for (idx, activity) in vocab.iter().enumerate() {
         dfg.nodes.push(DFGNode {

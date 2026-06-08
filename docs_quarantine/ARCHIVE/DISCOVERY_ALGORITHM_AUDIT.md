@@ -318,7 +318,7 @@ All algorithms produce valid DFG output:
 
 1. **Make RNG seed configurable** (Iteration 10+)
    - Add optional `seed` parameter to GA, PSO, ACO, SA functions
-   - Maintain backward compatibility with default seed=42
+   - Maintain baseline admissibility with default seed=42
 
 2. **Document arbitrary limits** (Immediate)
    - Inductive Miner depth limit (100) — add docstring

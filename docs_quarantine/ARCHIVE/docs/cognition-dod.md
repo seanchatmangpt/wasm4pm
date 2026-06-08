@@ -57,7 +57,7 @@ these exported functions:
 - `system_build` — builds a cognition system definition
 - `system_verify` — verifies a system definition
 
-### DoD-05: TS facade is thin
+### DoD-05: TS boundary is thin
 
 `packages/cognition/src/index.ts` must exist. It must delegate all computation
 to the compiled WASM module and contain no embedded business logic.
@@ -83,7 +83,7 @@ interim states.
 
 The doctor script performs 9 independent checks covering workspace registration,
 compile health, breed completeness, stub detection, adversarial detector presence,
-WASM export presence, TS facade presence, and CLI integration.
+WASM export presence, TS boundary presence, and CLI integration.
 
 ### DoD-08: Verify emits receipt
 
@@ -114,8 +114,8 @@ If the hashes differ, it indicates non-determinism in the cognition layer — a 
 - `console.log` calls with "not yet" or "TODO" messages
 - `throw new Error("not implemented")`
 
-The CLI command must delegate to the compiled WASM via the TS facade. Direct
-computation in the CLI command layer violates the zero-logic facade contract.
+The CLI command must delegate to the compiled WASM via the TS boundary. Direct
+computation in the CLI command layer violates the zero-logic boundary contract.
 
 ## Rationale
 

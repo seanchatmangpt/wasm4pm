@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # build-all.sh — Full cognition layer build pipeline.
 # Orchestrates: Rust native check → WASM check → wasm-pack (nodejs + bundler)
-#               → TS facade build → CLI build.
+#               → TS boundary build → CLI build.
 # Per architecture diagrams #11 (Phase 1 Tear-Down/Rebuild) and #12 (Rust-to-TS Build Pipeline).
 #
 # Usage:
@@ -51,15 +51,15 @@ else
     echo "      OK — pkg-bundler/ written"
 fi
 
-# ── Step 5: TS facade build ───────────────────────────────────────────────────
+# ── Step 5: TS boundary build ───────────────────────────────────────────────────
 if [ "$SKIP_TS" = "--skip-ts" ]; then
-    echo "[5/6] TS facade build... SKIPPED (--skip-ts)"
+    echo "[5/6] TS boundary build... SKIPPED (--skip-ts)"
 elif [ -f "$ROOT/packages/cognition/package.json" ]; then
-    echo "[5/6] Building @wasm4pm/cognition TS facade..."
+    echo "[5/6] Building @wasm4pm/cognition TS boundary..."
     (cd "$ROOT/packages/cognition" && pnpm build 2>&1 | sed 's/^/       /')
     echo "      OK"
 else
-    echo "[5/6] TS facade (packages/cognition) not yet present — SKIP"
+    echo "[5/6] TS boundary (packages/cognition) not yet present — SKIP"
 fi
 
 # ── Step 6: CLI build ─────────────────────────────────────────────────────────

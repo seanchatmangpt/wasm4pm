@@ -6,15 +6,15 @@
 //!
 //! - [`load_ocel2_from_json`] - Load OCEL from JSON string
 //! - [`export_ocel2_to_json`] - Export OCEL to JSON string
-//! - [`validate_ocel`] - Validate OCEL structure and referential integrity
+//! - [`validate_ocel_inner`] - Validate OCEL structure and referential integrity
 //!
 //! ## Example
 //!
 //! ```javascript
-//! import { load_ocel2_from_json, validate_ocel } from "wasm4pm";
+//! import { load_ocel2_from_json, validate_ocel_inner } from "wasm4pm";
 //!
 //! const handle = load_ocel2_from_json(jsonString);
-//! const validation = validate_ocel(handle);
+//! const validation = validate_ocel_inner(handle);
 //! ```
 
 #[cfg(feature = "ocel")]
@@ -55,7 +55,7 @@ pub fn export_ocel2_to_json(handle: &str) -> Result<String, JsValue> {
 }
 
 #[cfg(feature = "ocel")]
-fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
+pub fn validate_ocel_inner(ocel: &OCEL) -> Vec<String> {
     let mut errors = Vec::new();
 
     // Build a set of valid object IDs for quick lookup
@@ -181,7 +181,7 @@ fn validate_ocel_core(ocel: &OCEL) -> Vec<String> {
 pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::OCEL(ocel)) => {
-            let errors = validate_ocel_core(ocel);
+            let errors = validate_ocel_inner(ocel);
             let is_valid = errors.is_empty();
 
             let report = json!({
@@ -538,7 +538,7 @@ fn is_valid_iso8601(s: &str) -> bool {
 #[cfg(feature = "ocel")]
 #[wasm_bindgen]
 pub fn load_ocel2_from_ndjson(ndjson: &str) -> Result<String, JsValue> {
-    let ocel_types_struct = wasm4pm_compat::legacy_import::ocel::import_ocel_ndjson(ndjson)
+    let ocel_types_struct = wasm4pm_compat::import::ocel::import_ocel_ndjson(ndjson)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse NDJSON: {}", e)))?;
 
     let serialized = serde_json::to_string(&ocel_types_struct)
@@ -621,7 +621,7 @@ mod tests {
     #[test]
     fn test_ocel_io_validation_valid() {
         let ocel = create_test_ocel();
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(errors.is_empty(), "Valid OCEL should have no errors");
     }
 
@@ -638,7 +638,7 @@ mod tests {
             object_refs: vec![],
         });
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect missing object");
         assert!(errors.iter().any(|e| e.contains("non-existent")));
     }
@@ -648,7 +648,7 @@ mod tests {
         let mut ocel = create_test_ocel();
         ocel.events[0].timestamp = "not-a-timestamp".to_string();
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect invalid timestamp");
         assert!(errors.iter().any(|e| e.contains("invalid ISO 8601")));
     }
@@ -664,7 +664,7 @@ mod tests {
             embedded_relations: vec![],
         });
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect duplicate object ID");
         assert!(errors.iter().any(|e| e.contains("Duplicate object")));
     }
@@ -677,7 +677,7 @@ mod tests {
             qualifier: "related".to_string(),
         }];
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(errors.is_empty(), "Valid object refs should pass");
     }
 
@@ -689,7 +689,7 @@ mod tests {
             qualifier: "related".to_string(),
         }];
 
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect invalid object ref");
     }
 
@@ -711,7 +711,7 @@ mod tests {
             target_id: "order1".to_string(),
             qualifier: "relates".to_string(),
         });
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(
             !errors.is_empty(),
             "Should detect invalid source in global relation"
@@ -727,7 +727,7 @@ mod tests {
                 object_id: "nonexistent_embedded".to_string(),
                 qualifier: "relates".to_string(),
             });
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(
             !errors.is_empty(),
             "Should detect invalid target in embedded relation"
@@ -748,7 +748,7 @@ mod tests {
             object_ids: vec!["order1".to_string()],
             object_refs: vec![],
         });
-        let errors = validate_ocel_internals(&ocel);
+        let errors = validate_ocel_inner_internals(&ocel);
         assert!(!errors.is_empty(), "Should detect monotonicity violation");
         assert!(errors.iter().any(|e| e.contains("Monotonicity violation")));
     }
@@ -927,7 +927,7 @@ mod tests {
     }
 
     /// Helper for testing: run validation and return errors
-    fn validate_ocel_internals(ocel: &OCEL) -> Vec<String> {
-        validate_ocel_core(ocel)
+    fn validate_ocel_inner_internals(ocel: &OCEL) -> Vec<String> {
+        validate_ocel_inner(ocel)
     }
 }

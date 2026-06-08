@@ -84,7 +84,7 @@ run_step "cargo test -p prolog8 --lib" \
 run_step "cognition-no-stub-scan.sh --quick" \
   bash -c "bash '${REPO_ROOT}/scripts/cognition-no-stub-scan.sh' --quick 2>&1"
 
-# ── Step 5: TypeScript cognition facade requires cleanly ─────────────────────
+# ── Step 5: TypeScript cognition boundary requires cleanly ─────────────────────
 run_step "node -e require('./packages/cognition/dist/index.js')" \
   bash -c "node -e \"require('${REPO_ROOT}/packages/cognition/dist/index.js')\" 2>&1"
 

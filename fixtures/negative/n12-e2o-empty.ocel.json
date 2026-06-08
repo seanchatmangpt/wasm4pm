@@ -1,7 +1,7 @@
 {
   "_comment": "NEGATIVE FIXTURE N12 — event with zero qualified object references (E2O_EMPTY). OCPQ Def.2 requires every event to qualify-reference >=1 object; an event with no object evidence is an 'activity-only fake' move (maps to AndonPull::ActivityOnlyFakeRoute at the route gate). Minimal counterexample: add one E2O relationship to e2 and the log validates.",
   "expected_refusal": "ObjectLifecycleViolation",
-  "rejecting_primitive": "ocel_core::validate (E2O_EMPTY)",
+  "rejecting_primitive": "wasm4pm_compat::ocel::validate (E2O_EMPTY)",
   "eventTypes": [
     { "name": "Create Order", "attributes": [] },
     { "name": "Confirm Order", "attributes": [] }

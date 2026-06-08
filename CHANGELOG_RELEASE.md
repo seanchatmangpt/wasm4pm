@@ -260,7 +260,7 @@ fix(observability): close OTEL span coverage and semconv schema gaps
 fix(membrane,config): wire WASM4PM_MEMBRANE_* variables to config schema and runtime
 fix(validation): add real-data algorithm validation script with pm4py ground truth
 fix(cognition): close three field-contract gaps in TypeScript layer
-fix(wasm4pm-algos,wasm4pm-utils,wasm4pm-types): close three API-drift gaps in auxiliary crates
+fix(wasm4pm-algos,wasm4pm-utils,wasm4pm-compat): close three API-drift gaps in auxiliary crates
 fix(tps-metrics): close three quality gaps — rename misleading field, fix saturation bug, replace stub tests
 fix(config): close three config validation gaps — source/sink cross-field requirements, swarm algorithm ID validation, and prediction tasks enforcement
 fix(doctor): resolve HTML report test failure
@@ -319,7 +319,7 @@ feat(healing,rl): implement 5 autonomic gap fixes for Iteration 11c
 docs(cli): add config precedence hint to help output
 feat(iter8): implement 5 critical gap fixes — parameter suggestions, testing, docs, JSON consistency, RL observability
 test(enterprise): close 5 AtomVM/Erlang/marketplace bridge gaps (section K)
-docs(config,planner): clarify deprecated ML field backward-compatibility status
+docs(config,planner): clarify removed ML field backward-compatibility status
 docs(wasm4pm-cli): clarify relationship between Rust and TypeScript wpm binaries
 docs(claude-md): sync stale references after iter 1-5 gap fixes
 feat(spc): implement Western Electric Rule 4 (2-of-3 beyond 2σ) and close test gaps

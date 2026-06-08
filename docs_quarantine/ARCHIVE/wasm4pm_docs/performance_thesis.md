@@ -97,7 +97,7 @@ WebAssembly is a binary instruction format for a stack-based virtual machine, de
 
 **PM4Py** (Python): The de facto standard for process mining, achieving 1-10 Melem/s throughput
 
-**ProM** (Java): Legacy platform with GUI, 0.1-1 Melem/s throughput
+**ProM** (Java):  platform with GUI, 0.1-1 Melem/s throughput
 
 **Apromore**: Cloud-based process mining service with proprietary optimizations
 
@@ -439,7 +439,7 @@ Conformance checking measures how well a process model fits an event log. We ben
 **For Research**:
 
 1. **ETConformance Precision** — When precision metric needed
-2. **Standard Token Replay** — Legacy compatibility
+2. **Standard Token Replay** —  compatibility
 
 ---
 

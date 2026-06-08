@@ -43,6 +43,6 @@ should reject it.
 These examples assume:
 - `wpm` (apps/wasm4pm) is built and on PATH (or use `pnpm exec wpm` from workspace root).
 - The Rust crate is built and `wasm4pm-cognition` WASM module is loadable.
-- The TS facade `@wasm4pm/cognition` is built.
+- The TS boundary `@wasm4pm/cognition` is built.
 
 If any of these are missing, run `make cognition-build` from workspace root.

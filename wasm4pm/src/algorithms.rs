@@ -538,8 +538,8 @@ pub fn discover_dfg_filtered_from_log<W>(
     log: &AdmittedEventLog<W>,
     activity_key: &str,
     min_frequency: usize,
-) -> DirectlyFollowsGraph {
-    let mut dfg = DirectlyFollowsGraph::new();
+) -> DFG {
+    let mut dfg = DFG::new();
 
     let all_activities = log.value.get_activities(activity_key);
     for activity in &all_activities {
@@ -620,7 +620,7 @@ pub fn discover_dfg_filtered(
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
-        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .store_object(StoredObject::DFG(dfg))
         .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store DFG"))?;
 
     to_js_str(&json!({
@@ -635,7 +635,7 @@ pub fn discover_dfg_filtered(
 #[wasm_bindgen]
 pub fn export_dfg_to_json(handle: &str) -> Result<String, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
-        Some(StoredObject::DirectlyFollowsGraph(dfg)) => serde_json::to_string(dfg)
+        Some(StoredObject::DFG(dfg)) => serde_json::to_string(dfg)
             .map_err(|e| crate::error::js_val(&format!("Serialization failed: {}", e))),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not a DFG")),
         None => Err(wasm_err(
