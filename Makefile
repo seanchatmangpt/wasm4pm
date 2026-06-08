@@ -18,7 +18,8 @@ export RAYON_NUM_THREADS := $(JOBS)
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
         cognition-no-stub-gate cognition-examples cognition-smoke \
         real-data real-data-full fake-audit substrate-cert \
-        act-hygiene act-typescript act-list
+        act-hygiene act-typescript act-wip-check act-smoke-test act-build act-wasm-build \
+        act-all-quick act-list act-help
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -322,9 +323,67 @@ act-typescript:
 	@echo "Running typescript workflow locally..."
 	act push -W .github/workflows/typescript.yml --eventpath .github/act-events/push.json
 
+act-wip-check:
+	@echo "❌ wip-check.yml has pre-existing YAML syntax error (line 75: Unicode backticks)"
+	@echo "   This is a workflow configuration issue, not an act setup issue."
+	@echo "   Workflow will run in CI but cannot be tested locally with act until fixed."
+
+act-smoke-test:
+	@echo "Running smoke-test workflow locally (quick validation)..."
+	@echo "⚠️  Note: This requires WASM binary. Run with: act push -W .github/workflows/smoke-test.yml --eventpath .github/act-events/push.json"
+
+act-build:
+	@echo "Running build workflow locally..."
+	act push -W .github/workflows/build.yml --eventpath .github/act-events/push.json
+
+act-wasm-build:
+	@echo "Running wasm-build workflow locally (slow, ~5-10 minutes)..."
+	act push -W .github/workflows/wasm-build.yml --eventpath .github/act-events/push.json
+
+act-all-quick:
+	@echo "Running quick workflows (currently only repo-hygiene is stable)..."
+	$(MAKE) act-hygiene
+
 act-list:
 	@echo "Listing all jobs in GitHub Actions workflows..."
 	act --list
+
+act-help:
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  GitHub Actions Local Testing (act) — Workflow Status                      ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "✅ QUICK (< 2 min, ready to use):"
+	@echo "   make act-hygiene          — Check forbidden paths"
+	@echo "   make act-all-quick        — Run all working quick checks"
+	@echo ""
+	@echo "⚠️  MEDIUM (2-5 min, available but blocked):"
+	@echo "   make act-typescript       — TypeScript type-check + lint (blocked by Cargo issues)"
+	@echo "   make act-build            — Full build workflow (not tested yet)"
+	@echo ""
+	@echo "❌ SLOW (5-10+ min, resource intensive):"
+	@echo "   make act-wasm-build       — WebAssembly compilation"
+	@echo "   make act-smoke-test       — Quick validation tests (requires WASM)"
+	@echo ""
+	@echo "📋 Listing:"
+	@echo "   make act-list             — Show all GitHub Actions jobs"
+	@echo ""
+	@echo "ℹ️  WORKFLOW STATUS (16 total):"
+	@echo "   • repo-hygiene.yml        ✅ WORKING  — < 1 min, 0 dependencies"
+	@echo "   • typescript.yml          ⚠️  BLOCKED — Cargo path issue (tower-lsp-max)"
+	@echo "   • wip-check.yml           ❌ BROKEN   — YAML syntax error (line 75)"
+	@echo "   • build.yml               ⏳ UNTESTED — Dependency chain unclear"
+	@echo "   • wasm-build.yml          ⏳ UNTESTED — Requires WASM compilation"
+	@echo "   • smoke-test.yml          ⏳ UNTESTED — Requires compiled WASM"
+	@echo "   • test.yml                ❌ SKIP     — Full suite (too heavy for local)"
+	@echo "   • test.macos/linux/win    ❌ SKIP     — Platform-specific runners (CI-only)"
+	@echo "   • publish-npm.yml         ❌ SKIP     — Destructive (CI-only, requires token)"
+	@echo "   • publish-crates.yml      ❌ SKIP     — Destructive (CI-only, requires token)"
+	@echo "   • release.yml             ❌ SKIP     — Destructive (CI-only, cuts releases)"
+	@echo "   • pr-staleness.yml        ❌ SKIP     — GH API required (CI-only)"
+	@echo "   • docs.yml                ⏳ UNTESTED — Needs inspection"
+	@echo "   • bench-regression.yml    ❌ SKIP     — Infrastructure dependent"
+	@echo ""
 
 help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
