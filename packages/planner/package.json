@@ -26,7 +26,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
     "uuid": "^11.1.1"
   },

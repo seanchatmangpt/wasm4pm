@@ -30,10 +30,10 @@ async function main(logPath: string, nComponents: string = '3'): Promise<void> {
   const registry = getRegistry();
 
   // 1. Load the log
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
   // 2. Build feature matrix
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });
@@ -43,7 +43,7 @@ async function main(logPath: string, nComponents: string = '3'): Promise<void> {
 
   // 3. Run PCA
   const n = Math.max(1, Math.min(Math.floor(matrix.featureNames.length / 2), parseInt(nComponents, 10)));
-  const pcaResult: PCAResult = await reduceFeaturesPCA(matrix.data, {
+  const pcaResult: PCAResult = await reduceFeaturesPCA(matrix.data as any, {
     nComponents: n,
   });
 

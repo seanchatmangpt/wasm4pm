@@ -4,5 +4,20 @@ packages:
   - 'packages/*'
   - 'playground'
   - 'lab'
+  - 'examples'
   - 'tests/proof'
   - 'tests/archive'
+
+allowBuilds:
+  blake3: true
+  cpu-features: true
+  esbuild: true
+  protobufjs: true
+  ssh2: true
+
+onlyBuiltDependencies:
+  - blake3
+  - cpu-features
+  - esbuild
+  - protobufjs
+  - ssh2

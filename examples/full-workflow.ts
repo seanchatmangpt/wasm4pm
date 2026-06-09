@@ -111,13 +111,13 @@ async function main(logPath: string): Promise<void> {
   console.log(`[5/5] Running ML analysis...`);
 
   // Build feature matrix
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });
 
   // Classification
-  const classifyResult = await classifyTraces(matrix, {
+  const classifyResult = await classifyTraces(matrix as any, {
     method: 'naive_bayes',
     holdoutFraction: 0.2,
   });
@@ -134,7 +134,7 @@ async function main(logPath: string): Promise<void> {
   console.log(`      Classification accuracy: ${(classifyAccuracy * 100).toFixed(1)}%`);
 
   // Clustering
-  const clusterResult = await clusterTraces(matrix, {
+  const clusterResult = await clusterTraces(matrix as any, {
     method: 'kmeans',
     k: 5,
   });

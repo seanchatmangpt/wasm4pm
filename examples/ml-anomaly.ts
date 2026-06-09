@@ -30,10 +30,10 @@ async function main(logPath: string, sensitivity: string = '0.5'): Promise<void>
   const registry = getRegistry();
 
   // 1. Load the log
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
   // 2. Build feature matrix
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });

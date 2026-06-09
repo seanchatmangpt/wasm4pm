@@ -30,11 +30,11 @@ async function main(logPath: string): Promise<void> {
   const registry = getRegistry();
 
   // 1. Load the log via the kernel (returns a string handle).
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
   // 2. Build the numeric feature matrix.
   //    `targets` are durations; `labels` are outcome activity names.
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });
@@ -43,7 +43,7 @@ async function main(logPath: string): Promise<void> {
   console.log(`label classes : ${[...new Set(matrix.labels)].join(', ')}`);
 
   // 3. Train + classify with naive Bayes (fastest baseline).
-  const result: ClassificationResult = await classifyTraces(matrix, {
+  const result: ClassificationResult = await classifyTraces(matrix as any, {
     method: 'naive_bayes',
     holdoutFraction: 0.2,
   });

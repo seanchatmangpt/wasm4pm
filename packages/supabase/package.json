@@ -27,7 +27,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
-    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/contracts": "workspace:*",
     "zod": "^3.22.4"
   },
   "devDependencies": {

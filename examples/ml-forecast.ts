@@ -30,7 +30,7 @@ async function main(logPath: string): Promise<void> {
   const registry = getRegistry();
 
   // 1. Load the log
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
   // 2. Build throughput series (events per time window)
   const throughputSeries = await buildThroughputSeries(handle, {

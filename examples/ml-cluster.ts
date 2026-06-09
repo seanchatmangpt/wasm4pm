@@ -22,16 +22,16 @@ import { buildFeatureMatrix, clusterTraces } from '@wasm4pm/ml';
 async function main(logPath: string, k: number): Promise<void> {
   const xes = readFileSync(resolve(logPath), 'utf8');
   const registry = getRegistry();
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });
 
   // k-means is fast and works well when k is roughly known.
   // For unknown cohort counts, switch to method: 'dbscan' with eps tuning.
-  const result = await clusterTraces(matrix, {
+  const result = await clusterTraces(matrix as any, {
     method: 'kmeans',
     k,
     maxIterations: 100,

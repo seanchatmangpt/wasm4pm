@@ -26,12 +26,13 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@wasm4pm/config": "26.6.8",
-    "@wasm4pm/contracts": "26.6.8",
-    "@wasm4pm/observability": "26.6.8"
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/observability": "workspace:*",
+    "blake3": "^2.1.4"
   },
   "devDependencies": {
-    "wasm4pm": "26.6.8",
+    "wasm4pm": "workspace:*",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"

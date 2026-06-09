@@ -30,10 +30,10 @@ async function main(logPath: string, method: string = 'linear'): Promise<void> {
   const registry = getRegistry();
 
   // 1. Load the log
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = await kernel.run('load_eventlog_from_xes', null, { xes });
 
   // 2. Build feature matrix
-  const matrix = await buildFeatureMatrix(handle, {
+  const matrix = await buildFeatureMatrix(handle as any, {
     activityKey: 'concept:name',
     timestampKey: 'time:timestamp',
   });
@@ -43,7 +43,7 @@ async function main(logPath: string, method: string = 'linear'): Promise<void> {
 
   // 3. Run regression
   const methodKey = method.includes('poly') ? 'polynomial_regression' : method.includes('exp') ? 'exponential_regression' : 'linear_regression';
-  const result: RegressionResult = await regressRemainingTime(matrix, {
+  const result: RegressionResult = await regressRemainingTime(matrix as any, {
     method: methodKey,
     degree: method.includes('poly') ? 2 : undefined,
   });

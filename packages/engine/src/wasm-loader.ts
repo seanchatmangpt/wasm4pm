@@ -360,19 +360,38 @@ export class WasmLoader {
 
     try {
       if (!resolvedModulePath) {
-        // Compute workspace root from import.meta.url
-        // In src: wasm-loader.ts at packages/engine/src/
-        // In dist: wasm-loader.js at packages/engine/dist/
-        // Both are 3 levels up from workspace root
+        // Compute workspace root from import.meta.url.
+        // Handles two cases:
+        //   1. Direct load: ...packages/engine/dist/wasm-loader.js
+        //   2. pnpm v11 virtual store: ...node_modules/.pnpm/@wasm4pm+engine@.../node_modules/@wasm4pm/engine/dist/wasm-loader.js
         const currentUrl = new URL(import.meta.url);
         const currentPath = currentUrl.pathname;
 
-        // Find 'packages/engine' and go up to workspace root
+        let workspaceRoot: string | undefined;
+
+        // Case 1: direct file path containing packages/engine
         const engineIndex = currentPath.lastIndexOf('packages/engine');
-        if (engineIndex === -1) {
+        if (engineIndex !== -1) {
+          workspaceRoot = currentPath.substring(0, engineIndex);
+        }
+
+        // Case 2: pnpm virtual store (.pnpm/) — workspace root is before node_modules/.pnpm/
+        if (!workspaceRoot) {
+          const pnpmIndex = currentPath.lastIndexOf('/node_modules/.pnpm/');
+          if (pnpmIndex !== -1) {
+            workspaceRoot = currentPath.substring(0, pnpmIndex) + '/';
+          }
+        }
+
+        // Case 3: fallback — use process.cwd() as workspace root
+        if (!workspaceRoot && typeof process !== 'undefined') {
+          workspaceRoot = process.cwd() + '/';
+        }
+
+        if (!workspaceRoot) {
           throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
         }
-        const workspaceRoot = currentPath.substring(0, engineIndex);
+
         resolvedModulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
       }
 

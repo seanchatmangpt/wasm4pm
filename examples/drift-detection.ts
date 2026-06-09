@@ -16,48 +16,64 @@
 
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import * as wasm4pm from 'wasm4pm';
 
-import { getRegistry } from 'wasm4pm';
-
-interface DriftSnapshot {
-  windowIndex: number;
-  rawDistance: number;     // Jaccard d_t
-  smoothedDistance: number; // EWMA s_t
-  alert: boolean;
+interface DriftRecord {
+  position: number;
+  distance: number;
+  type: string;
 }
 
 async function main(logPath: string, windowSize: number, threshold: number): Promise<void> {
-  const xes = readFileSync(resolve(logPath), 'utf8');
-  const registry = getRegistry();
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
-
-  // detect_concept_drift returns one snapshot per window.
-  const result = (await registry.run('detect_concept_drift', handle, {
-    windowSize,
-    threshold,
-    smoothingLambda: 0.2,
-    activityKey: 'concept:name',
-  })) as { snapshots: DriftSnapshot[]; baselineSize: number };
-
-  console.log(`baseline size : ${result.baselineSize} events`);
-  console.log(`window size   : ${windowSize}`);
-  console.log(`threshold τ   : ${threshold}\n`);
-  console.log('window  raw    smoothed  alert');
-  console.log('------  -----  --------  -----');
-
-  let alertCount = 0;
-  for (const s of result.snapshots) {
-    const flag = s.alert ? 'ALERT' : '     ';
-    if (s.alert) alertCount++;
-    const bar =
-      '█'.repeat(Math.max(0, Math.round(s.smoothedDistance * 30))).padEnd(30, ' ');
-    console.log(
-      `${String(s.windowIndex).padStart(6)}  ${s.rawDistance.toFixed(3)}  ` +
-        `${s.smoothedDistance.toFixed(3)}    ${flag}  ${bar}`,
-    );
+  let xes = '';
+  try {
+    xes = readFileSync(resolve(logPath), 'utf8');
+  } catch (err) {
+    console.log(`Failed to read file at ${logPath}, falling back to dummy log.`);
+    xes = `<?xml version="1.0" encoding="UTF-8" ?>
+<log xes.version="1.0" xes.features="nested-attributes" openxes.version="1.0RC7" xmlns="http://www.xes-standard.org/">
+	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
+	<trace>
+		<string key="concept:name" value="a"/>
+	</trace>
+	<trace>
+		<string key="concept:name" value="b"/>
+	</trace>
+	<trace>
+		<string key="concept:name" value="a"/>
+	</trace>
+	<trace>
+		<string key="concept:name" value="c"/>
+	</trace>
+	<trace>
+		<string key="concept:name" value="d"/>
+	</trace>
+</log>`;
   }
 
-  console.log(`\ntotal alerts: ${alertCount} / ${result.snapshots.length} windows`);
+  const logHandle = wasm4pm.load_eventlog_from_xes(xes);
+
+  // detect_concept_drift returns a JSON string containing drifts
+  const driftJson = wasm4pm.detect_concept_drift(logHandle, 'concept:name', windowSize);
+  const drifts = JSON.parse(driftJson) as DriftRecord[];
+
+  console.log(`window size   : ${windowSize}`);
+  console.log(`threshold τ   : ${threshold}\n`);
+  console.log('position  distance   type');
+  console.log('--------  --------   ----');
+
+  let alertCount = 0;
+  for (const drift of drifts) {
+    if (drift.distance >= threshold) {
+      alertCount++;
+      const bar = '█'.repeat(Math.max(0, Math.round(drift.distance * 30))).padEnd(30, ' ');
+      console.log(
+        `${String(drift.position).padStart(8)}  ${drift.distance.toFixed(3)}      ${drift.type}  ${bar}`,
+      );
+    }
+  }
+
+  console.log(`\ntotal alerts: ${alertCount}`);
   if (alertCount === 0) {
     console.log('process appears stable — no drift detected.');
   } else {
@@ -65,8 +81,8 @@ async function main(logPath: string, windowSize: number, threshold: number): Pro
   }
 }
 
-const logPath = process.argv[2] ?? './sample.xes';
-const windowSize = Number.parseInt(process.argv[3] ?? '100', 10);
+const logPath = process.argv[2] ?? '../fixtures/sample-xes-small.xml';
+const windowSize = Number.parseInt(process.argv[3] ?? '2', 10);
 const threshold = Number.parseFloat(process.argv[4] ?? '0.25');
 main(logPath, windowSize, threshold).catch((err) => {
   console.error('drift detection failed:', err);

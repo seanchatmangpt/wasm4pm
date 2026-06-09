@@ -19,15 +19,17 @@
     "test:exit-codes": "vitest run -t 'Exit Codes'",
     "test:config": "vitest run -t 'Configuration Resolution'",
     "test:published": "node ./scripts/test-published.mjs",
+    "test:container": "node ./scripts/test-container.mjs",
     "clean": "rm -rf node_modules"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
+    "testcontainers": "^10.13.2",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "wasm4pm": "*"
+    "wasm4pm": "workspace:*"
   },
   "keywords": [
     "cli",

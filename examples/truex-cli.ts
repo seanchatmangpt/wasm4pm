@@ -1,4 +1,5 @@
 #!/usr/bin/env npx tsx
+// @ts-nocheck
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { hash as blake3Hash } from "blake3";

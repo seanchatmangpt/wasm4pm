@@ -32,7 +32,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "26.6.8"
+    "@wasm4pm/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

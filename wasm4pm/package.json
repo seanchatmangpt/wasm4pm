@@ -75,7 +75,7 @@
     "node": ">=14.0.0"
   },
   "dependencies": {
-    "@wasm4pm/ml": "26.6.8"
+    "@wasm4pm/ml": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "^9.3.3",

@@ -86,3 +86,4 @@ packages/agents/src/**/*.d.ts
 packages/agents/src/**/*.js.map
 packages/agents/src/**/*.d.ts.map
 /vendors/pm4py
+/vendors/POWL
