@@ -4,11 +4,25 @@ use colored::Colorize;
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
-use wasm4pm_algos::{conformance, heuristic};
 use wasm4pm_cli::io::{Io, Table};
 use wasm4pm_compat::event_log::EventLog;
 use wasm4pm_compat::import::xes::{import_xes, XESImportOptions};
 use wasm4pm_compat::models::DFG;
+
+// Stub module — wasm4pm-algos crate removed; these functions are not yet re-implemented
+mod heuristic {
+    use wasm4pm_compat::{event_log::EventLog, models::DFG};
+    pub fn discover_heuristic(_log: &EventLog, _activity_key: &str) -> anyhow::Result<DFG> {
+        anyhow::bail!("heuristic discovery not available in this build")
+    }
+}
+mod conformance {
+    use wasm4pm_compat::{event_log::EventLog, models::DFG};
+    pub struct ConformanceResult { pub fitness: f64, pub precision: Option<f64> }
+    pub fn check_conformance_token_replay(_log: &EventLog, _dfg: &DFG, _key: &str) -> anyhow::Result<ConformanceResult> {
+        anyhow::bail!("token replay conformance not available in this build")
+    }
+}
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {

@@ -89,6 +89,10 @@ jobs:
         working-directory: ./wasm4pm
         run: cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings
 
+      # Check all workspace members
+      - name: Check all workspace members
+        run: cargo check --workspace
+
       # TypeScript type checking
       - name: TypeScript type check
         working-directory: ./wasm4pm

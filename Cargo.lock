@@ -1283,7 +1283,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.6.5"
+version = "26.6.9"
 dependencies = [
  "base64",
  "bincode",
@@ -1405,12 +1405,13 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocpq"
-version = "26.6.5"
+version = "26.6.9"
 dependencies = [
  "chrono",
  "serde",
  "serde_json",
  "wasm-bindgen",
+ "wasm4pm-compat",
 ]
 
 [[package]]
@@ -1499,14 +1500,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51bae2ac328883f7acdfea3d66a7c35751187f870bc81f94563733a154d7a670"
 dependencies = [
  "plotters-backend",
-]
-
-[[package]]
-name = "pm-core"
-version = "26.6.9"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -2125,7 +2118,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0136791f7c95b1f6dd99f9cc786b91bb81c3800b639b3478e561ddb7be95e5f1"
 dependencies = [
  "fastrand",
- "getrandom 0.4.2",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
@@ -2636,7 +2629,6 @@ dependencies = [
  "wasm-bindgen-test",
  "wasm4pm-cognition",
  "wasm4pm-compat",
- "wasm4pm-macros",
 ]
 
 [[package]]
@@ -2655,6 +2647,7 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "wasm4pm",
+ "wasm4pm-compat",
 ]
 
 [[package]]
@@ -2694,26 +2687,6 @@ dependencies = [
  "serde",
  "serde_json",
  "uuid",
-]
-
-[[package]]
-name = "wasm4pm-macros"
-version = "26.6.9"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "wasm4pm-utils"
-version = "26.6.9"
-dependencies = [
- "hashbrown 0.17.1",
- "itertools 0.14.0",
- "proptest",
- "serde",
- "smallvec",
 ]
 
 [[package]]

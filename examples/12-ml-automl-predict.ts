@@ -22,7 +22,6 @@ async function predictiveSLACaseStudy(): Promise<void> {
   logger.step(1, 4, 'Ingesting Financial Event Log');
   const __dir = dirname(fileURLToPath(import.meta.url));
   const xes = readFileSync(join(__dir, 'fixtures/roadtraffic100traces.xes'), 'utf-8');
-  const xes2 = readFileSync(join(__dir, 'fixtures/sepsis.xes'), 'utf-8');
   const logHandle = wasm.load_eventlog_from_xes(xes);
   assert.ok(typeof logHandle === 'string' && logHandle.length > 0, 'Event log handle must be a non-empty string');
   logger.success('Financial logs loaded into WASM memory.');

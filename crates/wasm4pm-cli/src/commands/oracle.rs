@@ -27,33 +27,9 @@ pub enum OracleCommands {
 pub fn handle_oracle_command(command: &OracleCommands) -> Result<()> {
     match command {
         OracleCommands::Check { tape, law, format } => {
-            // Read law
-            let law_content = std::fs::read_to_string(law)?;
-            let law_model: wasm4pm_algos::prefix_conformance::law::OrderingLaw =
-                serde_json::from_str(&law_content)?;
-
-            let mut monitor = wasm4pm_algos::prefix_conformance::PrefixOracle::new(&law_model);
-
-            use std::io::BufRead;
-            let file = std::fs::File::open(tape)?;
-            let reader = std::io::BufReader::new(file);
-
-            for line in reader.lines() {
-                let line = line?;
-                if line.trim().is_empty() {
-                    continue;
-                }
-                let ev: wasm4pm_algos::prefix_conformance::PrefixEvent =
-                    serde_json::from_str(&line)?;
-                let (verdict, findings) = monitor.observe(&ev);
-                if !findings.is_empty() {
-                    println!("Case {}: {:?} - {:?}", ev.case_id, verdict, findings);
-                }
-            }
-
-            println!(
-                "Checked tape {} against law {} format {}",
-                tape, law, format
+            // wasm4pm-algos removed; prefix conformance oracle not yet re-implemented
+            anyhow::bail!(
+                "Oracle check not available: prefix_conformance removed (tape={tape}, law={law}, format={format})"
             );
         }
         OracleCommands::Watch { tape, law } => {

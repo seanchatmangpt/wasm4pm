@@ -8,7 +8,7 @@
 packages/
 ├── contracts/    # Shared types, receipts, errors, plans, hashing (leaf, no deps)
 ├── config/       # Zod-validated config, resolveConfig(), 5-layer precedence
-├── kernel/       # WASM boundary — 36 algorithms, run(), stream()
+├── kernel/       # WASM boundary — 60 algorithms, run(), stream()
 ├── engine/       # Lifecycle state machine (uninitialized → watching / failed)
 ├── planner/      # plan(config) → ExecutionPlan, explain(config) → string
 ├── observability/# 3-layer: CLI human, JSONL machine, OTEL spans

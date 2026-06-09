@@ -40,12 +40,11 @@ wasm4pm/
 ├── wasm4pm/                # Rust/WASM core — algorithms
 ├── crates/
 │   ├── wasm4pm-cli/        # SECONDARY Rust binary (also named "wpm") — NOT published
-│   ├── wasm4pm-algos/      # Algorithm implementations (Rust)
-│   ├── wasm4pm-compat/     # Shared Rust types (EventLog, DFG, etc.)
-│   ├── wasm4pm-utils/      # Shared Rust utilities
 │   ├── miniml-core/        # Micro-ML Rust crate
 │   ├── wasm4pm-cognition/  # Cognition layer WASM crate
-│   └── prolog8/            # Prolog8 inference engine
+│   ├── prolog8/            # Prolog8 inference engine
+│   └── ocpq/               # Object-centric process querying crate
+│   # NOTE: wasm4pm-compat is crates.io only — never add a path dep.
 ├── packages/               # TypeScript monorepo (11 packages)
 ├── apps/
 │   └── wasm4pm/            # PRIMARY CLI tool (@wasm4pm/cli) — this is what ships
@@ -120,3 +119,4 @@ cargo test             # Rust unit tests
 - `to_js` returns `JsValue::NULL` on native — validation MUST happen in Node.js.
 - `cargo test --lib` may exit with SIGABRT (signal 6) — check pass count via grep.
 - Discovery extra params: `discover_heuristic_miner(handle, activity_key, dependency_threshold)` (use 0.2-0.4).
+- `.claude/rules/` audit/iteration/cycle docs and memory notes drift in BOTH directions — some understate (precision IS implemented; StateCoverage exists despite FM-5 memory note), some overstate (Receipt schema has NO signature field; OTEL span names diverged from `_SPAN_SCHEMA` design docs). Verify artifacts on disk before citing any audit doc.
