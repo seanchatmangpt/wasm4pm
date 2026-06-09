@@ -1,0 +1,101 @@
+name: WASM Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wasm4pm/**'
+      - '.github/workflows/wasm-build.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'wasm4pm/**'
+      - '.github/workflows/wasm-build.yml'
+  release:
+    types: [published]
+
+jobs:
+  build-and-test:
+    name: Build WASM and Run Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: wasm4pm
+
+      - name: Install wasm-pack
+        run: npm install -g wasm-pack@0.13.1
+        shell: bash
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'wasm4pm/package-lock.json'
+
+      - name: Install Node dependencies
+        run: npm ci
+        working-directory: wasm4pm
+
+      - name: Build WASM (bundler target)
+        run: npm run build
+        working-directory: wasm4pm
+
+      - name: Build WASM (Node.js target)
+        run: npm run build:nodejs
+        working-directory: wasm4pm
+
+      - name: Build WASM (web target)
+        run: npm run build:web
+        working-directory: wasm4pm
+
+      - name: Check TypeScript
+        run: npm run type:check
+        working-directory: wasm4pm
+
+      - name: Check code format
+        run: npm run format:check
+        working-directory: wasm4pm
+
+      - name: Run unit tests
+        run: npm run test:unit
+        working-directory: wasm4pm
+
+      - name: Run integration tests
+        run: npm run test:integration
+        working-directory: wasm4pm
+        if: hashFiles('wasm4pm/__tests__/integration.test.js') != '' || hashFiles('wasm4pm/__tests__/integration.test.ts') != ''
+
+      - name: Generate documentation
+        run: npm run docs
+        working-directory: wasm4pm
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.os }}-node${{ matrix.node-version }}
+          path: wasm4pm/coverage
+
+      - name: Upload documentation
+        uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+        with:
+          name: docs
+          path: wasm4pm/docs

@@ -8,6 +8,8 @@
 //!   3. The `StreamingDfgBuilder` heuristic wrapper produces identical output
 //!      across two calls on the same log (Rank 1 determinism).
 //!
+//! **Test Coverage (3 total):** All 3 tests are active (no #[ignore] tags).
+//!
 //! Design note: wasm_bindgen-exported functions use `crate::error::js_val` on
 //! native targets, which returns `unsafe { zeroed() }`, so JSON payloads cannot
 //! be inspected in integration tests. All tests here call internal Rust types

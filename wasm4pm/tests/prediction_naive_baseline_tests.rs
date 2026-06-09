@@ -1,8 +1,17 @@
 //! Prediction Naive-Baseline Tests — Gap E adversarial suite
 //!
 //! Verifies that the prediction system beats naive baselines and satisfies
-//! fundamental mathematical properties.  All tests use pure-Rust paths
+//! fundamental mathematical properties. All tests use pure-Rust paths
 //! (no wasm_bindgen boundary) via the `state` layer and internal types.
+//!
+//! **Test Coverage (11 total):**
+//! - 10 tests: Unit tests for n-gram and rework scoring (no #[ignore])
+//! - 1 test: WASM-bindgen boundary test (has #[ignore], requires wasm runtime)
+//!
+//! **Ignored Tests (1 total):**
+//! - Test at line 296: `test_build_remaining_time_model_beats_average_baseline`
+//!   has #[ignore = "wasm_bindgen boundary: build_remaining_time_model requires wasm-bindgen runtime"]
+//!   Run with `--include-ignored` if WASM is compiled.
 //!
 //! Oracle hierarchy applied:
 //!   Rank 1 — Mathematical theorem (probability axioms, determinism)

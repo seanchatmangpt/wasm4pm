@@ -3,6 +3,8 @@
 //! Rank-1 precision tests that catch Bellman update bugs in a SINGLE transition.
 //! These complement the existing Rank-4 statistical convergence tests.
 //!
+//! **Test Coverage (14 total):** All 14 tests are active (no #[ignore] tags).
+//!
 //! Category A (Bellman Correctness): Tests 1-5
 //!   Verify mathematical correctness of a single Bellman update.
 //!   If the Bellman update passes the same state twice (the known bug), these fail immediately.
@@ -10,6 +12,9 @@
 //! Category E (Metamorphic Relations): Tests 6-10
 //!   Assert ORDERING relations between paired runs with controlled perturbations.
 //!   Catch subtle bugs that absolute value tests miss.
+//!
+//! Category X (Additional Coverage): Tests 11-14
+//!   Extended tests for edge cases and comprehensive validation.
 //!
 //! Key design decisions:
 //!   - Tests 1-5 use QLearning directly (not RlOrchestrator) to access get_q_value()

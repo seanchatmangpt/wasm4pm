@@ -20,7 +20,7 @@
   "packageManager": "pnpm@8.15.4",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspace=@wasm4pm/test-proof",
+    "test": "npm run test:integration",
     "test:proof": "npm run test --workspace=@wasm4pm/test-proof",
     "test:contract": "npm run test --workspace=@wasm4pm/contracts --workspace=@wasm4pm/config --workspace=@wasm4pm/engine --workspace=wasm4pm --workspace=@wasm4pm/observability --workspace=@wasm4pm/ml --workspace=@wasm4pm/planner --workspace=@wasm4pm/testing --if-present",
     "test:integration": "npm run test --workspaces --if-present",

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/test-archive",
-  "version": "26.6.5",
+  "version": "26.6.8",
   "private": true,
   "type": "module",
   "scripts": {

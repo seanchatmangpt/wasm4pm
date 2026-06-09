@@ -6,6 +6,14 @@
 //! All tests operate on pure-Rust helpers (`jaccard_distance`) or construct
 //! EventLog objects manually to drive the detection logic at the Rust layer.
 //!
+//! **Test Coverage (6 total):**
+//! - 3 tests: Unit tests for jaccard_distance (no #[ignore])
+//! - 3 tests: WASM-bindgen boundary tests (all #[ignore], require wasm runtime)
+//!
+//! **Ignored Tests (3 total):**
+//! - Tests 2, 3, 4 have #[ignore = "wasm_bindgen boundary"] because they call detect_drift()
+//!   which requires wasm-bindgen runtime. Run with `--include-ignored` if WASM is compiled.
+//!
 //! Oracle hierarchy applied:
 //!   Rank 1 — Mathematical theorem (Jaccard metric axioms)
 //!   Rank 2 — Domain contract (drift detection behavioral guarantees)

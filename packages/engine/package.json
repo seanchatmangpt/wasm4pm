@@ -1,6 +1,9 @@
 {
   "name": "@wasm4pm/engine",
-  "version": "26.6.5",
+  "version": "26.6.8",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Engine lifecycle and state machine for wasm4pm",
   "type": "module",
   "main": "dist/index.js",
@@ -11,6 +14,10 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "scripts": {
     "build": "tsc",
     "lint": "tsc --noEmit",
@@ -19,12 +26,12 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@wasm4pm/config": "*",
-    "@wasm4pm/contracts": "*",
-    "@wasm4pm/observability": "*"
+    "@wasm4pm/config": "26.6.8",
+    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/observability": "26.6.8"
   },
   "devDependencies": {
-    "wasm4pm": "*",
+    "wasm4pm": "26.6.8",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"

@@ -2,10 +2,18 @@
 //! JTBD BPI 2020 Real-Scale Tests
 //!
 //! Tests that verify the RL/Auto pipeline handles real-world BPI 2020 datasets at scale.
-//! All tests tagged #[ignore] so CI skips them; run explicitly with --include-ignored.
+//! **All 5 tests are tagged #[ignore]** and require 20-40 MB fixtures; run explicitly with
+//! `cargo test --test jtbd_bpi2020_tests -- --include-ignored`.
 //!
 //! BPI 2020 datasets are real government process data (thousands of traces, 20-32 MB each).
 //! These tests validate actual system behavior on production-scale event logs.
+//!
+//! **Ignored Tests (5 total):**
+//! 1. JTBD-BPI-1: Travel Permits log validation (requires 20MB BPI_2020_Travel_Permits_Actual.xes)
+//! 2. JTBD-BPI-2: RL orchestrator feature handling at scale (requires 20MB fixture)
+//! 3. JTBD-BPI-3: Health comparison across variants (requires 40MB pair of fixtures)
+//! 4. JTBD-BPI-4: Reward monotonicity on real features (requires 20MB fixture)
+//! 5. JTBD-BPI-5: LinUCB agent selection on real features (requires 20MB fixture)
 //!
 //! Oracle: Rank 2 (Domain Contract) — real processes have measurable health and
 //! RL agents should handle large feature spaces without panics or NaN values.

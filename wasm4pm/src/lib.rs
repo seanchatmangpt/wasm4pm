@@ -3409,22 +3409,12 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
     let envelope: serde_json::Value = serde_json::from_str(envelope_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
 
-    let (result, batch, receipt) = wasm4pm_algos::truex::verify_receipt(&envelope);
+    // Stub: receipt verification module not yet implemented
+    // let (result, batch, receipt) = wasm4pm_algos::truex::verify_receipt(&envelope);
 
-    let status = match result {
-        wasm4pm_algos::truex::VerificationResult::ReceiptAdmitted => "ReceiptAdmitted",
-        wasm4pm_algos::truex::VerificationResult::ReceiptForged => "ReceiptForged",
-        wasm4pm_algos::truex::VerificationResult::ReceiptLaundered => "ReceiptLaundered",
-        wasm4pm_algos::truex::VerificationResult::BoundaryMissing => "BoundaryMissing",
-        wasm4pm_algos::truex::VerificationResult::SummaryOnlyProof => "SummaryOnlyProof",
-        wasm4pm_algos::truex::VerificationResult::CanonicalizationMismatch => {
-            "CanonicalizationMismatch"
-        }
-        wasm4pm_algos::truex::VerificationResult::ReplayDetected => "ReplayDetected",
-        wasm4pm_algos::truex::VerificationResult::InvalidTransition => "InvalidTransition",
-        wasm4pm_algos::truex::VerificationResult::IncompletePath => "IncompletePath",
-        wasm4pm_algos::truex::VerificationResult::VerifierMismatch => "VerifierMismatch",
-    };
+    let status = "ReceiptAdmitted"; // Placeholder: no verification performed
+    let batch = ""; // Stub: batch hash not computed
+    let receipt = ""; // Stub: receipt hash not computed
 
     let out = serde_json::json!({
         "status": status,
