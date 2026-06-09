@@ -48,6 +48,7 @@
     "@types/node": "^20.10.0",
     "@wasm4pm/testing": "workspace:*",
     "typescript": "^5.3.3",
+    "vite-plugin-wasm": "^3.3.0",
     "vitest": "^1.1.0"
   },
   "keywords": [
