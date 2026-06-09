@@ -24,6 +24,8 @@ cd wasm4pm && npm run build:nodejs && cd ..
 npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
 ```
 
+> **Dual-binary caveat:** Installing the Rust crate (`cargo install wasm4pm-cli`) places a second `wpm` binary on your `PATH` that only exposes ~10 commands. It may shadow the TypeScript CLI (`@wasm4pm/cli`, 50+ commands), which is the published source of truth. Run `wpm doctor` to detect binary shadowing and confirm which binary is active.
+
 ## Quick Start
 
 Sample log: [`data/small-example.xes`](data/small-example.xes).
@@ -153,6 +155,35 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 
 Release and evidence discipline: [AGENTS.md](AGENTS.md) · [Contributing](CONTRIBUTING.md)
 
+## Versioning
+
+wasm4pm uses **CalVer**: `vYEAR.MONTH.DAY` (e.g. `v26.6.9` = June 9, 2026). PATCH is the day of month (1–31); multiple releases on the same day use letter suffixes (`v26.6.9a`, `v26.6.9b`).
+
+> **Warning:** Pin exact versions. Semver `^` and `~` ranges are unsafe with CalVer — a routine date rollover is not a compatible patch.
+
+## Telemetry
+
+Telemetry is **off by default**. No data leaves your environment without explicit configuration.
+
+Opt in:
+
+```bash
+export WASM4PM_OTEL_ENABLED=1
+export WASM4PM_OTEL_ENDPOINT=https://your-collector:4318
+```
+
+See [OTEL Configuration](docs/how-to/configure_observability.md) for span schema and filtering options.
+
+## Security & Enterprise
+
+- **Security disclosures:** [SECURITY.md](SECURITY.md)
+- **Enterprise deployment guide:** [docs/ENTERPRISE.md](docs/ENTERPRISE.md)
+- **Commercial licensing:** [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) — contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com)
+
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+**BUSL-1.1.** See [LICENSE](LICENSE).
+
+Production use requires a commercial license. Contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com) or see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+
+The license converts to **AGPL-3.0** after the Change Date specified in [LICENSE](LICENSE).
