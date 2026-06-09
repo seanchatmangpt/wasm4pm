@@ -28,17 +28,20 @@ use wasm4pm::foundry::{
     ocpq_query_fixtures, positive_order_traces, tree_language, world_artifacts, FieldTree,
     EVENT_TYPES, OBJECT_TYPES,
 };
+use wasm4pm::models::OCEL;
 use wasm4pm::soundness::analyze_petri_net;
 use wasm4pm::wf_to_powl::{powl_language, wf_net_language};
 use wasm4pm_compat::ocel::ObjectTypeCardinality;
-use wasm4pm::models::OCEL;
 
 struct ValidationReport {
     valid: bool,
     errors: Vec<String>,
 }
 
-fn validate(ocel: &wasm4pm::compat_api_probe::OCEL, _card: &HashMap<String, ObjectTypeCardinality>) -> ValidationReport {
+fn validate(
+    ocel: &wasm4pm::compat_api_probe::OCEL,
+    _card: &HashMap<String, ObjectTypeCardinality>,
+) -> ValidationReport {
     // We just cast it temporarily for testing
     let json = serde_json::to_string(ocel).unwrap();
     let compat_ocel: wasm4pm::models::OCEL = serde_json::from_str(&json).unwrap();
@@ -363,7 +366,8 @@ fn emits_world_fixtures_to_disk() {
 
     // Round-trip: the written OCEL re-parses and re-validates from disk.
     let on_disk = std::fs::read_to_string(out_dir.join("ocel-v2.json")).expect("read OCEL");
-    let parsed: wasm4pm_compat::ocel::OCEL = serde_json::from_str(&on_disk).expect("on-disk OCEL re-parses");
+    let parsed: wasm4pm_compat::ocel::OCEL =
+        serde_json::from_str(&on_disk).expect("on-disk OCEL re-parses");
     let report = validate(&parsed, &HashMap::new());
     assert!(
         report.valid,

@@ -120,8 +120,7 @@ mod ocel_lifecycle_wasm_export_tests {
         );
         let ocdfg = OCDFG::discover(&ocel);
 
-        let json_str = serde_json::to_string(&ocdfg)
-            .expect("OCDFG must serialise without error");
+        let json_str = serde_json::to_string(&ocdfg).expect("OCDFG must serialise without error");
 
         assert_ne!(
             json_str, "{}",

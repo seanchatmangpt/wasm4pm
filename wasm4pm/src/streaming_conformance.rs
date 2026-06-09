@@ -1,4 +1,4 @@
-use crate::models::{DFG, PetriNet, StreamingConformanceChecker};
+use crate::models::{PetriNet, StreamingConformanceChecker, DFG};
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -32,12 +32,8 @@ pub fn streaming_conformance_begin(model_handle: &str) -> Result<JsValue, JsValu
         Some(StoredObject::PetriNet(pn)) => {
             Ok(StreamingConformanceChecker::from_petri_net(pn.clone()))
         }
-        Some(StoredObject::DFG(dfg)) => {
-            Ok(StreamingConformanceChecker::from_dfg(dfg.clone()))
-        }
-        Some(_) => Err(crate::error::js_val(
-            "Handle is not a PetriNet or DFG",
-        )),
+        Some(StoredObject::DFG(dfg)) => Ok(StreamingConformanceChecker::from_dfg(dfg.clone())),
+        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet or DFG")),
         None => Err(crate::error::js_val("Model handle not found")),
     })?;
 

@@ -127,9 +127,7 @@ pub fn score_log_anomalies(
                 .iter()
                 .map(|e| (e.from.clone(), e.to.clone(), e.frequency))
                 .collect()),
-            Some(_) => Err(crate::error::js_val(
-                "dfg_handle is not a DFG",
-            )),
+            Some(_) => Err(crate::error::js_val("dfg_handle is not a DFG")),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 

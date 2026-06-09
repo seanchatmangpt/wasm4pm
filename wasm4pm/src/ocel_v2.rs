@@ -20,8 +20,6 @@
 
 use std::collections::HashMap;
 
-
-
 use wasm4pm_compat::ocel::{ObjectTypeCardinality, OCEL};
 use wasm_bindgen::prelude::*;
 
@@ -73,5 +71,4 @@ pub fn validate_ocel_v2(json: &str, cardinality_json: &str) -> Result<JsValue, J
 pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue> {
     let ocel = parse_ocel(json)?;
     return Err(js_val("flatten not implemented"));
-    
 }

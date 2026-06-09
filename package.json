@@ -15,9 +15,9 @@
   ],
   "engines": {
     "node": ">=20.0.0",
-    "npm": ">=10.0.0"
+    "pnpm": ">=8.0.0"
   },
-  "packageManager": "npm@10.5.2",
+  "packageManager": "pnpm@8.15.4",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspace=@wasm4pm/test-proof",

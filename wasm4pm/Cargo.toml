@@ -30,7 +30,7 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm4pm-algos = { version = "26.6.5", path = "../crates/wasm4pm-algos" }
+wasm4pm-compat = { version = "26.6.8", features = ["formats", "strict", "wasm4pm"] }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"

@@ -1,0 +1,17 @@
+# pnpm-specific configuration for wasm4pm monorepo
+
+# Workspace configuration
+shamefully-hoist = false
+strict-peer-dependencies = false
+
+# Performance
+use-lockfile = true
+prefer-offline = false
+
+# Architecture
+node-linker = hoisted
+
+# Publishing (also applies to pnpm publish)
+publish-branch = main
+registry = https://registry.npmjs.org/
+access = public

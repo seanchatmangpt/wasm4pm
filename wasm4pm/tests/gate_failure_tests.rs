@@ -13,8 +13,8 @@
 use std::collections::HashMap;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, DFG, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace,
-    PetriNetTransition, Trace,
+    AttributeValue, Event, EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition,
+    Trace, DFG,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 

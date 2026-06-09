@@ -18,7 +18,7 @@
 //! - Memory-constrained environments (WASM, edge devices)
 //! - Real-time dashboards where "good enough" beats "perfect"
 
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };

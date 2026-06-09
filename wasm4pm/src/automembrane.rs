@@ -342,7 +342,7 @@ fn evaluate_route_layer(motion: &RequestMotion) -> LayerVerdict {
 }
 
 /// Evaluate the automl layer.
-/// In the absence of a specific loaded envelope model, this layer performs a 
+/// In the absence of a specific loaded envelope model, this layer performs a
 /// structural risk assessment on the requested motion, penalizing missing roles,
 /// unknown origin systems, and uncredentialed high-stakes actions.
 fn evaluate_automl_layer(motion: &RequestMotion) -> LayerVerdict {
@@ -365,7 +365,9 @@ fn evaluate_automl_layer(motion: &RequestMotion) -> LayerVerdict {
     }
 
     // Feature 3: Action stakes vs Context
-    let is_high_stakes = HIGH_STAKES_KEYWORDS.iter().any(|k| motion.requested_action.to_lowercase().contains(k));
+    let is_high_stakes = HIGH_STAKES_KEYWORDS
+        .iter()
+        .any(|k| motion.requested_action.to_lowercase().contains(k));
     if is_high_stakes && risk_score > 0.0 {
         risk_score += 0.5;
         reasons.push("High stakes action requested with incomplete context");

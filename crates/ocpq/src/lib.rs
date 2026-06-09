@@ -23,8 +23,8 @@
 
 use std::collections::BTreeMap;
 
-use wasm4pm_compat::ocel::OCEL;
 use serde::{Deserialize, Serialize};
+use wasm4pm_compat::ocel::OCEL;
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;

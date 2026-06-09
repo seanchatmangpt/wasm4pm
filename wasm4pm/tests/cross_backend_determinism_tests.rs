@@ -17,7 +17,7 @@
 //! Gap: F / cross-backend parity
 
 use std::collections::HashMap;
-use wasm4pm::models::{AttributeValue, DFG, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace, DFG};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 

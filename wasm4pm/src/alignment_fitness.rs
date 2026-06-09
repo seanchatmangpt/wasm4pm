@@ -556,10 +556,7 @@ impl AlignmentConformance {
             wasm4pm_compat::witness::AlignmentPaper,
         >,
         petri_net: &PetriNet,
-    ) -> Result<
-        f64,
-        String,
-    >
+    ) -> Result<f64, String>
     where
         wasm4pm_compat::law::Require<{ DEN > 0 }>: wasm4pm_compat::law::IsTrue,
         wasm4pm_compat::law::Require<{ NUM <= DEN }>: wasm4pm_compat::law::IsTrue,

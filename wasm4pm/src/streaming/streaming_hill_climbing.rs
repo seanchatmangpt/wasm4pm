@@ -9,7 +9,7 @@
 //! This streaming implementation stores closed trace sequences so that the
 //! `to_dfg()` snapshot can compute per-edge removal costs accurately.
 
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };

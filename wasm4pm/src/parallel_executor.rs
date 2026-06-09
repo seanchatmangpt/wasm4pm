@@ -14,9 +14,7 @@
 use rustc_hash::FxHashMap;
 use wasm_bindgen::prelude::*;
 
-use crate::models::{
-    ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, EventLog,
-};
+use crate::models::{ColumnarLog, DFGNode, DirectlyFollowsRelation, EventLog, DFG};
 
 // ---------------------------------------------------------------------------
 // Internal helpers

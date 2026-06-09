@@ -1,6 +1,6 @@
-use std::str::FromStr;
 use pm4py_lsp::{create_parity_fixture, diagnose_text, Backend};
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_lsp_max::lsp_types::*;
@@ -100,7 +100,10 @@ df = pm4py.format_dataframe(df)
         .await
         .insert(uri.clone(), code_admitted.to_string());
 
-    let vector_repaired = backend.max_conformance_vector(Some(snapshot_id)).await.unwrap();
+    let vector_repaired = backend
+        .max_conformance_vector(Some(snapshot_id))
+        .await
+        .unwrap();
     assert!(vector_repaired
         .admitted
         .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())));

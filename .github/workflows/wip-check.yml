@@ -54,25 +54,27 @@ jobs:
         if: steps.check_prs.outputs.total_prs > steps.config.outputs.max_prs
         uses: actions/github-script@v7
         with:
-          script: |
+          script: |-
             const maxPrs = parseInt('${{ steps.config.outputs.max_prs }}');
             const openPrs = parseInt('${{ steps.check_prs.outputs.total_prs }}');
             const author = '${{ steps.check_prs.outputs.author }}';
 
-            const comment = `⚠️ **WIP Limit Exceeded**
-
-You currently have **${openPrs} open PRs** (limit: **${maxPrs}**).
-
-Per Toyota Production System principles, we enforce WIP (work-in-progress) limits to prevent context thrashing and ensure serial task completion.
-
-**Action Required:**
-1. Merge or close an existing PR to bring open count down to ${maxPrs}
-2. Then you can proceed with this PR
-
-**Open PRs:**
-${openPrs > maxPrs ? '⚠️ Exceeds limit by ' + (openPrs - maxPrs) : '✅ Within limit'}
-
-See [\`.wasm4pm/wip-config.json\`](.wasm4pm/wip-config.json) for configuration.`;
+            const comment = [
+              '⚠️ WIP Limit Exceeded',
+              '',
+              'You currently have ' + openPrs + ' open PRs (limit: ' + maxPrs + ').',
+              '',
+              'Per Toyota Production System principles, we enforce WIP (work-in-progress) limits to prevent context thrashing and ensure serial task completion.',
+              '',
+              'Action Required:',
+              '1. Merge or close an existing PR to bring open count down to ' + maxPrs,
+              '2. Then you can proceed with this PR',
+              '',
+              'Open PRs:',
+              (openPrs > maxPrs ? '⚠️ Exceeds limit by ' + (openPrs - maxPrs) : '✅ Within limit'),
+              '',
+              'See configuration file (.wasm4pm/wip-config.json) for details.'
+            ].join('\n');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,

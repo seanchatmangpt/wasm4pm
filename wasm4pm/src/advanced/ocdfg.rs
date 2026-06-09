@@ -1,4 +1,4 @@
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation, OCEL};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG, OCEL};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

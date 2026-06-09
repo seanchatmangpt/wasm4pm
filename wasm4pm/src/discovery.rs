@@ -24,10 +24,7 @@ use wasm_bindgen::prelude::*;
 
 /// Pure-Rust DFG discovery without wasm-bindgen. Used by integration tests.
 #[must_use]
-pub fn discover_dfg_from_log<W>(
-    log: &AdmittedEventLog<W>,
-    activity_key: &str,
-) -> DFG {
+pub fn discover_dfg_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> DFG {
     let mut dfg = DFG::new();
     let col_owned = log.value.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
