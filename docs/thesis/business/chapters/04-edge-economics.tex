@@ -1,0 +1,59 @@
+\chapter{Edge Economics: Where WASM Changes the Cost Curve}
+\label{ch:edge}
+
+\section{The incumbent cost structure}
+
+Cloud process mining has a data-gravity problem. Event logs are large,
+regulated, and continuously produced; the incumbent model ships them to a
+central cluster, which means the vendor's cost of goods includes ingest
+bandwidth, storage, and compute for every customer event --- and the
+customer's cost includes egress fees, DPAs, and data-residency review.
+A meaningful fraction of enterprise process mining deals die in the
+data-transfer security review, not on product merit.
+
+\section{The wasm4pm inversion}
+
+Because the entire algorithm catalog compiles to a self-contained WASM
+binary, the analysis moves to the data:
+
+\begin{description}[leftmargin=2em]
+  \item[Browser.] The 3.5\,MB browser profile runs full discovery and
+    conformance on an event log opened from the analyst's local disk. The
+    marginal cost of serving an additional analyst is a CDN fetch ---
+    effectively zero COGS.
+  \item[Edge runtimes.] The $\sim$1.5\,MB edge profile fits Cloudflare
+    Workers and Fastly Compute limits, enabling conformance checks
+    \emph{in the request path}: an API gateway can verify that a
+    transaction's event sequence conforms before forwarding it.
+  \item[IoT / shop floor.] The $\sim$500\,KB--1\,MB profiles run on
+    gateways beside the production line, mining equipment event streams
+    locally and emitting only receipts upstream --- the only architecture
+    that works for bandwidth-constrained or classified environments.
+\end{description}
+
+\section{Business models this enables}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Conformance-as-middleware.} License the edge profile to API
+    gateway and service mesh vendors as an embeddable policy engine:
+    process conformance as a deploy-time or request-time check, priced
+    per gateway node. The deterministic, side-effect-free WASM sandbox is
+    precisely what infrastructure vendors will accept into their hot path.
+  \item \textbf{OEM embedding in machine tools and MES.} Manufacturing
+    execution systems and equipment vendors embed the IoT profile and
+    resell ``self-auditing equipment.'' Per-device royalties; the
+    \texttt{wasm4pm-compat} crates.io distribution is the natural channel.
+  \item \textbf{Zero-infrastructure SaaS.} A hosted product where the
+    server stores only receipts and renders only dashboards, while all
+    computation happens client-side. Gross margin approaches that of a
+    static-site business while the product competes with compute-heavy
+    incumbents.
+\end{enumerate}
+
+\section{The size gate as a commercial control point}
+
+The CI size-regression gate (baseline 3{,}551{,}895 bytes, $\pm$5\%) is not
+only engineering hygiene --- it protects the edge value proposition. Every
+profile that fits inside a runtime's module limit is a market that stays
+addressable; uncontrolled binary growth silently closes those markets. The
+gate institutionalizes the constraint.
