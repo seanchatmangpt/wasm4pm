@@ -1503,7 +1503,7 @@ dependencies = [
 
 [[package]]
 name = "pm-core"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "serde",
  "serde_json",
@@ -1584,7 +1584,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "blake3",
  "js-sys",
@@ -2256,7 +2256,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "tps-metrics"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2594,7 +2594,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "bcinr",
  "blake3",
@@ -2641,7 +2641,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2659,7 +2659,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "blake3",
  "ed25519-dalek",
@@ -2698,7 +2698,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-macros"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2707,7 +2707,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-utils"
-version = "26.6.8"
+version = "26.6.9"
 dependencies = [
  "hashbrown 0.17.1",
  "itertools 0.14.0",

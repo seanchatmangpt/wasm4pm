@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cognition",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "publishConfig": {
     "access": "public"
   },

@@ -1,0 +1,42 @@
+name: examples
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'examples/**'
+      - 'packages/**'
+      - 'wasm4pm/**'
+  pull_request:
+    paths:
+      - 'examples/**'
+      - 'packages/**'
+      - 'wasm4pm/**'
+
+jobs:
+  validate:
+    name: Validate examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install monorepo dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Install examples dependencies
+        run: cd examples && npm install
+
+      - name: Validate all examples
+        run: cd examples && npm run validate

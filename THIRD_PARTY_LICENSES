@@ -1,0 +1,11 @@
+# Third-Party Licenses
+
+To generate the complete listing:
+  cargo install cargo-about && cargo about generate > THIRD_PARTY_LICENSES_RUST.md
+  npx license-checker --production --csv > THIRD_PARTY_LICENSES_NPM.csv
+
+All Rust deps: Apache-2.0 or MIT (verified via cargo-deny).
+All npm deps: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, or ISC.
+No GPL/AGPL dependencies included.
+
+Run: cargo deny check licenses

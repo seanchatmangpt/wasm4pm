@@ -62,12 +62,13 @@ export interface ExecutionProfile {
 
 /**
  * Runtime receipt - cryptographically signed proof of execution
- * Schema version 1.0
+ * Schema version 1.1
  */
 export interface Receipt {
   // Identifiers
   run_id: string; // UUID v4
-  schema_version: string; // "1.0"
+  trace_id: string; // W3C trace ID (32 hex chars)
+  schema_version: string; // "1.1"
 
   // Cryptographic hashes (BLAKE3, hex-encoded)
   config_hash: string;
@@ -136,6 +137,7 @@ export function isReceipt(value: unknown): value is Receipt {
 
   return (
     typeof receipt.run_id === 'string' &&
+    typeof receipt.trace_id === 'string' &&
     typeof receipt.schema_version === 'string' &&
     typeof receipt.config_hash === 'string' &&
     typeof receipt.input_hash === 'string' &&
@@ -162,6 +164,8 @@ export interface ReceiptDiff {
   same: boolean;
   /** run_id differs (always true when comparing two distinct runs) */
   run_id?: { a: string; b: string };
+  /** trace_id differs */
+  trace_id?: { a: string; b: string };
   /** execution status differs */
   status?: { a: Receipt['status']; b: Receipt['status'] };
   /** algorithm name or version differs */
@@ -198,11 +202,15 @@ export function validateReceiptSchema(receipt: unknown): receipt is Receipt {
   if (!isReceipt(receipt)) return false;
 
   const r = receipt as Receipt;
-  const hexPattern = /^[0-9a-f]{64}$/;
+  const hexPattern64 = /^[0-9a-f]{64}$/;
+  const hexPattern32 = /^[0-9a-f]{32}$/;
+
+  // trace_id must be 32 hex chars
+  if (!hexPattern32.test(r.trace_id)) return false;
 
   // Hash fields must be 64 hex chars (BLAKE3)
   for (const field of ['config_hash', 'input_hash', 'plan_hash', 'output_hash'] as const) {
-    if (!hexPattern.test(r[field])) return false;
+    if (!hexPattern64.test(r[field])) return false;
   }
 
   // Timestamps must be parseable ISO-8601
@@ -303,6 +311,11 @@ export function compareReceipts(a: Receipt, b: Receipt): ReceiptDiff {
     diff.run_id = { a: a.run_id, b: b.run_id };
   }
 
+  if (a.trace_id !== b.trace_id) {
+    diff.same = false;
+    diff.trace_id = { a: a.trace_id, b: b.trace_id };
+  }
+
   if (a.status !== b.status) {
     diff.same = false;
     diff.status = { a: a.status, b: b.status };
@@ -368,12 +381,13 @@ export function compareReceipts(a: Receipt, b: Receipt): ReceiptDiff {
  */
 export const RECEIPT_JSON_SCHEMA = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
-  $id: 'https://wasm4pm.dev/schemas/receipt/1.0',
+  $id: 'https://wasm4pm.dev/schemas/receipt/1.1',
   title: 'Receipt',
   description: 'Cryptographic proof of execution',
   type: 'object' as const,
   required: [
     'run_id',
+    'trace_id',
     'schema_version',
     'config_hash',
     'input_hash',
@@ -389,7 +403,8 @@ export const RECEIPT_JSON_SCHEMA = {
   ],
   properties: {
     run_id: { type: 'string' as const, format: 'uuid' },
-    schema_version: { type: 'string' as const, const: '1.0' },
+    trace_id: { type: 'string' as const, pattern: '^[0-9a-f]{32}$' },
+    schema_version: { type: 'string' as const, const: '1.1' },
     config_hash: { type: 'string' as const, pattern: '^[0-9a-f]{64}$' },
     input_hash: { type: 'string' as const, pattern: '^[0-9a-f]{64}$' },
     plan_hash: { type: 'string' as const, pattern: '^[0-9a-f]{64}$' },

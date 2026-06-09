@@ -53,19 +53,18 @@ The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, 
 
 ## Algorithms
 
-wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics. Domains include:
+wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics.
 
 | Domain | Examples |
 |--------|----------|
 | Core discovery | `dfg`, `heuristic_miner`, `inductive_miner`, `genetic_algorithm`, `ilp` |
 | Conformance & quality | `alignments`, `generalization`, `etconformance_precision` |
 | OCEL / object-centric | `ocel_dfg`, `ocel_petri_net`, `ocel_oc_declare` |
-| Prediction | `predict_next_activity`, `detect_drift` (via `wpm predict`) |
-| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` (via `wpm ml` or `wpm run`) |
+| Prediction | `predict_next_activity`, `detect_drift` |
+| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` |
+| Social Network | `handover_network`, `working_together_network` |
 
-List live metadata: `wpm algorithms` or `wpm algorithms --format json`.
-
-Full catalog: [Algorithms Reference](docs/reference/algorithms.md). See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
+Full catalog: [Algorithms Reference](docs/reference/algorithms.md).
 
 ## Programmatic API
 
@@ -131,15 +130,17 @@ wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 
 ## Deployment Profiles
 
+Optimized WASM bundles for every environment:
+
 | Profile | Size | Use case |
 |---------|------|----------|
 | `mobile` | ~500KB | Mobile / low bandwidth |
 | `iot` | ~1.0MB | Embedded |
 | `edge` | ~1.5MB | CDN / edge workers |
 | `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~2.7MB | Web + Node.js (default) |
+| `browser` | ~3.4MB | Web + Node.js (default) |
 
-Build a profile: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](docs/how-to/edge_deployment.md).
+Detailed feature mapping and build instructions: [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
 
 ## Documentation
 

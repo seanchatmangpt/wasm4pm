@@ -2438,6 +2438,72 @@ async function checkConfigPrecedence(): Promise<Diagnosis> {
 // Check arrays (used by subcommands to slice the check set)
 // ────────────────────────────────────────────────────────────────────────────
 
+// ────────────────────────────────────────────────────────────────────────────
+// Check: Rust wpm binary shadowing the TypeScript CLI
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkBinaryShadow(): Promise<Diagnosis> {
+  try {
+    const { execSync: exec } = await import('node:child_process');
+    let paths: string[] = [];
+    try {
+      const out = exec('which -a wpm 2>/dev/null', { encoding: 'utf-8', timeout: 3000 });
+      paths = out.trim().split('\n').filter(Boolean);
+    } catch {
+      try {
+        const out = exec('where wpm 2>nul', { encoding: 'utf-8', timeout: 3000 });
+        paths = out.trim().split('\n').filter(Boolean);
+      } catch {
+        return {
+          name: 'Binary shadow',
+          pathology: 'ENVIRONMENT_FAULT',
+          severity: 'INFO',
+          message: 'Binary shadow check: only one wpm found',
+        };
+      }
+    }
+    if (paths.length <= 1) {
+      return {
+        name: 'Binary shadow',
+        pathology: 'ENVIRONMENT_FAULT',
+        severity: 'INFO',
+        message: 'No binary shadowing detected',
+      };
+    }
+    const rustPaths = paths.filter(
+      (p) =>
+        p.includes('/cargo/') ||
+        p.includes('.cargo') ||
+        p.includes('/target/') ||
+        p.includes('wasm4pm-cli')
+    );
+    if (rustPaths.length > 0 && rustPaths.includes(paths[0])) {
+      return {
+        name: 'Binary shadow',
+        pathology: 'ENVIRONMENT_FAULT',
+        severity: 'WARNING',
+        message:
+          'Rust wpm binary shadows TypeScript CLI on PATH. Fix: cargo uninstall wasm4pm-cli or reorder PATH. Found: ' +
+          paths.join(', '),
+        fix: 'cargo uninstall wasm4pm-cli   OR   reorder PATH so the TypeScript wpm appears first',
+      };
+    }
+    return {
+      name: 'Binary shadow',
+      pathology: 'ENVIRONMENT_FAULT',
+      severity: 'INFO',
+      message: 'TypeScript wpm CLI is first on PATH',
+    };
+  } catch {
+    return {
+      name: 'Binary shadow',
+      pathology: 'ENVIRONMENT_FAULT',
+      severity: 'INFO',
+      message: 'Binary shadow check skipped',
+    };
+  }
+}
+
 export const ENV_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkNodeVersion,
   checkPnpmVersion,
@@ -2456,6 +2522,7 @@ export const ENV_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkResultsDir,
   checkAlgorithmRegistry,
   checkWorkspaceIntegrity,
+  checkBinaryShadow,
 ];
 
 export const TPS_CHECKS: Array<() => Promise<Diagnosis>> = [

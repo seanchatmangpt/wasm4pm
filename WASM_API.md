@@ -1,6 +1,14 @@
 # WASM API Reference
 
-**All public Rust→JavaScript exports via `wasm-bindgen`. 335 total exports (verified 2026-05-29 against browser WASM build) across 100+ source modules. Source has 383 `#[wasm_bindgen]` annotations; 48 are omitted from the browser build due to feature flags (`feature-gpu`, `feature-rayon`, cloud-only features).**
+**All public Rust→JavaScript exports via `wasm-bindgen`. 335 total exports (verified 2026-05-29 against browser WASM build) across 100+ source modules.**
+
+## The WASM Sanctuary & Deterministic Calculus
+
+The WASM boundary is not merely an interface; it is a **Sovereign Sanctuary**.
+
+1. **Memory Isolation**: Every function call executes within a linear memory sanctuary, isolated from the host's non-deterministic state.
+2. **Deterministic Calculus**: All algorithms MUST satisfy the calculus: `f(Binary_Hash, Input_Hash, Seed) -> (Output, Receipt)`. Bit-exact identity is required for all Rank-1 oracles.
+3. **Immutable Verdicts**: The WASM runtime is the final arbiter. A `Refused` verdict from the kernel is an immutable process law that cannot be overturned by administrative layers.
 
 **Current version:** `26.5.29`
 

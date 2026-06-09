@@ -11,6 +11,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -53,7 +54,7 @@ jobs:
         run: node lab/scripts/test-container.mjs
 
       - name: Publish to npm
-        run: cd wasm4pm && npm publish --ignore-scripts
+        run: cd wasm4pm && npm publish --provenance --access public --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

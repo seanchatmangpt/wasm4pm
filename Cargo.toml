@@ -4,9 +4,9 @@ resolver = "2"
 members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocpq", "crates/pm-core"]
 
 [workspace.package]
-version = "26.6.8"
+version = "26.6.9"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
 repository = "https://github.com/seanchatmangpt/wasm4pm"
 

@@ -1,10 +1,10 @@
 {
   "name": "@wasm4pm/swarm",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Autonomic swarm coordinator for wasm4pm \u2014 multi-worker process mining with convergence detection",
+  "description": "Autonomic swarm coordinator for wasm4pm — multi-worker process mining with convergence detection",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

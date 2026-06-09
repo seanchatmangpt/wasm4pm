@@ -5,17 +5,17 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "npx tsx 01-discovery/01-basic-dfg.ts",
-    "discovery": "npx tsx 01-discovery/01-basic-dfg.ts",
-    "conformance": "npx tsx 02-conformance/01-basic-fitness.ts",
-    "predict": "npx tsx 03-prediction/01-next-activity.ts",
-    "autonomic": "npx tsx 04-rl-autonomic/01-health-monitoring.ts",
-    "scaling": "npx tsx 06-scaling/01-streaming-dfg.ts",
-    "integration": "npx tsx 07-integration/01-cli-workflow.ts",
+    "start": "tsx 01-discovery/01-basic-dfg.ts",
+    "discovery": "tsx 01-discovery/01-basic-dfg.ts",
+    "conformance": "tsx 02-conformance/01-basic-fitness.ts",
+    "predict": "tsx 03-prediction/01-next-activity.ts",
+    "autonomic": "tsx 04-rl-autonomic/01-health-monitoring.ts",
+    "scaling": "tsx 06-scaling/01-streaming-dfg.ts",
+    "integration": "tsx 07-integration/01-cli-workflow.ts",
     "test:examples": "npm run test:examples:build && npm run test:examples:run",
     "test:examples:lint": "eslint **/*.ts --max-warnings 0",
     "test:examples:build": "tsc --noEmit",
-    "test:examples:run": "npm run discovery && npm run conformance",
+    "test:examples:run": "npm run discovery && npm run conformance && npm run predict && npm run autonomic && npm run scaling && npm run integration && tsx 08-advanced-discovery.ts && tsx 09-graph-and-variants.ts && tsx 10-conformance-and-metrics.ts && tsx 11-matrix-and-networks.ts && tsx 12-ml-automl-predict.ts && tsx 13-streaming-and-agentic.ts && tsx 14-ocel-process-mining.ts && tsx 15-powl-import-export.ts",
     "validate": "npm run test:examples"
   },
   "keywords": [
@@ -46,7 +46,9 @@
     "typescript": "^5.0.0",
     "ts-node": "^10.9.0",
     "tsx": "^4.0.0",
-    "eslint": "^8.0.0"
+    "eslint": "^8.0.0",
+    "blake3": "^3.0.0",
+    "pathe": "^1.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

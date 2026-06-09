@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -57,5 +57,5 @@
     "workflow"
   ],
   "author": "Sean Chatman",
-  "license": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }
