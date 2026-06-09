@@ -2,6 +2,9 @@
 //!
 //! Validates checkpoint save/load, hash verification, and agent state injection.
 //! All tests use temporary files and deterministic seeding.
+//!
+//! **Test Coverage (6 total):** All 6 tests are active (no #[ignore] tags).
+//! Tests use `tempdir()` for safe file I/O.
 
 use std::collections::HashMap;
 use tempfile::tempdir;

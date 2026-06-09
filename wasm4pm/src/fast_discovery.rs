@@ -746,11 +746,7 @@ pub fn analyze_activity_cooccurrence(
 /// Unlike all-or-nothing trace fitness, partial coverage provides a non-zero
 /// gradient from an empty DFG — essential for incremental construction in A*.
 /// Fitness ∈ [0, 1]: 0 = no edges match any pair, 1 = all pairs covered exactly.
-fn evaluate_dfg_partial_fitness(
-    dfg: &DFG,
-    log: &EventLog,
-    activity_key: &str,
-) -> f64 {
+fn evaluate_dfg_partial_fitness(dfg: &DFG, log: &EventLog, activity_key: &str) -> f64 {
     let edge_set: HashSet<(&str, &str)> = dfg
         .edges
         .iter()

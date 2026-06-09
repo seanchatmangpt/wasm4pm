@@ -17,7 +17,8 @@ export RAYON_NUM_THREADS := $(JOBS)
         verify-profiles help doctor lint test test-proof verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
         cognition-no-stub-gate cognition-examples cognition-smoke \
-        real-data real-data-full fake-audit substrate-cert
+        real-data real-data-full fake-audit substrate-cert \
+        act-hygiene act-typescript act-all-quick act-list act-help
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -308,10 +309,57 @@ cognition-dod:
 cognition-cycle:
 	@bash crates/wasm4pm-cognition/scripts/cognition-replay-cycle.sh
 
+# ── Local GitHub Actions Testing with act ─────────────────────────────────────
+# Run lightweight workflows locally before pushing to avoid full CI runs.
+# Requires: Docker installed, act binary in PATH
+# Note: repo-hygiene and typescript workflows are optimized for act; others are too heavy
+
+act-hygiene:
+	@echo "Running repo-hygiene workflow locally..."
+	act push -W .github/workflows/repo-hygiene.yml --eventpath .github/act-events/push.json
+
+act-typescript:
+	@echo "Running typescript workflow locally..."
+	act push -W .github/workflows/typescript.yml --eventpath .github/act-events/push.json
+
+act-all-quick:
+	@echo "Running all available quick workflows..."
+	$(MAKE) act-hygiene
+
+act-list:
+	@echo "Listing all jobs in GitHub Actions workflows..."
+	act --list
+
+act-help:
+	@echo "╔════════════════════════════════════════════════════════════════════════════╗"
+	@echo "║  GitHub Actions Local Testing with act                                    ║"
+	@echo "╚════════════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Available Workflows:"
+	@echo ""
+	@echo "✅ WORKING (< 1 min):"
+	@echo "   make act-hygiene          — Check forbidden paths (repo-hygiene.yml)"
+	@echo "   make act-all-quick        — Run all working quick checks"
+	@echo ""
+	@echo "⚠️  BLOCKED (needs Cargo fix):"
+	@echo "   make act-typescript       — TypeScript checks (blocked by tower-lsp-max)"
+	@echo ""
+	@echo "📋 Utility:"
+	@echo "   make act-list             — List all GitHub Actions jobs"
+	@echo ""
+	@echo "Note: Other workflows cannot be run locally (YAML errors, missing WASM,"
+	@echo "      infrastructure dependencies, or destructive operations)."
+	@echo ""
+
 help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  wasm4pm Build wasm4pm Build & Benchmark Targets Benchmark Targets"
 	@echo "╚═══════════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "GitHub Actions Testing (local, with act):"
+	@echo "  make act-hygiene        — Run forbidden-paths check locally (repo-hygiene.yml)"
+	@echo "  make act-typescript     — Run TS type-check + lint locally (typescript.yml)"
+	@echo "  make act-list           — List all jobs in workflows (no execution)"
 	@echo ""
 	@echo "WASM Profile Building (5 deployment profiles, pm4wasm tiers):"
 	@echo "  make build-profile      — Build all profiles (browser, edge, fog, iot, cloud)"

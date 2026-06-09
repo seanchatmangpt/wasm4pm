@@ -5,6 +5,8 @@
 //! These tests are end-to-end: build a `wasm4pm_compat::powl::ChoiceGraph`, add it
 //! to a `PowlArena`, project to a Petri net via the existing POWL→PN
 //! conversion, then replay traces and assert fitness behaviour.
+//!
+//! **Test Coverage (6 total):** All 6 tests are active (no #[ignore] tags).
 
 use wasm4pm::powl::conformance::token_replay::replay_trace;
 use wasm4pm::powl::conversion::to_petri_net;

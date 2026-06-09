@@ -9,7 +9,7 @@
 //! memory usage (approximately 135KB regardless of log size).
 
 use super::{BloomFilter, CountMinSketch, HyperLogLog};
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 use rustc_hash::FxHashMap;
 
 /// Simple hash function for trace and activity strings.

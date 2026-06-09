@@ -817,9 +817,7 @@ impl LanguageServer for Backend {
             .ok_or_else(|| Error::invalid_params("Receipt not found"))
     }
 
-    async fn max_admission(
-        &self,
-    ) -> Result<serde_json::Value> {
+    async fn max_admission(&self) -> Result<serde_json::Value> {
         let snapshot_id = self.max_snapshot().await?.0;
         let receipt_id = format!("receipt-admission-{}", Uuid::new_v4());
         let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, "pm4py.law.formatted"));
@@ -854,10 +852,7 @@ impl LanguageServer for Backend {
         }))
     }
 
-    async fn max_refusal(
-        &self,
-        params: String,
-    ) -> Result<serde_json::Value> {
+    async fn max_refusal(&self, params: String) -> Result<serde_json::Value> {
         let snapshot_id = self.max_snapshot().await?.0;
         let receipt_id = format!("receipt-refusal-{}", Uuid::new_v4());
         let hash = hash::blake3_string(&format!("{}-{}", snapshot_id, params));

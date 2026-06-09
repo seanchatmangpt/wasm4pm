@@ -18,7 +18,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 #[cfg(feature = "streaming_basic")]
 use crate::streaming::{ActivityInterner, Interner};
 

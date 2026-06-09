@@ -1,0 +1,18 @@
+{
+  "action": "opened",
+  "pull_request": {
+    "number": 1,
+    "title": "Test PR",
+    "draft": false,
+    "head": {
+      "ref": "feature/test",
+      "sha": "abc123def456"
+    },
+    "base": {
+      "ref": "main"
+    }
+  },
+  "repository": {
+    "full_name": "seanchatmangpt/wasm4pm"
+  }
+}

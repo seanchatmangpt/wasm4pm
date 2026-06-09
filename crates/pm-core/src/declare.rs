@@ -732,7 +732,7 @@ mod serde_declare_template {
 pub struct DeclareConstraint {
     /// The LTL-encoded template for this constraint.
     ///
-    /// Replaces the stringly-typed `template: String` field in the 
+    /// Replaces the stringly-typed `template: String` field in the
     /// wasm4pm model.
     pub template: DeclareTemplate,
 

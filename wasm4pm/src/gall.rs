@@ -1,5 +1,5 @@
-use wasm4pm_compat::ocel::{OCEL, OCELEvent};
 use std::collections::HashSet;
+use wasm4pm_compat::ocel::{OCELEvent, OCEL};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum GallVerdict {
@@ -16,17 +16,24 @@ pub struct GallConformanceReceipt {
 }
 
 /// Authoritative wasm4pm replay for the Gall Checkpoint Doctrine.
-/// 
+///
 /// Replays the given OCEL log against the required checkpoints and chain linkage,
 /// emitting a formal conformance verdict.
 pub fn check_gall_conformance(ocel: OCEL) -> GallVerdict {
-    let required = ["GALL-CHECKPOINT-001", "GALL-CHECKPOINT-002", "GALL-CHECKPOINT-003", "GALL-CHECKPOINT-004"];
+    let required = [
+        "GALL-CHECKPOINT-001",
+        "GALL-CHECKPOINT-002",
+        "GALL-CHECKPOINT-003",
+        "GALL-CHECKPOINT-004",
+    ];
     let mut admitted = HashSet::new();
     let mut previous_receipt_id = None;
     let mut chain_broken = false;
 
     if ocel.events.is_empty() {
-        return GallVerdict::Inconclusive { reason: "No events in OCEL log".to_string() };
+        return GallVerdict::Inconclusive {
+            reason: "No events in OCEL log".to_string(),
+        };
     }
 
     for evt in &ocel.events {
@@ -50,7 +57,9 @@ pub fn check_gall_conformance(ocel: OCEL) -> GallVerdict {
     }
 
     if chain_broken {
-        GallVerdict::Blocked { reason: "Chain Broken".to_string() }
+        GallVerdict::Blocked {
+            reason: "Chain Broken".to_string(),
+        }
     } else {
         let mut missing = Vec::new();
         for req in required {

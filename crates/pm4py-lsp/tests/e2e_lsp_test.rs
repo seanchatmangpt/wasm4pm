@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use pm4py_lsp::Backend;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tower_lsp_max::lsp_types::*;
@@ -196,7 +196,7 @@ async fn test_e2e_code_action_repairs_diagnostic() {
             text_document: TextDocumentIdentifier { uri: uri.clone() },
             range: diagnostic.range,
             context: CodeActionContext {
-version: None,
+                version: None,
                 diagnostics: vec![diagnostic.clone()],
                 only: None,
                 trigger_kind: None,
@@ -309,7 +309,10 @@ async fn test_e2e_multiple_files_concurrent() {
     // Conformance vector must reflect both files: A refused, B admitted
     drop(docs);
     let snapshot = backend.max_snapshot().await.unwrap();
-    let cv = backend.max_conformance_vector(Some(snapshot)).await.unwrap();
+    let cv = backend
+        .max_conformance_vector(Some(snapshot))
+        .await
+        .unwrap();
     assert!(
         cv.refused
             .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())),
@@ -373,7 +376,10 @@ async fn test_e2e_close_removes_diagnostics() {
 
     // Conformance vector for an empty workspace has no refused axes for formatting
     let snapshot = backend.max_snapshot().await.unwrap();
-    let cv = backend.max_conformance_vector(Some(snapshot)).await.unwrap();
+    let cv = backend
+        .max_conformance_vector(Some(snapshot))
+        .await
+        .unwrap();
     assert!(
         !cv.refused
             .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())),
@@ -483,7 +489,7 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
         text_document: TextDocumentIdentifier { uri: uri.clone() },
         range: unformatted_diag.range.clone(),
         context: CodeActionContext {
-version: None,
+            version: None,
             diagnostics: vec![unformatted_diag.clone()],
             only: None,
             trigger_kind: None,
@@ -639,7 +645,10 @@ net, im, fm = pm4py.discover_petri_net_inductive(df)
 
     // 11. Verify conformance vector is Admitted for formatting law.
     let snapshot_id_2 = backend.max_snapshot().await.unwrap();
-    let conformance_vector = backend.max_conformance_vector(Some(snapshot_id_2)).await.unwrap();
+    let conformance_vector = backend
+        .max_conformance_vector(Some(snapshot_id_2))
+        .await
+        .unwrap();
     assert!(conformance_vector
         .admitted
         .contains(&LawAxis::Custom("pm4py.law.formatted".to_string())));

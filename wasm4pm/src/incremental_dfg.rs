@@ -23,7 +23,7 @@ use serde_json::json;
 use wasm_bindgen::prelude::*;
 
 use crate::error::{self, codes};
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 use crate::state;
 use crate::utilities::to_js_str;
 

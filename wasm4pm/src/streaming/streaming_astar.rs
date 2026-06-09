@@ -11,7 +11,7 @@
 //! The A* score combines actual cost (edges removed) with estimated cost
 //! to reach an optimal model.
 
-use crate::models::{DFGNode, DFG, DirectlyFollowsRelation};
+use crate::models::{DFGNode, DirectlyFollowsRelation, DFG};
 use crate::streaming::{
     impl_activity_interner, ActivityInterner, Interner, StreamStats, StreamingAlgorithm,
 };

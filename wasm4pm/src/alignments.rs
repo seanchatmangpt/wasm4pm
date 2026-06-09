@@ -409,9 +409,7 @@ pub fn compute_alignments(
 
     let start_activities: std::collections::HashSet<String> =
         get_or_init_state().with_object(dfg_handle, |obj| match obj {
-            Some(StoredObject::DFG(dfg)) => {
-                Ok(dfg.start_activities.keys().cloned().collect())
-            }
+            Some(StoredObject::DFG(dfg)) => Ok(dfg.start_activities.keys().cloned().collect()),
             Some(_) => Err(crate::error::js_val("Handle is not a DFG")),
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;

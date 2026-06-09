@@ -30,7 +30,7 @@ jobs:
 
       # Setup Rust
       - name: Setup Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: wasm32-unknown-unknown
 

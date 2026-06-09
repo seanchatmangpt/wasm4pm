@@ -11,11 +11,11 @@
 
 use std::collections::BTreeMap;
 
-use wasm4pm_compat::ocel::OCEL;
 use ocpq::{
     evaluate_constraint, evaluate_query, BasicPredicate, Binding, BindingBox, ChildSet,
     ConstraintPredicate, Edge, Node, QueryTree, VarDecl, VarKind,
 };
+use wasm4pm_compat::ocel::OCEL;
 
 /// Four-weeks-in-seconds, the `tmax` of the Fig. 6 `TBE` interval.
 const FOUR_WEEKS_SECS: i64 = 28 * 24 * 3600;

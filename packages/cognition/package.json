@@ -1,6 +1,9 @@
 {
   "name": "@wasm4pm/cognition",
-  "version": "26.6.5",
+  "version": "26.6.8",
+  "publishConfig": {
+    "access": "public"
+  },
   "description": "Old-AI cognition kernel for AutoSystems: frames, rules, constraints, search, scoring, verify, receipt, contract",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,8 +39,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "*",
-    "wasm4pm-cognition": "file:../../crates/wasm4pm-cognition/pkg"
+    "@wasm4pm/contracts": "26.6.8",
+    "wasm4pm-cognition": "./pkg"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

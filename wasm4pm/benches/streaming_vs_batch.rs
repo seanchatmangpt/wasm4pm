@@ -17,8 +17,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::discovery::discover_dfg;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
-    EventLog, Trace,
+    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsRelation, Event, EventLog, Trace, DFG,
 };
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};

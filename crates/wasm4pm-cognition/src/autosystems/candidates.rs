@@ -43,8 +43,7 @@ pub enum RuntimeBoundary {
 /// Retained for compile-time compatibility with prior dependents. Manifest-driven
 /// discovery uses [`Candidate::family_id`] (free-form string) instead.
 #[allow(removed)]
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ArchitectureFamily {
     /// Centralized cloud service.
     CentralizedCloud,

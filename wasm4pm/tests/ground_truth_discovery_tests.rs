@@ -15,8 +15,7 @@
 use rustc_hash::FxHashMap;
 use std::collections::HashMap;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
-    EventLog, Trace,
+    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsRelation, Event, EventLog, Trace, DFG,
 };
 use wasm4pm::state::{get_or_init_state, StoredObject};
 

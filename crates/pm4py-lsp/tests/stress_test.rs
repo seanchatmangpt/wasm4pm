@@ -1,10 +1,10 @@
-use std::str::FromStr;
 use futures::FutureExt;
 use pm4py_lsp::analysis::PipelineFacts;
 use pm4py_lsp::diagnose_text;
 use pm4py_lsp::fixtures::{persist_fixture, reload_fixture, Fixture};
 use pm4py_lsp::receipts::{persist_receipt, verify_receipt_file, Receipt, SnapshotId};
 use pm4py_lsp::Backend;
+use std::str::FromStr;
 use std::sync::Arc;
 use tempfile::tempdir;
 use tower_lsp_max::lsp_types::*;
@@ -375,7 +375,7 @@ async fn test_stress_s8_deadlock_check() {
                     text_document: TextDocumentIdentifier { uri: uri_clone },
                     range: Range::default(),
                     context: CodeActionContext {
-version: None,
+                        version: None,
                         diagnostics: vec![Diagnostic {
                             range: Range::default(),
                             code: Some(NumberOrString::String(
@@ -392,7 +392,7 @@ version: None,
                         work_done_token: None,
                     },
                     partial_result_params: PartialResultParams {
-is_partial_result_token_null: false,
+                        is_partial_result_token_null: false,
                         partial_result_token: None,
                     },
                 };

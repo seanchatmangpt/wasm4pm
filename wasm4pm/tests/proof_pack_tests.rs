@@ -3,6 +3,8 @@
 //! Verifies that ProofPackWriter creates correct directory structure,
 //! writes valid JSON files, and that the BLAKE3 hash chain detects tampering.
 //!
+//! **Test Coverage (11 total):** All 11 tests are active (no #[ignore] tags).
+//!
 //! All tests use `ProofPackWriter::for_test()` so packs land in
 //! `target/test-proof-packs/` and never contaminate `target/proof-packs/`.
 //!

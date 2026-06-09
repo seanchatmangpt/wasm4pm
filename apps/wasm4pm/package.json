@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.6.5",
+  "version": "26.6.8",
   "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -15,8 +15,7 @@
     }
   },
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "scripts": {
     "build": "tsc",
@@ -28,17 +27,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/agents": "*",
-    "@wasm4pm/cognition": "*",
-    "@wasm4pm/config": "*",
-    "@wasm4pm/contracts": "*",
-    "@wasm4pm/engine": "*",
-    "wasm4pm": "*",
-    "@wasm4pm/ml": "*",
-    "@wasm4pm/observability": "*",
-    "@wasm4pm/planner": "*",
-    "@wasm4pm/supabase": "*",
-    "@wasm4pm/swarm": "*",
+    "@wasm4pm/agents": "26.6.8",
+    "@wasm4pm/cognition": "26.6.8",
+    "@wasm4pm/config": "26.6.8",
+    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/engine": "26.6.8",
+    "wasm4pm": "26.6.8",
+    "@wasm4pm/ml": "26.6.8",
+    "@wasm4pm/observability": "26.6.8",
+    "@wasm4pm/planner": "26.6.8",
+    "@wasm4pm/supabase": "26.6.8",
+    "@wasm4pm/swarm": "26.6.8",
     "ajv": "^8.12.0",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",
@@ -47,7 +46,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^20.10.0",
-    "@wasm4pm/testing": "*",
+    "@wasm4pm/testing": "26.6.8",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"
   },

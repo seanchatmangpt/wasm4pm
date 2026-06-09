@@ -18,8 +18,8 @@ use std::time::Duration;
 use wasm4pm::advanced_algorithms::discover_heuristic_miner;
 use wasm4pm::conformance::token_replay_pure;
 use wasm4pm::models::{
-    AttributeValue, ColumnarLog, DFGNode, DFG, DirectlyFollowsRelation, Event,
-    EventLog, PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition, Trace,
+    AttributeValue, ColumnarLog, DFGNode, DirectlyFollowsRelation, Event, EventLog, PetriNet,
+    PetriNetArc, PetriNetPlace, PetriNetTransition, Trace, DFG,
 };
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 

@@ -9,7 +9,8 @@
 //!   GAP-4: State quantization bounds (rework_ratio_q overflow)
 //!   GAP-5: State coverage analysis (exploration gaps)
 //!
-//! Test count: 18 tests (Rank-1 mathematical oracles + integration)
+//! **Test Coverage (14 total):** All 14 tests are active (no #[ignore] tags).
+//! Test count: 14 tests (Rank-1 mathematical oracles + integration)
 //! All tests are deterministic (seeded RNG where applicable).
 
 use wasm4pm::reinforcement::QLearning;

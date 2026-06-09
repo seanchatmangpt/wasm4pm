@@ -353,19 +353,13 @@ fn convert_attribute_value(
     val: wasm4pm_compat::event_log::AttributeValue,
 ) -> Option<AttributeValue> {
     match val {
-        wasm4pm_compat::event_log::AttributeValue::String(s) => {
-            Some(AttributeValue::String(s))
-        }
+        wasm4pm_compat::event_log::AttributeValue::String(s) => Some(AttributeValue::String(s)),
         wasm4pm_compat::event_log::AttributeValue::Date(d) => {
             Some(AttributeValue::Date(d.to_rfc3339()))
         }
         wasm4pm_compat::event_log::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
-        wasm4pm_compat::event_log::AttributeValue::Float(f) => {
-            Some(AttributeValue::Float(f))
-        }
-        wasm4pm_compat::event_log::AttributeValue::Boolean(b) => {
-            Some(AttributeValue::Boolean(b))
-        }
+        wasm4pm_compat::event_log::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
+        wasm4pm_compat::event_log::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
         wasm4pm_compat::event_log::AttributeValue::ID(id) => {
             Some(AttributeValue::String(id.to_string()))
         }
@@ -774,7 +768,7 @@ impl OCELEvent {
     }
 
     /// Extract object IDs from object_refs only (removed, use all_object_ids).
-    
+
     pub fn get_object_ids(&self) -> Vec<String> {
         self.object_refs
             .iter()

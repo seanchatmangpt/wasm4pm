@@ -10,8 +10,8 @@ use crate::incremental_dfg::IncrementalDFG;
 #[cfg(feature = "streaming_basic")]
 use crate::incremental_dfg::StreamingDFG;
 use crate::models::{
-    DeclareModel, DFG, EventLog, NGramPredictor, PetriNet,
-    StreamingConformanceChecker, TemporalProfile, OCEL,
+    DeclareModel, EventLog, NGramPredictor, PetriNet, StreamingConformanceChecker, TemporalProfile,
+    DFG, OCEL,
 };
 #[cfg(feature = "streaming_basic")]
 use crate::streaming::{StreamingDfgBuilder, StreamingHeuristicBuilder, StreamingSkeletonBuilder};
@@ -223,9 +223,7 @@ impl Clone for StoredObject {
             StoredObject::EventLog(el) => StoredObject::EventLog(el.clone()),
             StoredObject::OCEL(o) => StoredObject::OCEL(o.clone()),
             StoredObject::PetriNet(pn) => StoredObject::PetriNet(pn.clone()),
-            StoredObject::DFG(dfg) => {
-                StoredObject::DFG(dfg.clone())
-            }
+            StoredObject::DFG(dfg) => StoredObject::DFG(dfg.clone()),
             StoredObject::DeclareModel(dm) => StoredObject::DeclareModel(dm.clone()),
             StoredObject::JsonString(s) => StoredObject::JsonString(s.clone()),
             #[cfg(feature = "streaming_basic")]

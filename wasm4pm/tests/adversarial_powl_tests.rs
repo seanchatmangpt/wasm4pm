@@ -4,6 +4,8 @@
 //! Tests 8 categories using faker and design-by-contract thinking.
 //! ~600 lines total, testing MineDG, SPC alerts, circuit breaker, and end-to-end pipelines.
 //!
+//! **Test Coverage (16 total):** All 16 tests are active (no #[ignore] tags).
+//!
 //! # Categories
 //! - **A**: Bellman/Correctness (Rank 1 Oracle) — MineDG Definition 5 conditions
 //! - **C**: Temporal/SPC (Rank 1 Oracle) — Western Electric Rules on injected violations

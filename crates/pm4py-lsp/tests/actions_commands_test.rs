@@ -1,7 +1,7 @@
-use std::str::FromStr;
 use pm4py_lsp::{diagnose_text, Backend};
 use serde_json::json;
 use std::collections::HashMap;
+use std::str::FromStr;
 use tower_lsp_max::lsp_types::*;
 use tower_lsp_max::{LanguageServer, LspService};
 

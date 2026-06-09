@@ -105,7 +105,7 @@ impl<'de> serde::Deserialize<'de> for PrecisionScore {
 /// except when both counters are zero (empty log), in which case `precision = 1.0`.
 ///
 /// ## Counter widths
-/// `u64` counters are used instead of the `u32` counters in the 
+/// `u64` counters are used instead of the `u32` counters in the
 /// `PrecisionResult` to prevent overflow on large real-world logs where
 /// `total_consumed` can exceed `2^32`.
 ///

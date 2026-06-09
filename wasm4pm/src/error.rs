@@ -223,4 +223,3 @@ impl std::fmt::Display for CompatRefusal {
         }
     }
 }
-

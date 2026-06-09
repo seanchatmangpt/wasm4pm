@@ -1,9 +1,7 @@
 use proptest::prelude::*;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::state::{get_or_init_state, StoredObject};
-use wasm4pm_compat::event_log::{
-    AttributeValue, Event, EventLog, Trace, XESEditableAttribute,
-};
+use wasm4pm_compat::event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
 
 #[cfg(test)]
 mod deep_adversarial {

@@ -19,7 +19,7 @@
 //! Gap: F (streaming batch equivalence)
 
 use std::collections::HashMap;
-use wasm4pm::models::{AttributeValue, DFG, Event, EventLog, Trace};
+use wasm4pm::models::{AttributeValue, Event, EventLog, Trace, DFG};
 use wasm4pm::simd_streaming_dfg::SimdStreamingDfg;
 use wasm4pm::streaming::{StreamingAlgorithm, StreamingDfgBuilder};
 
@@ -436,5 +436,3 @@ fn streaming_late_event_handled_deterministically() {
 // ---------------------------------------------------------------------------
 // Test 6: streaming_conformance_matches_batch_conformance
 // ---------------------------------------------------------------------------
-
-

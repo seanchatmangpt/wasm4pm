@@ -14,7 +14,6 @@ crate-type = ["cdylib", "rlib"]
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }
-wasm4pm-compat = { workspace = true }
 
 # wasm bindings — gated behind a feature so the crate can be tested
 # natively with `cargo test` while still building as cdylib for browsers.
