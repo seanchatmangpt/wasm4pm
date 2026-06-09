@@ -8,7 +8,8 @@
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
   "files": [
-    "pkg/"
+    "pkg/",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -70,7 +71,7 @@
     "event-log"
   ],
   "author": "Sean Chatman <info@chatmangpt.com>",
-  "license": "MIT OR Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=14.0.0"
   },
