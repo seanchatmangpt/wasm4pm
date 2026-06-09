@@ -40,7 +40,7 @@ jobs:
 
       # Setup Rust
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: wasm32-unknown-unknown
 
@@ -116,7 +116,7 @@ jobs:
           node-version: '20'
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: wasm32-unknown-unknown
 
@@ -216,7 +216,7 @@ jobs:
 
       # Setup Rust
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@master
         with:
           targets: wasm32-unknown-unknown
 
@@ -244,7 +244,7 @@ jobs:
       - name: Build all targets
         run: |
           echo "=== Building WASM targets ==="
-          npm run build:wasm
+          cd wasm4pm && npm run build:all && cd ..
           echo "=== Building TypeScript packages ==="
           pnpm -r --parallel build
           echo "=== Build complete ==="
@@ -302,34 +302,9 @@ jobs:
 
           EOF
 
-      # Publish to npm
-      - name: Publish wasm4pm to npm
-        working-directory: ./wasm4pm
-        run: |
-          echo "Publishing wasm4pm@$(node -p "require('./package.json').version")..."
-          npm publish --ignore-scripts
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      # Publish other packages (if any are public)
-      - name: Publish other packages
-        run: |
-          # Publish @wasm4pm/types
-          if [ -f "packages/types/package.json" ]; then
-            cd packages/types
-            npm publish --ignore-scripts
-            cd ../..
-          fi
-
-          # Publish @wasm4pm/connectors
-          if [ -f "packages/connectors/package.json" ]; then
-            cd packages/connectors
-            npm publish --ignore-scripts
-            cd ../..
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true
+      # Note: npm publishing is delegated to .github/workflows/publish-npm.yml
+      # triggered on v* tag push. This workflow focuses on verification,
+      # building, testing, changelog generation, and Rust crate publication only.
 
       # Generate and upload documentation site
       - name: Upload documentation
@@ -371,8 +346,7 @@ jobs:
 
           ## Published Packages
           - ✓ wasm4pm (WASM core library)
-          - ✓ @wasm4pm/types (TypeScript types)
-          - ✓ @wasm4pm/connectors (Data adapters)
+          - ✓ @wasm4pm/* (workspace packages)
 
           ## Build Artifacts
           - Bundler target (ES modules, Node.js)
