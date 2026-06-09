@@ -1,6 +1,6 @@
 ---
 name: wasm4pm Absolute Rules
-description: Non-negotiable rules + key gotchas for wasm4pm development
+description: Non-negotiable rules for wasm4pm development (gotchas live in CLAUDE.md)
 type: rules
 ---
 
@@ -17,13 +17,4 @@ type: rules
 
 **Doctrine:** If the code says it worked but the test doesn't prove it with OTEL spans, it didn't work. (Full Chicago TDD / van der Aalst constitution: `~/.claude/rules/process-mining-chicago-tdd.md`.)
 
-## Key gotchas
-- `WasmLoader` is a singleton — `WasmLoader.reset()` between tests.
-- `to_js(&json!({...}))` returns `{}` on wasm32 — use `to_js_str()`; `to_js` returns NULL on native.
-- `cargo test --lib` may SIGABRT on exit — count passes via grep.
-- ENV prefix `WASM4PM_*`; precedence CLI > TOML > JSON > ENV > defaults.
-- Exit codes: 0 ok, 1 config, 2 source, 3 execution, 4 partial, 5 system.
-- CalVer: vYY.M.D (PATCH = day of month, never >31; same-day suffixes a/b/c).
-- Determinism is a merge gate: same input → bit-exact output (seed all RNG, sort HashMap iteration).
-- Run vitest from the package directory, not monorepo root.
-- Fitness threshold >0.85 for valid models; MCPP route admission requires exactly 1.0 conformance.
+Gotchas live in `CLAUDE.md` (single source of truth — do not duplicate here).

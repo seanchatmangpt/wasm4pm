@@ -61,7 +61,7 @@ export interface ExecutionProfile {
 }
 
 /**
- * Runtime receipt - cryptographically signed proof of execution
+ * Runtime receipt - BLAKE3-hashed proof of execution (unsigned)
  * Schema version 1.1
  */
 export interface Receipt {

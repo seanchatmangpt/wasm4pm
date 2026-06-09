@@ -112,11 +112,14 @@ cargo test             # Rust unit tests
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests.
 - All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed.
-- ENV var prefix is `WASM4PM_*`. Precedence: CLI > file > ENV > defaults.
+- ENV var prefix is `WASM4PM_*`. Precedence: CLI > TOML > JSON > ENV > defaults.
 - OTEL span `startTime`/`endTime` are in **nanoseconds**.
-- "bad algorithm" exit code is `SOURCE_ERROR` (2).
+- Exit codes: 0 ok, 1 config, 2 source ("bad algorithm" = `SOURCE_ERROR`), 3 execution, 4 partial, 5 system.
 - `to_js(&json!({...}))` silently returns `{}` on wasm32 — use `to_js_str()` in `utilities.rs`.
 - `to_js` returns `JsValue::NULL` on native — validation MUST happen in Node.js.
 - `cargo test --lib` may exit with SIGABRT (signal 6) — check pass count via grep.
+- Run vitest from the package directory, not monorepo root.
+- Determinism is a merge gate: same input → bit-exact output (seed all RNG, sort HashMap iteration).
+- Fitness threshold >0.85 for valid models; MCPP route admission requires exactly 1.0 conformance.
 - Discovery extra params: `discover_heuristic_miner(handle, activity_key, dependency_threshold)` (use 0.2-0.4).
-- `.claude/rules/` audit/iteration/cycle docs and memory notes drift in BOTH directions — some understate (precision IS implemented; StateCoverage exists despite FM-5 memory note), some overstate (Receipt schema has NO signature field; OTEL span names diverged from `_SPAN_SCHEMA` design docs). Verify artifacts on disk before citing any audit doc.
+- Audit records decay in both directions (understate AND overstate). Point-in-time audits were consolidated into `docs/audit-history.md` (verified on disk 2026-06-09) — check there first, and verify artifacts on disk before citing any audit doc or memory note.

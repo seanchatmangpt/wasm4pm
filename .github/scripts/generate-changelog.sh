@@ -135,7 +135,7 @@ See git log for full contributor list.
 
 ## License
 
-MIT OR Apache-2.0
+BUSL-1.1
 
 ---
 

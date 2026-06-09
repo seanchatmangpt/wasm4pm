@@ -192,4 +192,4 @@ Every feature follows Red-Green-Refactor:
 2. **GREEN**: Minimal implementation to pass
 3. **REFACTOR**: Clean code (no behavior change)
 
-See `.claude/rules/chicago-tdd.md` for full discipline including FIRST principles and merge checklist.
+See `.claude/rules/_core/absolute.md` (doctrine + Andon rules); verified audit status in `docs/audit-history.md`.

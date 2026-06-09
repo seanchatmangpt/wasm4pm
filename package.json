@@ -67,7 +67,8 @@
     "build:cloud": "bash scripts/build-profile.sh cloud",
     "build:profiles": "bash scripts/build-all-profiles.sh",
     "verify:profiles": "node scripts/verify-profiles.js",
-    "bench:real": "node benchmarks/real_data_wasm_bench.js"
+    "bench:real": "node benchmarks/real_data_wasm_bench.js",
+    "prepare": "git config core.hooksPath scripts/hooks || true"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",

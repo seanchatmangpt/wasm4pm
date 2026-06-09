@@ -79,6 +79,29 @@ npm config set proxy http://proxy.company.com:8080
 wasm4pm uses CalVer (YEAR.MONTH.DAY). Always pin exact versions:
   "dependencies": { "@wasm4pm/cli": "26.6.9" }
 
+## Known Limitations
+
+### CLI to WASM Trace Correlation (Deferred)
+
+The TypeScript CLI and the Rust/WASM core currently generate independent OTEL trace IDs. Distributed tracing across the CLI-WASM boundary is not yet correlated — Jaeger will show disconnected spans for CLI and WASM operations.
+
+**Current behavior:** CLI span (e.g., trace_abc) and WASM span (e.g., trace_xyz) appear as separate traces.
+**Impact:** Cross-boundary latency attribution and critical-path analysis in APM tools are unavailable.
+**Workaround:** Correlate via cycle_count or timestamp proximity in Jaeger query results.
+**Resolution timeline:** Planned for a future release. Design is fully specified in `.claude/rules/_observability-audit-findings.md` (Pattern 1 — context parameter propagation). Estimated implementation effort: 4-6 hours.
+
+### Rust Toolchain Pin
+
+The Rust toolchain is pinned to a specific nightly date in `rust-toolchain.toml` (required by `generic_const_exprs`). Do not change to unpinned `channel = "nightly"` — this would be non-reproducible on CI.
+
+### Stochastic Algorithm Reproducibility
+
+Algorithms using randomness (genetic, ACO, PSO, simulated annealing, A*) use a fixed seed (42). The seed is not currently configurable via CLI or API.
+
+### WASM Binary Size (Browser Profile)
+
+The browser-profile WASM binary is approximately 3.5 MB. Use the mobile (~500KB), IoT (~1MB), edge (~1.5MB), or fog (~2MB) profiles for size-constrained deployments.
+
 ## Support
 
 - Documentation: README.md, WASM_API.md, TESTING.md

@@ -117,4 +117,4 @@ Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](../../LICENSE-APACHE) and [LICENSE-MIT](../../LICENSE-MIT).
+BUSL-1.1. See [LICENSE](../../LICENSE).
