@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<log xes.version="2.0" xes.features ="arbitrary-depth"
+  xmlns="http://www.xes-standard.org
+/">
+  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext" />
+  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext" />
+  <global scope="trace">
+    <string key="concept:name" value="" />
+  </global>
+  <global scope="event">
+    <string key="concept:name" value="" />
+    <date key="time:timestamp" value="2024-01-01T00:00:00.000+00:00" />
+    <string key="system" value="" />
+    <string key="nested-global-string-attr">
+      <boolean key="was-correctly-parsed" value="true"/>
+    </string>
+  </global>
+  <classifier name="Activity" keys="concept:name" />
+  <classifier name="Another" keys="concept:name system" />
+  <float key="log attribute" value="2335.23" />
+  <trace>
+    <string key="concept:name" value="Trace number one" />
+    <event>
+      <string key="concept:name" value="Register client" />
+      <string key="system" value="alpha" />
+      <date key="time:timestamp" value="2009-11-25T14:12:45:000+02:00" />
+      <int key="attempt" value="23">
+        <boolean key="tried hard" value="false" />
+      </int>
+    </event>
+    <event>
+      <string key="concept:name" value="Mail rejection" />
+      <string key="system" value="beta" />
+      <date key="time:timestamp" value="2009-11-28T11:18:45:000+02:00" />
+    </event>
+  </trace>
+  <!-- Weird Trace: -->
+  <trace>
+    <string key="concept:name" value="Really weird trace" />
+    <event>
+      <string key="testid" value="Second" />
+      <date key="time:timestamp" value="2009-11-28T11:18:45:000+02:00" />
+    </event>
+    <event>
+      <string key="testid" value="First" />
+      <date key="time:timestamp" value="2009-11-25T14:12:45:000+02:00" />
+    </event>
+    <event>
+      <string key="testid" value="With invalid time:timestamp" />
+      <string key="time:timestamp" value="2009-11-25T14:12:45:000+02:00" />
+    </event>
+    <event>
+      <string key="testid" value="With default timestamp" />
+    </event>
+  </trace>
+  <!-- End Weird Trace -->
+</log>
