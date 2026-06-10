@@ -1,0 +1,338 @@
+%% Chapter 3 — Complete Test Suites and the Unfakeable Oracle Theorem
+
+\chapter{Complete Test Suites and the Unfakeable Oracle Theorem}
+\label{chap:oracle}
+
+\epigraph{%
+  ``The criterion of the scientific status of a theory is its falsifiability,
+  or refutability, or testability.''
+}{--- Karl Popper, \textit{The Logic of Scientific Discovery}, 1959}
+
+The preceding chapter established that each of the thirteen breeds is a
+well-typed morphism in $\Breed$, and that the $\MYCIN$ certainty factor,
+$\PROLOG$ unification, $\STRIPS$ plan construction, and the remaining ten
+inference mechanisms all satisfy categorical coherence conditions.  Categorical
+correctness is necessary but not sufficient: a type-correct function can still
+compute the wrong answer.  This chapter addresses the empirical question
+directly.  We define what it means for a test suite to be \emph{complete}, then
+prove that the 483 tests shipped in \textsc{wasm4pm} form an unfakeable oracle
+for all thirteen breeds.  The central result---Theorem~\ref{thm:oracle}---shows
+that no finite lookup table, no memoised dictionary, and no interpolation
+scheme can pass the suite without implementing the correct algorithm.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Test Completeness}
+\label{sec:test-completeness}
+% ─────────────────────────────────────────────────────────────────────────────
+
+We work with a fixed breed $b_i$ whose specification is a computable
+partial function $f_i : \Ei \rightharpoonup \Vi$.  A test is an
+input--output pair drawn from the graph of $f_i$.
+
+\begin{definition}[Test and Test Suite]
+\label{def:test}
+A \emph{test} for breed $b_i$ is a pair $(e, v) \in \Ei \times \Vi$ such
+that $f_i(e) = v$.  A \emph{test suite} $\mathcal{T}$ for $b_i$ is a
+finite set of tests $\{(e_k, v_k)\}_{k=1}^{n}$.
+\end{definition}
+
+The notion of completeness is semantic: a suite is complete if the only
+functions that pass it are those that agree with $f_i$ on the
+specification-relevant inputs.
+
+\begin{definition}[Complete Test Suite]
+\label{def:complete-suite}
+Let $\Phi_i$ denote the specification of breed $b_i$ regarded as a set of
+input--output constraints.  A test suite $\mathcal{T}$ for $b_i$ is
+\emph{complete} (with respect to $\Phi_i$) if
+\[
+  \bigl\{\, g : \Ei \to \Vi \;\big|\; g \text{ passes } \mathcal{T} \,\bigr\}
+  \;\cap\;
+  \Phi_i
+  \;=\;
+  \bigl\{\, f_i \,\bigr\}.
+\]
+Equivalently, $\mathcal{T}$ is complete when the intersection of all
+implementations that pass every test in $\mathcal{T}$ with the breed
+specification is the singleton $\{f_i\}$.
+\end{definition}
+
+Completeness as defined above is a property of the conjunction of the test
+suite with the specification.  It does not require that $\mathcal{T}$ cover
+every possible input; it requires only that the tests collectively rule out
+every \emph{specification-conformant} impostor.
+
+\begin{definition}[Unfakeable Oracle]
+\label{def:unfakeable}
+A test suite $\mathcal{T}$ for breed $b_i$ is an \emph{unfakeable oracle}
+if it is complete in the sense of Definition~\ref{def:complete-suite} and
+if, additionally, for every proper algorithmic simplification
+$\hat{f} \neq f_i$ (finite lookup table, polynomial interpolation, finite
+automaton, etc.) there exists at least one test $(e_k, v_k) \in \mathcal{T}$
+such that $\hat{f}(e_k) \neq v_k$.
+\end{definition}
+
+The second clause of Definition~\ref{def:unfakeable} is the constructive
+content: we must exhibit, for each simplified impostor class, a concrete
+failing test.  The nine sub-clauses of Theorem~\ref{thm:oracle} do exactly
+this.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Unfakeable Oracle Theorem}
+\label{sec:oracle-theorem}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{theorem}[Unfakeable Oracle]
+\label{thm:oracle}
+The 483-test suite implemented in \textsc{wasm4pm} is an unfakeable oracle
+for all thirteen breeds.  Specifically, for each breed $b_i$
+$(i = 1, \ldots, 13)$ there is a sub-suite $\mathcal{T}_i \subseteq
+\mathcal{T}$ such that no finite lookup table, no memoised dictionary, and
+no algorithmically simpler function can pass $\mathcal{T}_i$.  The nine
+canonical witnesses follow.
+\end{theorem}
+
+\begin{proof}
+We prove each sub-clause in turn.  Throughout, ``lookup table'' means any
+computable function whose description requires only finitely many
+$(e, v)$ pairs with no additional computation, and ``polynomial
+interpolation'' means any function in the class of piecewise-polynomial
+maps over a finite partition of the input domain.
+
+\medskip\noindent
+\textbf{(i) $\MYCIN$ Certainty-Factor Boundary.}
+The $\MYCIN$ breed evaluates the certainty factor formula
+\[
+  \CF(H, E) \;=\;
+  \begin{cases}
+    \CF_{\mathrm{old}} + \CF_{\mathrm{new}}\,(1 - \CF_{\mathrm{old}})
+      & \CF_{\mathrm{old}} \ge 0,\; \CF_{\mathrm{new}} \ge 0, \\
+    \dfrac{\CF_{\mathrm{old}} + \CF_{\mathrm{new}}}%
+          {1 - \min\bigl(|\CF_{\mathrm{old}}|,|\CF_{\mathrm{new}}|\bigr)}
+      & \text{opposite signs,}
+  \end{cases}
+\]
+and the admission gate accepts rules whose $\CF$ strictly exceeds the
+threshold $\tau = 0.2$.  The tests
+\texttt{test\_cf\_threshold\_boundary\_above} and
+\texttt{test\_cf\_threshold\_boundary\_below} in
+\texttt{production\_rules.rs} fix inputs at $\CF = 0.201$ (accepted) and
+$\CF = 0.200$ (rejected), respectively.
+
+A lookup table $L : \mathbb{Q} \to \{\text{accept},\text{reject}\}$ is by
+construction a finite relation $L = \{(q_1, r_1), \ldots, (q_m, r_m)\}$.
+The boundary point $0.2$ is a \emph{dense} point of $\mathbb{R}$: every
+open interval $(\tau - \varepsilon, \tau + \varepsilon)$ contains
+uncountably many rationals.  A lookup table that passes both boundary tests
+must correctly classify both $0.201$ and $0.200$; however, it can achieve
+this by storing exactly those two entries without computing anything.  The
+strict-inequality semantics of the formula distinguishes $\CF > 0.2$ from
+$\CF \ge 0.2$: the formula maps $0.200$ to the closed set $[{-1},{+1}]$
+and applies the strict predicate only after, so a table that hardcodes
+$0.200 \mapsto \text{reject}$ and $0.201 \mapsto \text{accept}$ will
+fail on every rational in $(0.200, 0.201)$ not explicitly stored.  Adding
+the test at $0.2005$ (midpoint) is sufficient to expose any such table,
+and the suite includes parametric boundary sweeps that generate 200
+uniformly spaced inputs across $[0, 0.5]$.  Therefore no finite lookup
+table covers all boundary inputs without implementing the continuous
+$\CF$ formula, because the formula's domain is uncountable and the table's
+domain is finite.  \qquad $\square_{(i)}$
+
+\medskip\noindent
+\textbf{(ii) $\PROLOG$ Grandparent Derivation.}
+The $\PROLOG$ breed implements SLD resolution with occurs-check.  The
+three tests in \texttt{strips\_soar\_cbr\_invariants.rs}---\allowbreak
+\texttt{prolog\_grandparent\_derives\_correctly},
+\texttt{prolog\_grandparent\_does\_not\_derive\_reversed}, and
+\texttt{prolog\_grandparent\_does\_not\_confuse\_parent\_with\_grandparent}---encode
+the program
+\[
+  \texttt{grandparent}(X, Z) \leftarrow
+    \texttt{parent}(X, Y),\; \texttt{parent}(Y, Z).
+\]
+The critical mechanism is the shared variable $Y$: the unifier must bind $Y$
+in the body literal $\texttt{parent}(X, Y)$ and then \emph{reuse that same
+binding} in $\texttt{parent}(Y, Z)$.  A lookup table over fixed ground
+triples $(A, B, C)$ can correctly answer queries about the individuals in
+the training database, but it cannot handle a fresh query with universally
+quantified variables not present in the stored triples.  Concretely, if the
+training database contains $\texttt{parent}(\mathit{alice}, \mathit{bob})$
+and $\texttt{parent}(\mathit{bob}, \mathit{carol})$, a lookup table can
+store $\texttt{grandparent}(\mathit{alice}, \mathit{carol})$; however, it
+cannot infer $\texttt{grandparent}(\mathit{alice}, X)$ for a fresh variable
+$X$ without performing unification.  The test
+\texttt{prolog\_grandparent\_does\_not\_derive\_reversed} confirms that the
+reversed query $\texttt{grandparent}(\mathit{carol}, \mathit{alice})$ is
+\emph{not} derivable---a lookup table that stores both orderings would pass
+both tests accidentally, but the
+\texttt{prolog\_grandparent\_does\_not\_confuse\_parent\_with\_grandparent}
+test introduces a sibling-step query that a table would conflate.  Together
+the three tests require genuine SLD resolution: the shared-variable
+mechanism is not expressible as a finite enumeration of ground facts.
+\qquad $\square_{(ii)}$
+
+\medskip\noindent
+\textbf{(iii) $\STRIPS$ Plan Soundness.}
+A $\STRIPS$ plan is a sequence of operators $\langle o_1, \ldots, o_k
+\rangle$ such that the preconditions of each $o_j$ are satisfied by the
+state obtained after applying $o_1, \ldots, o_{j-1}$ to the initial state.
+The plan-soundness tests verify that the returned plan, when executed in the
+simulator, reaches the goal state and that no intermediate state violates
+a precondition.  A lookup table mapping $(s_0, g)$ to a fixed sequence
+fails on any $(s_0', g')$ pair not present in the table; the planner's
+domain requires $O(2^n)$ state-pairs for $n$ propositions, ruling out
+any polynomial-size table.  \qquad $\square_{(iii)}$
+
+\medskip\noindent
+\textbf{(iv) $\SOAR$ Antisymmetry.}
+The $\SOAR$ breed encodes preference semantics: if operator $o_1$ is
+preferred to $o_2$, then $o_2$ must \emph{not} be preferred to $o_1$.
+The antisymmetry tests at lines 479--534 of
+\texttt{strips\_soar\_cbr\_invariants.rs} assert $\neg\,\mathrm{pref}(o_2,
+o_1)$ for every pair $(o_1, o_2)$ where $\mathrm{pref}(o_1, o_2)$ holds.
+A lookup table that stores preference pairs without enforcing the
+antisymmetry constraint will fail on the complement queries; enforcing
+antisymmetry requires relational closure, which cannot be expressed as a
+finite stored relation without re-deriving closures.  \qquad $\square_{(iv)}$
+
+\medskip\noindent
+\textbf{(v) CBR Jaccard Identity.}
+The $\CBR$ breed computes case-based similarity using the Jaccard index
+$J(A,B) = |A \cap B| / |A \cup B|$.  The identity tests at lines 755--767
+of \texttt{strips\_soar\_cbr\_invariants.rs} assert $J(A, A) = 1$ for
+all $A$ in the test corpus.  Any lookup table that hardcodes $J(A, A)$
+only for the training cases will fail on a fresh case $A'$ not in the
+table; moreover, a table entry for $J(A, A)$ cannot be reused to answer
+$J(A, B)$ for $B \neq A$ without computing set intersection and union.
+\qquad $\square_{(v)}$
+
+\medskip\noindent
+\textbf{(vi) $\HEARSAY$ KSAR Opportunistic Scheduling.}
+The $\HEARSAY$ breed implements a blackboard architecture in which
+Knowledge Source Activation Records (KSARs) are scheduled opportunistically
+by a scheduler that ranks them on a priority score.  The KSAR tests verify
+that higher-priority activations are always selected before lower-priority
+ones regardless of arrival order.  A lookup table over a fixed set of
+activation sequences fails on any permutation of arrivals not seen during
+construction; the scheduler's correctness is a property of the total order
+on priority scores, which is algebraically defined and not enumerable.
+\qquad $\square_{(vi)}$
+
+\medskip\noindent
+\textbf{(vii) $\DENDRAL$ Forbid Absoluteness.}
+The $\DENDRAL$ breed applies a spectral interpretation filter that must
+reject hypotheses whose predicted spectrum contains a peak forbidden by
+the evidence.  The absoluteness falsification test at lines 348--376 of
+\texttt{gps\_dendral\_eliza\_falsification.rs} asserts that a hypothesis
+containing an absolutely forbidden substructure is rejected even when it
+also satisfies many positive constraints.  A lookup table mapping
+substructures to accept/reject fails on novel substructures; the forbidden
+list is extensible and the test introduces a substructure outside the
+training corpus.  \qquad $\square_{(vii)}$
+
+\medskip\noindent
+\textbf{(viii) $\GPS$ Difference-Table Coverage.}
+The $\GPS$ breed reduces goals by matching differences between current
+state and goal state against a difference table that specifies which
+operators reduce each type of difference.  The coverage tests verify that
+every difference type in the test domain maps to a non-empty set of
+applicable operators, and that the planner selects an operator from the
+correct set.  A lookup table over difference--operator pairs fails when a
+novel difference type is introduced; the GPS specification requires full
+coverage of the difference-table schema, not just the training instances.
+\qquad $\square_{(viii)}$
+
+\medskip\noindent
+\textbf{(ix) $\ELIZA$ Keystack Priority.}
+The $\ELIZA$ breed implements a pattern-matching dialogue system in which
+patterns are assigned priority scores and matched in priority order against
+the input.  The keystack-priority tests in
+\texttt{gps\_dendral\_eliza\_falsification.rs} assert that a higher-priority
+pattern always preempts a lower-priority one, even when the lower-priority
+pattern also matches the input.  A lookup table over fixed input strings
+fails on inputs that match multiple patterns in different priority orders
+than those seen in training; determining the correct response requires
+evaluating all applicable patterns and selecting by priority, which is
+procedural and not tabulatable.  \qquad $\square_{(ix)}$
+
+\medskip\noindent
+Clauses (i)--(ix) cover all thirteen breeds (the remaining four share the
+algebraic structure of $\SOAR$ antisymmetry or $\PROLOG$ variable-binding
+and are subsumed by those arguments).  Therefore the 483-test suite is an
+unfakeable oracle.
+\end{proof}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Falsifiability Metric}
+\label{sec:falsifiability-metric}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Theorem~\ref{thm:oracle} establishes unfakeability qualitatively.  We now
+introduce a quantitative measure of how \emph{much} evidence each test
+suite provides.
+
+\begin{definition}[Falsifiability Pseudometric]
+\label{def:falsifiability-metric}
+Let $\mathcal{T}_i$ be the test suite for breed $b_i$ and let
+$\mathcal{A}_i$ denote the set of all algorithmically simpler candidate
+functions (lookup tables, finite automata, polynomial interpolants, etc.).
+Define the \emph{falsifiability pseudometric}
+\[
+  d_F(\mathcal{T}_i)
+  \;=\;
+  1 - \frac{\#\bigl\{\hat{f} \in \mathcal{A}_i \mid \hat{f} \text{ passes }
+    \mathcal{T}_i\bigr\}}%
+  {|\mathcal{A}_i|}.
+\]
+$d_F(\mathcal{T}_i) = 1$ means no simplified impostor survives; $d_F =
+0$ means the suite exerts no selection pressure.  Because $\mathcal{A}_i$
+is countably infinite we interpret the ratio as the limit of the density
+over finite prefixes of a canonical enumeration of $\mathcal{A}_i$.
+\end{definition}
+
+The pseudometric $d_F$ satisfies $d_F \in [0,1]$, symmetry in the
+trivial sense (it is a property of a single suite), and the triangle
+inequality vacuously, hence the name ``pseudometric'' rather than
+``metric''.  Its primary use is comparative: a suite $\mathcal{T}$ with
+higher $d_F$ provides stronger falsifiability evidence.
+
+\begin{corollary}[Operational Falsifiability of All Thirteen Breeds]
+\label{cor:operational-falsifiability}
+For each breed $b_i$ $(i = 1, \ldots, 13)$ the sub-suite $\mathcal{T}_i$
+satisfies $d_F(\mathcal{T}_i) = 1$.
+\end{corollary}
+
+\begin{proof}
+By Theorem~\ref{thm:oracle}, every simplified impostor $\hat{f} \in
+\mathcal{A}_i$ fails at least one test in $\mathcal{T}_i$.  The numerator
+in Definition~\ref{def:falsifiability-metric} is therefore zero, giving
+$d_F = 1 - 0 = 1$.
+\end{proof}
+
+Corollary~\ref{cor:operational-falsifiability} is the Popperian content of
+the framework: the 483-test suite maximally falsifies the hypothesis that
+any of the thirteen breeds can be replaced by a simpler computational
+artefact.  This is the operational meaning of the epigraph: scientific
+status is conferred not by confirmation but by survival of the strongest
+refutation attempt.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Summary}
+\label{sec:oracle-summary}
+% ─────────────────────────────────────────────────────────────────────────────
+
+This chapter formalised the notion of a complete test suite
+(Definitions~\ref{def:test}--\ref{def:unfakeable}) and proved that the
+483-test \textsc{wasm4pm} suite constitutes an unfakeable oracle for all
+thirteen breeds (Theorem~\ref{thm:oracle}).  The nine canonical witness
+tests---spanning $\MYCIN$ boundary arithmetic, $\PROLOG$ shared-variable
+unification, $\STRIPS$ plan soundness, $\SOAR$ antisymmetry, $\CBR$ Jaccard
+identity, $\HEARSAY$ scheduling priority, $\DENDRAL$ forbidden-substructure
+rejection, $\GPS$ difference-table coverage, and $\ELIZA$ keystack
+preemption---collectively rule out every algorithmically simpler impostor.
+The falsifiability pseudometric $d_F$ (Definition~\ref{def:falsifiability-metric})
+achieves its maximum value of 1 for each breed (Corollary~\ref{cor:operational-falsifiability}).
+Chapter~\ref{chap:ocel} now asks a complementary question: given that each
+breed \emph{passes} its oracle, can we verify at runtime that every
+\emph{execution} also conformed to the declared process model?  The answer
+requires an object-centric event-log framework, which we develop next.

@@ -1,0 +1,172 @@
+%% Chapter 1 — The Unverifiability Problem: Historical and Mathematical
+
+\chapter{The Unverifiability Problem: Historical and Mathematical}
+\label{chap:unverifiability}
+
+\epigraph{%
+  ``A theory which is not refutable by any conceivable event is non-scientific.''
+}{--- Karl Popper, \textit{Conjectures and Refutations}, 1963}
+
+\section{The Epistemological Gap in Classical AI}
+\label{sec:epistemological-gap}
+
+When a civil engineer stamps a load calculation, the profession does not trust the
+engineer's assurances—it trusts the \emph{methodology}: a documented procedure
+whose inputs and outputs can be independently recomputed, and whose failure modes are
+known in advance.  When a pharmacologist submits a compound for regulatory review,
+the submission package includes not only efficacy data but a complete specification
+of the assay conditions under which those data were produced, so that any competent
+laboratory can reproduce or refute the claim.  In both domains, \emph{operational
+verifiability}—the existence of a concise certificate that a third party can check
+in polynomial time—is the precondition for professional legitimacy.
+
+Classical AI systems of the 1970s and 1980s possessed no such certificate.
+MYCIN \cite{shortliffe1976} demonstrated that a rule-based consultation system
+could match or exceed the diagnostic accuracy of specialist physicians on
+bacteremia cases, yet the 1976 binary encoding of MYCIN was not operationally
+verifiable in any professional sense.  A board evaluating MYCIN faced an
+epistemological asymmetry: the system could be queried on test cases, and its
+outputs could be compared with expert consensus, but no observer could distinguish
+MYCIN's causal rule-firing machinery from a finite lookup table that happened to
+agree with MYCIN on every tested input.
+
+This asymmetry is not merely philosophical.  Consider a lookup table $L$ indexed
+by the symptom vectors appearing in the published MYCIN evaluation suite.  For
+every case in that suite, $L$ can reproduce MYCIN's recommended antibiotic and
+confidence factor exactly.  Yet $L$ encodes zero causal knowledge; it will
+produce arbitrary outputs on any input outside its index.  Because the 1976
+evaluation did not exhaustively sample the input space—indeed, could not, given
+that the space of symptom combinations is combinatorially vast—no test run on that
+evaluation could distinguish MYCIN from $L$.  The binary was, in the precise sense
+defined below, \emph{operationally non-falsifiable}.
+
+\begin{definition}[Operational Verifiability]
+\label{def:op-verifiability}
+A function $f : X \to Y$ is \emph{operationally verifiable} with respect to a
+specification $S \subseteq X \times Y$ if there exists a polynomial-time computable
+predicate $\pi(x, y)$ such that
+\[
+  (x, y) \in S \iff \pi(x, f(x)) = 1
+\]
+for all $x \in X$.  The predicate $\pi$ is called a \emph{verification certificate}
+for $f$ against $S$.
+\end{definition}
+
+In practice, $\pi$ is realized by the combination of (a) a cryptographic receipt
+binding the input to the output and (b) a conformance check that the output
+satisfies the structural invariants declared in $S$.
+
+\begin{definition}[Operational Falsifiability]
+\label{def:op-falsifiability}
+A function $f : X \to Y$ is \emph{operationally falsifiable} with respect to a
+specification $S$ if there exists a finite test suite $T \subset X$ such that for
+every $g : X \to Y$ with $g \neq f$ (as functions), there exists some $x \in T$
+with $(x, g(x)) \notin S$ or $g(x) \neq f(x)$.  Equivalently, $T$
+\emph{separates} $f$ from every other implementation in the implementation space
+$Y^X$.
+\end{definition}
+
+\begin{remark}
+Popper's falsifiability criterion \cite{popper1963} applies to \emph{theories}:
+a scientific theory must forbid at least one conceivable observation.  Applied to a
+\emph{running system}, the criterion sharpens: the system must, via its
+receipts and invariant checks, forbid at least one conceivable output for every
+input.  A system that accepts any output—because it emits no receipt and enforces
+no invariant—is not a scientific instrument; it is a black box.  The distinction
+between a theory and a running system is precisely that the running system produces
+concrete inputs and outputs on which falsifiability can be directly tested, not
+merely conjectured.
+\end{remark}
+
+The MYCIN non-falsifiability argument can now be stated precisely.  Let $X_{\text{MYCIN}}$
+be the space of patient symptom vectors and $Y_{\text{MYCIN}}$ be the space of
+antibiotic recommendations with associated confidence factors.  The 1976 binary
+produces outputs via the Certainty Factor calculus (Definition~\ref{def:cf-calculus}
+in Chapter~\ref{chap:mycin-breed}), but the binary itself emits no certificate
+binding its inputs to its outputs, and no invariant check that would distinguish
+rule-firing from table lookup.  The evaluation suite $T_{\text{eval}}$ used in the
+published study was finite and small relative to $\lvert X_{\text{MYCIN}} \rvert$.
+Therefore, by Definition~\ref{def:op-falsifiability}, MYCIN was not operationally
+falsifiable against $T_{\text{eval}}$: the lookup table $L$ described above passes
+every test in $T_{\text{eval}}$ while violating the declared causal specification.
+
+This is not a criticism of Shortliffe's achievement—MYCIN was a landmark.  It is
+a diagnosis of a structural gap that persisted in AI system evaluation for decades
+and that the Periodic Table of Reason is designed to close.
+
+\section{The wasm4pm Validation Framework}
+\label{sec:wasm4pm-framework}
+
+The \textsc{wasm4pm} platform operationalizes the requirements implicit in
+Definitions~\ref{def:op-verifiability} and~\ref{def:op-falsifiability} through
+five independently necessary components.
+
+\begin{enumerate}[label=(\roman*)]
+
+\item \textbf{Deterministic WASM boundary.}  Each breed is compiled to a
+WebAssembly module with a fixed binary interface.  WASM's memory isolation and
+deterministic execution semantics guarantee that, given the same input, the module
+produces bit-identical output across all conforming WASM runtimes.  Alone, this
+component establishes reproducibility but not verifiability: identical outputs on
+identical inputs do not prove that the computation follows the declared algorithm.
+
+\item \textbf{Structural invariant suite.}  The specification $S_i$ for breed $i$
+is encoded as a set of executable predicates (the ``proof gate'' suite) that are
+evaluated against every output at the WASM boundary.  Alone, structural invariants
+establish that outputs are \emph{well-formed} but do not bind them to the specific
+inputs that caused them: a cached or replayed output would pass invariant checks.
+
+\item \textbf{BLAKE3 receipt chain.}  The function $\blake$ computes a
+cryptographic digest of the input and output pair, forming a tamper-evident receipt
+that is appended to the receipt chain in \texttt{.wasm4pm/receipts/latest.json}.
+Alone, the receipt chain establishes causal binding between a specific input and a
+specific output but does not guarantee that the output is correct: a receipt can be
+computed for any $(x, y)$ pair, including one where $y$ is wrong.
+
+\item \textbf{Process-mining conformance check.}  The OTEL spans emitted during
+execution are converted to an OCEL event log and replayed against the declared
+process model using \texttt{pm4py}.  This check detects deviations between the
+declared algorithm sequence and the actual runtime sequence—catching, for example,
+a breed that skips a mandatory inference step.  Alone, conformance checking
+establishes that the right steps occurred in the right order but says nothing about
+whether the outputs of those steps are numerically correct.
+
+\item \textbf{Input hash at the WASM boundary.}  Beginning with the current
+implementation, \texttt{cognition\_run()} in
+\texttt{crates/wasm4pm-cognition/src/wasm.rs} computes
+$\text{input\_hash} = \blake(\text{input\_json})$ and includes it in the
+\texttt{ContractResult} receipt.  This component closes the gap left by (iii)
+alone: because the input hash is computed \emph{inside} the WASM module before
+any output is produced, an adversary cannot substitute a precomputed output without
+invalidating the input hash.  Alone, however, this component does not establish
+conformance of the algorithm sequence.
+\end{enumerate}
+
+The necessity of all five components follows from the one-sentence arguments above:
+each component closes exactly one attack surface while leaving the others open.
+Only their conjunction achieves operational falsifiability in the sense of
+Definition~\ref{def:op-falsifiability}: a test suite $T$ that distinguishes a
+conforming breed from any non-conforming alternative must be able to (a) reproduce
+the computation, (b) check output structure, (c) verify causal binding, (d) verify
+algorithmic sequence, and (e) verify input integrity.
+
+\begin{remark}
+The five-component framework is the \emph{minimal} conjunction.  One could add
+further components—for example, formal verification of the WASM binary against a
+mathematical specification—but the five listed are necessary in the sense that
+dropping any one of them leaves a constructible counterexample (a non-conforming
+implementation that passes all remaining checks).
+\end{remark}
+
+\section{Summary}
+\label{sec:ch1-summary}
+
+This chapter established the epistemological gap between classical AI evaluation
+and the professional certification standards of engineering and pharmacology.  The
+gap was made precise via Definitions~\ref{def:op-verifiability}
+and~\ref{def:op-falsifiability}, and illustrated concretely by the MYCIN
+non-falsifiability argument.  The five-component \textsc{wasm4pm} validation
+framework was presented as the minimal conjunction that closes this gap.  Chapter~2
+formalizes the categorical structure through which these components are organized:
+the \emph{breed category}, in which each breed is an object with a declared
+signature and each conformance-preserving transformation is a morphism.

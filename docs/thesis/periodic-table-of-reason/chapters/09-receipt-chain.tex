@@ -1,0 +1,221 @@
+%% Chapter 9 — The Reasoning Receipt Chain as Epistemic Infrastructure
+
+\chapter{The Reasoning Receipt Chain as Epistemic Infrastructure}
+\label{chap:receipt}
+
+\epigraph{%
+  ``Trust, but verify.''
+}{--- Russian proverb, adopted by Ronald Reagan; for AI, trust the algorithm, verify the execution}
+
+Chapter~\ref{chap:speed} established that sub-microsecond breed latency makes it possible
+to manufacture millions of reasoning conclusions within a single decision budget.  This
+capability introduces an accountability obligation that has no precedent in classical expert
+systems: when a system produces $3 \times 10^7$ MYCIN consultations per minute, every one
+of those consultations must be individually auditable, non-repudiable, and causally traceable
+to the exact input that produced it.
+
+This chapter formalises the \emph{reasoning receipt chain} --- the cryptographic
+infrastructure that satisfies this obligation.  We prove that BLAKE3 hashing constitutes
+a process-binding commitment scheme (Section~\ref{sec:blake3-commitment}), that receipt
+composition is functorial over breed morphisms
+(Section~\ref{sec:receipt-functor}), and that the receipt chain satisfies four
+civilizational trust properties sufficient for regulatory compliance
+(Section~\ref{sec:trust-properties}).
+
+%% -----------------------------------------------------------------------
+\section{BLAKE3 as a Commitment Scheme}
+\label{sec:blake3-commitment}
+%% -----------------------------------------------------------------------
+
+\begin{definition}[Reasoning Receipt]
+\label{def:reasoning-receipt}
+Let $\Breed_i$ be a breed, $A$ an input assertion set, $L = (l_1, \ldots, l_n)$ the
+ordered sequence of rules fired during the consultation, and $t$ a Unix nanosecond
+timestamp.  The \emph{reasoning receipt} is
+\[
+  \rho \;=\; \blake(\mathtt{breed\_id}(\Breed_i) \;\|\; A \;\|\; L \;\|\; t),
+\]
+where $\blake$ denotes the BLAKE3 hash function, $\|$ denotes concatenation after
+canonical serialisation (JSON with lexicographically sorted keys), and
+$\mathtt{breed\_id}(\Breed_i)$ is the stable identifier registered in the kernel registry.
+\end{definition}
+
+The receipt $\rho$ is a 256-bit digest.  Three properties make it suitable as a
+commitment scheme for reasoning outputs.
+
+\begin{definition}[Three Receipt Properties]
+\label{def:receipt-properties}
+A reasoning receipt $\rho$ satisfies:
+\begin{enumerate}[label=(\roman*)]
+  \item \emph{Binding.}  It is computationally infeasible to find
+        $(A', L', t') \neq (A, L, t)$ such that
+        $\blake(\mathtt{breed\_id} \| A' \| L' \| t') = \rho$.
+        This follows immediately from the collision resistance of BLAKE3 under
+        the standard random-oracle assumption.
+
+  \item \emph{Hiding.}  Given only $\rho$, it is computationally infeasible to
+        recover $A$, $L$, or $t$.  This follows from the preimage resistance of BLAKE3
+        and the unpredictability of $t$ at nanosecond resolution.
+
+  \item \emph{Process-binding.}  The receipt commits not merely to the input--output
+        pair $(A, \text{conclusion})$ but to the entire \emph{execution trace} $L$,
+        i.e., the ordered sequence of rules fired.  Two consultations that reach the
+        same conclusion by different rule paths produce different receipts.
+\end{enumerate}
+\end{definition}
+
+\paragraph{Causal completeness update.}
+The original formulation of Definition~\ref{def:reasoning-receipt} covered the breed
+identifier, the rule-firing trace, and the timestamp.  A gap remained: the serialised
+input assertion set $A$ was available to the TypeScript consumer but was not independently
+hashed at the WASM boundary, creating the possibility that a receipt could be replayed
+with a silently modified input.
+
+This gap is closed in wasm4pm v26.6.10.  The function \texttt{cognition\_run()} in
+\texttt{crates/wasm4pm-cognition/src/wasm.rs} now computes
+\[
+  \mathtt{input\_hash} \;=\; \blake(\mathtt{input\_json}),
+\]
+where \texttt{input\_json} is the raw byte string received at the WASM boundary before
+any deserialisation.  The field \texttt{input\_hash} is included in the
+\texttt{ContractResult} struct returned to the TypeScript consumer and is validated for
+presence by the schema at \texttt{packages/cognition/src/schemas.ts:128}.  The receipt
+therefore now reads
+\[
+  \rho \;=\; \blake(\mathtt{breed\_id} \;\|\; \mathtt{input\_hash} \;\|\; L \;\|\; t),
+\]
+and the causal completeness gap is closed: any modification to the input, however small,
+changes \texttt{input\_hash}, and therefore changes $\rho$, making the tamper-evident
+property unconditional rather than dependent on the integrity of the TypeScript layer.
+
+\paragraph{Process-binding vs.\ zero-knowledge proof.}
+A natural question is whether a zero-knowledge proof (ZKP) of correct execution would
+be preferable to a process-binding receipt.  A ZKP would allow a verifier to confirm that
+the computation was performed correctly without learning the inputs.  However, regulatory
+compliance frameworks (FDA 21 CFR Part 11, EU AI Act Article 13, ISO 13485) require that
+\emph{both} the input record and the execution trace be available to an authorised auditor;
+hiding them behind a ZKP would violate the transparency obligations those frameworks impose.
+Process-binding commitment is therefore the correct primitive for regulated AI: it provides
+computational integrity guarantees (no one can forge a receipt for a computation they did
+not perform) while preserving full auditability for authorised parties.
+
+%% -----------------------------------------------------------------------
+\section{The Reasoning Receipt Functor}
+\label{sec:receipt-functor}
+%% -----------------------------------------------------------------------
+
+We now show that receipt generation is not an ad-hoc operation but a natural transformation
+in the categorical framework established in Chapter~\ref{chap:breed}.
+
+\begin{definition}[Receipt Functor]
+\label{def:receipt-functor}
+Define the \emph{receipt functor}
+\[
+  R_{\Breed} \;:\; \mathbf{Breed} \;\longrightarrow\; \mathbf{Receipt}
+\]
+as follows.  On objects: $R_{\Breed}(\Breed_i) = \rho_i$, the receipt of the terminal
+consultation of $\Breed_i$.  On morphisms: if $f : \Breed_i \to \Breed_j$ is a breed
+morphism (a natural transformation of the underlying inference functors), then
+$R_{\Breed}(f) : \rho_i \to \rho_j$ is the canonical hash-linking map
+$\rho_j = \blake(\rho_i \| \mathtt{breed\_id}(\Breed_j) \| \ldots)$, i.e., the receipt
+of the successor breed includes the receipt of the predecessor as a committed prefix.
+\end{definition}
+
+The Kleisli-composition interpretation makes the chain structure transparent.  Let
+$\mathbf{Receipt}$ be the category whose objects are 256-bit digests and whose morphisms
+are hash-linking maps.  Then $R_{\Breed}$ maps a sequential pipeline of breed invocations
+$\Breed_1 \to \Breed_2 \to \cdots \to \Breed_n$ to a receipt chain
+$\rho_1 \to \rho_2 \to \cdots \to \rho_n$ in which each receipt is a committed function
+of all predecessors.  This is precisely the Kleisli composition in the writer monad over
+the free monoid of BLAKE3 digests: composing two breed invocations appends their receipts,
+and the identity morphism maps to the empty receipt chain.
+
+\begin{theorem}[Civilizational Trust Properties]
+\label{thm:civilizational-trust}
+The receipt functor $R_{\Breed}$ satisfies the following four properties for any pipeline
+of breed invocations operating under the wasm4pm kernel:
+
+\begin{enumerate}[label=(\roman*)]
+  \item \emph{Non-forgeability.}
+  \item \emph{Non-repudiation.}
+  \item \emph{Third-party auditability.}
+  \item \emph{Causal completeness.}
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We prove each property in turn.
+
+\paragraph{(i) Non-forgeability.}
+Suppose an adversary wishes to present a receipt $\rho'$ claiming that a particular breed
+$\Breed_i$ was invoked on input $A'$ and fired rule sequence $L'$, without having actually
+performed that invocation.  To produce $\rho'$, the adversary must find a preimage of the
+BLAKE3 output
+$\rho' = \blake(\mathtt{breed\_id}(\Breed_i) \| \mathtt{input\_hash'} \| L' \| t')$.
+Under the standard collision-resistance and preimage-resistance assumptions for BLAKE3
+(which is based on the ARX permutation and has received no known attack reducing its
+security below 128 bits), this is computationally infeasible.  Furthermore, the
+\texttt{input\_hash} field is computed at the WASM boundary before any TypeScript code
+can modify the input, so the adversary cannot substitute a different input after the hash
+is committed.  The chain structure amplifies this: forging any receipt in the middle of a
+chain would require forging all subsequent receipts simultaneously, multiplying the
+computational difficulty by the chain length.
+
+\paragraph{(ii) Non-repudiation.}
+Once a receipt $\rho$ is emitted by \texttt{cognition\_run()}, the issuer (the wasm4pm
+runtime) cannot plausibly deny that the invocation occurred.  The receipt is saved to
+\texttt{.wasm4pm/receipts/latest.json} and, in compliant deployments, to an append-only
+audit log.  Because the receipt commits to \texttt{breed\_id}, \texttt{input\_hash}, the
+rule-firing trace $L$, and the timestamp $t$, any claim by the issuer that the invocation
+did not occur, or occurred with different parameters, can be immediately falsified by
+presenting the receipt and replaying the computation: the same inputs must produce the
+same receipt (determinism is a merge gate in wasm4pm; see \texttt{CLAUDE.md}).  The
+non-repudiation property therefore rests on the combination of BLAKE3 binding and the
+determinism invariant.
+
+\paragraph{(iii) Third-party auditability.}
+A third-party auditor possessing only the receipt chain $(\rho_1, \ldots, \rho_n)$ and
+the original input-output pairs can independently verify the chain's integrity by
+recomputing each $\rho_i$ from the committed data.  The auditor requires no access to
+the runtime environment, no secret keys, and no privileged channels.  This is the
+\emph{process-binding} property of Definition~\ref{def:receipt-properties}(iii): the
+receipt encodes not just the conclusion but the execution path, so the auditor can
+distinguish between two consultations that reached the same conclusion by different rule
+paths --- a distinction that zero-knowledge proofs could not provide without disclosing
+the inputs.  Third-party auditability is therefore a strictly stronger property than
+output correctness: it certifies \emph{how} the conclusion was reached, not merely
+\emph{that} the conclusion is consistent with the inputs.
+
+\paragraph{(iv) Causal completeness.}
+Prior to v26.6.10, a receipt committed to the breed identifier, the rule-firing trace,
+and the timestamp, but the input assertion set $A$ was hashed only in the TypeScript
+consumer layer.  This created a causal gap: a receipt could in principle be replayed
+against a modified input if the TypeScript layer were compromised, without changing the
+receipt value.  The causal completeness gap is now closed by the addition of
+\texttt{input\_hash} $= \blake(\mathtt{input\_json})$ computed in
+\texttt{crates/wasm4pm-cognition/src/wasm.rs} before deserialisation.  With this
+addition, the receipt is a committed function of the complete causal closure of the
+computation: the breed, the input, the execution trace, and the time.  Any modification
+to any of these four elements changes the receipt.  Causal completeness means that the
+receipt chain is a \emph{sufficient statistic} for the computation: given the chain,
+an auditor can reconstruct the entire causal history without any additional evidence.
+This is the epistemic property that justifies calling the receipt chain
+\emph{infrastructure} rather than merely a log: it is the substrate on which
+the trust properties of (i)--(iii) rest.
+\end{proof}
+
+%% -----------------------------------------------------------------------
+\section{Summary}
+\label{sec:receipt-summary}
+%% -----------------------------------------------------------------------
+
+This chapter proved that the wasm4pm reasoning receipt chain is not an engineering
+convenience but an epistemic infrastructure satisfying four civilizational trust properties:
+non-forgeability, non-repudiation, third-party auditability, and --- following the v26.6.10
+\texttt{input\_hash} addition at the WASM boundary --- causal completeness.  Together,
+Chapters~\ref{chap:speed} and~\ref{chap:receipt} establish the two sides of the
+accountability equation: the speed phase transitions of Chapter~\ref{chap:speed} make
+ensemble reasoning feasible; the receipt functor of this chapter makes every conclusion in
+that ensemble auditable.  Chapter~\ref{chap:synthesis} draws these threads together into
+the Periodic Table of Reason, showing how the categorical, process-mining, and
+cryptographic constraints jointly determine the shape of trustworthy AI reasoning systems.

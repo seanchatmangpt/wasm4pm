@@ -1,0 +1,277 @@
+%% Chapter 12 — Verification Ladder and Falsifiers
+
+\chapter{Verification Ladder and Falsifiers}
+\label{chap:verification}
+
+\epigraph{%
+  ``For every complex problem there is an answer that is clear, simple, and wrong.''
+}{--- H.L.\ Mencken; the verification ladder prevents premature closure}
+
+\noindent Any formal system that cannot be falsified is not science — it is creed. This
+chapter provides the two instruments that keep the \emph{Periodic Table of Reason} honest:
+a ten-rung (plus one extension) verification ladder that any evaluator can climb
+independently, and nine falsifiers that would, if realised, require the thesis to be
+retracted or substantially revised. The ladder specifies \emph{what to run}; the
+falsifiers specify \emph{what would constitute refutation}.
+
+%%--------------------------------------------------------------------
+\section{Verification Ladder}
+\label{sec:verification-ladder}
+%%--------------------------------------------------------------------
+
+The verification ladder is ordered from least to most computationally demanding. An
+evaluator who completes all rungs has independently reproduced every empirical claim in
+the thesis.
+
+\medskip
+\textbf{1.} Clone the repository and confirm the monorepo structure matches
+Section~\ref{sec:repository-structure}: \texttt{wasm4pm/} (Rust/WASM core),
+\texttt{packages/} (11 TypeScript packages), \texttt{apps/wasm4pm/} (primary CLI),
+\texttt{crates/} (secondary Rust crates including \texttt{wasm4pm-cognition},
+\texttt{prolog8}, \texttt{miniml-core}, \texttt{ocpq}). Confirm that
+\texttt{Cargo.toml} lists the workspace members and \texttt{pnpm-workspace.yaml}
+lists the package paths.
+
+\medskip
+\textbf{2.} Build the WASM core: from \texttt{crates/wasm4pm-cognition/}, run
+\begin{center}
+\texttt{wasm-pack build --target nodejs --out-dir pkg -- --features wasm}
+\end{center}
+and confirm that \texttt{pkg/wasm4pm\_cognition\_bg.wasm} is produced without errors.
+This rung verifies that the Rust source compiles to a valid WASM binary and that the
+\texttt{wasm\_bindgen} exports (\texttt{cognition\_run}, \texttt{cognition\_verify},
+\texttt{system\_build}) are present in the generated \texttt{.d.ts} stubs.
+
+\medskip
+\textbf{3.} Run the Rust unit test suite: from the repository root, run
+\begin{center}
+\texttt{cargo test 2>\&1 | grep -E "test result|FAILED|passed"}
+\end{center}
+and confirm 483 tests pass with 0 failures. The MYCIN CF boundary tests
+(\texttt{test\_cf\_threshold\_boundary\_above}, \texttt{test\_cf\_threshold\_boundary\_below}
+in \texttt{production\_rules.rs}) and the Prolog grandparent test
+(\texttt{strips\_soar\_cbr\_invariants.rs}) must appear in the output. Any failure
+triggers Andon (Section~\ref{sec:falsifiers}).
+
+\medskip
+\textbf{4.} Run the TypeScript test suite: from the repository root, run
+\begin{center}
+\texttt{pnpm build \&\& pnpm test}
+\end{center}
+and confirm all packages report passing. Specifically verify that
+\texttt{packages/cognition/src/bvc.ts} (\texttt{computeBVC}, \texttt{isBVCCertified})
+and \texttt{packages/contracts/src/admission.ts} (\texttt{BVCAdmissionResult},
+\texttt{admitBVC}) are covered by passing tests.
+
+\medskip
+\textbf{5.} Run the Criterion latency benchmarks: from
+\texttt{crates/wasm4pm-cognition/}, run
+\begin{center}
+\texttt{cargo bench --bench breed\_latency 2>\&1 | grep -E "time:|FAILED"}
+\end{center}
+and confirm that all 13 breeds report median latency $\leq 10\,\mu\mathrm{s}$.
+Compare against \texttt{docs/benchmarks/breed-latency-2026-06-10.md}. Any breed
+exceeding $10\,\mu\mathrm{s}$ is a candidate for Falsifier F6.
+
+\medskip
+\textbf{6.} Verify the BVC for each breed individually: invoke \texttt{wpm cognition run}
+(or \texttt{wpm cr} alias) for each of the 13 breeds with a canonical test input.
+Confirm that each response contains \texttt{status: "ok"}, a non-empty
+\texttt{output\_hash}, a non-empty \texttt{input\_hash}, and that
+\texttt{admitBVC(result)} returns \texttt{certified: true}. Any breed returning
+\texttt{status !== "ok"} or \texttt{certified: false} is a candidate for
+Falsifier F9.
+
+\medskip
+\textbf{7.} Verify OCEL conformance for one breed end-to-end: run \texttt{wpm cognition run}
+for the \texttt{mycin} breed, extract the OTel spans, convert to OCEL format using
+the \texttt{@wasm4pm/observability} span-to-ocel utility, and replay the resulting
+log against the \MYCIN{} Petri net model using pm4py. Confirm fitness $\phi = 1.0$.
+Repeat for \texttt{prolog} as a second data point.
+
+\medskip
+\textbf{8.} Verify receipt chain integrity: run the factory-agent chain
+(\texttt{examples/cognition/chains/factory-agent/chain.sh}) and confirm that all 13
+stage receipts are produced and that
+$r_{k+1}.\texttt{input\_hash} = r_k.\texttt{output\_hash}$ for $k = 0, \ldots, 11$.
+The final receipt (\texttt{stages/12-eliza/result.json}) must contain a non-empty
+\texttt{output\_hash} that is the BLAKE3 hash of the ELIZA stage's
+\texttt{ocel\_log} concatenated with its \texttt{result}.
+
+\medskip
+\textbf{9.} Verify determinism for each breed: run the double-run bit-exact harness
+\begin{center}
+\texttt{cargo test breed\_determinism 2>\&1 | grep -E "test result|FAILED"}
+\end{center}
+and confirm all 13 breeds produce identical byte sequences on both runs with the
+same input seed. Any non-determinism is Falsifier F3.
+
+\medskip
+\textbf{10.} Verify the \texttt{admitBVC} gate prevents non-certified breeds from entering
+a pipeline: construct a synthetic \texttt{BVCAdmissionResult} with
+\texttt{certified: false} and confirm that \texttt{admitBVC()} returns an error
+response. Then construct one with \texttt{certified: true} and confirm it returns
+an admit response. This rung verifies that the Fourth Constraint is enforced at
+the API boundary, not merely documented.
+
+\medskip
+\textbf{10b.} Run all three breed chains via the master runner:
+\begin{center}
+\texttt{bash examples/cognition/chains/run-all-chains.sh}
+\end{center}
+Verify that all 26 stages across the three chains
+(\texttt{socratic-diagnosis}: 7 breeds; \texttt{scientific-discovery}: 6 breeds;
+\texttt{factory-agent}: 13 breeds) complete with exit code 0 and that every
+stage receipt is BVC-certified. The expected summary line is:
+\begin{center}
+\texttt{PASSED: 3 / 3 chains}
+\end{center}
+Any chain failure is Andon; investigate the failing stage's receipt before
+proceeding.
+
+%%--------------------------------------------------------------------
+\section{Falsifiers}
+\label{sec:falsifiers}
+%%--------------------------------------------------------------------
+
+The following conditions, if demonstrated, would falsify one or more of the seven main
+theorems. Falsification of a main theorem requires either retraction, revision, or a proof
+that the falsifying instance lies outside the scope of the theorem's hypotheses.
+
+\medskip
+\textbf{F1 — Oracle forgery.} A test harness that does not implement the correct
+breed algorithm nonetheless passes a Tier-2 oracle check. This would falsify
+Theorem~\ref{thm:main-oracle} and would require reconstructing the oracle hierarchy
+to identify the exploited weakness. A concrete demonstration requires constructing a
+function $f \colon \mathcal{X} \to \mathcal{Y}$ that (a) does not implement \MYCIN{}
+certainty-factor algebra, and (b) satisfies $\CF(A \wedge B) = \CF(A) \cdot \CF(B)$
+for all inputs in the test suite. If such a function exists and is not the correct
+algorithm, the oracle is not Tier-2.
+
+\medskip
+\textbf{F2 — OCEL fitness gap.} A breed's execution traces produce an OCEL event log
+whose fitness under pm4py token-based replay is $\phi < 1.0$. This would falsify
+Theorem~\ref{thm:main-ocel}(iii) for that breed and would require revising either the
+breed's process model $M_i$ or the OTel span-to-event mapping. The gap would also
+reduce $C_{\mathrm{ocel}}(\Breed_i)$ below 1 and thus $V(\Breed_i)$ below 1.
+
+\medskip
+\textbf{F3 — Non-determinism.} Two invocations of the same breed with the same input
+seed produce different byte-level outputs. This would falsify
+Theorem~\ref{thm:main-bvc} ($C_{\mathrm{determ}} = 1$) for that breed and would
+require identifying the non-determinism source: hash-map iteration order, floating-point
+rounding differences across platforms, or an unseeded PRNG.
+
+\medskip
+\textbf{F4 — Receipt hash mismatch.} The \texttt{output\_hash} emitted by
+\texttt{cognition\_run()} does not equal
+$\blake3(\texttt{ocel\_log} \Vert \texttt{result})$ when recomputed independently.
+This would falsify Theorem~\ref{thm:main-bvc} ($C_{\mathrm{receipt}} = 1$) and the
+non-repudiation property of Theorem~\ref{thm:main-civ}. It would require a bug in
+the BLAKE3 construction at the WASM boundary
+(\texttt{crates/wasm4pm-cognition/src/wasm.rs}).
+
+\medskip
+\textbf{F5 — Epistemic dependence.} A functor $F \colon \prod_{j \neq i} \Breed_j
+\to \Breed_i$ is exhibited in the \textbf{Breed} category that commutes with the
+evidence functor, demonstrating that breed $\Breed_i$ is derivable from the remaining
+twelve. This would falsify Theorem~\ref{thm:main-epistemic} for that breed and would
+require either removing the breed from the table as redundant or strengthening the
+independence proof. The most plausible candidate for approximate dependence is \ELIZA{}
+(as a degenerate \CBR{} with empty case base), but the evidence functors differ in the
+dimensions they populate in the epistemological space $\mathcal{V}$.
+
+\medskip
+\textbf{F6 — Latency regression above threshold.} A breed exceeds $10\,\mu\mathrm{s}$
+median latency on representative hardware under Criterion benchmarking. This would
+falsify Theorem~\ref{thm:main-speed} for that breed and would require either
+performance optimisation or a revision of the phase-transition threshold argument.
+Given that the current worst case is \PROLOG{} at $7.932\,\mu\mathrm{s}$, a regression
+would require approximately a 26\% slowdown.
+
+\medskip
+\textbf{F7 — Regulatory inadmissibility finding.} A court, regulator, or standards body
+issues a ruling that BLAKE3-based receipt chains are inadmissible as documentary evidence
+in the relevant jurisdiction. This would falsify the regulatory-admissibility component
+of Theorem~\ref{thm:main-civ} and would require replacing BLAKE3 with an
+admissibility-certified hash function (e.g.\ SHA-3/256, which is currently FIPS 202
+certified).
+
+\medskip
+\textbf{F8 — Fourth constraint sufficiency counter-example.} A pipeline satisfying
+$C_0 \wedge C_1 \wedge C_2 \wedge C_3$ produces an output that is epistemically
+untrustworthy in a way not detectable by the BVC. This would require constructing a
+breed that achieves $V(\Breed_i) = 1$ by passing all four component tests while
+concealing a systematic bias or error in its reasoning not exercised by the oracle suite.
+A successful construction would require either expanding the oracle hierarchy to Tier-3
+or adding a fifth constraint.
+
+\medskip
+\textbf{F9 — BVC formula gap.} The function \texttt{computeBVC()} in
+\texttt{packages/cognition/src/bvc.ts} returns a value strictly less than 1.0 for a
+breed invocation that is independently verified to satisfy all four components
+($C_{\mathrm{test}} = C_{\mathrm{ocel}} = C_{\mathrm{receipt}} = C_{\mathrm{determ}} = 1$).
+This would falsify Theorem~\ref{thm:main-bvc} not at the mathematical level but at the
+implementation level, indicating a bug in the composite scoring formula:
+\begin{center}
+\texttt{score = (c\_test + c\_ocel + c\_receipt + c\_determ) / 4}
+\end{center}
+Specifically, this falsifier would be instantiated if floating-point summation error
+caused \texttt{score} to underflow below 1.0 for four unit inputs, or if any of the
+four component fields were incorrectly extracted from the \texttt{ContractResult}
+returned by \texttt{cognition\_run()}.
+
+%%--------------------------------------------------------------------
+\section{Relationship Between Ladder and Falsifiers}
+\label{sec:ladder-falsifiers-relationship}
+%%--------------------------------------------------------------------
+
+Each rung of the verification ladder is designed to exercise one or more falsifiers.
+The correspondence is as follows:
+
+\medskip
+\begin{center}
+\begin{tabular}{cll}
+\toprule
+\textbf{Rung} & \textbf{Primary Falsifier(s) Exercised} & \textbf{Theorem at Risk} \\
+\midrule
+1   & (structural, no direct falsifier)      & Background \\
+2   & (compilation; no direct falsifier)     & Background \\
+3   & F1 (oracle forgery)                    & Thm.~\ref{thm:main-oracle} \\
+4   & F9 (BVC formula gap)                   & Thm.~\ref{thm:main-bvc} \\
+5   & F6 (latency regression)                & Thm.~\ref{thm:main-speed} \\
+6   & F4 (receipt hash mismatch), F9         & Thm.~\ref{thm:main-bvc}, \ref{thm:main-civ} \\
+7   & F2 (OCEL fitness gap)                  & Thm.~\ref{thm:main-ocel} \\
+8   & F4 (receipt hash mismatch)             & Thm.~\ref{thm:main-civ} \\
+9   & F3 (non-determinism)                   & Thm.~\ref{thm:main-bvc} \\
+10  & F8 (fourth constraint gap)             & Thm.~\ref{thm:main-fourth} \\
+10b & F2, F4, F9 (chain-level integration)   & Thm.~\ref{thm:main-bvc}, \ref{thm:main-civ} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\medskip
+Falsifiers F5 (epistemic dependence) and F7 (regulatory inadmissibility) are not
+directly exercised by the verification ladder because they require external input —
+a category-theoretic construction in the case of F5, and a legal ruling in the case
+of F7. They are included as honest acknowledgements that the thesis makes claims
+(epistemological geometry, regulatory admissibility) whose full falsification space
+extends beyond what automated testing can cover.
+
+%%--------------------------------------------------------------------
+\section{Openness to Refutation}
+\label{sec:openness-refutation}
+%%--------------------------------------------------------------------
+
+The Popperian criterion for scientific status is not the absence of falsifiers but the
+\emph{genuine possibility of their instantiation}. Each falsifier in this chapter
+describes a concrete experiment that a competent engineer could perform. The thesis
+does not claim that the falsifiers are impossible — it claims only that they have not
+been instantiated as of the 2026-06-09 audit. Any evaluator who instantiates a
+falsifier is invited to open an issue in the \wasm{} repository; the authors commit to
+investigating within two working days and either refuting the counter-example or
+revising the affected theorem.
+
+This commitment is itself falsifiable: if an issue is opened, a counter-example is
+demonstrated, and no response is forthcoming within two working days, the thesis
+authors have failed their own standard of scientific accountability.

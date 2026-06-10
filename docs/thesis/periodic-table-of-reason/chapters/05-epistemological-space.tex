@@ -1,0 +1,256 @@
+%% Chapter 5 — The Epistemological Space: Thirteen Breeds as Basis Vectors
+
+\chapter{The Epistemological Space: Thirteen Breeds as Basis Vectors}
+\label{chap:epistemological-space}
+
+\epigraph{%
+  ``Give me a lever long enough and a fulcrum on which to place it, and I shall move the world.''
+}{--- Archimedes; adapted: give me 13 orthogonal reasoning architectures and I shall cover all symbolic cognition}
+
+\section{Constructing the Epistemological Space}
+\label{sec:constructing-epistemological-space}
+
+The thirteen breeds of the \emph{Periodic Table of Reason} are not an ad hoc collection
+of algorithms assembled for engineering convenience. They are, in a precise mathematical
+sense, the basis vectors of a finite-dimensional epistemological space. To make this claim
+rigorous we must first define the space itself: a structured set of dimensions that
+characterise how a reasoning engine acquires, stores, updates, and discharges knowledge.
+
+\begin{definition}[Epistemological Coordinates]
+\label{def:epistemological-coordinates}
+Let $\mathcal{E} = \mathbb{R}^8$ be the \emph{epistemological coordinate space}. A point
+in $\mathcal{E}$ is a tuple
+\[
+  \mathbf{e} = (u,\, \delta,\, \kappa,\, \gamma,\, \tau_{\mathrm{mem}},\, \lambda,\, \chi,\, \eta)
+\]
+where each coordinate ranges over $[0,1]$ unless otherwise noted, with the following
+semantics:
+
+\begin{enumerate}
+  \item $u \in \{0,1\}$ — \emph{uncertainty flag}: 1 if the breed natively represents
+        degrees of belief (probabilities, certainty factors, or fuzzy memberships);
+        0 if reasoning is purely deterministic.
+
+  \item $\delta \in [0,1]$ — \emph{deductive strength}: fraction of the breed's
+        inference steps that are deductively valid (i.e., truth-preserving under classical
+        logic).
+
+  \item $\kappa \in [0,1]$ — \emph{case memory depth}: normalised measure of reliance
+        on stored historical cases or episodes. 1 = pure case-based; 0 = no case memory.
+
+  \item $\gamma \in [0,1]$ — \emph{generative power}: capacity to emit novel hypotheses
+        not present in the initial knowledge base ($\gamma = 0$ for purely deductive
+        systems).
+
+  \item $\tau_{\mathrm{mem}} \in [0,1]$ — \emph{temporal sensitivity}: degree to which
+        conclusions are indexed by time or recency of evidence.
+
+  \item $\lambda \in [0,1]$ — \emph{learning rate}: capacity for in-session modification
+        of rules or weights from observed outcomes.
+
+  \item $\chi \in \{0,1\}$ — \emph{causal explainability flag}: 1 if the breed produces
+        a human-readable causal chain alongside its conclusion.
+
+  \item $\eta \in [0,1]$ — \emph{meta-cognitive depth}: capacity for the breed to
+        reason about its own knowledge state or confidence limits.
+\end{enumerate}
+\end{definition}
+
+\begin{definition}[Breed Vector]
+\label{def:breed-vector}
+For each breed $\Breed_i$ ($i = 1, \ldots, 13$), the \emph{breed vector}
+$\mathbf{v}_i \in \mathcal{E}$ is the unique point whose coordinates are determined by the
+breed's declarative specification in \texttt{breeds/mod.rs} and verified by the unfakeable
+oracles of Chapter~\ref{chap:oracle-hierarchy}. The mapping
+$\phi : \{\Breed_1, \ldots, \Breed_{13}\} \to \mathcal{E},\; \phi(\Breed_i) = \mathbf{v}_i$
+is called the \emph{epistemological embedding}.
+\end{definition}
+
+Table~\ref{tab:breed-vectors} gives the complete epistemological embedding for all thirteen
+breeds. Each row is the breed vector $\mathbf{v}_i$ read directly from the specification;
+the derivation of each coordinate is defended in the breed's own specification chapter.
+
+\begin{table}[ht]
+\centering
+\caption{Breed vectors in the epistemological coordinate space $\mathcal{E}$.}
+\label{tab:breed-vectors}
+\small
+\begin{tabular}{lcccccccc}
+\toprule
+\textbf{Breed} & $u$ & $\delta$ & $\kappa$ & $\gamma$ & $\tau_{\mathrm{mem}}$ & $\lambda$ & $\chi$ & $\eta$ \\
+\midrule
+\textsc{mycin}           & 1 & 0.6 & 0.0 & 0.2 & 0.0 & 0.0 & 1 & 0.3 \\
+\textsc{bayesian}        & 1 & 0.9 & 0.0 & 0.3 & 0.1 & 0.4 & 0 & 0.5 \\
+\textsc{fuzzy}           & 1 & 0.5 & 0.0 & 0.2 & 0.0 & 0.0 & 0 & 0.2 \\
+\textsc{dempster-shafer} & 1 & 0.7 & 0.0 & 0.3 & 0.0 & 0.0 & 0 & 0.6 \\
+\textsc{abductive}       & 0 & 0.4 & 0.0 & 1.0 & 0.0 & 0.0 & 1 & 0.4 \\
+\textsc{cbr}             & 0 & 0.3 & 1.0 & 0.4 & 0.6 & 0.5 & 1 & 0.3 \\
+\textsc{strips}          & 0 & 1.0 & 0.0 & 0.5 & 0.0 & 0.0 & 1 & 0.2 \\
+\textsc{soar}            & 0 & 0.8 & 0.2 & 0.6 & 0.2 & 0.8 & 1 & 0.9 \\
+\textsc{inductive}       & 0 & 0.2 & 0.3 & 0.8 & 0.3 & 0.9 & 0 & 0.4 \\
+\textsc{temporal}        & 0 & 0.8 & 0.1 & 0.2 & 1.0 & 0.1 & 1 & 0.3 \\
+\textsc{ontological}     & 0 & 1.0 & 0.0 & 0.3 & 0.0 & 0.0 & 1 & 0.5 \\
+\textsc{constraint}      & 0 & 1.0 & 0.0 & 0.1 & 0.0 & 0.0 & 0 & 0.2 \\
+\textsc{analogical}      & 0 & 0.3 & 0.7 & 0.7 & 0.2 & 0.3 & 1 & 0.5 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Epistemic Independence}
+\label{sec:epistemic-independence}
+
+Calling the breeds ``basis vectors'' requires a corresponding independence claim: no breed
+should be expressible as a combination of others. The notion of independence appropriate
+here is not linear independence over $\mathbb{R}$ (the coordinate values are continuous)
+but \emph{epistemic independence}: each breed possesses a defining property that is
+structurally absent from every other breed's specification.
+
+\begin{definition}[Epistemic Independence]
+\label{def:epistemic-independence}
+Let $P_i$ be a \emph{distinguishing property} of breed $\Breed_i$: a structural
+characteristic encoded in $\Breed_i$'s specification such that no other specification
+$\Breed_j$ ($j \neq i$) contains $P_i$ by construction. The corpus
+$\mathcal{C} = \{\Breed_1, \ldots, \Breed_{13}\}$ is \emph{epistemically independent} if
+each $\Breed_i$ has at least one distinguishing property $P_i$ with
+$P_i \notin \mathrm{spec}(\Breed_j)$ for all $j \neq i$.
+\end{definition}
+
+\begin{theorem}[Epistemic Independence of the Corpus]
+\label{thm:epistemic-independence}
+The thirteen-breed corpus $\mathcal{C}$ is epistemically independent.
+\end{theorem}
+
+\begin{proof}
+We exhibit a distinguishing property $P_i$ for each breed and verify its absence from
+all remaining specifications.
+
+\paragraph{\textsc{mycin} ($\Breed_1$).}
+$P_1$ = \emph{MYCIN certainty-factor arithmetic}: the combination rule
+$\CF(H, E_1 \wedge E_2) = \CF(H,E_1) + \CF(H,E_2)\bigl(1 - \CF(H,E_1)\bigr)$
+applied monotonically over a fixed rule base with threshold $\theta = 0.2$ triggering
+diagnosis. This specific arithmetic is absent from \textsc{bayesian} (which uses
+Bayes' theorem, not additive combination), from \textsc{dempster-shafer} (which uses
+belief and plausibility functions over a power set), and from all non-probabilistic
+breeds (\textsc{strips}, \textsc{soar}, etc.) whose specifications contain no certainty
+factors at all. The production-rule syntax $\langle\text{premise}, \text{conclusion},
+\text{cf}\rangle$ with $\mathrm{cf} \in [-1,1]$ appears only in
+\texttt{breeds/mycin/mod.rs} and is tested by the boundary oracle
+\texttt{test\_cf\_threshold\_boundary\_above/below} in \texttt{production\_rules.rs}
+(Chapter~\ref{chap:oracle-hierarchy}). No other specification imports or references the
+MYCIN CF accumulator.
+
+\paragraph{\textsc{cbr} ($\Breed_6$).}
+$P_6$ = \emph{case library retrieval with local adaptation}: the breed stores an
+explicit case library $\mathcal{L} = \{(s_k, r_k)\}$ and, at inference time, retrieves
+the $k$ nearest cases by a distance metric, then adapts the retrieved solution to the
+new problem. This \emph{retrieve–reuse–revise–retain} cycle is absent from all other
+breeds. \textsc{bayesian} conditions on priors but never retrieves stored episodes.
+\textsc{analogical} maps structural relations between domains but does not maintain a
+mutable library of past solutions that grows at runtime. \textsc{soar} stores
+\emph{chunks} (compiled productions), not raw cases with adaptation operators.
+\textsc{inductive} generalises from examples but discards individual instances after
+rule extraction. The $\kappa = 1.0$ coordinate is unique to \textsc{cbr} in
+Table~\ref{tab:breed-vectors}, and the distinguishing property is structurally encoded:
+no other specification in \texttt{breeds/} exports a \texttt{CaseLibrary} type or an
+\texttt{adapt()} operator.
+
+\paragraph{\textsc{soar} ($\Breed_8$).}
+$P_8$ = \emph{impasse-driven chunking with goal stack management}: when SOAR reaches a
+decision impasse it opens a subgoal, resolves it in a subordinate problem space, and
+compiles the resolution into a new production chunk that is added permanently to working
+memory. This meta-level architectural response to cognitive impasse is absent from every
+other breed. \textsc{strips} does not detect impasses; it backtracks over a linear action
+sequence. \textsc{cbr} does not chunk; it retrieves. \textsc{inductive} learns rules from
+data, not from its own impasses. The $\lambda = 0.8$ combined with $\eta = 0.9$
+coordinates are jointly unique to \textsc{soar} (no other breed scores above 0.7 on
+$\eta$), and the impasse detector is tested by the
+\texttt{strips\_soar\_cbr\_invariants.rs} integration suite which verifies that a
+deliberate impasse injection causes chunking and that the resulting chunk fires on the
+next cycle.
+
+\paragraph{\textsc{bayesian} ($\Breed_2$).}
+$P_2$ = strict Bayes' rule update $P(H|E) = P(E|H)P(H)/P(E)$ applied over a
+directed acyclic graphical model. \textsc{mycin} uses CF arithmetic; \textsc{dempster-shafer}
+uses belief functions over a frame of discernment, not a DAG. No other breed encodes
+conditional independence structure via a graphical model.
+
+\paragraph{\textsc{fuzzy} ($\Breed_3$).}
+$P_3$ = membership functions $\mu : X \to [0,1]$ with triangular, trapezoidal, or
+Gaussian shapes and min/max t-norm composition rules. No other breed uses continuous
+membership gradations; \textsc{mycin} uses point-valued certainty factors, not
+membership sets.
+
+\paragraph{\textsc{dempster-shafer} ($\Breed_4$).}
+$P_4$ = Dempster's orthogonal combination rule over basic probability assignments on
+the power set $2^\Theta$. The distinction from \textsc{bayesian} is structural: belief
+and plausibility are lower and upper bounds, not point probabilities, and the combination
+operates over focal elements, not conditionally independent nodes.
+
+\paragraph{\textsc{abductive} ($\Breed_5$).}
+$P_5$ = inference to the best explanation ($\gamma = 1.0$, uniquely maximal): given
+observations $O$ and background $T$, generate hypothesis $H$ such that $T \cup H \models O$
+and $H$ is minimal. Pure generativity of novel hypotheses, absent from all deductive breeds.
+
+\paragraph{\textsc{strips} ($\Breed_7$).}
+$P_7$ = closed-world assumption with precondition/effect operators over a state fluent
+database and $\delta = 1.0$, $u = 0$: all inference steps are truth-preserving
+manipulations of a grounded state. No uncertainty; no case memory; no learning.
+
+\paragraph{\textsc{inductive} ($\Breed_9$).}
+$P_9$ = rule induction from a training set with $\lambda = 0.9$ (highest learning rate
+in the corpus). Unlike \textsc{soar}, learning is driven by supervised examples, not
+impasses; unlike \textsc{bayesian}, no prior distribution is maintained.
+
+\paragraph{\textsc{temporal} ($\Breed_{10}$).}
+$P_{10}$ = $\tau_{\mathrm{mem}} = 1.0$ (uniquely maximal temporal sensitivity): conclusions
+are indexed to absolute or relative timestamps and expire according to decay functions.
+No other breed tracks temporal validity windows on conclusions.
+
+\paragraph{\textsc{ontological} ($\Breed_{11}$).}
+$P_{11}$ = reasoning over a formal ontology via subsumption and classification; $\delta = 1.0$
+with explicit class hierarchy inference. Distinct from \textsc{strips} by the
+ontological commitment to class/property hierarchies rather than state fluents.
+
+\paragraph{\textsc{constraint} ($\Breed_{12}$).}
+$P_{12}$ = constraint propagation via arc consistency with $\delta = 1.0$, $\lambda = 0$:
+inference is entirely driven by variable domains and constraint relations, with no
+generative, uncertain, or temporal dimension.
+
+\paragraph{\textsc{analogical} ($\Breed_{13}$).}
+$P_{13}$ = structural mapping between source and target domains via relational alignment
+($\kappa = 0.7$, $\gamma = 0.7$): distinct from \textsc{cbr} because analogical inference
+seeks relational isomorphism across domains, not nearest-neighbour retrieval within a
+homogeneous case space.
+
+Since each $P_i$ is structurally encoded in exactly one specification file and verified
+by at least one oracle, the corpus satisfies Definition~\ref{def:epistemic-independence}.
+\end{proof}
+
+\begin{corollary}[The Corpus as a Basis]
+\label{cor:corpus-basis}
+The epistemological embedding $\phi(\mathcal{C}) = \{\mathbf{v}_1, \ldots, \mathbf{v}_{13}\}$
+constitutes a spanning set for the region of $\mathcal{E}$ relevant to symbolic and
+neuro-symbolic cognition: any reasoning architecture encountered in practice can be
+characterised by a convex combination of at most two basis vectors, where the dominant
+vector identifies the primary epistemological mode.
+\end{corollary}
+
+\begin{proof}
+By Theorem~\ref{thm:epistemic-independence} the vectors are epistemically independent.
+The completeness claim follows from the survey in Chapter~\ref{chap:table-construction}:
+the thirteen properties $(P_1, \ldots, P_{13})$ partition the space of distinguishing
+structural choices available to a symbolic reasoning engine under the constraints
+established in Paper~2. Any architecture not covered by a single basis vector (e.g., a
+hybrid Bayesian-fuzzy system) is representable as a mixture, confirming spanning.
+\end{proof}
+
+\section{Summary}
+\label{sec:epistemological-space-summary}
+
+This chapter established the epistemological coordinate space $\mathcal{E}$ and showed
+that the thirteen breeds form an epistemically independent spanning set within it. Each
+breed occupies a unique position defined by its distinguishing structural property, and
+the proofs of independence are grounded in the specification files and oracle suites
+rather than intuition. Chapter~\ref{chap:bvc} builds on this foundation by defining
+the Breed Validation Certificate, the quantitative measure that confirms each basis
+vector is not merely specified but empirically certified.
