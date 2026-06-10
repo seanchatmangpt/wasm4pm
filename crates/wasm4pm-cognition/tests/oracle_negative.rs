@@ -590,5 +590,51 @@ fn abductive_ibe_empty_facts_refused() {
     assert!(result.unwrap_err().contains("fact"));
 }
 
+#[test]
+fn partial_order_plan_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::partial_order_plan::PartialOrderPlan;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "p", "v")];
+    let result = PartialOrderPlan.preconditions(&input);
+    assert!(result.is_err(), "PartialOrderPlan must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn event_calculus_empty_refused() {
+    use wasm4pm_cognition::breeds::event_calculus::EventCalculus;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base();
+    let result = EventCalculus.preconditions(&input);
+    assert!(result.is_err(), "EventCalculus must refuse empty inputs");
+    assert!(result.unwrap_err().contains("initially") || result.unwrap_err().contains("happens"));
+}
+
+#[test]
+fn mdp_empty_refused() {
+    use wasm4pm_cognition::breeds::mdp::Mdp;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base();
+    let result = Mdp.preconditions(&input);
+    assert!(result.is_err(), "MDP must refuse empty state/action facts");
+    assert!(result.unwrap_err().contains("state"));
+}
+
+#[test]
+fn version_space_empty_refused() {
+    use wasm4pm_cognition::breeds::version_space::VersionSpace;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base();
+    let result = VersionSpace.preconditions(&input);
+    assert!(result.is_err(), "VersionSpace must refuse empty attributes/examples");
+    assert!(result.unwrap_err().contains("attribute"));
+}
+
+
 
 

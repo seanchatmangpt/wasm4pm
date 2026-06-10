@@ -109,6 +109,10 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "description_logic" => Some(&models_p2::DESCRIPTION_LOGIC_MODEL),
         "abductive_lp" => Some(&models_p2::ABDUCTIVE_LP_MODEL),
         "abductive_ibe" => Some(&models_p2::ABDUCTIVE_IBE_MODEL),
+        "partial_order_plan" => Some(&models_p2::PARTIAL_ORDER_PLAN_MODEL),
+        "event_calculus" => Some(&models_p2::EVENT_CALCULUS_MODEL),
+        "mdp" => Some(&models_p2::MDP_MODEL),
+        "version_space" => Some(&models_p2::VERSION_SPACE_MODEL),
         _ => None,
     }
 }

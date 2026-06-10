@@ -1888,3 +1888,71 @@ fn dempster_shafer_k1_run_error() {
     assert!(res.is_err());
     assert!(res.unwrap_err().to_string().contains("K=1"));
 }
+
+// ===========================================================================
+// Partial Order Plan hidden challenge tests
+// ===========================================================================
+
+/// Hidden-POP-1: Threat resolution with forced promotion.
+///
+/// Scenario:
+/// Initial: at(zorp_pkg, blee_loc), clean(blee_loc)
+/// Goal: at(zorp_pkg, glorp_loc), clean(blee_loc)
+///
+/// Actions:
+/// 1. move(blee_loc, glorp_loc): pre robot_at(blee_loc), adds robot_at(glorp_loc), dels robot_at(blee_loc), dels clean(blee_loc)
+/// 2. clean_loc(blee_loc): pre robot_at(blee_loc), adds clean(blee_loc)
+/// 3. pick(zorp_pkg, blee_loc): pre at(zorp_pkg, blee_loc), robot_at(blee_loc), adds holding(zorp_pkg), dels at(zorp_pkg, blee_loc)
+/// 4. drop(zorp_pkg, glorp_loc): pre holding(zorp_pkg), robot_at(glorp_loc), adds at(zorp_pkg, glorp_loc)
+///
+/// A causal link is needed for clean(blee_loc) in the goal.
+/// The 'start' step provides clean(blee_loc).
+/// Action 'move' deletes clean(blee_loc), so it's a threat to start -> end link for clean(blee_loc).
+/// But 'move' must happen to get at(zorp_pkg, glorp_loc).
+/// 'clean_loc' can re-establish clean(blee_loc).
+///
+/// This test specifically checks for 'detect-threat' and 'promote' in the trace.
+#[test]
+fn partial_order_plan_hidden_threat() {
+    let mut input = base("POP forced promotion challenge");
+    input.state = vec![
+        state_atom("at(zorp_pkg)", "blee_loc"),
+        state_atom("clean(blee_loc)", "true"),
+        state_atom("robot_at", "blee_loc"),
+    ];
+    input.goals = vec![
+        goal("g1", "at(zorp_pkg)", "glorp_loc"),
+        goal("g2", "clean(blee_loc)", "true"),
+    ];
+    input.rules = vec![
+        rule("move-blee-glorp", vec!["robot_at=blee_loc"], "robot_at=glorp_loc;!robot_at=blee_loc;!clean(blee_loc)=true", 1.0),
+        rule("clean-blee", vec!["robot_at=blee_loc"], "clean(blee_loc)=true", 1.0),
+        rule("pick-zorp-blee", vec!["at(zorp_pkg)=blee_loc", "robot_at=blee_loc"], "holding(zorp_pkg)=true;!at(zorp_pkg)=blee_loc", 1.0),
+        rule("drop-zorp-glorp", vec!["holding(zorp_pkg)=true", "robot_at=glorp_loc"], "at(zorp_pkg)=glorp_loc;!holding(zorp_pkg)=true", 1.0),
+    ];
+
+    let output = dispatch_breed_test("partial_order_plan", &input)
+        .expect("POP hidden threat must not return Err");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+
+    let has_threat = output.inference_trace.iter().any(|t| t.kind == "detect-threat");
+    assert!(has_threat, "Must detect at least one threat");
+
+    let has_promote = output.inference_trace.iter().any(|t| t.kind == "promote");
+    let has_demote = output.inference_trace.iter().any(|t| t.kind == "demote");
+    assert!(has_promote || has_demote, "Must resolve threat via promote or demote");
+
+    assert!(output.selected.is_some(), "Plan must be found");
+    let plan = output.selected.as_ref().unwrap();
+    // A valid plan must include move and drop to satisfy at(zorp_pkg)=glorp_loc,
+    // and clean-blee must happen AFTER move-blee-glorp to satisfy clean(blee_loc)=true.
+    assert!(plan.contains("move-blee-glorp"));
+    assert!(plan.contains("drop-zorp-glorp"));
+    assert!(plan.contains("clean-blee"));
+    
+    // Ordering check: clean-blee must be after move-blee-glorp
+    let move_pos = plan.find("move-blee-glorp").unwrap();
+    let clean_pos = plan.find("clean-blee").unwrap();
+    assert!(clean_pos > move_pos, "clean-blee must happen after move-blee-glorp; plan={plan}");
+}

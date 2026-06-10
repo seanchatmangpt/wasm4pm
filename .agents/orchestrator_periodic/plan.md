@@ -13,8 +13,8 @@
 |---|------|-------|-------------|--------|
 | 1 | Phase A: Batch 0 | Split ocel, extract dispatch, reconcile registry. | none | DONE |
 | 2 | Stage C1: Core | Build and verify support modules in `src/breeds/support/`. | M1 | DONE |
-| 3 | Tier P1 Breeds | Implement 10 P1 breeds and verify. | M2 | IN_PROGRESS |
-| 4 | Tier P2 Breeds | Implement 12 P2 breeds and verify. | M2 | PLANNED |
+| 3 | Tier P1 Breeds | Implement 10 P1 breeds and verify. | M2 | DONE |
+| 4 | Tier P2 Breeds | Implement 12 P2 breeds and verify. | M2 | IN_PROGRESS |
 | 5 | Tier P3 Breeds | Implement 11 P3 breeds and verify. | M2 | PLANNED |
 | 6 | Tier P4 Breeds | Implement 6 P4 breeds, Meta-Reasoning, Reasoning Compiler. | M3, M4, M5 | PLANNED |
 | 7 | Phase C3/D Release| Run full-ensemble, benches, registry checks, release certificate. | M6 | PLANNED |

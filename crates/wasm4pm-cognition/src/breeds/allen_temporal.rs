@@ -184,11 +184,6 @@ impl CognitionBreed for AllenTemporal {
             }
         }
 
-        // Hidden oracle: ensure gamma, delta, eps exist
-        let g_id = get_id!("gamma");
-        let d_id = get_id!("delta");
-        let e_id = get_id!("eps");
-
         let n = node_names.len();
         if n > 32 {
             return Err(BreedError { breed: self.id(), message: "Exceeded 32 intervals".into() });
@@ -280,12 +275,6 @@ impl CognitionBreed for AllenTemporal {
             }
         }
 
-        // Hidden oracle logic
-        matrix[g_id][d_id] &= 1 << 0; // p
-        matrix[d_id][g_id] = inverse_mask(matrix[g_id][d_id]);
-        matrix[d_id][e_id] &= 1 << 2; // m
-        matrix[e_id][d_id] = inverse_mask(matrix[d_id][e_id]);
-
         // Path consistency using a queue
         let mut q = VecDeque::new();
         for i in 0..n {
@@ -319,14 +308,6 @@ impl CognitionBreed for AllenTemporal {
                     }
                 }
             }
-        }
-
-        // Verify hidden oracle
-        if (matrix[g_id][e_id] & (1 << 0)) == 0 {
-             return Err(BreedError { breed: self.id(), message: "Hidden oracle failed: gamma should be before eps".into() });
-        }
-        if (matrix[e_id][g_id] & (1 << 1)) == 0 {
-             return Err(BreedError { breed: self.id(), message: "Hidden oracle failed: eps should be after gamma".into() });
         }
 
         trace.push(TraceStep {
@@ -387,32 +368,62 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_compose_r_equals() {
-        let _ = COMPOSITION_TABLE; // force init to check
+    fn test_algebraic_property_sweep() {
+        let _ = COMPOSITION_TABLE;
         for i in 0..13 {
-            let eq_mask = 1 << 12;
             let i_mask = 1 << i;
-            let c1 = compose_mask(i_mask, eq_mask);
-            let c2 = compose_mask(eq_mask, i_mask);
-            assert_eq!(c1, i_mask, "r * eq = r failed for {}", i);
-            assert_eq!(c2, i_mask, "eq * r = r failed for {}", i);
+            let eq_mask = 1 << 12;
+
+            // 1. Identity: r * eq = r and eq * r = r
+            assert_eq!(compose_mask(i_mask, eq_mask), i_mask, "r * eq = r failed for {}", rel_to_str(i));
+            assert_eq!(compose_mask(eq_mask, i_mask), i_mask, "eq * r = r failed for {}", rel_to_str(i));
+
+            // 2. Inverse Involution: inverse(inverse(r)) = r
+            assert_eq!(INVERSE[INVERSE[i]], i, "inverse(inverse(r)) = r failed for {}", rel_to_str(i));
+
+            for j in 0..13 {
+                let j_mask = 1 << j;
+                // 3. Inverse of composition: inv(a * b) = inv(b) * inv(a)
+                let comp_ab = compose_mask(i_mask, j_mask);
+                let inv_comp_ab = inverse_mask(comp_ab);
+                
+                let inv_a = inverse_mask(i_mask);
+                let inv_b = inverse_mask(j_mask);
+                let comp_invb_inva = compose_mask(inv_b, inv_a);
+                
+                assert_eq!(inv_comp_ab, comp_invb_inva, "inv(a*b) = inv(b)*inv(a) failed for {} * {}", rel_to_str(i), rel_to_str(j));
+            }
         }
     }
 
     #[test]
-    fn test_inverse_involution() {
-        for i in 0..13 {
-            let inv1 = INVERSE[i];
-            let inv2 = INVERSE[inv1];
-            assert_eq!(inv2, i, "inverse of inverse is not self for {}", i);
-        }
-    }
+    fn test_path_consistency_4_intervals() {
+        // Fresh 4-interval network requiring non-trivial path consistency
+        // A before B, B before C, C before D => A before D
+        let p = 1 << 0;
+        let mut m = vec![vec![8191u16; 4]; 4];
+        for i in 0..4 { m[i][i] = 1 << 12; }
+        
+        m[0][1] = p; m[1][0] = inverse_mask(p);
+        m[1][2] = p; m[2][1] = inverse_mask(p);
+        m[2][3] = p; m[3][2] = inverse_mask(p);
 
-    #[test]
-    fn test_oracle_before_meets() {
-        let p_mask = 1 << 0;
-        let m_mask = 1 << 2;
-        let c = compose_mask(p_mask, m_mask);
-        assert_eq!(c, p_mask, "before * meets != before");
+        let mut q = VecDeque::new();
+        for i in 0..4 { for j in 0..4 { if i != j { q.push_back((i,j)); } } }
+
+        while let Some((i, j)) = q.pop_front() {
+            for k in 0..4 {
+                if k != i && k != j {
+                    let t = m[k][j] & compose_mask(m[k][i], m[i][j]);
+                    if t != m[k][j] {
+                        m[k][j] = t;
+                        m[j][k] = inverse_mask(t);
+                        q.push_back((k, j));
+                        q.push_back((j, k));
+                    }
+                }
+            }
+        }
+        assert_eq!(m[0][3], p, "A should be before D");
     }
 }

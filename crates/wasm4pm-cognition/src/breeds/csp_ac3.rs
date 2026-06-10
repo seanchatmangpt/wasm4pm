@@ -102,6 +102,10 @@ impl CognitionBreed for CspAc3 {
                     "csp-assign".to_string(),
                     format!("var={} val={}", var, val),
                 ),
+                TraceEvent::Propagate { var, domain } => (
+                    "csp-propagate".to_string(),
+                    format!("var={} domain={:?}", var, domain),
+                ),
                 TraceEvent::Backtrack { var } => (
                     "csp-backtrack".to_string(),
                     format!("var={}", var),

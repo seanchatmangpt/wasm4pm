@@ -27,3 +27,23 @@ fn anti_fraud_gate_dempster_shafer() {
         }
     }
 }
+
+#[test]
+fn anti_fraud_gate_partial_order_plan() {
+    let src = fs::read_to_string("src/breeds/partial_order_plan.rs").expect("Failed to read");
+    for word in &["zorp_pkg", "blee_loc", "glorp_loc"] {
+        if src.contains(word) {
+            panic!("FRAUD DETECTED: partial_order_plan.rs contains fresh oracle identifier {}", word);
+        }
+    }
+}
+
+#[test]
+fn anti_fraud_gate_allen_temporal() {
+    let src = fs::read_to_string("src/breeds/allen_temporal.rs").expect("Failed to read");
+    for word in &["gamma", "delta", "eps"] {
+        if src.contains(word) {
+            panic!("FRAUD DETECTED: allen_temporal.rs contains fresh oracle identifier {}", word);
+        }
+    }
+}

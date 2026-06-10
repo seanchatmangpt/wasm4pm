@@ -21,6 +21,8 @@ pub mod cbr;
 pub mod ebl;
 /// Module for default_logic
 pub mod default_logic;
+/// Module for clp
+pub mod clp;
 /// Module for csp_ac3
 pub mod csp_ac3;
 /// Module for dendral
@@ -61,6 +63,16 @@ pub mod description_logic;
 pub mod abductive_lp;
 /// Module for abductive_ibe
 pub mod abductive_ibe;
+/// Module for partial_order_plan
+pub mod partial_order_plan;
+/// Module for event_calculus
+pub mod event_calculus;
+/// Module for mdp
+pub mod mdp;
+/// Module for version_space
+pub mod version_space;
+/// Module for qualitative_reason
+pub mod qualitative_reason;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).

@@ -263,7 +263,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "description_logic",
@@ -417,7 +417,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "event_calculus",
@@ -515,7 +515,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "situation_calculus",

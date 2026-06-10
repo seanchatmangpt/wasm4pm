@@ -18,13 +18,13 @@
 | 2 | allen_temporal | Implement and verify Allen's Temporal Interval Algebra breed | None | DONE |
 | 3 | fuzzy_logic | Implement and verify Fuzzy Logic inference breed | None | DONE |
 | 4 | bayesian_network | Implement and verify Bayesian Inference breed | None | DONE |
-| 5 | csp_ac3 | Implement and verify Constraint Satisfaction (AC-3) breed | None | PLANNED |
-| 6 | default_logic | Implement and verify Default Logic extension finder breed | None | PLANNED |
-| 7 | htn_planning | Implement and verify Hierarchical Task Network planner breed | None | PLANNED |
-| 8 | dempster_shafer | Implement and verify Dempster-Shafer theory of evidence breed | None | PLANNED |
-| 9 | frames_inheritance | Implement and verify Frame-based inheritance with overrides breed | None | PLANNED |
-| 10| ebl | Implement and verify Explanation-Based Learning / generalization breed | None | PLANNED |
-| 11| final_verification | Run cargo tests, vitest integration tests, ostar audit checks, and generate final proofs | M1-M10 | PLANNED |
+| 5 | csp_ac3 | Implement and verify Constraint Satisfaction (AC-3) breed | None | DONE |
+| 6 | default_logic | Implement and verify Default Logic extension finder breed | None | DONE |
+| 7 | htn_planning | Implement and verify Hierarchical Task Network planner breed | None | DONE |
+| 8 | dempster_shafer | Implement and verify Dempster-Shafer theory of evidence breed | None | DONE |
+| 9 | frames_inheritance | Implement and verify Frame-based inheritance with overrides breed | None | DONE |
+| 10| ebl | Implement and verify Explanation-Based Learning / generalization breed | None | DONE |
+| 11| final_verification | Run cargo tests, vitest integration tests, ostar audit checks, and generate final proofs | M1-M10 | DONE |
 
 ## Interface Contracts
 ### CognitionBreed ↔ Host
