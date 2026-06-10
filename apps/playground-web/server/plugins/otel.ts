@@ -1,4 +1,3 @@
-import { defineNitroPlugin } from 'nitropack/runtime'
 import { OtelExporter } from '@wasm4pm/observability'
 
 export default defineNitroPlugin(() => {

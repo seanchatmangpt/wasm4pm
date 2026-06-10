@@ -43,6 +43,16 @@ export default defineNuxtConfig({
     }
   },
 
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        paths: {
+          '@wasm4pm/*': ['../../packages/*/src/index.ts', '../../packages/*/dist/index.d.ts']
+        }
+      }
+    }
+  },
+
   compatibilityDate: '2024-07-11',
 
   eslint: {
