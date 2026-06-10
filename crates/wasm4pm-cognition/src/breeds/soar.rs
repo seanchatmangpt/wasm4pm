@@ -28,6 +28,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, Rule, TraceStep,
 };
 use std::collections::HashSet;
+use tracing;
 
 /// SOAR breed.
 pub struct Soar;
@@ -289,6 +290,8 @@ impl CognitionBreed for Soar {
         let mut candidates = input.candidates.clone();
         let mut trace: Vec<TraceStep> = Vec::new();
 
+        tracing::debug!(breed.step = "operator_proposed", breed = "soar", "L1 inference step");
+
         // Step 1: prohibit.
         for c in candidates.iter_mut() {
             if prefs.prohibit.contains(&c.id) {
@@ -325,6 +328,7 @@ impl CognitionBreed for Soar {
         apply_better_dominance(&mut candidates, &prefs.better, &mut trace, 0);
 
         // Step 4: best/worst tags among survivors.
+        tracing::debug!(breed.step = "preference_evaluated", breed = "soar", "L1 inference step");
         let alive: Vec<&Candidate> = candidates.iter().filter(|c| !c.eliminated).collect();
         let any_best = alive.iter().any(|c| prefs.best.contains(&c.id));
         let surviving_ids: Vec<String> = if any_best {
@@ -354,6 +358,7 @@ impl CognitionBreed for Soar {
                 (Some(surviving_ids[0].clone()), false, false)
             }
             _ => {
+                tracing::debug!(breed.step = "impasse_detected", breed = "soar", "L1 inference step");
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "impasse".to_string(),
@@ -373,6 +378,8 @@ impl CognitionBreed for Soar {
                 (winner, true, resolved)
             }
         };
+
+        tracing::debug!(breed.step = "operator_selected", breed = "soar", "L1 inference step");
 
         // Step 5: emit chunk.pref output fact.
         let chunk_reason = if subgoal_resolved {

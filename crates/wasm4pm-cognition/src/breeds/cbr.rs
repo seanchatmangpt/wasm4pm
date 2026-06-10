@@ -13,6 +13,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Case, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
+use tracing;
 
 /// Case-Based Reasoning breed.
 pub struct Cbr;
@@ -152,6 +153,7 @@ impl CognitionBreed for Cbr {
             let sim = jaccard(&query, &case_set);
             let score = sim * case.outcome_score;
             scored.push((idx, sim, score));
+            tracing::debug!(breed.step = "case_retrieved", breed = "cbr", "L1 inference step");
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "score-case".to_string(),
@@ -192,6 +194,7 @@ impl CognitionBreed for Cbr {
             let n_adapted = merged.len().saturating_sub(input.facts.len());
 
             // Reuse trace
+            tracing::debug!(breed.step = "adaptation_applied", breed = "cbr", "L1 inference step");
             trace.push(TraceStep {
                 step: trace.len(),
                 kind: "reuse-adapt".to_string(),
@@ -263,6 +266,7 @@ impl CognitionBreed for Cbr {
             });
         }
 
+        tracing::debug!(breed.step = "solution_proposed", breed = "cbr", "L1 inference step");
         let selected = accepted_idx.map(|idx| input.cases[idx].architecture.clone());
 
         let explanation = match scored.first() {

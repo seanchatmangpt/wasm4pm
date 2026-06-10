@@ -14,6 +14,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{HashMap, HashSet};
+use tracing;
 
 /// MYCIN production-rule engine.
 pub struct Mycin;
@@ -101,6 +102,7 @@ impl CognitionBreed for Mycin {
                 }
             }
             if applicable.is_empty() {
+                tracing::debug!(breed.step = "threshold_checked", "MYCIN L1 step");
                 break;
             }
             applicable.sort_by(|(ai, _), (bi, _)| {
@@ -116,10 +118,19 @@ impl CognitionBreed for Mycin {
             let rule = &input.rules[idx];
             fired.insert(rule.id.clone());
 
+            tracing::debug!(breed.step = "rule_selected", rule_id = %rule.id, "MYCIN L1 step");
+            tracing::debug!(
+                breed.step = "premise_matched",
+                matched = true,
+                "MYCIN L1 step"
+            );
+
             let inferred_cf = rule.certainty * premise_cf;
             let prev = working_memory.get(&rule.conclusion).copied().unwrap_or(0.0);
             let new_cf = combine_cf(prev, inferred_cf);
             working_memory.insert(rule.conclusion.clone(), new_cf);
+
+            tracing::debug!(breed.step = "cf_accumulated", "MYCIN L1 step");
 
             trace.push(TraceStep {
                 step: trace.len(),
@@ -167,6 +178,8 @@ impl CognitionBreed for Mycin {
             trace.len(),
             selected
         );
+
+        tracing::debug!(breed.step = "diagnosis_emitted", "MYCIN L1 step");
 
         Ok(BreedOutput {
             breed: BreedId::Mycin,

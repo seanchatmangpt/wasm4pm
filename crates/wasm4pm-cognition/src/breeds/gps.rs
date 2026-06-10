@@ -15,6 +15,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
 use std::collections::HashSet;
+use tracing;
 
 /// GPS planner.
 pub struct Gps;
@@ -86,6 +87,7 @@ fn solve(
         if !adds.contains(&goal.to_string()) {
             continue;
         }
+        tracing::debug!(breed.step = "operator_selected", breed = "gps", operator = %action.id, "L1 inference step");
         // Try to satisfy preconditions recursively.
         let snapshot = state.clone();
         let mut ok = true;
@@ -107,6 +109,7 @@ fn solve(
         for a in adds {
             state.insert(a);
         }
+        tracing::debug!(breed.step = "operator_applied", breed = "gps", operator = %action.id, "L1 inference step");
         plan.push(action.id.clone());
         trace.push(TraceStep {
             step: trace.len(),
@@ -171,7 +174,9 @@ impl CognitionBreed for Gps {
 
         let mut last_gap_count = goals.iter().filter(|g| !state.contains(*g)).count() + 1;
         while let Some(gap) = first_gap(&goals, &state) {
+            tracing::debug!(breed.step = "goal_selected", breed = "gps", goal = %gap, "L1 inference step");
             let gap_count = goals.iter().filter(|g| !state.contains(*g)).count();
+            tracing::debug!(breed.step = "difference_computed", breed = "gps", gap_count = gap_count, "L1 inference step");
             if gap_count >= last_gap_count {
                 return Err(BreedError {
                     breed: BreedId::Gps,
@@ -195,6 +200,7 @@ impl CognitionBreed for Gps {
                 });
             }
         }
+        tracing::debug!(breed.step = "goal_achieved", breed = "gps", plan_ops = plan.len(), "L1 inference step");
 
         let explanation = format!("GPS plan ({} ops): {}", plan.len(), plan.join(" → "));
         // Semantic contract for `selected`:

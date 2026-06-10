@@ -24,6 +24,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::BTreeMap;
+use tracing;
 
 /// Hearsay-II breed.
 pub struct Hearsay;
@@ -161,6 +162,7 @@ impl CognitionBreed for Hearsay {
                 break;
             }
             let ksar = agenda.remove(0);
+            tracing::debug!(breed.step = "hypothesis_evaluated", breed = "hearsay", "L1 inference step");
 
             // Check trigger still valid on blackboard.
             let trigger_cf = match blackboard.get(&ksar.trigger).copied() {
@@ -201,6 +203,7 @@ impl CognitionBreed for Hearsay {
 
             if (fused - prev).abs() > 1e-6 {
                 blackboard.insert(ksar.conclusion.clone(), fused);
+                tracing::debug!(breed.step = "hypothesis_posted", breed = "hearsay", "L1 inference step");
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "post-hypothesis".to_string(),
@@ -239,6 +242,7 @@ impl CognitionBreed for Hearsay {
                         trigger: trigger.clone(),
                         certainty: ks.certainty.clamp(0.0, 1.0),
                     };
+                    tracing::debug!(breed.step = "knowledge_source_triggered", breed = "hearsay", "L1 inference step");
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "enqueue-ksar".to_string(),
@@ -290,6 +294,7 @@ impl CognitionBreed for Hearsay {
             .collect();
         new_facts.sort_by(|a, b| a.key.cmp(&b.key).then_with(|| a.value.cmp(&b.value)));
 
+        tracing::debug!(breed.step = "consensus_reached", breed = "hearsay", "L1 inference step");
         let explanation = format!(
             "Hearsay posted {} hypotheses; selected {:?}",
             blackboard.len(),

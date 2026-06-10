@@ -23,10 +23,10 @@
 
 | Gate | Name | Status | Evidence Present | Named Gaps |
 |------|------|--------|-----------------|------------|
-| G1 | Registry Gate | PARTIAL_ALIVE | `wasm4pm/src/registry.rs` dispatcher exists; 60 algorithms registered in Rust | `registry.json` does not exist; no CI check enforces registry completeness; no machine-readable artifact for downstream consumers |
+| G1 | Registry Gate | PARTIAL_ALIVE | `wasm4pm/src/registry.rs` dispatcher exists; 60 algorithms registered in Rust; `registry.json` and `check_registry.sh` created | No CI check yet enforces registry completeness at build time; schema validation at boundary absent |
 | G2 | Theorem Gate | PARTIAL_ALIVE | Theorem files present in codebase; theorem structure exists | Not all theorems cite imported axioms by reference; oracle theorem overclaims scope beyond what axioms support |
-| G3 | Receipt Gate | PARTIAL_ALIVE | `input_hash` and `output_hash` fields emitted in receipts | `ocel_hash`, `model_hash`, `wasm_hash`, and `signature` fields are MISSING from receipt schema; chain is structurally incomplete |
-| G4 | OCEL Gate | PARTIAL_ALIVE | L0 wrapper spans emitted via OTEL; span structure present | L1 breed-level inference traces MISSING; OCPN (Object-Centric Petri Net) models MISSING; log cannot be replayed against a declared model |
+| G3 | Receipt Gate | PARTIAL_ALIVE | `input_hash` and `output_hash` fields emitted in receipts; `ocel_hash` now added to `ContractResult` in `wasm.rs` | `model_hash`, `wasm_hash`, and `signature` fields still MISSING from receipt schema; chain is structurally incomplete |
+| G4 | OCEL Gate | PARTIAL_ALIVE | L0 spans present; L1 breed-level inference spans now in all 13 breeds; OCPN models exist for 3 flagship breeds (MYCIN, Prolog, STRIPS) | 10 breeds still lack OCPN models; log cannot be replayed against a declared model for those 10; conformance checking blocked at scale |
 | G5 | Defense Gate | PARTIAL_ALIVE | Defensible on breed implementations and core algorithm behavior | 5 proof vulnerabilities identified and unpatched; defense is partial, not adversarially closed |
 
 ---
@@ -35,11 +35,11 @@
 
 | WS | Name | Status | Evidence Present | Named Gaps |
 |----|------|--------|-----------------|------------|
-| A | Registry | PARTIAL_ALIVE | `registry.rs` dispatcher; 60 algorithms in Rust kernel | `registry.json` absent; no CI enforcement; no schema validation at boundary |
+| A | Registry | PARTIAL_ALIVE | `registry.rs` dispatcher; 60 algorithms in Rust kernel; `registry.json` and `check_registry.sh` created | No CI enforcement at build time; no schema validation at boundary |
 | B | Axioms | UNSUPPORTED | References to axioms appear in theorem files | Chapter 0 (axiom foundation document) does not exist on disk; no imported axiom set that theorems can cite |
-| C | Adversary | PARTIAL_ALIVE | `adversarial-catalogue.test.ts` exists and runs | Adversary classes not formally defined; catalogue is a list of cases, not a typed threat model; no boundary between adversary class and mitigation |
-| D | OCEL L1 | PARTIAL_ALIVE | L0 OTEL wrapper spans present | L1 breed inference traces absent; no object-centric event log derivable from current span output; van der Aalst conformance checking blocked |
-| E | Receipts | PARTIAL_ALIVE | `input_hash` + `output_hash` in receipt schema | `ocel_hash`, `model_hash`, `wasm_hash`, `signature` absent; receipt cannot prove algorithm identity or log binding |
+| C | Adversary | PARTIAL_ALIVE | `adversarial-catalogue.test.ts` exists and runs; `oracle_hidden.rs` now provides T_hidden corpus (9 hidden tests across 3 breeds) | Adversary classes not formally defined; catalogue is a list of cases, not a typed threat model; T_hidden covers only 3 of 13 breeds; no boundary between adversary class and mitigation |
+| D | OCEL L1 | PARTIAL_ALIVE | L0 OTEL wrapper spans present; L1 breed inference traces now in all 13 breeds; OCPN models exist for MYCIN, Prolog, and STRIPS | 10 breeds lack OCPN models; no object-centric event log replay possible for those 10; van der Aalst conformance checking blocked at scale |
+| E | Receipts | PARTIAL_ALIVE | `input_hash` + `output_hash` in receipt schema; `ocel_hash` now present in `ContractResult` | `model_hash`, `wasm_hash`, `signature` absent; receipt cannot prove algorithm identity or log binding |
 | F | Geometry | UNSUPPORTED | R8 independence claim present in documentation | No geometric grounding implementation found; claim is asserted, not derived |
 | G | Category | UNSUPPORTED | Category theory terminology appears in comments and docs | No category-theoretic construction implemented; decorative use only |
 | H | Speed | PARTIAL_ALIVE | Benchmarks exist and run | Queueing-theoretic grounding absent; throughput claims lack Little's Law or M/M/c derivation |

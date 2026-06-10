@@ -224,6 +224,11 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         .to_hex()
         .to_string();
     let replay_pointer = output_hash[..16].to_string();
+    let ocel_hash = if let Some(ref ocel_log) = output.ocel_log {
+        blake3::hash(ocel_log.to_string().as_bytes()).to_hex().to_string()
+    } else {
+        String::new()
+    };
 
     let receipt = CognitionReceipt {
         run_id: run_id.clone(),
@@ -245,6 +250,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "run_id": run_id,
         "input_hash": input_hash,
         "output_hash": output_hash,
+        "ocel_hash": ocel_hash,
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,
         "output": output,
