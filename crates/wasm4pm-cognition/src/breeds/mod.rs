@@ -8,18 +8,28 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod autoinstinct_learning;
+/// Breed dispatch: explicit string-match routing (greppable, audit-friendly).
+pub mod dispatch;
+/// Combinator core: shared, fully-validated algebraic machinery (Stage C1).
+pub mod support;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
 pub mod cbr;
+pub mod construction_grammar;
+pub mod contingent_plan;
 pub mod dendral;
 pub mod frame;
 pub mod gps;
 pub mod hearsay;
+pub mod markov_logic;
+pub mod meta_reasoning;
+pub mod pomdp;
 pub mod production_rules;
 pub mod prolog;
 pub mod soar;
 pub mod strips;
+pub mod tableaux;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -50,6 +60,18 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
+    /// Tableaux: Smullyan signed analytic tableaux for propositional validity (Smullyan 1968)
+    Tableaux,
+    /// Construction Grammar: Goldberg argument-structure constructions (Goldberg 1995)
+    ConstructionGrammar,
+    /// Markov Logic: propositional MLN MAP inference via MaxWalkSAT (Richardson & Domingos 2006)
+    MarkovLogic,
+    /// POMDP: exact Bayes belief update + bounded PBVI (Kaelbling, Littman & Cassandra 1998)
+    Pomdp,
+    /// Contingent Planning: AND-OR search over belief states with sensing (Russell & Norvig, AIMA §4.3.2)
+    ContingentPlan,
+    /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
+    MetaReasoning,
 }
 
 impl fmt::Display for BreedId {
@@ -68,6 +90,12 @@ impl fmt::Display for BreedId {
             BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
             BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
             BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
+            BreedId::Tableaux => write!(f, "tableaux"),
+            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
+            BreedId::MarkovLogic => write!(f, "markov_logic"),
+            BreedId::Pomdp => write!(f, "pomdp"),
+            BreedId::ContingentPlan => write!(f, "contingent_plan"),
+            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
         }
     }
 }
@@ -290,75 +318,4 @@ pub trait CognitionBreed: Send + Sync {
     }
 }
 
-/// Test harness: dispatch to the correct breed's `run()` method.
-///
-/// Routes each breed name to its corresponding `CognitionBreed::run()` implementation.
-/// Validates all 9 breeds and produces non-empty inference traces.
-///
-/// Used by integration tests in `tests/dispatch_smoke.rs` to verify:
-/// - Correct breed routing by name
-/// - Non-empty trace production (fraud detection)
-/// - Output structure validity
-/// - Multi-breed pipeline execution (Diagram 29)
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
-pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    use crate::breeds::autoinstinct_learning::AutoinstinctLearning;
-    use crate::breeds::autoinstinct_neurosis::AutoinstinctNeurosis;
-    use crate::breeds::autoinstinct_semantics::AutoinstinctSemantics;
-    use crate::breeds::autoinstinct_vision::AutoinstinctVision;
-    use crate::breeds::cbr::Cbr;
-    use crate::breeds::dendral::Dendral;
-    use crate::breeds::frame::Eliza;
-    use crate::breeds::gps::Gps;
-    use crate::breeds::hearsay::Hearsay;
-    use crate::breeds::production_rules::Mycin;
-    use crate::breeds::prolog::Prolog;
-    use crate::breeds::soar::Soar;
-    use crate::breeds::strips::Strips;
-
-    match breed {
-        "eliza" => Eliza
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_neurosis" => AutoinstinctNeurosis
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_semantics" => AutoinstinctSemantics
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_vision" => AutoinstinctVision
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_learning" => AutoinstinctLearning
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        other => Err(format!("unknown breed: {}", other)),
-    }
-}
+pub use dispatch::{dispatch_breed, dispatch_breed_test, run_breed};

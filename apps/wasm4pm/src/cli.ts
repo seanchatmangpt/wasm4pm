@@ -27,6 +27,7 @@ import { verify } from './commands/verify.js';
 import { proof } from './commands/proof.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
+import { compile } from './commands/compile.js';
 import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
@@ -385,6 +386,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     config,
     verify,
     cognition,
+    compile,
     'prefix-conformance': prefixConformance,
     algorithms,
     examples,

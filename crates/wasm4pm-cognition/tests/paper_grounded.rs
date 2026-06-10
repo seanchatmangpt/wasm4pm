@@ -1414,3 +1414,127 @@ fn autoinstinct_semantics_paper_grounded() {
         }
     }
 }
+
+// ============================================================================
+// P4 tier paper-grounded tests
+// ============================================================================
+
+/// Load a P4 fixture's facts-only input. Panics on a malformed fixture once
+/// the file exists; returns None (graceful skip) only when absent.
+fn p4_fixture_input(path: &str) -> Option<(BreedInput, serde_json::Value)> {
+    let content = fs::read_to_string(path).ok()?;
+    let json: serde_json::Value =
+        serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let inp = &json["input"];
+    let facts = inp["facts"]
+        .as_array()
+        .expect("fixture input.facts must be an array")
+        .iter()
+        .map(|f| Fact {
+            key: f["key"].as_str().expect("fact key").to_string(),
+            value: f["value"].as_str().expect("fact value").to_string(),
+        })
+        .collect();
+    let input = BreedInput {
+        intent: inp["intent"].as_str().unwrap_or("test").to_string(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    Some((input, json["expected"].clone()))
+}
+
+fn fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
+    &out
+        .facts
+        .iter()
+        .find(|f| f.key == key)
+        .unwrap_or_else(|| panic!("missing fact '{}'", key))
+        .value
+}
+
+/// Smullyan 1968 — K axiom closes alpha-only.
+#[test]
+fn tableaux_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/tableaux.json") {
+        let out = dispatch_breed_test("tableaux", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "tableaux:verdict"), exp["verdict"].as_str().unwrap());
+        assert_eq!(
+            out.inference_trace.iter().filter(|t| t.kind == "beta-expand").count() as u64,
+            exp["beta_expansions"].as_u64().unwrap(),
+            "Smullyan K-axiom proof must use zero beta expansions"
+        );
+        assert!(!out.inference_trace.is_empty());
+    }
+}
+
+/// Goldberg 1995 — 'pat faxed bill the letter' is the ditransitive
+/// construction; transitive 'fax' is coerced.
+#[test]
+fn construction_grammar_paper_grounded() {
+    if let Some((input, exp)) =
+        p4_fixture_input("tests/fixtures/papers/construction_grammar.json")
+    {
+        let out = dispatch_breed_test("construction_grammar", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "cxg:construction"), exp["construction"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "cxg:coerced"), exp["coerced"].as_str().unwrap());
+        assert!(fact_value(&out, "cxg:meaning").starts_with(exp["meaning_frame"].as_str().unwrap()));
+        assert_eq!(fact_value(&out, "cxg:slot:rec"), exp["slot_rec"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "cxg:slot:theme"), exp["slot_theme"].as_str().unwrap());
+    }
+}
+
+/// Richardson & Domingos 2006 — smokes/friends ground MLN MAP state.
+#[test]
+fn markov_logic_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/markov_logic.json") {
+        let out = dispatch_breed_test("markov_logic", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "mln:cost"), exp["cost"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:smokes_bob"), exp["smokes_bob"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:cancer_anna"), exp["cancer_anna"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:cancer_bob"), exp["cancer_bob"].as_str().unwrap());
+    }
+}
+
+/// Kaelbling, Littman & Cassandra 1998 — tiger posterior 0.85 after hear-left.
+#[test]
+fn pomdp_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/pomdp.json") {
+        let out = dispatch_breed_test("pomdp", &input).expect("run ok");
+        assert_eq!(
+            fact_value(&out, "pomdp:belief:tiger-left"),
+            exp["belief_tiger_left"].as_str().unwrap()
+        );
+        assert!(out.inference_trace.iter().any(|t| t.kind == "pbvi-backup"));
+    }
+}
+
+/// Russell & Norvig AIMA §4.3.2 — vacuum AND-OR conditional plan.
+#[test]
+fn contingent_plan_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/contingent_plan.json") {
+        let out = dispatch_breed_test("contingent_plan", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "plan:tree"), exp["plan_tree"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "plan:tree").matches("(sense ").count() as u64,
+            exp["sense_nodes"].as_u64().unwrap()
+        );
+    }
+}
+
+/// Cox & Raja 2011 — meta-level detects the object-level conflict and arbitrates.
+#[test]
+fn meta_reasoning_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/meta_reasoning.json") {
+        let out = dispatch_breed_test("meta_reasoning", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "meta:conflicts"), exp["conflicts"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "meta:decision:therapy"),
+            exp["decision_therapy"].as_str().unwrap()
+        );
+        assert_eq!(out.selected.as_deref(), exp["selected"].as_str());
+    }
+}

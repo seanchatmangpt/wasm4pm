@@ -412,3 +412,131 @@ fn autoinstinct_learning_all_goals_achieved() {
         }
     }
 }
+
+// ===========================================================================
+// P4 tier refusal tests (tableaux, construction_grammar, markov_logic,
+// pomdp, contingent_plan, meta_reasoning)
+// ===========================================================================
+
+/// Rank-2: tableaux requires a parseable propositional 'tableaux:formula' fact.
+#[test]
+fn tableaux_missing_or_temporal_formula_refused() {
+    use wasm4pm_cognition::breeds::tableaux::Tableaux;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    // No formula fact at all.
+    let input = empty_base();
+    assert!(Tableaux.preconditions(&input).is_err());
+
+    // Temporal operator: outside the propositional fragment.
+    let mut input = empty_base();
+    input.facts = vec![fact("tableaux:formula", "G zorp")];
+    assert!(Tableaux.preconditions(&input).is_err());
+
+    // Malformed formula.
+    let mut input = empty_base();
+    input.facts = vec![fact("tableaux:formula", "(a -> ")];
+    assert!(Tableaux.preconditions(&input).is_err());
+}
+
+/// Rank-2: construction_grammar refuses an empty utterance / empty lexicon,
+/// and refuses (Err at run) words missing from the lexicon — no POS guessing.
+#[test]
+fn construction_grammar_empty_or_unknown_refused() {
+    use wasm4pm_cognition::breeds::construction_grammar::ConstructionGrammar;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base();
+    assert!(ConstructionGrammar.preconditions(&input).is_err());
+
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("cxg:utterance", "the gronkulator hums"),
+        fact("lex:the:pos", "det"),
+        fact("lex:hums:pos", "verb"),
+    ];
+    // 'gronkulator' is not in the lexicon: run must refuse.
+    assert!(ConstructionGrammar.run(&input).is_err());
+}
+
+/// Rank-2: markov_logic refuses empty clause sets and negative weights.
+#[test]
+fn markov_logic_negative_weight_refused() {
+    use wasm4pm_cognition::breeds::markov_logic::MarkovLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base();
+    assert!(MarkovLogic.preconditions(&input).is_err());
+
+    let mut input = empty_base();
+    input.facts = vec![fact("mln:clause:bad", "-2.0|zibble")];
+    assert!(MarkovLogic.preconditions(&input).is_err());
+}
+
+/// Rank-2: pomdp refuses non-stochastic rows and oversized |S|·|A|·|O|.
+#[test]
+fn pomdp_nonstochastic_model_refused() {
+    use wasm4pm_cognition::breeds::pomdp::Pomdp;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("pomdp:states", "s1,s2"),
+        fact("pomdp:actions", "a"),
+        fact("pomdp:observations", "o1,o2"),
+        fact("pomdp:b0:s1", "0.5"),
+        fact("pomdp:b0:s2", "0.5"),
+        // T(a, s1, ·) sums to 0.7 — must be refused.
+        fact("pomdp:t:a:s1:s1", "0.7"),
+        fact("pomdp:t:a:s1:s2", "0.0"),
+        fact("pomdp:t:a:s2:s1", "0.0"),
+        fact("pomdp:t:a:s2:s2", "1.0"),
+        fact("pomdp:o:a:s1:o1", "0.5"),
+        fact("pomdp:o:a:s1:o2", "0.5"),
+        fact("pomdp:o:a:s2:o1", "0.5"),
+        fact("pomdp:o:a:s2:o2", "0.5"),
+    ];
+    assert!(Pomdp.preconditions(&input).is_err());
+}
+
+/// Rank-2: contingent_plan REFUSES when the belief is uncertain and no
+/// sensing action exists — it must never emit a linear plan that only
+/// works in some worlds.
+#[test]
+fn contingent_plan_uncertain_without_sensing_refused() {
+    use wasm4pm_cognition::breeds::contingent_plan::ContingentPlan;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("cp:unknown", "dirt"),
+        fact("cp:goal:dirt", "false"),
+        fact("cp:act:suck:pre", "dirt"),
+        fact("cp:act:suck:del", "dirt"),
+        // NO cp:sense:* facts — sensing is unavailable.
+    ];
+    assert!(ContingentPlan.run(&input).is_err());
+}
+
+/// Rank-2: meta_reasoning requires at least two complete breed reports.
+#[test]
+fn meta_reasoning_single_report_refused() {
+    use wasm4pm_cognition::breeds::meta_reasoning::MetaReasoning;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("breed:mycin:conclusion", "therapy=gentamicin"),
+        fact("breed:mycin:confidence", "0.8"),
+    ];
+    assert!(MetaReasoning.preconditions(&input).is_err());
+
+    // Conclusion without confidence is also incomplete.
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("breed:mycin:conclusion", "therapy=gentamicin"),
+        fact("breed:prolog:conclusion", "therapy=none"),
+        fact("breed:prolog:confidence", "0.6"),
+    ];
+    assert!(MetaReasoning.preconditions(&input).is_err());
+}

@@ -184,6 +184,9 @@ importers:
       wasm4pm:
         specifier: workspace:*
         version: link:../../packages/kernel
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
       '@faker-js/faker':
         specifier: ^10.4.0
@@ -11762,7 +11765,7 @@ snapshots:
       '@vitest/utils': 1.6.1
       magic-string: 0.30.21
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@25.9.2)(@vitest/browser@1.6.1)(happy-dom@20.10.2)(lightningcss@1.32.0)(terser@5.48.0)
+      vitest: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)(happy-dom@20.10.2)(lightningcss@1.32.0)(terser@5.48.0)
     optionalDependencies:
       playwright: 1.60.0
 
