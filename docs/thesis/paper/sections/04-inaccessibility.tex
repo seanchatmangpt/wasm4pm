@@ -11,7 +11,7 @@ valid receipt is inaccessible to acceptance.
 Such a mutation is submitted as $x$ with $\verifyreceipt(R) = 0$: no OCEL~2.0 log
 is embedded or referenced, and no challenge nonce was minted before execution.
 By Definition~\ref{def:accept}, $\accept(x) = 0$.
-By Corollary~\ref{cor:refuse}, the change is refused or residualized. \qed
+By Corollary~\ref{cor:refuse}, the change is refused or residualized.
 \end{proof}
 
 \begin{proposition}[Process-State Skip]
@@ -24,7 +24,7 @@ is lawful) is inaccessible to acceptance.
 Let $s_{\mathrm{current}} = \textit{draft}$ and $e = \textit{MarkPaid}$.
 The boundary predicate satisfies $B(\textit{draft}, \textit{MarkPaid}) = 0$.
 By Definition~\ref{def:accept}, $\accept(x) = 0$.
-By Definition~\ref{def:mu}, $\mu(s, e) = s$; state does not change. \qed
+By Definition~\ref{def:mu}, $\mu(s, e) = s$; state does not change.
 \end{proof}
 
 \begin{proposition}[Object Substitution]
@@ -37,7 +37,7 @@ The signature $\sigma$ is computed over $h(a \| e \| O \| \ldots)$ where $O$
 encodes the canonical OCEL~2.0 object-event relation. Substituting a different
 object set $O'$ invalidates $\sigma$: $\verifysig(\sigma, h(\ldots \| O' \| \ldots)) = 0$.
 Alternatively, if the attacker re-signs with $O'$, they must forge the authority
-key, which reduces to breaking ML-DSA. Hence $\accept(x) = 0$. \qed
+key, which reduces to breaking ML-DSA. Hence $\accept(x) = 0$.
 \end{proof}
 
 \begin{proposition}[Backdated Change]
@@ -51,7 +51,7 @@ change would need to be inserted at position $k < t$ in the chain, requiring a
 collision in $h(R_{k-1})$ (BLAKE3 preimage resistance) or re-signing all
 downstream receipts $R_k, \ldots, R_t$ with valid authority keys. The timestamp
 field $t$ is also bound into $\sigma$, so re-dating without re-signing fails
-$\verifysig$. \qed
+$\verifysig$.
 \end{proof}
 
 \begin{proposition}[Replay]
@@ -63,7 +63,7 @@ A replayed event carries the original nonce $n$, which has already been consumed
 $\operatorname{Fresh}(n) = 0$, so $\accept(x) = 0$. Furthermore, $\sigma$ binds
 $R_{\mathrm{prior}}$: if the process has advanced since the original acceptance,
 the prior receipt in $\sigma$ no longer matches the current chain head, causing
-$\verifysig$ to fail. \qed
+$\verifysig$ to fail.
 \end{proof}
 
 \begin{proposition}[Schema-Valid Fraud]
@@ -76,7 +76,7 @@ Schema validity is a necessary but not sufficient condition for $\accept$.
 The conjunct $B(s, e) = 1$ requires the event to be admissible from the current
 process state, regardless of whether its payload is well-formed. A schema-valid
 \texttt{\{"status":"approved"\}} is refused whenever
-$B(s_{\mathrm{current}}, \textit{ApprovalGranted}) = 0$. \qed
+$B(s_{\mathrm{current}}, \textit{ApprovalGranted}) = 0$.
 \end{proof}
 
 \begin{proposition}[Rogue Admin Mutation]
@@ -90,7 +90,7 @@ privileged types; it does not mean the authority to bypass $\accept$. The change
 $x$ produced by an admin must still satisfy $\verifysig$, $\verifyreceipt$,
 $B(s, e) = 1$, $\operatorname{PolicyAllowed}$, and $\operatorname{ValidatorAllowed}$.
 Administrative authority is encoded in the actor component $a$ and checked by
-$\verifysig$ --- the admin is inside the process, not above it. \qed
+$\verifysig$ --- the admin is inside the process, not above it.
 \end{proof}
 
 \begin{proposition}[AI-Agent Hallucinated Action]
@@ -104,7 +104,7 @@ produce a valid $\sigma$, a fresh nonce $n$, a receipt $R$ with embedded OCEL lo
 and satisfy $B(s, e) = 1$, then $\accept(x_{\mathrm{agent}}) = 0$ and the action
 is residualized. The agent may continue operating, but its output does not enter
 enterprise state. This converts agents from open-ended mutation engines into
-receipt-bearing process participants. \qed
+receipt-bearing process participants.
 \end{proof}
 
 Table~\ref{tab:inaccessibility} summarises the failing predicate for each class.

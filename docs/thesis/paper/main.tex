@@ -4,7 +4,6 @@
 \usepackage[T1]{fontenc}
 \usepackage{microtype}
 \usepackage{amsmath}
-\usepackage{amsthm}
 \usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -12,7 +11,6 @@
 \usepackage{enumitem}
 \usepackage{xcolor}
 \usepackage{hyperref}
-\usepackage{listings}
 \usepackage{graphicx}
 
 \hypersetup{
@@ -22,17 +20,11 @@
   urlcolor=blue!60!black
 }
 
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{corollary}[theorem]{Corollary}
-\newtheorem{lemma}[theorem]{Lemma}
-\theoremstyle{definition}
-\newtheorem{definition}[theorem]{Definition}
+% LNCS provides theorem/proof/definition/corollary/lemma/proposition environments.
 
 % Shorthand macros
 \newcommand{\Aent}{A_{\mathrm{enterprise}}}
-\newcommand{\Omega}{\Omega_{\mathrm{change}}}
+\newcommand{\OmegaChange}{\Omega_{\mathrm{change}}}
 \newcommand{\accept}{\operatorname{Accept}}
 \newcommand{\refuse}{\operatorname{Refuse}}
 \newcommand{\residualize}{\operatorname{Residualize}}
@@ -53,7 +45,7 @@ Making Invalid State Transitions Mathematically Inaccessible}
 
 \maketitle
 
-\include{sections/00-abstract}
+\input{sections/00-abstract}
 
 \section{Introduction}
 \label{sec:intro}
