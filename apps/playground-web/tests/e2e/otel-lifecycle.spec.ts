@@ -29,8 +29,12 @@ test.describe('OTEL + WASM lifecycle', () => {
     expect(body.ok).toBe(true)
   })
 
-  test('Petri net page loads Vue Flow canvas', async ({ page }) => {
+  test('Petri net page loads Vue Flow canvas after run', async ({ page }) => {
     await page.goto('/play/petri-net')
-    await expect(page.locator('.vue-flow, [class*="vue-flow"]')).toBeVisible({ timeout: 15000 })
+    // VueFlow renders only after WASM runs and dfgResult is populated — trigger a run
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /^Run/i }).click()
+    // VueFlow mounts after dfgResult is set — class is injected by @vue-flow/core
+    await expect(page.locator('.vue-flow__container, .vue-flow').first()).toBeVisible({ timeout: 10000 })
   })
 })

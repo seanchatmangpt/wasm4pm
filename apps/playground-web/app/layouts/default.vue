@@ -6,15 +6,19 @@ const isPlayRoute = computed(() => route.path === '/play' || route.path.startsWi
 
 const navLinks = [{
   label: 'Learn',
-  to: '/learn',
+  to: '/learn/tutorials/getting-started',
   icon: 'i-lucide-book-open'
 }, {
   label: 'Sandbox',
-  to: '/sandbox',
+  to: '/play',
   icon: 'i-lucide-flask-conical'
 }, {
+  label: 'Petri Net',
+  to: '/play/petri-net',
+  icon: 'i-lucide-network'
+}, {
   label: 'Reference',
-  to: '/reference',
+  to: '/learn/reference/algorithms',
   icon: 'i-lucide-library'
 }]
 
@@ -43,14 +47,16 @@ function toggleColorMode() {
 
         <!-- Right actions -->
         <div class="flex items-center gap-2 shrink-0">
-          <UButton
-            :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
-            @click="toggleColorMode"
-          />
+          <ClientOnly>
+            <UButton
+              :icon="colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon'"
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              :aria-label="colorMode.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+              @click="toggleColorMode"
+            />
+          </ClientOnly>
           <UButton
             icon="i-simple-icons-github"
             color="neutral"

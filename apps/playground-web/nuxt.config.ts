@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+import wasmPlugin from 'vite-plugin-wasm'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -25,7 +26,7 @@ export default defineNuxtConfig({
   },
 
   vite: {
-    assetsInclude: ['**/*.wasm'],
+    plugins: [wasmPlugin()],
     optimizeDeps: { exclude: ['wasm4pm'] },
     esbuild: { target: 'esnext' },
     build: { target: 'esnext' }
@@ -37,19 +38,13 @@ export default defineNuxtConfig({
 
   routeRules: {
     '/': { redirect: '/learn/tutorials/getting-started' },
+    // WASM pages: disable SSR — WASM can't run server-side, and SSR causes hydration
+    // mismatches that break Vue's reactive disabled attribute on the Run button.
+    '/play': { ssr: false },
+    '/play/**': { ssr: false },
     '/api/**': { cors: true },
     '/wasm4pm_bg.wasm': {
       headers: { 'cache-control': 'public, max-age=31536000, immutable' }
-    }
-  },
-
-  typescript: {
-    tsConfig: {
-      compilerOptions: {
-        paths: {
-          '@wasm4pm/*': ['../../packages/*/src/index.ts', '../../packages/*/dist/index.d.ts']
-        }
-      }
     }
   },
 

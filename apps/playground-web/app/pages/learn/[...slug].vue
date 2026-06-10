@@ -30,12 +30,18 @@ type NavItem = {
   children?: NavItem[]
 }
 
+function prefixLearn(path?: string) {
+  if (!path) return path
+  return path.startsWith('/learn') ? path : `/learn${path}`
+}
+
 function mapNavItems(items: any[]): NavItem[] {
   if (!items?.length) return []
   return items.map((item) => {
+    const rawPath = item.path ?? item._path ?? item.to
     const mapped: NavItem = {
       label: item.title ?? item.label ?? '',
-      to: item.path ?? item._path ?? item.to,
+      to: prefixLearn(rawPath),
       icon: item.icon,
     }
     if (item.children?.length) {
@@ -95,7 +101,7 @@ watch(() => route.path, closeSidebar)
         Open Sandbox →
       </UButton>
 
-      <UDivider class="mb-2" />
+      <USeparator class="mb-2" />
 
       <UNavigationMenu
         v-if="nav.length"

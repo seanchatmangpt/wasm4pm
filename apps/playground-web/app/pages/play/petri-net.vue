@@ -11,7 +11,7 @@ const ALGORITHM_GROUPS = [
   {
     label: 'Discovery',
     algorithms: [
-      { id: 'simd_streaming_dfg', label: 'DFG (streaming)', default: true },
+      { id: 'dfg', label: 'DFG', default: true },
       { id: 'heuristic_miner', label: 'Heuristic Miner' },
       { id: 'inductive_miner', label: 'Inductive Miner' },
       { id: 'alpha_miner', label: 'Alpha Miner' },
@@ -56,7 +56,7 @@ interface DfgResult { nodes: DfgNode[]; edges: DfgEdge[] }
 
 const { init, loadXes, runAlgorithm, ready, error: wasmError } = useWasm()
 
-const selectedAlgo = ref('simd_streaming_dfg')
+const selectedAlgo = ref('dfg')
 const sidebarSearch = ref('')
 const running = ref(false)
 const runError = ref<string | null>(null)

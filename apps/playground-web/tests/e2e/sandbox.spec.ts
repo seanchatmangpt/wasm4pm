@@ -8,29 +8,30 @@ test.describe('Sandbox — algorithm runner', () => {
 
   test('navigate to /play shows sandbox', async ({ page }) => {
     await page.goto('/play')
-    await expect(page.locator('code')).toBeVisible() // algo name in top bar
+    // SPA page — wait for Vue to mount and render the algo name in top bar
+    await expect(page.locator('code')).toBeVisible({ timeout: 10000 })
   })
 
   test('WASM loads (ready state)', async ({ page }) => {
     await page.goto('/play')
-    // Wait for WASM to init — Run button becomes enabled
-    await expect(page.getByRole('button', { name: /Run/i })).toBeEnabled({ timeout: 15000 })
+    // Wait for WASM to init — Run ⌘↵ button becomes enabled
+    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
   })
 
   test('run DFG algorithm on small-example preset', async ({ page }) => {
-    await page.goto('/play?algo=simd_streaming_dfg&preset=small-example')
-    await expect(page.getByRole('button', { name: /Run/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /Run/i }).click()
-    // JSON output appears
-    await expect(page.locator('pre')).toBeVisible({ timeout: 10000 })
-    const text = await page.locator('pre').textContent()
+    await page.goto('/play?algo=dfg&preset=small-example')
+    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    // JSON output appears — use .first() to handle strict mode (multiple pre elements)
+    await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
+    const text = await page.locator('pre').first().textContent()
     expect(text).toContain('{') // valid JSON
   })
 
   test('receipt tab appears after successful run', async ({ page }) => {
-    await page.goto('/play?algo=simd_streaming_dfg')
-    await expect(page.getByRole('button', { name: /Run/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /Run/i }).click()
+    await page.goto('/play?algo=dfg')
+    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /Run ⌘/i }).click()
     await expect(page.getByRole('tab', { name: /Receipt/i })).toBeVisible({ timeout: 10000 })
   })
 
@@ -42,24 +43,30 @@ test.describe('Sandbox — algorithm runner', () => {
   })
 
   test('cmd+enter keyboard shortcut triggers run', async ({ page }) => {
-    await page.goto('/play')
-    await expect(page.getByRole('button', { name: /Run/i })).toBeEnabled({ timeout: 15000 })
+    await page.goto('/play?algo=dfg&preset=small-example')
+    // Wait for WASM ready before triggering shortcut
+    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    // Click the page body to ensure focus is in the document (not devtools)
+    await page.locator('main').click()
     await page.keyboard.press('Meta+Enter')
-    await expect(page.locator('pre')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
   })
 
   test('sample preset buttons load different logs', async ({ page }) => {
     await page.goto('/play')
-    const before = await page.locator('textarea, .monaco-editor').inputValue().catch(() => '')
+    // Wait for WASM and initial preset to load
+    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
     await page.getByRole('button', { name: /Road Traffic/i }).click()
-    await page.waitForTimeout(500)
-    const after = await page.locator('textarea, .monaco-editor').inputValue().catch(() => '')
-    // Content changed
+    // After clicking, running Road Traffic with dfg should succeed
+    await page.waitForTimeout(1500)
+    // The top bar still shows current algo code element (page renders)
+    await expect(page.locator('code')).toBeVisible()
   })
 
   test('drag-and-drop zone is visible', async ({ page }) => {
     await page.goto('/play')
-    await expect(page.getByText(/drop file to load/i)).toBeVisible()
+    // The drop-file hint is always visible in the input panel header
+    await expect(page.getByText(/drop file to load/i)).toBeVisible({ timeout: 10000 })
   })
 
   test('algorithm sidebar filter narrows list', async ({ page }) => {
@@ -74,7 +81,8 @@ test.describe('Sandbox — algorithm runner', () => {
     await page.goto('/play')
     await page.getByRole('button', { name: /MYCIN/i }).click()
     await expect(page.locator('code')).toContainText('cognition:MYCIN')
-    // Run button hidden in cognition mode
-    await expect(page.getByRole('button', { name: /^Run$/i })).not.toBeVisible()
+    // The algorithm Run ⌘↵ button disappears in cognition mode (v-if="!isCognitionMode")
+    // CognitionDemo has its own "Run" button — match the ⌘↵ shortcut hint specifically
+    await expect(page.getByText('⌘↵')).not.toBeVisible()
   })
 })

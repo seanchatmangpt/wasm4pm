@@ -7,7 +7,7 @@ const ALGORITHM_GROUPS = [
   {
     label: 'Discovery',
     algorithms: [
-      { id: 'simd_streaming_dfg', label: 'DFG (streaming)', default: true },
+      { id: 'dfg', label: 'DFG', default: true },
       { id: 'heuristic_miner', label: 'Heuristic Miner' },
       { id: 'inductive_miner', label: 'Inductive Miner' },
       { id: 'alpha_miner', label: 'Alpha Miner' },
@@ -70,7 +70,7 @@ const SAMPLE_LOGS = [
 const { init, loadXes, loadOcel, runAlgorithm, ready, error: wasmError } = useWasm()
 const { saveReceipt } = useReceipt()
 
-const selectedAlgo = ref('simd_streaming_dfg')
+const selectedAlgo = ref('dfg')
 const selectedBreed = ref<string | null>(null)
 const xesInput = ref('')
 const result = ref<unknown>(null)
@@ -290,7 +290,7 @@ const outputTabs = computed(() => {
 
       <!-- Cognition mode: full-panel CognitionDemo -->
       <div v-if="isCognitionMode" class="flex-1 overflow-auto p-4">
-        <ContentCognitionDemo :breed="selectedBreed!" />
+        <CognitionDemo :breed="selectedBreed!" />
       </div>
 
       <!-- Algorithm mode: split input + output -->
@@ -307,7 +307,7 @@ const outputTabs = computed(() => {
             <UIcon v-if="isOverDropZone" name="i-lucide-upload" class="ml-auto text-primary" />
             <span v-else class="ml-auto text-muted/60 normal-case">drop file to load</span>
           </div>
-          <ContentXesEditor v-model="xesInput" height="100%" />
+          <XesEditor v-model="xesInput" height="100%" />
         </div>
 
         <!-- Output -->
@@ -328,8 +328,8 @@ const outputTabs = computed(() => {
             <UAlert v-else-if="runError" color="error" :description="runError" />
             <template v-else-if="result">
               <pre v-show="activeTab === 'json'" class="text-xs font-mono">{{ JSON.stringify(result, null, 2) }}</pre>
-              <ContentProcessGraph v-show="activeTab === 'graph'" :data="result as Record<string, unknown>" />
-              <ContentReceiptViewer v-show="activeTab === 'receipt' && receipt" :receipt="receipt!" />
+              <ProcessGraph v-show="activeTab === 'graph'" :data="result as Record<string, unknown>" />
+              <ReceiptViewer v-show="activeTab === 'receipt' && receipt" :receipt="receipt!" />
             </template>
             <div v-else class="text-sm text-muted text-center mt-16">
               Select an algorithm, load a log, and click Run (or press ⌘↵).

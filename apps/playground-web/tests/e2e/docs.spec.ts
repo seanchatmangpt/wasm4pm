@@ -8,13 +8,13 @@ test.describe('Docs — learning portal', () => {
 
   test('sidebar navigation items are present', async ({ page }) => {
     await page.goto('/learn/tutorials/getting-started')
-    // Navigation should have at least tutorials and reference sections
-    await expect(page.locator('nav, aside')).toBeVisible()
+    // aside is the sidebar — one unique element (3 nav + 1 aside exist; use aside specifically)
+    await expect(page.locator('aside').first()).toBeVisible()
   })
 
   test('AlgorithmDemo MDC widget renders', async ({ page }) => {
     await page.goto('/learn/tutorials/getting-started')
-    await expect(page.locator('.algorithm-demo')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.algorithm-demo').first()).toBeVisible({ timeout: 10000 })
   })
 
   test('Open Sandbox button links to /play', async ({ page }) => {
@@ -27,11 +27,11 @@ test.describe('Docs — learning portal', () => {
 
   test('reference/algorithms page renders AlgorithmTable', async ({ page }) => {
     await page.goto('/learn/reference/algorithms')
-    await expect(page.locator('table, [data-testid="algorithm-table"], .algorithm-table')).toBeVisible({ timeout: 10000 })
+    await expect(page.locator('.algorithm-table').first()).toBeVisible({ timeout: 10000 })
   })
 
   test('404 shows helpful fallback, not blank page', async ({ page }) => {
-    const response = await page.goto('/learn/tutorials/nonexistent-page')
+    await page.goto('/learn/tutorials/nonexistent-page')
     // Either 404 status or error content shown
     const body = await page.textContent('body')
     expect(body).toBeTruthy()
