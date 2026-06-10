@@ -2,6 +2,7 @@
 
 \chapter{The Breed Category and Formal Signatures}
 \label{chap:breed-category}
+\label{chap:breed}
 
 \epigraph{%
   ``A category is a collection of objects and morphisms satisfying identity and
@@ -94,6 +95,10 @@ The \emph{breed category} $\mathbf{Breed}$ is defined as follows.
     \]
 \end{itemize}
 \end{definition}
+
+\begin{remark}[Profunctor structure]
+The category \textbf{Breed} is therefore not a subcategory of $\mathbf{Set} \times \mathbf{Set}$ with componentwise-covariant morphisms. Morphisms are input-contravariant/output-covariant pairs---the shape of a profunctor (or lens-like structure in the sense of Lawvere's behavioural specifications). Proposition~\ref{prop:breed-functor} establishes post/pre-composition functoriality; the natural-transformation content between distinct breed functors $F_i, F_j$ is an additional structural property, not claimed here.
+\end{remark}
 
 \begin{proposition}[Each Breed as a Functor]
 \label{prop:breed-functor}

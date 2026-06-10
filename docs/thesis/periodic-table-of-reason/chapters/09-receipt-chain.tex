@@ -2,6 +2,7 @@
 
 \chapter{The Reasoning Receipt Chain as Epistemic Infrastructure}
 \label{chap:receipt}
+\label{chap:civilizational}
 
 \epigraph{%
   ``Trust, but verify.''
@@ -113,12 +114,16 @@ Define the \emph{receipt functor}
 \[
   R_{\Breed} \;:\; \mathbf{Breed} \;\longrightarrow\; \mathbf{Receipt}
 \]
-as follows.  On objects: $R_{\Breed}(\Breed_i) = \rho_i$, the receipt of the terminal
-consultation of $\Breed_i$.  On morphisms: if $f : \Breed_i \to \Breed_j$ is a breed
-morphism (a natural transformation of the underlying inference functors), then
-$R_{\Breed}(f) : \rho_i \to \rho_j$ is the canonical hash-linking map
-$\rho_j = \blake(\rho_i \| \mathtt{breed\_id}(\Breed_j) \| \ldots)$, i.e., the receipt
-of the successor breed includes the receipt of the predecessor as a committed prefix.
+as follows.  On objects: $R_{\Breed}(\Breed_i) = \mathcal{R}_i$, the \emph{receipt type}
+of $\Breed_i$, defined as the set of all valid receipts for breed $\Breed_i$
+(i.e., all 256-bit digests that can be produced by a lawful terminal consultation of
+$\Breed_i$).  On morphisms: if $f : \Breed_i \to \Breed_j$ is a breed morphism (a natural
+transformation of the underlying inference functors), then
+$R_{\Breed}(f) : \mathcal{R}_i \to \mathcal{R}_j$ is the canonical hash-linking map
+between receipt types, sending each $\rho_i \in \mathcal{R}_i$ to the receipt
+$\rho_j = \blake(\rho_i \| \mathtt{breed\_id}(\Breed_j) \| \ldots) \in \mathcal{R}_j$,
+i.e., every valid receipt of the successor breed includes a valid receipt of the
+predecessor as a committed prefix.
 \end{definition}
 
 The Kleisli-composition interpretation makes the chain structure transparent.  Let
@@ -130,6 +135,7 @@ of all predecessors.  This is precisely the Kleisli composition \cite{maclane197
 writer monad over the free monoid of BLAKE3 digests: composing two breed invocations
 appends their receipts, and the identity morphism maps to the empty receipt chain.
 
+\phantomsection\label{sec:trust-properties}
 \begin{theorem}[Civilizational Trust Properties]
 \label{thm:civilizational-trust}
 The receipt functor $R_{\Breed}$ satisfies the following four properties for any pipeline

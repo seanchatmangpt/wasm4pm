@@ -47,8 +47,8 @@ test.describe('OTEL + WASM lifecycle', () => {
         service_name: 'playground-web',
         event: 'wasm.init',
         status: 'ok',
-        duration_ms: 42,
-      },
+        duration_ms: 42
+      }
     })
     expect(res.ok()).toBe(true)
     const body = await res.json()

@@ -15,6 +15,7 @@ benchmarks → replay instructions → falsifier conditions.
 
 % -------------------------------------------------------------------------
 \section*{A\quad Repository and Commit Identity}
+\label{sec:repository-structure}
 \addcontentsline{toc}{section}{A — Repository and Commit Identity}
 
 \textbf{Location:} repository root (\texttt{/Users/sac/wasm4pm/}).
@@ -137,6 +138,7 @@ python3 /Users/sac/wasm4pm/proof-pack/check-conformance.py ocel/L0/
 
 % -------------------------------------------------------------------------
 \section*{G\quad Receipt Schema and Sample Receipts}
+\label{app:receipt-schema}
 \addcontentsline{toc}{section}{G — Receipt Schema and Sample Receipts}
 
 \textbf{Schema:} \texttt{schemas/receipt.schema.json} (JSON Schema draft-07).
@@ -160,23 +162,24 @@ purposes.
 \section*{H\quad Signature Verification Transcript}
 \addcontentsline{toc}{section}{H — Signature Verification Transcript}
 
-\textbf{Status:} Signed receipts are \textsc{pending}.  The current receipt
-chain uses BLAKE3 content hashing but does not yet attach an asymmetric
-signature.  The planned mechanism is \texttt{minisign} over the serialised
-receipt JSON.
+\textbf{Status:} Receipt signing via Ed25519 (deterministic \texttt{ActorSigner})
+is implemented as of v26.6.10.  Each receipt carries a \texttt{signature} field
+verifiable with the actor's public key.  Production deployment requires an
+institutional keypair; the private key is excluded from the open-source release.
 
-Current verifiable receipt fields (no signature required):
+Verifiable receipt fields:
 \begin{verbatim}
 {
   "run_id":          "<uuid>",
   "input_hash":      "<blake3-hex>",
   "output_hash":     "<blake3-hex>",
   "replay_pointer":  "<first-16-of-output_hash>",
-  "timestamp_ns":    <u64>
+  "timestamp_ns":    <u64>,
+  "signature":       "<ed25519-hex>"
 }
 \end{verbatim}
-When signatures are wired, \texttt{proof-pack/verify-signatures.sh} will
-contain the full \texttt{minisign -V} transcript.
+The script \texttt{proof-pack/verify-signatures.sh} exercises the Ed25519
+verification path against the actor's public key.
 
 % -------------------------------------------------------------------------
 \section*{I\quad Determinism Double-Run Transcript}

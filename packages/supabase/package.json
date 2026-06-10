@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/supabase",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },

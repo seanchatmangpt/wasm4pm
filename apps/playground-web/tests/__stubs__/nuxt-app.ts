@@ -4,7 +4,7 @@ import { ref, readonly, computed, watch, onMounted, onUnmounted } from 'vue'
 export { ref, readonly, computed, watch, onMounted, onUnmounted }
 
 export const useRoute = () => ({ path: '/', query: {}, params: {} })
-export const useRouter = (): { replace: ReturnType<typeof vi.fn>; push: ReturnType<typeof vi.fn> } => ({ replace: vi.fn(), push: vi.fn() })
+export const useRouter = (): { replace: ReturnType<typeof vi.fn>, push: ReturnType<typeof vi.fn> } => ({ replace: vi.fn(), push: vi.fn() })
 export const useColorMode = () => ({ value: 'light', preference: 'light' })
 export const useHead: ReturnType<typeof vi.fn> = vi.fn()
 export const useSeoMeta: ReturnType<typeof vi.fn> = vi.fn()

@@ -32,7 +32,7 @@ const ALGORITHM_IDS: string[] = [
   'ml_classify',
   'ml_cluster',
   'ml_anomaly',
-  'ml_forecast',
+  'ml_forecast'
 ]
 
 // Ordered list of function-name prefixes to probe when resolving an algorithm.
@@ -41,7 +41,7 @@ const WASM_PREFIXES = ['discover_', 'conformance_', 'ml_', 'streaming_', ''] as 
 
 function resolveWasmFn(
   mod: Record<string, unknown>,
-  name: string,
+  name: string
 ): ((...args: unknown[]) => string) | undefined {
   for (const prefix of WASM_PREFIXES) {
     const candidate = mod[`${prefix}${name}`]
@@ -62,8 +62,7 @@ export const useWasm = () => {
       }
       _wasm = mod as unknown as Record<string, unknown>
       _ready.value = true
-    }
-    catch (e: unknown) {
+    } catch (e: unknown) {
       _error.value = e instanceof Error ? e.message : String(e)
     }
   }
@@ -97,7 +96,7 @@ export const useWasm = () => {
     name: string,
     handle: number,
     activityKey: string = 'concept:name',
-    params: Record<string, unknown> = {},
+    params: Record<string, unknown> = {}
   ): unknown {
     if (!_wasm) throw new Error('WASM not initialized — call init() first')
     const fn = resolveWasmFn(_wasm, name)
@@ -107,7 +106,7 @@ export const useWasm = () => {
       if (!import.meta.server) {
         $fetch('/api/otel-event', { method: 'POST', body: {
           service_name: 'playground-web', event: 'wasm.run', status: 'error',
-          algorithm: name, error: err, duration_ms: 0,
+          algorithm: name, error: err, duration_ms: 0
         } }).catch(() => {})
       }
       throw new Error(err)
@@ -118,16 +117,14 @@ export const useWasm = () => {
       const raw = fn(handle, activityKey, ...Object.values(params))
       const result = typeof raw === 'string' ? JSON.parse(raw) : raw
       return result
-    }
-    catch (e) {
+    } catch (e) {
       status = 'error'
       throw e
-    }
-    finally {
+    } finally {
       if (!import.meta.server) {
         $fetch('/api/otel-event', { method: 'POST', body: {
           service_name: 'playground-web', event: 'wasm.run', status,
-          algorithm: name, duration_ms: Math.round(performance.now() - t0),
+          algorithm: name, duration_ms: Math.round(performance.now() - t0)
         } }).catch(() => {})
       }
     }
@@ -151,6 +148,6 @@ export const useWasm = () => {
     runAlgorithm,
     getAlgorithmList,
     ready: readonly(_ready),
-    error: readonly(_error),
+    error: readonly(_error)
   }
 }

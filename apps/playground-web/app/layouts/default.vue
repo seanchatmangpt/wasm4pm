@@ -29,12 +29,17 @@ function toggleColorMode() {
 
 <template>
   <div class="min-h-screen flex flex-col bg-background text-foreground">
-    <header v-if="!isPlayRoute" class="sticky top-0 z-50 border-b border-default bg-background/80 backdrop-blur">
-      <div class="max-w-7xl mx-auto px-4 h-14 flex items-center gap-6">
+    <header v-if="!isPlayRoute" class="sticky top-0 z-50 border-b border-(--color-surface-border) bg-(--color-surface-1)/95 backdrop-blur-sm">
+      <div class="max-w-7xl mx-auto px-4 h-12 flex items-center gap-6">
         <!-- Logo -->
         <NuxtLink to="/" class="flex items-center gap-2 shrink-0">
-          <span class="font-mono font-bold text-lg tracking-tight text-primary">wasm4pm</span>
-          <UBadge label="playground" color="primary" variant="subtle" size="xs" />
+          <span class="font-mono font-bold text-base tracking-tight text-green-400">wasm4pm</span>
+          <UBadge
+            label="playground"
+            color="primary"
+            variant="subtle"
+            size="xs"
+          />
         </NuxtLink>
 
         <!-- Center nav -->

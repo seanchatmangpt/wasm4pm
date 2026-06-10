@@ -40,8 +40,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     return JSON.parse(stdout)
-  }
-  catch {
+  } catch {
     throw createError({ statusCode: 500, statusMessage: `Non-JSON output: ${stdout.slice(0, 300)}` })
   }
 })

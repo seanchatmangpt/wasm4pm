@@ -52,8 +52,7 @@ export const useReceipt = () => {
     if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
-    }
-    catch { return [] }
+    } catch { return [] }
   }
 
   function clearReceipts() {

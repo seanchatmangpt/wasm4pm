@@ -12,7 +12,7 @@ beforeEach(() => {
   vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({
     output: { diagnosis: 'strep_infection', antibiotic: 'penicillin' },
     output_hash: 'fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321',
-    run_id: 'run-mock-001',
+    run_id: 'run-mock-001'
   }))
 })
 
@@ -57,7 +57,7 @@ describe('CognitionDemo', () => {
   it('shows loading state on the Run button while running', async () => {
     // Make $fetch hang indefinitely so running.value stays true
     let resolveFetch!: (v: unknown) => void
-    const pendingFetch = new Promise(r => { resolveFetch = r })
+    const pendingFetch = new Promise((r) => { resolveFetch = r })
     vi.stubGlobal('$fetch', () => pendingFetch)
 
     const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })

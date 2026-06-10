@@ -14,16 +14,16 @@ const MonacoStub = {
   name: 'MonacoEditor',
   props: ['value', 'language', 'options'],
   emits: ['change'],
-  template: '<textarea :value="value" :readonly="options && options.readOnly" @input="$emit(\'change\', $event.target.value)" />',
+  template: '<textarea :value="value" :readonly="options && options.readOnly" @input="$emit(\'change\', $event.target.value)" />'
 }
 
-const globalStubs = { 'VueMonacoEditor': MonacoStub }
+const globalStubs = { VueMonacoEditor: MonacoStub }
 
 describe('XesEditor', () => {
   it('renders a container with the given height', async () => {
     const wrapper = mount(XesEditor, {
       props: { modelValue: '', height: '300px' },
-      global: { stubs: globalStubs },
+      global: { stubs: globalStubs }
     })
     await flushPromises()
     const div = wrapper.find('div')
@@ -33,7 +33,7 @@ describe('XesEditor', () => {
   it('passes modelValue down to the editor', async () => {
     const wrapper = mount(XesEditor, {
       props: { modelValue: '<log/>', height: '200px' },
-      global: { stubs: globalStubs },
+      global: { stubs: globalStubs }
     })
     await flushPromises()
     const textarea = wrapper.find('textarea')
@@ -43,7 +43,7 @@ describe('XesEditor', () => {
   it('emits update:modelValue when content changes', async () => {
     const wrapper = mount(XesEditor, {
       props: { modelValue: '', height: '200px' },
-      global: { stubs: globalStubs },
+      global: { stubs: globalStubs }
     })
     await flushPromises()
     const textarea = wrapper.find('textarea')
@@ -56,7 +56,7 @@ describe('XesEditor', () => {
   it('passes readOnly=true to editor options', async () => {
     const wrapper = mount(XesEditor, {
       props: { modelValue: '<log/>', height: '200px', readOnly: true },
-      global: { stubs: globalStubs },
+      global: { stubs: globalStubs }
     })
     await flushPromises()
     const textarea = wrapper.find('textarea')
@@ -67,7 +67,7 @@ describe('XesEditor', () => {
   it('defaults to xml language', async () => {
     const wrapper = mount(XesEditor, {
       props: { modelValue: '', height: '200px' },
-      global: { stubs: globalStubs },
+      global: { stubs: globalStubs }
     })
     await flushPromises()
     // language prop is passed down — stub receives it; we verify the prop binding

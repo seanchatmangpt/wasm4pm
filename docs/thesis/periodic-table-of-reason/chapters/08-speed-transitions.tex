@@ -151,6 +151,7 @@ A breed $\Breed_i$ with $\tau(\Breed_i) \leq \tau^*_\varepsilon$ is said to be
 
 \begin{theorem}[Speed Phase Transition]
 \label{thm:phase-transition}
+\label{thm:speed-phase-transition}
 Let $\Breed_i$ be a breed satisfying the categorical axioms of
 Chapter~\ref{chap:breed}.  A certified reasoning service with mean service time $s$
 admits real-time integration at regime $i$ (with deadline $D_i$ as defined in
@@ -184,6 +185,11 @@ Berry--Esseen theorem \cite{berry1941,feller1968} bounds the Kolmogorov--Smirnov
 distance between the empirical distribution over $k$ samples and the true posterior by
 $C / \sqrt{k}$ for a universal constant $C > 0$.  This bound falls below $\varepsilon$ if and only if $k \geq C^2 / \varepsilon^2$,
 which requires $\tau(\Breed_i) \leq T_D \varepsilon^2 / C^2 = \tau^*_\varepsilon$.
+
+\begin{remark}[Concrete Berry--Ess\'{e}en instantiation]
+With $C \approx 0.5$ (Kolmogorov--Smirnov version) and $\varepsilon = 0.05$, the bound requires $k \geq C^2/\varepsilon^2 = 100$ samples. Under a decision budget $T_D = 100\,\text{ms}$, this yields $\tau^*_\varepsilon = 1\,\text{ms}$; under $T_D = 1\,\text{ms}$, $\tau^*_\varepsilon = 10\,\mu\text{s} = \tau_{\text{interrupt}}$. Decision budgets in the millisecond regime thus admit the normal approximation with 5\% error probability; sub-millisecond budgets require the Poisson limit.
+\end{remark}
+
 Thus, reliable Bayesian sensitivity analysis --- one whose error is below $\varepsilon$
 with high probability --- is a \emph{threshold phenomenon}: it appears discontinuously as
 $\tau$ drops through $\tau^*_\varepsilon$.  Above the threshold the analyst has no

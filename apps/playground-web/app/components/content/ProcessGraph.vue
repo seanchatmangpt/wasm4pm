@@ -1,8 +1,8 @@
 <script setup lang="ts">
 const props = defineProps<{ data: Record<string, unknown> }>()
 
-interface Node { id: string; label: string; count?: number }
-interface Edge { source: string; target: string; weight?: number }
+interface Node { id: string, label: string, count?: number }
+interface Edge { source: string, target: string, weight?: number }
 
 const nodes = computed<Node[]>(() => {
   const raw = props.data['nodes'] ?? props.data['activities']
@@ -26,7 +26,7 @@ const edges = computed<Edge[]>(() => {
 const maxWeight = computed(() => Math.max(1, ...edges.value.map(e => e.weight ?? 1)))
 
 // ELK-based layout
-const nodePositions = ref<Record<string, { x: number; y: number }>>({})
+const nodePositions = ref<Record<string, { x: number, y: number }>>({})
 const isLayouting = ref(false)
 const svgWidth = ref(640)
 const svgHeight = ref(320)
@@ -52,15 +52,15 @@ async function runLayout(ns: Node[], es: Edge[]) {
         'algorithm': 'layered',
         'elk.direction': 'RIGHT',
         'elk.layered.spacing.nodeNodeBetweenLayers': '60',
-        'elk.spacing.nodeNode': '40',
+        'elk.spacing.nodeNode': '40'
       },
       children: ns.map(n => ({ id: n.id, width: 120, height: 36 })),
-      edges: es.map((e, i) => ({ id: `e${i}`, sources: [e.source], targets: [e.target] })),
+      edges: es.map((e, i) => ({ id: `e${i}`, sources: [e.source], targets: [e.target] }))
     }
 
     const result = await elk.layout(graph)
 
-    const positions: Record<string, { x: number; y: number }> = {}
+    const positions: Record<string, { x: number, y: number }> = {}
     let maxX = 0
     let maxY = 0
     for (const child of result.children ?? []) {
@@ -95,7 +95,7 @@ watch(
 </script>
 
 <template>
-  <div class="process-graph overflow-auto border border-default rounded-lg p-2 bg-default">
+  <div class="process-graph overflow-auto border rounded-lg p-2" style="background: var(--color-surface-0); border-color: var(--color-surface-border)">
     <div v-if="isLayouting" class="text-sm text-muted text-center py-8">
       Computing layout…
     </div>
@@ -106,8 +106,16 @@ watch(
       class="min-w-full"
     >
       <defs>
-        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-          <path d="M 0 0 L 10 5 L 0 10 z" class="fill-muted" />
+        <marker
+          id="arrow"
+          viewBox="0 0 10 10"
+          refX="9"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto"
+        >
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#52525b" />
         </marker>
       </defs>
 
@@ -120,32 +128,47 @@ watch(
           :x2="nodePositions[e.target]!.x"
           :y2="nodePositions[e.target]!.y"
           :stroke-width="1 + (e.weight ?? 1) / maxWeight * 3"
-          stroke="currentColor"
-          class="text-muted opacity-50"
+          stroke="#2a2a30"
           marker-end="url(#arrow)"
         />
         <text
           v-if="nodePositions[e.source] && nodePositions[e.target] && e.weight"
           :x="(nodePositions[e.source]!.x + nodePositions[e.target]!.x) / 2"
           :y="(nodePositions[e.source]!.y + nodePositions[e.target]!.y) / 2 - 4"
-          class="text-xs fill-muted"
+          fill="#71717a"
           text-anchor="middle"
-          font-size="10"
+          font-size="9"
         >{{ e.weight }}</text>
       </g>
 
       <!-- Nodes -->
       <g v-for="n in nodes" :key="n.id" :transform="`translate(${nodePositions[n.id]?.x ?? 0},${nodePositions[n.id]?.y ?? 0})`">
         <rect
-          x="-55" y="-16" width="110" height="32"
-          rx="6"
-          class="fill-primary/10 stroke-primary/40"
+          x="-55"
+          y="-16"
+          width="110"
+          height="32"
+          rx="5"
+          fill="rgba(0,220,130,0.08)"
+          stroke="rgba(0,220,130,0.35)"
           stroke-width="1.5"
         />
-        <text class="text-xs fill-default" text-anchor="middle" dominant-baseline="middle" font-size="11">
+        <text
+          fill="#00DC82"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-size="11"
+          font-family="ui-monospace,monospace"
+        >
           {{ n.label.length > 14 ? n.label.slice(0, 14) + '…' : n.label }}
         </text>
-        <text v-if="n.count" class="fill-muted" text-anchor="middle" y="14" font-size="9">
+        <text
+          v-if="n.count"
+          fill="#52525b"
+          text-anchor="middle"
+          y="14"
+          font-size="9"
+        >
           {{ n.count }}
         </text>
       </g>

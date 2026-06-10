@@ -136,8 +136,8 @@ describe('useReceipt', () => {
         output_hash: 'b'.repeat(64),
         run_id: 'c'.repeat(32),
         timestamp: new Date().toISOString(),
-        input_size: 42,
-      },
+        input_size: 42
+      }
     ]
     localStorage.setItem('wasm4pm:receipts', JSON.stringify(preExisting))
 

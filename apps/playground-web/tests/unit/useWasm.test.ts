@@ -88,7 +88,7 @@ describe('useWasm -- loadOcel()', () => {
     await init()
     const ocelJson = JSON.stringify({
       'ocel:events': {},
-      'ocel:objects': {},
+      'ocel:objects': {}
     })
     const handle = loadOcel(ocelJson)
     expect(handle).toBeTruthy()
@@ -109,7 +109,7 @@ describe('useWasm -- runAlgorithm()', () => {
     const { init, loadXes, runAlgorithm } = await freshUseWasm()
     await init()
     const handle = loadXes(SAMPLE_XES)
-    const result = runAlgorithm('dfg', handle as any) as { nodes: unknown[]; edges: unknown[] }
+    const result = runAlgorithm('dfg', handle as any) as { nodes: unknown[], edges: unknown[] }
     expect(Array.isArray(result.nodes)).toBe(true)
     expect(Array.isArray(result.edges)).toBe(true)
     expect(result.nodes.length).toBeGreaterThan(0)

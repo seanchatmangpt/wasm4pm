@@ -18,7 +18,7 @@
 export default {
   services: {
     jaeger: {
-      type: 'jaeger',
-    },
-  },
+      type: 'jaeger'
+    }
+  }
 }

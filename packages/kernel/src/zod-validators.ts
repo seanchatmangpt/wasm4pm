@@ -38,13 +38,14 @@ export const PetriNetSchema = z.object({
 });
 
 const DFGNodeSchema = z.object({
-  activity: z.string(),
+  id: z.string(),
+  label: z.string().optional(),
   frequency: z.number(),
 });
 
 const DFGEdgeSchema = z.object({
-  source: z.string(),
-  target: z.string(),
+  from: z.string(),
+  to: z.string(),
   frequency: z.number(),
 });
 
@@ -154,7 +155,8 @@ export const AutomlResultSchema = z.object({
 const InductiveMinerNodeSchema: z.ZodType<unknown> = z.lazy(() =>
   z.object({
     node_type: z.enum(['sequence', 'xor', 'parallel', 'loop', 'leaf']),
-    label: z.string().optional(),
+    // WASM emits label: null for non-leaf nodes — nullish, not optional
+    label: z.string().nullish(),
     children: z.array(InductiveMinerNodeSchema),
   })
 );

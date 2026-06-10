@@ -29,12 +29,11 @@ export function createOtelCollector(page: Page) {
   const spans: OtelSpan[] = []
 
   // Register route interception immediately — must be called before page.goto()
-  page.route('**/api/otel-event', async route => {
+  page.route('**/api/otel-event', async (route) => {
     try {
       const body = route.request().postDataJSON() as OtelSpan
       spans.push(body)
-    }
-    catch {
+    } catch {
       // ignore parse errors
     }
     await route.continue()
@@ -70,6 +69,6 @@ export function createOtelCollector(page: Page) {
       for (const span of spans) {
         expect(span.service_name, `All spans must have service_name="${name}"`).toBe(name)
       }
-    },
+    }
   }
 }

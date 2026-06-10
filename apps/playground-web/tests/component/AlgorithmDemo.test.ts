@@ -87,7 +87,7 @@ describe('AlgorithmDemo', () => {
 
   it('shows Receipt tab after a successful run', async () => {
     const wrapper = mount(AlgorithmDemo, {
-      props: { algorithm: 'dfg', preset: 'small-example', showReceipt: true },
+      props: { algorithm: 'dfg', preset: 'small-example', showReceipt: true }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 200)) // wait for WASM init
@@ -106,7 +106,7 @@ describe('AlgorithmDemo', () => {
 
   it('uses custom label prop as display text', async () => {
     const wrapper = mount(AlgorithmDemo, {
-      props: { algorithm: 'dfg', label: 'My Custom Label' },
+      props: { algorithm: 'dfg', label: 'My Custom Label' }
     })
     await flushPromises()
     expect(wrapper.text()).toContain('My Custom Label')

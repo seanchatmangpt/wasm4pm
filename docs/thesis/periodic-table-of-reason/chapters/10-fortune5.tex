@@ -131,6 +131,8 @@ the \texttt{system\_build} contract: the field \texttt{pareto\_front} is non-nul
 was optimal at the moment of dispatch; the BLAKE3 receipt chain provides this proof.
 \end{proof}
 
+\noindent The enumeration bound ($b = 316$, depth $= 3$) is instance-specific; this is not a general planning-complexity claim.
+
 %%--------------------------------------------------------------------
 \section{SOAR for Regulatory Preference Satisfaction}
 \label{sec:soar-regulatory}
@@ -184,6 +186,8 @@ deployment can evaluate $\approx 1.2 \times 10^{12}$ preference checks per day,
 sufficient for any realistic high-frequency-trading compliance load.
 \end{remark}
 
+\noindent This breed certifies the 1987 SOAR architecture snapshot (impasse/preference core); modern SOAR 9.6 extensions (episodic/semantic memory, reinforcement learning) are out of scope.
+
 %%--------------------------------------------------------------------
 \section{Prolog for Institutional Legal Reasoning}
 \label{sec:prolog-legal}
@@ -218,7 +222,7 @@ for any single-tenant legal workload and exceeding it by three orders of magnitu
 
 \begin{proof}
 Correctness of the Horn-clause resolution is guaranteed by the Prolog8 engine, which
-implements standard SLD resolution with occur-check. Completeness follows from the
+implements SLD resolution over flat (non-recursive) terms, where the occurs-check is trivially satisfied by construction (the flat-term fragment precludes circular unification). Completeness follows from the
 known completeness of SLD resolution over definite clause programs. The
 grandparent-ancestry test in
 \texttt{crates/wasm4pm-cognition/tests/strips\_soar\_cbr\_invariants.rs} exercises
@@ -272,6 +276,12 @@ The factory-agent chain executes the following 13 stages in order:
 \end{tabular}
 \end{center}
 \medskip
+
+\noindent The breed implements Retrieve and Retain with Jaccard similarity; Reuse and Revise are out of scope---the Jaccard oracle tests the metric, the retain-grows-library oracle tests the architecture.
+
+\begin{remark}[Deployment caveat]
+The BVC certifies that the ELIZA algorithm executes as declared; it does not certify that pattern-matched reflection is appropriate as a trust surface. Stage~12 output is a template transformation of Stage~11 output with no access to prior-stage reasoning traces; the receipt chain---not ELIZA prose---is the audit-grade explanation.
+\end{remark}
 
 Each stage reads the prior stage's \texttt{output} as its \texttt{contract} input and
 emits its own \texttt{output\_hash} as the \texttt{input\_hash} of the next stage,

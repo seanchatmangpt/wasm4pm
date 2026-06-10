@@ -2,6 +2,7 @@
 
 \chapter{OCEL Conformance as a Measure-Theoretic Framework}
 \label{chap:ocel}
+\label{chap:ocel-conformance}
 
 \epigraph{%
   ``If you cannot observe the process, you cannot manage the process.''
@@ -20,7 +21,7 @@ fitness, and establishing that the Breed Validation Certificate (BVC)
 machinery enforces \textbf{L0 wrapper fitness} $\varphi_{\mathrm{L0}} = 1.0$ as an
 admission gate for every production execution. L1 breed-inference alignment fitness
 (token replay against the declared breed OCPN) has been measured as step-coverage
-$= 1.0$ for MYCIN, Prolog, and STRIPS; full alignment fitness via pm4py replay
+$= 1.0$ for MYCIN, Prolog, and STRIPS; full alignment fitness via planned external validation (pm4py replay)
 is scheduled for proof-pack v2 and currently carries \textsc{partial-alive} standing
 (see \texttt{ocel/reports/\{mycin,prolog,strips\}.json}).
 
@@ -159,6 +160,7 @@ choke point described in the next section.
 
 \begin{theorem}[Conformance Certificate]
 \label{thm:conformance-certificate}
+\label{thm:ocel-conformance}
 Let $\mathcal{N}_{\mathrm{breed}}$ be as in Definition~\ref{def:breed-ocpn}
 and let $\mathcal{L}$ be the OCEL corpus emitted by \textsc{wasm4pm}.
 Then:
@@ -226,6 +228,10 @@ trace in $\mathcal{L}$ has $\varphi(\sigma) = 1.0$ by clause (i), so
 \]
 \qquad $\square_{(iii)}$
 \end{proof}
+
+\begin{remark}[PTIME decidability]
+Choke-point enforcement escapes Rice's theorem (Axiom~\ref{ax:rice} in Chapter~\ref{chap:imported-axioms}): it does not decide a semantic property over all programs, but checks conformance of one concrete finite trace against a fixed, finite OCPN. Token replay on a trace of length $n$ against a net with $p$ places runs in $O(np)$ time---strictly PTIME, with no halting-problem contact. The decidable-subclass license of Axiom~0.5 applies directly.
+\end{remark}
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{Process Mining Over the Accumulated Corpus}

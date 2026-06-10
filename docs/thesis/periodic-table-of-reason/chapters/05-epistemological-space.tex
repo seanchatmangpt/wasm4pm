@@ -2,6 +2,8 @@
 
 \chapter{The Epistemological Space: Thirteen Breeds as Basis Vectors}
 \label{chap:epistemological-space}
+\label{chap:periodic-table}
+\label{chap:table-construction}
 
 \epigraph{%
   ``Give me a lever long enough and a fulcrum on which to place it, and I shall move the world.''
@@ -81,26 +83,27 @@ the derivation of each coordinate is defended in the breed's own specification c
 
 \begin{table}[ht]
 \centering
-\caption{Breed vectors in the epistemological coordinate space $\mathcal{E}$.}
+\caption{Breed vectors in the epistemological coordinate space $\mathcal{E}$. All 13 implemented breeds; coordinates derived from \texttt{crates/wasm4pm-cognition/src/breeds/}.}
 \label{tab:breed-vectors}
+\label{tab:breed-coordinates}
 \small
 \begin{tabular}{lcccccccc}
 \toprule
 \textbf{Breed} & $u$ & $\delta$ & $\kappa$ & $\gamma$ & $\tau_{\mathrm{mem}}$ & $\lambda$ & $\chi$ & $\eta$ \\
 \midrule
-\textsc{mycin}           & 1 & 0.6 & 0.0 & 0.2 & 0.0 & 0.0 & 1 & 0.3 \\
-\textsc{bayesian}        & 1 & 0.9 & 0.0 & 0.3 & 0.1 & 0.4 & 0 & 0.5 \\
-\textsc{fuzzy}           & 1 & 0.5 & 0.0 & 0.2 & 0.0 & 0.0 & 0 & 0.2 \\
-\textsc{dempster-shafer} & 1 & 0.7 & 0.0 & 0.3 & 0.0 & 0.0 & 0 & 0.6 \\
-\textsc{abductive}       & 0 & 0.4 & 0.0 & 1.0 & 0.0 & 0.0 & 1 & 0.4 \\
-\textsc{cbr}             & 0 & 0.3 & 1.0 & 0.4 & 0.6 & 0.5 & 1 & 0.3 \\
-\textsc{strips}          & 0 & 1.0 & 0.0 & 0.5 & 0.0 & 0.0 & 1 & 0.2 \\
-\textsc{soar}            & 0 & 0.8 & 0.2 & 0.6 & 0.2 & 0.8 & 1 & 0.9 \\
-\textsc{inductive}       & 0 & 0.2 & 0.3 & 0.8 & 0.3 & 0.9 & 0 & 0.4 \\
-\textsc{temporal}        & 0 & 0.8 & 0.1 & 0.2 & 1.0 & 0.1 & 1 & 0.3 \\
-\textsc{ontological}     & 0 & 1.0 & 0.0 & 0.3 & 0.0 & 0.0 & 1 & 0.5 \\
-\textsc{constraint}      & 0 & 1.0 & 0.0 & 0.1 & 0.0 & 0.0 & 0 & 0.2 \\
-\textsc{analogical}      & 0 & 0.3 & 0.7 & 0.7 & 0.2 & 0.3 & 1 & 0.5 \\
+\textsc{mycin}                   & 1 & 0.6 & 0.0 & 0.2 & 0.0 & 0.0 & 1 & 0.3 \\
+\textsc{prolog}                  & 0 & 1.0 & 0.0 & 0.0 & 0.0 & 0.0 & 1 & 0.1 \\
+\textsc{strips}                  & 0 & 1.0 & 0.0 & 0.5 & 0.0 & 0.0 & 1 & 0.2 \\
+\textsc{gps}                     & 0 & 0.9 & 0.0 & 0.4 & 0.0 & 0.0 & 1 & 0.3 \\
+\textsc{soar}                    & 0 & 0.8 & 0.2 & 0.6 & 0.2 & 0.8 & 1 & 0.9 \\
+\textsc{cbr}                     & 0 & 0.3 & 1.0 & 0.4 & 0.6 & 0.5 & 1 & 0.3 \\
+\textsc{hearsay}                 & 1 & 0.5 & 0.0 & 0.7 & 0.1 & 0.3 & 1 & 0.4 \\
+\textsc{dendral}                 & 0 & 0.7 & 0.0 & 0.9 & 0.0 & 0.0 & 1 & 0.2 \\
+\textsc{eliza}                   & 0 & 0.0 & 0.0 & 0.0 & 0.0 & 0.0 & 0 & 0.0 \\
+\textsc{autoinstinct-learning}   & 0 & 0.4 & 0.3 & 0.6 & 0.3 & 0.9 & 1 & 0.5 \\
+\textsc{autoinstinct-semantics}  & 0 & 0.8 & 0.0 & 0.2 & 0.0 & 0.0 & 1 & 0.1 \\
+\textsc{autoinstinct-neurosis}   & 1 & 0.2 & 0.0 & 0.1 & 0.1 & 0.0 & 1 & 0.8 \\
+\textsc{autoinstinct-vision}     & 0 & 0.6 & 0.0 & 0.5 & 0.0 & 0.0 & 1 & 0.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -137,11 +140,11 @@ all remaining specifications.
 $P_1$ = \emph{MYCIN certainty-factor arithmetic}: the combination rule
 $\CF(H, E_1 \wedge E_2) = \CF(H,E_1) + \CF(H,E_2)\bigl(1 - \CF(H,E_1)\bigr)$
 applied monotonically over a fixed rule base with threshold $\theta = 0.2$ triggering
-diagnosis. This specific arithmetic is absent from \textsc{bayesian} (which uses
-Bayes' theorem, not additive combination), from \textsc{dempster-shafer} (which uses
-belief and plausibility functions over a power set), and from all non-probabilistic
-breeds (\textsc{strips}, \textsc{soar}, etc.) whose specifications contain no certainty
-factors at all. The production-rule syntax $\langle\text{premise}, \text{conclusion},
+diagnosis. This specific arithmetic is absent from \textsc{autoinstinct-neurosis} (which
+uses belief-conflict weights, not additive CF combination), from \textsc{hearsay} (which
+uses uncertain hypotheses scored by KS confidence, not point-valued CF), and from all
+deterministic breeds (\textsc{prolog}, \textsc{strips}, \textsc{soar}, etc.) whose
+specifications contain no certainty factors at all. The production-rule syntax $\langle\text{premise}, \text{conclusion},
 \text{cf}\rangle$ with $\mathrm{cf} \in [-1,1]$ appears only in
 \texttt{breeds/mycin/mod.rs} and is tested by the boundary oracle
 \texttt{test\_cf\_threshold\_boundary\_above/below} in \texttt{production\_rules.rs}
@@ -153,12 +156,11 @@ $P_6$ = \emph{case library retrieval with local adaptation}: the breed stores an
 explicit case library $\mathcal{L} = \{(s_k, r_k)\}$ and, at inference time, retrieves
 the $k$ nearest cases by a distance metric, then adapts the retrieved solution to the
 new problem. This \emph{retrieve–reuse–revise–retain} cycle is absent from all other
-breeds. \textsc{bayesian} conditions on priors but never retrieves stored episodes.
-\textsc{analogical} maps structural relations between domains but does not maintain a
-mutable library of past solutions that grows at runtime. \textsc{soar} stores
-\emph{chunks} (compiled productions), not raw cases with adaptation operators.
-\textsc{inductive} generalises from examples but discards individual instances after
-rule extraction. The $\kappa = 1.0$ coordinate is unique to \textsc{cbr} in
+breeds. \textsc{autoinstinct-learning} maintains a goal plan, not a solution library.
+\textsc{soar} stores \emph{chunks} (compiled productions), not raw cases with adaptation
+operators. \textsc{dendral} retrieves constraints from a rule base, not stored (input,
+solution) pairs. \textsc{hearsay} posts hypotheses to a blackboard but never retains
+them in a searchable case library that grows with each solved problem. The $\kappa = 1.0$ coordinate is unique to \textsc{cbr} in
 Table~\ref{tab:breed-vectors}, and the distinguishing property is structurally encoded:
 no other specification in \texttt{breeds/} exports a \texttt{CaseLibrary} type or an
 \texttt{adapt()} operator.
@@ -177,59 +179,104 @@ $\eta$), and the impasse detector is tested by the
 deliberate impasse injection causes chunking and that the resulting chunk fires on the
 next cycle.
 
-\paragraph{\textsc{bayesian} ($\Breed_2$).}
-$P_2$ = strict Bayes' rule update $P(H|E) = P(E|H)P(H)/P(E)$ applied over a
-directed acyclic graphical model. \textsc{mycin} uses CF arithmetic; \textsc{dempster-shafer}
-uses belief functions over a frame of discernment, not a DAG. No other breed encodes
-conditional independence structure via a graphical model.
+\paragraph{\textsc{prolog} ($\Breed_2$).}
+$P_2$ = \emph{SLD resolution over a Herbrand base with backtracking}: the breed unifies
+goals against Horn-clause heads in the database, producing a proof tree via depth-first
+search with backtracking on failure. This is the only breed in which the inference
+mechanism is a complete decision procedure for first-order Horn theories over flat terms.
+\textsc{mycin} uses forward-chaining CF rules, not SLD. \textsc{strips} chains operators
+over a state, not over logical goals. \textsc{gps} applies means-ends operators, not
+resolution. The oracle \texttt{test\_prolog\_proves\_parent\_from\_22\_fact\_genealogy}
+(Chapter~\ref{chap:oracle-hierarchy}) verifies that the SLD kernel proves
+\texttt{parent(tom, bob)} from a 22-fact genealogy in $\leq 10$ resolution steps, with
+no other breed capable of passing the same oracle.
 
-\paragraph{\textsc{fuzzy} ($\Breed_3$).}
-$P_3$ = membership functions $\mu : X \to [0,1]$ with triangular, trapezoidal, or
-Gaussian shapes and min/max t-norm composition rules. No other breed uses continuous
-membership gradations; \textsc{mycin} uses point-valued certainty factors, not
-membership sets.
+\paragraph{\textsc{strips} ($\Breed_3$).}
+$P_3$ = \emph{closed-world state manipulation with precondition/effect operators and
+$\delta = 1.0$, $u = 0$}: every inference step is a truth-preserving rewrite of the
+current state by applying an operator whose preconditions are satisfied. No uncertainty;
+no case memory; no learning; no resolution. \textsc{gps} also uses state-space search but
+via means-ends analysis (difference-table lookup), not precondition/effect rewriting.
+\textsc{prolog} does not manipulate a mutable state; it derives logical consequences from
+a fixed database. The pair $(\delta, u) = (1.0, 0)$ combined with $\gamma = 0.5$
+(plan-generation capacity) and $\lambda = 0.0$ is shared only with \textsc{prolog}, but
+the state-mutation mechanism is entirely absent from \textsc{prolog}'s Herbrand model.
 
-\paragraph{\textsc{dempster-shafer} ($\Breed_4$).}
-$P_4$ = Dempster's orthogonal combination rule over basic probability assignments on
-the power set $2^\Theta$. The distinction from \textsc{bayesian} is structural: belief
-and plausibility are lower and upper bounds, not point probabilities, and the combination
-operates over focal elements, not conditionally independent nodes.
+\paragraph{\textsc{gps} ($\Breed_4$).}
+$P_4$ = \emph{means-ends analysis via a difference-reduction table}: \textsc{gps}
+selects an operator by computing the difference between current state and goal, looks up
+the operator relevant to that difference in a precompiled table, and applies it
+recursively. This difference-table mechanism---encoding which operators reduce which
+differences---is absent from \textsc{strips} (which does not use a difference table, only
+precondition matching) and from \textsc{soar} (which resolves differences via impasse
+and preference, not a static difference table). The oracle verifies that the
+difference-table lookup fires at least once before any operator application.
 
-\paragraph{\textsc{abductive} ($\Breed_5$).}
-$P_5$ = inference to the best explanation ($\gamma = 1.0$, uniquely maximal): given
-observations $O$ and background $T$, generate hypothesis $H$ such that $T \cup H \models O$
-and $H$ is minimal. Pure generativity of novel hypotheses, absent from all deductive breeds.
+\paragraph{\textsc{hearsay} ($\Breed_7$).}
+$P_7$ = \emph{blackboard-architecture multi-knowledge-source hypothesis posting}:
+\textsc{hearsay} maintains a shared hypothesis space (the blackboard) to which
+specialised knowledge sources post partial interpretations (phonemes, words, phrases) at
+different abstraction levels, each triggered when the blackboard contains evidence
+sufficient to warrant its firing. No other breed uses a multi-KS blackboard; \textsc{soar}
+has a shared working memory but its KSs are uniform productions, not heterogeneous
+recognise-act specialists. The joint coordinate $(\gamma, u) = (0.7, 1)$ reflects
+uncertainty-bearing hypothesis generation, unique to \textsc{hearsay} in this corpus.
 
-\paragraph{\textsc{strips} ($\Breed_7$).}
-$P_7$ = closed-world assumption with precondition/effect operators over a state fluent
-database and $\delta = 1.0$, $u = 0$: all inference steps are truth-preserving
-manipulations of a grounded state. No uncertainty; no case memory; no learning.
+\paragraph{\textsc{dendral} ($\Breed_8$).}
+$P_8$ = \emph{constraint-filtered structure enumeration}: \textsc{dendral} generates
+candidate molecular structures via a plan-generate-test loop and then eliminates those
+inconsistent with mass-spectrometry constraints encoded as domain rules. The generative
+power $\gamma = 0.9$ is the highest in the corpus after \textsc{hearsay} and is
+distinguished from abductive generativity because \textsc{dendral} produces a finite set
+of structural candidates, not a single best explanation. No other breed eliminates
+candidates via spectral constraint filters; the oracle verifies that at least 3 of the
+provided candidate structures are eliminated by the 7 mass-spectrometry constraints.
 
-\paragraph{\textsc{inductive} ($\Breed_9$).}
-$P_9$ = rule induction from a training set with $\lambda = 0.9$ (highest learning rate
-in the corpus). Unlike \textsc{soar}, learning is driven by supervised examples, not
-impasses; unlike \textsc{bayesian}, no prior distribution is maintained.
+\paragraph{\textsc{eliza} ($\Breed_9$).}
+$P_9$ = \emph{keyword-triggered template reflection with zero deductive content}:
+$(\delta, u, \kappa, \lambda, \chi, \eta) = (0, 0, 0, 0, 0, 0)$---the only breed in the
+corpus that performs no inference of any kind, instead substituting matched patterns from
+the input into response templates. Every other breed with $\chi = 1$ produces a causal
+chain grounded in its internal state; \textsc{eliza} produces a template transformation
+of the user's own words, with no access to prior inference steps. This coordinate-zero
+uniqueness is its distinguishing property.
 
-\paragraph{\textsc{temporal} ($\Breed_{10}$).}
-$P_{10}$ = $\tau_{\mathrm{mem}} = 1.0$ (uniquely maximal temporal sensitivity): conclusions
-are indexed to absolute or relative timestamps and expire according to decay functions.
-No other breed tracks temporal validity windows on conclusions.
+\paragraph{\textsc{autoinstinct-learning} ($\Breed_{10}$).}
+$P_{10}$ = \emph{curriculum-aware goal planning with $\lambda = 0.9$}: the breed
+identifies which goals in a prerequisite-structured curriculum remain unachieved,
+orders them by dependency, and emits a learning plan. The learning rate $\lambda = 0.9$
+is shared with no classical breed; \textsc{soar}'s $\lambda = 0.8$ arises from
+impasse-triggered chunk acquisition, not from curriculum optimisation. The oracle verifies
+that, given a 5-goal curriculum with 2 prerequisites already met, the breed produces a
+3-step plan covering the unachieved goals in dependency order.
 
-\paragraph{\textsc{ontological} ($\Breed_{11}$).}
-$P_{11}$ = reasoning over a formal ontology via subsumption and classification; $\delta = 1.0$
-with explicit class hierarchy inference. Distinct from \textsc{strips} by the
-ontological commitment to class/property hierarchies rather than state fluents.
+\paragraph{\textsc{autoinstinct-semantics} ($\Breed_{11}$).}
+$P_{11}$ = \emph{conceptual-dependency primitive parsing}: the breed maps natural-language
+input to a set of CD primitives (ATRANS, PTRANS, MTRANS, INGEST, PROPEL, \ldots) from
+Schank's 1972 representational vocabulary~\cite{schank1972}. The coordinate
+$(\delta, \chi) = (0.8, 1)$ reflects high structural fidelity (the CD grammar is
+fixed-vocabulary) with full causal traceability. No other breed parses to CD primitives;
+\textsc{eliza} uses surface patterns without semantic decomposition.
 
-\paragraph{\textsc{constraint} ($\Breed_{12}$).}
-$P_{12}$ = constraint propagation via arc consistency with $\delta = 1.0$, $\lambda = 0$:
-inference is entirely driven by variable domains and constraint relations, with no
-generative, uncertain, or temporal dimension.
+\paragraph{\textsc{autoinstinct-neurosis} ($\Breed_{12}$).}
+$P_{12}$ = \emph{belief-conflict detection with $\eta = 0.8$}: the breed processes a
+set of beliefs, identifies contradictions and inconsistencies, and emits a conflict trace.
+The meta-cognitive depth $\eta = 0.8$ is the second-highest in the corpus (after
+\textsc{soar}'s $\eta = 0.9$) and arises from a categorically different mechanism: where
+\textsc{soar} reasons about its own impasses in a problem-solving context,
+\textsc{autoinstinct-neurosis} reasons about the consistency of its own belief set---a
+self-referential epistemic audit. The uncertainty flag $u = 1$ reflects that conflicting
+beliefs are assigned probabilistic weights, not binary truth values.
 
-\paragraph{\textsc{analogical} ($\Breed_{13}$).}
-$P_{13}$ = structural mapping between source and target domains via relational alignment
-($\kappa = 0.7$, $\gamma = 0.7$): distinct from \textsc{cbr} because analogical inference
-seeks relational isomorphism across domains, not nearest-neighbour retrieval within a
-homogeneous case space.
+\paragraph{\textsc{autoinstinct-vision} ($\Breed_{13}$).}
+$P_{13}$ = \emph{spatial scene parsing with support-relationship inference}: the breed
+parses a set of object descriptors (position, size, colour) and derives spatial relations
+(above, supports, occludes) via geometric constraint evaluation. The coordinate
+$(\gamma, \kappa) = (0.5, 0.0)$ reflects generative derivation of relations not in the
+input (generativity) without relying on case memory (no stored scenes). This spatial
+reasoning mechanism---deriving a relational graph from raw object descriptions---is absent
+from every other breed; \textsc{dendral} generates structures but from spectral
+constraints, not geometric ones.
 
 Since each $P_i$ is structurally encoded in exactly one specification file and verified
 by at least one oracle, the corpus satisfies Definition~\ref{def:epistemic-independence}.

@@ -143,9 +143,7 @@ async function run() {
     result.value = runAlgorithm(selectedAlgo.value, handle, 'concept:name')
     receipt.value = await saveReceipt(xesInput.value, result.value, selectedAlgo.value)
     activeTab.value = 'json'
-  }
-  catch (e: unknown) { runError.value = e instanceof Error ? e.message : String(e) }
-  finally { running.value = false }
+  } catch (e: unknown) { runError.value = e instanceof Error ? e.message : String(e) } finally { running.value = false }
 }
 
 async function loadPreset(path: string) {
@@ -212,24 +210,39 @@ const outputTabs = computed(() => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-default">
+  <div class="flex h-screen overflow-hidden" style="background: var(--color-surface-0)">
     <!-- Algorithm sidebar -->
-    <aside class="w-64 shrink-0 border-r border-default bg-elevated flex flex-col">
-      <div class="p-3 border-b border-default">
-        <UButton to="/learn/tutorials/getting-started" variant="ghost" size="xs" icon="i-lucide-arrow-left" class="mb-2">
+    <aside class="w-56 shrink-0 flex flex-col" style="background: var(--color-surface-1); border-right: 1px solid var(--color-surface-border)">
+      <div class="p-3" style="border-bottom: 1px solid var(--color-surface-border)">
+        <UButton
+          to="/learn/tutorials/getting-started"
+          variant="ghost"
+          size="xs"
+          icon="i-lucide-arrow-left"
+          class="mb-2 text-zinc-500 hover:text-zinc-300"
+        >
           Docs
         </UButton>
-        <UInput v-model="sidebarSearch" placeholder="Filter algorithms…" size="sm" icon="i-lucide-search" />
+        <UInput
+          v-model="sidebarSearch"
+          placeholder="Filter…"
+          size="sm"
+          icon="i-lucide-search"
+        />
       </div>
       <div class="flex-1 overflow-y-auto p-2">
         <!-- Algorithm groups -->
         <div v-for="group in filteredGroups" :key="group.label" class="mb-3">
-          <p class="text-xs text-muted uppercase tracking-wider px-2 py-1">{{ group.label }}</p>
+          <p class="text-[10px] tracking-widest uppercase px-2 py-1 font-semibold" style="color: rgba(0,220,130,0.55)">
+            {{ group.label }}
+          </p>
           <button
             v-for="algo in group.algorithms"
             :key="algo.id"
-            class="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accented transition-colors"
-            :class="{ 'bg-primary/10 text-primary font-medium': !isCognitionMode && selectedAlgo === algo.id }"
+            class="w-full text-left px-2 py-1 text-xs rounded transition-colors hover:text-zinc-100"
+            :class="!isCognitionMode && selectedAlgo === algo.id
+              ? 'border-l-2 border-green-400 pl-1.5 text-green-400 font-medium'
+              : 'text-zinc-400 hover:bg-zinc-800/50'"
             @click="selectAlgo(algo.id)"
           >
             {{ algo.label }}
@@ -238,12 +251,17 @@ const outputTabs = computed(() => {
 
         <!-- Cognition Breeds section -->
         <div v-if="filteredBreeds.length > 0" class="mb-3">
-          <p class="text-xs text-muted uppercase tracking-wider px-2 py-1">Cognition Breeds</p>
+          <div class="my-2" style="height: 1px; background: var(--color-surface-border)" />
+          <p class="text-[10px] tracking-widest uppercase px-2 py-1 font-semibold text-purple-400/60">
+            Cognition
+          </p>
           <button
             v-for="breed in filteredBreeds"
             :key="breed.id"
-            class="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accented transition-colors"
-            :class="{ 'bg-primary/10 text-primary font-medium': isCognitionMode && selectedBreed === breed.id }"
+            class="w-full text-left px-2 py-1 text-xs rounded transition-colors hover:text-zinc-100"
+            :class="isCognitionMode && selectedBreed === breed.id
+              ? 'border-l-2 border-purple-400 pl-1.5 text-purple-400 font-medium'
+              : 'text-zinc-400 hover:bg-zinc-800/50'"
             @click="selectBreed(breed.id)"
           >
             {{ breed.label }}
@@ -255,22 +273,28 @@ const outputTabs = computed(() => {
     <!-- Main area -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Top bar -->
-      <header class="flex items-center gap-3 px-4 py-2 border-b border-default bg-elevated">
-        <code class="text-sm font-semibold text-primary">
+      <header class="flex items-center gap-3 px-4 py-2 shrink-0" style="border-bottom: 1px solid var(--color-surface-border); background: var(--color-surface-1)">
+        <code class="text-sm font-semibold text-green-400 font-mono">
           {{ isCognitionMode ? `cognition:${selectedBreed}` : selectedAlgo }}
         </code>
         <div class="flex gap-1 ml-auto">
           <UButton
-            v-for="s in SAMPLE_LOGS" :key="s.id"
-            size="xs" variant="ghost"
+            v-for="s in SAMPLE_LOGS"
+            :key="s.id"
+            size="xs"
+            variant="ghost"
+            color="neutral"
             @click="loadPreset(s.path)"
-          >{{ s.label }}</UButton>
+          >
+            {{ s.label }}
+          </UButton>
         </div>
         <UButton
           size="xs"
           variant="ghost"
+          color="neutral"
           :icon="shareCopied ? 'i-lucide-check' : 'i-lucide-share-2'"
-          :color="shareCopied ? 'success' : undefined"
+          :color="shareCopied ? 'success' : 'neutral'"
           @click="shareUrl"
         >
           {{ shareCopied ? 'Copied!' : 'Share' }}
@@ -279,12 +303,13 @@ const outputTabs = computed(() => {
           v-if="!isCognitionMode"
           :loading="running"
           :disabled="!ready"
+          color="primary"
           icon="i-lucide-play"
           size="sm"
           @click="run"
         >
           Run
-          <span class="text-xs text-muted ml-1 hidden sm:inline">⌘↵</span>
+          <span class="text-xs opacity-50 ml-1 hidden sm:inline">⌘↵</span>
         </UButton>
       </header>
 
@@ -298,41 +323,74 @@ const outputTabs = computed(() => {
         <!-- Input with drag-and-drop -->
         <div
           ref="dropZoneRef"
-          class="w-1/2 flex flex-col border-r border-default transition-colors"
-          :class="{ 'bg-primary/5 border-primary': isOverDropZone }"
+          class="w-1/2 flex flex-col transition-all"
+          :class="isOverDropZone ? 'ring-1 ring-green-400/50' : ''"
+          style="border-right: 1px solid var(--color-surface-border)"
         >
-          <div class="px-3 py-1.5 border-b border-default text-xs text-muted uppercase tracking-wider flex items-center gap-2">
-            <span>Input (XES / OCEL)</span>
-            <span v-if="isOcelInput" class="text-primary font-medium normal-case">OCEL</span>
-            <UIcon v-if="isOverDropZone" name="i-lucide-upload" class="ml-auto text-primary" />
-            <span v-else class="ml-auto text-muted/60 normal-case">drop file to load</span>
+          <div class="px-3 py-1.5 flex items-center gap-2" style="border-bottom: 1px solid var(--color-surface-border)">
+            <span class="font-mono text-[10px] uppercase tracking-widest" style="color: rgba(0,220,130,0.5)">Input</span>
+            <UBadge
+              v-if="isOcelInput"
+              color="primary"
+              variant="subtle"
+              size="xs"
+            >
+              OCEL
+            </UBadge>
+            <UBadge
+              v-else
+              color="neutral"
+              variant="subtle"
+              size="xs"
+            >
+              XES
+            </UBadge>
+            <UIcon v-if="isOverDropZone" name="i-lucide-upload" class="ml-auto text-green-400" />
+            <span v-else class="ml-auto text-[10px] text-zinc-600 font-mono">drop file</span>
           </div>
           <XesEditor v-model="xesInput" height="100%" />
         </div>
 
         <!-- Output -->
         <div class="w-1/2 flex flex-col">
-          <div class="flex items-center gap-2 px-3 py-1.5 border-b border-default">
-            <UTabs :items="outputTabs" v-model="activeTab" size="xs" />
-            <div class="flex gap-1 ml-auto" v-if="result">
-              <UButton size="xs" variant="ghost" icon="i-lucide-copy" @click="copyResult" />
-              <UButton size="xs" variant="ghost" icon="i-lucide-download" @click="downloadResult" />
+          <div class="flex items-center gap-2 px-3 py-1.5" style="border-bottom: 1px solid var(--color-surface-border)">
+            <UTabs
+              v-model="activeTab"
+              :items="outputTabs"
+              size="xs"
+              color="primary"
+            />
+            <div v-if="result" class="flex gap-1 ml-auto">
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-copy"
+                @click="copyResult"
+              />
+              <UButton
+                size="xs"
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-download"
+                @click="downloadResult"
+              />
             </div>
           </div>
           <div class="flex-1 overflow-auto p-3">
-            <div v-if="!ready" class="flex items-center gap-2 text-sm text-muted">
+            <div v-if="!ready" class="flex items-center gap-2 text-sm text-zinc-500">
               <UIcon name="i-lucide-loader-2" class="animate-spin" />
               Loading WASM runtime…
             </div>
             <UAlert v-else-if="wasmError" color="error" :description="wasmError" />
             <UAlert v-else-if="runError" color="error" :description="runError" />
             <template v-else-if="result">
-              <pre v-show="activeTab === 'json'" class="text-xs font-mono">{{ JSON.stringify(result, null, 2) }}</pre>
+              <pre v-show="activeTab === 'json'" class="text-[11px] font-mono rounded p-3 overflow-auto" style="background: var(--color-surface-0); color: rgba(0,220,130,0.85)">{{ JSON.stringify(result, null, 2) }}</pre>
               <ProcessGraph v-show="activeTab === 'graph'" :data="result as Record<string, unknown>" />
               <ReceiptViewer v-show="activeTab === 'receipt' && receipt" :receipt="receipt!" />
             </template>
-            <div v-else class="text-sm text-muted text-center mt-16">
-              Select an algorithm, load a log, and click Run (or press ⌘↵).
+            <div v-else class="text-xs text-zinc-600 text-center mt-16 font-mono">
+              select an algorithm → load a log → run (⌘↵)
             </div>
           </div>
         </div>

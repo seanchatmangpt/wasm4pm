@@ -9,7 +9,7 @@ export default defineNitroPlugin(() => {
     enabled: true,
     exporter: 'otlp_http',
     endpoint,
-    required: false,
+    required: false
   })
 
   console.info('[otel] initialized endpoint:', endpoint)

@@ -281,6 +281,10 @@ export * from './model-registry.js';
 // Process-Law Query Language - M4
 export * from './ocpq.js';
 
+// Log structure fingerprint (AutoML Layer 2)
+export { computeFingerprint } from './log-fingerprint.js';
+export type { LogFingerprint } from './log-fingerprint.js';
+
 // Export all WASM functions from @wasm4pm/core to provide unified entry point
 export * from '@wasm4pm/core';
 

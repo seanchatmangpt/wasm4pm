@@ -48,11 +48,11 @@ const domainFilter = ref(ALL_DOMAIN)
 const domains = computed(() => [ALL_DOMAIN, ...new Set(ALL_ALGORITHMS.map(a => a.domain))])
 const tierColors: Record<string, string> = { fast: 'success', balanced: 'info', quality: 'warning' }
 
-const filtered = computed(() => ALL_ALGORITHMS.filter(a => {
-  const matchSearch = !search.value ||
-    a.id.includes(search.value.toLowerCase()) ||
-    a.alias.includes(search.value.toLowerCase()) ||
-    a.description.toLowerCase().includes(search.value.toLowerCase())
+const filtered = computed(() => ALL_ALGORITHMS.filter((a) => {
+  const matchSearch = !search.value
+    || a.id.includes(search.value.toLowerCase())
+    || a.alias.includes(search.value.toLowerCase())
+    || a.description.toLowerCase().includes(search.value.toLowerCase())
   const matchDomain = domainFilter.value === ALL_DOMAIN || domainFilter.value === '' || a.domain === domainFilter.value
   return matchSearch && matchDomain
 }))
@@ -71,7 +71,12 @@ const columns = [
 <template>
   <div class="algorithm-table my-6">
     <div class="flex gap-3 mb-4">
-      <UInput v-model="search" placeholder="Search algorithms…" icon="i-lucide-search" class="flex-1" />
+      <UInput
+        v-model="search"
+        placeholder="Search algorithms…"
+        icon="i-lucide-search"
+        class="flex-1"
+      />
       <USelect v-model="domainFilter" :items="domains.map(d => ({ label: d === ALL_DOMAIN ? 'All domains' : d, value: d }))" class="w-44" />
     </div>
     <UTable :data="filtered" :columns="(columns as any)">
@@ -82,9 +87,13 @@ const columns = [
         <code class="text-xs text-muted">{{ (row as any).original.alias }}</code>
       </template>
       <template #tier-cell="{ row }">
-        <UBadge :color="tierColors[(row as any).original.tier] as any" variant="soft" size="sm">{{ (row as any).original.tier }}</UBadge>
+        <UBadge :color="tierColors[(row as any).original.tier] as any" variant="soft" size="sm">
+          {{ (row as any).original.tier }}
+        </UBadge>
       </template>
     </UTable>
-    <p class="text-xs text-muted mt-2">Showing {{ filtered.length }} of {{ ALL_ALGORITHMS.length }} algorithms</p>
+    <p class="text-xs text-muted mt-2">
+      Showing {{ filtered.length }} of {{ ALL_ALGORITHMS.length }} algorithms
+    </p>
   </div>
 </template>

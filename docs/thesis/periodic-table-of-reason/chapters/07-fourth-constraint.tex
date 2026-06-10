@@ -27,7 +27,7 @@ breaks causal provenance and invalidates the pipeline's proof of correctness.
 \paragraph{Constraint $C_2$ — Process Conformance.}
 The object-centric event log derived from the pipeline's OTel spans must conform with
 fitness $\phi \geq \phi^*$ (typically $\phi^* = 0.85$) to the declared process model
-under pm4py token-based replay. A pipeline that passes code-level tests but fails
+under native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework. A pipeline that passes code-level tests but fails
 process conformance is non-conforming by the van der Aalst Constitution
 (\texttt{\textasciitilde/.claude/rules/process-mining-chicago-tdd.md}).
 
@@ -80,6 +80,7 @@ non-redundant with respect to $C_0$--$C_2$.
 
 \begin{definition}[The Fourth Constraint $C_3$]
 \label{def:fourth-constraint}
+\label{def:fourth-constraint-ucq}
 The \emph{fourth constraint} $C_3$ requires that every breed $\Breed_i$ participating
 in the universal manufacturing pipeline $\mu_U$ holds its Breed Validation Certificate:
 \[
@@ -94,7 +95,7 @@ value. This fail-fast behaviour ensures that $C_3$ cannot be bypassed by deferre
 evaluation or lazy initialisation.
 \end{definition}
 
-\section{Theorem 7.2 --- The Four-Constraint Universal Equation}
+\section{The Four-Constraint Universal Equation}
 \label{sec:four-constraint-equation}
 
 \begin{theorem}[Four-Constraint Universal Causal Equation]
@@ -114,7 +115,7 @@ where:
         corpus $\mathcal{C}$.
   \item $C_0$ — algorithmic completeness (kernel registry coverage).
   \item $C_1$ — receipt continuity (BLAKE3 chain unbroken).
-  \item $C_2$ — process conformance ($\phi \geq \phi^*$ under pm4py).
+  \item $C_2$ — process conformance ($\phi \geq \phi^*$ under native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework).
   \item $C_3$ — breed certification ($V(\Breed_i) = 1$ for all $\Breed_i \in \mu_U$).
 \end{itemize}
 \end{theorem}
@@ -143,7 +144,7 @@ breed certificates compose into a global pipeline certificate.
 \label{prop:sheaf-condition}
 Let the pipeline $\mu_U$ be modelled as a directed graph $G = (V, E)$ where each
 node $v \in V$ corresponds to a manufacturing stage and each edge $e \in E$ carries a
-receipt. Define a presheaf $\mathcal{F}$ on $G$ by assigning to each node $v$ the set
+receipt. We equip $G$ with the Alexandrov topology induced by the stage partial order: opens are down-closed sets of stages. Under the discrete topology the gluing condition trivializes; the Alexandrov topology is the substantive choice that makes locality and gluing non-trivial. Define a presheaf $\mathcal{F}$ on $G$ by assigning to each node $v$ the set
 $\mathcal{F}(v) = \{A : \mathrm{BVC}(\Breed(v)) \wedge \text{receipt}(v)\}$ of
 certified artefacts at that stage. Then $\mathcal{F}$ is a \emph{sheaf}: local
 certificates glue to a global certificate if and only if $C_1$ (receipt continuity)

@@ -32,7 +32,7 @@ const HEAVY_ALGORITHMS = new Set([
   'precision',
   'generalization',
   'simplicity',
-  'ocel_conformance',
+  'ocel_conformance'
 ])
 
 /**
@@ -79,7 +79,7 @@ export function useWasmWorker() {
     algorithm: string,
     xes: string,
     activityKey = 'concept:name',
-    options: WasmWorkerRunOptions = {},
+    options: WasmWorkerRunOptions = {}
   ): Promise<WasmWorkerResult> {
     const isHeavy = options.forceYield || HEAVY_ALGORITHMS.has(algorithm)
 
@@ -108,7 +108,7 @@ export function useWasmWorker() {
       result,
       durationMs,
       algorithm,
-      yieldedBeforeRun: true,
+      yieldedBeforeRun: true
     }
   }
 
@@ -123,7 +123,7 @@ export function useWasmWorker() {
     algorithm: string,
     handle: number,
     activityKey = 'concept:name',
-    options: WasmWorkerRunOptions = {},
+    options: WasmWorkerRunOptions = {}
   ): Promise<WasmWorkerResult> {
     const isHeavy = options.forceYield || HEAVY_ALGORITHMS.has(algorithm)
 
@@ -142,7 +142,7 @@ export function useWasmWorker() {
       result,
       durationMs,
       algorithm,
-      yieldedBeforeRun: true,
+      yieldedBeforeRun: true
     }
   }
 
@@ -156,7 +156,7 @@ export function useWasmWorker() {
     algorithms: string[],
     xes: string,
     activityKey = 'concept:name',
-    params: Record<string, unknown> = {},
+    params: Record<string, unknown> = {}
   ): Promise<WasmWorkerResult[]> {
     // Parse once — yield before and after for large files.
     await yieldToEventLoop()
@@ -175,7 +175,7 @@ export function useWasmWorker() {
     algorithm: string,
     ocelJson: string,
     activityKey = 'concept:name',
-    options: WasmWorkerRunOptions = {},
+    options: WasmWorkerRunOptions = {}
   ): Promise<WasmWorkerResult> {
     await yieldToEventLoop()
     const handle = loadOcel(ocelJson)
@@ -188,7 +188,7 @@ export function useWasmWorker() {
       result,
       durationMs,
       algorithm,
-      yieldedBeforeRun: true,
+      yieldedBeforeRun: true
     }
   }
 
@@ -207,6 +207,6 @@ export function useWasmWorker() {
     /** Expose init so the caller doesn't also need to import useWasm. */
     init,
     /** The set of algorithm IDs that trigger the double-yield path. */
-    HEAVY_ALGORITHMS,
+    HEAVY_ALGORITHMS
   }
 }

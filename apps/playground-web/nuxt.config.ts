@@ -25,15 +25,8 @@ export default defineNuxtConfig({
     }
   },
 
-  vite: {
-    plugins: [wasmPlugin()],
-    optimizeDeps: { exclude: ['wasm4pm'] },
-    esbuild: { target: 'esnext' },
-    build: { target: 'esnext' }
-  },
-
   alias: {
-    'wasm4pm': fileURLToPath(new URL('./public/wasm4pm.js', import.meta.url))
+    wasm4pm: fileURLToPath(new URL('./public/wasm4pm.js', import.meta.url))
   },
 
   routeRules: {
@@ -49,6 +42,13 @@ export default defineNuxtConfig({
   },
 
   compatibilityDate: '2024-07-11',
+
+  vite: {
+    plugins: [wasmPlugin()],
+    optimizeDeps: { exclude: ['wasm4pm'] },
+    esbuild: { target: 'esnext' },
+    build: { target: 'esnext' }
+  },
 
   eslint: {
     config: {

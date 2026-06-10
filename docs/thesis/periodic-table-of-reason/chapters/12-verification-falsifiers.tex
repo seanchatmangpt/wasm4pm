@@ -86,7 +86,7 @@ Falsifier F9.
 \textbf{7.} Verify OCEL conformance for one breed end-to-end: run \texttt{wpm cognition run}
 for the \texttt{mycin} breed, extract the OTel spans, convert to OCEL format using
 the \texttt{@wasm4pm/observability} span-to-ocel utility, and replay the resulting
-log against the \MYCIN{} Petri net model using pm4py. Confirm fitness $\phi = 1.0$.
+log against the \MYCIN{} Petri net model using native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework. Confirm fitness $\phi = 1.0$.
 Repeat for \texttt{prolog} as a second data point.
 
 \medskip
@@ -150,7 +150,7 @@ algorithm, the oracle is not Tier-2.
 
 \medskip
 \textbf{F2 — OCEL fitness gap.} A breed's execution traces produce an OCEL event log
-whose fitness under pm4py token-based replay is $\phi < 1.0$. This would falsify
+whose fitness under native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework, is $\phi < 1.0$. This would falsify
 Theorem~\ref{thm:main-ocel}(iii) for that breed and would require revising either the
 breed's process model $M_i$ or the OTel span-to-event mapping. The gap would also
 reduce $C_{\mathrm{ocel}}(\Breed_i)$ below 1 and thus $V(\Breed_i)$ below 1.

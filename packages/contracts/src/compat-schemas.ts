@@ -174,10 +174,10 @@ export const DFGEdgeSchema = z.object({
   "frequency": z.number(),
 
 
-  "source": z.string(),
+  "from": z.string(),
 
 
-  "target": z.string(),
+  "to": z.string(),
 
 
 
@@ -189,7 +189,10 @@ export type DFGEdge = z.infer<typeof DFGEdgeSchema>;
 export const DFGNodeSchema = z.object({
 
 
-  "activity": z.string(),
+  "id": z.string(),
+
+
+  "label": z.string().optional(),
 
 
   "frequency": z.number(),

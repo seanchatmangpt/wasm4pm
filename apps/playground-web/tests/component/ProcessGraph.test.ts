@@ -12,11 +12,11 @@ function makeElkMock(overrideLayout?: (g: unknown) => Promise<unknown>) {
           children: (g.children ?? []).map((c, i) => ({
             ...c,
             x: i * 150,
-            y: 100,
-          })),
+            y: 100
+          }))
         })
       }
-    },
+    }
   }
 }
 
@@ -55,9 +55,9 @@ describe('ProcessGraph', () => {
       props: {
         data: {
           nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }],
-          edges: [],
-        },
-      },
+          edges: []
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -75,11 +75,11 @@ describe('ProcessGraph', () => {
           nodes: [
             { id: 'a', label: 'A' },
             { id: 'b', label: 'B' },
-            { id: 'c', label: 'C' },
+            { id: 'c', label: 'C' }
           ],
-          edges: [],
-        },
-      },
+          edges: []
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -95,9 +95,9 @@ describe('ProcessGraph', () => {
       props: {
         data: {
           nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }],
-          edges: [{ source: 'a', target: 'b' }],
-        },
-      },
+          edges: [{ source: 'a', target: 'b' }]
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -113,13 +113,13 @@ describe('ProcessGraph', () => {
         layout() {
           return new Promise(() => { /* intentionally never resolves */ })
         }
-      },
+      }
     }))
     const ProcessGraph = await loadComponent()
     const wrapper = mount(ProcessGraph, {
       props: {
-        data: { nodes: [{ id: 'x', label: 'X' }], edges: [] },
-      },
+        data: { nodes: [{ id: 'x', label: 'X' }], edges: [] }
+      }
     })
     await flushPromises()
     // isLayouting is set to true before elk.layout resolves — check immediately
@@ -135,9 +135,9 @@ describe('ProcessGraph', () => {
       props: {
         data: {
           activities: [{ id: 'p', label: 'P' }, { id: 'q', label: 'Q' }],
-          directly_follows: [{ source: 'p', target: 'q', weight: 2 }],
-        },
-      },
+          directly_follows: [{ source: 'p', target: 'q', weight: 2 }]
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -153,8 +153,8 @@ describe('ProcessGraph', () => {
     const ProcessGraph = await loadComponent()
     const wrapper = mount(ProcessGraph, {
       props: {
-        data: { nodes: ['alpha', 'beta'], edges: [] },
-      },
+        data: { nodes: ['alpha', 'beta'], edges: [] }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -175,14 +175,14 @@ describe('ProcessGraph', () => {
           nodes: [
             { id: 'a', label: 'A' },
             { id: 'b', label: 'B' },
-            { id: 'c', label: 'C' },
+            { id: 'c', label: 'C' }
           ],
           edges: [
             { source: 'a', target: 'b', weight: 1 },
-            { source: 'a', target: 'c', weight: 10 },
-          ],
-        },
-      },
+            { source: 'a', target: 'c', weight: 10 }
+          ]
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 50))
@@ -201,16 +201,16 @@ describe('ProcessGraph', () => {
         layout() {
           return Promise.reject(new Error('ELK unavailable'))
         }
-      },
+      }
     }))
     const ProcessGraph = await loadComponent()
     const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }],
-          edges: [{ source: 'x', target: 'y' }],
-        },
-      },
+          edges: [{ source: 'x', target: 'y' }]
+        }
+      }
     })
     await flushPromises()
     await new Promise(r => setTimeout(r, 100))

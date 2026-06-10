@@ -42,7 +42,7 @@ function mapNavItems(items: any[]): NavItem[] {
     const mapped: NavItem = {
       label: item.title ?? item.label ?? '',
       to: prefixLearn(rawPath),
-      icon: item.icon,
+      icon: item.icon
     }
     if (item.children?.length) {
       mapped.children = mapNavItems(item.children)
@@ -82,11 +82,13 @@ watch(() => route.path, closeSidebar)
       :class="[
         'fixed lg:sticky top-0 z-30 h-screen w-64 shrink-0 border-r border-default bg-elevated flex flex-col p-4 gap-1 overflow-y-auto',
         'transition-transform duration-200 ease-in-out',
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
       ]"
     >
       <div class="flex items-center gap-2 px-2 py-3 mb-2">
-        <UBadge color="primary" variant="soft">wasm4pm</UBadge>
+        <UBadge color="primary" variant="soft">
+          wasm4pm
+        </UBadge>
         <span class="font-semibold text-sm">Playground</span>
       </div>
 
@@ -140,8 +142,12 @@ watch(() => route.path, closeSidebar)
       <!-- 404 state -->
       <main v-if="!page" class="flex-1 flex items-center justify-center px-6 py-20">
         <div class="text-center max-w-md">
-          <div class="text-6xl font-bold text-primary mb-4">404</div>
-          <h1 class="text-2xl font-semibold mb-2">Page not found</h1>
+          <div class="text-6xl font-bold text-primary mb-4">
+            404
+          </div>
+          <h1 class="text-2xl font-semibold mb-2">
+            Page not found
+          </h1>
           <p class="text-muted mb-6">
             The documentation page you're looking for doesn't exist or has been moved.
           </p>

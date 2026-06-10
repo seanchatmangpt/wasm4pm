@@ -51,7 +51,9 @@ const dimensions = computed(() => [
 
 <template>
   <div class="quality-badge-group">
-    <p v-if="label" class="quality-badge-label">{{ label }}</p>
+    <p v-if="label" class="quality-badge-label">
+      {{ label }}
+    </p>
     <div class="quality-badge-row">
       <span
         v-for="dim in dimensions"

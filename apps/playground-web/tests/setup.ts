@@ -16,7 +16,7 @@ config.global.stubs = {
   USeparator: { template: '<hr />' },
   UIcon: { template: '<span v-bind="$attrs" />' },
   ReceiptViewer: { props: ['receipt'], template: '<div v-if="receipt"><span>run_id</span><span>{{ receipt.run_id }}</span><span>output_hash</span><span>{{ receipt.output_hash }}</span></div>' },
-  ProcessGraph: { props: ['data'], template: '<div />' },
+  ProcessGraph: { props: ['data'], template: '<div />' }
 }
 
 // localStorage — happy-dom doesn't expose this as a bare global in all versions.
@@ -29,7 +29,7 @@ vi.stubGlobal('localStorage', {
   getItem: (k: string) => _lsStore.get(k) ?? null,
   setItem: (k: string, v: string) => { _lsStore.set(k, v) },
   removeItem: (k: string) => { _lsStore.delete(k) },
-  clear: () => { _lsStore.clear() },
+  clear: () => { _lsStore.clear() }
 })
 
 // $fetch global — network boundary shim; no real server in vitest.

@@ -9,10 +9,10 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
+    trace: 'on-first-retry'
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } }
   ],
   webServer: {
     command: 'node_modules/.bin/nuxt dev',
@@ -20,6 +20,6 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
     stdout: 'ignore',
-    stderr: 'pipe',
-  },
+    stderr: 'pipe'
+  }
 })

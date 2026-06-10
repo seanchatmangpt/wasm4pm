@@ -6,7 +6,7 @@ describe('QualityBadge', () => {
   // 1. Renders 4 dimension badges
   it('renders 4 dimension badges (fitness, precision, simplicity, generalization)', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.9, precision: 0.8, simplicity: 0.7, generalization: 0.6 },
+      props: { fitness: 0.9, precision: 0.8, simplicity: 0.7, generalization: 0.6 }
     })
     await flushPromises()
     const text = wrapper.text()
@@ -19,7 +19,7 @@ describe('QualityBadge', () => {
   // 2. Green (success) color for values > 0.85
   it('applies success color for values above 0.85', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9 },
+      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -33,7 +33,7 @@ describe('QualityBadge', () => {
   // 3. Yellow (warning) color for values 0.6–0.85
   it('applies warning color for values in range 0.6–0.85', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.75, precision: 0.75, simplicity: 0.75, generalization: 0.75 },
+      props: { fitness: 0.75, precision: 0.75, simplicity: 0.75, generalization: 0.75 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -45,7 +45,7 @@ describe('QualityBadge', () => {
   // 4. Red (error) color for values < 0.6
   it('applies error color for values below 0.6', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.5, precision: 0.5, simplicity: 0.5, generalization: 0.5 },
+      props: { fitness: 0.5, precision: 0.5, simplicity: 0.5, generalization: 0.5 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -57,7 +57,7 @@ describe('QualityBadge', () => {
   // 5. label prop shows as title
   it('renders label prop as visible title text', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9, label: 'Alpha Miner' },
+      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9, label: 'Alpha Miner' }
     })
     await flushPromises()
     expect(wrapper.text()).toContain('Alpha Miner')
@@ -66,7 +66,7 @@ describe('QualityBadge', () => {
   // 5b. No label element when label prop is omitted
   it('does not render label element when label prop is empty', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9 },
+      props: { fitness: 0.9, precision: 0.9, simplicity: 0.9, generalization: 0.9 }
     })
     await flushPromises()
     expect(wrapper.find('.quality-badge-label').exists()).toBe(false)
@@ -75,21 +75,21 @@ describe('QualityBadge', () => {
   // 6. Tooltip text describes each dimension
   it('tooltip text describes each dimension', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.9, precision: 0.8, simplicity: 0.7, generalization: 0.6 },
+      props: { fitness: 0.9, precision: 0.8, simplicity: 0.7, generalization: 0.6 }
     })
     await flushPromises()
     const html = wrapper.html()
     // UTooltip renders :text as an attribute or aria-label — check for keyword presence
-    expect(html).toContain('replay')       // fitness tooltip
-    expect(html).toContain('unseen')       // precision tooltip
-    expect(html).toContain('Occam')        // simplicity tooltip
-    expect(html).toContain('generalizes')  // generalization tooltip
+    expect(html).toContain('replay') // fitness tooltip
+    expect(html).toContain('unseen') // precision tooltip
+    expect(html).toContain('Occam') // simplicity tooltip
+    expect(html).toContain('generalizes') // generalization tooltip
   })
 
   // 7a. Boundary value 0 renders correctly as error
   it('renders boundary value 0 as error badge with "0.00"', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0, precision: 0, simplicity: 0, generalization: 0 },
+      props: { fitness: 0, precision: 0, simplicity: 0, generalization: 0 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -100,7 +100,7 @@ describe('QualityBadge', () => {
   // 7b. Boundary value 1 renders correctly as success
   it('renders boundary value 1 as success badge with "1.00"', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 1, precision: 1, simplicity: 1, generalization: 1 },
+      props: { fitness: 1, precision: 1, simplicity: 1, generalization: 1 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -111,7 +111,7 @@ describe('QualityBadge', () => {
   // 7c. Exact boundary 0.85 — colorFor uses >, so 0.85 is warning not success
   it('treats exact boundary 0.85 as warning (not success)', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.85, precision: 0.85, simplicity: 0.85, generalization: 0.85 },
+      props: { fitness: 0.85, precision: 0.85, simplicity: 0.85, generalization: 0.85 }
     })
     await flushPromises()
     const html = wrapper.html()
@@ -122,7 +122,7 @@ describe('QualityBadge', () => {
   // 7d. Exact boundary 0.6 — colorFor uses >=, so 0.6 is warning not error
   it('treats exact boundary 0.6 as warning (not error)', async () => {
     const wrapper = mount(QualityBadge, {
-      props: { fitness: 0.6, precision: 0.6, simplicity: 0.6, generalization: 0.6 },
+      props: { fitness: 0.6, precision: 0.6, simplicity: 0.6, generalization: 0.6 }
     })
     await flushPromises()
     const html = wrapper.html()

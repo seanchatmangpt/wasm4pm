@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/observability",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },

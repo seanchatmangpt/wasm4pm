@@ -166,7 +166,6 @@ export const ContractResultSchema = z.object({
   status: z.literal('ok'),
   breed: BreedIdSchema,
   run_id: z.string().min(1),
-  input_hash: z.string().min(1),
   output_hash: z.string().min(1),
   replay_pointer: z.string(),
   options_profile: z.string().nullable(),

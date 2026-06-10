@@ -60,7 +60,7 @@ describe('useWasmWorker -- runAsync()', () => {
     expect(typeof res.durationMs).toBe('number')
     expect(res.durationMs).toBeGreaterThanOrEqual(0)
     // dfg result has nodes + edges
-    const r = res.result as { nodes: unknown[]; edges: unknown[] }
+    const r = res.result as { nodes: unknown[], edges: unknown[] }
     expect(Array.isArray(r.nodes)).toBe(true)
     expect(r.nodes.length).toBeGreaterThan(0)
   })
@@ -130,7 +130,7 @@ describe('useWasmWorker -- runBatch()', () => {
     expect(results).toHaveLength(2)
     expect(results[0]!.algorithm).toBe('dfg')
     expect(results[1]!.algorithm).toBe('heuristic_miner')
-    results.forEach(r => {
+    results.forEach((r) => {
       expect(r.yieldedBeforeRun).toBe(true)
       expect(typeof r.durationMs).toBe('number')
       expect(r.result).not.toBeNull()

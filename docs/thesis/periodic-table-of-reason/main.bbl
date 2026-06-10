@@ -1,4 +1,4 @@
-\begin{thebibliography}{24}
+\begin{thebibliography}{31}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
@@ -90,6 +90,12 @@ Richard~E. Fikes and Nils~J. Nilsson.
   assumption, preconditions, and add/delete effects. Foundation for the
   \textsc{strips} breed plan-soundness proof (Theorem~3.1, clause~(iii)).
 
+\bibitem[Goodenough and Gerhart(1975)]{goodenoughandgerhart1975}
+John~B. Goodenough and Susan~L. Gerhart.
+\newblock \emph{Toward a Theory of Test Data Selection}.
+\newblock ACM, 1975.
+\newblock Foundational paper on test adequacy criteria.
+
 \bibitem[Kowalski(1974)]{kowalski1974prolog}
 Robert Kowalski.
 \newblock Predicate logic as a programming language.
@@ -129,6 +135,12 @@ Sander J.~J. Leemans, Dirk Fahland, and Wil M.~P. van~der Aalst.
 \newblock The Inductive Miner algorithm. Guarantees fitness $\geq 0.5$ and
   soundness of discovered models. Used in Proposition~4.1.
 
+\bibitem[Leucker and Schallhart(2009)]{leucker2009rv}
+Martin Leucker and Christian Schallhart.
+\newblock A brief account of runtime verification.
+\newblock \emph{Journal of Logic and Algebraic Programming}, 78\penalty0
+  (5):\penalty0 293--303, 2009.
+
 \bibitem[Mac~Lane(1971)]{maclane1971}
 Saunders Mac~Lane.
 \newblock \emph{Categories for the Working Mathematician}, volume~5 of
@@ -156,6 +168,18 @@ Eugenio Moggi.
 \newblock Introduces computational monads as a categorical framework for
   effects. The writer monad over the free monoid of BLAKE3 digests
   (Definition~9.3, Receipt Functor) is an instance of this framework.
+
+\bibitem[Moreau et~al.(2013)Moreau, Missier, et~al.]{moreau2013prov}
+Luc Moreau, Paolo Missier, et~al.
+\newblock {PROV-DM}: The {PROV} data model.
+\newblock In \emph{W3C Recommendation}, 2013.
+\newblock \url{https://www.w3.org/TR/prov-dm/}.
+
+\bibitem[Necula(1997)]{necula1997pcc}
+George~C. Necula.
+\newblock Proof-carrying code.
+\newblock In \emph{Proceedings of the 24th ACM SIGPLAN-SIGACT Symposium on
+  Principles of Programming Languages (POPL)}, pages 106--119. ACM, 1997.
 
 \bibitem[Newell and Simon(1963)]{newell1963gps}
 Allen Newell and Herbert~A. Simon.
@@ -201,6 +225,13 @@ J.~Alan Robinson.
   resolution. Foundation for the \textsc{prolog} breed grandparent derivation
   proof (Theorem~3.1, clause~(ii)).
 
+\bibitem[Schank(1972)]{schank1972}
+Roger~C. Schank.
+\newblock Conceptual dependency: A theory of natural language understanding.
+\newblock \emph{Cognitive Psychology}, 3\penalty0 (4):\penalty0 552--631, 1972.
+\newblock Foundational CD theory paper; cited for ELIZA/autoinstinct-semantics
+  breed provenance.
+
 \bibitem[Shortliffe(1976)]{shortliffe1976}
 Edward~H. Shortliffe.
 \newblock \emph{Computer-Based Medical Consultations: {MYCIN}}.
@@ -208,6 +239,21 @@ Edward~H. Shortliffe.
 \newblock Original MYCIN monograph. Defines the Certainty Factor calculus and
   the threshold $\tau = 0.2$ used in the unfakeable oracle (Theorem~3.1,
   clause~(i)). Shortliffe's PhD dissertation at Stanford.
+
+\bibitem[van~der Aalst(2016)]{vanderaalst2016}
+Wil M.~P. van~der Aalst.
+\newblock \emph{Process Mining: Data Science in Action}.
+\newblock Springer, 2nd edition, 2016.
+\newblock \doi{10.1007/978-3-662-49851-4}.
+\newblock The definitive text on process mining. Introduces alignment-based
+  conformance checking, discovery algorithms, and the Process Mining Manifesto.
+  Second edition adds predictive and prescriptive mining.
+
+\bibitem[{WebAssembly Community Group}(2019)]{webassembly2019}
+{WebAssembly Community Group}.
+\newblock {WebAssembly} core specification.
+\newblock Technical report, W3C, 2019.
+\newblock Version 1.0. \url{https://webassembly.github.io/spec/core/}.
 
 \bibitem[Weizenbaum(1966)]{weizenbaum1966eliza}
 Joseph Weizenbaum.

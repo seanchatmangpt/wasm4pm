@@ -19,23 +19,23 @@ const ALGORITHM_GROUPS = [
       { id: 'ilp_miner', label: 'ILP Miner' },
       { id: 'genetic_miner', label: 'Genetic Miner' },
       { id: 'powl_miner', label: 'POWL Miner' },
-      { id: 'declare_miner', label: 'Declare Miner' },
-    ],
+      { id: 'declare_miner', label: 'Declare Miner' }
+    ]
   },
   {
     label: 'Conformance',
     algorithms: [
       { id: 'token_replay_conformance', label: 'Token Replay' },
       { id: 'alignment_conformance', label: 'Alignment' },
-      { id: 'footprint_conformance', label: 'Footprint' },
-    ],
+      { id: 'footprint_conformance', label: 'Footprint' }
+    ]
   },
   {
     label: 'Streaming / Drift',
     algorithms: [
       { id: 'streaming_dfg', label: 'Streaming DFG' },
-      { id: 'concept_drift_detection', label: 'Concept Drift' },
-    ],
+      { id: 'concept_drift_detection', label: 'Concept Drift' }
+    ]
   },
   {
     label: 'ML',
@@ -45,14 +45,14 @@ const ALGORITHM_GROUPS = [
       { id: 'ml_forecast', label: 'Forecast' },
       { id: 'ml_anomaly', label: 'Anomaly' },
       { id: 'ml_regress', label: 'Regress' },
-      { id: 'ml_pca', label: 'PCA' },
-    ],
-  },
+      { id: 'ml_pca', label: 'PCA' }
+    ]
+  }
 ]
 
-interface DfgNode { id: string; label: string; count?: number }
-interface DfgEdge { source: string; target: string; weight?: number }
-interface DfgResult { nodes: DfgNode[]; edges: DfgEdge[] }
+interface DfgNode { id: string, label: string, count?: number }
+interface DfgEdge { source: string, target: string, weight?: number }
+interface DfgResult { nodes: DfgNode[], edges: DfgEdge[] }
 
 const { init, loadXes, runAlgorithm, ready, error: wasmError } = useWasm()
 
@@ -76,16 +76,17 @@ const flowNodes = computed(() => {
       position: { x: col * 200, y: row * 120 },
       type: 'default',
       style: {
-        background: '#3b82f6',
-        color: '#fff',
-        border: '2px solid #1d4ed8',
-        borderRadius: '6px',
+        background: 'rgba(0,220,130,0.1)',
+        color: '#00DC82',
+        border: '1.5px solid rgba(0,220,130,0.4)',
+        borderRadius: '5px',
         padding: '8px 12px',
-        fontSize: '12px',
+        fontSize: '11px',
         fontWeight: '600',
+        fontFamily: 'ui-monospace,monospace',
         minWidth: '120px',
-        textAlign: 'center' as const,
-      },
+        textAlign: 'center' as const
+      }
     }
   })
 })
@@ -99,8 +100,8 @@ const flowEdges = computed(() => {
     label: e.weight != null ? String(e.weight) : '',
     type: 'smoothstep',
     animated: false,
-    style: { stroke: '#64748b' },
-    labelStyle: { fontSize: '11px', fill: '#475569' },
+    style: { stroke: '#2a2a30' },
+    labelStyle: { fontSize: '10px', fill: '#71717a', fontFamily: 'ui-monospace,monospace' }
   }))
 })
 
@@ -141,44 +142,52 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen overflow-hidden bg-default">
+  <div class="flex h-screen overflow-hidden" style="background: var(--color-surface-0)">
     <!-- Sidebar -->
-    <aside class="w-56 shrink-0 border-r border-default bg-elevated flex flex-col">
-      <div class="p-3 border-b border-default">
+    <aside class="w-56 shrink-0 flex flex-col" style="background: var(--color-surface-1); border-right: 1px solid var(--color-surface-border)">
+      <div class="p-3" style="border-bottom: 1px solid var(--color-surface-border)">
         <NuxtLink
           to="/play"
-          class="inline-flex items-center gap-1 text-xs text-muted hover:text-foreground mb-2"
+          class="inline-flex items-center gap-1 text-xs text-zinc-500 hover:text-zinc-300 mb-2 font-mono"
         >
-          ← Back
+          ← sandbox
         </NuxtLink>
-        <p class="text-xs font-semibold text-foreground mb-2">Petri Net Canvas</p>
+        <p class="text-[10px] font-semibold tracking-widest uppercase mb-2" style="color: rgba(0,220,130,0.55)">
+          Petri Net Canvas
+        </p>
         <input
           v-model="sidebarSearch"
-          placeholder="Filter algorithms…"
-          class="w-full text-xs px-2 py-1.5 rounded border border-default bg-default text-foreground placeholder:text-muted focus:outline-none focus:border-primary"
-        />
+          placeholder="Filter…"
+          class="w-full text-xs px-2 py-1.5 rounded text-zinc-300 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-green-400/30"
+          style="background: var(--color-surface-2); border: 1px solid var(--color-surface-border)"
+        >
       </div>
       <div class="flex-1 overflow-y-auto p-2">
         <div v-for="group in filteredGroups" :key="group.label" class="mb-3">
-          <p class="text-xs text-muted uppercase tracking-wider px-2 py-1">{{ group.label }}</p>
+          <p class="text-[10px] tracking-widest uppercase px-2 py-1 font-semibold" style="color: rgba(0,220,130,0.55)">
+            {{ group.label }}
+          </p>
           <button
             v-for="algo in group.algorithms"
             :key="algo.id"
-            class="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-accented transition-colors"
-            :class="{ 'bg-primary/10 text-primary font-semibold': selectedAlgo === algo.id }"
+            class="w-full text-left px-2 py-1 text-xs rounded transition-colors hover:text-zinc-100"
+            :class="selectedAlgo === algo.id
+              ? 'border-l-2 border-green-400 pl-1.5 text-green-400 font-semibold'
+              : 'text-zinc-400 hover:bg-zinc-800/50'"
             @click="selectedAlgo = algo.id; run()"
           >
             {{ algo.label }}
           </button>
         </div>
       </div>
-      <div class="p-3 border-t border-default">
+      <div class="p-3" style="border-top: 1px solid var(--color-surface-border)">
         <button
           :disabled="!ready || running"
-          class="w-full text-xs px-3 py-2 rounded bg-primary text-white font-semibold disabled:opacity-50 hover:bg-primary/90 transition-colors"
+          class="w-full text-xs px-3 py-2 rounded font-semibold disabled:opacity-40 transition-colors font-mono"
+          style="background: rgba(0,220,130,0.15); color: #00DC82; border: 1px solid rgba(0,220,130,0.3)"
           @click="run"
         >
-          {{ running ? 'Running…' : 'Run' }}
+          {{ running ? 'running…' : '▶ run' }}
         </button>
       </div>
     </aside>
@@ -186,44 +195,44 @@ onMounted(async () => {
     <!-- Canvas area -->
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Top bar -->
-      <header class="flex items-center gap-3 px-4 py-2 border-b border-default bg-elevated shrink-0">
-        <code class="text-sm font-semibold text-primary">{{ selectedAlgo }}</code>
-        <span class="text-xs text-muted ml-auto">
-          {{ dfgResult ? `${dfgResult.nodes.length} nodes · ${dfgResult.edges.length} edges` : 'No result yet' }}
+      <header class="flex items-center gap-3 px-4 py-2 shrink-0" style="border-bottom: 1px solid var(--color-surface-border); background: var(--color-surface-1)">
+        <code class="text-sm font-semibold text-green-400 font-mono">{{ selectedAlgo }}</code>
+        <span class="text-[11px] text-zinc-600 ml-auto font-mono">
+          {{ dfgResult ? `${dfgResult.nodes.length} nodes · ${dfgResult.edges.length} edges` : 'no result' }}
         </span>
       </header>
 
       <!-- Status messages -->
-      <div v-if="!ready" class="flex items-center justify-center flex-1 gap-2 text-sm text-muted">
-        <span class="animate-spin inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+      <div v-if="!ready" class="flex items-center justify-center flex-1 gap-2 text-sm text-zinc-600">
+        <span class="animate-spin inline-block w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full" />
         Loading WASM runtime…
       </div>
-      <div v-else-if="wasmError" class="flex items-center justify-center flex-1 text-red-500 text-sm p-4">
+      <div v-else-if="wasmError" class="flex items-center justify-center flex-1 text-red-400 text-sm p-4">
         WASM error: {{ wasmError }}
       </div>
-      <div v-else-if="runError" class="flex items-center justify-center flex-1 text-orange-500 text-sm p-4 text-center">
+      <div v-else-if="runError" class="flex items-center justify-center flex-1 text-orange-400 text-sm p-4 text-center font-mono text-xs">
         {{ runError }}
       </div>
-      <div v-else-if="running" class="flex items-center justify-center flex-1 gap-2 text-sm text-muted">
-        <span class="animate-spin inline-block w-4 h-4 border-2 border-primary border-t-transparent rounded-full" />
+      <div v-else-if="running" class="flex items-center justify-center flex-1 gap-2 text-sm text-zinc-600">
+        <span class="animate-spin inline-block w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full" />
         Running algorithm…
       </div>
 
       <!-- VueFlow Canvas -->
-      <div v-else-if="dfgResult" class="flex-1 relative">
+      <div v-else-if="dfgResult" class="flex-1 relative" style="background: var(--color-surface-0)">
         <VueFlow
           :nodes="flowNodes"
           :edges="flowEdges"
           fit-view-on-init
           class="w-full h-full"
         >
-          <Background />
+          <Background pattern-color="#1f1f23" :gap="20" />
           <Controls />
         </VueFlow>
       </div>
 
-      <div v-else class="flex items-center justify-center flex-1 text-sm text-muted">
-        Select an algorithm and click Run to visualize the process graph.
+      <div v-else class="flex items-center justify-center flex-1 text-xs text-zinc-600 font-mono">
+        select an algorithm and run to visualize
       </div>
     </div>
   </div>

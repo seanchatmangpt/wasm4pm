@@ -38,7 +38,7 @@ const algorithmBlurbs: Record<string, string> = {
   inductive_miner: 'Recursively splits the log using cut operators (sequence, parallel, choice, loop). Guarantees a sound WF-net. The quality-tier default in wasm4pm.',
   alpha_miner: 'The classic alpha-algorithm. Constructs a Petri net from footprint relations. Fast but cannot handle length-one and length-two loops.',
   token_replay_conformance: 'Fires tokens through a Petri net trace by trace. Counts missing and remaining tokens. Fitness = 1 - (missing/consumed). Threshold > 0.85 required.',
-  alignment_conformance: 'Optimal alignment via A* search over the synchronous product net. Exact but O(n^2) in model size. Use for high-stakes conformance checks.',
+  alignment_conformance: 'Optimal alignment via A* search over the synchronous product net. Exact but O(n^2) in model size. Use for high-stakes conformance checks.'
 }
 
 const currentBlurb = computed(() => algorithmBlurbs[props.algorithm] ?? null)
@@ -53,8 +53,7 @@ onMounted(async () => {
   const path = presetMap[props.preset ?? 'small-example'] ?? '/samples/small-example.xes'
   try {
     xesInput.value = await $fetch<string>(path, { responseType: 'text' })
-  }
-  catch { /* user can paste manually */ }
+  } catch { /* user can paste manually */ }
 })
 
 async function run() {
@@ -71,11 +70,9 @@ async function run() {
     }
     activeTab.value = 'result'
     if (currentBlurb.value) aboutOpen.value = true
-  }
-  catch (e: unknown) {
+  } catch (e: unknown) {
     runError.value = e instanceof Error ? e.message : String(e)
-  }
-  finally {
+  } finally {
     running.value = false
   }
 }
@@ -83,8 +80,7 @@ async function run() {
 const resultJson = computed(() => result.value ? JSON.stringify(result.value, null, 2) : '')
 
 async function loadPreset(path: string) {
-  try { xesInput.value = await $fetch<string>(path, { responseType: 'text' }) }
-  catch { /* user can paste manually */ }
+  try { xesInput.value = await $fetch<string>(path, { responseType: 'text' }) } catch { /* user can paste manually */ }
 }
 
 // DFG node/edge detection
@@ -103,15 +99,18 @@ const tabs = computed(() => {
 </script>
 
 <template>
-  <div class="algorithm-demo border border-default rounded-lg overflow-hidden my-6">
+  <div class="algorithm-demo rounded-lg overflow-hidden my-6" style="border: 1px solid var(--color-surface-border)">
     <!-- Header -->
-    <div class="flex items-center justify-between px-4 py-2 bg-elevated border-b border-default">
+    <div class="flex items-center justify-between px-4 py-2" style="background: var(--color-surface-2); border-bottom: 1px solid var(--color-surface-border)">
       <div class="flex items-center gap-2">
-        <UBadge variant="soft" color="primary" size="sm">{{ algorithm }}</UBadge>
-        <span v-if="label" class="text-sm text-muted">{{ label }}</span>
+        <UBadge variant="soft" color="primary" size="sm">
+          {{ algorithm }}
+        </UBadge>
+        <span v-if="label" class="text-sm text-zinc-500">{{ label }}</span>
       </div>
       <UButton
         size="sm"
+        color="primary"
         :loading="running"
         :disabled="!ready"
         icon="i-lucide-play"
@@ -122,13 +121,15 @@ const tabs = computed(() => {
     </div>
 
     <!-- Input area -->
-    <div class="p-4 border-b border-default">
+    <div class="p-4" style="border-bottom: 1px solid var(--color-surface-border)">
       <div class="flex gap-2 mb-2">
-        <span class="text-xs text-muted uppercase tracking-wider">Input XES</span>
+        <span class="font-mono text-[10px] uppercase tracking-widest" style="color: rgba(0,220,130,0.5)">Input XES</span>
         <div class="flex gap-1 ml-auto">
           <UButton
-            v-for="(path, key) in presetMap" :key="key"
-            size="xs" variant="ghost"
+            v-for="(path, key) in presetMap"
+            :key="key"
+            size="xs"
+            variant="ghost"
             @click="loadPreset(path)"
           >
             {{ key }}
@@ -157,11 +158,21 @@ const tabs = computed(() => {
 
     <!-- Output tabs -->
     <div v-if="result || runError" class="p-4">
-      <UAlert v-if="runError" color="error" :description="runError" class="mb-3" />
+      <UAlert
+        v-if="runError"
+        color="error"
+        :description="runError"
+        class="mb-3"
+      />
       <template v-else>
-        <UTabs :items="tabs" v-model="activeTab" size="sm" class="mb-3" />
+        <UTabs
+          v-model="activeTab"
+          :items="tabs"
+          size="sm"
+          class="mb-3"
+        />
         <div v-show="activeTab === 'result'">
-          <pre class="text-xs bg-default rounded p-3 overflow-auto max-h-64">{{ resultJson }}</pre>
+          <pre class="text-[11px] font-mono rounded p-3 overflow-auto max-h-64" style="background: var(--color-surface-0); color: rgba(0,220,130,0.85)">{{ resultJson }}</pre>
         </div>
         <div v-show="activeTab === 'graph'">
           <ProcessGraph v-if="hasDfg" :data="result as Record<string, unknown>" />
@@ -172,7 +183,7 @@ const tabs = computed(() => {
       </template>
 
       <!-- About this algorithm (collapsible) -->
-      <div v-if="currentBlurb" class="mt-3 border border-default rounded">
+      <div v-if="currentBlurb" class="mt-3 rounded" style="border: 1px solid var(--color-surface-border)">
         <button
           class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted hover:text-default transition-colors"
           @click="aboutOpen = !aboutOpen"

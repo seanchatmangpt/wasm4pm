@@ -15,7 +15,7 @@ function makeReceipt(overrides: Partial<Receipt> = {}): Receipt {
     run_id: 'run-abc-123-xyz-789',
     timestamp: '2026-06-10T12:34:56.789Z',
     input_size: 2048,
-    ...overrides,
+    ...overrides
   }
 }
 
@@ -23,8 +23,8 @@ function makeReceipt(overrides: Partial<Receipt> = {}): Receipt {
 beforeEach(() => {
   vi.stubGlobal('navigator', {
     clipboard: {
-      writeText: vi.fn().mockResolvedValue(undefined),
-    },
+      writeText: vi.fn().mockResolvedValue(undefined)
+    }
   })
 })
 
@@ -52,7 +52,7 @@ describe('ReceiptViewer', () => {
   // 3. renders input_hash truncated to 16 chars + ellipsis
   it('renders input_hash truncated to 16 characters with ellipsis', async () => {
     const receipt = makeReceipt({
-      input_hash: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+      input_hash: 'abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890'
     })
     const wrapper = mount(ReceiptViewer, { props: { receipt } })
     await flushPromises()
@@ -63,7 +63,7 @@ describe('ReceiptViewer', () => {
   // 4. renders output_hash truncated
   it('renders output_hash truncated to 16 characters with ellipsis', async () => {
     const receipt = makeReceipt({
-      output_hash: '0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff',
+      output_hash: '0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff'
     })
     const wrapper = mount(ReceiptViewer, { props: { receipt } })
     await flushPromises()

@@ -2,6 +2,8 @@
 
 \chapter{Complete Test Suites and the Oracle Adequacy Theorem}
 \label{chap:oracle}
+\label{chap:oracle-hierarchy}
+\label{chap:oracle-theorem}
 
 \epigraph{%
   ``The criterion of the scientific status of a theory is its falsifiability,
@@ -84,6 +86,7 @@ this.
 
 \begin{theorem}[Oracle Adequacy under Declared Adversary Boundary]
 \label{thm:oracle}
+\label{thm:oracle-hierarchy}
 The 483-test suite implemented in \textsc{wasm4pm} is an unfakeable oracle
 for all thirteen breeds.  Specifically, for each breed $b_i$
 $(i = 1, \ldots, 13)$ there is a sub-suite $\mathcal{T}_i \subseteq
@@ -142,7 +145,7 @@ domain is finite.  \qquad $\square_{(i)}$
 
 \medskip\noindent
 \textbf{(ii) $\PROLOG$ Grandparent Derivation \cite{robinson1965,kowalski1974prolog}.}
-The $\PROLOG$ breed implements SLD resolution with occurs-check.  The
+The $\PROLOG$ breed implements SLD resolution over flat (non-recursive) terms, where the occurs-check is trivially satisfied by construction (the flat-term fragment precludes circular unification).  The
 three tests in \texttt{strips\_soar\_cbr\_invariants.rs}---\allowbreak
 \texttt{prolog\_grandparent\_derives\_correctly},
 \texttt{prolog\_grandparent\_does\_not\_derive\_reversed}, and

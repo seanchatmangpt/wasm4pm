@@ -126,7 +126,7 @@ computed for any $(x, y)$ pair, including one where $y$ is wrong.
 
 \item \textbf{Process-mining conformance check.}  The OTEL spans emitted during
 execution are converted to an OCEL event log and replayed against the declared
-process model using \texttt{pm4py}.  This check detects deviations between the
+process model using native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework.  This check detects deviations between the
 declared algorithm sequence and the actual runtime sequence—catching, for example,
 a breed that skips a mandatory inference step.  Alone, conformance checking
 establishes that the right steps occurred in the right order but says nothing about

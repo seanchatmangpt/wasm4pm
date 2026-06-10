@@ -19,6 +19,16 @@ aggregates four independently falsifiable evidence dimensions into a single qual
 A breed that achieves $V(\Breed_i) = 1$ has passed every level of the oracle hierarchy
 and is admissible as a component of the Universal Causal Equation.
 
+\begin{definition}[Validated Corpus]
+\label{def:validated-corpus}
+The \emph{validated corpus} is the set of all breed invocations for which a passing
+oracle test result exists in the \textsc{wasm4pm} test suite.  Formally,
+$\Breed_i$ belongs to the validated corpus if and only if the test registry contains
+at least one test $t \in \mathcal{T}_i$ with outcome $\mathrm{pass}$ and oracle tier
+$\geq 1$.  The current corpus comprises 483 passing tests across all thirteen breeds
+(run date: 2026-06-09).
+\end{definition}
+
 \begin{definition}[Validation Measure]
 \label{def:validation-measure}
 For breed $\Breed_i$, the \emph{validation measure} is
@@ -108,7 +118,7 @@ The BVC is not a documentation artefact; it is a runtime predicate evaluated by
 component (e.g., a non-deterministic update to a PRNG seed) automatically loses its
 certificate until the regression is repaired and all four components are re-verified.
 
-\section{Theorem 6.1 — BVC for All Thirteen Breeds}
+\section{The Universal BVC Theorem for All Thirteen Breeds}
 \label{sec:bvc-theorem}
 
 \begin{theorem}[Universal BVC]
@@ -136,9 +146,15 @@ substitution. Since 483 / 483 tests pass, we have $C_{\mathrm{test}}(\Breed_i) =
 for all $i$. $\checkmark$
 
 \paragraph{$C_{\mathrm{ocel}} = 1$ for all $i$.}
+Here $C_{\mathrm{ocel}}$ denotes \textbf{L0 lifecycle-wrapper conformance}: the
+dispatch$\to$execute$\to$commit wrapper executes in the declared order; L1
+breed-inference alignment fitness is an open proof obligation
+(\textsc{partial-alive}: step-coverage $= 1.0$ for \textsc{Mycin}, \textsc{Prolog},
+and \textsc{Strips} only; full token-replay alignment is deferred to proof-pack~v2).
 By Theorem~\ref{thm:ocel-conformance}(iii), every breed's execution trace is
-representable as an OCEL event log with $\phi = 1.0$ under the declared model $M_i$.
-The conformance check is performed by \texttt{pm4py} token-based replay on the
+representable as an OCEL event log with $\phi_{\mathrm{L0}} = 1.0$ under the L0
+wrapper model $M_{\mathrm{L0}}$.
+The conformance check is performed by native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework, applied to the
 object-centric Petri net extracted from each breed's lifecycle specification. Zero
 deviating traces were observed across all 13 breeds in the 2026-06-09 audit
 (see \texttt{docs/audit-history.md}). Thus $C_{\mathrm{ocel}}(\Breed_i) = 1$ for

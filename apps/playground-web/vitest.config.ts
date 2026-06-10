@@ -13,13 +13,13 @@ export default defineConfig({
     vue(),
     AutoImport({
       imports: ['vue'],
-      dts: false,
-    }),
+      dts: false
+    })
   ],
   define: {
     'import.meta.client': JSON.stringify(true),
     'import.meta.server': JSON.stringify(false),
-    'import.meta.env.SSR': JSON.stringify(false),
+    'import.meta.env.SSR': JSON.stringify(false)
   },
   resolve: {
     alias: {
@@ -27,7 +27,7 @@ export default defineConfig({
       '@': app,
       'wasm4pm': wasmPkg,
       '#app': stubs,
-      '#imports': stubs,
+      '#imports': stubs
     }
   },
   test: {
@@ -35,9 +35,9 @@ export default defineConfig({
     include: [
       'tests/unit/**/*.test.ts',
       'tests/component/**/*.test.ts',
-      'tests/integration/**/*.test.ts',
+      'tests/integration/**/*.test.ts'
     ],
     globals: true,
-    setupFiles: ['./tests/setup.ts'],
+    setupFiles: ['./tests/setup.ts']
   }
 })

@@ -66,17 +66,15 @@ async function run() {
   try {
     const body = JSON.parse(contractInput.value)
     // POST to Nuxt server API route /api/cognition
-    const res = await $fetch<{ output: unknown; output_hash: string; run_id: string }>(
+    const res = await $fetch<{ output: unknown, output_hash: string, run_id: string }>(
       '/api/cognition',
       { method: 'POST', body }
     )
     result.value = res.output
     receipt.value = await saveReceipt(contractInput.value, res, props.breed)
-  }
-  catch (e: unknown) {
+  } catch (e: unknown) {
     error.value = e instanceof Error ? e.message : String(e)
-  }
-  finally {
+  } finally {
     running.value = false
   }
 }
@@ -86,19 +84,33 @@ async function run() {
   <div class="cognition-demo border border-default rounded-lg overflow-hidden my-6">
     <div class="flex items-center justify-between px-4 py-2 bg-elevated border-b border-default">
       <div class="flex items-center gap-2">
-        <UBadge variant="soft" color="secondary" size="sm">{{ breed }}</UBadge>
+        <UBadge variant="soft" color="secondary" size="sm">
+          {{ breed }}
+        </UBadge>
         <span v-if="label" class="text-sm text-muted">{{ label }}</span>
       </div>
-      <UButton size="sm" :loading="running" icon="i-lucide-brain" @click="run">
+      <UButton
+        size="sm"
+        :loading="running"
+        icon="i-lucide-brain"
+        @click="run"
+      >
         Run
       </UButton>
     </div>
     <div class="p-4 border-b border-default">
-      <p class="text-xs text-muted mb-2 uppercase tracking-wider">Contract (intent.json)</p>
+      <p class="text-xs text-muted mb-2 uppercase tracking-wider">
+        Contract (intent.json)
+      </p>
       <UTextarea v-model="contractInput" :rows="8" class="font-mono text-xs" />
     </div>
     <div v-if="result || error" class="p-4">
-      <UAlert v-if="error" color="error" :description="error" class="mb-3" />
+      <UAlert
+        v-if="error"
+        color="error"
+        :description="error"
+        class="mb-3"
+      />
       <template v-else>
         <pre class="text-xs bg-default rounded p-3 overflow-auto max-h-64">{{ JSON.stringify(result, null, 2) }}</pre>
         <ReceiptViewer v-if="receipt" :receipt="receipt" class="mt-3" />

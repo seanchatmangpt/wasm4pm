@@ -3,6 +3,7 @@
 
 @theme static {
   --font-sans: 'Public Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
 
   --color-green-50: #EFFDF5;
   --color-green-100: #D9FBE8;
@@ -15,4 +16,16 @@
   --color-green-800: #016538;
   --color-green-900: #0A5331;
   --color-green-950: #052E16;
+
+  /* Surface ramp for dark terminal feel */
+  --color-surface-0: #0a0a0b;
+  --color-surface-1: #111113;
+  --color-surface-2: #18181b;
+  --color-surface-3: #1f1f23;
+  --color-surface-border: #2a2a30;
+
+  /* Semantic hash colors — receipt trophy */
+  --color-hash-input: #00DC82;
+  --color-hash-output: #60a5fa;
+  --color-hash-run-id: #a78bfa;
 }

@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   language: 'xml',
   height: '200px',
-  readOnly: false,
+  readOnly: false
 })
 
 const emit = defineEmits<{
@@ -28,7 +28,7 @@ const editorOptions = computed(() => ({
   lineNumbers: 'on' as const,
   scrollBeyondLastLine: false,
   automaticLayout: true,
-  readOnly: props.readOnly,
+  readOnly: props.readOnly
 }))
 
 function handleChange(value: string | undefined) {
