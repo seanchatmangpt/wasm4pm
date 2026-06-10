@@ -307,11 +307,7 @@ const outputTabs = computed(() => {
             <UIcon v-if="isOverDropZone" name="i-lucide-upload" class="ml-auto text-primary" />
             <span v-else class="ml-auto text-muted/60 normal-case">drop file to load</span>
           </div>
-          <textarea
-            v-model="xesInput"
-            class="flex-1 resize-none font-mono text-xs p-3 bg-default text-foreground focus:outline-none"
-            placeholder="Paste XES event log or OCEL JSON here, drop a file, or load a preset from the top bar…"
-          />
+          <ContentXesEditor v-model="xesInput" height="100%" />
         </div>
 
         <!-- Output -->

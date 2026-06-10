@@ -36,7 +36,7 @@
 |---|---|
 | AlgorithmDemo | registered |
 | AlgorithmTable | registered |
-| ProcessGraph | registered — sqrt(n) grid layout only; positions meaningless for DFG analysis |
+| ProcessGraph | registered — ELK layout (async, loading state) DONE |
 | ReceiptViewer | registered |
 | CognitionDemo | registered |
 | QualityBadge | registered |
@@ -50,6 +50,7 @@
 |---|---|
 | `useWasm` | singleton WASM init, SSR guard, `loadXes`, `loadOcel`, `runAlgorithm`, `getAlgorithmList` |
 | `useReceipt` | SHA-256 hashing + localStorage persistence |
+| `useWasmWorker` | yield-based async WASM runner (phase 1) DONE |
 
 ---
 
@@ -58,7 +59,8 @@
 | Route | State |
 |---|---|
 | `/learn/[...slug]` | active — content renderer |
-| `/play` | active — sandbox with OCEL support and cognition sidebar |
+| `/play` | active — sandbox with OCEL support, cognition sidebar, Monaco XES editor DONE |
+| `/play/petri-net` | active — Vue Flow canvas DONE |
 | `/` | redirect |
 
 ---
@@ -84,17 +86,27 @@
 
 ## Known Issues
 
-1. **ProcessGraph.vue layout** — uses simple `sqrt(n)` grid; node positions are meaningless for DFG analysis. No Sugiyama, ELK, or dagre layout.
-2. **XES input is a plain textarea** — no syntax highlighting, no schema validation (Monaco not installed).
-3. **WASM runs block the UI thread** — no WebWorker wrapper; heavy algorithms will freeze the page.
-4. **`/api/cognition` path assumption** — assumes `apps/wasm4pm/dist/bin/wpm.js` exists; returns 500 if TS CLI is not built first (`pnpm build` in `apps/wasm4pm/`).
-5. **how-to section not fully indexed** — 4 files on disk in `content/2.how-to/` but SQLite shows 0; restart `nuxt dev` to re-index.
-6. **`pnpm-workspace.yaml` rebuild gate** — `allowBuilds: better-sqlite3` must be `true` for the native rebuild to succeed.
+1. **`/api/cognition` path assumption** — assumes `apps/wasm4pm/dist/bin/wpm.js` exists; returns 500 if TS CLI is not built first (`pnpm build` in `apps/wasm4pm/`).
+2. **how-to section not fully indexed** — 4 files on disk in `content/2.how-to/` but SQLite shows 0; restart `nuxt dev` to re-index.
+3. **`pnpm-workspace.yaml` rebuild gate** — `allowBuilds: better-sqlite3` must be `true` for the native rebuild to succeed.
 
 ---
 
-## Next Immediate Actions
+## Q1 Features — DONE
 
-1. `pnpm add elkjs` — implement ELK layout in `ProcessGraph.vue` to replace sqrt(n) grid.
-2. `pnpm add @monaco-editor/vue3` — create `app/components/content/XesEditor.client.vue` for syntax-highlighted XES/OCEL editing.
-3. `pnpm add @vue-flow/core` — create `app/pages/play/petri-net.vue` for interactive Petri net canvas.
+| Feature | Status |
+|---|---|
+| ProcessGraph ELK layout (async, loading state) | DONE |
+| Monaco XES editor (`XesEditor.client.vue`) | DONE |
+| Vue Flow canvas (`/play/petri-net`) | DONE |
+| WebWorker phase 1 yield-based async WASM runner | DONE |
+
+---
+
+## Next Immediate Actions (Q2)
+
+1. **WebWorker phase 2** — wire `useWasmWorker` into `/play` sandbox to unblock UI thread for heavy algorithms.
+2. **Petri net WASM integration** — connect `/play/petri-net` canvas to `inductive_miner` / `alpha_miner` output for live rendering.
+3. **XES schema validation** — add XML schema validation inside `XesEditor.client.vue` (Monaco diagnostics).
+4. **ELK layout tuning** — improve edge routing and hierarchical grouping for large DFGs (>50 nodes).
+5. **how-to content indexing** — investigate SQLite re-index on cold start for `content/2.how-to/`.

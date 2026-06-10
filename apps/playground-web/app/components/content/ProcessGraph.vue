@@ -25,28 +25,82 @@ const edges = computed<Edge[]>(() => {
 
 const maxWeight = computed(() => Math.max(1, ...edges.value.map(e => e.weight ?? 1)))
 
-// Simple horizontal layout: left → right
-const nodePositions = computed(() => {
-  const cols = Math.ceil(Math.sqrt(nodes.value.length))
-  return Object.fromEntries(
-    nodes.value.map((n, i) => [n.id, { x: (i % cols) * 160 + 80, y: Math.floor(i / cols) * 80 + 40 }])
-  )
-})
+// ELK-based layout
+const nodePositions = ref<Record<string, { x: number; y: number }>>({})
+const isLayouting = ref(false)
+const svgWidth = ref(640)
+const svgHeight = ref(320)
 
-const svgWidth = computed(() => {
-  const cols = Math.ceil(Math.sqrt(nodes.value.length))
-  return cols * 160 + 80
-})
-const svgHeight = computed(() => {
-  const rows = Math.ceil(nodes.value.length / Math.ceil(Math.sqrt(nodes.value.length)))
-  return rows * 80 + 40
-})
+async function runLayout(ns: Node[], es: Edge[]) {
+  if (!import.meta.client || ns.length === 0) {
+    // Fallback grid for SSR or empty
+    const cols = Math.max(1, Math.ceil(Math.sqrt(ns.length)))
+    nodePositions.value = Object.fromEntries(
+      ns.map((n, i) => [n.id, { x: (i % cols) * 160 + 80, y: Math.floor(i / cols) * 80 + 40 }])
+    )
+    return
+  }
+
+  isLayouting.value = true
+  try {
+    const ELK = (await import('elkjs/lib/elk.bundled.js')).default
+    const elk = new ELK()
+
+    const graph = {
+      id: 'root',
+      layoutOptions: {
+        'algorithm': 'layered',
+        'elk.direction': 'RIGHT',
+        'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+        'elk.spacing.nodeNode': '40',
+      },
+      children: ns.map(n => ({ id: n.id, width: 120, height: 36 })),
+      edges: es.map((e, i) => ({ id: `e${i}`, sources: [e.source], targets: [e.target] })),
+    }
+
+    const result = await elk.layout(graph)
+
+    const positions: Record<string, { x: number; y: number }> = {}
+    let maxX = 0
+    let maxY = 0
+    for (const child of result.children ?? []) {
+      const x = (child.x ?? 0) + 60
+      const y = (child.y ?? 0) + 40
+      positions[child.id!] = { x, y }
+      maxX = Math.max(maxX, x + 80)
+      maxY = Math.max(maxY, y + 40)
+    }
+    nodePositions.value = positions
+    svgWidth.value = Math.max(640, maxX + 40)
+    svgHeight.value = Math.max(200, maxY + 40)
+  } catch (err) {
+    console.warn('ELK layout failed, falling back to grid:', err)
+    const cols = Math.max(1, Math.ceil(Math.sqrt(ns.length)))
+    nodePositions.value = Object.fromEntries(
+      ns.map((n, i) => [n.id, { x: (i % cols) * 160 + 80, y: Math.floor(i / cols) * 80 + 40 }])
+    )
+    const cols2 = Math.max(1, Math.ceil(Math.sqrt(ns.length)))
+    svgWidth.value = cols2 * 160 + 80
+    svgHeight.value = Math.ceil(ns.length / cols2) * 80 + 40
+  } finally {
+    isLayouting.value = false
+  }
+}
+
+watch(
+  [nodes, edges],
+  ([ns, es]) => { runLayout(ns, es) },
+  { immediate: true }
+)
 </script>
 
 <template>
   <div class="process-graph overflow-auto border border-default rounded-lg p-2 bg-default">
+    <div v-if="isLayouting" class="text-sm text-muted text-center py-8">
+      Computing layout…
+    </div>
     <svg
-      v-if="nodes.length"
+      v-else-if="nodes.length"
       :width="svgWidth"
       :height="svgHeight"
       class="min-w-full"
