@@ -1,46 +1,72 @@
-# wasm4pm Documentation Hub (Diátaxis)
+# wasm4pm Documentation
 
-Welcome to the unified documentation source of truth. Every document here is grounded in empirical test evidence.
+We follow the [Diátaxis framework](https://diataxis.fr/). Each section serves a distinct reader need.
 
-Stale or unverified pages are archived under [`docs_quarantine/ARCHIVE/unverified/`](../docs_quarantine/ARCHIVE/unverified/README.md).
+---
 
-## Tutorials (Learning)
+## Tutorials — learning-oriented
 
-- [Getting Started](tutorials/getting_started.md)
-- [Truex Receipt Verification](tutorials/truex_receipts.md)
-- [Predictive Monitoring](tutorials/predictive_monitoring.md)
-- [Cognition Contracts](tutorials/cognition_contracts.md)
+Start here if you are new to wasm4pm. Tutorials take you through concrete steps that build understanding by doing.
 
-## How-To Guides (Goals)
+- [Getting Started](tutorials/getting_started.md) — install, run your first discovery, verify with `wpm doctor`
+- [Truex Receipt Verification](tutorials/truex_receipts.md) — OCEL 2.0 canonicalization and BLAKE3 integrity checking
+- [Predictive Monitoring](tutorials/predictive_monitoring.md) — next-activity prediction and concept drift detection
+- [Cognition Contracts](tutorials/cognition_contracts.md) — all 13 breeds, exact field names, working examples
 
-- [OTEL Configuration](how-to/configure_observability.md)
-- [Supabase Integration](how-to/supabase_integration.md)
-- [Edge Deployment](how-to/edge_deployment.md)
-- [Concept Drift](how-to/concept_drift.md)
+---
 
-## Reference (Information)
+## How-To Guides — task-oriented
 
-- [CLI Commands](reference/cli_commands.md)
-- [Algorithms (60 registered)](reference/algorithms.md)
-- [Configuration Schema](reference/configuration_schema.md)
-- [Truex OCEL 2.0 Canonical Profile](truex-ocel2-canonical-profile.md)
+Solving specific, concrete problems. Assumes you know what you want to achieve.
 
-## Algorithm Evaluations
+- [Configure Observability](how-to/configure_observability.md) — OTEL spans, OTLP export, Jaeger setup
+- [Edge Deployment](how-to/edge_deployment.md) — Cloudflare Workers, Fastly Compute, CDN edge
+- [Concept Drift Detection](how-to/concept_drift.md) — streaming drift monitoring with `wpm drift-watch`
+- [Supabase Integration](how-to/supabase_integration.md) — persist receipts and results to Supabase
+- [Troubleshooting](how-to/troubleshooting.md) — exit codes, WASM build errors, SIGABRT, cognition failures
 
-60 individual algorithm evaluation reports covering reachability, test evidence, and implementation details.
+---
 
-→ [`docs/algorithms_evaluation/`](algorithms_evaluation/) — Browse by algorithm name
+## Reference — information-oriented
 
-## Primitive Kernel
+Accurate, complete descriptions of the system. Use these to look things up, not to learn.
 
-Formal process-mining primitives grounded in van der Aalst / Kourani papers — OCEL v2, POWL 2.0, WF-net / Petri-net soundness, conformance, and more.
+- [Algorithms](reference/algorithms.md) — all 60 registered algorithms, domains, admission status, input types
+- [CLI Commands](reference/cli_commands.md) — every command, flag, and exit code
+- [Configuration Schema](reference/configuration_schema.md) — `wasm4pm.toml` / `wasm4pm.json` / ENV vars
+- [Deployment Profiles](reference/deployment_profiles.md) — mobile / iot / edge / fog / browser build targets
+- [Glossary](reference/glossary.md) — canonical definitions for OCEL, DFG, breed, receipt, admission, and more
 
-→ [`docs/primitives/`](primitives/INDEX.md) — Primitive index and status
+---
 
-## Explanation (Understanding)
+## Explanation — understanding-oriented
 
-- [Architecture Overview](explanation/architecture_overview.md)
-- [Old AI vs. LLM Doctrine](explanation/old_ai_vs_llms.md)
-- [Combinatorial Maximalism](../docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md) *(archived)* · [AGENTS.md](../AGENTS.md) (evidence discipline)
-- [Receipt Truth Verification](explanation/prd_ard_receipt_truth_verification.md)
-- [Truex Jobs-To-Be-Done](JTBD.md)
+Background, rationale, and concepts. Read these to understand why things work the way they do.
+
+- [Architecture Overview](explanation/architecture_overview.md) — system layers, engine state machine, WASM boundary
+- [Process Mining Primer](explanation/process-mining-primer.md) — discovery / conformance / enhancement, OCEL 2.0, quality dimensions
+- [Old AI vs. LLMs](explanation/old_ai_vs_llms.md) — why deterministic symbolic AI runs the kernel
+- [Why WASM](explanation/why_wasm.md) — determinism, portability, SIMD performance
+- [Concept Drift — Math](explanation/concept_drift_math.md) — EWMA, ADWIN, statistical foundations
+- [Receipt Truth Verification](explanation/prd_ard_receipt_truth_verification.md) — PRD/ARD receipt chain theory
+- [Public Ontology Alignment](explanation/wasm4pm-public-ontology-alignment.md) — alignment with IEEE XES and OCEL standards
+
+---
+
+## Auxiliary
+
+These sections are not part of the four Diátaxis quadrants but complement them.
+
+- [Architecture Navigation](orientation/) — C4 models, code hotspots, data flow diagrams
+- [Domain Primitives](primitives/INDEX.md) — formal algorithm and process model specifications
+- [Truex OCEL 2.0 Canonical Profile](truex-ocel2-canonical-profile.md) — full schema and refusal taxonomy
+- [Enterprise Deployment](ENTERPRISE.md) — system requirements, air-gap install, corporate registry, memory guidelines
+- [Jobs-To-Be-Done](JTBD.md) — user jobs framing for Truex and cognition features
+
+---
+
+## Operational records
+
+Internal governance files — not user documentation.
+
+- [Internal records](internal/) — audit history, rewrite manifest, validation evidence, kernel receipts
