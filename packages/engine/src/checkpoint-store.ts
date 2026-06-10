@@ -87,6 +87,9 @@ export class FileCheckpointStore implements ICheckpointStore {
 
   constructor(baseDir = '.wasm4pm/checkpoints') {
     this.baseDir = baseDir;
+  }
+
+  private ensureDir(): void {
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });
     }
@@ -98,6 +101,7 @@ export class FileCheckpointStore implements ICheckpointStore {
   }
 
   async save(id: string, checkpoint: Checkpoint): Promise<void> {
+    this.ensureDir();
     const filePath = this.getCheckpointPath(id);
     const data = {
       id: checkpoint.id,
