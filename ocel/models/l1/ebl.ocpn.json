@@ -1,0 +1,24 @@
+{
+  "id": "ocel_ebl_v1",
+  "name": "EBL Lifecycle Model",
+  "phases": [
+    {
+      "name": "explain",
+      "kinds": ["ebl-explain"],
+      "min_occurrences": 1,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "generalize",
+      "kinds": ["ebl-generalize"],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "operationalize",
+      "kinds": ["ebl-operationalize"],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

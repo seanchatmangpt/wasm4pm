@@ -202,4 +202,55 @@ pub static DEFAULT_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     ],
 };
 
+/// Frames Inheritance lifecycle: frame-load -> frame-walk* -> frame-resolve
+pub static FRAMES_INHERITANCE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "frames_inheritance",
+    phases: &[
+        LifecyclePhase {
+            name: "load",
+            kinds: &["frame-load"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "walk",
+            kinds: &["frame-walk"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "resolve",
+            kinds: &["frame-resolve"],
+            min_occurrences: 0,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+/// EBL lifecycle: ebl-explain+ -> ebl-generalize* -> ebl-operationalize
+pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "ebl",
+    phases: &[
+        LifecyclePhase {
+            name: "explain",
+            kinds: &["ebl-explain"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "generalize",
+            kinds: &["ebl-generalize"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "operationalize",
+            kinds: &["ebl-operationalize"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+
 

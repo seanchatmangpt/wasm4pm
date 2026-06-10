@@ -1839,4 +1839,142 @@ fn htn_planning_paper_grounded() {
     }
 }
 
+#[test]
+fn dempster_shafer_paper_grounded() {
+    let path = "tests/fixtures/papers/dempster_shafer.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    rules.push(Rule {
+                        id: r["id"].as_str().unwrap().to_string(),
+                        premise: vec![],
+                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
+                        certainty: r["certainty"].as_f64().unwrap() as f32,
+                    });
+                }
+            }
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    goals.push(Goal {
+                        id: g["id"].as_str().unwrap().to_string(),
+                        predicate: g["predicate"].as_str().unwrap().to_string(),
+                        value: g["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap().to_string(),
+                candidates: vec![],
+                facts: vec![],
+                cases: vec![],
+                rules,
+                goals,
+                state: vec![],
+            };
+            let breed = dempster_shafer::DempsterShafer;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("DempsterShafer run must succeed");
+            assert_eq!(output.breed, BreedId::DempsterShafer);
+            let bel_val = output.facts.iter().find(|f| f.key == "belief:flim").unwrap().value.parse::<f64>().unwrap();
+            let expected_bel = json["expected"]["belief"].as_f64().unwrap();
+            assert!((bel_val - expected_bel).abs() < 1e-5);
+        }
+    }
+}
+
+#[test]
+fn frames_inheritance_paper_grounded() {
+    let path = "tests/fixtures/papers/frames_inheritance.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    facts.push(Fact {
+                        key: f["key"].as_str().unwrap().to_string(),
+                        value: f["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap().to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            };
+            let breed = frames_inheritance::FramesInheritance;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("FramesInheritance run must succeed");
+            assert_eq!(output.breed, BreedId::FramesInheritance);
+            assert_eq!(output.selected.as_deref(), Some(json["expected"]["resolved_value"].as_str().unwrap()));
+        }
+    }
+}
+
+#[test]
+fn ebl_paper_grounded() {
+    let path = "tests/fixtures/papers/ebl.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    facts.push(Fact {
+                        key: f["key"].as_str().unwrap().to_string(),
+                        value: f["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    rules.push(Rule {
+                        id: r["id"].as_str().unwrap().to_string(),
+                        premise: premises,
+                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
+                        certainty: r["certainty"].as_f64().unwrap() as f32,
+                    });
+                }
+            }
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    goals.push(Goal {
+                        id: g["id"].as_str().unwrap().to_string(),
+                        predicate: g["predicate"].as_str().unwrap().to_string(),
+                        value: g["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap().to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules,
+                goals,
+                state: vec![],
+            };
+            let breed = ebl::Ebl;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("Ebl run must succeed");
+            assert_eq!(output.breed, BreedId::Ebl);
+            let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
+            let contains_str = json["expected"]["rule_contains"].as_str().unwrap();
+            assert!(rule_fact.value.contains(contains_str));
+        }
+    }
+}
+
+
 

@@ -472,6 +472,68 @@ export function minimalDefaultLogicInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// DEMPSTER-SHAFER — dempster_shafer.rs. Dempster combination.
+// ---------------------------------------------------------------------------
+export function minimalDempsterShaferInput(): BreedInput {
+  return {
+    intent: 'evaluate belief',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'source1', premise: [], conclusion: 'flim', certainty: 0.6 },
+      { id: 'source2', premise: [], conclusion: 'flam', certainty: 0.7 }
+    ],
+    goals: [
+      { id: 'query', predicate: 'query', value: 'flim' }
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// FRAMES INHERITANCE — frames_inheritance.rs. Multiple inheritance with overrides.
+// ---------------------------------------------------------------------------
+export function minimalFramesInheritanceInput(): BreedInput {
+  return {
+    intent: 'resolve widget_a weight',
+    candidates: [],
+    facts: [
+      { key: 'frame:widget_a:isa', value: 'widget' },
+      { key: 'frame:widget:slot:weight:default', value: '10kg' },
+      { key: 'frame:widget_a:slot:weight', value: '5kg' }
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// EBL — ebl.rs. Explanation-Based Learning.
+// ---------------------------------------------------------------------------
+export function minimalEblInput(): BreedInput {
+  return {
+    intent: 'learn',
+    candidates: [],
+    facts: [
+      { key: 'has_handle(obj1)', value: 'true' },
+      { key: 'concave(obj1)', value: 'true' }
+    ],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['cup(?x)'], conclusion: 'drinkable(?x)', certainty: 1.0 },
+      { id: 'r2', premise: ['has_handle(?y)', 'concave(?y)'], conclusion: 'cup(?y)', certainty: 1.0 }
+    ],
+    goals: [
+      { id: 'g1', predicate: 'drinkable(obj1)', value: 'true' }
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

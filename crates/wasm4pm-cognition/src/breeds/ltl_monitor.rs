@@ -265,7 +265,7 @@ impl CognitionBreed for LtlMonitor {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         let has_init = output.inference_trace.iter().any(|t| t.kind == "ltl-init");
         let has_verdict = output.inference_trace.iter().any(|t| t.kind == "ltl-verdict");
         if !has_init || !has_verdict {

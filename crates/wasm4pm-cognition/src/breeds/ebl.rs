@@ -306,14 +306,14 @@ impl CognitionBreed for Ebl {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         let has_rule = output.facts.iter().any(|f| f.key == "ebl:rule");
         if !has_rule {
             return Err("EBL must emit an ebl:rule fact".to_string());
         }
         let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
         if !rule_fact.value.contains('?') {
-            return Err("Learned rule must contain >= 1 variable".to_string());
+            return Err("Learned rule must contain >= 1 variable. A ground rule is a fraud signal.".to_string());
         }
         let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
         if !kinds.contains("ebl-explain") || !kinds.contains("ebl-generalize") || !kinds.contains("ebl-operationalize") {
@@ -398,7 +398,7 @@ mod tests {
         };
 
         let output = Ebl.run(&input).expect("EBL run failed");
-        Ebl.postconditions(&output).expect("Postconditions failed");
+        Ebl.postconditions(&input, &output).expect("Postconditions failed");
 
         let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
         // The rule should be something like "has_handle(?target), concave(?target) => drinkable(?target)"

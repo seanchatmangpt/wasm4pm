@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "fbc6bef0450ad55597d295210b6f3b0a0a3d2763",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "hft_monitoring",
+  "input": {
+    "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "ocel_petri_net",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
+      "duration_ms": 50.824,
+      "expected_path": {
+        "route_id": "wpm.example.hft_monitoring.ocel_petri_net.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
+                "duration_ms": 50.824
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_petri_net",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_petri_net_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "8e8b15fa0905e08f4c4e489e12599746cf7ba05c4601c4b146f5880dd09ba198"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:11.046Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:12.270Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:11.339Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:12.737Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:12.775Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
+                "duration_ms": 50.824
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:14.644Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:16.972Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:15.240Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_petri_net",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:15.588Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:18.597Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_petri_net_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_petri_net",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_petri_net_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "559c30817c2ca5867b29e6211f90ed455e24c70c1d299e3228ea43415fc06c30",
+        "observed_result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
+        "output_artifact_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "ocel_encode",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
+      "duration_ms": 11.747,
+      "expected_path": {
+        "route_id": "wpm.example.hft_monitoring.ocel_encode.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_encode_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
+                "duration_ms": 11.747
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_encode",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_encode_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "6df6dfe5c0e17cc287b2330a8df25b17d53d746f9af8f3eaafe747aaa8b33c6c"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_encode_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:11.520Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:14.101Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:13.609Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:13.356Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:17.321Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
+                "duration_ms": 11.747
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:15.038Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:13.697Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:15.967Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_encode",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:16.428Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_encode_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:15.904Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_encode_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_encode",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_encode_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "b4cd25d09297ba5db53b870b922add6bba12e6e6db4ca7350365a51593d52189",
+        "observed_result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
+        "output_artifact_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "ocel_ocla",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
+      "duration_ms": 25.059,
+      "expected_path": {
+        "route_id": "wpm.example.hft_monitoring.ocel_ocla.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
+                "duration_ms": 25.059
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_ocla",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_ocla_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "9cca922d3087dc13b53c2ece145ab2df3207de727691b10095072d0f7e14e2b0"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:12.915Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:12.536Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:13.002Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:11.879Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:16.149Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
+                "duration_ms": 25.059
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:14.585Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:14.821Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:18.627Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_ocla",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:16.836Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:17.758Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_ocla_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_ocla",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_ocla_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "721503bcaec6678dd11874154c56880c6e103b1b630edc12fce52d861c4f03f8",
+        "observed_result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
+        "output_artifact_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "ocel_oc_declare",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
+      "duration_ms": 27.893,
+      "expected_path": {
+        "route_id": "wpm.example.hft_monitoring.ocel_oc_declare.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
+                "duration_ms": 27.893
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_oc_declare",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_oc_declare_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "5cf919693ba27a4ee4517f03f29545d10b30bccd569a43a2ac54b038ab3bf2bf"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:10.566Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:13.723Z",
+              "relationships": [
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:11.594Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:11.862Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:16.612Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
+                "duration_ms": 27.893
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:15.541Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:13.747Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:15.721Z",
+              "relationships": [
+                {
+                  "objectId": "example_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_oc_declare",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:14.725Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:16.012Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_oc_declare_hft_monitoring",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_hft_monitoring",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_hft_monitoring",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_hft_monitoring",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_oc_declare",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_oc_declare_hft_monitoring",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_hft_monitoring",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "38450a7afb278c3aca80552857d73416d57aa8a2a2813b7804563ca2c7c1e8d4",
+        "observed_result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
+        "output_artifact_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T23:41:10.329Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "c18e5c30263b35fceeae31c5cdf2ec8f9902f147c9a14f857b2b8318118731e9"
+}

@@ -511,4 +511,39 @@ fn htn_planning_empty_goals_or_rules_refused() {
     assert!(result.unwrap_err().contains("rule"));
 }
 
+#[test]
+fn dempster_shafer_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::dempster_shafer::DempsterShafer;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no rules
+    let result = DempsterShafer.preconditions(&input);
+    assert!(result.is_err(), "DempsterShafer must refuse empty rules");
+    assert!(result.unwrap_err().contains("rules"));
+}
+
+#[test]
+fn frames_inheritance_invalid_intent_refused() {
+    use wasm4pm_cognition::breeds::frames_inheritance::FramesInheritance;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.intent = "invalid_intent".into();
+    let result = FramesInheritance.preconditions(&input);
+    assert!(result.is_err(), "FramesInheritance must refuse invalid intent");
+    assert!(result.unwrap_err().contains("intent"));
+}
+
+#[test]
+fn ebl_empty_goals_refused() {
+    use wasm4pm_cognition::breeds::ebl::Ebl;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no goals
+    let result = Ebl.preconditions(&input);
+    assert!(result.is_err(), "Ebl must refuse empty goals");
+    assert!(result.unwrap_err().contains("goal"));
+}
+
+
 

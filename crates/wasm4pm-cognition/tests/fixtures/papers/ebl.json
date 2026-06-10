@@ -1,0 +1,43 @@
+{
+  "breed": "ebl",
+  "provenance": {
+    "paper": "Mitchell-1986-Explanation-Based-Generalization.pdf",
+    "citation": "T. M. Mitchell, R. M. Keller, S. T. Kedar-Cabelli (1986). Explanation-Based Generalization: A Unifying View. Machine Learning, Vol. 1, No. 1, pp. 47-80.",
+    "locus": "§3.1 The Cup Example",
+    "extraction": "grounded"
+  },
+  "input": {
+    "intent": "learn",
+    "candidates": [],
+    "facts": [
+      {"key": "has_handle(obj1)", "value": "true"},
+      {"key": "concave(obj1)", "value": "true"}
+    ],
+    "cases": [],
+    "rules": [
+      {
+        "id": "r1",
+        "premise": ["cup(?x)"],
+        "conclusion": "drinkable(?x)",
+        "certainty": 1.0
+      },
+      {
+        "id": "r2",
+        "premise": ["has_handle(?y)", "concave(?y)"],
+        "conclusion": "cup(?y)",
+        "certainty": 1.0
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "drinkable(obj1)",
+        "value": "true"
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "rule_contains": "drinkable"
+  }
+}

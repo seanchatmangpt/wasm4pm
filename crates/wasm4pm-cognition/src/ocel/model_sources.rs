@@ -22,6 +22,8 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "dempster_shafer" => Some(include_str!("../../../../ocel/models/l1/dempster_shafer.ocpn.json")),
         "csp_ac3" => Some(include_str!("../../../../ocel/models/l1/csp_ac3.ocpn.json")),
         "default_logic" => Some(include_str!("../../../../ocel/models/l1/default_logic.ocpn.json")),
+        "frames_inheritance" => Some(include_str!("../../../../ocel/models/l1/frames_inheritance.ocpn.json")),
+        "ebl" => Some(include_str!("../../../../ocel/models/l1/ebl.ocpn.json")),
         _ => None,
     }
 }

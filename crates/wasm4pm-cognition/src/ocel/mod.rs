@@ -101,6 +101,8 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "dempster_shafer" => Some(&models_p1::DEMPSTER_SHAFER_MODEL),
         "csp_ac3" => Some(&models_p1::CSP_AC3_MODEL),
         "default_logic" => Some(&models_p1::DEFAULT_LOGIC_MODEL),
+        "frames_inheritance" => Some(&models_p1::FRAMES_INHERITANCE_MODEL),
+        "ebl" => Some(&models_p1::EBL_MODEL),
         _ => None,
     }
 }

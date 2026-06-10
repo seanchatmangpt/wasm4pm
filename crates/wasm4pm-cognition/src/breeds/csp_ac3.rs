@@ -131,7 +131,7 @@ impl CognitionBreed for CspAc3 {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("CSP must record at least one trace step".to_string());
         }

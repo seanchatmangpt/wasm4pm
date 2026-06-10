@@ -12,7 +12,9 @@ use wasm4pm_cognition::breeds::{
     prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
     bayesian_network::BayesianNetwork, csp_ac3::CspAc3, default_logic::DefaultLogic,
-    htn_planning::HtnPlanning, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    htn_planning::HtnPlanning, dempster_shafer::DempsterShafer,
+    frames_inheritance::FramesInheritance, ebl::Ebl,
+    BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -256,6 +258,36 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "allen_temporal", AllenTemporal);
     bench_breed!(group, "fuzzy_logic", FuzzyLogic);
     bench_breed!(group, "bayesian_network", BayesianNetwork);
+    bench_breed!(group, "dempster_shafer", DempsterShafer);
+
+    let mut fi_input = input.clone();
+    fi_input.intent = "resolve widget_a weight".to_string();
+    fi_input.facts.push(Fact { key: "frame:widget_a:isa".into(), value: "widget".into() });
+    fi_input.facts.push(Fact { key: "frame:widget:slot:weight:default".into(), value: "10kg".into() });
+    fi_input.facts.push(Fact { key: "frame:widget_a:slot:weight".into(), value: "5kg".into() });
+    group.bench_function("frames_inheritance", |b| b.iter(|| FramesInheritance.run(black_box(&fi_input))));
+
+    let mut ebl_input_obj = input.clone();
+    ebl_input_obj.facts.push(Fact { key: "has_handle(obj1)".into(), value: "true".into() });
+    ebl_input_obj.facts.push(Fact { key: "concave(obj1)".into(), value: "true".into() });
+    ebl_input_obj.rules.push(Rule {
+        id: "r1_ebl".into(),
+        premise: vec!["cup(?x)".into()],
+        conclusion: "drinkable(?x)".into(),
+        certainty: 1.0,
+    });
+    ebl_input_obj.rules.push(Rule {
+        id: "r2_ebl".into(),
+        premise: vec!["has_handle(?y)".into(), "concave(?y)".into()],
+        conclusion: "cup(?y)".into(),
+        certainty: 1.0,
+    });
+    ebl_input_obj.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "drinkable(obj1)".into(),
+        value: "true".into(),
+    }];
+    group.bench_function("ebl", |b| b.iter(|| Ebl.run(black_box(&ebl_input_obj))));
 
     group.finish();
 }

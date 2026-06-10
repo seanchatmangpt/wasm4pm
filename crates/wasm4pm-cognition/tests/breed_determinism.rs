@@ -329,6 +329,84 @@ fn htn_planning_input() -> BreedInput {
     }
 }
 
+fn dempster_shafer_input() -> BreedInput {
+    BreedInput {
+        intent: "evaluate belief".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "source1".into(),
+                premise: vec![],
+                conclusion: "flim".into(),
+                certainty: 0.6,
+            },
+            Rule {
+                id: "source2".into(),
+                premise: vec![],
+                conclusion: "flam".into(),
+                certainty: 0.7,
+            },
+        ],
+        goals: vec![Goal {
+            id: "query".into(),
+            predicate: "query".into(),
+            value: "flim".into(),
+        }],
+        state: vec![],
+    }
+}
+
+fn frames_inheritance_input() -> BreedInput {
+    BreedInput {
+        intent: "resolve widget_a weight".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "frame:widget_a:isa".into(), value: "widget".into() },
+            Fact { key: "frame:widget:slot:weight:default".into(), value: "10kg".into() },
+            Fact { key: "frame:widget_a:slot:weight".into(), value: "5kg".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn ebl_input() -> BreedInput {
+    BreedInput {
+        intent: "learn".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "has_handle(obj1)".into(), value: "true".into() },
+            Fact { key: "concave(obj1)".into(), value: "true".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["cup(?x)".into()],
+                conclusion: "drinkable(?x)".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".into(),
+                premise: vec!["has_handle(?y)".into(), "concave(?y)".into()],
+                conclusion: "cup(?y)".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![Goal {
+            id: "g1".into(),
+            predicate: "drinkable(obj1)".into(),
+            value: "true".into(),
+        }],
+        state: vec![],
+    }
+}
+
+
 // ---------------------------------------------------------------------------
 // Helper: run breed twice, assert serialized output is identical
 // ---------------------------------------------------------------------------
@@ -573,12 +651,27 @@ fn determinism_htn_planning() {
     assert_deterministic("htn_planning", &htn_planning_input());
 }
 
+#[test]
+fn determinism_dempster_shafer() {
+    assert_deterministic("dempster_shafer", &dempster_shafer_input());
+}
+
+#[test]
+fn determinism_frames_inheritance() {
+    assert_deterministic("frames_inheritance", &frames_inheritance_input());
+}
+
+#[test]
+fn determinism_ebl() {
+    assert_deterministic("ebl", &ebl_input());
+}
+
 // ---------------------------------------------------------------------------
-// Count assertion: exactly 20 breed determinism tests exist in this suite
+// Count assertion: exactly 23 breed determinism tests exist in this suite
 // ---------------------------------------------------------------------------
 
 #[test]
-fn exactly_20_breed_pairs_covered() {
+fn exactly_23_breed_pairs_covered() {
     let covered = [
         "eliza",
         "cbr",
@@ -600,6 +693,9 @@ fn exactly_20_breed_pairs_covered() {
         "csp_ac3",
         "default_logic",
         "htn_planning",
+        "dempster_shafer",
+        "frames_inheritance",
+        "ebl",
     ];
-    assert_eq!(covered.len(), 20, "must cover exactly 20 breeds");
+    assert_eq!(covered.len(), 23, "must cover exactly 23 breeds");
 }

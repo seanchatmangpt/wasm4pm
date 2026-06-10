@@ -329,7 +329,7 @@ impl CognitionBreed for Hearsay {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("Hearsay must record at least one blackboard event".to_string());
         }

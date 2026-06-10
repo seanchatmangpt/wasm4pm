@@ -252,9 +252,50 @@ describe('default_logic breed integration', () => {
     expect(result.output.breed).toBe('DefaultLogic');
     expect(result.output.selected).toContain('tweety');
     expect(result.output.selected).toContain('flies');
+  });
+});
+
+describe('dempster_shafer breed integration', () => {
+  it('combines belief masses using Dempster rule', async () => {
+    const result = (await fixtures.runBreed(
+      'dempster_shafer',
+      fixtures.minimalDempsterShaferInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('DempsterShafer');
+    expect(result.output.selected).toContain('Bel=0.310345');
     expect(result.output.inference_trace.length).toBeGreaterThan(0);
   });
 });
+
+describe('frames_inheritance breed integration', () => {
+  it('resolves slot values up the inheritance chain with overrides', async () => {
+    const result = (await fixtures.runBreed(
+      'frames_inheritance',
+      fixtures.minimalFramesInheritanceInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('FramesInheritance');
+    expect(result.output.selected).toBe('5kg');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
+describe('ebl breed integration', () => {
+  it('learns operationalized rules from training concept', async () => {
+    const result = (await fixtures.runBreed(
+      'ebl',
+      fixtures.minimalEblInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Ebl');
+    const ruleFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'ebl:rule');
+    expect(ruleFact).toBeDefined();
+    expect(ruleFact?.value).toContain('drinkable');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
 
 // =============================================================================
 // cognition_verify integration (positive + negative oracle)

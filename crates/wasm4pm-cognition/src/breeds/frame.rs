@@ -267,7 +267,7 @@ impl CognitionBreed for Eliza {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("ELIZA must record at least one pattern attempt".to_string());
         }

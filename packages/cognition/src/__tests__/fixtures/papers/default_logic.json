@@ -1,0 +1,28 @@
+{
+  "breed": "default_logic",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Reiter 1980"
+  },
+  "input": {
+    "intent": "solve",
+    "facts": [
+      { "key": "bird", "value": "tweety" }
+    ],
+    "rules": [
+      {
+        "id": "r_default",
+        "premise": ["tweety", "unless:non_flying"],
+        "conclusion": "flies",
+        "certainty": 1.0
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "extension": "flies"
+  }
+}

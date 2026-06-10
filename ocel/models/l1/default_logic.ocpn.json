@@ -1,0 +1,37 @@
+{
+  "id": "default_logic",
+  "name": "Default Logic Extension Finder",
+  "places": [
+    { "id": "p_start" },
+    { "id": "p_solving" },
+    { "id": "p_end" }
+  ],
+  "transitions": [
+    {
+      "id": "t_load",
+      "label": "default-load",
+      "arcs_in": ["p_start"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_fire",
+      "label": "default-fire",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_block",
+      "label": "default-block",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_extension",
+      "label": "default-extension",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_end"]
+    }
+  ],
+  "initial_marking": ["p_start"],
+  "final_markings": [["p_end"]]
+}

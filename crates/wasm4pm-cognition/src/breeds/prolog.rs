@@ -653,7 +653,7 @@ impl CognitionBreed for Prolog {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("Prolog must emit a non-empty inference trace".into());
         }

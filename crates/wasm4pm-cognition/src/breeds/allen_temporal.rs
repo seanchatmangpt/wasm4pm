@@ -286,7 +286,7 @@ impl CognitionBreed for AllenTemporal {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("Trace must not be empty".into());
         }

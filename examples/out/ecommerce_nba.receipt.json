@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "fbc6bef0450ad55597d295210b6f3b0a0a3d2763",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "ecommerce_nba",
+  "input": {
+    "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "powl_to_process_tree",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30",
+      "duration_ms": 21.758,
+      "expected_path": {
+        "route_id": "wpm.example.ecommerce_nba.powl_to_process_tree.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30",
+                "duration_ms": 21.758
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_powl_to_process_tree",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_powl_to_process_tree_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "f83c64a666286e358a9edbcb798352dcfaa2c7b1f08636c5c7f264e0c71bd144"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:13.990Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:14.064Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:15.852Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:12.846Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:13.875Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30",
+                "duration_ms": 21.758
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:14.595Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:16.567Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:18.420Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_powl_to_process_tree",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:17.361Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:17.205Z",
+              "relationships": [
+                {
+                  "objectId": "result_powl_to_process_tree_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_powl_to_process_tree",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_powl_to_process_tree_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "7dda0d33931cad77a66fb1935c82a3bb3314ddacdd4ba3274fe204dde3a816ca",
+        "observed_result_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
+        "output_artifact_hash": "d73dc2afad7c42ae439e49e310f9380ff572dd49c68ddb8365275e6a0e746d30",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "yawl_export",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626",
+      "duration_ms": 11.42,
+      "expected_path": {
+        "route_id": "wpm.example.ecommerce_nba.yawl_export.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_yawl_export_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626",
+                "duration_ms": 11.42
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_yawl_export",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_yawl_export_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "d2b531f0311a2e17ff84b5eb42c7747f4a9c7e9a9e6755f7f68e2d1c54676523"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_yawl_export_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:12.929Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:12.297Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:15.784Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:12.477Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:13.998Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626",
+                "duration_ms": 11.42
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:16.052Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:14.372Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:17.156Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_yawl_export",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:17.035Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_yawl_export_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:16.203Z",
+              "relationships": [
+                {
+                  "objectId": "result_yawl_export_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_yawl_export",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_yawl_export_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "3c3f2f293825d80fb7a112af53f2a910fb6637856336b7117daf1490788f7f1f",
+        "observed_result_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
+        "output_artifact_hash": "4788bb0bfd27ef14ca3c8630413aa39fd315768c5b1ed87831df4ad937633626",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "playout",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297",
+      "duration_ms": 11.76,
+      "expected_path": {
+        "route_id": "wpm.example.ecommerce_nba.playout.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_playout_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297",
+                "duration_ms": 11.76
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_playout",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_playout_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "6bd7947085e9391168fb56c8dbeb40d1e6c77d1a2726d8257c6947f59b6dcb07"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_playout_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:10.738Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:12.169Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:15.207Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:14.355Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:16.419Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297",
+                "duration_ms": 11.76
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:13.854Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:15.028Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:17.919Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_playout",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:15.784Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_playout_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:15.185Z",
+              "relationships": [
+                {
+                  "objectId": "result_playout_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_playout",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_playout_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "9c75c7246290f8a29ecfae4731ac8eadb1d7c1c416f7a1707090e8855bce1d34",
+        "observed_result_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
+        "output_artifact_hash": "3687f4cda7554a469b3dcd7597cf0c1948a0de202806b9df6fec2b2ed4949297",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "monte_carlo_simulation",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5",
+      "duration_ms": 54.102,
+      "expected_path": {
+        "route_id": "wpm.example.ecommerce_nba.monte_carlo_simulation.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5",
+                "duration_ms": 54.102
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_monte_carlo_simulation",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_monte_carlo_simulation_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "04b7438c307673d0f13f2fa78cab80358216d25ce1ce38e65943475b9c97472e"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:41:13.140Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:41:14.693Z",
+              "relationships": [
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:41:15.000Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:41:14.630Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:41:12.820Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5",
+                "duration_ms": 54.102
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:41:17.493Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:41:16.804Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:41:16.286Z",
+              "relationships": [
+                {
+                  "objectId": "example_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_monte_carlo_simulation",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:41:14.557Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:41:19.754Z",
+              "relationships": [
+                {
+                  "objectId": "result_monte_carlo_simulation_ecommerce_nba",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_ecommerce_nba",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_ecommerce_nba",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_ecommerce_nba",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_monte_carlo_simulation",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_monte_carlo_simulation_ecommerce_nba",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_ecommerce_nba",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "ca8a6ad52cf4fe733c0ef394182fd1bab3faeebe2b5fb4bebc9904b8d045dfe1",
+        "observed_result_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
+        "output_artifact_hash": "134a83f2a961ff90bc54486df5cb3efb9082b92faa3f182fef2f68fb20e9ead5",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T23:41:10.300Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "2c96cbe476762a6b7ceb18016f0d56f00ae98e118a4ed31856759e5a45c9a71a"
+}
