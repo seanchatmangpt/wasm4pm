@@ -487,7 +487,8 @@ e3,Place Order,2024-01-03T09:00:00Z,o2,,10,yes
     fn test_missing_activity_skipped() {
         let csv = "ocel:eid,ocel:activity,ocel:timestamp\ne1,,2024-01-01T10:00:00Z\ne2,Act,2024-01-01T11:00:00Z\n";
         let ocel = parse_ocel_csv(csv).expect("parse failed");
+        // e1 has empty activity → skipped; only e2 (activity "Act") survives
         assert_eq!(ocel.events.len(), 1);
-        assert_eq!(ocel.events[0].id, "e1"); // row_idx=0 but skipped row_idx=0, so e1 is actually index 1
+        assert_eq!(ocel.events[0].id, "e2");
     }
 }
