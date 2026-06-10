@@ -55,8 +55,11 @@ export const useWasm = () => {
     if (import.meta.server || _wasm) return
     try {
       const mod = await import('wasm4pm')
-      // Web target: explicitly load the .wasm binary from the static file server
-      await (mod as any).default(new URL('/wasm4pm_bg.wasm', window.location.origin))
+      // Browser web target: load .wasm binary from static file server.
+      // CJS (Node.js/vitest): mod.default is not a function — WASM auto-inits via readFileSync.
+      if (typeof (mod as any).default === 'function') {
+        await (mod as any).default(new URL('/wasm4pm_bg.wasm', window.location.origin))
+      }
       _wasm = mod as unknown as Record<string, unknown>
       _ready.value = true
     }

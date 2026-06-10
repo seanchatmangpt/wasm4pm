@@ -2,38 +2,19 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import CognitionDemo from '../../app/components/content/CognitionDemo.vue'
 
-// ---------------------------------------------------------------------------
-// Globals setup
-// ---------------------------------------------------------------------------
-// Stub crypto so useReceipt.saveReceipt works without real SubtleCrypto
-const FAKE_HASH_BUF = new Uint8Array(32).fill(0xab).buffer
+// happy-dom provides real crypto.subtle and localStorage — no need to stub them.
 
 beforeEach(() => {
-  vi.stubGlobal('crypto', {
-    subtle: { digest: vi.fn().mockResolvedValue(FAKE_HASH_BUF) },
-    randomUUID: () => '550e8400-e29b-41d4-a716-446655440000',
-  })
+  // Reset localStorage between tests so receipt lists don't bleed across.
+  localStorage.clear()
 
-  // Stub localStorage for useReceipt persistence
-  const store: Record<string, string> = {}
-  vi.stubGlobal('localStorage', {
-    getItem: (k: string) => store[k] ?? null,
-    setItem: (k: string, v: string) => { store[k] = v },
-    removeItem: (k: string) => { delete store[k] },
-    clear: () => { Object.keys(store).forEach(k => delete store[k]) },
-  })
-
-  // Default $fetch response: successful cognition call
+  // Stub $fetch for /api/cognition — network boundary, no real server in vitest.
   vi.stubGlobal('$fetch', vi.fn().mockResolvedValue({
     output: { diagnosis: 'strep_infection', antibiotic: 'penicillin' },
     output_hash: 'fedcba0987654321fedcba0987654321fedcba0987654321fedcba0987654321',
     run_id: 'run-mock-001',
   }))
 })
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('CognitionDemo', () => {
   // 1. renders breed name as badge
@@ -87,7 +68,6 @@ describe('CognitionDemo', () => {
     await runButton.trigger('click')
     await wrapper.vm.$nextTick()
 
-    // Nuxt UI UButton sets disabled when :loading is true
     const anyDisabledOrBusy = wrapper.find('[aria-busy="true"], button[disabled]').exists()
       || runButton.attributes('disabled') !== undefined
       || runButton.attributes('aria-busy') !== undefined

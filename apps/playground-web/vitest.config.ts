@@ -4,8 +4,9 @@ import AutoImport from 'unplugin-auto-import/vite'
 import { fileURLToPath } from 'node:url'
 
 const app = fileURLToPath(new URL('./app', import.meta.url))
+// Real wasm4pm CJS build — auto-initializes via fs.readFileSync at require-time; no browser URL needed.
+const wasmPkg = fileURLToPath(new URL('../../wasm4pm/pkg/wasm4pm.js', import.meta.url))
 const stubs = fileURLToPath(new URL('./tests/__stubs__/nuxt-app.ts', import.meta.url))
-const wasmStub = fileURLToPath(new URL('./tests/__stubs__/wasm4pm.ts', import.meta.url))
 
 export default defineConfig({
   plugins: [
@@ -24,14 +25,18 @@ export default defineConfig({
     alias: {
       '~': app,
       '@': app,
-      'wasm4pm': wasmStub,
+      'wasm4pm': wasmPkg,
       '#app': stubs,
       '#imports': stubs,
     }
   },
   test: {
     environment: 'happy-dom',
-    include: ['tests/unit/**/*.test.ts', 'tests/component/**/*.test.ts'],
+    include: [
+      'tests/unit/**/*.test.ts',
+      'tests/component/**/*.test.ts',
+      'tests/integration/**/*.test.ts',
+    ],
     globals: true,
     setupFiles: ['./tests/setup.ts'],
   }

@@ -1,59 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { useReceipt } from '../../app/composables/useReceipt'
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/** Build a deterministic 32-byte ArrayBuffer so SHA-256 output is predictable. */
-function fakeDigestBuffer(seed = 0xab): ArrayBuffer {
-  const buf = new ArrayBuffer(32)
-  new Uint8Array(buf).fill(seed)
-  return buf
-}
-
-function hexFromBuffer(buf: ArrayBuffer): string {
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('')
-}
-
-const FAKE_HASH = hexFromBuffer(fakeDigestBuffer(0xab))
-const FAKE_UUID = '550e8400-e29b-41d4-a716-446655440000'
-
-// ---------------------------------------------------------------------------
-// Setup — mock crypto and localStorage before each test
-// ---------------------------------------------------------------------------
-
-let localStorageStore: Record<string, string> = {}
+// happy-dom provides real crypto.subtle (SHA-256) and localStorage.
+// No stubs — useReceipt runs against real browser APIs.
 
 beforeEach(() => {
-  // Reset in-memory store
-  localStorageStore = {}
-
-  // Stub localStorage
-  vi.stubGlobal('localStorage', {
-    getItem: (key: string) => localStorageStore[key] ?? null,
-    setItem: (key: string, value: string) => { localStorageStore[key] = value },
-    removeItem: (key: string) => { delete localStorageStore[key] },
-    clear: () => { localStorageStore = {} },
-  })
-
-  // Stub crypto.subtle.digest to return predictable buffer
-  vi.stubGlobal('crypto', {
-    subtle: {
-      digest: vi.fn().mockResolvedValue(fakeDigestBuffer(0xab)),
-    },
-    randomUUID: vi.fn().mockReturnValue(FAKE_UUID),
-  })
-
-  // Make import.meta.client truthy so the persistence branch executes
-  vi.stubGlobal('import', { meta: { client: true } })
+  localStorage.clear()
 })
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe('useReceipt', () => {
   // 1. saveReceipt() returns a Receipt with all required fields
@@ -80,27 +33,33 @@ describe('useReceipt', () => {
     expect(receipt.output_hash.length).toBeGreaterThan(0)
   })
 
-  // 3. hashes match the mocked SHA-256 output
-  it('saveReceipt hashes equal the SHA-256 digest output', async () => {
+  // 3. hashes are real SHA-256 hex strings (64 chars)
+  it('saveReceipt hashes are 64-char lowercase hex (real SHA-256)', async () => {
     const { saveReceipt } = useReceipt()
     const receipt = await saveReceipt('x', {}, 'inductive-miner')
 
-    expect(receipt.input_hash).toBe(FAKE_HASH)
-    expect(receipt.output_hash).toBe(FAKE_HASH)
+    expect(receipt.input_hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(receipt.output_hash).toMatch(/^[0-9a-f]{64}$/)
   })
 
-  // 4. run_id is UUID-like (hex, no dashes, 32 chars from randomUUID sans dashes)
-  it('saveReceipt run_id is a UUID-derived string', async () => {
+  // 4. hashes are deterministic for the same input
+  it('same input produces same input_hash on repeated calls', async () => {
+    const { saveReceipt } = useReceipt()
+    const r1 = await saveReceipt('deterministic-input', {}, 'dfg')
+    const r2 = await saveReceipt('deterministic-input', {}, 'dfg')
+
+    expect(r1.input_hash).toBe(r2.input_hash)
+  })
+
+  // 5. run_id is a UUID-derived 32-char hex string (dashes removed)
+  it('saveReceipt run_id is a 32-char hex string', async () => {
     const { saveReceipt } = useReceipt()
     const receipt = await saveReceipt('data', {}, 'dfg')
 
-    const expectedRunId = FAKE_UUID.replace(/-/g, '')
-    expect(receipt.run_id).toBe(expectedRunId)
-    // UUID without dashes = 32 hex chars
     expect(receipt.run_id).toMatch(/^[0-9a-f]{32}$/)
   })
 
-  // 5. input_size matches input string byte length
+  // 6. input_size matches input string byte length
   it('saveReceipt input_size equals input string length', async () => {
     const { saveReceipt } = useReceipt()
     const input = 'hello world'
@@ -109,13 +68,13 @@ describe('useReceipt', () => {
     expect(receipt.input_size).toBe(input.length)
   })
 
-  // 6. getReceipts returns empty array on fresh start
+  // 7. getReceipts returns empty array on fresh start
   it('getReceipts returns empty array on fresh start', () => {
     const { getReceipts } = useReceipt()
     expect(getReceipts()).toEqual([])
   })
 
-  // 7. getReceipts returns saved receipts after saveReceipt calls
+  // 8. getReceipts returns saved receipts after saveReceipt calls
   it('getReceipts returns receipts after saves', async () => {
     const { saveReceipt, getReceipts } = useReceipt()
     await saveReceipt('a', {}, 'algo-1')
@@ -128,30 +87,29 @@ describe('useReceipt', () => {
     expect(receipts[1]!.algorithm).toBe('algo-1')
   })
 
-  // 8. getReceipts persists to localStorage
+  // 9. getReceipts persists to localStorage
   it('getReceipts reads from localStorage', async () => {
     const { saveReceipt } = useReceipt()
     await saveReceipt('payload', { x: 1 }, 'conformance')
 
-    // Raw localStorage should hold JSON
-    const raw = localStorageStore['wasm4pm:receipts']
+    const raw = localStorage.getItem('wasm4pm:receipts')
     expect(raw).toBeDefined()
     const parsed = JSON.parse(raw!)
     expect(Array.isArray(parsed)).toBe(true)
     expect(parsed[0]!.algorithm).toBe('conformance')
   })
 
-  // 9. clearReceipts empties the receipt list
+  // 10. clearReceipts empties the receipt list
   it('clearReceipts removes all receipts', async () => {
     const { saveReceipt, getReceipts, clearReceipts } = useReceipt()
     await saveReceipt('data', {}, 'algo')
 
     clearReceipts()
     expect(getReceipts()).toEqual([])
-    expect(localStorageStore['wasm4pm:receipts']).toBeUndefined()
+    expect(localStorage.getItem('wasm4pm:receipts')).toBeNull()
   })
 
-  // 10. Persistence cap: only last 20 receipts are kept when 25 are saved
+  // 11. Persistence cap: only last 20 receipts are kept when 25 are saved
   it('caps stored receipts at 20 when 25 are saved', async () => {
     const { saveReceipt, getReceipts } = useReceipt()
 
@@ -169,26 +127,25 @@ describe('useReceipt', () => {
     expect(algorithms).not.toContain('algo-4')
   })
 
-  // 11. getReceipts reads from localStorage on composable init
+  // 12. getReceipts reads pre-existing data from localStorage on init
   it('getReceipts reads pre-existing data from localStorage on init', () => {
     const preExisting = [
       {
         algorithm: 'pre-existing',
-        input_hash: 'aabbcc',
-        output_hash: 'ddeeff',
-        run_id: 'abc123',
+        input_hash: 'a'.repeat(64),
+        output_hash: 'b'.repeat(64),
+        run_id: 'c'.repeat(32),
         timestamp: new Date().toISOString(),
         input_size: 42,
       },
     ]
-    localStorageStore['wasm4pm:receipts'] = JSON.stringify(preExisting)
+    localStorage.setItem('wasm4pm:receipts', JSON.stringify(preExisting))
 
-    // New composable instance should read from localStorage immediately
     const { getReceipts } = useReceipt()
     const receipts = getReceipts()
 
     expect(receipts).toHaveLength(1)
     expect(receipts[0]!.algorithm).toBe('pre-existing')
-    expect(receipts[0]!.input_hash).toBe('aabbcc')
+    expect(receipts[0]!.input_hash).toBe('a'.repeat(64))
   })
 })

@@ -2,9 +2,8 @@
 import { vi } from 'vitest'
 import { config } from '@vue/test-utils'
 
-// Register Nuxt UI stubs so DOM queries work (UButton → <button>, etc.)
-// Nuxt UI components are auto-imported in production but not in plain vitest.
-// These minimal stubs render slot content with the correct native element.
+// Nuxt UI component stubs — infrastructure boundary (components require full Nuxt runtime).
+// We test OUR prop logic (color thresholds, loading state, etc.), not the library's rendering.
 config.global.stubs = {
   UButton: { props: ['loading', 'disabled'], template: '<button v-bind="$attrs" :disabled="loading || disabled || null" :aria-busy="loading ? true : undefined" @click="$emit(\'click\')"><slot /></button>', emits: ['click'] },
   UBadge: { template: '<span v-bind="$attrs"><slot /></span>' },
@@ -20,31 +19,19 @@ config.global.stubs = {
   ProcessGraph: { props: ['data'], template: '<div />' },
 }
 
-// localStorage mock
-const localStorageStore: Record<string, string> = {}
+// localStorage — happy-dom doesn't expose this as a bare global in all versions.
+// Provide a real Storage-compatible implementation backed by a plain Map.
+// Behavior is faithful: persistence, STORAGE_KEY reads, 20-item cap — all real.
+const _lsStore = new Map<string, string>()
 vi.stubGlobal('localStorage', {
-  getItem: (k: string) => localStorageStore[k] ?? null,
-  setItem: (k: string, v: string) => { localStorageStore[k] = v },
-  removeItem: (k: string) => { delete localStorageStore[k] },
-  clear: () => { Object.keys(localStorageStore).forEach(k => delete localStorageStore[k]) },
+  get length() { return _lsStore.size },
+  key: (n: number) => [..._lsStore.keys()][n] ?? null,
+  getItem: (k: string) => _lsStore.get(k) ?? null,
+  setItem: (k: string, v: string) => { _lsStore.set(k, v) },
+  removeItem: (k: string) => { _lsStore.delete(k) },
+  clear: () => { _lsStore.clear() },
 })
 
-// crypto.subtle.digest mock — returns predictable hash bytes
-vi.stubGlobal('crypto', {
-  subtle: {
-    digest: async (_algo: string, data: ArrayBuffer) => {
-      const view = new Uint8Array(data)
-      const hash = new Uint8Array(32)
-      for (let i = 0; i < view.length && i < 32; i++) hash[i] = view[i] ^ 0xab
-      return hash.buffer
-    }
-  },
-  randomUUID: () => '00000000-0000-0000-0000-000000000001',
-  getRandomValues: (arr: Uint8Array) => { arr.fill(1); return arr }
-})
-
-// performance.now stub
-vi.stubGlobal('performance', { now: vi.fn(() => 1000) })
-
-// $fetch global — tests override per-suite
+// $fetch global — network boundary shim; no real server in vitest.
+// Tests override per-suite with vi.stubGlobal('$fetch', ...).
 vi.stubGlobal('$fetch', vi.fn().mockResolvedValue(''))

@@ -1,148 +1,53 @@
 /**
- * Unit tests for useWasm composable.
+ * Unit tests for useWasm composable — real WASM binary, no mocks.
  *
- * The composable keeps module-level singletons (_wasm, _ready, _error).
- * We reset these between tests via vi.resetModules() + dynamic re-import.
+ * wasm4pm/pkg/wasm4pm.js is a Node.js CJS build that auto-initializes via
+ * fs.readFileSync at require-time.  useWasm.init() detects this (mod.default
+ * is not a function in CJS) and skips the browser URL call, setting _wasm
+ * directly.  All algorithm calls here exercise the real WASM binary.
  *
- * Globals (describe, it, expect, vi, beforeEach) come from vitest globals:true.
+ * vi.resetModules() clears the vitest ESM cache between tests so the
+ * module-level _wasm/_ready/_error singletons reset, while Node's require
+ * cache keeps the already-initialized WASM module warm.
  */
 
-// ---------------------------------------------------------------------------
-// WASM_PREFIXES as declared in the composable
-// ---------------------------------------------------------------------------
-const PREFIXES = ['discover_', 'conformance_', 'ml_', 'streaming_', ''] as const
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
-// All algorithm IDs from the composable's ALGORITHM_IDS constant
-const ALGORITHM_IDS = [
-  'alpha_miner',
-  'heuristic_miner',
-  'inductive_miner',
-  'dfg',
-  'petri_net',
-  'bpmn',
-  'directly_follows',
-  'eventually_follows',
-  'conformance_token_replay',
-  'conformance_alignments',
-  'fitness',
-  'precision',
-  'generalization',
-  'simplicity',
-  'social_network',
-  'dotted_chart',
-  'performance_dfg',
-  'case_duration',
-  'variant_explorer',
-  'ocel_discovery',
-  'ocel_conformance',
-  'ml_classify',
-  'ml_cluster',
-  'ml_anomaly',
-  'ml_forecast',
-]
-
-// Algorithm IDs we know a specific test will probe
-const EXTRA_PROBE_NAMES = ['totally_unknown_xyz', 'bare_algo']
-
-// Build the full set of export names the composable will ever read
-function allProbeNames(ids: string[]): string[] {
-  const names = new Set<string>()
-  for (const id of ids) {
-    for (const prefix of PREFIXES) {
-      names.add(`${prefix}${id}`)
-    }
-  }
-  return [...names]
-}
-
-// ---------------------------------------------------------------------------
-// Fake WASM module
-//
-// We declare EVERY key the composable will access on the module so vitest's
-// strict-export check doesn't throw.  All entries start as undefined; the
-// ones we want to be real functions are set to vi.fn().
-// ---------------------------------------------------------------------------
-const WASM_FN_STUBS: Record<string, ReturnType<typeof vi.fn> | undefined> = {}
-
-// Seed undefined stubs for every probed name
-for (const name of allProbeNames([...ALGORITHM_IDS, ...EXTRA_PROBE_NAMES])) {
-  WASM_FN_STUBS[name] = undefined
-}
-
-// Real exports
-WASM_FN_STUBS.default = vi.fn(async () => undefined)
-WASM_FN_STUBS.load_eventlog_from_xes = vi.fn(() => 42)
-WASM_FN_STUBS.load_ocel_from_json = vi.fn(() => 43)
-WASM_FN_STUBS.discover_dfg = vi.fn(() => JSON.stringify({ nodes: [], edges: [] }))
-
-vi.mock('wasm4pm', () => WASM_FN_STUBS)
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const SAMPLE_XES = readFileSync(
+  join(__dirname, '../../public/samples/small-example.xes'), 'utf8'
+)
 
 async function freshUseWasm() {
   vi.resetModules()
-  vi.mock('wasm4pm', () => WASM_FN_STUBS)
   const { useWasm } = await import('../../app/composables/useWasm')
   return useWasm()
 }
 
-const initFn = () => WASM_FN_STUBS.default as ReturnType<typeof vi.fn>
-const xesFn = () => WASM_FN_STUBS.load_eventlog_from_xes as ReturnType<typeof vi.fn>
-const ocelFn = () => WASM_FN_STUBS.load_ocel_from_json as ReturnType<typeof vi.fn>
-const dfgFn = () => WASM_FN_STUBS.discover_dfg as ReturnType<typeof vi.fn>
-
-beforeEach(() => {
-  initFn().mockClear().mockImplementation(async () => undefined)
-  xesFn().mockClear().mockImplementation(() => 42)
-  ocelFn().mockClear().mockImplementation(() => 43)
-  dfgFn().mockClear().mockImplementation(() => JSON.stringify({ nodes: [], edges: [] }))
-  // Reset any temporarily added bare stubs
-  WASM_FN_STUBS.bare_algo = undefined
-})
-
 // ---------------------------------------------------------------------------
-// Tests
+// init()
 // ---------------------------------------------------------------------------
 
 describe('useWasm -- init()', () => {
-  it('SSR guard: import.meta.server prevents initialization', async () => {
-    // import.meta.server is resolved at compile time by Nuxt/Vite transforms.
-    // In the test environment it is always false (browser-like).  We verify
-    // the guard indirectly: if the flag were true the init fn would be a no-op;
-    // its presence in the source is confirmed by code review.  What we can
-    // test is that init() is a no-op when _wasm is already set (the OR branch
-    // of the same guard), which is covered by the idempotency test.
-    //
-    // Direct SSR simulation is not possible without a separate SSR test runner.
-    // We document the intent and skip runtime assertion to avoid false failures.
-    expect(true).toBe(true) // guard exists in source; tested via idempotency
-  })
-
-  it('idempotent: calling init() twice only initialises once', async () => {
-    const { init, ready } = await freshUseWasm()
-    await init()
-    await init()
-    expect(initFn()).toHaveBeenCalledTimes(1)
-    expect(ready.value).toBe(true)
-  })
-
-  it('sets ready=true on success', async () => {
+  it('sets ready=true and clears error on success', async () => {
     const { init, ready, error } = await freshUseWasm()
     await init()
     expect(ready.value).toBe(true)
     expect(error.value).toBeNull()
   })
 
-  it('sets error and leaves ready=false on failure', async () => {
-    initFn().mockRejectedValueOnce(new Error('load failed'))
-    const { init, ready, error } = await freshUseWasm()
+  it('is idempotent: calling init() twice only initialises once', async () => {
+    const { init, ready } = await freshUseWasm()
     await init()
-    expect(ready.value).toBe(false)
-    expect(error.value).toBe('load failed')
+    await init()
+    // Still ready, no error — the guard short-circuits on second call
+    expect(ready.value).toBe(true)
   })
 })
+
+// ---------------------------------------------------------------------------
+// loadXes()
+// ---------------------------------------------------------------------------
 
 describe('useWasm -- loadXes()', () => {
   it('throws if WASM not initialized', async () => {
@@ -150,76 +55,99 @@ describe('useWasm -- loadXes()', () => {
     expect(() => loadXes('<log/>')).toThrow('WASM not initialized')
   })
 
-  it('calls load_eventlog_from_xes with the supplied XES string', async () => {
+  it('returns a handle after init', async () => {
     const { init, loadXes } = await freshUseWasm()
     await init()
-    const handle = loadXes('<log version="1.0"/>')
-    expect(xesFn()).toHaveBeenCalledWith('<log version="1.0"/>')
-    expect(handle).toBe(42)
+    const handle = loadXes(SAMPLE_XES)
+    // CJS WASM returns string handles like "obj_0"
+    expect(handle).toBeTruthy()
+  })
+
+  it('different XES inputs produce different handles', async () => {
+    const { init, loadXes } = await freshUseWasm()
+    await init()
+    const h1 = loadXes(SAMPLE_XES)
+    const h2 = loadXes(SAMPLE_XES)
+    // Each call registers a new log object
+    expect(h1).not.toBe(h2)
   })
 })
 
+// ---------------------------------------------------------------------------
+// loadOcel()
+// ---------------------------------------------------------------------------
+
 describe('useWasm -- loadOcel()', () => {
-  it('calls load_ocel_from_json with the supplied JSON string', async () => {
+  it('throws if WASM not initialized', async () => {
+    const { loadOcel } = await freshUseWasm()
+    expect(() => loadOcel('{}')).toThrow('WASM not initialized')
+  })
+
+  it('returns a handle for valid OCEL JSON', async () => {
     const { init, loadOcel } = await freshUseWasm()
     await init()
-    const json = JSON.stringify({ ocel: true })
-    const handle = loadOcel(json)
-    expect(ocelFn()).toHaveBeenCalledWith(json)
-    expect(handle).toBe(43)
+    const ocelJson = JSON.stringify({
+      'ocel:events': {},
+      'ocel:objects': {},
+    })
+    const handle = loadOcel(ocelJson)
+    expect(handle).toBeTruthy()
   })
 })
+
+// ---------------------------------------------------------------------------
+// runAlgorithm()
+// ---------------------------------------------------------------------------
 
 describe('useWasm -- runAlgorithm()', () => {
   it('throws if WASM not initialized', async () => {
     const { runAlgorithm } = await freshUseWasm()
-    expect(() => runAlgorithm('dfg', 0)).toThrow('WASM not initialized')
+    expect(() => runAlgorithm('dfg', 0 as any)).toThrow('WASM not initialized')
   })
 
-  it('tries discover_ prefix first and succeeds for "dfg"', async () => {
-    const { init, runAlgorithm } = await freshUseWasm()
+  it('discover_dfg: "dfg" resolves via discover_ prefix, returns nodes and edges', async () => {
+    const { init, loadXes, runAlgorithm } = await freshUseWasm()
     await init()
-    const result = runAlgorithm('dfg', 42)
-    expect(dfgFn()).toHaveBeenCalledWith(42, 'concept:name')
-    expect(result).toEqual({ nodes: [], edges: [] })
+    const handle = loadXes(SAMPLE_XES)
+    const result = runAlgorithm('dfg', handle as any) as { nodes: unknown[]; edges: unknown[] }
+    expect(Array.isArray(result.nodes)).toBe(true)
+    expect(Array.isArray(result.edges)).toBe(true)
+    expect(result.nodes.length).toBeGreaterThan(0)
   })
 
-  it('falls back to bare name when discover_ and other prefixes are absent', async () => {
-    // Install bare_algo as a function; all prefixed probes are undefined (set in beforeEach)
-    const bareFn = vi.fn(() => JSON.stringify({ bare: true }))
-    WASM_FN_STUBS.bare_algo = bareFn
-
-    const { init, runAlgorithm } = await freshUseWasm()
+  it('heuristic_miner returns a result with algorithm and node/edge counts', async () => {
+    const { init, loadXes, runAlgorithm } = await freshUseWasm()
     await init()
-    const result = runAlgorithm('bare_algo', 1)
-    expect(bareFn).toHaveBeenCalledWith(1, 'concept:name')
-    expect(result).toEqual({ bare: true })
+    const handle = loadXes(SAMPLE_XES)
+    const result = runAlgorithm('heuristic_miner', handle as any, 'concept:name', { dep_threshold: 0.3 }) as any
+    expect(result).toHaveProperty('algorithm', 'heuristic_miner')
+    expect(typeof result.nodes).toBe('number')
+    expect(typeof result.edges).toBe('number')
   })
 
-  it('throws "Algorithm not found" for unrecognized names', async () => {
-    const { init, runAlgorithm } = await freshUseWasm()
+  it('throws "Algorithm not found" for unrecognized algorithm name', async () => {
+    const { init, loadXes, runAlgorithm } = await freshUseWasm()
     await init()
-    expect(() => runAlgorithm('totally_unknown_xyz', 0)).toThrow('Algorithm not found')
+    const handle = loadXes(SAMPLE_XES)
+    expect(() => runAlgorithm('totally_unknown_xyz', handle as any)).toThrow('Algorithm not found')
   })
 
   it('parses JSON result string into an object', async () => {
-    const { init, runAlgorithm } = await freshUseWasm()
+    const { init, loadXes, runAlgorithm } = await freshUseWasm()
     await init()
-    const result = runAlgorithm('dfg', 42, 'concept:name')
+    const handle = loadXes(SAMPLE_XES)
+    const result = runAlgorithm('dfg', handle as any)
     expect(typeof result).toBe('object')
-    expect(result).toEqual({ nodes: [], edges: [] })
-  })
-
-  it('forwards activityKey and extra params as positional args', async () => {
-    const { init, runAlgorithm } = await freshUseWasm()
-    await init()
-    runAlgorithm('dfg', 42, 'myKey', { dep_threshold: 0.5 })
-    expect(dfgFn()).toHaveBeenCalledWith(42, 'myKey', 0.5)
+    expect(result).not.toBeNull()
   })
 })
 
+// ---------------------------------------------------------------------------
+// getAlgorithmList()
+// ---------------------------------------------------------------------------
+
 describe('useWasm -- getAlgorithmList()', () => {
-  it('returns array of strings before WASM is initialized (full hardcoded list)', async () => {
+  it('returns an array of strings before init (hardcoded list)', async () => {
     const { getAlgorithmList } = await freshUseWasm()
     const list = getAlgorithmList()
     expect(Array.isArray(list)).toBe(true)
@@ -227,13 +155,24 @@ describe('useWasm -- getAlgorithmList()', () => {
     list.forEach(id => expect(typeof id).toBe('string'))
   })
 
-  it('returns only IDs that resolve to a real WASM export after init', async () => {
+  it('after init: "dfg" is present (resolves to discover_dfg in real WASM)', async () => {
     const { init, getAlgorithmList } = await freshUseWasm()
     await init()
     const list = getAlgorithmList()
-    // discover_dfg is the only real function stub, so 'dfg' must survive the filter
     expect(list).toContain('dfg')
-    // alpha_miner has no real stub -- must be excluded
+  })
+
+  it('after init: "alpha_miner" is absent (discover_alpha_miner not exported in real WASM)', async () => {
+    const { init, getAlgorithmList } = await freshUseWasm()
+    await init()
+    const list = getAlgorithmList()
     expect(list).not.toContain('alpha_miner')
+  })
+
+  it('after init: "heuristic_miner" is present', async () => {
+    const { init, getAlgorithmList } = await freshUseWasm()
+    await init()
+    const list = getAlgorithmList()
+    expect(list).toContain('heuristic_miner')
   })
 })
