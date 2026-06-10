@@ -1,0 +1,34 @@
+{
+  "generated_at": "2026-06-10",
+  "proof_pack_version": "v26.6.10",
+  "gates": {
+    "G1": { "name": "Receipt chain non-empty", "status": "PARTIAL_ALIVE", "detail": "input_hash and output_hash emitted; ocel_hash/model_hash/wasm_hash pending" },
+    "G2": { "name": "Negative oracle coverage", "status": "PARTIAL_ALIVE", "detail": "13 negative cases in oracle_negative.rs; full adversarial suite pending" },
+    "G3": { "name": "Determinism gate", "status": "PARTIAL_ALIVE", "detail": "determinism tests exist; bit-exact cross-platform verification pending" },
+    "G4": { "name": "OTEL span coverage", "status": "PARTIAL_ALIVE", "detail": "spans emitted for public ops; 100% operation coverage not yet audited" },
+    "G5": { "name": "Breed registry completeness", "status": "PARTIAL_ALIVE", "detail": "check_registry.sh exists; automated CI enforcement pending" }
+  },
+  "falsifiers": {
+    "F1": { "name": "Empty receipt accepted", "status": "DETECTABLE", "detail": "verify-receipts.sh rejects empty input_hash/output_hash" },
+    "F2": { "name": "Wrong breed name accepted", "status": "DETECTABLE", "detail": "Rust deny_unknown_fields rejects unknown breed fields" },
+    "F3": { "name": "Non-deterministic output", "status": "PARTIAL", "detail": "determinism tests cover known paths; HashMap iteration sort not audited everywhere" },
+    "F4": { "name": "Skipped OTEL spans", "status": "PARTIAL", "detail": "spans present on happy path; error path coverage not fully verified" },
+    "F5": { "name": "Mock WASM in cognition tests", "status": "DETECTABLE", "detail": "FM-5 rule enforced; integration test must use real WASM" },
+    "F6": { "name": "Stage reordering in pipeline", "status": "PARTIAL", "detail": "engine state machine enforces order; log-based conformance check pending" },
+    "F7": { "name": "Release from invalid history", "status": "UNDETECTABLE", "detail": "OCEL log derivation and model-vs-log comparison not yet implemented" },
+    "F8": { "name": "Receipt hash collision", "status": "UNDETECTABLE", "detail": "BLAKE3 used; cross-run hash uniqueness not programmatically verified" }
+  },
+  "advancement_path": {
+    "next_milestone": "v26.6.11",
+    "required_to_advance_gates": [
+      "Emit ocel_hash, model_hash, wasm_hash in receipt chain (G1 → ALIVE)",
+      "Add OTEL span audit to CI confirming 100% public-op coverage (G4 → ALIVE)",
+      "Wire check_registry.sh into CI (G5 → ALIVE)"
+    ],
+    "required_to_close_falsifiers": [
+      "Implement OCEL log derivation from OTel traces for F7",
+      "Add cross-run receipt uniqueness assertion for F8",
+      "Audit HashMap sort coverage for F3"
+    ]
+  }
+}

@@ -87,9 +87,11 @@ this.
 The 483-test suite implemented in \textsc{wasm4pm} is an unfakeable oracle
 for all thirteen breeds.  Specifically, for each breed $b_i$
 $(i = 1, \ldots, 13)$ there is a sub-suite $\mathcal{T}_i \subseteq
-\mathcal{T}$ such that no finite lookup table, no memoised dictionary, and
-no algorithmically simpler function can pass $\mathcal{T}_i$.  The nine
-canonical witnesses follow.
+\mathcal{T}$ such that no implementation in adversary class $\mathcal{A}_N$
+can pass $T_{\text{static}} \wedge T_{\text{generated}} \wedge T_{\text{hidden}}
+\wedge$ invariant gate $\wedge$ trace conformance $\wedge$ receipt verification
+$\wedge$ deterministic replay without satisfying the declared breed specification
+under the admitted boundary conditions.  The nine canonical witnesses follow.
 \end{theorem}
 
 \begin{proof}

@@ -1,0 +1,35 @@
+{
+  "model_id": "l0-wrapper-v1",
+  "model_level": "L0",
+  "breed_id": "all",
+  "object_types": ["breed_run", "receipt"],
+  "places": [
+    {"id": "p1", "name": "ready",      "object_type": "breed_run"},
+    {"id": "p2", "name": "dispatched", "object_type": "breed_run"},
+    {"id": "p3", "name": "executed",   "object_type": "breed_run"},
+    {"id": "p4", "name": "verified",   "object_type": "breed_run"},
+    {"id": "p5", "name": "committed",  "object_type": "receipt"},
+    {"id": "p6", "name": "refused",    "object_type": "receipt"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "dispatch",  "label": "dispatch"},
+    {"id": "t2", "name": "execute",   "label": "execute"},
+    {"id": "t3", "name": "verify",    "label": "verify"},
+    {"id": "t4", "name": "commit",    "label": "commit"},
+    {"id": "t5", "name": "refuse",    "label": "refuse"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "t5", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}, {"p6": 1}]
+}

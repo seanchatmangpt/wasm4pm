@@ -137,7 +137,7 @@ of breed invocations operating under the wasm4pm kernel:
 
 \begin{enumerate}[label=(\roman*)]
   \item \emph{Non-forgeability.}
-  \item \emph{Non-repudiation.}
+  \item \emph{Tamper-evident content binding (partial non-repudiation).}
   \item \emph{Third-party auditability.}
   \item \emph{Causal completeness.}
 \end{enumerate}
@@ -161,17 +161,25 @@ is committed.  The chain structure amplifies this: forging any receipt in the mi
 chain would require forging all subsequent receipts simultaneously, multiplying the
 computational difficulty by the chain length.
 
-\paragraph{(ii) Non-repudiation.}
-Once a receipt $\rho$ is emitted by \texttt{cognition\_run()}, the issuer (the wasm4pm
-runtime) cannot plausibly deny that the invocation occurred.  The receipt is saved to
-\texttt{.wasm4pm/receipts/latest.json} and, in compliant deployments, to an append-only
-audit log.  Because the receipt commits to \texttt{breed\_id}, \texttt{input\_hash}, the
-rule-firing trace $L$, and the timestamp $t$, any claim by the issuer that the invocation
-did not occur, or occurred with different parameters, can be immediately falsified by
-presenting the receipt and replaying the computation: the same inputs must produce the
-same receipt (determinism is a merge gate in wasm4pm; see \texttt{CLAUDE.md}).  The
-non-repudiation property therefore rests on the combination of BLAKE3 binding and the
-determinism invariant.
+\paragraph{(ii) Tamper-evident content binding (partial non-repudiation).}
+BLAKE3 provides tamper-evident content binding: given the hash, any modification to
+content produces a different hash with overwhelming probability.  This is a property of
+the hash function, not of the authority that computed it.  Non-repudiation requires
+additionally a digital signature where the authority holds the private key.  The receipt
+schema (Appendix~\ref{app:receipt-schema}) distinguishes these: \texttt{input\_hash} and
+\texttt{output\_hash} establish content binding; \texttt{signature} and
+\texttt{public\_key\_id} establish accountable execution binding.  Until signing is
+implemented, receipts carry PARTIAL standing: tamper-evident but not accountable.
+
+Concretely, once a receipt $\rho$ is emitted by \texttt{cognition\_run()} and saved to
+\texttt{.wasm4pm/receipts/latest.json}, any post-hoc modification to the committed fields
+(\texttt{breed\_id}, \texttt{input\_hash}, rule-firing trace $L$, timestamp $t$) is
+detectable by recomputing the hash.  Because determinism is a merge gate in wasm4pm
+(same inputs must produce bit-exact output), a verifier can replay the computation and
+confirm the receipt.  This establishes content-binding integrity but not cryptographic
+non-repudiation: the runtime could in principle produce a receipt for a computation it
+did not perform (or deny one it did) until the \texttt{signature}/\texttt{public\_key\_id}
+fields are populated by a key held exclusively by the authorised execution environment.
 
 \paragraph{(iii) Third-party auditability.}
 A third-party auditor possessing only the receipt chain $(\rho_1, \ldots, \rho_n)$ and

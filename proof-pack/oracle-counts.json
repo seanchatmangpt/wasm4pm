@@ -1,0 +1,12 @@
+{
+  "T_static": "PENDING",
+  "T_negative": 13,
+  "T_replay": "PENDING",
+  "T_trace": "PENDING",
+  "_notes": {
+    "T_negative": "13 cases confirmed in crates/wasm4pm-cognition/src/oracle_negative.rs",
+    "T_static": "count pending full static oracle audit",
+    "T_replay": "count pending replay harness instrumentation",
+    "T_trace": "count pending OTEL trace coverage audit"
+  }
+}

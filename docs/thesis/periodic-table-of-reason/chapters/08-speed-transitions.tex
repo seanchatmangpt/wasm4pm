@@ -15,11 +15,57 @@ What none of those chapters addressed is the \emph{quantitative} question: how d
 execution latency determine \emph{which} of those properties become computationally
 accessible within a fixed decision budget?
 
-This chapter proves that below a critical latency threshold $\tau^*$, three qualitatively
-distinct reasoning capabilities emerge as phase transitions: Bayesian sensitivity analysis
-across a full breed ensemble, Pareto-frontier multi-objective planning, and adversarial
-robustness auditing.  These are not merely faster versions of existing capabilities; they
-are capabilities that are \emph{logically impossible} when execution latency is above $\tau^*$.
+This chapter proves that reasoning capability is not a smooth function of latency but
+exhibits \emph{phase transitions} at four regime boundaries.  We define a four-regime
+latency taxonomy (Table~\ref{tab:latency-regimes}) and prove that a certified reasoning
+service admits real-time integration at regime $i$ if and only if its mean service time
+$s$ satisfies $s < D_i$ and the queue utilisation $\rho = \lambda \cdot s < 1$ (Little's
+Law stability condition \cite{feller1968}).  Three qualitatively distinct capabilities ---
+Bayesian sensitivity analysis, Pareto-frontier multi-objective planning, and adversarial
+robustness auditing --- emerge discontinuously as $s$ crosses regime boundaries from
+above.
+
+%% -----------------------------------------------------------------------
+\section{Four-Regime Latency Taxonomy}
+\label{sec:latency-regimes}
+%% -----------------------------------------------------------------------
+
+A single global speed threshold obscures the qualitatively different demands placed on a
+reasoning service by different integration contexts.  We instead define four regimes
+parameterised by the deadline $D_i$ and the maximum sustainable request rate
+$\lambda_{\max,i}$ implied by the Little's Law stability condition $\rho = \lambda \cdot
+s < 1$.
+
+\begin{table}[ht]
+\centering
+\caption{Four-Regime Latency Taxonomy for Certified Reasoning Services}
+\label{tab:latency-regimes}
+\begin{tabular}{llll}
+\hline
+\textbf{Regime} & \textbf{Deadline $D_i$} & \textbf{Utilisation Condition} & \textbf{Application} \\
+\hline
+$\tau_{\text{batch}}$       & seconds         & low $\lambda$ (offline)           & offline reasoning, batch audit \\
+$\tau_{\text{interactive}}$ & $\approx 1$ ms  & $\lambda \leq 10^3$ req/s         & request/response API \\
+$\tau_{\text{control}}$     & $\approx 100\,\mu\text{s}$ & $\lambda \leq 10^4$ req/s & control loop integration \\
+$\tau_{\text{interrupt}}$   & $\approx 10\,\mu\text{s}$  & $\lambda \leq 10^5$ req/s & continuous adversarial audit \\
+\hline
+\end{tabular}
+\end{table}
+
+\noindent
+\emph{Regime assignment for wasm4pm breeds.}  Measured breed latencies
+(\texttt{docs/benchmarks/breed-latency-2026-06-10.md}) place
+\texttt{production\_rules} ($\approx 2\,\mu\text{s}$) and
+\texttt{soar\_rule\_match} ($\approx 5\,\mu\text{s}$) in the
+$\tau_{\text{interrupt}}$ regime, and \texttt{strips\_planning}
+($\approx 10\,\mu\text{s}$) at the $\tau_{\text{interrupt}}$ boundary.
+A hypothetical breed at $\approx 1\,\mu\text{s}$ would fall \emph{below} all current
+regime deadlines and is therefore flagged as \emph{aspirational} --- not yet represented
+by a validated wasm4pm breed.
+
+A phase transition occurs when $s$ crosses $D_i$ from above: the service exits the
+lower-demand regime and enters the higher-demand regime, gaining (or losing) the
+epistemic capabilities associated with that regime.
 
 %% -----------------------------------------------------------------------
 \section{The Ensemble Size Function}
@@ -106,14 +152,18 @@ A breed $\Breed_i$ with $\tau(\Breed_i) \leq \tau^*_\varepsilon$ is said to be
 \begin{theorem}[Speed Phase Transition]
 \label{thm:phase-transition}
 Let $\Breed_i$ be a breed satisfying the categorical axioms of
-Chapter~\ref{chap:breed} and let $T_D$ be a fixed decision budget.  When
-$\tau(\Breed_i) \leq \tau^*_\varepsilon$, three capabilities emerge that are logically
-inaccessible when $\tau(\Breed_i) > \tau^*_\varepsilon$:
+Chapter~\ref{chap:breed}.  A certified reasoning service with mean service time $s$
+admits real-time integration at regime $i$ (with deadline $D_i$ as defined in
+Table~\ref{tab:latency-regimes}) if and only if $s < D_i$ \emph{and}
+$\rho = \lambda \cdot s < 1$ (Little's Law stability condition \cite{feller1968}).
+A phase transition occurs when $s$ crosses $D_i$ from above.  In particular,
+when $s \leq \tau^*_\varepsilon = T_D / k^*_\varepsilon$, three capabilities emerge
+that are logically inaccessible when $s > \tau^*_\varepsilon$:
 
 \begin{enumerate}[label=(\roman*)]
-  \item \emph{Bayesian sensitivity analysis.}
-  \item \emph{Pareto-frontier multi-objective planning.}
-  \item \emph{Adversarial robustness auditing.}
+  \item \emph{Bayesian sensitivity analysis} (requires $s \leq \tau_{\text{control}}$ or lower).
+  \item \emph{Pareto-frontier multi-objective planning} (requires $s \leq \tau_{\text{interrupt}}$).
+  \item \emph{Adversarial robustness auditing} (requires $s \leq \tau_{\text{interrupt}}$).
 \end{enumerate}
 \end{theorem}
 
@@ -153,8 +203,9 @@ $n = 100$ ground actions, $d = 3$ objectives), this bound is
 $\tau \leq T_D / 100^{2/3} \approx T_D / 21.5$.
 Classical STRIPS planners operating at multi-second latencies cannot enumerate the full
 front within any realistic decision budget; wasm4pm STRIPS at $\approx 10\,\mu\text{s}$
-(see \texttt{docs/benchmarks/breed-latency-2026-06-10.md}) can enumerate the complete
-Pareto front for this instance in roughly $0.2$ seconds, well within a 60-second budget.
+(the $\tau_{\text{interrupt}}$ boundary; see \texttt{docs/benchmarks/breed-latency-2026-06-10.md})
+can enumerate the complete Pareto front for this instance in roughly $0.2$ seconds, well
+within a 60-second budget.
 When $\tau > \tau^*_\varepsilon$, only a strict subset of the Pareto front is reachable;
 the planner may commit to a dominated solution without knowing a non-dominated alternative
 exists.  The transition from partial to full Pareto coverage is again discontinuous in

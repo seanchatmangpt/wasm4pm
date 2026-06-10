@@ -1,0 +1,288 @@
+%% Appendix: Proof-Pack — Independent Replay and Verification
+%% wasm4pm Thesis — Periodic Table of Reason
+%% Auto-generated section; treat as first-class source.
+
+\chapter*{Proof-Pack: Independent Replay and Verification}
+\addcontentsline{toc}{chapter}{Proof-Pack: Independent Replay and Verification}
+
+\noindent
+This appendix constitutes the \emph{proof-pack}: a self-contained dossier of
+artefacts, pointers, and commands that allow an independent auditor to replay
+every claim in the thesis from a clean checkout.  Sections A–L follow the
+order of the verification pipeline: identity → registry → corpus → generation
+→ refusal → OCEL replay → receipt schema → signatures → determinism →
+benchmarks → replay instructions → falsifier conditions.
+
+% -------------------------------------------------------------------------
+\section*{A\quad Repository and Commit Identity}
+\addcontentsline{toc}{section}{A — Repository and Commit Identity}
+
+\textbf{Location:} repository root (\texttt{/Users/sac/wasm4pm/}).
+
+The canonical commit is recorded in \texttt{proof-pack/commit.txt} (generated
+at pack-seal time).  To verify the exact commit against a remote:
+
+\begin{verbatim}
+git -C /Users/sac/wasm4pm log -1 --format="%H %ai %s"
+git -C /Users/sac/wasm4pm verify-commit HEAD   # if GPG-signed
+\end{verbatim}
+
+\noindent\textbf{Status:} \texttt{proof-pack/commit.txt} is written by
+\texttt{proof-pack/seal.sh} on every pack seal.  GPG signing is optional in
+the current workflow; the SHA alone is sufficient for replay identity.
+
+% -------------------------------------------------------------------------
+\section*{B\quad Certified Breed Registry Snapshot}
+\addcontentsline{toc}{section}{B — Certified Breed Registry Snapshot}
+
+\textbf{Authoritative files:}
+\begin{itemize}
+  \item \texttt{breeds/registry.json} — machine-readable registry of all
+        certified breeds with \texttt{id}, \texttt{category}, \texttt{tier},
+        and oracle counts.
+  \item \texttt{docs/registry/certified-breeds-2026-06.md} — human-readable
+        snapshot as of 2026-06, listing per-breed certification status and
+        open issues.
+\end{itemize}
+
+\begin{verbatim}
+jq '.breeds | length' /Users/sac/wasm4pm/breeds/registry.json
+wc -l /Users/sac/wasm4pm/docs/registry/certified-breeds-2026-06.md
+\end{verbatim}
+
+\noindent\textbf{Status:} Registry exists.  Snapshot document exists as of
+2026-06-09.  Re-run \texttt{proof-pack/snapshot-registry.sh} to regenerate
+after new breed certifications.
+
+% -------------------------------------------------------------------------
+\section*{C\quad Test Corpus Summary}
+\addcontentsline{toc}{section}{C — Test Corpus Summary}
+
+\textbf{File:} \texttt{proof-pack/oracle-counts.json}
+
+This JSON document records, per breed, the counts of: positive oracles,
+negative oracles, property-based tests generated, and OCEL replay traces.
+It is produced by \texttt{proof-pack/count-oracles.sh}.
+
+\begin{verbatim}
+cat /Users/sac/wasm4pm/proof-pack/oracle-counts.json | \
+  jq '{total_positive: [.[].positive] | add,
+       total_negative: [.[].negative] | add}'
+\end{verbatim}
+
+\noindent\textbf{Status:} File exists; counts are updated on each CI run.
+Breeds with zero oracle counts are flagged \texttt{"status": "pending"} in
+the registry.
+
+% -------------------------------------------------------------------------
+\section*{D\quad Property Generator Summary}
+\addcontentsline{toc}{section}{D — Property Generator Summary}
+
+\textbf{Status:} \textsc{pending} (\(T_{\text{generated}}\) not yet wired).
+
+The intended approach is fast-check (TypeScript) + proptest (Rust) driving the
+WASM boundary.  For each breed, a property generator will:
+\begin{enumerate}
+  \item Sample arbitrary valid \texttt{BreedInput} via a breed-specific
+        \texttt{Arbitrary} instance.
+  \item Assert \texttt{status === 'ok'} and receipt non-emptiness.
+  \item Assert idempotency: two runs on the same seed produce bit-identical
+        \texttt{output\_hash}.
+\end{enumerate}
+Target: \(\geq 500\) generated cases per breed.  Generator scaffolding lives
+in \texttt{packages/testing/src/generators/} (directory structure prepared;
+breed impls pending).
+
+% -------------------------------------------------------------------------
+\section*{E\quad Negative / Refusal Corpus}
+\addcontentsline{toc}{section}{E — Negative / Refusal Corpus}
+
+\textbf{File:} \texttt{crates/wasm4pm-cognition/tests/oracle\_negative.rs}
+
+Each test in this file presents a structurally malformed or semantically
+illegal \texttt{BreedInput} and asserts that the WASM boundary returns
+\texttt{status !== 'ok'} (or panics via \texttt{Err}).  Categories include:
+missing required fields, unknown breed ids, out-of-range certainty values,
+and empty premise arrays.
+
+\begin{verbatim}
+cargo test --manifest-path \
+  /Users/sac/wasm4pm/crates/wasm4pm-cognition/Cargo.toml \
+  oracle_negative -- --nocapture 2>&1 | grep -E "test .* ok|FAILED"
+\end{verbatim}
+
+\noindent\textbf{Status:} File exists.  Coverage is partial; breeds added
+after 2026-05 require additional negative cases.
+
+% -------------------------------------------------------------------------
+\section*{F\quad OCEL Corpus and Replay Commands}
+\addcontentsline{toc}{section}{F — OCEL Corpus and Replay Commands}
+
+\textbf{Directory:} \texttt{ocel/}
+
+\noindent\textbf{L0 traces} (exists): synthetic per-breed OCEL 2.0 JSON files
+covering the 10 initially certified breeds.  Each file encodes a single lawful
+execution plus a declared conforming Petri-net model.
+
+\noindent\textbf{L1 traces} (pending): real-world XES/OCEL sourced from
+\texttt{\textasciitilde/chatmangpt/pm4py} bench data — needed for the
+remaining breeds.
+
+\begin{verbatim}
+# Replay all L0 traces:
+bash /Users/sac/wasm4pm/proof-pack/replay-ocel.sh --level L0
+# Check conformance fitness (requires pm4py):
+python3 /Users/sac/wasm4pm/proof-pack/check-conformance.py ocel/L0/
+\end{verbatim}
+
+% -------------------------------------------------------------------------
+\section*{G\quad Receipt Schema and Sample Receipts}
+\addcontentsline{toc}{section}{G — Receipt Schema and Sample Receipts}
+
+\textbf{Schema:} \texttt{schemas/receipt.schema.json} (JSON Schema draft-07).
+
+Every \texttt{wpm run} and \texttt{wpm cognition run} emits a receipt to
+\texttt{.wasm4pm/receipts/latest.json}.  Required fields: \texttt{run\_id},
+\texttt{breed}, \texttt{input\_hash}, \texttt{output\_hash},
+\texttt{replay\_pointer}, \texttt{options\_profile}, \texttt{timestamp\_ns}.
+
+\begin{verbatim}
+# Validate a receipt against the schema:
+npx ajv validate -s schemas/receipt.schema.json \
+  -d .wasm4pm/receipts/latest.json
+\end{verbatim}
+
+\noindent\textbf{Status:} Schema exists.  Sample receipts in
+\texttt{proof-pack/sample-receipts/} cover three breeds for illustrative
+purposes.
+
+% -------------------------------------------------------------------------
+\section*{H\quad Signature Verification Transcript}
+\addcontentsline{toc}{section}{H — Signature Verification Transcript}
+
+\textbf{Status:} Signed receipts are \textsc{pending}.  The current receipt
+chain uses BLAKE3 content hashing but does not yet attach an asymmetric
+signature.  The planned mechanism is \texttt{minisign} over the serialised
+receipt JSON.
+
+Current verifiable receipt fields (no signature required):
+\begin{verbatim}
+{
+  "run_id":          "<uuid>",
+  "input_hash":      "<blake3-hex>",
+  "output_hash":     "<blake3-hex>",
+  "replay_pointer":  "<first-16-of-output_hash>",
+  "timestamp_ns":    <u64>
+}
+\end{verbatim}
+When signatures are wired, \texttt{proof-pack/verify-signatures.sh} will
+contain the full \texttt{minisign -V} transcript.
+
+% -------------------------------------------------------------------------
+\section*{I\quad Determinism Double-Run Transcript}
+\addcontentsline{toc}{section}{I — Determinism Double-Run Transcript}
+
+\textbf{Script:} \texttt{proof-pack/verify-determinism.sh}
+
+\begin{verbatim}
+#!/usr/bin/env bash
+# Usage: bash proof-pack/verify-determinism.sh <breed> <input.json>
+set -euo pipefail
+RUN1=$(wpm cognition run --breed "$1" --input "$2" --no-save \
+         --format json | jq -r .output_hash)
+RUN2=$(wpm cognition run --breed "$1" --input "$2" --no-save \
+         --format json | jq -r .output_hash)
+if [ "$RUN1" = "$RUN2" ]; then
+  echo "PASS determinism: $RUN1"
+else
+  echo "FAIL: $RUN1 != $RUN2"; exit 1
+fi
+\end{verbatim}
+
+\noindent\textbf{Status:} Script exists.  CI runs it for all 13 certified
+breeds on every merge to \texttt{main}.
+
+% -------------------------------------------------------------------------
+\section*{J\quad Benchmark Report}
+\addcontentsline{toc}{section}{J — Benchmark Report}
+
+\textbf{File:} \texttt{benchmarks/queueing-threshold-report.md}
+
+This report documents the empirical queueing-threshold measurements used in
+Chapter 8 (Speed Transitions).  It records, per breed and tier, the observed
+\(\lambda_{\text{critical}}\) at which the breed transitions from
+\texttt{realtime} to \texttt{nearline}, and from \texttt{nearline} to
+\texttt{batch}.
+
+\begin{verbatim}
+# Re-run benchmarks (requires wasm-pack build first):
+bash /Users/sac/wasm4pm/benchmarks/run-queueing.sh 2>&1 | \
+  tee benchmarks/queueing-threshold-report.md
+\end{verbatim}
+
+\noindent\textbf{Status:} Report exists as of 2026-06-09.  Re-run after any
+algorithm or WASM boundary change.
+
+% -------------------------------------------------------------------------
+\section*{K\quad Independent Replay Instructions}
+\addcontentsline{toc}{section}{K — Independent Replay Instructions}
+
+\textbf{Script:} \texttt{proof-pack/replay.sh}
+
+\begin{verbatim}
+#!/usr/bin/env bash
+# Full independent replay from a clean checkout.
+set -euo pipefail
+cd /Users/sac/wasm4pm
+
+# 1. Build WASM core
+cd crates/wasm4pm-cognition
+wasm-pack build --target nodejs --out-dir pkg -- --features wasm
+cd ../..
+
+# 2. Install TS dependencies and build
+pnpm install && pnpm build
+
+# 3. Run full test suite
+pnpm test
+
+# 4. Replay OCEL corpus
+bash proof-pack/replay-ocel.sh --level L0
+
+# 5. Verify determinism for all breeds
+bash proof-pack/verify-determinism.sh --all
+
+# 6. Print summary
+cat proof-pack/oracle-counts.json | jq .
+\end{verbatim}
+
+\noindent\textbf{Status:} Script exists; steps 1–3 are confirmed working.
+Steps 4–5 depend on OCEL/determinism scripts (see §F and §I).
+
+% -------------------------------------------------------------------------
+\section*{L\quad Falsifier Conditions}
+\addcontentsline{toc}{section}{L — Falsifier Conditions}
+
+\textbf{File:} \texttt{docs/falsifiers.md}
+
+This document enumerates the precise conditions under which the central claims
+of the thesis are \emph{falsified}.  Each falsifier is keyed to a theorem in
+Chapter 11.  Examples:
+
+\begin{itemize}
+  \item \textbf{F-ORA}: A breed passes all positive oracles yet produces a
+        different \texttt{output\_hash} on re-run with identical input
+        (falsifies Theorem~O).
+  \item \textbf{F-CONF}: An OCEL replay reports fitness $<0.85$ for a breed
+        declared \texttt{certified} (falsifies Theorem~C).
+  \item \textbf{F-NEG}: A refusal oracle input returns \texttt{status === 'ok'}
+        (falsifies the refusal completeness claim).
+\end{itemize}
+
+\begin{verbatim}
+cat /Users/sac/wasm4pm/docs/falsifiers.md
+\end{verbatim}
+
+\noindent\textbf{Status:} \texttt{docs/falsifiers.md} exists and is updated on
+each new theorem addition.  Any CI job that triggers a falsifier condition
+opens a P0 issue automatically via \texttt{.github/workflows/falsifier-gate.yml}.

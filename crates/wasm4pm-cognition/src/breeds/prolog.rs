@@ -195,9 +195,10 @@ impl CognitionBreed for Prolog {
         // 0. Forward-chaining fast-path: if any rule uses ?N variables,
         //    derive new facts by Robinson shared-variable unification before
         //    delegating to the Prolog8 kernel (which uses flat 1-arity terms).
-        let has_var_rules = input.rules.iter().any(|r| {
-            r.premise.iter().any(|p| p.contains('?')) || r.conclusion.contains('?')
-        });
+        let has_var_rules = input
+            .rules
+            .iter()
+            .any(|r| r.premise.iter().any(|p| p.contains('?')) || r.conclusion.contains('?'));
         if has_var_rules {
             // Parse base facts into (predicate, args) tuples
             let base_facts: Vec<(String, Vec<String>)> = input
@@ -251,20 +252,19 @@ impl CognitionBreed for Prolog {
                 let _ = (g_pred2, g_args2); // value may be "true" — use key-based match
 
                 // Build the full goal tuple from goal.predicate (e.g. "grandparent:alice,carol")
-                let matched = all_facts.iter().find(|(pred, args)| {
-                    pred == goal_pred && *args == goal_args_owned
-                });
+                let matched = all_facts
+                    .iter()
+                    .find(|(pred, args)| pred == goal_pred && *args == goal_args_owned);
 
                 if let Some((matched_pred, matched_args)) = matched {
-                    let label = matched_args.last().cloned().unwrap_or_else(|| goal.id.clone());
+                    let label = matched_args
+                        .last()
+                        .cloned()
+                        .unwrap_or_else(|| goal.id.clone());
                     trace.push(TraceStep {
                         step: step_no,
                         kind: "infer".into(),
-                        detail: format!(
-                            "derived {}:{}",
-                            matched_pred,
-                            matched_args.join(",")
-                        ),
+                        detail: format!("derived {}:{}", matched_pred, matched_args.join(",")),
                         depth: 0,
                         objects: vec![],
                     });
