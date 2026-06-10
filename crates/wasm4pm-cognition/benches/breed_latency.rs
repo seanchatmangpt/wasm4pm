@@ -6,10 +6,14 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use wasm4pm_cognition::breeds::{
+    abductive_ibe::AbductiveIbe, abductive_lp::AbductiveLp, asp::Asp,
     autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
     autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
-    prolog::Prolog, soar::Soar, strips::Strips, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    belief_merging::BeliefMerging, cbr::Cbr, clp::Clp, dendral::Dendral,
+    description_logic::DescriptionLogic, event_calculus::EventCalculus, frame::Eliza, gps::Gps,
+    hearsay::Hearsay, mdp::Mdp, partial_order_plan::PartialOrderPlan, production_rules::Mycin,
+    prolog::Prolog, qualitative_reason::QualitativeReason, script_sam::ScriptSam, soar::Soar,
+    strips::Strips, version_space::VersionSpace, BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -155,6 +159,132 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
 
     group.finish();
+
+    // P2 tier: each breed gets a representative input exercising its core path.
+    let p2_base = || BreedInput {
+        intent: "bench".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    let f = |key: &str, value: &str| Fact { key: key.into(), value: value.into() };
+    let g = |id: &str, predicate: &str, value: &str| Goal {
+        id: id.into(), predicate: predicate.into(), value: value.into(),
+    };
+    let r = |id: &str, premise: Vec<&str>, conclusion: &str| Rule {
+        id: id.into(),
+        premise: premise.into_iter().map(String::from).collect(),
+        conclusion: conclusion.into(),
+        certainty: 1.0,
+    };
+
+    macro_rules! bench_breed_input {
+        ($group:expr, $name:expr, $breed:expr, $input:expr) => {
+            let input = $input;
+            $group.bench_function($name, |b| b.iter(|| $breed.run(black_box(&input))));
+        };
+    }
+
+    let mut p2 = c.benchmark_group("breed_latency_p2");
+    p2.sample_size(50);
+
+    let mut asp_in = p2_base();
+    asp_in.rules = vec![r("b1", vec!["not b"], "a"), r("b2", vec!["not a"], "b"), r("b3", vec!["a"], "c")];
+    bench_breed_input!(p2, "asp", Asp, asp_in);
+
+    let mut dl_in = p2_base();
+    dl_in.facts = vec![
+        f("dl:subclass:A", "B"), f("dl:subclass:B", "C"),
+        f("dl:exists_rhs:A", "rr.D"), f("dl:exists_lhs:rr.D", "E"),
+        f("dl:conj:C+E", "F"),
+    ];
+    dl_in.goals = vec![g("q", "dl:subsumes", "A:F")];
+    bench_breed_input!(p2, "description_logic", DescriptionLogic, dl_in);
+
+    let mut alp_in = p2_base();
+    alp_in.facts = vec![f("alp:abducible:a", "true"), f("alp:abducible:b", "true"), f("alp:abducible:c", "true")];
+    alp_in.rules = vec![r("r1", vec!["a"], "o"), r("r2", vec!["b"], "o")];
+    alp_in.goals = vec![g("o", "alp:observe", "o")];
+    bench_breed_input!(p2, "abductive_lp", AbductiveLp, alp_in);
+
+    let mut ibe_in = p2_base();
+    ibe_in.facts = vec![
+        f("ibe:obs:o1", "true"), f("ibe:obs:o2", "true"),
+        f("ibe:hyp:h1:covers", "o1,o2"), f("ibe:hyp:h1:cost", "3"),
+        f("ibe:hyp:h2:covers", "o1"), f("ibe:hyp:h2:cost", "1"),
+    ];
+    bench_breed_input!(p2, "abductive_ibe", AbductiveIbe, ibe_in);
+
+    let mut pop_in = p2_base();
+    pop_in.facts = vec![
+        f("pop:op:alpha:pre", "w"), f("pop:op:alpha:add", "t2"),
+        f("pop:op:beta:add", "t1"), f("pop:op:beta:del", "w"),
+    ];
+    pop_in.state = vec![StateAtom { predicate: "w".into(), value: "true".into() }];
+    pop_in.goals = vec![g("g1", "t1", "true"), g("g2", "t2", "true")];
+    bench_breed_input!(p2, "partial_order_plan", PartialOrderPlan, pop_in);
+
+    let mut ec_in = p2_base();
+    ec_in.facts = vec![
+        f("ec:happens:2", "on"), f("ec:happens:5", "off"), f("ec:happens:7", "on"),
+        f("ec:initiates:on", "lit"), f("ec:terminates:off", "lit"),
+    ];
+    ec_in.goals = vec![g("q1", "ec:holdsat", "lit@4"), g("q2", "ec:holdsat", "lit@6")];
+    bench_breed_input!(p2, "event_calculus", EventCalculus, ec_in);
+
+    let mut mdp_in = p2_base();
+    mdp_in.facts = vec![
+        f("mdp:gamma", "0.9"),
+        f("mdp:trans:s0:go", "s1:1.0"), f("mdp:trans:s0:stay", "s0:1.0"),
+        f("mdp:reward:s0:stay", "0.1"),
+        f("mdp:trans:s1:go", "goal:1.0"), f("mdp:reward:s1:go", "2.0"),
+        f("mdp:trans:goal:stay", "goal:1.0"),
+    ];
+    bench_breed_input!(p2, "mdp", Mdp, mdp_in);
+
+    let mut vs_in = p2_base();
+    vs_in.facts = vec![
+        f("vs:attrs", "sky,airtemp,humidity,wind,water,forecast"),
+        f("vs:example:1", "Sunny,Warm,Normal,Strong,Warm,Same:+"),
+        f("vs:example:2", "Sunny,Warm,High,Strong,Warm,Same:+"),
+        f("vs:example:3", "Rainy,Cold,High,Strong,Warm,Change:-"),
+        f("vs:example:4", "Sunny,Warm,High,Strong,Cool,Change:+"),
+    ];
+    bench_breed_input!(p2, "version_space", VersionSpace, vs_in);
+
+    let mut bm_in = p2_base();
+    bm_in.facts = vec![
+        f("bm:atoms", "p,q"),
+        f("bm:base:1", "p,q"), f("bm:base:2", "p,q"), f("bm:base:3", "-p,-q"),
+        f("bm:ic", "true"),
+    ];
+    bench_breed_input!(p2, "belief_merging", BeliefMerging, bm_in);
+
+    let mut qr_in = p2_base();
+    qr_in.facts = vec![
+        f("qr:confluence:valve", "+p,+a,-q"),
+        f("qr:sign:p", "+"), f("qr:sign:a", "-"),
+    ];
+    bench_breed_input!(p2, "qualitative_reason", QualitativeReason, qr_in);
+
+    let mut sam_in = p2_base();
+    sam_in.facts = vec![
+        f("sam:event:1", "enter:john"), f("sam:event:2", "order:john"),
+        f("sam:event:3", "pay:john"), f("sam:event:4", "leave:john"),
+    ];
+    bench_breed_input!(p2, "script_sam", ScriptSam, sam_in);
+
+    let mut clp_in = p2_base();
+    clp_in.facts = vec![
+        f("clp:var:x", "1..5"), f("clp:var:y", "1..5"), f("clp:var:z", "1..5"),
+        f("clp:constraint:c1", "x<y"), f("clp:constraint:c2", "y<z"), f("clp:constraint:c3", "z<=3"),
+    ];
+    bench_breed_input!(p2, "clp", Clp, clp_in);
+
+    p2.finish();
 }
 
 criterion_group!(benches, bench_breeds);

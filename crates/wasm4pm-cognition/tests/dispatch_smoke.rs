@@ -524,3 +524,144 @@ fn dispatch_output_receipt_consistency() {
     let input_json = serde_json::to_string(&input).expect("input must be JSON serializable");
     assert!(!input_json.is_empty(), "input JSON must not be empty");
 }
+
+// ===========================================================================
+// P2 tier — dispatch smoke (12 breeds): each id routes through both
+// dispatch_breed_test (raw) and dispatch::dispatch_breed (full lifecycle)
+// and produces a non-empty inference trace.
+// ===========================================================================
+
+fn p2_smoke_inputs() -> Vec<(&'static str, BreedInput)> {
+    let f = |key: &str, value: &str| Fact {
+        key: key.into(),
+        value: value.into(),
+    };
+    let base = || BreedInput {
+        intent: "smoke".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let mut asp = base();
+    asp.rules = vec![Rule {
+        id: "s1".into(),
+        premise: vec![],
+        conclusion: "p".into(),
+        certainty: 1.0,
+    }];
+
+    let mut dl = base();
+    dl.facts = vec![f("dl:subclass:A", "B")];
+    dl.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "dl:subsumes".into(),
+        value: "A:B".into(),
+    }];
+
+    let mut alp = base();
+    alp.facts = vec![f("alp:abducible:a", "true")];
+    alp.rules = vec![Rule {
+        id: "s".into(),
+        premise: vec!["a".into()],
+        conclusion: "o".into(),
+        certainty: 1.0,
+    }];
+    alp.goals = vec![Goal {
+        id: "o".into(),
+        predicate: "alp:observe".into(),
+        value: "o".into(),
+    }];
+
+    let mut ibe = base();
+    ibe.facts = vec![
+        f("ibe:obs:o1", "true"),
+        f("ibe:hyp:h1:covers", "o1"),
+        f("ibe:hyp:h1:cost", "1"),
+    ];
+
+    let mut pop = base();
+    pop.facts = vec![f("pop:op:act:add", "g")];
+    pop.goals = vec![Goal {
+        id: "g".into(),
+        predicate: "g".into(),
+        value: "true".into(),
+    }];
+
+    let mut ec = base();
+    ec.facts = vec![f("ec:happens:1", "go"), f("ec:initiates:go", "m")];
+    ec.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "ec:holdsat".into(),
+        value: "m@2".into(),
+    }];
+
+    let mut mdp = base();
+    mdp.facts = vec![
+        f("mdp:gamma", "0.5"),
+        f("mdp:trans:s:a", "s:1.0"),
+        f("mdp:reward:s:a", "1.0"),
+    ];
+
+    let mut vs = base();
+    vs.facts = vec![f("vs:attrs", "a"), f("vs:example:1", "x:+")];
+
+    let mut bm = base();
+    bm.facts = vec![f("bm:atoms", "a"), f("bm:base:1", "a"), f("bm:base:2", "-a")];
+
+    let mut qr = base();
+    qr.facts = vec![f("qr:confluence:c1", "+x,-y"), f("qr:sign:x", "+")];
+
+    let mut sam = base();
+    sam.facts = vec![f("sam:event:1", "enter:bo"), f("sam:event:2", "leave:bo")];
+
+    let mut clp = base();
+    clp.facts = vec![f("clp:var:x", "1..2"), f("clp:constraint:c1", "x<=1")];
+
+    vec![
+        ("asp", asp),
+        ("description_logic", dl),
+        ("abductive_lp", alp),
+        ("abductive_ibe", ibe),
+        ("partial_order_plan", pop),
+        ("event_calculus", ec),
+        ("mdp", mdp),
+        ("version_space", vs),
+        ("belief_merging", bm),
+        ("qualitative_reason", qr),
+        ("script_sam", sam),
+        ("clp", clp),
+    ]
+}
+
+#[test]
+fn p2_breeds_route_through_raw_dispatch() {
+    for (breed, input) in p2_smoke_inputs() {
+        let out = dispatch_breed_test(breed, &input)
+            .unwrap_or_else(|e| panic!("{} raw dispatch: {}", breed, e));
+        assert!(
+            !out.inference_trace.is_empty(),
+            "{}: non-empty trace required",
+            breed
+        );
+        assert_eq!(format!("{}", out.breed), breed, "{}: breed id mismatch", breed);
+    }
+}
+
+#[test]
+fn p2_breeds_route_through_full_dispatch_with_ocel_gate() {
+    for (breed, input) in p2_smoke_inputs() {
+        let out = wasm4pm_cognition::breeds::dispatch::dispatch_breed(breed, &input)
+            .unwrap_or_else(|e| panic!("{} full dispatch: {}", breed, e));
+        assert!(out.ocel_log.is_some(), "{}: OCEL log must be attached", breed);
+    }
+}
+
+#[test]
+fn p2_unknown_breed_still_rejected() {
+    let (_, input) = &p2_smoke_inputs()[0];
+    assert!(dispatch_breed_test("florbulator", input).is_err());
+}

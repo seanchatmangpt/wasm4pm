@@ -75,6 +75,18 @@ export const BreedIdSchema = z.enum([
   'autoinstinct_semantics',
   'autoinstinct_vision',
   'autoinstinct_learning',
+  'asp',
+  'description_logic',
+  'abductive_lp',
+  'abductive_ibe',
+  'partial_order_plan',
+  'event_calculus',
+  'mdp',
+  'version_space',
+  'belief_merging',
+  'qualitative_reason',
+  'script_sam',
+  'clp',
 ]);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 

@@ -316,3 +316,93 @@ fn all_13_breeds_ocel_conforming() {
     // CBR needs cases
     assert_breed_conforming("cbr", &cbr_input);
 }
+
+// ===========================================================================
+// P2 tier — OCEL conformance: measured fitness 1.0 per breed on its paper
+// fixture input, plus negative injection (shuffled trace must not be 1.0).
+// ===========================================================================
+
+mod p2_conformance {
+    use super::*;
+    use std::fs;
+    use wasm4pm_cognition::breeds::BreedInput;
+    use wasm4pm_cognition::ocel::lifecycle_model_for;
+
+    const P2_BREEDS: [&str; 12] = [
+        "asp",
+        "description_logic",
+        "abductive_lp",
+        "abductive_ibe",
+        "partial_order_plan",
+        "event_calculus",
+        "mdp",
+        "version_space",
+        "belief_merging",
+        "qualitative_reason",
+        "script_sam",
+        "clp",
+    ];
+
+    fn fixture_input(breed: &str) -> BreedInput {
+        let path = format!("tests/fixtures/papers/{}.json", breed);
+        let content = fs::read_to_string(&path).unwrap_or_else(|e| panic!("{}: {}", path, e));
+        let json: serde_json::Value = serde_json::from_str(&content).unwrap();
+        serde_json::from_value(json["input"].clone())
+            .unwrap_or_else(|e| panic!("{} input: {}", path, e))
+    }
+
+    /// Measured fitness must be exactly 1.0 for every P2 breed.
+    #[test]
+    fn p2_fitness_is_one_for_every_breed() {
+        for breed in P2_BREEDS {
+            let input = fixture_input(breed);
+            let out = dispatch_breed_test(breed, &input)
+                .unwrap_or_else(|e| panic!("{}: {}", breed, e));
+            let log = derive_ocel(breed, "p2conformance", &out.inference_trace);
+            let model = lifecycle_model_for(breed)
+                .unwrap_or_else(|| panic!("{}: missing lifecycle model", breed));
+            let result = validate_ocel_alignment(&log, model);
+            assert!(
+                result.is_conforming && (result.fitness - 1.0).abs() < f32::EPSILON,
+                "{}: fitness {} refusals {:?}",
+                breed,
+                result.fitness,
+                result.refusals
+            );
+        }
+    }
+
+    /// Negative injection: reversing a real trace must break conformance
+    /// (van der Aalst doctrine — the model must reject impossible logs).
+    #[test]
+    fn p2_shuffled_trace_is_rejected() {
+        let input = fixture_input("asp");
+        let out = dispatch_breed_test("asp", &input).unwrap();
+        let mut steps = out.inference_trace.clone();
+        steps.reverse();
+        for (i, s) in steps.iter_mut().enumerate() {
+            s.step = i; // keep logical steps monotonic so ONLY ordering is wrong
+        }
+        let log = derive_ocel("asp", "p2negative", &steps);
+        let model = lifecycle_model_for("asp").unwrap();
+        let result = validate_ocel_alignment(&log, model);
+        assert!(
+            !result.is_conforming,
+            "reversed ASP trace must not conform (fitness {})",
+            result.fitness
+        );
+    }
+
+    /// Every P2 breed has both a lifecycle model and an OCPN model source.
+    #[test]
+    fn p2_models_registered() {
+        for breed in P2_BREEDS {
+            assert!(lifecycle_model_for(breed).is_some(), "{}: lifecycle", breed);
+            let src = wasm4pm_cognition::ocel::model_sources::model_source(breed)
+                .unwrap_or_else(|| panic!("{}: OCPN source", breed));
+            let parsed: serde_json::Value = serde_json::from_str(src)
+                .unwrap_or_else(|e| panic!("{}: OCPN parse {}", breed, e));
+            assert_eq!(parsed["breed_id"].as_str(), Some(breed));
+        }
+    }
+}

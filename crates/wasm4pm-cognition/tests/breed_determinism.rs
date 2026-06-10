@@ -424,3 +424,173 @@ fn exactly_13_breed_pairs_covered() {
     ];
     assert_eq!(covered.len(), 13, "must cover exactly 13 breeds");
 }
+
+// ===========================================================================
+// P2 tier — determinism (12 breeds): bit-exact double runs through the full
+// dispatch lifecycle (including OCEL derivation).
+// ===========================================================================
+
+use wasm4pm_cognition::breeds::dispatch::dispatch_breed as p2_dispatch;
+
+fn p2_assert_bit_exact(breed: &str, input: &BreedInput) {
+    let a = p2_dispatch(breed, input).unwrap_or_else(|e| panic!("{} run 1: {}", breed, e));
+    let b = p2_dispatch(breed, input).unwrap_or_else(|e| panic!("{} run 2: {}", breed, e));
+    let sa = serde_json::to_string(&a).unwrap();
+    let sb = serde_json::to_string(&b).unwrap();
+    assert_eq!(sa, sb, "{}: double run must be bit-exact", breed);
+    assert!(!a.inference_trace.is_empty(), "{}: empty trace", breed);
+}
+
+fn p2_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn p2_base() -> BreedInput {
+    BreedInput {
+        intent: "determinism".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+#[test]
+fn asp_deterministic() {
+    let mut input = p2_base();
+    input.rules = vec![
+        Rule { id: "d1".into(), premise: vec!["not b".into()], conclusion: "a".into(), certainty: 1.0 },
+        Rule { id: "d2".into(), premise: vec!["not a".into()], conclusion: "b".into(), certainty: 1.0 },
+    ];
+    p2_assert_bit_exact("asp", &input);
+}
+
+#[test]
+fn description_logic_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("dl:subclass:A", "B"),
+        p2_fact("dl:subclass:B", "C"),
+    ];
+    input.goals = vec![Goal { id: "q".into(), predicate: "dl:subsumes".into(), value: "A:C".into() }];
+    p2_assert_bit_exact("description_logic", &input);
+}
+
+#[test]
+fn abductive_lp_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![p2_fact("alp:abducible:a", "true"), p2_fact("alp:abducible:b", "true")];
+    input.rules = vec![Rule { id: "d".into(), premise: vec!["a".into()], conclusion: "o".into(), certainty: 1.0 }];
+    input.goals = vec![Goal { id: "o".into(), predicate: "alp:observe".into(), value: "o".into() }];
+    p2_assert_bit_exact("abductive_lp", &input);
+}
+
+#[test]
+fn abductive_ibe_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("ibe:obs:o1", "true"),
+        p2_fact("ibe:hyp:h1:covers", "o1"),
+        p2_fact("ibe:hyp:h1:cost", "1"),
+        p2_fact("ibe:hyp:h2:covers", "o1"),
+        p2_fact("ibe:hyp:h2:cost", "2"),
+    ];
+    p2_assert_bit_exact("abductive_ibe", &input);
+}
+
+#[test]
+fn partial_order_plan_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("pop:op:alpha:pre", "w"),
+        p2_fact("pop:op:alpha:add", "t2"),
+        p2_fact("pop:op:beta:add", "t1"),
+        p2_fact("pop:op:beta:del", "w"),
+    ];
+    input.state = vec![StateAtom { predicate: "w".into(), value: "true".into() }];
+    input.goals = vec![
+        Goal { id: "g1".into(), predicate: "t1".into(), value: "true".into() },
+        Goal { id: "g2".into(), predicate: "t2".into(), value: "true".into() },
+    ];
+    p2_assert_bit_exact("partial_order_plan", &input);
+}
+
+#[test]
+fn event_calculus_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("ec:happens:1", "go"),
+        p2_fact("ec:initiates:go", "moving"),
+    ];
+    input.goals = vec![Goal { id: "q".into(), predicate: "ec:holdsat".into(), value: "moving@3".into() }];
+    p2_assert_bit_exact("event_calculus", &input);
+}
+
+#[test]
+fn mdp_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("mdp:gamma", "0.5"),
+        p2_fact("mdp:trans:s:a", "s:1.0"),
+        p2_fact("mdp:reward:s:a", "1.0"),
+    ];
+    p2_assert_bit_exact("mdp", &input);
+}
+
+#[test]
+fn version_space_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("vs:attrs", "a,b"),
+        p2_fact("vs:example:1", "x,y:+"),
+        p2_fact("vs:example:2", "z,y:-"),
+    ];
+    p2_assert_bit_exact("version_space", &input);
+}
+
+#[test]
+fn belief_merging_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("bm:atoms", "a,b"),
+        p2_fact("bm:base:1", "a,b"),
+        p2_fact("bm:base:2", "-a,-b"),
+    ];
+    p2_assert_bit_exact("belief_merging", &input);
+}
+
+#[test]
+fn qualitative_reason_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("qr:confluence:c1", "+x,-y,-z"),
+        p2_fact("qr:sign:x", "+"),
+    ];
+    p2_assert_bit_exact("qualitative_reason", &input);
+}
+
+#[test]
+fn script_sam_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("sam:event:1", "enter:ana"),
+        p2_fact("sam:event:2", "pay:ana"),
+    ];
+    p2_assert_bit_exact("script_sam", &input);
+}
+
+#[test]
+fn clp_deterministic() {
+    let mut input = p2_base();
+    input.facts = vec![
+        p2_fact("clp:var:x", "1..4"),
+        p2_fact("clp:var:y", "1..4"),
+        p2_fact("clp:constraint:c1", "x<y"),
+    ];
+    p2_assert_bit_exact("clp", &input);
+}

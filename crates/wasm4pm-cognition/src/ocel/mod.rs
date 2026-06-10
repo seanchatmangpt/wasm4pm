@@ -70,320 +70,52 @@ pub struct LifecyclePhase {
     pub max_occurrences: usize,
 }
 
-// MYCIN lifecycle model: load-facts* → fire-rule+ → decision?
-/// MYCIN lifecycle
-pub static MYCIN_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "mycin",
-    phases: &[
-        LifecyclePhase {
-            name: "load-facts",
-            kinds: &["load-fact"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "fire-rules",
-            kinds: &["fire-rule"],
-            min_occurrences: 1,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "decision",
-            kinds: &["decision"],
-            min_occurrences: 0,
-            max_occurrences: 1,
-        },
-    ],
-};
-
-/// Hearsay lifecycle: seed + post-hypothesis+
-pub static HEARSAY_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "hearsay",
-    phases: &[LifecyclePhase {
-        name: "hypothesize",
-        kinds: &[
-            "seed",
-            "post-hypothesis",
-            "enqueue-ksar",
-            "stale-ksar",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// CBR lifecycle: build-index → retrieve-candidates → score-case+ → decision?
-pub static CBR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "cbr",
-    phases: &[
-        LifecyclePhase {
-            name: "index",
-            kinds: &["build-index"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "retrieve",
-            kinds: &["retrieve-candidates"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "score",
-            kinds: &[
-                "score-case",
-                "reuse-adapt",
-                "revise-accept",
-                "revise-reject",
-                "retain-case",
-            ],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "decision",
-            kinds: &["decision"],
-            min_occurrences: 0,
-            max_occurrences: 1,
-        },
-    ],
-};
-
-/// GPS lifecycle: reduce-gap / apply-operator
-pub static GPS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "gps",
-    phases: &[LifecyclePhase {
-        name: "plan",
-        kinds: &[
-            "reduce-gap",
-            "apply-operator",
-            "check-presatisfied",
-            "match-goal",
-            "set-goal",
-            "subgoal",
-            "achieve-diff",
-            "decision",
-            "no-plan",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// STRIPS lifecycle: subgoal/try-action/execute/iterate-depth+
-pub static STRIPS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "strips",
-    phases: &[LifecyclePhase {
-        name: "plan",
-        kinds: &[
-            "subgoal",
-            "try-action",
-            "execute",
-            "iterate-depth",
-            "check-presatisfied",
-            "frame-axioms-loaded",
-            "apply-action",
-            "add-effect",
-            "del-effect",
-            "decision",
-            "no-plan",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// Prolog lifecycle: intern-fact/load-rule* → kernel-query+ → decision?
-pub static PROLOG_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "prolog",
-    phases: &[
-        LifecyclePhase {
-            name: "load",
-            kinds: &["intern-fact", "load-fact", "load-rule"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "query",
-            kinds: &[
-                "kernel-query",
-                "unify",
-                "sld-step",
-                "match-rule",
-                "bind-var",
-            ],
-            min_occurrences: 1,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "decision",
-            kinds: &["decision"],
-            min_occurrences: 0,
-            max_occurrences: 1,
-        },
-    ],
-};
-
-/// SOAR lifecycle: evaluate-single/prohibit/veto/dominate/impasse (preference evaluation)
-pub static SOAR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "soar",
-    phases: &[LifecyclePhase {
-        name: "evaluate",
-        kinds: &[
-            "evaluate-single",
-            "prohibit",
-            "veto-non-required",
-            "dominate",
-            "impasse",
-            "propose-operator",
-            "preference",
-            "decide-operator",
-            "impasse-unresolved-fallback",
-            "subgoal",
-            "apply-operator",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// ELIZA lifecycle: try-pattern* → match-pattern/bind-slot+
-pub static ELIZA_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "eliza",
-    phases: &[LifecyclePhase {
-        name: "match",
-        kinds: &[
-            "try-pattern",
-            "match-pattern",
-            "bind-slot",
-            "keyword-match",
-            "transform",
-            "reflect",
-            "response",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// DENDRAL lifecycle: eliminate/survive+ (constraint-test then prune)
-pub static DENDRAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "dendral",
-    phases: &[LifecyclePhase {
-        name: "test",
-        kinds: &[
-            "eliminate",
-            "survive",
-            "generate-hypothesis",
-            "enumerate",
-            "test-hypothesis",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// Autoinstinct Neurosis lifecycle: seed-beliefs + affect-snapshot
-pub static AUTOINSTINCT_NEUROSIS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "autoinstinct_neurosis",
-    phases: &[LifecyclePhase {
-        name: "analyze",
-        kinds: &[
-            "seed-beliefs",
-            "affect-snapshot",
-            "analyze",
-            "detect-pattern",
-            "belief-update",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// Autoinstinct Vision lifecycle: observe-object / find-clear-object
-pub static AUTOINSTINCT_VISION_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "autoinstinct_vision",
-    phases: &[LifecyclePhase {
-        name: "perceive",
-        kinds: &[
-            "observe-object",
-            "find-clear-object",
-            "perceive",
-            "segment",
-            "classify",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// Autoinstinct Semantics lifecycle: init-parser + extract-act/no-act-found
-pub static AUTOINSTINCT_SEMANTICS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "autoinstinct_semantics",
-    phases: &[LifecyclePhase {
-        name: "parse",
-        kinds: &[
-            "init-parser",
-            "no-act-found",
-            "extract-act",
-            "extract-recipient",
-            "extract-source",
-            "parse",
-            "frame-bind",
-            "atrans",
-            "ptrans",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
-
-/// Autoinstinct Learning lifecycle: no-plan-found | plan-step+
-pub static AUTOINSTINCT_LEARNING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "autoinstinct_learning",
-    phases: &[LifecyclePhase {
-        name: "plan",
-        kinds: &[
-            "plan-step",
-            "no-plan-found",
-            "update-distance",
-            "expand-frontier",
-            "goal-reached",
-            "decision",
-        ],
-        min_occurrences: 1,
-        max_occurrences: usize::MAX,
-    }],
-};
+/// Static per-breed lifecycle models (P0 tier: the 13 founding breeds).
+pub mod models_p0;
+/// Static per-breed lifecycle models (P2 tier).
+pub mod models_p2;
+/// `include_str!` sources for hand-authored OCPN model JSON files.
+pub mod model_sources;
 
 /// Get the lifecycle model for a breed by id.
-pub fn get_model(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
+pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
     match breed_id {
-        "mycin" => Some(&MYCIN_MODEL),
-        "hearsay" => Some(&HEARSAY_MODEL),
-        "cbr" => Some(&CBR_MODEL),
-        "gps" => Some(&GPS_MODEL),
-        "strips" => Some(&STRIPS_MODEL),
-        "prolog" => Some(&PROLOG_MODEL),
-        "soar" => Some(&SOAR_MODEL),
-        "eliza" => Some(&ELIZA_MODEL),
-        "dendral" => Some(&DENDRAL_MODEL),
-        "autoinstinct_neurosis" => Some(&AUTOINSTINCT_NEUROSIS_MODEL),
-        "autoinstinct_vision" => Some(&AUTOINSTINCT_VISION_MODEL),
-        "autoinstinct_semantics" => Some(&AUTOINSTINCT_SEMANTICS_MODEL),
-        "autoinstinct_learning" => Some(&AUTOINSTINCT_LEARNING_MODEL),
+        "mycin" => Some(&models_p0::MYCIN_MODEL),
+        "hearsay" => Some(&models_p0::HEARSAY_MODEL),
+        "cbr" => Some(&models_p0::CBR_MODEL),
+        "gps" => Some(&models_p0::GPS_MODEL),
+        "strips" => Some(&models_p0::STRIPS_MODEL),
+        "prolog" => Some(&models_p0::PROLOG_MODEL),
+        "soar" => Some(&models_p0::SOAR_MODEL),
+        "eliza" => Some(&models_p0::ELIZA_MODEL),
+        "dendral" => Some(&models_p0::DENDRAL_MODEL),
+        "autoinstinct_neurosis" => Some(&models_p0::AUTOINSTINCT_NEUROSIS_MODEL),
+        "autoinstinct_vision" => Some(&models_p0::AUTOINSTINCT_VISION_MODEL),
+        "autoinstinct_semantics" => Some(&models_p0::AUTOINSTINCT_SEMANTICS_MODEL),
+        "autoinstinct_learning" => Some(&models_p0::AUTOINSTINCT_LEARNING_MODEL),
+        "asp" => Some(&models_p2::ASP_MODEL),
+        "description_logic" => Some(&models_p2::DESCRIPTION_LOGIC_MODEL),
+        "abductive_lp" => Some(&models_p2::ABDUCTIVE_LP_MODEL),
+        "abductive_ibe" => Some(&models_p2::ABDUCTIVE_IBE_MODEL),
+        "partial_order_plan" => Some(&models_p2::PARTIAL_ORDER_PLAN_MODEL),
+        "event_calculus" => Some(&models_p2::EVENT_CALCULUS_MODEL),
+        "mdp" => Some(&models_p2::MDP_MODEL),
+        "version_space" => Some(&models_p2::VERSION_SPACE_MODEL),
+        "belief_merging" => Some(&models_p2::BELIEF_MERGING_MODEL),
+        "qualitative_reason" => Some(&models_p2::QUALITATIVE_REASON_MODEL),
+        "script_sam" => Some(&models_p2::SCRIPT_SAM_MODEL),
+        "clp" => Some(&models_p2::CLP_MODEL),
         _ => None,
     }
 }
 
-/// Conformance check result from OCEL validation.
+/// Deprecated alias for [`lifecycle_model_for`].
+#[deprecated(note="Use lifecycle_model_for")]
+pub fn get_model(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
+    lifecycle_model_for(breed_id)
+}
+
+/// Result of replaying a trace against a breed lifecycle model.
 #[derive(Debug, Clone)]
 pub struct ConformanceResult {
     /// Fitness score 0.0..=1.0

@@ -7,19 +7,47 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Inference to the best explanation (Harman 1965; Thagard 1978).
+pub mod abductive_ibe;
+/// Abductive logic programming (Kakas, Kowalski & Toni 1992).
+pub mod abductive_lp;
+/// Answer set programming (Gelfond & Lifschitz 1988).
+pub mod asp;
 pub mod autoinstinct_learning;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
+/// Distance-based belief merging (Konieczny & Pino Pérez 2002).
+pub mod belief_merging;
 pub mod cbr;
+/// Constraint logic programming over finite domains (Jaffar & Lassez 1987).
+pub mod clp;
 pub mod dendral;
+/// EL description-logic classification (Baader, Brandt & Lutz 2005).
+pub mod description_logic;
+/// Breed dispatch: full lifecycle routing with OCEL conformance gate.
+pub mod dispatch;
+/// Discrete event calculus (Kowalski & Sergot 1986).
+pub mod event_calculus;
 pub mod frame;
 pub mod gps;
 pub mod hearsay;
+/// MDP value iteration (Bellman 1957).
+pub mod mdp;
+/// SNLP partial-order planning (McAllester & Rosenblitt 1991).
+pub mod partial_order_plan;
 pub mod production_rules;
 pub mod prolog;
+/// Confluence-based qualitative reasoning (de Kleer & Brown 1984).
+pub mod qualitative_reason;
+/// SAM script application (Schank & Abelson 1977).
+pub mod script_sam;
 pub mod soar;
 pub mod strips;
+/// Shared combinator core (Stage C1 library).
+pub mod support;
+/// Version-space candidate elimination (Mitchell 1982).
+pub mod version_space;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -50,6 +78,30 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
+    /// ASP: Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz 1988)
+    Asp,
+    /// Description Logic: EL completion-rule classification (Baader, Brandt & Lutz 2005)
+    DescriptionLogic,
+    /// Abductive Logic Programming (Kakas, Kowalski & Toni 1992)
+    AbductiveLp,
+    /// Abduction as Inference to the Best Explanation (Harman 1965; Thagard 1978)
+    AbductiveIbe,
+    /// SNLP partial-order planning (McAllester & Rosenblitt 1991)
+    PartialOrderPlan,
+    /// Event Calculus (Kowalski & Sergot 1986)
+    EventCalculus,
+    /// MDP value iteration (Bellman 1957)
+    Mdp,
+    /// Version-space candidate elimination (Mitchell 1982)
+    VersionSpace,
+    /// Belief merging — Σ / GMax distance-based operators (Konieczny & Pino Pérez 2002)
+    BeliefMerging,
+    /// Qualitative reasoning — confluences (de Kleer & Brown 1984)
+    QualitativeReason,
+    /// SAM script application (Schank & Abelson 1977)
+    ScriptSam,
+    /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
+    Clp,
 }
 
 impl fmt::Display for BreedId {
@@ -68,6 +120,18 @@ impl fmt::Display for BreedId {
             BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
             BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
             BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
+            BreedId::Asp => write!(f, "asp"),
+            BreedId::DescriptionLogic => write!(f, "description_logic"),
+            BreedId::AbductiveLp => write!(f, "abductive_lp"),
+            BreedId::AbductiveIbe => write!(f, "abductive_ibe"),
+            BreedId::PartialOrderPlan => write!(f, "partial_order_plan"),
+            BreedId::EventCalculus => write!(f, "event_calculus"),
+            BreedId::Mdp => write!(f, "mdp"),
+            BreedId::VersionSpace => write!(f, "version_space"),
+            BreedId::BeliefMerging => write!(f, "belief_merging"),
+            BreedId::QualitativeReason => write!(f, "qualitative_reason"),
+            BreedId::ScriptSam => write!(f, "script_sam"),
+            BreedId::Clp => write!(f, "clp"),
         }
     }
 }
@@ -357,6 +421,42 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         "autoinstinct_learning" => AutoinstinctLearning
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "asp" => crate::breeds::asp::Asp
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "description_logic" => crate::breeds::description_logic::DescriptionLogic
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "abductive_lp" => crate::breeds::abductive_lp::AbductiveLp
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "abductive_ibe" => crate::breeds::abductive_ibe::AbductiveIbe
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "partial_order_plan" => crate::breeds::partial_order_plan::PartialOrderPlan
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "event_calculus" => crate::breeds::event_calculus::EventCalculus
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "mdp" => crate::breeds::mdp::Mdp
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "version_space" => crate::breeds::version_space::VersionSpace
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "belief_merging" => crate::breeds::belief_merging::BeliefMerging
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "qualitative_reason" => crate::breeds::qualitative_reason::QualitativeReason
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "script_sam" => crate::breeds::script_sam::ScriptSam
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "clp" => crate::breeds::clp::Clp
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         other => Err(format!("unknown breed: {}", other)),
