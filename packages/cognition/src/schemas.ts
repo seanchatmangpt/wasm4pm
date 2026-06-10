@@ -85,6 +85,18 @@ export const BreedIdSchema = z.enum([
   'dempster_shafer',
   'frames_inheritance',
   'ebl',
+  'asp',
+  'description_logic',
+  'abductive_lp',
+  'abductive_ibe',
+  'partial_order_plan',
+  'event_calculus',
+  'mdp',
+  'version_space',
+  'belief_merging',
+  'qualitative_reason',
+  'script_sam',
+  'clp',
 ]);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 

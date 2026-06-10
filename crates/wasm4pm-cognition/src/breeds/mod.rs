@@ -8,6 +8,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 pub mod allen_temporal;
+/// Inference to the best explanation (Harman 1965; Thagard 1978).
+pub mod abductive_ibe;
+/// Abductive logic programming (Kakas, Kowalski & Toni 1992).
+pub mod abductive_lp;
+/// Answer set programming (Gelfond & Lifschitz 1988).
+pub mod asp;
 pub mod autoinstinct_learning;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
@@ -21,6 +27,14 @@ pub mod dendral;
 /// Breed dispatch (full lifecycle + test harness).
 pub mod dispatch;
 pub mod ebl;
+/// Distance-based belief merging (Konieczny & Pino Pérez 2002).
+pub mod belief_merging;
+/// Constraint logic programming over finite domains (Jaffar & Lassez 1987).
+pub mod clp;
+/// EL description-logic classification (Baader, Brandt & Lutz 2005).
+pub mod description_logic;
+/// Discrete event calculus (Kowalski & Sergot 1986).
+pub mod event_calculus;
 pub mod frame;
 pub mod frames_inheritance;
 pub mod fuzzy_logic;
@@ -28,12 +42,22 @@ pub mod gps;
 pub mod hearsay;
 pub mod htn_planning;
 pub mod ltl_monitor;
+/// MDP value iteration (Bellman 1957).
+pub mod mdp;
+/// SNLP partial-order planning (McAllester & Rosenblitt 1991).
+pub mod partial_order_plan;
 pub mod production_rules;
 pub mod prolog;
+/// Confluence-based qualitative reasoning (de Kleer & Brown 1984).
+pub mod qualitative_reason;
+/// SAM script application (Schank & Abelson 1977).
+pub mod script_sam;
 pub mod soar;
 pub mod strips;
 /// Combinator core: shared proven algebraic machinery (Stage C1).
 pub mod support;
+/// Version-space candidate elimination (Mitchell 1982).
+pub mod version_space;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -84,6 +108,30 @@ pub enum BreedId {
     FramesInheritance,
     /// Explanation-based learning (Mitchell et al. 1986)
     Ebl,
+    /// ASP: Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz 1988)
+    Asp,
+    /// Description Logic: EL completion-rule classification (Baader, Brandt & Lutz 2005)
+    DescriptionLogic,
+    /// Abductive Logic Programming (Kakas, Kowalski & Toni 1992)
+    AbductiveLp,
+    /// Abduction as Inference to the Best Explanation (Harman 1965; Thagard 1978)
+    AbductiveIbe,
+    /// SNLP partial-order planning (McAllester & Rosenblitt 1991)
+    PartialOrderPlan,
+    /// Event Calculus (Kowalski & Sergot 1986)
+    EventCalculus,
+    /// MDP value iteration (Bellman 1957)
+    Mdp,
+    /// Version-space candidate elimination (Mitchell 1982)
+    VersionSpace,
+    /// Belief merging — Σ / GMax distance-based operators (Konieczny & Pino Pérez 2002)
+    BeliefMerging,
+    /// Qualitative reasoning — confluences (de Kleer & Brown 1984)
+    QualitativeReason,
+    /// SAM script application (Schank & Abelson 1977)
+    ScriptSam,
+    /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
+    Clp,
 }
 
 impl fmt::Display for BreedId {
@@ -112,6 +160,18 @@ impl fmt::Display for BreedId {
             BreedId::DempsterShafer => write!(f, "dempster_shafer"),
             BreedId::FramesInheritance => write!(f, "frames_inheritance"),
             BreedId::Ebl => write!(f, "ebl"),
+            BreedId::Asp => write!(f, "asp"),
+            BreedId::DescriptionLogic => write!(f, "description_logic"),
+            BreedId::AbductiveLp => write!(f, "abductive_lp"),
+            BreedId::AbductiveIbe => write!(f, "abductive_ibe"),
+            BreedId::PartialOrderPlan => write!(f, "partial_order_plan"),
+            BreedId::EventCalculus => write!(f, "event_calculus"),
+            BreedId::Mdp => write!(f, "mdp"),
+            BreedId::VersionSpace => write!(f, "version_space"),
+            BreedId::BeliefMerging => write!(f, "belief_merging"),
+            BreedId::QualitativeReason => write!(f, "qualitative_reason"),
+            BreedId::ScriptSam => write!(f, "script_sam"),
+            BreedId::Clp => write!(f, "clp"),
         }
     }
 }
@@ -354,7 +414,7 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
 
 impl BreedId {
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
-    pub const ALL: [BreedId; 23] = [
+    pub const ALL: [BreedId; 35] = [
         BreedId::Eliza,
         BreedId::Cbr,
         BreedId::Dendral,
@@ -378,5 +438,17 @@ impl BreedId {
         BreedId::DempsterShafer,
         BreedId::FramesInheritance,
         BreedId::Ebl,
+        BreedId::Asp,
+        BreedId::DescriptionLogic,
+        BreedId::AbductiveLp,
+        BreedId::AbductiveIbe,
+        BreedId::PartialOrderPlan,
+        BreedId::EventCalculus,
+        BreedId::Mdp,
+        BreedId::VersionSpace,
+        BreedId::BeliefMerging,
+        BreedId::QualitativeReason,
+        BreedId::ScriptSam,
+        BreedId::Clp,
     ];
 }

@@ -1,0 +1,31 @@
+{
+  "breed": "abductive_lp",
+  "provenance": {
+    "citation": "Kakas, A. C., Kowalski, R. A., & Toni, F. (1992). Abductive Logic Programming. Journal of Logic and Computation, 2(6), 719–770.",
+    "locus": "Section 1.1 (introductory example): grass-is-wet — wet ← rained; wet ← sprinkler-on; observation wet; abducibles {rained, sprinkler-on}; the two minimal abductive explanations are {rained} and {sprinkler-on}. The same section introduces integrity constraints as the mechanism that rules out explanations.",
+    "extraction": "verbatim",
+    "notes": "The grass-wet program is the paper's running introductory example of abduction in logic programming. Both singleton explanations are minimal and IC-consistent; enumeration order (size then lex) lists {rained} before {sprinkler-on} alphabetically: 'rained' < 'sprinkler-on'."
+  },
+  "input": {
+    "intent": "explain the wet grass observation (KKT 1992 Section 1)",
+    "candidates": [],
+    "facts": [
+      { "key": "alp:abducible:rained", "value": "true" },
+      { "key": "alp:abducible:sprinkler_on", "value": "true" }
+    ],
+    "cases": [],
+    "rules": [
+      { "id": "r1", "premise": ["rained"], "conclusion": "grass_wet", "certainty": 1.0 },
+      { "id": "r2", "premise": ["sprinkler_on"], "conclusion": "grass_wet", "certainty": 1.0 }
+    ],
+    "goals": [
+      { "id": "o1", "predicate": "alp:observe", "value": "grass_wet" }
+    ],
+    "state": []
+  },
+  "expected": {
+    "explanation_count": "2",
+    "explanations": ["{rained}", "{sprinkler_on}"],
+    "notes": "Two minimal explanations per KKT 1992; the empty set and the pair {rained,sprinkler_on} are excluded (non-explaining / non-minimal)."
+  }
+}

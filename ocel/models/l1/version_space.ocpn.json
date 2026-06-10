@@ -1,0 +1,45 @@
+{
+  "model_id": "version_space-l1-v1",
+  "model_level": "L1",
+  "breed_id": "version_space",
+  "object_types": ["boundary", "example", "concept"],
+  "places": [
+    {"id": "p1", "name": "examples_raw",    "object_type": "example"},
+    {"id": "p2", "name": "boundaries_init", "object_type": "boundary"},
+    {"id": "p3", "name": "example_seen",    "object_type": "example"},
+    {"id": "p4", "name": "boundary_moved",  "object_type": "boundary"},
+    {"id": "p5", "name": "concept_final",   "object_type": "concept"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "init_boundaries",  "label": "init-boundaries"},
+    {"id": "t2", "name": "process_positive", "label": "process-positive"},
+    {"id": "t3", "name": "process_negative", "label": "process-negative"},
+    {"id": "t4", "name": "generalize_s",     "label": "generalize-s"},
+    {"id": "t5", "name": "specialize_g",     "label": "specialize-g"},
+    {"id": "t6", "name": "prune",            "label": "prune"},
+    {"id": "t7", "name": "converged",        "label": "converged"},
+    {"id": "t8", "name": "boundaries_final", "label": "boundaries-final"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "p3", "to": "t6", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "t5", "to": "p4", "type": "produce"},
+    {"from": "t6", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t2", "type": "consume"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "p4", "to": "t7", "type": "consume"},
+    {"from": "p4", "to": "t8", "type": "consume"},
+    {"from": "t7", "to": "p5", "type": "produce"},
+    {"from": "t8", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

@@ -545,3 +545,132 @@ fn ebl_missing_domain_theory_refused() {
     let err = Ebl.preconditions(&input).expect_err("must refuse");
     assert!(err.contains("domain theory"));
 }
+
+// ===========================================================================
+// P2 tier — refusal tests (12 breeds). Refusals are preconditions, so these
+// route through breeds::dispatch::dispatch_breed (full lifecycle).
+// ===========================================================================
+
+use wasm4pm_cognition::breeds::dispatch::dispatch_breed as p2_dispatch;
+
+/// ASP refuses an atom universe larger than its 12-atom enumeration cap.
+#[test]
+fn asp_refuses_oversized_atom_universe() {
+    let mut input = empty_base();
+    input.rules = (0..13)
+        .map(|i| rule(&format!("f{}", i), vec![], &format!("atom{}", i), 1.0))
+        .collect();
+    let err = p2_dispatch("asp", &input).unwrap_err();
+    assert!(err.contains("cap"), "got: {}", err);
+}
+
+/// Description logic refuses when no dl:subsumes query goal is supplied.
+#[test]
+fn description_logic_refuses_without_query() {
+    let mut input = empty_base();
+    input.facts = vec![fact("dl:subclass:A", "B")];
+    let err = p2_dispatch("description_logic", &input).unwrap_err();
+    assert!(err.contains("query"), "got: {}", err);
+}
+
+/// Abductive LP refuses when no abducibles are declared.
+#[test]
+fn abductive_lp_refuses_without_abducibles() {
+    let mut input = empty_base();
+    input.rules = vec![rule("r1", vec!["a"], "obs", 1.0)];
+    input.goals = vec![goal("o1", "alp:observe", "obs")];
+    let err = p2_dispatch("abductive_lp", &input).unwrap_err();
+    assert!(err.contains("abducible"), "got: {}", err);
+}
+
+/// IBE refuses when there are no observations to explain.
+#[test]
+fn abductive_ibe_refuses_without_observations() {
+    let mut input = empty_base();
+    input.facts = vec![fact("ibe:hyp:h1:covers", "o1")];
+    let err = p2_dispatch("abductive_ibe", &input).unwrap_err();
+    assert!(err.contains("ibe:obs"), "got: {}", err);
+}
+
+/// SNLP refuses when no operators are declared.
+#[test]
+fn partial_order_plan_refuses_without_operators() {
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "on_a_b", "true")];
+    input.state = vec![state_atom("clear_a", "true")];
+    let err = p2_dispatch("partial_order_plan", &input).unwrap_err();
+    assert!(err.contains("pop:op"), "got: {}", err);
+}
+
+/// Event calculus refuses a malformed HoldsAt query.
+#[test]
+fn event_calculus_refuses_malformed_query() {
+    let mut input = empty_base();
+    input.facts = vec![fact("ec:initially", "on")];
+    input.goals = vec![goal("q1", "ec:holdsat", "on-at-four")];
+    let err = p2_dispatch("event_calculus", &input).unwrap_err();
+    assert!(err.contains("malformed"), "got: {}", err);
+}
+
+/// MDP refuses transition probabilities that do not sum to 1.
+#[test]
+fn mdp_refuses_non_normalized_probabilities() {
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("mdp:gamma", "0.5"),
+        fact("mdp:trans:s1:a", "s1:0.4"),
+    ];
+    let err = p2_dispatch("mdp", &input).unwrap_err();
+    assert!(err.contains("sum"), "got: {}", err);
+}
+
+/// Version space refuses when there is no positive example.
+#[test]
+fn version_space_refuses_without_positive_example() {
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("vs:attrs", "a,b"),
+        fact("vs:example:1", "x,y:-"),
+    ];
+    let err = p2_dispatch("version_space", &input).unwrap_err();
+    assert!(err.contains("positive"), "got: {}", err);
+}
+
+/// Belief merging refuses a single-base profile (nothing to merge).
+#[test]
+fn belief_merging_refuses_single_base() {
+    let mut input = empty_base();
+    input.facts = vec![fact("bm:atoms", "a"), fact("bm:base:1", "a")];
+    let err = p2_dispatch("belief_merging", &input).unwrap_err();
+    assert!(err.contains("two"), "got: {}", err);
+}
+
+/// Qualitative reasoning refuses a sign declaration for an unconstrained variable.
+#[test]
+fn qualitative_reason_refuses_unknown_sign_variable() {
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("qr:confluence:c1", "+x,-y"),
+        fact("qr:sign:zz", "+"),
+    ];
+    let err = p2_dispatch("qualitative_reason", &input).unwrap_err();
+    assert!(err.contains("zz"), "got: {}", err);
+}
+
+/// SAM refuses a story with no event in any known script vocabulary.
+#[test]
+fn script_sam_refuses_unknown_vocabulary() {
+    let mut input = empty_base();
+    input.facts = vec![fact("sam:event:1", "teleport:zz")];
+    let err = p2_dispatch("script_sam", &input).unwrap_err();
+    assert!(err.contains("vocabulary"), "got: {}", err);
+}
+
+/// CLP refuses a store with variables but no constraints.
+#[test]
+fn clp_refuses_without_constraints() {
+    let mut input = empty_base();
+    input.facts = vec![fact("clp:var:x", "1..3")];
+    let err = p2_dispatch("clp", &input).unwrap_err();
+    assert!(err.contains("constraint"), "got: {}", err);
+}

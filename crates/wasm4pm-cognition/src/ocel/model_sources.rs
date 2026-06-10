@@ -24,6 +24,18 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "default_logic" => Some(include_str!("../../../../ocel/models/l1/default_logic.ocpn.json")),
         "frames_inheritance" => Some(include_str!("../../../../ocel/models/l1/frames_inheritance.ocpn.json")),
         "ebl" => Some(include_str!("../../../../ocel/models/l1/ebl.ocpn.json")),
+        "asp" => Some(include_str!("../../../../ocel/models/l1/asp.ocpn.json")),
+        "description_logic" => Some(include_str!("../../../../ocel/models/l1/description_logic.ocpn.json")),
+        "abductive_lp" => Some(include_str!("../../../../ocel/models/l1/abductive_lp.ocpn.json")),
+        "abductive_ibe" => Some(include_str!("../../../../ocel/models/l1/abductive_ibe.ocpn.json")),
+        "partial_order_plan" => Some(include_str!("../../../../ocel/models/l1/partial_order_plan.ocpn.json")),
+        "event_calculus" => Some(include_str!("../../../../ocel/models/l1/event_calculus.ocpn.json")),
+        "mdp" => Some(include_str!("../../../../ocel/models/l1/mdp.ocpn.json")),
+        "version_space" => Some(include_str!("../../../../ocel/models/l1/version_space.ocpn.json")),
+        "belief_merging" => Some(include_str!("../../../../ocel/models/l1/belief_merging.ocpn.json")),
+        "qualitative_reason" => Some(include_str!("../../../../ocel/models/l1/qualitative_reason.ocpn.json")),
+        "script_sam" => Some(include_str!("../../../../ocel/models/l1/script_sam.ocpn.json")),
+        "clp" => Some(include_str!("../../../../ocel/models/l1/clp.ocpn.json")),
         _ => None,
     }
 }

@@ -1545,6 +1545,162 @@ fn allen_temporal_paper_grounded() {
     }
 }
 
+// ============================================================================
+// P2 tier — paper-grounded tests (12 breeds)
+// All P2 runs go through breeds::dispatch::dispatch_breed, which enforces
+// preconditions, postconditions, and the OCEL conformance gate (fitness 1.0).
+// ============================================================================
+
+/// Load a P2 fixture and deserialize its "input" object into a BreedInput.
+fn p2_load(breed: &str) -> (BreedInput, serde_json::Value) {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("fixture {} must exist: {}", path, e));
+    let json: serde_json::Value =
+        serde_json::from_str(&content).unwrap_or_else(|e| panic!("fixture {} parse: {}", path, e));
+    let input: BreedInput = serde_json::from_value(json["input"].clone())
+        .unwrap_or_else(|e| panic!("fixture {} input parse: {}", path, e));
+    (input, json)
+}
+
+fn p2_fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
+    out.facts
+        .iter()
+        .find(|f| f.key == key)
+        .map(|f| f.value.as_str())
+        .unwrap_or_else(|| panic!("missing output fact '{}'", key))
+}
+
+/// Gelfond & Lifschitz 1988: unique stable model {p(1,2), q(1)}.
+#[test]
+fn asp_paper_grounded() {
+    let (input, json) = p2_load("asp");
+    let out = dispatch::dispatch_breed("asp", &input).expect("ASP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "asp:answer_set_count"),
+        json["expected"]["answer_set_count"].as_str().unwrap()
+    );
+    assert_eq!(
+        p2_fact_value(&out, "asp:answer_set:0"),
+        json["expected"]["answer_set_0"].as_str().unwrap()
+    );
+    assert!(out.ocel_log.is_some(), "OCEL log must be attached");
+}
+
+/// Baader, Brandt & Lutz 2005: Pericarditis ⊑ HeartDisease via CR1–CR4.
+#[test]
+fn description_logic_paper_grounded() {
+    let (input, json) = p2_load("description_logic");
+    let out = dispatch::dispatch_breed("description_logic", &input).expect("DL paper run");
+    for (key, val) in json["expected"]["verdicts"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+    for kind in json["expected"]["required_trace_kinds"].as_array().unwrap() {
+        let k = kind.as_str().unwrap();
+        assert!(
+            out.inference_trace.iter().any(|t| t.kind == k),
+            "trace must contain '{}'",
+            k
+        );
+    }
+}
+
+/// Kakas, Kowalski & Toni 1992: grass-wet — explanations {rained}, {sprinkler_on}.
+#[test]
+fn abductive_lp_paper_grounded() {
+    let (input, json) = p2_load("abductive_lp");
+    let out = dispatch::dispatch_breed("abductive_lp", &input).expect("ALP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "alp:explanation_count"),
+        json["expected"]["explanation_count"].as_str().unwrap()
+    );
+    let expls: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("alp:explanation:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    for e in json["expected"]["explanations"].as_array().unwrap() {
+        assert!(expls.contains(&e.as_str().unwrap()), "missing {}", e);
+    }
+}
+
+/// Harman 1965 / Thagard 1978: evolution is the best explanation (score 3.9).
+#[test]
+fn abductive_ibe_paper_grounded() {
+    let (input, json) = p2_load("abductive_ibe");
+    let out = dispatch::dispatch_breed("abductive_ibe", &input).expect("IBE paper run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["best"].as_str().unwrap())
+    );
+    assert_eq!(
+        p2_fact_value(&out, "ibe:score"),
+        json["expected"]["score"].as_str().unwrap()
+    );
+    let creation = json["expected"]["creation_score"].as_str().unwrap();
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "score-hypothesis"
+                && t.detail == format!("creation score={}", creation)),
+        "creation score {} must appear in trace",
+        creation
+    );
+}
+
+/// McAllester & Rosenblitt 1991: Sussman anomaly — interleaved solution.
+#[test]
+fn partial_order_plan_paper_grounded() {
+    let (input, json) = p2_load("partial_order_plan");
+    let out = dispatch::dispatch_breed("partial_order_plan", &input).expect("SNLP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "pop:plan"),
+        json["expected"]["plan"].as_str().unwrap()
+    );
+    assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "promote" || t.kind == "demote"));
+}
+
+/// Kowalski & Sergot 1986: hired/promoted narrative periods.
+#[test]
+fn event_calculus_paper_grounded() {
+    let (input, json) = p2_load("event_calculus");
+    let out = dispatch::dispatch_breed("event_calculus", &input).expect("EC paper run");
+    for (key, val) in json["expected"]["verdicts"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+}
+
+/// Bellman 1957: closed-form fixed point of the functional equation.
+#[test]
+fn mdp_paper_grounded() {
+    let (input, json) = p2_load("mdp");
+    let out = dispatch::dispatch_breed("mdp", &input).expect("MDP paper run");
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    for (state, expected) in json["expected"]["values"].as_object().unwrap() {
+        let v: f64 = p2_fact_value(&out, &format!("mdp:value:{}", state))
+            .parse()
+            .unwrap();
+        assert!(
+            (v - expected.as_f64().unwrap()).abs() < tol,
+            "V({}) = {} != {}",
+            state,
+            v,
+            expected
+        );
+    }
+    for (state, action) in json["expected"]["policy"].as_object().unwrap() {
+        assert_eq!(
+            p2_fact_value(&out, &format!("mdp:policy:{}", state)),
+            action.as_str().unwrap()
+        );
+    }
+}
+
 /// Mamdani & Assilian 1975 — min-firing + max aggregation + centroid:
 /// hand-derived 101-point discrete centroid of Tri(0,25,100) = 41.66667.
 #[test]
@@ -1710,4 +1866,140 @@ fn ebl_paper_grounded() {
         );
     }
     assert!(learned.contains('?'), "Mitchell 1986 EBG must produce a variablized rule");
+}
+
+/// Mitchell 1982: EnjoySport — S4 = <Sunny,Warm,?,Strong,?,?>, |G3| = 3, |G4| = 2.
+#[test]
+fn version_space_paper_grounded() {
+    let (input, json) = p2_load("version_space");
+    let out = dispatch::dispatch_breed("version_space", &input).expect("VS paper run");
+    assert_eq!(
+        p2_fact_value(&out, "vs:s"),
+        json["expected"]["s"].as_str().unwrap()
+    );
+    let g: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("vs:g:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_g: Vec<&str> = json["expected"]["g"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(g.len(), expected_g.len());
+    for h in expected_g {
+        assert!(g.contains(&h), "missing G member {}", h);
+    }
+    let ig = json["expected"]["intermediate_g_size"].as_u64().unwrap();
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "prune" && t.detail.contains(&format!("|G|={}", ig))),
+        "intermediate |G|={} must appear in trace",
+        ig
+    );
+}
+
+/// Konieczny & Pino Pérez 2002: Σ (majoritarian) vs GMax (egalitarian).
+#[test]
+fn belief_merging_paper_grounded() {
+    let (input, json) = p2_load("belief_merging");
+    let out_sum = dispatch::dispatch_breed("belief_merging", &input).expect("Σ paper run");
+    let sum_models: Vec<&str> = out_sum
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("bm:model:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_sum: Vec<&str> = json["expected"]["sum_models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(sum_models, expected_sum);
+
+    let input_gmax: BreedInput = serde_json::from_value(json["input_gmax"].clone()).unwrap();
+    let out_gmax = dispatch::dispatch_breed("belief_merging", &input_gmax).expect("GMax paper run");
+    let gmax_models: Vec<&str> = out_gmax
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("bm:model:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_gmax: Vec<&str> = json["expected"]["gmax_models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(gmax_models.len(), expected_gmax.len());
+    for m in expected_gmax {
+        assert!(gmax_models.contains(&m), "missing GMax model {}", m);
+    }
+    assert_ne!(sum_models, gmax_models, "Σ and GMax must disagree on this profile");
+}
+
+/// de Kleer & Brown 1984: pressure-regulator valve ambiguity — 3 states.
+#[test]
+fn qualitative_reason_paper_grounded() {
+    let (input, json) = p2_load("qualitative_reason");
+    let out = dispatch::dispatch_breed("qualitative_reason", &input).expect("QR paper run");
+    assert_eq!(
+        p2_fact_value(&out, "qr:state_count"),
+        json["expected"]["state_count"].as_str().unwrap()
+    );
+    for q in json["expected"]["q_values"].as_array().unwrap() {
+        let glyph = q.as_str().unwrap();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key.starts_with("qr:state:") && f.value.contains(&format!("q:{}", glyph))),
+            "missing q={} branch",
+            glyph
+        );
+    }
+    for kind in json["expected"]["required_trace_kinds"].as_array().unwrap() {
+        let k = kind.as_str().unwrap();
+        assert!(out.inference_trace.iter().any(|t| t.kind == k), "missing '{}'", k);
+    }
+}
+
+/// Schank & Abelson 1977: restaurant story — eating scene inferred for John.
+#[test]
+fn script_sam_paper_grounded() {
+    let (input, json) = p2_load("script_sam");
+    let out = dispatch::dispatch_breed("script_sam", &input).expect("SAM paper run");
+    assert_eq!(
+        p2_fact_value(&out, "sam:script"),
+        json["expected"]["script"].as_str().unwrap()
+    );
+    for (key, val) in json["expected"]["inferred"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+    assert_eq!(
+        p2_fact_value(&out, "sam:inferred_count"),
+        json["expected"]["inferred_count"].as_str().unwrap()
+    );
+    for (key, val) in json["expected"]["role"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+}
+
+/// Jaffar & Lassez 1987: CLP scheme — propagation alone solves, zero backtracks.
+#[test]
+fn clp_paper_grounded() {
+    let (input, json) = p2_load("clp");
+    let out = dispatch::dispatch_breed("clp", &input).expect("CLP paper run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["solution"].as_str().unwrap())
+    );
+    assert_eq!(
+        p2_fact_value(&out, "clp:backtracks"),
+        json["expected"]["backtracks"].as_str().unwrap()
+    );
 }

@@ -1957,3 +1957,363 @@ fn ebl_hidden_learned_rule_transfers_to_fresh_objects() {
         .iter()
         .any(|t| t.kind == "ebl-explain" && t.detail.contains("learned")));
 }
+
+// ===========================================================================
+// P2 tier — hidden oracle challenges (12 breeds).
+//
+// Inputs use fresh names appearing in no paper fixture or module unit test
+// (defeats A1 lookup tables and A2 memoization); every test asserts a
+// non-empty inference trace (A3 stub adversary). All runs route through
+// breeds::dispatch::dispatch_breed, so the OCEL conformance gate applies.
+// ===========================================================================
+
+use wasm4pm_cognition::breeds::dispatch::dispatch_breed as p2_dispatch;
+
+fn p2_assert_real_trace(out: &wasm4pm_cognition::breeds::BreedOutput) {
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: empty trace is a fraud signal"
+    );
+}
+
+fn p2_fv<'a>(out: &'a wasm4pm_cognition::breeds::BreedOutput, key: &str) -> &'a str {
+    out.facts
+        .iter()
+        .find(|f| f.key == key)
+        .map(|f| f.value.as_str())
+        .unwrap_or_else(|| panic!("missing fact '{}'", key))
+}
+
+/// Hidden-ASP-1: even loop {gleep :- not snork; snork :- not gleep} → exactly
+/// 2 answer sets; odd loop {florp :- not florp} → exactly 0. Hand-derived
+/// from the Gelfond–Lifschitz reduct definition.
+#[test]
+fn asp_hidden_even_and_odd_loops() {
+    let mut input = base("hidden asp even loop");
+    input.rules = vec![
+        rule("h1", vec!["not snork"], "gleep", 1.0),
+        rule("h2", vec!["not gleep"], "snork", 1.0),
+    ];
+    let out = p2_dispatch("asp", &input).expect("even loop run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "asp:answer_set_count"), "2");
+    assert_eq!(p2_fv(&out, "asp:answer_set:0"), "gleep");
+    assert_eq!(p2_fv(&out, "asp:answer_set:1"), "snork");
+
+    let mut odd = base("hidden asp odd loop");
+    odd.rules = vec![rule("h3", vec!["not florp"], "florp", 1.0)];
+    let out_odd = p2_dispatch("asp", &odd).expect("odd loop run");
+    p2_assert_real_trace(&out_odd);
+    assert_eq!(p2_fv(&out_odd, "asp:answer_set_count"), "0");
+    assert!(out_odd.selected.is_none());
+}
+
+/// Hidden-ASP-2: non-monotonic retraction — adding wug_abnormal removes
+/// wug_flies from the unique answer set.
+#[test]
+fn asp_hidden_nonmonotonic_retraction() {
+    let mut input = base("hidden asp retraction");
+    input.rules = vec![
+        rule("hf", vec![], "wug", 1.0),
+        rule("hr", vec!["wug", "not wug_abnormal"], "wug_flies", 1.0),
+    ];
+    let out = p2_dispatch("asp", &input).expect("base run");
+    assert_eq!(p2_fv(&out, "asp:answer_set:0"), "wug,wug_flies");
+
+    input.rules.push(rule("ha", vec![], "wug_abnormal", 1.0));
+    let out2 = p2_dispatch("asp", &input).expect("abnormal run");
+    p2_assert_real_trace(&out2);
+    assert_eq!(p2_fv(&out2, "asp:answer_set:0"), "wug,wug_abnormal");
+}
+
+/// Hidden-DL-1: subsumption derivable only through the role chain
+/// Quib ⊑ ∃zap.Vrul, Vrul ⊑ Hode, ∃zap.Hode ⊑ Plon (CR3 then CR4);
+/// precision: the reverse direction must NOT be derived.
+#[test]
+fn description_logic_hidden_role_chain() {
+    let mut input = base("hidden dl role chain");
+    input.facts = vec![
+        fact("dl:exists_rhs:Quib", "zap.Vrul"),
+        fact("dl:subclass:Vrul", "Hode"),
+        fact("dl:exists_lhs:zap.Hode", "Plon"),
+    ];
+    input.goals = vec![
+        goal("q1", "dl:subsumes", "Quib:Plon"),
+        goal("q2", "dl:subsumes", "Plon:Quib"),
+    ];
+    let out = p2_dispatch("description_logic", &input).expect("DL hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "dl:verdict:Quib:Plon"), "true");
+    assert_eq!(p2_fv(&out, "dl:verdict:Plon:Quib"), "false");
+    assert!(out.inference_trace.iter().any(|t| t.kind == "apply-cr3"));
+    assert!(out.inference_trace.iter().any(|t| t.kind == "apply-cr4"));
+}
+
+/// Hidden-ALP-1: IC (brill ∧ glorp impossible) rejects the lexicographically
+/// first singleton; the correct minimal explanation is {snag}. Supersets of
+/// accepted sets are excluded by minimality.
+#[test]
+fn abductive_lp_hidden_ic_and_minimality() {
+    let mut input = base("hidden alp ic");
+    input.facts = vec![
+        fact("alp:abducible:brill", "true"),
+        fact("alp:abducible:snag", "true"),
+        fact("alp:ic:nogood", "brill,glorp"),
+    ];
+    input.rules = vec![
+        rule("hr1", vec!["brill"], "glorp", 1.0),
+        rule("hr2", vec!["snag"], "glorp", 1.0),
+    ];
+    input.goals = vec![goal("o1", "alp:observe", "glorp")];
+    let out = p2_dispatch("abductive_lp", &input).expect("ALP hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "alp:explanation_count"), "1");
+    assert_eq!(p2_fv(&out, "alp:explanation:0"), "{snag}");
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "ic-check" && t.detail.contains("violated")));
+}
+
+/// Hidden-IBE-1: closed-form arithmetic — omni covers 3 obs at cost 25
+/// (3 − 2.5 = 0.5); thrift covers 2 at cost 2 (2 − 0.2 = 1.8). The cheaper
+/// partial hypothesis wins; exact scores asserted in trace details.
+#[test]
+fn abductive_ibe_hidden_score_arithmetic() {
+    let mut input = base("hidden ibe scores");
+    input.facts = vec![
+        fact("ibe:obs:k1", "true"),
+        fact("ibe:obs:k2", "true"),
+        fact("ibe:obs:k3", "true"),
+        fact("ibe:hyp:omni:covers", "k1,k2,k3"),
+        fact("ibe:hyp:omni:cost", "25"),
+        fact("ibe:hyp:thrift:covers", "k1,k2"),
+        fact("ibe:hyp:thrift:cost", "2"),
+    ];
+    let out = p2_dispatch("abductive_ibe", &input).expect("IBE hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(out.selected.as_deref(), Some("thrift"));
+    assert_eq!(p2_fv(&out, "ibe:score"), "1.8000");
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "score-hypothesis" && t.detail == "omni score=0.5000"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "score-hypothesis" && t.detail == "thrift score=1.8000"));
+}
+
+/// Hidden-POP-1: demotion would order the clobberer before Start, so
+/// promotion is forced: krel (deletes w) must come after zonk (needs w).
+#[test]
+fn partial_order_plan_hidden_promotion_forced() {
+    let mut input = base("hidden pop promotion");
+    input.facts = vec![
+        fact("pop:op:zonk:pre", "w"),
+        fact("pop:op:zonk:add", "t2"),
+        fact("pop:op:krel:add", "t1"),
+        fact("pop:op:krel:del", "w"),
+    ];
+    input.state = vec![state_atom("w", "true")];
+    input.goals = vec![goal("g1", "t1", "true"), goal("g2", "t2", "true")];
+    let out = p2_dispatch("partial_order_plan", &input).expect("POP hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "pop:plan"), "zonk;krel");
+    assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
+    assert!(out.inference_trace.iter().any(|t| t.kind == "promote"));
+}
+
+/// Hidden-EC-1: glow flicked on@2, off@5, on@7 — HoldsAt(glow,4)=T by
+/// inertia, HoldsAt(glow,6)=F (clipped), HoldsAt(glow,9)=T (re-initiated).
+#[test]
+fn event_calculus_hidden_inertia_clipping() {
+    let mut input = base("hidden ec lamp");
+    input.facts = vec![
+        fact("ec:happens:2", "flick_on"),
+        fact("ec:happens:5", "flick_off"),
+        fact("ec:happens:7", "flick_on"),
+        fact("ec:initiates:flick_on", "glow"),
+        fact("ec:terminates:flick_off", "glow"),
+    ];
+    input.goals = vec![
+        goal("q1", "ec:holdsat", "glow@4"),
+        goal("q2", "ec:holdsat", "glow@6"),
+        goal("q3", "ec:holdsat", "glow@9"),
+    ];
+    let out = p2_dispatch("event_calculus", &input).expect("EC hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "ec:verdict:glow@4"), "true");
+    assert_eq!(p2_fv(&out, "ec:verdict:glow@6"), "false");
+    assert_eq!(p2_fv(&out, "ec:verdict:glow@9"), "true");
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "clipped-check" && t.detail.contains("true")));
+}
+
+/// Hidden-MDP-1: self-loop den with R=1, γ=0.5 → V = R/(1−γ) = 2 exactly;
+/// Bellman residual < 1e-4 at every state of a second two-action model.
+#[test]
+fn mdp_hidden_closed_form_and_residual() {
+    let mut input = base("hidden mdp den");
+    input.facts = vec![
+        fact("mdp:gamma", "0.5"),
+        fact("mdp:trans:den:rest", "den:1.0"),
+        fact("mdp:reward:den:rest", "1.0"),
+    ];
+    let out = p2_dispatch("mdp", &input).expect("MDP hidden run");
+    p2_assert_real_trace(&out);
+    let v: f64 = p2_fv(&out, "mdp:value:den").parse().unwrap();
+    assert!((v - 2.0).abs() < 1e-4, "V(den) = {} != 2", v);
+
+    // Two-state choice model: hand-derived V(burrow)=max(0.2/(1-0.5)=0.4, 0+0.5*3)=1.5? no:
+    // V(field)=3/(1-0.5*0)? field: dig→field r=0 self? Use: field self-loop r=1.5 → V=3;
+    // burrow: stay r=0.2 → 0.2+0.5V(burrow)=0.4; hop→field r=0 → 0+0.5*3=1.5 → V(burrow)=1.5, policy hop.
+    let mut input2 = base("hidden mdp residual");
+    input2.facts = vec![
+        fact("mdp:gamma", "0.5"),
+        fact("mdp:trans:burrow:hop", "field:1.0"),
+        fact("mdp:trans:burrow:stay", "burrow:1.0"),
+        fact("mdp:reward:burrow:stay", "0.2"),
+        fact("mdp:trans:field:graze", "field:1.0"),
+        fact("mdp:reward:field:graze", "1.5"),
+    ];
+    let out2 = p2_dispatch("mdp", &input2).expect("MDP residual run");
+    let vb: f64 = p2_fv(&out2, "mdp:value:burrow").parse().unwrap();
+    let vf: f64 = p2_fv(&out2, "mdp:value:field").parse().unwrap();
+    assert!((vf - 3.0).abs() < 1e-4, "V(field) = {} != 3", vf);
+    assert!((vb - 1.5).abs() < 1e-4, "V(burrow) = {} != 1.5", vb);
+    // Bellman residual check at every state.
+    assert!(((1.5 + 0.5 * vf) - vf).abs() < 1e-4);
+    assert!((f64::max(0.2 + 0.5 * vb, 0.5 * vf) - vb).abs() < 1e-4);
+    assert_eq!(p2_fv(&out2, "mdp:policy:burrow"), "hop");
+}
+
+/// Hidden-VS-1: novel texture/weight/hue domain — intermediate |G| = 2 after
+/// the first negative, then exact convergence S == G == <?,heavy,?>.
+#[test]
+fn version_space_hidden_convergence() {
+    let mut input = base("hidden vs convergence");
+    input.facts = vec![
+        fact("vs:attrs", "texture,weight,hue"),
+        fact("vs:example:1", "fuzzy,heavy,crimson:+"),
+        fact("vs:example:2", "smooth,light,crimson:-"),
+        fact("vs:example:3", "fuzzy,heavy,teal:+"),
+        fact("vs:example:4", "fuzzy,light,teal:-"),
+        fact("vs:example:5", "smooth,heavy,amber:+"),
+    ];
+    let out = p2_dispatch("version_space", &input).expect("VS hidden run");
+    p2_assert_real_trace(&out);
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "prune" && t.detail.contains("|G|=2")),
+        "intermediate |G|=2 must appear"
+    );
+    assert_eq!(p2_fv(&out, "vs:converged"), "true");
+    assert_eq!(p2_fv(&out, "vs:s"), "?,heavy,?");
+    assert_eq!(p2_fv(&out, "vs:g:0"), "?,heavy,?");
+}
+
+/// Hidden-BM-1: the majority opinion (u∧v ×2) is excluded by IC ¬u; the
+/// merged belief is the minimal-distance IC-world (¬u,v) with hand-computed
+/// distance vector (1,1,1).
+#[test]
+fn belief_merging_hidden_ic_overrides_majority() {
+    let mut input = base("hidden bm ic");
+    input.facts = vec![
+        fact("bm:atoms", "u,v"),
+        fact("bm:base:1", "u,v"),
+        fact("bm:base:2", "u,v"),
+        fact("bm:base:3", "-u,-v"),
+        fact("bm:ic", "-u"),
+        fact("bm:operator", "sum"),
+    ];
+    let out = p2_dispatch("belief_merging", &input).expect("BM hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "bm:model_count"), "1");
+    assert_eq!(p2_fv(&out, "bm:model:0"), "-u,v");
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "distance" && t.detail.contains("d=(1,1,1)")));
+}
+
+/// Hidden-QR-1: bathtub variant flin/flout/dvol — the ambiguous + ⊕ −
+/// confluence must yield ALL THREE dvol branches (state-count assert), with
+/// the dvol=0 quasi-equilibrium branch present.
+#[test]
+fn qualitative_reason_hidden_ambiguity_branches() {
+    let mut input = base("hidden qr bathtub");
+    input.facts = vec![
+        fact("qr:confluence:tub", "+flin,-flout,-dvol"),
+        fact("qr:sign:flin", "+"),
+        fact("qr:sign:flout", "+"),
+    ];
+    let out = p2_dispatch("qualitative_reason", &input).expect("QR hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "qr:state_count"), "3");
+    assert!(out.inference_trace.iter().any(|t| t.kind == "branch-ambiguity"));
+    for glyph in ["+", "0", "-"] {
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key.starts_with("qr:state:")
+                    && f.value.contains(&format!("dvol:{}", glyph))),
+            "missing dvol={} branch",
+            glyph
+        );
+    }
+}
+
+/// Hidden-SAM-1: airport story observing only checkin + fly infers exactly
+/// {security, board} with the bound filler — and NOT land (bounded inference).
+#[test]
+fn script_sam_hidden_bounded_inference() {
+    let mut input = base("hidden sam airport");
+    input.facts = vec![
+        fact("sam:event:1", "checkin:nia"),
+        fact("sam:event:2", "fly:nia"),
+    ];
+    let out = p2_dispatch("script_sam", &input).expect("SAM hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(p2_fv(&out, "sam:script"), "airport");
+    let inferred: Vec<&str> = out
+        .facts
+        .iter()
+        .filter_map(|f| f.key.strip_prefix("sam:inferred:"))
+        .collect();
+    assert_eq!(inferred, vec!["security", "board"]);
+    assert!(!inferred.contains(&"land"), "land must NOT be inferred");
+    assert_eq!(p2_fv(&out, "sam:inferred:security"), "nia");
+    assert_eq!(p2_fv(&out, "sam:role:passenger"), "nia");
+}
+
+/// Hidden-CLP-1: p<q<r≤3 over 1..5 — propagation alone forces p=1,q=2,r=3
+/// with ZERO backtrack steps; exact domain reductions appear in the trace.
+#[test]
+fn clp_hidden_propagation_only() {
+    let mut input = base("hidden clp chain");
+    input.facts = vec![
+        fact("clp:var:p", "1..5"),
+        fact("clp:var:q", "1..5"),
+        fact("clp:var:r", "1..5"),
+        fact("clp:constraint:c1", "p<q"),
+        fact("clp:constraint:c2", "q<r"),
+        fact("clp:constraint:c3", "r<=3"),
+    ];
+    let out = p2_dispatch("clp", &input).expect("CLP hidden run");
+    p2_assert_real_trace(&out);
+    assert_eq!(out.selected.as_deref(), Some("p=1,q=2,r=3"));
+    assert_eq!(p2_fv(&out, "clp:backtracks"), "0");
+    assert!(out.inference_trace.iter().all(|t| t.kind != "backtrack"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "propagate" && t.detail == "r: {3,4,5} -> {3}"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "propagate" && t.detail.starts_with("p:") && t.detail.ends_with("{1}")));
+}

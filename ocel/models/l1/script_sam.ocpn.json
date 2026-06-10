@@ -1,0 +1,37 @@
+{
+  "model_id": "script_sam-l1-v1",
+  "model_level": "L1",
+  "breed_id": "script_sam",
+  "object_types": ["script", "scene", "role"],
+  "places": [
+    {"id": "p1", "name": "story_raw",       "object_type": "script"},
+    {"id": "p2", "name": "script_selected", "object_type": "script"},
+    {"id": "p3", "name": "scene_aligned",   "object_type": "scene"},
+    {"id": "p4", "name": "gaps_inferred",   "object_type": "scene"},
+    {"id": "p5", "name": "summarized",      "object_type": "script"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "select_script", "label": "select-script"},
+    {"id": "t2", "name": "align_event",   "label": "align-event"},
+    {"id": "t3", "name": "bind_role",     "label": "bind-role"},
+    {"id": "t4", "name": "infer_gap",     "label": "infer-gap"},
+    {"id": "t5", "name": "summary",       "label": "summary"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}
