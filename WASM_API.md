@@ -1521,6 +1521,108 @@ wpm prolog8 replay -i <input.json>    # Verify a receipt (detect tampering)
 | Integration | 11 | Passing |
 | **Total** | **78** | **All passing** |
 
+## Admission Gate — Accept(x) = C1∧…∧C7 (wasm4pm/src/admission.rs)
+
+Implements the 7-conjunct enterprise change admissibility predicate.
+
+### `wasm_admit_change(candidate_json_str, ledger_path, policy_path, boundary_map_path, revocation_path) → string`
+
+Evaluates a candidate change against all 7 conjuncts using **file paths** (native/server use).
+
+**Input:** JSON string of candidate change object with fields:
+- `actor: string` — identity of the change initiator
+- `event_type: string` — type of transition being requested
+- `state: string` — current process state
+- `objects: [{id, type}]` — OCEL 2.0 object references (non-empty)
+- `challenge_nonce: string` — 32-hex-char nonce from `wasm_mint_challenge_nonce`
+- `receipt: {receipt_hash: string, previous_receipt_hash: string}` — chain links
+- `signature: string` (64 hex) — ed25519 signature over canonical hash
+- `signer_pubkey: string` (32 hex) — corresponding verifying key
+
+**Returns:** `AdmissionResult` JSON:
+```json
+{ "admitted": true, "failing_conjunct": null, "refusal_code": null, "receipt_hash": "abc123..." }
+{ "admitted": false, "failing_conjunct": "C3", "refusal_code": "PolicyDenied", "receipt_hash": null }
+```
+
+**Conjunct evaluation order:** C2 → C3 → C4 → C5 → C6 → C7 → C1  
+(C1/signature is last so each other conjunct can be isolated in tests without a valid keypair)
+
+### `wasm_admit_change_inline(candidate_json_str, ledger_contents, policy_contents, boundary_contents, revoked_contents) → string`
+
+Same as above but accepts **config as inline strings** instead of file paths. Required for Node.js WASM (filesystem not accessible in wasm32-unknown-unknown sandbox). The Node.js caller reads files and passes contents.
+
+```typescript
+const result = JSON.parse(wasm.wasm_admit_change_inline(
+  candidateJson,
+  readFileSync('.wasm4pm/nonces/consumed.jsonl', 'utf8'),
+  readFileSync('.wasm4pm/policy.json', 'utf8'),
+  readFileSync('.wasm4pm/boundary-map.json', 'utf8'),
+  readFileSync('.wasm4pm/revoked-validators.json', 'utf8'),
+));
+```
+
+### `wasm_mint_challenge_nonce() → string`
+
+Generates a 32-hex-char (128-bit) challenge nonce via fastrand. **Not deterministic** — excluded from output-hash computation. Call before constructing a candidate; include result as `challenge_nonce` in the candidate and sign over it.
+
+### `wasm_verify_receipt_chain(receipts_dir) → string`
+
+Walks a directory of `.json` receipt files, orders them by `previous_receipt_hash` chain links from the genesis entry, and verifies each `BLAKE3(prior_receipt_body) == prior_receipt_hash`.
+
+**Returns:** `{"ok": true, "chain_length": 5}` or `{"ok": false, "error": "Chain broken at position 2: expected abc..., got def..."}`
+
+### Config file formats
+
+**`.wasm4pm/policy.json`**
+```json
+{
+  "version": "1.0",
+  "policy_hash": "<blake3-hex>",
+  "grants": [
+    { "actor_pattern": "*", "event_types": ["*"] },
+    { "actor_pattern": "finance-team", "event_types": ["approve", "pay"] }
+  ]
+}
+```
+
+**`.wasm4pm/boundary-map.json`**
+```json
+{
+  "transitions": {
+    "idle":      ["start"],
+    "running":   ["complete", "fail", "pause"],
+    "paused":    ["resume", "fail"],
+    "completed": [],
+    "failed":    ["retry"]
+  }
+}
+```
+
+**`.wasm4pm/nonces/consumed.jsonl`** — append-only, one JSON object per line:
+```
+{"nonce":"aabbcc..."}
+{"nonce":"ddeeff..."}
+```
+
+**`.wasm4pm/revoked-validators.json`** — JSON array of revoked version strings:
+```json
+["26.1.1", "26.2.3"]
+```
+
+### Refusal codes
+
+| Conjunct | Code | Meaning |
+|---|---|---|
+| C1 | `SignatureMissing` | No signature field present |
+| C1 | `SignatureInvalid` | ed25519 verification failed |
+| C2 | `ReceiptChainIncomplete` | `receipt_hash` or `previous_receipt_hash` null/absent |
+| C3 | `PolicyDenied` | Actor+event_type not covered by any grant |
+| C4 | `ValidatorRevoked` | Current validator version is in revocation list |
+| C5 | `NonceConsumed` | Nonce already in consumed ledger (replay attempt) |
+| C6 | `BoundaryDenied` | `B(state, event_type) = 0` — transition not admitted |
+| C7 | `ObjectsEmpty` | Objects array absent or empty |
+
 ## Serialization Notes
 
 - All `Result<JsValue, JsValue>` returns use `serde_json::to_string()` + `JsValue::from_str()` — NOT `serde_wasm_bindgen` (known bug with `json!()` macro)
