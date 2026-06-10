@@ -2910,3 +2910,480 @@ fn naive_physics_hidden_tower_exact_closure() {
         "spill must name ax-liquid-spill"
     );
 }
+
+// ===========================================================================
+// TABLEAUX hidden challenge tests
+// ===========================================================================
+
+/// Hidden-TABLEAUX-1: fresh-name K instance `zorp -> (wibble -> zorp)` is
+/// valid and its proof must be alpha-only (ZERO beta-expand steps) — the
+/// structural fingerprint a lookup table or stub cannot reproduce.
+#[test]
+fn tableaux_hidden_k_instance_alpha_only() {
+    let mut input = base("prove fresh K instance");
+    input.facts = vec![fact("tableaux:formula", "zorp -> (wibble -> zorp)")];
+    let out = dispatch_breed_test("tableaux", &input).expect("must prove");
+    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert_eq!(out.selected.as_deref(), Some("valid"));
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "beta-expand").count(),
+        0,
+        "K instance must close without branching"
+    );
+}
+
+/// Hidden-TABLEAUX-2: `zorp -> wibble` is invalid; the emitted countermodel
+/// is verified by an INDEPENDENT evaluator inside this test (recursive truth
+/// evaluation over the countermodel valuation — not the breed's code path).
+#[test]
+fn tableaux_hidden_countermodel_independently_verified() {
+    use std::collections::BTreeMap;
+    use wasm4pm_cognition::breeds::support::formula::Formula;
+
+    /// Independent propositional evaluator (test-local, not breed code).
+    fn eval(f: &Formula, v: &BTreeMap<String, bool>) -> bool {
+        match f {
+            Formula::True => true,
+            Formula::False => false,
+            Formula::Atom(a) => *v.get(a).unwrap_or(&false),
+            Formula::Not(a) => !eval(a, v),
+            Formula::And(a, b) => eval(a, v) && eval(b, v),
+            Formula::Or(a, b) => eval(a, v) || eval(b, v),
+            Formula::Implies(a, b) => !eval(a, v) || eval(b, v),
+            _ => panic!("non-propositional operator in countermodel check"),
+        }
+    }
+
+    let src = "zorp -> wibble";
+    let mut input = base("refute fresh implication");
+    input.facts = vec![fact("tableaux:formula", src)];
+    let out = dispatch_breed_test("tableaux", &input).expect("must run");
+    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert_eq!(out.selected.as_deref(), Some("invalid"));
+
+    let mut valuation: BTreeMap<String, bool> = BTreeMap::new();
+    for f in &out.facts {
+        if let Some(atom) = f.key.strip_prefix("tableaux:countermodel:") {
+            valuation.insert(atom.to_string(), f.value == "true");
+        }
+    }
+    assert!(!valuation.is_empty(), "countermodel facts required for invalid verdict");
+    let formula = Formula::parse(src).expect("parse");
+    assert!(
+        !eval(&formula, &valuation),
+        "independent evaluator: countermodel must falsify the formula"
+    );
+}
+
+// ===========================================================================
+// CONSTRUCTION-GRAMMAR hidden challenge tests
+// ===========================================================================
+
+fn sneeze_facts() -> Vec<wasm4pm_cognition::breeds::Fact> {
+    vec![
+        fact("cxg:utterance", "he sneezed the napkin off the table"),
+        fact("lex:he:pos", "pron"),
+        fact("lex:sneezed:pos", "verb"),
+        fact("lex:sneezed:valence", "intransitive"),
+        fact("lex:the:pos", "det"),
+        fact("lex:napkin:pos", "noun"),
+        fact("lex:off:pos", "prep"),
+        fact("lex:table:pos", "noun"),
+    ]
+}
+
+/// Hidden-CXG-1 (Goldberg's signature): "sneezed the napkin off the table"
+/// must receive the caused-motion meaning even though 'sneeze' is lexically
+/// intransitive — the meaning CANNOT come from the verb's lexicon entry.
+#[test]
+fn construction_grammar_hidden_sneeze_coercion() {
+    let mut input = base("goldberg sneeze");
+    input.facts = sneeze_facts();
+    let out = dispatch_breed_test("construction_grammar", &input).expect("must parse");
+    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert_eq!(out.selected.as_deref(), Some("caused-motion"));
+    let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
+    assert!(meaning.value.starts_with("CAUSE-MOVE"), "meaning: {}", meaning.value);
+    let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
+    assert_eq!(coerced.value, "true", "intransitive verb must be coerced by the construction");
+    let obl = out.facts.iter().find(|f| f.key == "cxg:slot:obl").unwrap();
+    assert_eq!(obl.value, "off the table");
+}
+
+/// Hidden-CXG-2: removing the oblique chunk changes the matched construction
+/// (caused-motion → transitive) — proves matching is structural, not memoized.
+#[test]
+fn construction_grammar_hidden_removing_oblique_changes_match() {
+    let mut input = base("goldberg sneeze truncated");
+    input.facts = sneeze_facts();
+    input.facts[0] = fact("cxg:utterance", "he sneezed the napkin");
+    let out = dispatch_breed_test("construction_grammar", &input).expect("must parse");
+    assert_eq!(out.selected.as_deref(), Some("transitive"));
+    let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
+    assert!(meaning.value.starts_with("ACT-ON"));
+}
+
+// ===========================================================================
+// MARKOV-LOGIC hidden challenge tests
+// ===========================================================================
+
+/// Hidden-MLN-1: fresh-name weighted clauses; the test EXHAUSTIVELY
+/// enumerates all 2^k assignments (k=3) with its own evaluator and asserts
+/// the breed's `mln:cost` equals the exhaustive optimum. Also asserts the
+/// double run is bit-identical (seeded SmallRng determinism).
+#[test]
+fn markov_logic_hidden_exhaustive_optimum_and_determinism() {
+    // (atom, positive) literals per clause + weight; fresh atom names.
+    let clauses: Vec<(f64, Vec<(&str, bool)>)> = vec![
+        (2.5, vec![("grompf", false), ("zibble", true)]),
+        (1.2, vec![("grompf", true), ("zibble", true)]),
+        (0.7, vec![("zibble", false), ("quorx", false)]),
+        (1.9, vec![("quorx", true), ("grompf", true)]),
+    ];
+    let atoms = ["grompf", "quorx", "zibble"];
+
+    // Exhaustive 2^3 optimum (test-local evaluator).
+    let mut optimum = f64::INFINITY;
+    for mask in 0..(1u32 << atoms.len()) {
+        let val = |a: &str| -> bool {
+            let i = atoms.iter().position(|x| *x == a).unwrap();
+            mask & (1 << i) != 0
+        };
+        let cost: f64 = clauses
+            .iter()
+            .filter(|(_, lits)| !lits.iter().any(|(a, pos)| val(a) == *pos))
+            .map(|(w, _)| *w)
+            .sum();
+        if cost < optimum {
+            optimum = cost;
+        }
+    }
+
+    let mut input = base("fresh MLN MAP");
+    input.facts = vec![
+        fact("mln:clause:h1", "2.5|!grompf,zibble"),
+        fact("mln:clause:h2", "1.2|grompf,zibble"),
+        fact("mln:clause:h3", "0.7|!zibble,!quorx"),
+        fact("mln:clause:h4", "1.9|quorx,grompf"),
+    ];
+    let out1 = dispatch_breed_test("markov_logic", &input).expect("run 1");
+    let out2 = dispatch_breed_test("markov_logic", &input).expect("run 2");
+    assert!(!out1.inference_trace.is_empty(), "A3: non-empty trace required");
+
+    let cost_fact = out1.facts.iter().find(|f| f.key == "mln:cost").unwrap();
+    let breed_cost: f64 = cost_fact.value.parse().unwrap();
+    assert!(
+        (breed_cost - optimum).abs() < 1e-9,
+        "MaxWalkSAT cost {} must equal exhaustive optimum {}",
+        breed_cost,
+        optimum
+    );
+
+    // Bit-identical double run.
+    assert_eq!(
+        serde_json::to_string(&out1).unwrap(),
+        serde_json::to_string(&out2).unwrap(),
+        "seeded MaxWalkSAT must be bit-identical across runs"
+    );
+}
+
+/// Hidden-MLN-2: evidence clamping changes the optimum (the clamped optimum
+/// differs from the free optimum), hand-derived.
+#[test]
+fn markov_logic_hidden_evidence_clamp_changes_optimum() {
+    let mut input = base("clamped MLN");
+    input.facts = vec![
+        // free optimum: flim=true satisfies both → cost 0
+        fact("mln:clause:e1", "3.0|flim"),
+        fact("mln:clause:e2", "1.5|flim,blee"),
+        fact("evidence:flim", "false"),
+    ];
+    let out = dispatch_breed_test("markov_logic", &input).expect("run ok");
+    // flim clamped false: e1 (weight 3.0) is unsatisfiable; e2 satisfied via blee.
+    let cost = out.facts.iter().find(|f| f.key == "mln:cost").unwrap();
+    assert_eq!(cost.value, "3.000000");
+    let blee = out.facts.iter().find(|f| f.key == "mln:atom:blee").unwrap();
+    assert_eq!(blee.value, "true");
+}
+
+// ===========================================================================
+// POMDP hidden challenge tests
+// ===========================================================================
+
+fn tiger_input(steps: &[&str]) -> BreedInput {
+    let mut input = base("tiger");
+    let mut f = vec![
+        fact("pomdp:states", "tiger-left,tiger-right"),
+        fact("pomdp:actions", "listen,open-left,open-right"),
+        fact("pomdp:observations", "hear-left,hear-right"),
+        fact("pomdp:gamma", "0.95"),
+        fact("pomdp:horizon", "3"),
+        fact("pomdp:b0:tiger-left", "0.5"),
+        fact("pomdp:b0:tiger-right", "0.5"),
+        fact("pomdp:o:listen:tiger-left:hear-left", "0.85"),
+        fact("pomdp:o:listen:tiger-left:hear-right", "0.15"),
+        fact("pomdp:o:listen:tiger-right:hear-left", "0.15"),
+        fact("pomdp:o:listen:tiger-right:hear-right", "0.85"),
+    ];
+    for s in ["tiger-left", "tiger-right"] {
+        for sp in ["tiger-left", "tiger-right"] {
+            f.push(fact(
+                &format!("pomdp:t:listen:{}:{}", s, sp),
+                if s == sp { "1.0" } else { "0.0" },
+            ));
+        }
+        f.push(fact(&format!("pomdp:r:listen:{}", s), "-1.0"));
+    }
+    for a in ["open-left", "open-right"] {
+        for s in ["tiger-left", "tiger-right"] {
+            for sp in ["tiger-left", "tiger-right"] {
+                f.push(fact(&format!("pomdp:t:{}:{}:{}", a, s, sp), "0.5"));
+            }
+            for ob in ["hear-left", "hear-right"] {
+                f.push(fact(&format!("pomdp:o:{}:{}:{}", a, s, ob), "0.5"));
+            }
+        }
+    }
+    f.push(fact("pomdp:r:open-left:tiger-left", "-100.0"));
+    f.push(fact("pomdp:r:open-left:tiger-right", "10.0"));
+    f.push(fact("pomdp:r:open-right:tiger-left", "10.0"));
+    f.push(fact("pomdp:r:open-right:tiger-right", "-100.0"));
+    for (i, s) in steps.iter().enumerate() {
+        f.push(fact(&format!("pomdp:step:{}", i), s));
+    }
+    input.facts = f;
+    input
+}
+
+/// Hidden-POMDP-1: tiger posterior after one hear-left is EXACTLY 0.85
+/// (0.85·0.5 / (0.85·0.5 + 0.15·0.5)); after two hear-left it is
+/// 289/298 = 0.969799 to 6 dp (hand-derived Bayes arithmetic; the plan's
+/// 0.969697 figure is a transcription slip — see the breed doc card).
+#[test]
+fn pomdp_hidden_tiger_posteriors_exact() {
+    let out1 = dispatch_breed_test("pomdp", &tiger_input(&["listen|hear-left"])).expect("run 1");
+    assert!(!out1.inference_trace.is_empty(), "A3: non-empty trace required");
+    let b1 = out1.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    assert_eq!(b1.value, "0.850000");
+
+    let out2 = dispatch_breed_test(
+        "pomdp",
+        &tiger_input(&["listen|hear-left", "listen|hear-left"]),
+    )
+    .expect("run 2");
+    let b2 = out2.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    // 0.85²/(0.85²+0.15²) = 0.7225/0.745 = 0.96979865… → 0.969799 at 6 dp.
+    let v: f64 = b2.value.parse().unwrap();
+    assert!((v - 289.0 / 298.0).abs() < 1e-6, "got {}", v);
+    assert_eq!(b2.value, "0.969799");
+}
+
+/// Hidden-POMDP-2: tampering with the O matrix must shift the posterior —
+/// a memoized stub returning 0.85 regardless of the model is defeated.
+#[test]
+fn pomdp_hidden_tampered_o_matrix_shifts_posterior() {
+    let mut input = tiger_input(&["listen|hear-left"]);
+    for f in input.facts.iter_mut() {
+        if f.key == "pomdp:o:listen:tiger-left:hear-left" {
+            f.value = "0.6".into();
+        }
+        if f.key == "pomdp:o:listen:tiger-left:hear-right" {
+            f.value = "0.4".into();
+        }
+    }
+    let out = dispatch_breed_test("pomdp", &input).expect("run ok");
+    let b = out.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    // 0.6·0.5 / (0.6·0.5 + 0.15·0.5) = 0.8 — must differ from 0.85.
+    assert_eq!(b.value, "0.800000");
+}
+
+// ===========================================================================
+// CONTINGENT-PLANNING hidden challenge tests
+// ===========================================================================
+
+/// Test-local plan-tree replayer: parses the serialized s-expression and
+/// executes it against a single concrete world.
+mod cp_replay {
+    use std::collections::BTreeMap;
+
+    #[derive(Debug)]
+    pub enum Node {
+        Done,
+        Act(String, Box<Node>),
+        Sense(String, String, Box<Node>, Box<Node>),
+    }
+
+    pub fn parse(s: &str) -> (Node, &str) {
+        let s = s.trim_start();
+        let s = s.strip_prefix('(').expect("expected '('");
+        if let Some(rest) = s.strip_prefix("done") {
+            return (Node::Done, rest.trim_start().strip_prefix(')').unwrap());
+        }
+        if let Some(rest) = s.strip_prefix("act ") {
+            let (name, rest) = rest.split_once(' ').unwrap();
+            let (sub, rest) = parse(rest);
+            return (
+                Node::Act(name.to_string(), Box::new(sub)),
+                rest.trim_start().strip_prefix(')').unwrap(),
+            );
+        }
+        if let Some(rest) = s.strip_prefix("sense ") {
+            let (name, rest) = rest.split_once(' ').unwrap();
+            let (atom, rest) = rest.split_once(' ').unwrap();
+            let (then_n, rest) = parse(rest);
+            let (else_n, rest) = parse(rest);
+            return (
+                Node::Sense(
+                    name.to_string(),
+                    atom.to_string(),
+                    Box::new(then_n),
+                    Box::new(else_n),
+                ),
+                rest.trim_start().strip_prefix(')').unwrap(),
+            );
+        }
+        panic!("bad plan node: {}", s);
+    }
+
+    pub type World = BTreeMap<String, bool>;
+    pub type Action = (Vec<(String, bool)>, Vec<String>, Vec<String>); // pre/add/del
+
+    pub fn replay(node: &Node, world: &mut World, actions: &BTreeMap<String, Action>) {
+        match node {
+            Node::Done => {}
+            Node::Act(name, sub) => {
+                let (pre, add, del) = actions.get(name).expect("unknown action in plan");
+                for (a, v) in pre {
+                    assert_eq!(
+                        world.get(a).copied().unwrap_or(false),
+                        *v,
+                        "precondition of '{}' violated during replay",
+                        name
+                    );
+                }
+                for d in del {
+                    world.insert(d.clone(), false);
+                }
+                for a in add {
+                    world.insert(a.clone(), true);
+                }
+                replay(sub, world, actions);
+            }
+            Node::Sense(_, atom, then_n, else_n) => {
+                if world.get(atom).copied().unwrap_or(false) {
+                    replay(then_n, world, actions);
+                } else {
+                    replay(else_n, world, actions);
+                }
+            }
+        }
+    }
+}
+
+/// Hidden-CP-1: the vacuum plan must contain EXACTLY ONE Sense node, and the
+/// test REPLAYS the serialized tree against EACH possible initial world,
+/// asserting goal satisfaction in all of them.
+#[test]
+fn contingent_plan_hidden_replay_against_all_worlds() {
+    use std::collections::BTreeMap;
+
+    let mut input = base("vacuum");
+    input.facts = vec![
+        fact("cp:unknown", "dirt"),
+        fact("cp:goal:dirt", "false"),
+        fact("cp:act:suck:pre", "dirt"),
+        fact("cp:act:suck:del", "dirt"),
+        fact("cp:sense:check-dirt", "dirt"),
+    ];
+    let out = dispatch_breed_test("contingent_plan", &input).expect("must plan");
+    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    let tree = out.facts.iter().find(|f| f.key == "plan:tree").unwrap();
+    assert_eq!(tree.value.matches("(sense ").count(), 1, "exactly one Sense node");
+
+    let (plan, rest) = cp_replay::parse(&tree.value);
+    assert!(rest.trim().is_empty(), "trailing garbage in plan tree");
+
+    let mut actions: BTreeMap<String, cp_replay::Action> = BTreeMap::new();
+    actions.insert(
+        "suck".to_string(),
+        (vec![("dirt".to_string(), true)], vec![], vec!["dirt".to_string()]),
+    );
+
+    // Replay against EACH initial world: dirt=true and dirt=false.
+    for dirt in [true, false] {
+        let mut world: cp_replay::World = BTreeMap::new();
+        world.insert("dirt".to_string(), dirt);
+        cp_replay::replay(&plan, &mut world, &actions);
+        assert_eq!(
+            world.get("dirt").copied().unwrap_or(false),
+            false,
+            "goal dirt=false must hold after replay from dirt={}",
+            dirt
+        );
+    }
+}
+
+/// Hidden-CP-2: with no sensing action available, the breed must REFUSE
+/// rather than emit a linear plan valid in only some worlds.
+#[test]
+fn contingent_plan_hidden_no_sensing_refuses() {
+    let mut input = base("vacuum without sensor");
+    input.facts = vec![
+        fact("cp:unknown", "dirt"),
+        fact("cp:goal:dirt", "false"),
+        fact("cp:act:suck:pre", "dirt"),
+        fact("cp:act:suck:del", "dirt"),
+    ];
+    assert!(dispatch_breed_test("contingent_plan", &input).is_err());
+}
+
+// ===========================================================================
+// META-REASONING hidden challenge tests
+// ===========================================================================
+
+/// Hidden-META-1: an injected mycin-vs-prolog contradiction must produce a
+/// conflict-detected step NAMING BOTH breeds.
+#[test]
+fn meta_reasoning_hidden_mycin_vs_prolog_conflict_named() {
+    let mut input = base("arbitrate");
+    input.facts = vec![
+        fact("breed:mycin:conclusion", "therapy=gentamicin"),
+        fact("breed:mycin:confidence", "0.8"),
+        fact("breed:prolog:conclusion", "therapy=none"),
+        fact("breed:prolog:confidence", "0.6"),
+    ];
+    let out = dispatch_breed_test("meta_reasoning", &input).expect("must arbitrate");
+    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    let conflict = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "conflict-detected")
+        .expect("conflict-detected step required");
+    assert!(
+        conflict.detail.contains("mycin") && conflict.detail.contains("prolog"),
+        "conflict step must name both breeds: {}",
+        conflict.detail
+    );
+    assert_eq!(out.selected.as_deref(), Some("therapy=gentamicin"));
+}
+
+/// Hidden-META-2 (negative control): identical conclusions with close
+/// confidences must produce ZERO conflict steps.
+#[test]
+fn meta_reasoning_hidden_identical_conclusions_zero_conflicts() {
+    let mut input = base("agreement");
+    input.facts = vec![
+        fact("breed:mycin:conclusion", "therapy=gentamicin"),
+        fact("breed:mycin:confidence", "0.8"),
+        fact("breed:prolog:conclusion", "therapy=gentamicin"),
+        fact("breed:prolog:confidence", "0.7"),
+    ];
+    let out = dispatch_breed_test("meta_reasoning", &input).expect("must arbitrate");
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "conflict-detected").count(),
+        0,
+        "identical conclusions must not be flagged"
+    );
+    let c = out.facts.iter().find(|f| f.key == "meta:conflicts").unwrap();
+    assert_eq!(c.value, "0");
+}

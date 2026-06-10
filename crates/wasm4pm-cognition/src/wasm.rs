@@ -203,7 +203,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     // Build conformance summary — run_breed() already enforced the F7 gate,
     // so if we reach here conformance passed. Re-derive actual fitness from ocel_log.
     let conformance_summary = if let Some(ref ocel_log) = output.ocel_log {
-        if let Some(model) = crate::ocel::get_model(&input.breed) {
+        if let Some(model) = crate::ocel::lifecycle_model_for(&input.breed) {
             let ocel: crate::ocel::OcelLog = serde_json::from_value(ocel_log.clone())
                 .unwrap_or_else(|_| crate::ocel::OcelLog {
                     object_types: vec![],

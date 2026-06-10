@@ -47,6 +47,12 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "ctl_check" => Some(include_str!("../../../../ocel/models/l1/ctl_check.ocpn.json")),
         "ilp" => Some(include_str!("../../../../ocel/models/l1/ilp.ocpn.json")),
         "naive_physics" => Some(include_str!("../../../../ocel/models/l1/naive_physics.ocpn.json")),
+        "tableaux" => Some(include_str!("../../../../ocel/models/l1/tableaux.ocpn.json")),
+        "construction_grammar" => Some(include_str!("../../../../ocel/models/l1/construction_grammar.ocpn.json")),
+        "markov_logic" => Some(include_str!("../../../../ocel/models/l1/markov_logic.ocpn.json")),
+        "pomdp" => Some(include_str!("../../../../ocel/models/l1/pomdp.ocpn.json")),
+        "contingent_plan" => Some(include_str!("../../../../ocel/models/l1/contingent_plan.ocpn.json")),
+        "meta_reasoning" => Some(include_str!("../../../../ocel/models/l1/meta_reasoning.ocpn.json")),
         _ => None,
     }
 }

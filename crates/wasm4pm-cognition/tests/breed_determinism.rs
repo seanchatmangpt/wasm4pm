@@ -895,3 +895,141 @@ fn p3_breeds_bit_exact_determinism() {
         assert!(!a.inference_trace.is_empty(), "{} empty trace", breed);
     }
 }
+
+// ---------------------------------------------------------------------------
+// P4 tier determinism (bit-exact double run via serialized output compare)
+// ---------------------------------------------------------------------------
+
+fn p4_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn p4_input(facts: Vec<Fact>) -> BreedInput {
+    BreedInput {
+        intent: "determinism".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn assert_p4_deterministic(breed: &str, input: &BreedInput) {
+    let a = dispatch_breed_test(breed, input).expect("run 1");
+    let b = dispatch_breed_test(breed, input).expect("run 2");
+    assert_eq!(
+        serde_json::to_string(&a).unwrap(),
+        serde_json::to_string(&b).unwrap(),
+        "{} must be bit-exact deterministic",
+        breed
+    );
+}
+
+#[test]
+fn tableaux_deterministic() {
+    assert_p4_deterministic(
+        "tableaux",
+        &p4_input(vec![p4_fact("tableaux:formula", "((a -> b) -> a) -> a")]),
+    );
+}
+
+#[test]
+fn construction_grammar_deterministic() {
+    assert_p4_deterministic(
+        "construction_grammar",
+        &p4_input(vec![
+            p4_fact("cxg:utterance", "he sneezed the napkin off the table"),
+            p4_fact("lex:he:pos", "pron"),
+            p4_fact("lex:sneezed:pos", "verb"),
+            p4_fact("lex:sneezed:valence", "intransitive"),
+            p4_fact("lex:the:pos", "det"),
+            p4_fact("lex:napkin:pos", "noun"),
+            p4_fact("lex:off:pos", "prep"),
+            p4_fact("lex:table:pos", "noun"),
+        ]),
+    );
+}
+
+#[test]
+fn markov_logic_deterministic() {
+    assert_p4_deterministic(
+        "markov_logic",
+        &p4_input(vec![
+            p4_fact("mln:clause:d1", "1.5|!smokes_anna,cancer_anna"),
+            p4_fact("mln:clause:d2", "1.1|!friends_ab,!smokes_anna,smokes_bob"),
+            p4_fact("evidence:smokes_anna", "true"),
+            p4_fact("evidence:friends_ab", "true"),
+        ]),
+    );
+}
+
+#[test]
+fn pomdp_deterministic() {
+    let mut facts = vec![
+        p4_fact("pomdp:states", "up,down"),
+        p4_fact("pomdp:actions", "probe,commit"),
+        p4_fact("pomdp:observations", "hi,lo"),
+        p4_fact("pomdp:gamma", "0.9"),
+        p4_fact("pomdp:horizon", "3"),
+        p4_fact("pomdp:b0:up", "0.5"),
+        p4_fact("pomdp:b0:down", "0.5"),
+        p4_fact("pomdp:step:0", "probe|hi"),
+    ];
+    for s in ["up", "down"] {
+        for sp in ["up", "down"] {
+            facts.push(p4_fact(
+                &format!("pomdp:t:probe:{}:{}", s, sp),
+                if s == sp { "1.0" } else { "0.0" },
+            ));
+            facts.push(p4_fact(&format!("pomdp:t:commit:{}:{}", s, sp), "0.5"));
+        }
+        facts.push(p4_fact(&format!("pomdp:r:probe:{}", s), "-1.0"));
+        facts.push(p4_fact(
+            &format!("pomdp:o:commit:{}:hi", s),
+            "0.5",
+        ));
+        facts.push(p4_fact(
+            &format!("pomdp:o:commit:{}:lo", s),
+            "0.5",
+        ));
+    }
+    facts.push(p4_fact("pomdp:o:probe:up:hi", "0.9"));
+    facts.push(p4_fact("pomdp:o:probe:up:lo", "0.1"));
+    facts.push(p4_fact("pomdp:o:probe:down:hi", "0.1"));
+    facts.push(p4_fact("pomdp:o:probe:down:lo", "0.9"));
+    facts.push(p4_fact("pomdp:r:commit:up", "5.0"));
+    facts.push(p4_fact("pomdp:r:commit:down", "-5.0"));
+    assert_p4_deterministic("pomdp", &p4_input(facts));
+}
+
+#[test]
+fn contingent_plan_deterministic() {
+    assert_p4_deterministic(
+        "contingent_plan",
+        &p4_input(vec![
+            p4_fact("cp:unknown", "dirt"),
+            p4_fact("cp:goal:dirt", "false"),
+            p4_fact("cp:act:suck:pre", "dirt"),
+            p4_fact("cp:act:suck:del", "dirt"),
+            p4_fact("cp:sense:check-dirt", "dirt"),
+        ]),
+    );
+}
+
+#[test]
+fn meta_reasoning_deterministic() {
+    assert_p4_deterministic(
+        "meta_reasoning",
+        &p4_input(vec![
+            p4_fact("breed:mycin:conclusion", "therapy=gentamicin"),
+            p4_fact("breed:mycin:confidence", "0.8"),
+            p4_fact("breed:prolog:conclusion", "therapy=none"),
+            p4_fact("breed:prolog:confidence", "0.6"),
+        ]),
+    );
+}

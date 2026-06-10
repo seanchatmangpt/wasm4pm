@@ -17,6 +17,10 @@ pub mod asp;
 pub mod act_r;
 pub mod analogy_sme;
 pub mod autoinstinct_learning;
+/// Breed dispatch: explicit string-match routing (greppable, audit-friendly).
+pub mod dispatch;
+/// Combinator core: shared, fully-validated algebraic machinery (Stage C1).
+pub mod support;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
@@ -25,9 +29,9 @@ pub mod cbr;
 pub mod csp_ac3;
 pub mod default_logic;
 pub mod dempster_shafer;
+pub mod construction_grammar;
+pub mod contingent_plan;
 pub mod dendral;
-/// Breed dispatch (full lifecycle + test harness).
-pub mod dispatch;
 pub mod ebl;
 /// Distance-based belief merging (Konieczny & Pino Pérez 2002).
 pub mod belief_merging;
@@ -51,6 +55,9 @@ pub mod ltl_monitor;
 pub mod mdp;
 /// SNLP partial-order planning (McAllester & Rosenblitt 1991).
 pub mod partial_order_plan;
+pub mod markov_logic;
+pub mod meta_reasoning;
+pub mod pomdp;
 pub mod production_rules;
 pub mod prolog;
 /// Confluence-based qualitative reasoning (de Kleer & Brown 1984).
@@ -59,8 +66,6 @@ pub mod qualitative_reason;
 pub mod script_sam;
 pub mod soar;
 pub mod strips;
-/// Combinator core: shared proven algebraic machinery (Stage C1).
-pub mod support;
 /// Version-space candidate elimination (Mitchell 1982).
 pub mod version_space;
 pub mod ilp;
@@ -71,6 +76,7 @@ pub mod sat_cdcl;
 pub mod situation_calculus;
 
 pub use dispatch::{dispatch_breed, run_breed};
+pub mod tableaux;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -167,6 +173,18 @@ pub enum BreedId {
     Ilp,
     /// Naive physics axiom saturation (Hayes 1979/1985)
     NaivePhysics,
+    /// Tableaux: Smullyan signed analytic tableaux for propositional validity (Smullyan 1968)
+    Tableaux,
+    /// Construction Grammar: Goldberg argument-structure constructions (Goldberg 1995)
+    ConstructionGrammar,
+    /// Markov Logic: propositional MLN MAP inference via MaxWalkSAT (Richardson & Domingos 2006)
+    MarkovLogic,
+    /// POMDP: exact Bayes belief update + bounded PBVI (Kaelbling, Littman & Cassandra 1998)
+    Pomdp,
+    /// Contingent Planning: AND-OR search over belief states with sensing (Russell & Norvig, AIMA §4.3.2)
+    ContingentPlan,
+    /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
+    MetaReasoning,
 }
 
 impl fmt::Display for BreedId {
@@ -218,6 +236,12 @@ impl fmt::Display for BreedId {
             BreedId::CtlCheck => write!(f, "ctl_check"),
             BreedId::Ilp => write!(f, "ilp"),
             BreedId::NaivePhysics => write!(f, "naive_physics"),
+            BreedId::Tableaux => write!(f, "tableaux"),
+            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
+            BreedId::MarkovLogic => write!(f, "markov_logic"),
+            BreedId::Pomdp => write!(f, "pomdp"),
+            BreedId::ContingentPlan => write!(f, "contingent_plan"),
+            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
         }
     }
 }
@@ -460,7 +484,7 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
 
 impl BreedId {
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
-    pub const ALL: [BreedId; 46] = [
+    pub const ALL: [BreedId; 52] = [
         BreedId::Eliza,
         BreedId::Cbr,
         BreedId::Dendral,
@@ -507,5 +531,12 @@ impl BreedId {
         BreedId::CtlCheck,
         BreedId::Ilp,
         BreedId::NaivePhysics,
+        BreedId::Tableaux,
+        BreedId::ConstructionGrammar,
+        BreedId::MarkovLogic,
+        BreedId::Pomdp,
+        BreedId::ContingentPlan,
+        BreedId::MetaReasoning,
     ];
 }
+

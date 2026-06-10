@@ -108,6 +108,12 @@ export const BreedIdSchema = z.enum([
   'ctl_check',
   'ilp',
   'naive_physics',
+  'tableaux',
+  'construction_grammar',
+  'markov_logic',
+  'pomdp',
+  'contingent_plan',
+  'meta_reasoning',
 ]);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 

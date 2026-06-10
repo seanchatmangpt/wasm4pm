@@ -957,3 +957,125 @@ fn p3_unknown_breed_still_refused() {
     let input = p3_input("problog");
     assert!(dispatch_breed_test("problogg", &input).is_err());
 }
+
+// ---------------------------------------------------------------------------
+// P4 tier dispatch smoke tests
+// ---------------------------------------------------------------------------
+
+fn p4s_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn p4s_input(facts: Vec<Fact>) -> BreedInput {
+    BreedInput {
+        intent: "smoke".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+#[test]
+fn dispatch_tableaux_smoke() {
+    let out = dispatch_breed_test(
+        "tableaux",
+        &p4s_input(vec![p4s_fact("tableaux:formula", "a -> (b -> a)")]),
+    )
+    .expect("tableaux dispatch");
+    assert_eq!(out.breed, BreedId::Tableaux);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_construction_grammar_smoke() {
+    let out = dispatch_breed_test(
+        "construction_grammar",
+        &p4s_input(vec![
+            p4s_fact("cxg:utterance", "he sneezed the napkin off the table"),
+            p4s_fact("lex:he:pos", "pron"),
+            p4s_fact("lex:sneezed:pos", "verb"),
+            p4s_fact("lex:sneezed:valence", "intransitive"),
+            p4s_fact("lex:the:pos", "det"),
+            p4s_fact("lex:napkin:pos", "noun"),
+            p4s_fact("lex:off:pos", "prep"),
+            p4s_fact("lex:table:pos", "noun"),
+        ]),
+    )
+    .expect("construction_grammar dispatch");
+    assert_eq!(out.breed, BreedId::ConstructionGrammar);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_markov_logic_smoke() {
+    let out = dispatch_breed_test(
+        "markov_logic",
+        &p4s_input(vec![p4s_fact("mln:clause:s1", "1.0|a,b")]),
+    )
+    .expect("markov_logic dispatch");
+    assert_eq!(out.breed, BreedId::MarkovLogic);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_pomdp_smoke() {
+    let mut facts = vec![
+        p4s_fact("pomdp:states", "s1,s2"),
+        p4s_fact("pomdp:actions", "a"),
+        p4s_fact("pomdp:observations", "o1,o2"),
+        p4s_fact("pomdp:b0:s1", "0.5"),
+        p4s_fact("pomdp:b0:s2", "0.5"),
+    ];
+    for s in ["s1", "s2"] {
+        for sp in ["s1", "s2"] {
+            facts.push(p4s_fact(
+                &format!("pomdp:t:a:{}:{}", s, sp),
+                if s == sp { "1.0" } else { "0.0" },
+            ));
+        }
+        facts.push(p4s_fact(&format!("pomdp:o:a:{}:o1", s), "0.5"));
+        facts.push(p4s_fact(&format!("pomdp:o:a:{}:o2", s), "0.5"));
+        facts.push(p4s_fact(&format!("pomdp:r:a:{}", s), "1.0"));
+    }
+    let out = dispatch_breed_test("pomdp", &p4s_input(facts)).expect("pomdp dispatch");
+    assert_eq!(out.breed, BreedId::Pomdp);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_contingent_plan_smoke() {
+    let out = dispatch_breed_test(
+        "contingent_plan",
+        &p4s_input(vec![
+            p4s_fact("cp:init:dirt", "true"),
+            p4s_fact("cp:goal:dirt", "false"),
+            p4s_fact("cp:act:suck:pre", "dirt"),
+            p4s_fact("cp:act:suck:del", "dirt"),
+        ]),
+    )
+    .expect("contingent_plan dispatch");
+    assert_eq!(out.breed, BreedId::ContingentPlan);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_meta_reasoning_smoke() {
+    let out = dispatch_breed_test(
+        "meta_reasoning",
+        &p4s_input(vec![
+            p4s_fact("breed:mycin:conclusion", "x=1"),
+            p4s_fact("breed:mycin:confidence", "0.8"),
+            p4s_fact("breed:prolog:conclusion", "x=1"),
+            p4s_fact("breed:prolog:confidence", "0.7"),
+        ]),
+    )
+    .expect("meta_reasoning dispatch");
+    assert_eq!(out.breed, BreedId::MetaReasoning);
+    assert!(!out.inference_trace.is_empty());
+}
