@@ -55,7 +55,7 @@ impl CognitionBreed for BayesianNetwork {
         let mut step_count = 0;
         
         let mut cpts = Vec::new();
-        let mut evidence = HashMap::new();
+        let mut evidence = std::collections::BTreeMap::new();
         let mut query = None;
         
         for goal in &input.goals {
@@ -131,7 +131,7 @@ impl CognitionBreed for BayesianNetwork {
             step_count += 1;
         }
         
-        let q_str = query.unwrap();
+        let q_str = query.ok_or_else(|| BreedError { breed: self.id(), message: "missing query goal (prob: or dsep:)".to_string() })?;
         let explanation;
         
         if q_str.starts_with("prob:") {

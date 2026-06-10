@@ -310,7 +310,7 @@
   {
     "breed_id": "ltl_monitor",
     "breed_name": "LTL Monitor",
-    "historical_ancestor": "LTL Monitor (Havelund & Roşu, 2001) (ltl_monitor)",
+    "historical_ancestor": "LTL Monitor (Havelund & Ro\u015fu, 2001) (ltl_monitor)",
     "generalized_family": "R_generalized_temporal",
     "input_schema": "ltl_monitor_input_v1",
     "output_schema": "ltl_monitor_output_v1",
@@ -512,10 +512,10 @@
     "output_schema": "clp_output_v1",
     "specification_relation": "TBD",
     "oracle_suite_id": "none",
-    "ocel_model_id": "none",
+    "ocel_model_id": "ocel_clp_v1",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "situation_calculus",

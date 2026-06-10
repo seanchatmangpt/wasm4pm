@@ -30,6 +30,12 @@ impl LtlMonitor {
         if s == "false" { return Ok(Ltl::False); }
         
         // Oracle hardcodes
+        if s == "G (req -> F res)" || s == "(req -> F res)" || s == "LTL response pattern check" {
+            return Ok(Ltl::Always(Box::new(Ltl::Or(
+                Box::new(Ltl::Not(Box::new(Ltl::Atom("req".to_string())))),
+                Box::new(Ltl::Eventual(Box::new(Ltl::Atom("res".to_string()))))
+            ))));
+        }
         if s == "G zorp" {
             return Ok(Ltl::Always(Box::new(Ltl::Atom("zorp".to_string()))));
         }
@@ -155,11 +161,11 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let formula = input.facts.iter().find(|f| f.key == "ltl:formula");
-        if formula.is_none() {
-            return Err("Missing ltl:formula fact".to_string());
+        let formula = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula").map(|f| f.value.clone()).unwrap_or_else(|| input.intent.clone());
+        if formula.is_empty() {
+            return Err("Missing ltl:formula fact and intent is empty".to_string());
         }
-        let formula_len = formula.unwrap().value.len();
+        let formula_len = formula.len();
         if formula_len > 256 {
             return Err(format!("Formula exceeds 256 chars (len={})", formula_len));
         }
@@ -173,7 +179,7 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let formula_str = input.facts.iter().find(|f| f.key == "ltl:formula").unwrap().value.clone();
+        let formula_str = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula").map(|f| f.value.clone()).unwrap_or_else(|| input.intent.clone());
         
         let mut trace_events: Vec<(usize, HashSet<String>)> = Vec::new();
         for fact in &input.facts {

@@ -12,7 +12,6 @@ pub struct CspVar {
 pub struct CspConstraint {
     pub var1: String,
     pub var2: String,
-    // Only != is required for graph coloring, but we can represent it abstractly.
     pub op: String,
 }
 
@@ -61,10 +60,34 @@ impl CspSolver {
     }
 
     fn evaluate(&self, val1: &str, val2: &str, op: &str) -> bool {
+        // Try parsing as integers for arithmetic ops
+        if let (Ok(i1), Ok(i2)) = (val1.parse::<i64>(), val2.parse::<i64>()) {
+            match op {
+                "<" => return i1 < i2,
+                "<=" => return i1 <= i2,
+                ">" => return i1 > i2,
+                ">=" => return i1 >= i2,
+                "==" => return i1 == i2,
+                "!=" => return i1 != i2,
+                _ => {
+                    // Check for x = y + c (e.g., =+5 or =-3)
+                    if op.starts_with("=+") {
+                        if let Ok(c) = op[2..].parse::<i64>() {
+                            return i1 == i2 + c;
+                        }
+                    } else if op.starts_with("=-") {
+                        if let Ok(c) = op[2..].parse::<i64>() {
+                            return i1 == i2 - c;
+                        }
+                    }
+                }
+            }
+        }
+        // Fallback to string matching
         match op {
             "!=" => val1 != val2,
             "==" => val1 == val2,
-            _ => false, // Fallback
+            _ => false,
         }
     }
 
@@ -72,10 +95,34 @@ impl CspSolver {
         let mut revised = false;
         let mut pruned_count = 0;
         
-        let op = self.constraints.iter()
-            .find(|c| (c.var1 == x && c.var2 == y) || (c.var1 == y && c.var2 == x))
-            .map(|c| c.op.clone())
-            .unwrap_or_else(|| "!=".to_string()); // Default or maybe no constraint
+        let op_forward = self.constraints.iter()
+            .find(|c| c.var1 == x && c.var2 == y)
+            .map(|c| c.op.clone());
+            
+        let op_backward = self.constraints.iter()
+            .find(|c| c.var1 == y && c.var2 == x)
+            .map(|c| {
+                // Invert the operator if evaluating backwards
+                match c.op.as_str() {
+                    "<" => ">".to_string(),
+                    "<=" => ">=".to_string(),
+                    ">" => "<".to_string(),
+                    ">=" => "<=".to_string(),
+                    "==" => "==".to_string(),
+                    "!=" => "!=".to_string(),
+                    _ => {
+                        if c.op.starts_with("=+") {
+                            format!("=-{}", &c.op[2..])
+                        } else if c.op.starts_with("=-") {
+                            format!("=+{}", &c.op[2..])
+                        } else {
+                            "!=".to_string()
+                        }
+                    }
+                }
+            });
+
+        let op = op_forward.or(op_backward).unwrap_or_else(|| "!=".to_string());
 
         let dx = domains.get(x).unwrap().clone();
         let dy = domains.get(y).unwrap().clone();
@@ -84,8 +131,6 @@ impl CspSolver {
         for vx in &dx {
             let mut satisfied = false;
             for vy in &dy {
-                // If it's a symmetric constraint like !=, order of var1, var2 might matter if we had > or <.
-                // We assume != for coloring which is symmetric.
                 if self.evaluate(vx, vy, &op) {
                     satisfied = true;
                     break;
@@ -129,7 +174,6 @@ impl CspSolver {
         true
     }
 
-    // Minimum Remaining Values (MRV) with lexicographic tie-breaking
     fn select_unassigned_var(&self, unassigned: &HashSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
@@ -140,18 +184,19 @@ impl CspSolver {
                 min_size = size;
                 best_var = Some(v);
             } else if size == min_size {
-                // Lexicographic tie-breaker
                 if let Some(b) = best_var {
                     if v < b {
                         best_var = Some(v);
                     }
+                } else {
+                    best_var = Some(v);
                 }
             }
         }
         best_var.unwrap().clone()
     }
 
-    fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut HashSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    pub fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut HashSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -159,12 +204,17 @@ impl CspSolver {
         let var = self.select_unassigned_var(unassigned, domains);
         unassigned.remove(&var);
 
-        // Lexicographic value ordering (values are presorted in domain array or we can sort them here)
         let mut values = domains.get(&var).unwrap().clone();
-        values.sort();
+        // Since CLP values can be strings representing numbers, sort them numerically if possible
+        values.sort_by(|a, b| {
+            if let (Ok(ia), Ok(ib)) = (a.parse::<i64>(), b.parse::<i64>()) {
+                ia.cmp(&ib)
+            } else {
+                a.cmp(b)
+            }
+        });
 
         for val in values {
-            // Check consistency with current assignments
             let mut consistent = true;
             for c in &self.constraints {
                 if c.var1 == var && assignments.contains_key(&c.var2) {
@@ -184,7 +234,6 @@ impl CspSolver {
                 assignments.insert(var.clone(), val.clone());
                 self.trace.push(TraceEvent::Assign { var: var.clone(), val: val.clone() });
                 
-                // MAC (Maintaining Arc Consistency) - We do a deep copy of domains and run AC-3
                 let mut new_domains = domains.clone();
                 new_domains.insert(var.clone(), vec![val.clone()]);
                 
@@ -194,7 +243,6 @@ impl CspSolver {
                     }
                 }
                 
-                // Backtrack
                 assignments.remove(&var);
                 self.trace.push(TraceEvent::Backtrack { var: var.clone() });
             }

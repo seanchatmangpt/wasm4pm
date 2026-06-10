@@ -1,0 +1,44 @@
+{
+  "name": "clp",
+  "places": [
+    { "id": "p0", "is_start": true, "is_end": false },
+    { "id": "p1", "is_start": false, "is_end": false },
+    { "id": "p2", "is_start": false, "is_end": false },
+    { "id": "p3", "is_start": false, "is_end": true }
+  ],
+  "transitions": [
+    { "id": "t_post", "label": "post-constraint" },
+    { "id": "t_prop1", "label": "propagate" },
+    { "id": "t_label", "label": "label" },
+    { "id": "t_prop2", "label": "propagate" },
+    { "id": "t_backtrack", "label": "backtrack" },
+    { "id": "t_solution", "label": "solution" },
+    { "id": "t_inconsistent", "label": "inconsistent" }
+  ],
+  "arcs": [
+    { "source": "p0", "target": "t_post" },
+    { "source": "t_post", "target": "p1" },
+    { "source": "p1", "target": "t_prop1" },
+    { "source": "t_prop1", "target": "p1" },
+    { "source": "p1", "target": "t_post" },
+    
+    { "source": "p1", "target": "t_label" },
+    { "source": "t_label", "target": "p2" },
+    
+    { "source": "p2", "target": "t_prop2" },
+    { "source": "t_prop2", "target": "p2" },
+    
+    { "source": "p2", "target": "t_label" },
+    { "source": "p2", "target": "t_backtrack" },
+    { "source": "t_backtrack", "target": "p2" },
+    
+    { "source": "p2", "target": "t_solution" },
+    { "source": "t_solution", "target": "p3" },
+    
+    { "source": "p1", "target": "t_inconsistent" },
+    { "source": "p2", "target": "t_inconsistent" },
+    { "source": "t_inconsistent", "target": "p3" }
+  ],
+  "initial_marking": { "p0": 1 },
+  "final_markings": [ { "p3": 1 } ]
+}

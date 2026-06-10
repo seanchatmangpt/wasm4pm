@@ -1,0 +1,1 @@
+{"intent": "", "candidates": [], "goals": [], "rules": [], "state": [], "cases": [], "facts": [{"key": "domain:X", "value": "1..3"}, {"key": "domain:Y", "value": "1..3"}, {"key": "domain:Z", "value": "1..3"}, {"key": "constraint:X:<:Y", "value": ""}, {"key": "constraint:Y:<:Z", "value": ""}]}

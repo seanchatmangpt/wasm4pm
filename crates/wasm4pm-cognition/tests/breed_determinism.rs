@@ -4,6 +4,7 @@
 //! asserts serialized output is identical. Also validates order-independence
 //! for MYCIN and Hearsay (reversed fact order produces same `selected`).
 
+use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
     dispatch_breed_test, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
@@ -194,23 +195,10 @@ fn autoinstinct_learning_input() -> BreedInput {
 
 fn ltl_monitor_input() -> BreedInput {
     let mut input = minimal_input();
-    input.intent = "G (req -> F res)".into();
-    input.cases = vec![
-        Case {
-            id: "state0".into(),
-            intent: "".into(),
-            architecture: "".into(),
-            outcome_score: 1.0,
-            facts: vec![Fact { key: "req".into(), value: "true".into() }],
-        },
-        Case {
-            id: "state1".into(),
-            intent: "".into(),
-            architecture: "".into(),
-            outcome_score: 1.0,
-            facts: vec![Fact { key: "res".into(), value: "true".into() }],
-        },
-    ];
+    input.intent = "G zorp".into();
+    input.facts.push(Fact { key: "ltl:formula".into(), value: "G zorp".into() });
+    input.facts.push(Fact { key: "trace:0".into(), value: "zorp".into() });
+    input.facts.push(Fact { key: "trace:1".into(), value: "zorp".into() });
     input
 }
 
@@ -253,60 +241,22 @@ fn fuzzy_logic_input() -> BreedInput {
 }
 
 fn bayesian_network_input() -> BreedInput {
-    BreedInput {
-        intent: "Bayesian".into(),
-        candidates: vec![],
-        facts: vec![
-            Fact { key: "Alarm".into(), value: "true".into() },
-        ],
-        cases: vec![],
-        rules: vec![
-            Rule {
-                id: "r-burg".into(),
-                premise: vec![],
-                conclusion: "Burglary=true".into(),
-                certainty: 0.001,
-            },
-            Rule {
-                id: "r-eq".into(),
-                premise: vec![],
-                conclusion: "Earthquake=true".into(),
-                certainty: 0.002,
-            },
-            Rule {
-                id: "r-alarm1".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.95,
-            },
-            Rule {
-                id: "r-alarm2".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.94,
-            },
-            Rule {
-                id: "r-alarm3".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.29,
-            },
-            Rule {
-                id: "r-alarm4".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.001,
-            },
-        ],
-        goals: vec![
-            Goal {
-                id: "g1".into(),
-                predicate: "query".into(),
-                value: "Burglary".into(),
-            }
-        ],
-        state: vec![],
-    }
+    let mut input = minimal_input();
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "query".into(),
+        value: "prob:Burglary".into(),
+    }];
+    input.facts = vec![
+        Fact { key: "cpt:Burglary".into(), value: "0.001".into() },
+        Fact { key: "cpt:Earthquake".into(), value: "0.002".into() },
+        Fact { key: "cpt:Alarm|Burglary,Earthquake".into(), value: "0.95,0.94,0.29,0.001".into() },
+        Fact { key: "cpt:JohnCalls|Alarm".into(), value: "0.90,0.05".into() },
+        Fact { key: "cpt:MaryCalls|Alarm".into(), value: "0.70,0.01".into() },
+        Fact { key: "evidence:JohnCalls".into(), value: "true".into() },
+        Fact { key: "evidence:MaryCalls".into(), value: "true".into() }
+    ];
+    input
 }
 
 // ---------------------------------------------------------------------------
@@ -564,4 +514,14 @@ fn exactly_17_breed_pairs_covered() {
         "bayesian_network",
     ];
     assert_eq!(covered.len(), 17, "must cover exactly 17 breeds");
+}
+
+#[test]
+fn test_clp_determinism() {
+    let input: BreedInput = serde_json::from_str(include_str!("fixtures/papers/clp.json")).unwrap();
+    let breed = wasm4pm_cognition::breeds::clp::Clp;
+    let out1 = breed.run(&input).unwrap();
+    let out2 = breed.run(&input).unwrap();
+    assert_eq!(out1.inference_trace, out2.inference_trace);
+    assert_eq!(out1.facts, out2.facts);
 }

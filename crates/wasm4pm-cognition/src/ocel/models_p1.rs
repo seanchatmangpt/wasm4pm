@@ -1,18 +1,24 @@
 use super::{BreedLifecycleModel, LifecyclePhase};
 
-/// LTL Monitor lifecycle: evaluate-state* -> evaluate-formula
+/// LTL Monitor lifecycle: ltl-init -> ltl-progress* -> ltl-verdict
 pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "ltl_monitor",
     phases: &[
         LifecyclePhase {
-            name: "evaluate-states",
-            kinds: &["evaluate-state"],
+            name: "init",
+            kinds: &["ltl-init"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "progress",
+            kinds: &["ltl-progress"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "evaluate-formula",
-            kinds: &["evaluate-formula"],
+            name: "verdict",
+            kinds: &["ltl-verdict"],
             min_occurrences: 1,
             max_occurrences: 1,
         },

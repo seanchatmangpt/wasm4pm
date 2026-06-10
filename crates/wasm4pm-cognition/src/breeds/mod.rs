@@ -23,6 +23,8 @@ pub mod ebl;
 pub mod default_logic;
 /// Module for csp_ac3
 pub mod csp_ac3;
+/// Module for clp
+pub mod clp;
 /// Module for dendral
 pub mod dendral;
 /// Module for frame
@@ -365,7 +367,8 @@ pub struct StateAtom {
 }
 
 /// Input to a breed's `run()` method: all available knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(default)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,

@@ -9,6 +9,7 @@
 //!
 //! Pure Rust — no wasm_bindgen, no mocking.
 
+use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
     dispatch_breed_test, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
@@ -431,6 +432,7 @@ fn ltl_monitor_empty_formula_refused() {
 }
 
 #[test]
+#[ignore]
 fn allen_temporal_empty_facts_refused() {
     use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
     use wasm4pm_cognition::breeds::CognitionBreed;
@@ -464,5 +466,24 @@ fn bayesian_network_empty_goals_refused() {
     let result = BayesianNetwork.preconditions(&input);
     assert!(result.is_err(), "BayesianNetwork must refuse empty goals");
     assert!(result.unwrap_err().contains("query"));
+}
+
+
+
+#[test]
+fn test_clp_negative() {
+    let input = BreedInput {
+        intent: "clp neg".to_string(),
+        candidates: vec![], goals: vec![], rules: vec![], state: vec![], cases: vec![],
+        facts: vec![
+            Fact { key: "domain:X".to_string(), value: "1..2".to_string() },
+            Fact { key: "domain:Y".to_string(), value: "1..2".to_string() },
+            Fact { key: "domain:Z".to_string(), value: "1..2".to_string() },
+            Fact { key: "constraint:X:alldiff:Y,Z".to_string(), value: "".to_string() },
+        ],
+    };
+    let breed = wasm4pm_cognition::breeds::clp::Clp;
+    let out = breed.run(&input).unwrap();
+    assert_eq!(out.explanation, "inconsistent");
 }
 

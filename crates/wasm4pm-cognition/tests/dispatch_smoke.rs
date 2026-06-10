@@ -1,6 +1,7 @@
 //! Dispatch breed smoke tests: native (non-WASM) tests validating each breed
 //! routes correctly through the dispatch mechanism and produces non-empty traces.
 
+use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
     dispatch_breed, dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
@@ -542,6 +543,14 @@ fn test_all_55_breeds_exhaustiveness() {
         BreedId::AutoinstinctSemantics,
         BreedId::AutoinstinctNeurosis,
         BreedId::AutoinstinctVision,
+        BreedId::BayesianNetwork,
+        BreedId::Clp,
+        BreedId::FuzzyLogic,
+        BreedId::AllenTemporal,
+        BreedId::LtlMonitor,
+        BreedId::CspAc3,
+        BreedId::HtnPlanning,
+        BreedId::DefaultLogic,
     ];
 
     for &breed_id in BreedId::ALL {
@@ -623,3 +632,22 @@ fn model_source_matches_lifecycle_model_for_every_breed() {
         }
     }
 }
+
+
+#[test]
+fn test_clp_smoke() {
+    let out = wasm4pm_cognition::breeds::dispatch_breed("clp", &BreedInput {
+        intent: "".to_string(),
+        candidates: vec![], goals: vec![], rules: vec![], state: vec![], cases: vec![],
+        facts: vec![
+            Fact { key: "domain:A".to_string(), value: "1".to_string() },
+            Fact { key: "domain:B".to_string(), value: "2".to_string() },
+            Fact { key: "constraint:A:!=:B".to_string(), value: "".to_string() }
+        ]
+    });
+    if let Err(ref e) = out {
+        println!("test_clp_smoke failed: {}", e);
+    }
+    assert!(out.is_ok());
+}
+
