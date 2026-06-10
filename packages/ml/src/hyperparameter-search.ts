@@ -21,7 +21,7 @@
 import { classifyTraces, regressRemainingTime } from './classifiers.js';
 import { clusterTraces } from './clustering.js';
 import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
-import type { FeatureMatrix, RegressionResult } from './types.js';
+import type { FeatureMatrix } from './types.js';
 
 export type { FeatureMatrix };
 
@@ -118,7 +118,7 @@ export async function evaluateModel(
     return _evaluateSingle(params, data, task, labels);
   }
 
-  const { trainIndices, testIndices } = stratifiedKFold(
+  const { testIndices } = stratifiedKFold(
     labels.length > 0 ? labels.map((_, i) => i % 2) : Array(n).fill(0),
     actualFolds,
   );
@@ -258,7 +258,7 @@ export function suggestSearchSpace(
 export async function findBestParams(
   task: 'classify' | 'cluster' | 'regress',
   data: FeatureMatrix,
-  labels: string[],
+  _labels: string[],
   searchSpace: SearchSpace,
   cvFolds: number = 3,
 ): Promise<GridSearchOutput> {
@@ -311,10 +311,9 @@ export interface GridSearchResult {
  * @param alpha - Significance level (0.05 for 95% CI)
  * @returns t-value
  */
-function tQuantile(df: number, alpha: number = 0.05): number {
-  // Approximation: t(df, alpha/2) ≈ polynomial fit
+function tQuantile(df: number, _alpha: number = 0.05): number {
+  // Approximation: t(df, 0.025) ≈ polynomial fit for 95% CI
   // For df >= 1, use Abramowitz & Stegun approximation
-  const t_alpha = alpha / 2;
   if (df === 1) return 12.706;
   if (df === 2) return 4.303;
   if (df === 3) return 3.182;
