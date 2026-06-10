@@ -9,7 +9,7 @@ use wasm4pm_cognition::breeds::{
     TraceStep,
 };
 use wasm4pm_cognition::ocel::{
-    check_temporal_conformance, derive_ocel, get_model, validate_ocel_alignment, OcelEvent, OcelLog,
+    check_temporal_conformance, derive_ocel, lifecycle_model_for, validate_ocel_alignment, OcelEvent, OcelLog,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ fn mycin_missing_fire_rule_fails_conformance() {
         make_trace_step(1, "decision", "mycin:selected"),
     ];
     let log = derive_ocel("mycin", "test-run-id-12345678", &steps);
-    let model = get_model("mycin").expect("mycin model must exist");
+    let model = lifecycle_model_for("mycin").expect("mycin model must exist");
     let result = validate_ocel_alignment(&log, model);
     assert!(
         result.fitness < 1.0,
@@ -192,7 +192,7 @@ fn valid_mycin_trace_fitness_one() {
         make_trace_step(3, "decision", "mycin:selected"),
     ];
     let log = derive_ocel("mycin", "test-run-id-12345678", &steps);
-    let model = get_model("mycin").expect("mycin model must exist");
+    let model = lifecycle_model_for("mycin").expect("mycin model must exist");
     let result = validate_ocel_alignment(&log, model);
     assert_eq!(
         result.fitness, 1.0,
@@ -264,7 +264,7 @@ fn assert_breed_conforming(breed: &str, input: &BreedInput) {
         .unwrap_or_else(|e| panic!("{}: temporal conformance failed: {}", breed, e));
 
     // Lifecycle conformance (only for breeds with declared models)
-    if let Some(model) = get_model(breed) {
+    if let Some(model) = lifecycle_model_for(breed) {
         let result = validate_ocel_alignment(&ocel_log, model);
         assert_eq!(
             result.fitness,

@@ -20,6 +20,8 @@ pub mod production_rules;
 pub mod prolog;
 pub mod soar;
 pub mod strips;
+/// Dispatch logic for breeds
+pub mod dispatch;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -50,6 +52,26 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
+}
+
+impl BreedId {
+    /// All defined breed IDs
+    pub const ALL: &'static [BreedId] = &[
+
+        BreedId::Eliza,
+        BreedId::Cbr,
+        BreedId::Dendral,
+        BreedId::Strips,
+        BreedId::Prolog,
+        BreedId::Mycin,
+        BreedId::Gps,
+        BreedId::Soar,
+        BreedId::Hearsay,
+        BreedId::AutoinstinctLearning,
+        BreedId::AutoinstinctSemantics,
+        BreedId::AutoinstinctNeurosis,
+        BreedId::AutoinstinctVision,
+    ];
 }
 
 impl fmt::Display for BreedId {
