@@ -253,3 +253,18 @@ export * from './model-registry.js';
 
 // Admission framework — Accept(x) = C1..C7
 export * from './admission.js';
+
+// Runtime Zod-compatible validators (no external dep) — Receipt, FitnessResult, EventLogIR
+export {
+  parseReceipt,
+  assertReceipt,
+  parseFitnessResult,
+  assertFitnessResult,
+  parseEventLogIR,
+  assertEventLogIR,
+  type ParseResult,
+  type ParseSuccess,
+  type ParseError,
+} from './zod-validators.js';
+
+export * from './compat-schemas.js';

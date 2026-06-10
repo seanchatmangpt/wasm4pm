@@ -1,7 +1,11 @@
-# Reference: Algorithms
+# Algorithm Registry — v26.6.9 (60 admitted)
 
-> **Generated from kernel registry.** Re-run `pnpm run docs:algorithms` after registry changes.
-> Version: **v26.5.29** · Count: **60** registered algorithms.
+All 60 algorithms are admitted in the release certificate (BLAKE3-bound to git commit).
+
+> **Source of truth:** `artifacts/release/ALGORITHM_BEHAVIOR_MATRIX.v26.6.9.md`
+> Every algorithm passed positive, negative (structured refusal), and invariant (determinism) test cases.
+
+---
 
 ## Listing Algorithms
 
@@ -26,126 +30,154 @@ When no `-a` flag is given, `wpm run` uses:
 
 The repo root ships `wasm4pm.toml` with `algorithm.name = "simd_streaming_dfg"`.
 
-## Compare vs Run
+---
 
-- **`wpm compare dfg,heuristic,inductive`** — benchmarks a fixed subset of discovery aliases with sparklines
-- **`wpm run -a <id>`** — dispatches any registered algorithm below
+## Discovery (20 algorithms)
+
+These algorithms accept XES event logs and exit 0 on well-formed input.
+
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `a_star` | `astar` | A* shortest-path discovery over DFG | XES | admitted |
+| `aco` | `ant-colony` | Ant Colony Optimisation process discovery | XES | admitted |
+| `alpha_plus_plus` | `alpha` | Alpha++ miner — Petri net from directly-follows graph | XES | admitted |
+| `declare` | `declare` | Declarative constraint mining (LTL-based) | XES | admitted |
+| `dfg` | `dfg` | Directly-Follows Graph — fastest baseline discovery | XES | admitted |
+| `genetic_algorithm` | `genetic` | Genetic algorithm process model search | XES | admitted |
+| `heuristic_miner` | `heuristic` | Heuristics Miner with dependency thresholds | XES | admitted |
+| `hierarchical_dfg` | — | Hierarchical DFG with sub-process detection | XES | admitted |
+| `hill_climbing` | `hill-climbing` | Hill-climbing local search over process space | XES | admitted |
+| `ilp` | `ilp` | ILP Miner — integer linear programming Petri net | XES | admitted |
+| `inductive_miner` | `inductive` | Inductive Miner — sound process tree discovery | XES | admitted |
+| `log_to_trie` | `prefix-tree` | Prefix-tree (trie) representation of traces | XES | admitted |
+| `optimized_dfg` | `dfg-optimized` | DFG with arc-weight optimisation pass | XES | admitted |
+| `process_skeleton` | `skeleton` | Minimal skeleton DFG for fast overview | XES | admitted |
+| `pso` | `pso` | Particle Swarm Optimisation discovery | XES | admitted |
+| `simd_streaming_dfg` | `simd-dfg` | SIMD-accelerated streaming DFG (default algorithm) | XES | admitted |
+| `simulated_annealing` | `simulated-annealing` | Simulated Annealing stochastic search | XES | admitted |
+| `smart_engine` | — | Auto-selects best algorithm for input characteristics | XES | admitted |
+| `streaming_log` | — | Streaming event log ingestion and analytics | XES | admitted |
+| `transition_system` | `transition-system` | Transition system from event log | XES | admitted |
 
 ---
 
-## Core Discovery
+## Discovery Analytics (10 algorithms)
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `a_star` | `astar` | dfg | 60 | 70 | ✗ | ✗ |
-| `aco` | `ant-colony` | dfg | 65 | 75 | ✓ | ✗ |
-| `alpha_plus_plus` | `alpha` | petrinet | 20 | 50 | ✗ | ✗ |
-| `declare` | `declare` | declare | 35 | 50 | ✓ | ✓ |
-| `dfg` | `dfg` | dfg | 5 | 30 | ✓ | ✓ |
-| `genetic_algorithm` | `genetic` | dfg | 75 | 80 | ✓ | ✗ |
-| `heuristic_miner` | `heuristic` | dfg | 25 | 50 | ✓ | ✓ |
-| `hill_climbing` | `hill-climbing` | dfg | 40 | 55 | ✓ | ✓ |
-| `ilp` | `ilp` | petrinet | 80 | 90 | ✗ | ✗ |
-| `inductive_miner` | `inductive` | tree | 30 | 55 | ✓ | ✓ |
-| `optimized_dfg` | `dfg-optimized` | dfg | 70 | 85 | ✗ | ✗ |
-| `process_skeleton` | `skeleton` | dfg | 3 | 25 | ✓ | ✓ |
-| `pso` | `pso` | dfg | 70 | 75 | ✓ | ✗ |
-| `simulated_annealing` | `simulated-annealing` | dfg | 55 | 65 | ✓ | ✗ |
+These algorithms accept XES and exit 0; they produce analytics artifacts rather than process models.
 
-## Streaming & Smart Engine
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `analyze_process_speedup` | — | Measures speedup potential across variants | XES | admitted |
+| `analyze_variant_complexity` | — | Complexity metrics per trace variant | XES | admitted |
+| `batches` | `batches` | Detects batch-execution patterns in the log | XES | admitted |
+| `causal_graph` | `causal-graph` | Causal dependency graph from event ordering | XES | admitted |
+| `compute_activity_transition_matrix` | — | Activity-to-activity transition probability matrix | XES | admitted |
+| `compute_trace_similarity_matrix` | — | Pairwise trace similarity matrix | XES | admitted |
+| `correlation_miner` | `correlation` | Correlation-based dependency miner | XES | admitted |
+| `handover_network` | — | Social network: handover-of-work between resources | XES | admitted |
+| `performance_spectrum` | `perf-spectrum` | Performance spectrum visualisation data | XES | admitted |
+| `working_together_network` | — | Social network: co-worker collaboration frequency | XES | admitted |
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `hierarchical_dfg` | — | dfg | 5 | 30 | ✓ | ✓ |
-| `simd_streaming_dfg` | `simd-dfg` | dfg | 1 | 30 | ✓ | ✓ |
-| `smart_engine` | — | dfg | 3 | 45 | ✓ | ✓ |
-| `streaming_log` | — | analytics | 10 | 25 | ✓ | ✓ |
+---
 
-## Discovery Analytics
+## Object-Centric (6 algorithms)
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `analyze_process_speedup` | — | analytics | 15 | 60 | ✓ | ✓ |
-| `analyze_variant_complexity` | — | analytics | 10 | 40 | ✓ | ✓ |
-| `batches` | `batches` | analytics | 50 | 55 | ✗ | ✗ |
-| `causal_graph` | `causal-graph` | dfg | 60 | 55 | ✗ | ✓ |
-| `compute_activity_transition_matrix` | — | analytics | 20 | 50 | ✓ | ✓ |
-| `compute_trace_similarity_matrix` | — | analytics | 50 | 70 | ✓ | ✗ |
-| `correlation_miner` | `correlation` | dfg | 45 | 60 | ✗ | ✗ |
-| `log_to_trie` | `prefix-tree` | dfg | 75 | 50 | ✓ | ✓ |
-| `performance_spectrum` | `perf-spectrum` | analytics | 55 | 60 | ✗ | ✗ |
-| `transition_system` | `transition-system` | dfg | 70 | 50 | ✓ | ✓ |
+> **Note:** OCEL algorithms require OCEL 2.0 JSON input, not XES. On XES input these algorithms exit 3 (execution error — wrong input format). Pass an OCEL 2.0 `.json` file via `wpm run -a <id> --source <file.json>`.
 
-## Conformance & Quality
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `ocel_dfg` | — | Object-centric DFG across all object types | OCEL 2.0 JSON | admitted |
+| `ocel_dfg_per_type` | — | Separate DFG per object type | OCEL 2.0 JSON | admitted |
+| `ocel_encode` | — | Encodes OCEL log to feature matrix | OCEL 2.0 JSON | admitted |
+| `ocel_oc_declare` | — | Object-centric Declare constraint discovery | OCEL 2.0 JSON | admitted |
+| `ocel_ocla` | — | Object-centric log abstraction analytics | OCEL 2.0 JSON | admitted |
+| `ocel_petri_net` | — | Per-type flattened Petri nets (one per object type; cross-type sync not modelled) | OCEL 2.0 JSON | admitted |
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `alignments` | `alignment` | analytics | 20 | 90 | ✓ | ✗ |
-| `complexity_metrics` | `complexity` | analytics | 80 | 60 | ✓ | ✓ |
-| `etconformance_precision` | `etconformance` | analytics | 55 | 70 | ✓ | ✓ |
-| `generalization` | `generalization` | analytics | 65 | 65 | ✓ | ✓ |
+---
 
-## Simulation
+## ML & Analytics (8 algorithms)
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `monte_carlo_simulation` | `montecarlo` | dfg | 70 | 60 | ✓ | ✗ |
-| `playout` | `playout` | analytics | 60 | 50 | ✓ | ✓ |
+> **Note:** ML algorithms require labeled dataset params via CLI flags (`--values-json`, `--labels`, etc.). On XES-only input these algorithms exit 1 (config error — missing required parameters).
 
-## Import / Export
+| ID | Alias | Description | Required flags | Status |
+|----|-------|-------------|----------------|--------|
+| `automl_classify` | — | AutoML classification over process features | `--values-json` | admitted |
+| `automl_forecast` | — | AutoML time-series forecasting | `--values-json` | admitted |
+| `ml_anomaly` | `ml-anomaly` | Anomaly detection on feature vectors | `--values-json` | admitted |
+| `ml_classify` | `ml-classify` | Supervised classification | `--values-json` | admitted |
+| `ml_cluster` | `ml-cluster` | Unsupervised clustering | `--values-json` | admitted |
+| `ml_forecast` | `ml-forecast` | Time-series forecasting | `--values-json` | admitted |
+| `ml_pca` | `ml-pca` | Principal Component Analysis | `--values-json` | admitted |
+| `ml_regress` | `ml-regress` | Regression over numeric process features | `--values-json` | admitted |
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `bpmn_import` | `import-bpmn` | tree | 70 | 70 | ✓ | ✓ |
-| `pnml_import` | `import-pnml` | petrinet | 75 | 80 | ✓ | ✓ |
-| `powl_to_process_tree` | `powl-to-tree` | tree | 75 | 70 | ✓ | ✓ |
-| `yawl_export` | `export-yawl` | tree | 75 | 70 | ✓ | ✓ |
+---
 
-## OCEL / Object-Centric
+## Conformance (4 algorithms)
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `ocel_dfg` | — | dfg | 5 | 30 | ✓ | ✓ |
-| `ocel_dfg_per_type` | — | dfg | 8 | 40 | ✓ | ✓ |
-| `ocel_encode` | — | analytics | 5 | 20 | ✓ | ✓ |
-| `ocel_oc_declare` | — | declare | 40 | 60 | ✓ | ✗ |
-| `ocel_ocla` | — | analytics | 10 | 40 | ✓ | ✓ |
-| `ocel_petri_net` | — | petrinet | 35 | 65 | ✓ | ✗ |
+> **Note:** `etconformance_precision` and `generalization` require a pre-discovered Petri net handle passed via `--petri-net-handle`. On XES-only input without a handle these algorithms exit 1 (config error — missing required parameter).
 
-Note: `ocel_petri_net` produces one Petri net per object type via per-type flattening; cross-type synchronization is not modelled.
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `alignments` | `alignment` | Token-replay alignment-based conformance checking | XES | admitted |
+| `complexity_metrics` | `complexity` | Structural complexity metrics (size, CFC, depth) | XES | admitted |
+| `etconformance_precision` | `etconformance` | ETConformance precision measurement | XES + `--petri-net-handle` | admitted |
+| `generalization` | `generalization` | Van der Aalst generalization score | XES + `--petri-net-handle` | admitted |
 
-## Prediction
+---
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `compute_ewma` | — | analytics | 5 | 30 | ✓ | ✓ |
-| `detect_drift` | — | analytics | 15 | 70 | ✓ | ✓ |
-| `predict_next_activity` | — | analytics | 15 | 50 | ✓ | ✓ |
-| `predict_outcome` | — | analytics | 25 | 55 | ✓ | ✓ |
-| `predict_remaining_time` | — | analytics | 20 | 55 | ✓ | ✓ |
+## Simulation (2 algorithms)
 
-## ML Analysis
+> **Note:** `playout` requires a Petri net handle and exits 1 without it. `monte_carlo_simulation` accepts XES and exits 0.
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `automl_classify` | — | analytics | 40 | 90 | ✓ | ✓ |
-| `automl_forecast` | — | analytics | 30 | 85 | ✓ | ✓ |
-| `ml_anomaly` | `ml-anomaly` | ml_result | 30 | 55 | ✓ | ✓ |
-| `ml_classify` | `ml-classify` | ml_result | 30 | 55 | ✓ | ✓ |
-| `ml_cluster` | `ml-cluster` | ml_result | 35 | 55 | ✓ | ✓ |
-| `ml_forecast` | `ml-forecast` | ml_result | 25 | 50 | ✓ | ✓ |
-| `ml_pca` | `ml-pca` | ml_result | 25 | 55 | ✗ | ✗ |
-| `ml_regress` | `ml-regress` | ml_result | 25 | 50 | ✓ | ✓ |
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `monte_carlo_simulation` | `montecarlo` | Monte Carlo simulation from discovered model | XES | admitted |
+| `playout` | `playout` | Stochastic playout from Petri net | Petri net handle | admitted |
 
-## Social Network Analysis
+---
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `handover_network` | — | analytics | 40 | 60 | ✓ | ✓ |
-| `working_together_network` | — | analytics | 45 | 60 | ✓ | ✓ |
+## Prediction (5 algorithms)
 
-## Agentic
+These algorithms accept XES event logs and exit 0 on well-formed input.
 
-| ID | Alias | Output | Speed | Quality | Robust | Scales |
-|----|-------|--------|------:|--------:|:------:|:------:|
-| `agentic_pipeline` | — | analytics | 1 | 95 | ✓ | ✓ |
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `compute_ewma` | — | Exponentially weighted moving average on case metrics | XES | admitted |
+| `detect_drift` | — | Concept drift detection over sliding window | XES | admitted |
+| `predict_next_activity` | — | Next-activity prediction from trace prefix | XES | admitted |
+| `predict_outcome` | — | Case outcome prediction | XES | admitted |
+| `predict_remaining_time` | — | Remaining time prediction from trace prefix | XES | admitted |
+
+---
+
+## Import / Export (4 algorithms)
+
+> **Note:** Import algorithms require their respective model format as input (not XES). They exit 3 on XES input. Export algorithms require a model handle via `--petri-net-handle` or equivalent.
+
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `bpmn_import` | `import-bpmn` | Import BPMN 2.0 XML to process tree | BPMN XML | admitted |
+| `pnml_import` | `import-pnml` | Import PNML to Petri net | PNML XML | admitted |
+| `powl_to_process_tree` | `powl-to-tree` | Convert POWL model to process tree | POWL JSON | admitted |
+| `yawl_export` | `export-yawl` | Export process model to YAWL format | model handle | admitted |
+
+---
+
+## Agentic (1 algorithm)
+
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `agentic_pipeline` | — | Orchestrated multi-step agentic pipeline over event log | XES | admitted |
+
+---
+
+## Evidence
+
+Certificate: `artifacts/release/RELEASE_CERTIFICATE.v26.6.9.json`
+
+All 60 algorithms pass three test case categories:
+- **Positive** — valid input produces structured output with non-empty receipt
+- **Negative** — invalid/empty input produces structured refusal (no panic, no unhandled error)
+- **Invariant** — determinism: same input produces bit-exact output across runs (seeded RNG, sorted HashMap iteration)
+
+BLAKE3 receipt chain is mandatory for every `wpm run` invocation. Exit codes: 0 ok, 1 config, 2 source, 3 execution, 4 partial, 5 system.

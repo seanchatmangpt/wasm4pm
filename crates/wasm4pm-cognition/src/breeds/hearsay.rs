@@ -134,7 +134,7 @@ impl CognitionBreed for Hearsay {
             .max_by(|(ak, av), (bk, bv)| {
                 av.partial_cmp(bv)
                     .unwrap_or(std::cmp::Ordering::Equal)
-                    .then_with(|| ak.cmp(bk))
+                    .then_with(|| bk.cmp(ak)) // reversed: smallest key wins on tie
             })
             .map(|(k, _)| (*k).clone());
 
@@ -172,5 +172,126 @@ impl CognitionBreed for Hearsay {
             return Err("Hearsay must record at least one blackboard event".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact, Rule};
+
+    fn make_input(facts: Vec<Fact>, rules: Vec<Rule>) -> BreedInput {
+        BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules,
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    #[test]
+    fn test_noisy_or_commutative() {
+        let a = 0.6_f32;
+        let b = 0.3_f32;
+        assert!((noisy_or(a, b) - noisy_or(b, a)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_noisy_or_identity() {
+        let x = 0.7_f32;
+        assert!((noisy_or(x, 0.0) - x).abs() < 1e-6, "noisy_or identity failed");
+    }
+
+    #[test]
+    fn test_noisy_or_upper_bound() {
+        assert!(noisy_or(0.9, 0.9) <= 1.0);
+        assert!(noisy_or(1.0, 1.0) <= 1.0);
+    }
+
+    #[test]
+    fn test_noisy_or_monotone() {
+        let a = 0.5_f32;
+        let b = 0.3_f32;
+        assert!(noisy_or(a, b) >= noisy_or(a, 0.0), "noisy_or must be monotone");
+    }
+
+    #[test]
+    fn test_self_reinforcing_terminates() {
+        let input = make_input(
+            vec![Fact { key: "phone".into(), value: "X".into() }],
+            vec![Rule {
+                id: "self-ks".into(),
+                premise: vec!["phone:X".into()],
+                conclusion: "phone:X".into(),
+                certainty: 0.9,
+            }],
+        );
+        let output = Hearsay.run(&input).expect("self-reinforcing must terminate");
+        assert!(!output.inference_trace.is_empty());
+    }
+
+    #[test]
+    fn test_multi_level_fusion() {
+        let input = make_input(
+            vec![Fact { key: "phone".into(), value: "T".into() }],
+            vec![
+                Rule {
+                    id: "ks-word".into(),
+                    premise: vec!["phone:T".into()],
+                    conclusion: "word:THE".into(),
+                    certainty: 0.9,
+                },
+                Rule {
+                    id: "ks-phrase".into(),
+                    premise: vec!["word:THE".into()],
+                    conclusion: "phrase:THE_CAT".into(),
+                    certainty: 0.8,
+                },
+            ],
+        );
+        let output = Hearsay.run(&input).expect("multi-level run");
+        let sel = output.selected.as_deref().unwrap_or("");
+        assert!(
+            sel.starts_with("word:") || sel.starts_with("phrase:"),
+            "expected word or phrase level selected, got: {:?}", sel
+        );
+    }
+
+    #[test]
+    fn test_deterministic_tie() {
+        let input = make_input(
+            vec![Fact { key: "phone".into(), value: "A".into() }],
+            vec![
+                Rule {
+                    id: "ks-1".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:ZZZ".into(),
+                    certainty: 0.8,
+                },
+                Rule {
+                    id: "ks-2".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:AAA".into(),
+                    certainty: 0.8,
+                },
+            ],
+        );
+        let out1 = Hearsay.run(&input).expect("run 1");
+        let out2 = Hearsay.run(&input).expect("run 2");
+        assert_eq!(out1.selected, out2.selected, "tie must resolve deterministically");
+    }
+
+    #[test]
+    fn test_duplicate_post_fusion() {
+        // noisy_or(0.5, 0.5) = 1 - (1-0.5)*(1-0.5) = 0.75
+        let result = noisy_or(0.5, 0.5);
+        assert!(
+            (result - 0.75).abs() < 1e-5,
+            "noisy_or(0.5, 0.5) must be 0.75, got {}", result
+        );
+        assert!(result < 1.0, "duplicate posts must not saturate to 1.0");
     }
 }

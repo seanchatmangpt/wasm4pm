@@ -119,6 +119,15 @@ impl CognitionBreed for AutoinstinctLearning {
         let final_distance = planner.heuristic_distance(final_state);
         let goal_reached = final_distance == 0;
 
+        if !goal_reached {
+            return Err(BreedError {
+                message: format!(
+                    "autoinstinct_learning: goal not reached (distance={})",
+                    final_distance
+                ),
+            });
+        }
+
         let explanation = format!(
             "AutoinstinctLearning: {} plan steps, goal_mask={:#010b}, final_state={:#010b}, goal_reached={}",
             plan.len(),

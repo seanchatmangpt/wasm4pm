@@ -129,14 +129,14 @@ impl CognitionBreed for Mycin {
             });
         }
 
-        // Pick selected: highest-CF conclusion key=value pair.
-        let mut best: Option<(String, f32)> = None;
-        for (k, v) in working_memory.iter() {
-            if k.contains('=') && *v > 0.0 && best.as_ref().is_none_or(|(_, bv)| *v > *bv) {
-                best = Some((k.clone(), *v));
-            }
-        }
-        let selected = best.map(|(k, _)| k);
+        // Pick selected: highest-CF conclusion (k=v format); tiebreak = smallest key (deterministic).
+        let mut candidates: Vec<(String, f32)> = working_memory
+            .iter()
+            .filter(|(k, v)| k.contains('=') && **v > 0.0)
+            .map(|(k, v)| (k.clone(), *v))
+            .collect();
+        candidates.sort_by(|(ak, av), (bk, bv)| bv.total_cmp(av).then_with(|| ak.cmp(bk)));
+        let selected = candidates.into_iter().next().map(|(k, _)| k);
 
         let original: HashSet<String> = input
             .facts
@@ -185,5 +185,152 @@ impl CognitionBreed for Mycin {
             );
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact, Rule};
+
+    fn make_input(facts: Vec<Fact>, rules: Vec<Rule>) -> BreedInput {
+        BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules,
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    #[test]
+    fn test_combine_cf_both_positive() {
+        let result = combine_cf(0.6, 0.4);
+        let expected = 0.6_f32 + 0.4 - 0.6 * 0.4; // 0.76
+        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+    }
+
+    #[test]
+    fn test_combine_cf_both_negative() {
+        let result = combine_cf(-0.3, -0.4);
+        let expected = -0.3_f32 + -0.4 + (-0.3 * -0.4); // -0.58
+        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+    }
+
+    #[test]
+    fn test_combine_cf_mixed_positive_wins() {
+        let result = combine_cf(0.5, -0.2);
+        let expected = (0.5_f32 + -0.2) / (1.0 - 0.2_f32); // 0.375
+        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+    }
+
+    #[test]
+    fn test_combine_cf_mixed_negative_wins() {
+        let result = combine_cf(-0.5, 0.2);
+        let expected = (0.2_f32 + -0.5) / (1.0 - 0.5_f32); // -0.6
+        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+    }
+
+    // CF exactly 0.2 should NOT propagate (premise_satisfied requires CF > 0.2)
+    #[test]
+    fn test_cf_threshold_boundary_below() {
+        let input = make_input(
+            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["x=1".into()],
+                    conclusion: "y=boundary".into(),
+                    certainty: 0.2,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["y=boundary".into()],
+                    conclusion: "z=reached".into(),
+                    certainty: 0.9,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("run ok");
+        let r2_fired = output.inference_trace.iter().any(|t| t.detail.contains("z=reached"));
+        assert!(!r2_fired, "r2 must not fire when premise CF == 0.2 (strict > 0.2 threshold)");
+    }
+
+    // CF 0.201 is above threshold → chained rule fires
+    #[test]
+    fn test_cf_threshold_boundary_above() {
+        let input = make_input(
+            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["x=1".into()],
+                    conclusion: "y=above".into(),
+                    certainty: 0.201,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["y=above".into()],
+                    conclusion: "z=reached".into(),
+                    certainty: 0.9,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("run ok");
+        let r2_fired = output.inference_trace.iter().any(|t| t.detail.contains("z=reached"));
+        assert!(r2_fired, "r2 must fire when premise CF > 0.2");
+    }
+
+    // Tie-break: smallest key wins when CFs are equal
+    #[test]
+    fn test_tie_break_smallest_key_wins() {
+        let input = make_input(
+            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![
+                Rule {
+                    id: "r-z".into(),
+                    premise: vec!["x=1".into()],
+                    conclusion: "z=1".into(),
+                    certainty: 0.7,
+                },
+                Rule {
+                    id: "r-a".into(),
+                    premise: vec!["x=1".into()],
+                    conclusion: "a=1".into(),
+                    certainty: 0.7,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("run ok");
+        assert_eq!(output.selected.as_deref(), Some("a=1"), "smallest key must win tie");
+    }
+
+    // Cycle defence: A→B cycle terminates within 2*rules.len() iterations
+    #[test]
+    fn test_cycle_defence() {
+        let input = make_input(
+            vec![Fact { key: "a".into(), value: "start".into() }],
+            vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["a=start".into()],
+                    conclusion: "b=mid".into(),
+                    certainty: 0.9,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["b=mid".into()],
+                    conclusion: "a=cycle".into(),
+                    certainty: 0.8,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("cycle must terminate");
+        assert!(
+            output.inference_trace.len() <= 4,
+            "cycle must terminate; trace len={}", output.inference_trace.len()
+        );
     }
 }

@@ -140,6 +140,20 @@ export type { TimeoutFactors, TimeoutResult } from './adaptive-timeout.js';
 // Validation exports
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
+export { validateWasmPayload } from './zod-validators.js';
+export {
+  PetriNetSchema,
+  DFGSchema,
+  ConformanceResultSchema,
+  TokenReplayResultSchema,
+  BpmnProcessSchema,
+  DeclareModelSchema,
+  ReceiptSchema,
+  DetectDriftSchema,
+  ComputeEwmaSchema,
+  TransitionMatrixSchema,
+  AutomlResultSchema,
+} from './zod-validators.js';
 
 // Step dispatcher bridge
 export { buildKernelStepHandlers } from './step-dispatcher.js';

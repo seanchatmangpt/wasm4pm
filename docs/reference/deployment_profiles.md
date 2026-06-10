@@ -1,16 +1,19 @@
 # Reference: Deployment Profiles
 
-wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
+wasm4pm provides WASM builds for different deployment environments by gating features during compilation.
+
+> **Bundle sizes reflect the current build — size optimization (profile-specific tree-shaking) is planned for a future release.**
+> All profiles currently produce similar bundle sizes because wasm-opt is disabled and Rust's dead-code elimination is limited across the single cdylib. The profiles differ by **feature flags** (which algorithm subsets are compiled in), not by bundle size today.
 
 ## Summary Table
 
-| Profile | Target | Size Target | Features | Algorithms |
-|---------|--------|-------------|----------|-----------|
-| `mobile` | Mobile devices | ~500KB | basic discovery, conformance | ~10-15 |
-| `iot` | IoT devices, embedded | ~1.0MB | basic discovery, conformance | ~12-18 |
-| `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
-| `fog` | Fog computing, gateways | ~2.0MB | all except POWL, full streaming, ML | ~35-40 |
-| `browser` | Web browsers (DEFAULT) | **3.4MB** | all features | 60 |
+| Profile | Target | Measured Size | Features | Algorithms |
+|---------|--------|---------------|----------|-----------|
+| `mobile` | Mobile devices | ~5.4 MB | basic conformance, branchless stats | subset |
+| `iot` | IoT devices, embedded | ~5.4 MB | basic discovery + conformance, branchless stats | subset |
+| `edge` | CDN workers, edge servers | ~5.4 MB | adv. discovery, basic streaming, branchless stats | subset |
+| `fog` | Fog computing, gateways | ~5.4 MB | all except POWL, full streaming, ML, OCEL | ~55 |
+| `browser` | Web browsers (DEFAULT) | ~7.6 MB | all features including POWL | 60 |
 
 ## Canonical Feature Flags
 
@@ -25,9 +28,45 @@ wasm4pm provides optimized WASM bundles for different deployment environments by
 | `feature-streaming-basic` | DFG streaming | edge, fog, browser |
 | `feature-streaming-full` | SIMD-accelerated streaming | fog, browser |
 | `feature-gpu` | GPU acceleration (non-WASM) | N/A for WASM |
-| `feature-hand-rolled-stats` | Size optimization | mobile, iot, edge |
-| `feature-statrs` | Full-precision statistics | fog, browser |
+| `feature-hand-rolled-stats` | Branchless hand-rolled statistics | mobile, iot, edge |
+| `feature-statrs` | Full-precision statistics (statrs crate) | fog, browser |
 | `feature-rayon` | Parallel processing (non-WASM) | N/A for WASM |
+
+## Profile Feature Sets (from Cargo.toml)
+
+### `mobile`
+- `feature-conformance-basic` — token replay fitness
+- `feature-hand-rolled-stats` — branchless stats (size trade-off, no statrs)
+- `bcinr` — branchless algorithms
+
+### `iot`
+- `feature-conformance-basic`
+- `feature-hand-rolled-stats`
+- `discovery_basic` (alpha++, heuristic miner, inductive miner)
+- `bcinr`
+
+### `edge`
+- `feature-conformance-basic`
+- `feature-discovery-advanced` (genetic, ILP, ACO, PSO, A*, simulated annealing)
+- `feature-streaming-basic` (DFG streaming)
+- `feature-hand-rolled-stats`
+- `bcinr`
+
+### `fog`
+- `feature-conformance-full` (alignments, ET-conformance)
+- `feature-discovery-advanced`
+- `feature-ml` (classify, cluster, forecast, anomaly, regress, PCA)
+- `feature-streaming-full` (SIMD-accelerated)
+- `feature-ocel`
+- `feature-statrs`
+- `bcinr`
+
+### `browser` (DEFAULT)
+- All fog features plus:
+- `feature-powl` — partial-order workflows
+- `petri_net_playout`, `extensive_playout`, `montecarlo`
+- `console_error_panic_hook`
+- `import`
 
 ## Build Commands
 
@@ -54,7 +93,7 @@ To measure all sizes: `npm run measure-sizes`.
 
 ## Registry Integration
 
-The `@wasm4pm/kernel` registry automatically detects available algorithms based on the WASM build profile. 
+The `@wasm4pm/kernel` registry automatically detects available algorithms based on the WASM build profile.
 
 ```typescript
 import { getRegistry } from '@wasm4pm/kernel';

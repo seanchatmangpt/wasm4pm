@@ -128,7 +128,8 @@ impl CognitionBreed for Cbr {
         });
 
         // Retrieve candidate cases via index (O(log N) intersection instead of O(N²)).
-        let candidates = retrieve_candidates(&query, &index);
+        let mut candidates: Vec<usize> = retrieve_candidates(&query, &index).into_iter().collect();
+        candidates.sort_unstable();
         trace.push(TraceStep {
             step: trace.len(),
             kind: "retrieve-candidates".to_string(),

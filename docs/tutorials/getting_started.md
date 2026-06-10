@@ -2,24 +2,33 @@
 
 ## 1. Install
 
+`@wasm4pm/cli` is not yet published to npmjs.org. Install from source:
+
 ```bash
-npm install -g @wasm4pm/cli
-wpm --version
+git clone https://github.com/seanchatmangpt/wasm4pm
+cd wasm4pm
+# Build the Node.js WASM target (required once per clone)
+cd wasm4pm && npm run build:nodejs && cd ..
+pnpm install
 ```
 
-From the repo root without a global install:
+Verify the install:
 
 ```bash
-# CLI requires the Node.js WASM target (once per clone)
-cd wasm4pm && npm run build:nodejs && cd ..
-npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
+node apps/wasm4pm/dist/bin/wpm.js --version
+```
+
+For convenience, add a shell alias:
+
+```bash
+alias wpm='node /path/to/wasm4pm/apps/wasm4pm/dist/bin/wpm.js'
 ```
 
 ## 2. Process Mining
 
 The bundled sample log is [`data/small-example.xes`](../../data/small-example.xes).
 
-**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json` in the current directory, else the first algorithm for your execution profile, else `heuristic_miner`. The repo root ships a streaming preset (`wasm4pm.toml`) that sets `algorithm.name = "simd_streaming_dfg"`.
+**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json` in the current directory, else the first algorithm for your execution profile, else `simd_streaming_dfg`. The repo root ships a streaming preset (`wasm4pm.toml`) that sets `algorithm.name = "simd_streaming_dfg"`.
 
 ```bash
 wpm run data/small-example.xes
@@ -47,7 +56,14 @@ Compare algorithms side-by-side:
 wpm compare dfg,heuristic,genetic -i data/small-example.xes
 ```
 
-## 3. Programmatic Usage
+## 3. Health Checks
+
+```bash
+wpm doctor check
+wpm status --format json
+```
+
+## 4. Programmatic Usage
 
 ```typescript
 import { readFileSync } from 'fs';
@@ -78,13 +94,13 @@ const dfgJson = wasm.discover_dfg(logHandle, 'concept:name');
 console.log(JSON.parse(dfgJson));
 ```
 
-## 4. Cognition
+## 5. Cognition
 
 ```bash
 wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 ```
 
-## 5. Truex — OCEL 2.0 Receipts
+## 6. Truex — OCEL 2.0 Receipts
 
 Verify object-centric execution envelopes with cryptographic admission control:
 

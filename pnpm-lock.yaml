@@ -246,6 +246,9 @@ importers:
       uuid:
         specifier: ^11.1.1
         version: 11.1.1
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -3548,7 +3551,7 @@ snapshots:
       '@vitest/utils': 1.6.1
       magic-string: 0.30.21
       sirv: 2.0.4
-      vitest: 1.6.1(@types/node@25.9.2)(@vitest/browser@1.6.1)
+      vitest: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
     optionalDependencies:
       playwright: 1.60.0
 
@@ -3567,7 +3570,7 @@ snapshots:
       std-env: 3.10.0
       strip-literal: 2.1.1
       test-exclude: 6.0.0
-      vitest: 1.6.1(@types/node@25.9.2)(@vitest/browser@1.6.1)
+      vitest: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
     transitivePeerDependencies:
       - supports-color
 
