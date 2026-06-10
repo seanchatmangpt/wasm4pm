@@ -1,0 +1,17 @@
+{
+  "intent": "operator-selection",
+  "candidates": [
+    { "id": "op-fetch", "score": 0.6, "eliminated": false, "elimination_reason": null },
+    { "id": "op-search", "score": 0.8, "eliminated": false, "elimination_reason": null },
+    { "id": "op-propose", "score": 0.5, "eliminated": false, "elimination_reason": null }
+  ],
+  "facts": [
+    { "key": "pref", "value": "better:op-search:op-fetch" },
+    { "key": "pref", "value": "prohibit:op-propose" },
+    { "key": "state", "value": "problem-space=blocks-world" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

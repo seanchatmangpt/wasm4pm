@@ -1,6 +1,6 @@
 # wasm4pm
 
-High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and nine Old-AI cognition breeds — all through one CLI (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 13 Old-AI cognition breeds — all through one CLI (`wpm`).
 
 **Old AI is the factory. LLMs are the brochure.**
 
@@ -81,10 +81,10 @@ const logHandle = wasm.load_eventlog_from_xes(
 const kernel = new Kernel(wasm);
 await kernel.init();
 
-const { output } = await kernel.discover('dfg', logHandle, {
+const { handle } = await kernel.discover('dfg', logHandle, {
   activity_key: 'concept:name',
 });
-console.log(output);
+console.log(handle);
 ```
 
 ## Truex — OCEL 2.0 Execution Trust
@@ -112,7 +112,7 @@ Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
 
 ## Cognition (Old AI)
 
-Nine breeds run natively in Rust and are exposed through `wpm cognition`:
+Thirteen breeds run natively in Rust and are exposed through `wpm cognition`:
 
 ```bash
 wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
@@ -120,8 +120,6 @@ wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 
 | Breed | Origin | Technique |
 |-------|--------|-----------|
-| ELIZA | 1966 | Pattern matching with slot binding |
-| MYCIN | 1976 | Forward chaining + certainty factors |
 | STRIPS | 1971 | Goal regression planning |
 | Prolog | 1965 | Robinson unification + SLD resolution |
 | CBR | 1992 | Jaccard similarity case retrieval |
@@ -129,18 +127,26 @@ wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 | GPS | 1963 | Means-ends gap reduction |
 | SOAR | 1987 | Preference-based operator selection |
 | Hearsay-II | 1980 | Blackboard consensus fusion |
+| Frame | 1975 | Frame-based knowledge representation |
+| Production Rules | 1943 | Rule-based forward chaining |
+| Autoinstinct: Vision | — | Autoinstinct visual perception |
+| Autoinstinct: Semantics | — | Autoinstinct semantic reasoning |
+| Autoinstinct: Neurosis | — | Autoinstinct neurosis detection |
+| Autoinstinct: Learning | — | Autoinstinct adaptive learning |
 
 ## Deployment Profiles
 
 Optimized WASM bundles for every environment:
 
-| Profile | Size | Use case |
-|---------|------|----------|
+| Profile | Target Size | Use case |
+|---------|-------------|----------|
 | `mobile` | ~500KB | Mobile / low bandwidth |
 | `iot` | ~1.0MB | Embedded |
 | `edge` | ~1.5MB | CDN / edge workers |
 | `fog` | ~2.0MB | IoT gateways |
 | `browser` | ~3.4MB | Web + Node.js (default) |
+
+> **Note:** Sizes above are feature-gated targets. Current builds produce ~5.4MB (non-browser) and ~7.6MB (browser) until the wasm-pack `--features` forwarding in build scripts is resolved. See [audit 2026-06-09](docs/audits/readme-validation-2026-06-09.md).
 
 Detailed feature mapping and build instructions: [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
 

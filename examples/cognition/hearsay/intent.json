@@ -1,0 +1,38 @@
+{
+  "intent": "blackboard_consensus",
+  "candidates": [],
+  "facts": [
+    { "key": "phone", "value": "T" },
+    { "key": "phone", "value": "H" },
+    { "key": "phone", "value": "AX" }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "syllable-ks",
+      "premise": ["phone:T"],
+      "conclusion": "syllable:THE",
+      "certainty": 0.8
+    },
+    {
+      "id": "word-ks",
+      "premise": ["syllable:THE"],
+      "conclusion": "word:THE",
+      "certainty": 0.9
+    },
+    {
+      "id": "phrase-ks",
+      "premise": ["word:THE"],
+      "conclusion": "phrase:THE_UTTERANCE",
+      "certainty": 0.85
+    },
+    {
+      "id": "alt-syllable-ks",
+      "premise": ["phone:AX"],
+      "conclusion": "syllable:THE",
+      "certainty": 0.6
+    }
+  ],
+  "goals": [],
+  "state": []
+}

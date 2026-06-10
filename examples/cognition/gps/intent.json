@@ -1,0 +1,24 @@
+{
+  "intent": "means-ends planning",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "get-dressed",
+      "premise": ["shirt=on"],
+      "conclusion": "dressed=yes",
+      "certainty": 1.0
+    },
+    {
+      "id": "put-on-shirt",
+      "premise": [],
+      "conclusion": "shirt=on",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    { "id": "g1", "predicate": "dressed", "value": "yes" }
+  ],
+  "state": []
+}
