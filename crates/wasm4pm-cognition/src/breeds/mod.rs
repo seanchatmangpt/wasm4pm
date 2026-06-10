@@ -18,6 +18,8 @@ pub mod gps;
 pub mod hearsay;
 pub mod production_rules;
 pub mod prolog;
+/// Shared combinators and utilities across breeds.
+pub mod support;
 pub mod soar;
 pub mod strips;
 
