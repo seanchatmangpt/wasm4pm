@@ -34,7 +34,6 @@ const SMALL_XES = path.join(REPO, 'data', 'small-example.xes');
 const TRUEX_VALID = path.join(REPO, 'data', 'truex_ocel2_valid.json');
 const TRUEX_FORGED = path.join(REPO, 'data', 'truex_ocel2_forged.json');
 const TRUEX_VALID_OCEL = path.join(REPO, 'data', 'truex_ocel2_valid.ocel.json');
-const MYCIN_INTENT = path.join(REPO, 'examples', 'cognition', 'mycin', 'intent.json');
 const RECEIPTS_DIR = path.join(REPO, '.wasm4pm', 'receipts');
 const LATEST_RECEIPT = path.join(RECEIPTS_DIR, 'latest.json');
 
@@ -307,7 +306,7 @@ describe('README: Old AI cognition breeds — all 9', () => {
         console.warn(`[readme] ${breed} intent.json not found at ${contractPath} — skipping`);
         return;
       }
-      const result = await wpm(['cognition', 'run', '--contract', contractPath, '--no-save']);
+      const result = await wpm(['cognition', 'run', '--contract', breed, '--input', contractPath, '--format', 'json']);
       if (result.exitCode !== EXIT_CODES.success) {
         console.error(`[readme] cognition/${breed} exit:`, result.exitCode);
         console.error('  stdout:', result.stdout.slice(0, 400));
@@ -325,11 +324,13 @@ describe('README: Old AI cognition breeds — all 9', () => {
           `cognition/${breed}: stdout is not valid JSON.\nstdout: ${result.stdout.slice(0, 300)}`,
         );
       }
-      expect(parsed['status'], `cognition/${breed}: status must be 'ok'`).toBe('ok');
-      const outputHash = parsed['output_hash'] as string | undefined;
+      // CLI wraps cognition output in { payload: { status, output_hash, ... }, meta }
+      const payload = (parsed['payload'] as Record<string, unknown>) ?? parsed;
+      expect(payload['status'], `cognition/${breed}: status must be 'ok'`).toBe('ok');
+      const outputHash = payload['output_hash'] as string | undefined;
       expect(outputHash, `cognition/${breed}: output_hash must be present`).toBeTruthy();
       expect(outputHash!.length, `cognition/${breed}: output_hash must be non-empty`).toBeGreaterThan(0);
-      console.info(`[readme] cognition/${breed}: status=ok output_hash=${outputHash!.slice(0, 16)}...`);
+      console.info(`[readme] cognition/${breed}: status=ok output_hash=${(outputHash ?? '').slice(0, 16)}...`);
     }, { timeout: 30_000 });
   }
 
