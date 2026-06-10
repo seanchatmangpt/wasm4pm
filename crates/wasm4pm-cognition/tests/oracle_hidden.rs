@@ -1362,3 +1362,596 @@ fn autoinstinct_learning_hidden_surgical_curriculum() {
         "Learning surgical: must emit a curriculum plan"
     );
 }
+
+// ===========================================================================
+// P3 tier hidden challenge tests — fresh names never used in any public
+// fixture; expected values hand-derived from each algorithm's specification.
+// Every test asserts a non-empty inference_trace (A3 stub adversary).
+// ===========================================================================
+
+use wasm4pm_cognition::breeds::Case;
+
+/// Hidden-SITCALC-1: a fluent untouched by a 3-action sequence persists at
+/// the final situation AND has a frame-persist step naming it. Defeats A1/A2
+/// (fresh fluents/actions) and any engine that recomputes instead of using
+/// frame inertia (no frame-persist evidence).
+#[test]
+fn situation_calculus_hidden_frame_inertia() {
+    let mut input = base("hidden sitcalc");
+    input.facts = vec![
+        fact("fluent:lamp_lit", "true"),
+        fact("fluent:gate_open", "true"),
+        fact("fluent:rune_etched", "true"),
+        fact("action:close_gate:pre", "gate_open"),
+        fact("action:close_gate:del", "gate_open"),
+        fact("action:close_gate:add", "gate_shut"),
+        fact("action:dim_lamp:pre", "lamp_lit"),
+        fact("action:dim_lamp:del", "lamp_lit"),
+        fact("action:dim_lamp:add", "lamp_dim"),
+        fact("action:open_gate:pre", "gate_shut"),
+        fact("action:open_gate:del", "gate_shut"),
+        fact("action:open_gate:add", "gate_open"),
+        fact("do:0", "close_gate"),
+        fact("do:1", "dim_lamp"),
+        fact("do:2", "open_gate"),
+    ];
+    let out = dispatch_breed_test("situation_calculus", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    // rune_etched untouched by all three actions: persists + named.
+    assert!(
+        out.facts.iter().any(|f| f.key == "holds:rune_etched"),
+        "rune_etched must persist"
+    );
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "frame-persist" && t.detail.contains("rune_etched")),
+        "frame-persist step must name rune_etched"
+    );
+    // gate_open was touched (deleted then re-added): no frame-persist for it.
+    assert!(
+        !out.inference_trace
+            .iter()
+            .any(|t| t.kind == "frame-persist" && t.detail.contains("gate_open")),
+        "touched fluent must not claim inertia"
+    );
+    assert!(out.facts.iter().any(|f| f.key == "holds:gate_open"));
+    assert!(!out.facts.iter().any(|f| f.key == "holds:lamp_lit"));
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "regress-step").count(),
+        3
+    );
+}
+
+/// Hidden-CIRC-1: naive forward chaining (ignoring not_-premises) would
+/// derive flies_korv; circumscription must NOT entail it because dodo_korv
+/// forces ab_bird_korv in every minimal model.
+#[test]
+fn circumscription_hidden_blocks_naive_chaining() {
+    let mut input = base("hidden circumscription");
+    input.facts = vec![fact("bird_korv", "true"), fact("dodo_korv", "true")];
+    input.rules = vec![
+        rule("h-fly", vec!["bird_korv", "not_ab_bird_korv"], "flies_korv", 1.0),
+        rule("h-dodo", vec!["dodo_korv"], "ab_bird_korv", 1.0),
+    ];
+    input.goals = vec![goal("g1", "entail", "flies_korv")];
+    let out = dispatch_breed_test("circumscription", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    // Naive monotone chaining (ignore not_) WOULD fire h-fly. Circumscription must not.
+    assert!(
+        out.facts
+            .iter()
+            .any(|f| f.key == "entailed:flies_korv" && f.value == "false"),
+        "flies_korv must NOT be cautiously entailed"
+    );
+    // 1 ab atom → exactly 2 candidate enumerations.
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "enumerate-model").count(),
+        2
+    );
+}
+
+/// Hidden-CIRC-2: minimize prune steps appear when a strictly larger
+/// consistent ab-set is dominated by a smaller one.
+#[test]
+fn circumscription_hidden_minimize_prunes() {
+    let mut input = base("hidden circumscription prune");
+    input.facts = vec![fact("wug_a", "true")];
+    input.rules = vec![
+        // ab_self_x is self-supported when assumed: ab in S derives itself.
+        rule("h-self", vec!["ab_self_x"], "ab_self_x", 1.0),
+        rule("h-glow", vec!["wug_a", "not_ab_self_x"], "glows_a", 1.0),
+    ];
+    input.goals = vec![goal("g1", "entail", "glows_a")];
+    let out = dispatch_breed_test("circumscription", &input).expect("run ok");
+    // Both S={} and S={ab_self_x} are models; only S={} is minimal.
+    assert!(
+        out.inference_trace.iter().any(|t| t.kind == "minimize"),
+        "the non-minimal model must be pruned with a minimize step"
+    );
+    assert!(
+        out.facts
+            .iter()
+            .any(|f| f.key == "entailed:glows_a" && f.value == "true"),
+        "glows_a holds in the unique minimal model"
+    );
+}
+
+/// Hidden-SME-1: systematicity beats match count. Three shallow attribute
+/// matches all pull gor→rix; the single deep causal chain pulls gor→lum.
+/// The gmap must take the chain (score 5 > 1) and reject the shallow trio.
+#[test]
+fn analogy_sme_hidden_systematicity_beats_count() {
+    let mut input = base("hidden sme");
+    input.facts = vec![
+        fact("base:0", "(cause (push gor tor) (move tor))"),
+        fact("base:1", "(glow gor)"),
+        fact("base:2", "(hum gor)"),
+        fact("base:3", "(buzz gor)"),
+        fact("target:0", "(cause (push lum rix) (move rix))"),
+        fact("target:1", "(glow rix)"),
+        fact("target:2", "(hum rix)"),
+        fact("target:3", "(buzz rix)"),
+    ];
+    let out = dispatch_breed_test("analogy_sme", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    let map_gor = out
+        .facts
+        .iter()
+        .find(|f| f.key == "map:gor")
+        .expect("gor must be mapped");
+    assert_eq!(
+        map_gor.value, "lum",
+        "deep relational chain must win over three shallow attribute matches"
+    );
+    assert!(
+        out.facts.iter().any(|f| f.key == "map:tor" && f.value == "rix"),
+        "tor must map to rix via the chain"
+    );
+}
+
+/// Hidden-ACTR-1: two chunks match the retrieval pattern and differ only in
+/// base-level activation — the higher-B chunk wins and the activation value
+/// appears in the retrieve-chunk detail.
+#[test]
+fn act_r_hidden_base_activation_decides() {
+    let mut input = base("hidden actr");
+    input.facts = vec![fact("mode", "scan")];
+    input.cases = vec![
+        Case {
+            id: "chunk-lo".into(),
+            intent: "x".into(),
+            architecture: "declarative-chunk".into(),
+            outcome_score: 0.4,
+            facts: vec![fact("zone", "omega")],
+        },
+        Case {
+            id: "chunk-hi".into(),
+            intent: "x".into(),
+            architecture: "declarative-chunk".into(),
+            outcome_score: 0.9,
+            facts: vec![fact("zone", "omega")],
+        },
+    ];
+    input.rules = vec![rule("p-scan", vec!["mode=scan"], "retrieve:zone=omega", 0.8)];
+    let out = dispatch_breed_test("act_r", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    assert_eq!(out.selected.as_deref(), Some("chunk-hi"), "higher B must win");
+    let retrieve = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "retrieve-chunk")
+        .expect("retrieve-chunk step required");
+    assert!(retrieve.detail.contains("chunk-hi"));
+    assert!(
+        retrieve.detail.contains("A=0.9"),
+        "activation value must be evidenced in the trace detail: {}",
+        retrieve.detail
+    );
+}
+
+/// Hidden-PROBLOG-1: novel probabilities, exact to 1e-6 by hand:
+/// q :- a,b. q :- c. with 0.35::a, 0.6::b, 0.25::c
+/// P(q) = P(c) + P(¬c)·P(a)·P(b) = 0.25 + 0.75·0.35·0.6 = 0.4075.
+#[test]
+fn problog_hidden_exact_novel_probability() {
+    let mut input = base("hidden problog");
+    input.facts = vec![
+        fact("pfact:atom_a", "0.35"),
+        fact("pfact:atom_b", "0.6"),
+        fact("pfact:atom_c", "0.25"),
+    ];
+    input.rules = vec![
+        rule("h-ab", vec!["atom_a", "atom_b"], "q_derived", 1.0),
+        rule("h-c", vec!["atom_c"], "q_derived", 1.0),
+    ];
+    input.goals = vec![goal("g1", "query", "q_derived")];
+    let out = dispatch_breed_test("problog", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    let p: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "prob:q_derived")
+        .expect("probability fact")
+        .value
+        .parse()
+        .unwrap();
+    assert!(
+        (p - 0.4075).abs() < 1e-6,
+        "hand-derived P = 0.4075, got {}",
+        p
+    );
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "enumerate-world").count(),
+        8
+    );
+}
+
+/// Hidden-SAT-1: pigeonhole PHP(3,2) is UNSAT and requires ≥1 learn-clause;
+/// every learned clause is independently re-validated as a resolvent of its
+/// recorded antecedents (resolution certificate from=/pivots=).
+#[test]
+fn sat_cdcl_hidden_pigeonhole_with_resolvent_revalidation() {
+    use wasm4pm_cognition::breeds::support::clauses::{Clause, Lit};
+
+    let clause_specs: Vec<(&str, &str)> = vec![
+        ("clause:00", "1 2"),
+        ("clause:01", "3 4"),
+        ("clause:02", "5 6"),
+        ("clause:03", "-1 -3"),
+        ("clause:04", "-1 -5"),
+        ("clause:05", "-3 -5"),
+        ("clause:06", "-2 -4"),
+        ("clause:07", "-2 -6"),
+        ("clause:08", "-4 -6"),
+    ];
+    let mut input = base("hidden sat pigeonhole");
+    input.facts = clause_specs
+        .iter()
+        .map(|(k, v)| fact(k, v))
+        .collect();
+    let out = dispatch_breed_test("sat_cdcl", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    assert_eq!(out.selected.as_deref(), Some("UNSAT"), "PHP(3,2) is UNSAT");
+
+    let parse_clause = |s: &str| -> Clause {
+        Clause::new(
+            s.split_whitespace()
+                .map(|t| {
+                    let n: i64 = t.parse().unwrap();
+                    let var = (n.unsigned_abs() - 1) as u32;
+                    if n > 0 { Lit::pos(var) } else { Lit::neg(var) }
+                })
+                .collect(),
+        )
+    };
+    // Reconstruct the clause database exactly as the solver builds it.
+    let mut db: Vec<Clause> = clause_specs.iter().map(|(_, v)| parse_clause(v)).collect();
+
+    let learn_steps: Vec<&wasm4pm_cognition::breeds::TraceStep> = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "learn-clause")
+        .collect();
+    assert!(!learn_steps.is_empty(), "PHP(3,2) requires at least one learned clause");
+
+    let extract = |detail: &str, key: &str| -> String {
+        let start = detail.find(key).unwrap() + key.len();
+        let end = detail[start..].find(']').unwrap() + start;
+        detail[start..end].to_string()
+    };
+    for step in &learn_steps {
+        let learned_str = extract(&step.detail, "learned=[");
+        let from: Vec<usize> = extract(&step.detail, "from=[")
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.parse().unwrap())
+            .collect();
+        let pivots: Vec<u32> = extract(&step.detail, "pivots=[")
+            .split(',')
+            .filter(|s| !s.is_empty())
+            .map(|s| s.parse::<u32>().unwrap() - 1)
+            .collect();
+        let learned = parse_clause(&learned_str);
+        assert_eq!(from.len(), pivots.len() + 1, "certificate arity");
+        // Re-derive the resolvent from the certificate.
+        let mut cur = db[from[0]].clone();
+        for (idx, piv) in from[1..].iter().zip(pivots.iter()) {
+            let other = &db[*idx];
+            cur = cur
+                .resolve(other, *piv)
+                .or_else(|| other.resolve(&cur, *piv))
+                .expect("certificate must be a valid resolution step");
+        }
+        assert_eq!(
+            cur, learned,
+            "learned clause must equal the re-derived resolvent"
+        );
+        db.push(learned);
+    }
+}
+
+/// Hidden-EPISODIC-1: temporal kernel flips the winner against pure Jaccard.
+/// ep-rich has Jaccard 1.0 but is old; ep-near has Jaccard 0.5 at Δt=0.
+/// Pure Jaccard picks ep-rich (1.0 > 0.5); the temporal kernel makes
+/// ep-near win: 0.5 + 1 = 1.5 > 1.0 + 1/99 ≈ 1.0101.
+#[test]
+fn episodic_memory_hidden_temporal_flip() {
+    let mut input = base("hidden episodic");
+    input.facts = vec![
+        fact("flav", "umami"),
+        fact("hue", "teal"),
+        fact("cue:t", "99"),
+        fact("episode:ep-rich:t", "1"),
+        fact("episode:ep-near:t", "99"),
+    ];
+    input.cases = vec![
+        Case {
+            id: "ep-rich".into(),
+            intent: "x".into(),
+            architecture: "episode".into(),
+            outcome_score: 0.5,
+            facts: vec![fact("flav", "umami"), fact("hue", "teal")],
+        },
+        Case {
+            id: "ep-near".into(),
+            intent: "x".into(),
+            architecture: "episode".into(),
+            outcome_score: 0.5,
+            facts: vec![fact("flav", "umami"), fact("hue", "mauve")],
+        },
+    ];
+    let out = dispatch_breed_test("episodic_memory", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    // Pure-Jaccard scores: ep-rich = 1.0, ep-near = 1/3 — rich wins.
+    // Kernel scores: ep-rich = 1.0 + 1/99; ep-near = 1/3 + 1.0 — near wins.
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("ep-near"),
+        "temporal kernel must flip the winner vs pure Jaccard (CBR rebadge check)"
+    );
+}
+
+/// Hidden-RL-1: 4-state chain with closed-form Q*. With γ = 0.9,
+/// advance: wi → wi+1 (reward 1 only on w2→w3, terminal), back: wi → wi-1.
+/// Q*(w2,advance)=1, Q*(w1,advance)=0.9, Q*(w0,advance)=0.81,
+/// Q*(w0,back)=0.729, Q*(w1,back)=0.729, Q*(w2,back)=0.81.
+/// Policy must be 'advance' everywhere, max|Q − Q*| < 0.05, and the
+/// per-episode max-delta trend must be non-increasing (early >> late).
+#[test]
+fn rl_symbolic_hidden_four_state_chain_q_star() {
+    let mut input = base("hidden rl");
+    input.facts = vec![
+        fact("mdp:gamma", "0.9"),
+        fact("mdp:start", "w0"),
+        fact("mdp:terminal:w3", "true"),
+        fact("mdp:t:w0:advance", "w1"),
+        fact("mdp:t:w1:advance", "w2"),
+        fact("mdp:t:w2:advance", "w3"),
+        fact("mdp:t:w0:back", "w0"),
+        fact("mdp:t:w1:back", "w0"),
+        fact("mdp:t:w2:back", "w1"),
+        fact("mdp:r:w2:advance", "1.0"),
+        fact("rl:episodes", "400"),
+    ];
+    let out = dispatch_breed_test("rl_symbolic", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+
+    // Policy optimal everywhere.
+    for s in ["w0", "w1", "w2"] {
+        let p = out
+            .facts
+            .iter()
+            .find(|f| f.key == format!("policy:{}", s))
+            .unwrap_or_else(|| panic!("policy for {}", s));
+        assert_eq!(p.value, "advance", "policy at {} must be optimal", s);
+    }
+    // Q within 0.05 of the hand-derived fixed point.
+    let q_star = [
+        ("q:w0:advance", 0.81),
+        ("q:w1:advance", 0.9),
+        ("q:w2:advance", 1.0),
+        ("q:w0:back", 0.729),
+        ("q:w1:back", 0.729),
+        ("q:w2:back", 0.81),
+    ];
+    for (key, expect) in q_star {
+        let v: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == key)
+            .unwrap_or_else(|| panic!("missing {}", key))
+            .value
+            .parse()
+            .unwrap();
+        assert!(
+            (v - expect).abs() < 0.05,
+            "{}: |{} - {}| >= 0.05",
+            key,
+            v,
+            expect
+        );
+    }
+    // Episode max-delta trend: early mean must dominate late mean.
+    let deltas: Vec<f64> = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "episode-end")
+        .map(|t| {
+            let i = t.detail.find("max-delta=").unwrap() + "max-delta=".len();
+            t.detail[i..].parse::<f64>().unwrap()
+        })
+        .collect();
+    assert_eq!(deltas.len(), 400);
+    let early: f64 = deltas[..20].iter().sum::<f64>() / 20.0;
+    let late: f64 = deltas[380..].iter().sum::<f64>() / 20.0;
+    assert!(
+        early > late,
+        "TD updates must shrink: early mean {} <= late mean {}",
+        early,
+        late
+    );
+}
+
+/// Hidden-CTL-1: EF p holds but AF p fails on a novel structure; the AF
+/// counterexample (a lasso avoiding p) is re-validated edge-by-edge against
+/// the declared transitions, and every state on it must lack p.
+#[test]
+fn ctl_check_hidden_ef_holds_af_fails_with_validated_counterexample() {
+    let ts_facts = |formula: &str| {
+        vec![
+            fact("ts:init", "qa"),
+            fact("ts:edge:qa", "qb,qc"),
+            fact("ts:edge:qb", "qb"),
+            fact("ts:edge:qc", "qc"),
+            fact("ts:label:qb", "p"),
+            fact("ctl:formula", formula),
+        ]
+    };
+    // EF p holds at qa (path qa→qb).
+    let mut input_ef = base("hidden ctl ef");
+    input_ef.facts = ts_facts("E F p");
+    let out_ef = dispatch_breed_test("ctl_check", &input_ef).expect("run ok");
+    assert!(!out_ef.inference_trace.is_empty(), "A3: empty trace");
+    assert_eq!(out_ef.selected.as_deref(), Some("holds"));
+
+    // AF p fails at qa (path qa→qc→qc→… never reaches p).
+    let mut input_af = base("hidden ctl af");
+    input_af.facts = ts_facts("A F p");
+    let out_af = dispatch_breed_test("ctl_check", &input_af).expect("run ok");
+    assert_eq!(out_af.selected.as_deref(), Some("fails"));
+
+    // Re-validate the counterexample independently.
+    let declared_edges: Vec<(&str, &str)> =
+        vec![("qa", "qb"), ("qa", "qc"), ("qb", "qb"), ("qc", "qc")];
+    let p_states = ["qb"];
+    let mut cex: Vec<(usize, String)> = out_af
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("cex:"))
+        .map(|f| (f.key[4..].parse::<usize>().unwrap(), f.value.clone()))
+        .collect();
+    cex.sort();
+    assert!(!cex.is_empty(), "a failing AF must carry a counterexample");
+    let mut prev_target: Option<String> = None;
+    for (_, edge) in &cex {
+        let (s, t) = edge.split_once("->").expect("edge format s->t");
+        assert!(
+            declared_edges.contains(&(s, t)),
+            "counterexample edge {} not in the declared transition relation",
+            edge
+        );
+        assert!(!p_states.contains(&s), "state {} on the lasso satisfies p", s);
+        assert!(!p_states.contains(&t), "state {} on the lasso satisfies p", t);
+        if let Some(pt) = &prev_target {
+            assert_eq!(pt, s, "counterexample path must be connected");
+        }
+        prev_target = Some(t.to_string());
+    }
+    assert_eq!(cex[0].1.split_once("->").unwrap().0, "qa", "path starts at init");
+}
+
+/// Hidden-ILP-1: the clause learned from family A classifies a disjoint
+/// family B (constants never seen in training) — evaluated by an
+/// independent in-test matcher over the learned rule text.
+#[test]
+fn ilp_hidden_learned_clause_transfers_to_family_b() {
+    let mut input = base("hidden ilp");
+    input.facts = vec![
+        fact("bg:parent(nera,zoe)", "true"),
+        fact("bg:parent(nera,kip)", "true"),
+        fact("bg:parent(kip,ulla)", "true"),
+        fact("bg:female(nera)", "true"),
+        fact("bg:female(zoe)", "true"),
+        fact("bg:female(ulla)", "true"),
+        fact("pos:daughter(zoe,nera)", "true"),
+        fact("pos:daughter(ulla,kip)", "true"),
+        fact("neg:daughter(kip,nera)", "true"),
+        fact("neg:daughter(nera,zoe)", "true"),
+        fact("neg:daughter(ulla,nera)", "true"),
+    ];
+    let out = dispatch_breed_test("ilp", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    let rule_text = out
+        .facts
+        .iter()
+        .find(|f| f.key == "ilp:rule:0")
+        .expect("learned rule")
+        .value
+        .clone();
+
+    // Independent evaluator over family B: rhod (male parent), mira (female child).
+    let bg_b: Vec<&str> = vec!["parent(rhod,mira)", "female(mira)"];
+    let classify = |x: &str, y: &str| -> bool {
+        let body = rule_text.split(":-").nth(1).expect("body");
+        body.split(", ").all(|lit| {
+            let ground = lit.trim().replace("V0", x).replace("V1", y);
+            bg_b.contains(&ground.as_str())
+        })
+    };
+    assert!(
+        classify("mira", "rhod"),
+        "daughter(mira,rhod) must be classified positive by '{}'",
+        rule_text
+    );
+    assert!(
+        !classify("rhod", "mira"),
+        "daughter(rhod,mira) must be classified negative by '{}'",
+        rule_text
+    );
+}
+
+/// Hidden-PHYS-1: 4-deep support/containment tower; removing the base must
+/// produce exactly the transitive falls-closure (over-derivation fails too),
+/// with the responsible axiom named for every derived atom.
+#[test]
+fn naive_physics_hidden_tower_exact_closure() {
+    let mut input = base("hidden physics");
+    input.facts = vec![
+        fact("np:ground:slab", "true"),
+        fact("np:on:krat", "slab"),
+        fact("np:on:bolv", "krat"),
+        fact("np:on:mim", "bolv"),
+        fact("np:in:pearl", "mim"),
+        fact("np:liquid:brine", "mim"),
+        fact("np:remove:krat", "true"),
+    ];
+    let out = dispatch_breed_test("naive_physics", &input).expect("run ok");
+    assert!(!out.inference_trace.is_empty(), "A3: empty trace");
+    let falls: std::collections::BTreeSet<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("falls:"))
+        .map(|f| &f.key[6..])
+        .collect();
+    let expected: std::collections::BTreeSet<&str> =
+        ["bolv", "mim", "pearl"].into_iter().collect();
+    assert_eq!(falls, expected, "exact transitive falls-closure required");
+    assert!(
+        out.facts.iter().any(|f| f.key == "spills:brine"),
+        "liquid in falling container must spill"
+    );
+    // Axiom attribution per derived atom.
+    for (obj, axiom) in [
+        ("bolv", "ax-unsupported-falls"),
+        ("mim", "ax-unsupported-falls"),
+        ("pearl", "ax-containment-transport"),
+    ] {
+        assert!(
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "apply-axiom"
+                    && t.detail.contains(axiom)
+                    && t.detail.contains(&format!("'{}'", obj))),
+            "{} must be derived by {}",
+            obj,
+            axiom
+        );
+    }
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "apply-axiom" && t.detail.contains("ax-liquid-spill")),
+        "spill must name ax-liquid-spill"
+    );
+}

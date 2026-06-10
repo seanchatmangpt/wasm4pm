@@ -7,19 +7,34 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub mod act_r;
+pub mod analogy_sme;
 pub mod autoinstinct_learning;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
 pub mod cbr;
+pub mod circumscription;
+pub mod ctl_check;
 pub mod dendral;
+pub mod dispatch;
+pub mod episodic_memory;
 pub mod frame;
 pub mod gps;
 pub mod hearsay;
+pub mod ilp;
+pub mod naive_physics;
+pub mod problog;
 pub mod production_rules;
 pub mod prolog;
+pub mod rl_symbolic;
+pub mod sat_cdcl;
+pub mod situation_calculus;
 pub mod soar;
 pub mod strips;
+pub mod support;
+
+pub use dispatch::{dispatch_breed, run_breed};
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -50,6 +65,28 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
+    /// Situation calculus with successor-state axioms (Reiter 1991)
+    SituationCalculus,
+    /// Circumscription: minimal-model nonmonotonic entailment (McCarthy 1980)
+    Circumscription,
+    /// SME: structure-mapping analogy engine (Falkenhainer, Forbus & Gentner 1989)
+    AnalogySme,
+    /// ACT-R production cycle with activation-based retrieval (Anderson & Lebiere 1998)
+    ActR,
+    /// ProbLog: exact possible-worlds probabilistic Horn logic (De Raedt et al. 2007)
+    Problog,
+    /// CDCL SAT with 1-UIP clause learning (Marques-Silva & Sakallah 1999)
+    SatCdcl,
+    /// Episodic memory with temporal-proximity recall (Tulving 1983; Nuxoll & Laird 2007)
+    EpisodicMemory,
+    /// Tabular Q-learning over a symbolic MDP (Watkins & Dayan 1992)
+    RlSymbolic,
+    /// CTL model checking by fixed-point labeling (Clarke, Emerson & Sistla 1986)
+    CtlCheck,
+    /// FOIL inductive logic programming (Quinlan 1990)
+    Ilp,
+    /// Naive physics axiom saturation (Hayes 1979/1985)
+    NaivePhysics,
 }
 
 impl fmt::Display for BreedId {
@@ -68,6 +105,17 @@ impl fmt::Display for BreedId {
             BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
             BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
             BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
+            BreedId::SituationCalculus => write!(f, "situation_calculus"),
+            BreedId::Circumscription => write!(f, "circumscription"),
+            BreedId::AnalogySme => write!(f, "analogy_sme"),
+            BreedId::ActR => write!(f, "act_r"),
+            BreedId::Problog => write!(f, "problog"),
+            BreedId::SatCdcl => write!(f, "sat_cdcl"),
+            BreedId::EpisodicMemory => write!(f, "episodic_memory"),
+            BreedId::RlSymbolic => write!(f, "rl_symbolic"),
+            BreedId::CtlCheck => write!(f, "ctl_check"),
+            BreedId::Ilp => write!(f, "ilp"),
+            BreedId::NaivePhysics => write!(f, "naive_physics"),
         }
     }
 }
@@ -305,17 +353,28 @@ pub trait CognitionBreed: Send + Sync {
 /// // Validation successful
 /// ```
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    use crate::breeds::act_r::ActR;
+    use crate::breeds::analogy_sme::AnalogySme;
     use crate::breeds::autoinstinct_learning::AutoinstinctLearning;
     use crate::breeds::autoinstinct_neurosis::AutoinstinctNeurosis;
     use crate::breeds::autoinstinct_semantics::AutoinstinctSemantics;
     use crate::breeds::autoinstinct_vision::AutoinstinctVision;
     use crate::breeds::cbr::Cbr;
+    use crate::breeds::circumscription::Circumscription;
+    use crate::breeds::ctl_check::CtlCheck;
     use crate::breeds::dendral::Dendral;
+    use crate::breeds::episodic_memory::EpisodicMemory;
     use crate::breeds::frame::Eliza;
     use crate::breeds::gps::Gps;
     use crate::breeds::hearsay::Hearsay;
+    use crate::breeds::ilp::Ilp;
+    use crate::breeds::naive_physics::NaivePhysics;
+    use crate::breeds::problog::Problog;
     use crate::breeds::production_rules::Mycin;
     use crate::breeds::prolog::Prolog;
+    use crate::breeds::rl_symbolic::RlSymbolic;
+    use crate::breeds::sat_cdcl::SatCdcl;
+    use crate::breeds::situation_calculus::SituationCalculus;
     use crate::breeds::soar::Soar;
     use crate::breeds::strips::Strips;
 
@@ -357,6 +416,39 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         "autoinstinct_learning" => AutoinstinctLearning
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "situation_calculus" => SituationCalculus
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "circumscription" => Circumscription
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "analogy_sme" => AnalogySme
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "act_r" => ActR
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "problog" => Problog
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "sat_cdcl" => SatCdcl
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "episodic_memory" => EpisodicMemory
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "rl_symbolic" => RlSymbolic
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "ctl_check" => CtlCheck
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "ilp" => Ilp
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "naive_physics" => NaivePhysics
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         other => Err(format!("unknown breed: {}", other)),

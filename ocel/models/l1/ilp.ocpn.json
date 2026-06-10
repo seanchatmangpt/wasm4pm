@@ -1,0 +1,45 @@
+{
+  "model_id": "ilp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ilp",
+  "object_types": ["example", "literal", "clause", "decision"],
+  "places": [
+    {"id": "p1", "name": "examples_pending",  "object_type": "example"},
+    {"id": "p2", "name": "examples_loaded",   "object_type": "example"},
+    {"id": "p3", "name": "clause_growing",    "object_type": "literal"},
+    {"id": "p4", "name": "literal_scored",    "object_type": "literal"},
+    {"id": "p5", "name": "clause_emitted",    "object_type": "clause"},
+    {"id": "p6", "name": "decision_emitted",  "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-example",    "label": "load-example"},
+    {"id": "t2", "name": "propose-literal", "label": "propose-literal"},
+    {"id": "t3", "name": "score-gain",      "label": "score-gain"},
+    {"id": "t4", "name": "add-literal",     "label": "add-literal"},
+    {"id": "t5", "name": "cover-remove",    "label": "cover-remove"},
+    {"id": "t6", "name": "emit-clause",     "label": "emit-clause"},
+    {"id": "t7", "name": "decision",        "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p5", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

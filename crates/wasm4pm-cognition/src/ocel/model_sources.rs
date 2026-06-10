@@ -1,0 +1,30 @@
+/// Return the hand-authored OCPN model JSON source for a breed id, if any.
+pub fn model_source(breed_id: &str) -> Option<&'static str> {
+    match breed_id {
+        "mycin" => Some(include_str!("../../../../ocel/models/l1/mycin.ocpn.json")),
+        "prolog" => Some(include_str!("../../../../ocel/models/l1/prolog.ocpn.json")),
+        "strips" => Some(include_str!("../../../../ocel/models/l1/strips.ocpn.json")),
+        "soar" => Some(include_str!("../../../../ocel/models/l1/soar.ocpn.json")),
+        "hearsay" => Some(include_str!("../../../../ocel/models/l1/hearsay.ocpn.json")),
+        "cbr" => Some(include_str!("../../../../ocel/models/l1/cbr.ocpn.json")),
+        "gps" => Some(include_str!("../../../../ocel/models/l1/gps.ocpn.json")),
+        "dendral" => Some(include_str!("../../../../ocel/models/l1/dendral.ocpn.json")),
+        "eliza" => Some(include_str!("../../../../ocel/models/l1/eliza.ocpn.json")),
+        "autoinstinct_vision" => Some(include_str!("../../../../ocel/models/l1/autoinstinct_vision.ocpn.json")),
+        "autoinstinct_semantics" => Some(include_str!("../../../../ocel/models/l1/autoinstinct_semantics.ocpn.json")),
+        "autoinstinct_neurosis" => Some(include_str!("../../../../ocel/models/l1/autoinstinct_neurosis.ocpn.json")),
+        "autoinstinct_learning" => Some(include_str!("../../../../ocel/models/l1/autoinstinct_learning.ocpn.json")),
+        "situation_calculus" => Some(include_str!("../../../../ocel/models/l1/situation_calculus.ocpn.json")),
+        "circumscription" => Some(include_str!("../../../../ocel/models/l1/circumscription.ocpn.json")),
+        "analogy_sme" => Some(include_str!("../../../../ocel/models/l1/analogy_sme.ocpn.json")),
+        "act_r" => Some(include_str!("../../../../ocel/models/l1/act_r.ocpn.json")),
+        "problog" => Some(include_str!("../../../../ocel/models/l1/problog.ocpn.json")),
+        "sat_cdcl" => Some(include_str!("../../../../ocel/models/l1/sat_cdcl.ocpn.json")),
+        "episodic_memory" => Some(include_str!("../../../../ocel/models/l1/episodic_memory.ocpn.json")),
+        "rl_symbolic" => Some(include_str!("../../../../ocel/models/l1/rl_symbolic.ocpn.json")),
+        "ctl_check" => Some(include_str!("../../../../ocel/models/l1/ctl_check.ocpn.json")),
+        "ilp" => Some(include_str!("../../../../ocel/models/l1/ilp.ocpn.json")),
+        "naive_physics" => Some(include_str!("../../../../ocel/models/l1/naive_physics.ocpn.json")),
+        _ => None,
+    }
+}

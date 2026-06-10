@@ -316,3 +316,185 @@ fn all_13_breeds_ocel_conforming() {
     // CBR needs cases
     assert_breed_conforming("cbr", &cbr_input);
 }
+
+// ===========================================================================
+// P3 tier OCEL conformance: every breed's derived log replays its declared
+// lifecycle model at fitness 1.0; a shuffled trace must NOT conform.
+// ===========================================================================
+
+fn p3f(key: &str, value: &str) -> Fact {
+    Fact { key: key.into(), value: value.into() }
+}
+
+/// Valid representative input per P3 breed.
+fn p3_input(breed: &str) -> BreedInput {
+    let mut input = BreedInput {
+        intent: format!("p3 {} exercise", breed),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    match breed {
+        "situation_calculus" => {
+            input.facts = vec![
+                p3f("fluent:door_open", "true"),
+                p3f("fluent:mark_set", "true"),
+                p3f("action:shut:pre", "door_open"),
+                p3f("action:shut:del", "door_open"),
+                p3f("action:shut:add", "door_shut"),
+                p3f("do:0", "shut"),
+            ];
+        }
+        "circumscription" => {
+            input.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+        }
+        "analogy_sme" => {
+            input.facts = vec![
+                p3f("base:0", "(cause (heat stove pot) (boil pot))"),
+                p3f("target:0", "(cause (heat sun lake) (boil lake))"),
+            ];
+        }
+        "act_r" => {
+            input.facts = vec![p3f("goal", "lookup")];
+            input.cases = vec![Case {
+                id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(),
+                outcome_score: 0.7, facts: vec![p3f("slot", "val")],
+            }];
+            input.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+        }
+        "problog" => {
+            input.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+        }
+        "sat_cdcl" => {
+            input.facts = vec![
+                p3f("clause:00", "1 2"),
+                p3f("clause:01", "-1 2"),
+                p3f("clause:02", "1 -2"),
+                p3f("clause:03", "-1 -2"),
+            ];
+        }
+        "episodic_memory" => {
+            input.facts = vec![
+                p3f("scene", "garden"),
+                p3f("cue:t", "7"),
+                p3f("episode:ep-a:t", "6"),
+                p3f("episode:ep-b:t", "1"),
+            ];
+            input.cases = vec![
+                Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+                Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+            ];
+        }
+        "rl_symbolic" => {
+            input.facts = vec![
+                p3f("mdp:gamma", "0.9"),
+                p3f("mdp:start", "s0"),
+                p3f("mdp:terminal:goal", "true"),
+                p3f("mdp:t:s0:go", "goal"),
+                p3f("mdp:t:s0:stay", "s0"),
+                p3f("mdp:r:s0:go", "1.0"),
+                p3f("rl:episodes", "50"),
+            ];
+        }
+        "ctl_check" => {
+            input.facts = vec![
+                p3f("ts:init", "a"),
+                p3f("ts:edge:a", "b"),
+                p3f("ts:edge:b", "a"),
+                p3f("ts:label:b", "p"),
+                p3f("ctl:formula", "A F p"),
+            ];
+        }
+        "ilp" => {
+            input.facts = vec![
+                p3f("bg:parent(ann,mary)", "true"),
+                p3f("bg:parent(ann,tom)", "true"),
+                p3f("bg:female(mary)", "true"),
+                p3f("pos:daughter(mary,ann)", "true"),
+                p3f("neg:daughter(tom,ann)", "true"),
+            ];
+        }
+        "naive_physics" => {
+            input.facts = vec![
+                p3f("np:ground:floor", "true"),
+                p3f("np:on:box", "floor"),
+                p3f("np:on:vase", "box"),
+                p3f("np:remove:box", "true"),
+            ];
+        }
+        other => panic!("unknown p3 breed {}", other),
+    }
+    input
+}
+
+const P3_BREEDS: [&str; 11] = [
+    "situation_calculus", "circumscription", "analogy_sme", "act_r", "problog",
+    "sat_cdcl", "episodic_memory", "rl_symbolic", "ctl_check", "ilp", "naive_physics",
+];
+
+#[test]
+fn p3_breeds_ocel_fitness_one() {
+    for breed in P3_BREEDS {
+        let input = p3_input(breed);
+        let out = dispatch_breed_test(breed, &input)
+            .unwrap_or_else(|e| panic!("{}: {}", breed, e));
+        let log = derive_ocel(breed, "p3runfixture", &out.inference_trace);
+        let model = wasm4pm_cognition::ocel::lifecycle_model_for(breed)
+            .unwrap_or_else(|| panic!("{}: lifecycle model missing", breed));
+        let result = validate_ocel_alignment(&log, model);
+        assert!(
+            result.is_conforming && (result.fitness - 1.0).abs() < f32::EPSILON,
+            "{}: fitness {} refusals {:?}",
+            breed,
+            result.fitness,
+            result.refusals
+        );
+    }
+}
+
+/// Van der Aalst negative injection: a reversed trace must not replay at 1.0.
+#[test]
+fn p3_shuffled_trace_is_not_conforming() {
+    let input = p3_input("situation_calculus");
+    let out = dispatch_breed_test("situation_calculus", &input).expect("run ok");
+    let mut steps = out.inference_trace.clone();
+    steps.reverse();
+    for (i, s) in steps.iter_mut().enumerate() {
+        s.step = i; // keep logical steps monotonic so only ORDER is wrong
+    }
+    let log = derive_ocel("situation_calculus", "p3shuffled", &steps);
+    let model = wasm4pm_cognition::ocel::lifecycle_model_for("situation_calculus").unwrap();
+    let result = validate_ocel_alignment(&log, model);
+    assert!(
+        !result.is_conforming,
+        "reversed lifecycle order must be rejected (fitness {})",
+        result.fitness
+    );
+}
+
+/// Every P3 breed has a hand-authored OCPN model source on disk.
+#[test]
+fn p3_breeds_have_model_sources() {
+    for breed in P3_BREEDS {
+        let src = wasm4pm_cognition::ocel::model_sources::model_source(breed)
+            .unwrap_or_else(|| panic!("{}: OCPN model source missing", breed));
+        let json: serde_json::Value = serde_json::from_str(src).expect("OCPN must be valid JSON");
+        assert_eq!(json["breed_id"].as_str(), Some(breed));
+        assert_eq!(json["model_level"].as_str(), Some("L1"));
+        assert!(json["places"].as_array().map(|a| !a.is_empty()).unwrap_or(false));
+        assert!(json["transitions"].as_array().map(|a| !a.is_empty()).unwrap_or(false));
+    }
+}

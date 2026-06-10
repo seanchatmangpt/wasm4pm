@@ -412,3 +412,161 @@ fn autoinstinct_learning_all_goals_achieved() {
         }
     }
 }
+
+// ===========================================================================
+// P3 tier refusal tests — complexity caps and contract violations are
+// refusals (Err), never silent truncation.
+// ===========================================================================
+
+fn p3_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+/// situation_calculus refuses an empty action sequence (no do:<n> facts).
+#[test]
+fn situation_calculus_refuses_empty_action_sequence() {
+    let mut input = empty_base();
+    input.facts = vec![p3_fact("fluent:on_a_b", "true")];
+    let result = dispatch_breed_test("situation_calculus", &input);
+    assert!(result.is_err(), "must refuse without do: steps");
+}
+
+/// circumscription refuses more than 12 abnormality atoms (cap is a refusal).
+#[test]
+fn circumscription_refuses_thirteen_ab_atoms() {
+    let mut input = empty_base();
+    input.rules = (0..13)
+        .map(|i| Rule {
+            id: format!("r{}", i),
+            premise: vec![format!("base_{}", i)],
+            conclusion: format!("ab_atom_{}", i),
+            certainty: 1.0,
+        })
+        .collect();
+    input.goals = vec![goal("g1", "entail", "anything")];
+    let result = dispatch_breed_test("circumscription", &input);
+    assert!(result.is_err(), "must refuse 13 ab-atoms");
+    assert!(
+        result.unwrap_err().contains("cap"),
+        "error must name the complexity cap"
+    );
+}
+
+/// analogy_sme refuses when there is no target domain.
+#[test]
+fn analogy_sme_refuses_missing_target() {
+    let mut input = empty_base();
+    input.facts = vec![p3_fact("base:0", "(rel a b)")];
+    let result = dispatch_breed_test("analogy_sme", &input);
+    assert!(result.is_err(), "must refuse without target expressions");
+}
+
+/// act_r refuses an empty production set.
+#[test]
+fn act_r_refuses_no_productions() {
+    let input = empty_base();
+    let result = dispatch_breed_test("act_r", &input);
+    assert!(result.is_err(), "must refuse without production rules");
+}
+
+/// problog refuses more than 12 probabilistic facts (2^k blow-up guard).
+#[test]
+fn problog_refuses_thirteen_pfacts() {
+    let mut input = empty_base();
+    input.facts = (0..13)
+        .map(|i| p3_fact(&format!("pfact:atom_{}", i), "0.5"))
+        .collect();
+    input.goals = vec![goal("g1", "query", "atom_0")];
+    let result = dispatch_breed_test("problog", &input);
+    assert!(result.is_err(), "must refuse 13 pfacts");
+    assert!(
+        result.unwrap_err().contains("cap"),
+        "error must name the complexity cap"
+    );
+}
+
+/// problog refuses an out-of-range probability.
+#[test]
+fn problog_refuses_probability_above_one() {
+    let mut input = empty_base();
+    input.facts = vec![p3_fact("pfact:rain", "1.5")];
+    input.goals = vec![goal("g1", "query", "rain")];
+    let result = dispatch_breed_test("problog", &input);
+    assert!(result.is_err(), "must refuse p > 1");
+}
+
+/// sat_cdcl refuses an empty formula.
+#[test]
+fn sat_cdcl_refuses_no_clauses() {
+    let input = empty_base();
+    let result = dispatch_breed_test("sat_cdcl", &input);
+    assert!(result.is_err(), "must refuse without clauses");
+}
+
+/// episodic_memory refuses an episode that has no time fact.
+#[test]
+fn episodic_memory_refuses_missing_time() {
+    let mut input = empty_base();
+    input.facts = vec![p3_fact("cue:t", "5")];
+    input.cases = vec![Case {
+        id: "ep-untimed".into(),
+        intent: "x".into(),
+        architecture: "episode".into(),
+        outcome_score: 0.5,
+        facts: vec![p3_fact("k", "v")],
+    }];
+    let result = dispatch_breed_test("episodic_memory", &input);
+    assert!(result.is_err(), "must refuse an episode without episode:<id>:t");
+}
+
+/// rl_symbolic refuses gamma >= 1 (divergent discounting).
+#[test]
+fn rl_symbolic_refuses_gamma_one() {
+    let mut input = empty_base();
+    input.facts = vec![
+        p3_fact("mdp:gamma", "1.0"),
+        p3_fact("mdp:start", "s0"),
+        p3_fact("mdp:t:s0:go", "s0"),
+    ];
+    let result = dispatch_breed_test("rl_symbolic", &input);
+    assert!(result.is_err(), "must refuse gamma = 1.0");
+}
+
+/// ctl_check refuses a non-total transition relation (CTL requires totality).
+#[test]
+fn ctl_check_refuses_non_total_relation() {
+    let mut input = empty_base();
+    input.facts = vec![
+        p3_fact("ts:init", "a"),
+        p3_fact("ts:edge:a", "b"), // b has no successor
+        p3_fact("ctl:formula", "A G p"),
+    ];
+    let result = dispatch_breed_test("ctl_check", &input);
+    assert!(result.is_err(), "must refuse a deadlock state");
+    assert!(result.unwrap_err().contains("total"));
+}
+
+/// ilp refuses when there is no background knowledge.
+#[test]
+fn ilp_refuses_no_background() {
+    let mut input = empty_base();
+    input.facts = vec![p3_fact("pos:daughter(mary,ann)", "true")];
+    let result = dispatch_breed_test("ilp", &input);
+    assert!(result.is_err(), "must refuse without bg: facts");
+}
+
+/// naive_physics refuses a cyclic support chain (physically impossible scene).
+#[test]
+fn naive_physics_refuses_cyclic_support() {
+    let mut input = empty_base();
+    input.facts = vec![
+        p3_fact("np:on:a", "b"),
+        p3_fact("np:on:b", "a"),
+    ];
+    let result = dispatch_breed_test("naive_physics", &input);
+    assert!(result.is_err(), "must refuse a support cycle");
+    assert!(result.unwrap_err().contains("cyclic"));
+}

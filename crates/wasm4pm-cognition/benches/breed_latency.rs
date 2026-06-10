@@ -157,5 +157,145 @@ fn bench_breeds(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_breeds);
+fn p3f(key: &str, value: &str) -> Fact {
+    Fact { key: key.into(), value: value.into() }
+}
+
+/// P3 tier benchmarks: each breed gets a representative input that
+/// exercises its core algorithmic path.
+fn bench_p3_breeds(c: &mut Criterion) {
+    use wasm4pm_cognition::breeds::{
+        act_r::ActR, analogy_sme::AnalogySme, circumscription::Circumscription,
+        ctl_check::CtlCheck, episodic_memory::EpisodicMemory, ilp::Ilp,
+        naive_physics::NaivePhysics, problog::Problog, rl_symbolic::RlSymbolic,
+        sat_cdcl::SatCdcl, situation_calculus::SituationCalculus,
+    };
+
+    let empty = BreedInput {
+        intent: "p3 bench".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let mut sitcalc = empty.clone();
+    sitcalc.facts = vec![
+        p3f("fluent:door_open", "true"),
+        p3f("fluent:mark_set", "true"),
+        p3f("action:shut:pre", "door_open"),
+        p3f("action:shut:del", "door_open"),
+        p3f("action:shut:add", "door_shut"),
+        p3f("do:0", "shut"),
+    ];
+
+    let mut circ = empty.clone();
+    circ.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
+    circ.rules = vec![
+        Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
+        Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+    ];
+    circ.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+
+    let mut sme = empty.clone();
+    sme.facts = vec![
+        p3f("base:0", "(cause (heat stove pot) (boil pot))"),
+        p3f("target:0", "(cause (heat sun lake) (boil lake))"),
+    ];
+
+    let mut actr = empty.clone();
+    actr.facts = vec![p3f("goal", "lookup")];
+    actr.cases = vec![Case { id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(), outcome_score: 0.7, facts: vec![p3f("slot", "val")] }];
+    actr.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+
+    let mut problog = empty.clone();
+    problog.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
+    problog.rules = vec![
+        Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
+        Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+    ];
+    problog.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+
+    let mut sat = empty.clone();
+    sat.facts = vec![
+        p3f("clause:00", "1 2"),
+        p3f("clause:01", "-1 2"),
+        p3f("clause:02", "1 -2"),
+        p3f("clause:03", "-1 -2"),
+    ];
+
+    let mut epi = empty.clone();
+    epi.facts = vec![
+        p3f("scene", "garden"),
+        p3f("cue:t", "7"),
+        p3f("episode:ep-a:t", "6"),
+        p3f("episode:ep-b:t", "1"),
+    ];
+    epi.cases = vec![
+        Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+        Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+    ];
+
+    let mut rl = empty.clone();
+    rl.facts = vec![
+        p3f("mdp:gamma", "0.9"),
+        p3f("mdp:start", "s0"),
+        p3f("mdp:terminal:goal", "true"),
+        p3f("mdp:t:s0:go", "goal"),
+        p3f("mdp:t:s0:stay", "s0"),
+        p3f("mdp:r:s0:go", "1.0"),
+        p3f("rl:episodes", "50"),
+    ];
+
+    let mut ctl = empty.clone();
+    ctl.facts = vec![
+        p3f("ts:init", "a"),
+        p3f("ts:edge:a", "b"),
+        p3f("ts:edge:b", "a"),
+        p3f("ts:label:b", "p"),
+        p3f("ctl:formula", "A F p"),
+    ];
+
+    let mut ilp = empty.clone();
+    ilp.facts = vec![
+        p3f("bg:parent(ann,mary)", "true"),
+        p3f("bg:parent(ann,tom)", "true"),
+        p3f("bg:female(mary)", "true"),
+        p3f("pos:daughter(mary,ann)", "true"),
+        p3f("neg:daughter(tom,ann)", "true"),
+    ];
+
+    let mut phys = empty.clone();
+    phys.facts = vec![
+        p3f("np:ground:floor", "true"),
+        p3f("np:on:box", "floor"),
+        p3f("np:on:vase", "box"),
+        p3f("np:remove:box", "true"),
+    ];
+
+    macro_rules! bench_breed {
+        ($group:expr, $name:expr, $breed:expr, $input:expr) => {
+            $group.bench_function($name, |b| b.iter(|| $breed.run(black_box(&$input))));
+        };
+    }
+
+    let mut group = c.benchmark_group("breed_latency_p3");
+    group.sample_size(50);
+    bench_breed!(group, "situation_calculus", SituationCalculus, sitcalc);
+    bench_breed!(group, "circumscription", Circumscription, circ);
+    bench_breed!(group, "analogy_sme", AnalogySme, sme);
+    bench_breed!(group, "act_r", ActR, actr);
+    bench_breed!(group, "problog", Problog, problog);
+    bench_breed!(group, "sat_cdcl", SatCdcl, sat);
+    bench_breed!(group, "episodic_memory", EpisodicMemory, epi);
+    bench_breed!(group, "rl_symbolic", RlSymbolic, rl);
+    bench_breed!(group, "ctl_check", CtlCheck, ctl);
+    bench_breed!(group, "ilp", Ilp, ilp);
+    bench_breed!(group, "naive_physics", NaivePhysics, phys);
+    group.finish();
+}
+
+criterion_group!(benches, bench_breeds, bench_p3_breeds);
 criterion_main!(benches);
