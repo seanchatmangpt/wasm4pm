@@ -67,7 +67,7 @@ describe('runAsync()', () => {
     await runAsync('alpha_miner', FAKE_XES, 'concept:name')
 
     expect(mockRunAlgorithm).toHaveBeenCalledOnce()
-    const [alg, handle] = mockRunAlgorithm.mock.calls[0]
+    const [alg, handle] = mockRunAlgorithm.mock.calls[0]!
     expect(alg).toBe('alpha_miner')
     expect(handle).toBe(FAKE_HANDLE)
   })
@@ -138,7 +138,7 @@ describe('runWithHandle()', () => {
 
     expect(mockLoadXes).not.toHaveBeenCalled()
     expect(mockRunAlgorithm).toHaveBeenCalledOnce()
-    const [alg, handle] = mockRunAlgorithm.mock.calls[0]
+    const [alg, handle] = mockRunAlgorithm.mock.calls[0]!
     expect(alg).toBe('alpha_miner')
     expect(handle).toBe(99)
   })
@@ -187,8 +187,8 @@ describe('runBatch()', () => {
     const { runBatch } = useWasmWorker()
     const results = await runBatch(algorithms, FAKE_XES)
 
-    expect(results[0].algorithm).toBe('alpha_miner')
-    expect(results[1].algorithm).toBe('dfg')
+    expect(results[0]!.algorithm).toBe('alpha_miner')
+    expect(results[1]!.algorithm).toBe('dfg')
   })
 })
 

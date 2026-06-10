@@ -40,7 +40,7 @@ export const useReceipt = () => {
       input_size: input.length
     }
     // Persist to localStorage (last 20 receipts)
-    if (import.meta.client) {
+    if (typeof window !== 'undefined') {
       const stored = getReceipts()
       stored.unshift(receipt)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stored.slice(0, 20)))
@@ -49,7 +49,7 @@ export const useReceipt = () => {
   }
 
   function getReceipts(): Receipt[] {
-    if (!import.meta.client) return []
+    if (typeof window === 'undefined') return []
     try {
       return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
     }
@@ -57,7 +57,7 @@ export const useReceipt = () => {
   }
 
   function clearReceipts() {
-    if (import.meta.client) localStorage.removeItem(STORAGE_KEY)
+    if (typeof window !== 'undefined') localStorage.removeItem(STORAGE_KEY)
   }
 
   return { saveReceipt, getReceipts, clearReceipts }

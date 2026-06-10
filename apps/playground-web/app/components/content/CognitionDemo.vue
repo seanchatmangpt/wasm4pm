@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useReceipt } from '~/composables/useReceipt'
+
 const props = withDefaults(defineProps<{
   breed?: string
   label?: string

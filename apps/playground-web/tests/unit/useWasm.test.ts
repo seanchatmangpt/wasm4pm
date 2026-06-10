@@ -75,7 +75,7 @@ WASM_FN_STUBS.load_eventlog_from_xes = vi.fn(() => 42)
 WASM_FN_STUBS.load_ocel_from_json = vi.fn(() => 43)
 WASM_FN_STUBS.discover_dfg = vi.fn(() => JSON.stringify({ nodes: [], edges: [] }))
 
-vi.mock('/wasm4pm.js', () => WASM_FN_STUBS)
+vi.mock('wasm4pm', () => WASM_FN_STUBS)
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -83,7 +83,7 @@ vi.mock('/wasm4pm.js', () => WASM_FN_STUBS)
 
 async function freshUseWasm() {
   vi.resetModules()
-  vi.mock('/wasm4pm.js', () => WASM_FN_STUBS)
+  vi.mock('wasm4pm', () => WASM_FN_STUBS)
   const { useWasm } = await import('../../app/composables/useWasm')
   return useWasm()
 }

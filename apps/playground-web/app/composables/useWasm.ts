@@ -1,3 +1,5 @@
+import { ref, readonly } from 'vue'
+
 // Singleton — WASM init is expensive (8MB), happens once per browser session
 let _wasm: Record<string, unknown> | null = null
 const _ready = ref(false)
@@ -52,7 +54,7 @@ export const useWasm = () => {
   async function init() {
     if (import.meta.server || _wasm) return
     try {
-      const mod = await import('/wasm4pm.js' as string)
+      const mod = await import('wasm4pm')
       // Web target: explicitly load the .wasm binary from the static file server
       await (mod as any).default(new URL('/wasm4pm_bg.wasm', window.location.origin))
       _wasm = mod as unknown as Record<string, unknown>

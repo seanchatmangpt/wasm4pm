@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { useWasm } from '~/composables/useWasm'
+import { useReceipt } from '~/composables/useReceipt'
+
 const props = withDefaults(defineProps<{
   algorithm?: string
   preset?: string

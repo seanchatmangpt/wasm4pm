@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mount, flushPromises } from '@vue/test-utils'
 
 // ELK stub factory — registered via vi.doMock before each test loads the component.
 function makeElkMock(overrideLayout?: (g: unknown) => Promise<unknown>) {
@@ -40,9 +40,8 @@ describe('ProcessGraph', () => {
   it('renders "No graph data" message when data has no nodes/edges', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
-      props: { data: {} },
-    })
+    const wrapper = mount(ProcessGraph, { props: { data: {} } })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('No graph data')
@@ -52,7 +51,7 @@ describe('ProcessGraph', () => {
   it('renders SVG when data has a nodes array', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }],
@@ -60,6 +59,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.find('svg').exists()).toBe(true)
@@ -69,7 +69,7 @@ describe('ProcessGraph', () => {
   it('renders correct number of node rectangles', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [
@@ -81,6 +81,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.findAll('rect').length).toBe(3)
@@ -90,7 +91,7 @@ describe('ProcessGraph', () => {
   it('renders edges as SVG lines', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }],
@@ -98,6 +99,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.findAll('line').length).toBeGreaterThanOrEqual(1)
@@ -114,11 +116,12 @@ describe('ProcessGraph', () => {
       },
     }))
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: { nodes: [{ id: 'x', label: 'X' }], edges: [] },
       },
     })
+    await flushPromises()
     // isLayouting is set to true before elk.layout resolves — check immediately
     const html = wrapper.html()
     expect(html.includes('Computing layout') || html.includes('svg')).toBe(true)
@@ -128,7 +131,7 @@ describe('ProcessGraph', () => {
   it('accepts activities and directly_follows keys', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           activities: [{ id: 'p', label: 'P' }, { id: 'q', label: 'Q' }],
@@ -136,6 +139,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.find('svg').exists()).toBe(true)
@@ -147,11 +151,12 @@ describe('ProcessGraph', () => {
   it('handles string nodes', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: { nodes: ['alpha', 'beta'], edges: [] },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     expect(wrapper.find('svg').exists()).toBe(true)
@@ -164,7 +169,7 @@ describe('ProcessGraph', () => {
   it('edge weights affect stroke-width', async () => {
     vi.doMock('elkjs/lib/elk.bundled.js', () => makeElkMock())
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [
@@ -179,6 +184,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
     const lines = wrapper.findAll('line')
@@ -198,7 +204,7 @@ describe('ProcessGraph', () => {
       },
     }))
     const ProcessGraph = await loadComponent()
-    const wrapper = await mountSuspended(ProcessGraph, {
+    const wrapper = mount(ProcessGraph, {
       props: {
         data: {
           nodes: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }],
@@ -206,6 +212,7 @@ describe('ProcessGraph', () => {
         },
       },
     })
+    await flushPromises()
     await new Promise(r => setTimeout(r, 100))
     await wrapper.vm.$nextTick()
     expect(wrapper.find('svg').exists()).toBe(true)

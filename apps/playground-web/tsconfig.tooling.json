@@ -1,0 +1,8 @@
+{
+  "extends": "./.nuxt/tsconfig.node.json",
+  "include": [
+    "./.nuxt/nuxt.node.d.ts",
+    "./vitest.config.ts",
+    "./nuxt.config.ts"
+  ]
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mount, flushPromises } from '@vue/test-utils'
 import CognitionDemo from '../../app/components/content/CognitionDemo.vue'
 
 // ---------------------------------------------------------------------------
@@ -38,24 +38,21 @@ beforeEach(() => {
 describe('CognitionDemo', () => {
   // 1. renders breed name as badge
   it('renders breed name as a badge', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     expect(wrapper.text()).toContain('mycin')
   })
 
   it('renders custom breed name when prop differs from default', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'eliza' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'eliza' } })
+    await flushPromises()
     expect(wrapper.text()).toContain('eliza')
   })
 
   // 2. renders JSON editor (UTextarea) for contract input
   it('renders a textarea containing the preset contract JSON', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const textarea = wrapper.find('textarea')
     expect(textarea.exists()).toBe(true)
     const value = textarea.element.value
@@ -67,9 +64,8 @@ describe('CognitionDemo', () => {
 
   // 3. Run button present
   it('has a Run button', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const buttons = wrapper.findAll('button')
     const runButton = buttons.find(b => b.text().includes('Run'))
     expect(runButton).toBeDefined()
@@ -83,9 +79,8 @@ describe('CognitionDemo', () => {
     const pendingFetch = new Promise(r => { resolveFetch = r })
     vi.stubGlobal('$fetch', () => pendingFetch)
 
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const buttons = wrapper.findAll('button')
     const runButton = buttons.find(b => b.text().includes('Run'))!
 
@@ -104,18 +99,16 @@ describe('CognitionDemo', () => {
 
   // 5. result area hidden before first run
   it('does not render the result area before any run', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const pre = wrapper.find('pre')
     expect(pre.exists()).toBe(false)
   })
 
   // 6. after run shows output JSON
   it('displays output JSON after a successful run', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const buttons = wrapper.findAll('button')
     const runButton = buttons.find(b => b.text().includes('Run'))!
 
@@ -131,15 +124,13 @@ describe('CognitionDemo', () => {
 
   // 7. receipt hash displayed after run (ReceiptViewer shows output_hash label)
   it('displays receipt hash after a successful run', async () => {
-    const wrapper = await mountSuspended(CognitionDemo, {
-      props: { breed: 'mycin' },
-    })
+    const wrapper = mount(CognitionDemo, { props: { breed: 'mycin' } })
+    await flushPromises()
     const buttons = wrapper.findAll('button')
     const runButton = buttons.find(b => b.text().includes('Run'))!
 
     await runButton.trigger('click')
-    await new Promise(r => setTimeout(r, 0))
-    await wrapper.vm.$nextTick()
+    await flushPromises()
 
     const text = wrapper.text()
     // ReceiptViewer renders the output_hash and run_id field labels

@@ -124,8 +124,8 @@ describe('useReceipt', () => {
     const receipts = getReceipts()
     expect(receipts).toHaveLength(2)
     // Most recent first (unshift)
-    expect(receipts[0].algorithm).toBe('algo-2')
-    expect(receipts[1].algorithm).toBe('algo-1')
+    expect(receipts[0]!.algorithm).toBe('algo-2')
+    expect(receipts[1]!.algorithm).toBe('algo-1')
   })
 
   // 8. getReceipts persists to localStorage
@@ -136,9 +136,9 @@ describe('useReceipt', () => {
     // Raw localStorage should hold JSON
     const raw = localStorageStore['wasm4pm:receipts']
     expect(raw).toBeDefined()
-    const parsed = JSON.parse(raw)
+    const parsed = JSON.parse(raw!)
     expect(Array.isArray(parsed)).toBe(true)
-    expect(parsed[0].algorithm).toBe('conformance')
+    expect(parsed[0]!.algorithm).toBe('conformance')
   })
 
   // 9. clearReceipts empties the receipt list
@@ -162,7 +162,7 @@ describe('useReceipt', () => {
     const receipts = getReceipts()
     expect(receipts).toHaveLength(20)
     // Most recent save was algo-24, so it should be first
-    expect(receipts[0].algorithm).toBe('algo-24')
+    expect(receipts[0]!.algorithm).toBe('algo-24')
     // algo-0 through algo-4 were evicted
     const algorithms = receipts.map(r => r.algorithm)
     expect(algorithms).not.toContain('algo-0')
@@ -188,7 +188,7 @@ describe('useReceipt', () => {
     const receipts = getReceipts()
 
     expect(receipts).toHaveLength(1)
-    expect(receipts[0].algorithm).toBe('pre-existing')
-    expect(receipts[0].input_hash).toBe('aabbcc')
+    expect(receipts[0]!.algorithm).toBe('pre-existing')
+    expect(receipts[0]!.input_hash).toBe('aabbcc')
   })
 })

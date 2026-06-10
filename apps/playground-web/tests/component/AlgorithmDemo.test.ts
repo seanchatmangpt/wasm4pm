@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mountSuspended } from '@nuxt/test-utils/runtime'
+import { mount, flushPromises } from '@vue/test-utils'
 import { ref } from 'vue'
 import AlgorithmDemo from '~/components/content/AlgorithmDemo.vue'
 
 // ── useWasm mock ──────────────────────────────────────────────────────────────
-const mockRunAlgorithm = vi.fn(() => ({ nodes: [], edges: [] }))
+const mockRunAlgorithm = vi.fn<() => unknown>(() => ({ nodes: [], edges: [] }))
 const mockLoadXes = vi.fn(() => 1)
 const mockInit = vi.fn()
 const mockReady = ref(true)
@@ -38,7 +38,9 @@ vi.stubGlobal('$fetch', vi.fn(async () => FAKE_XES))
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 async function mountDemo(props: Record<string, unknown> = {}) {
-  return mountSuspended(AlgorithmDemo, { props })
+  const wrapper = mount(AlgorithmDemo, { props })
+  await flushPromises()
+  return wrapper
 }
 
 describe('AlgorithmDemo', () => {
@@ -49,8 +51,8 @@ describe('AlgorithmDemo', () => {
     mockLoadXes.mockReset()
     mockLoadXes.mockReturnValue(1)
     mockInit.mockReset()
-    vi.mocked($fetch).mockReset()
-    vi.mocked($fetch).mockResolvedValue(FAKE_XES as any)
+    vi.mocked(($fetch as any)).mockReset()
+    vi.mocked(($fetch as any)).mockResolvedValue(FAKE_XES as any)
   })
 
   it('renders algorithm badge with correct algorithm name prop', async () => {
@@ -107,13 +109,13 @@ describe('AlgorithmDemo', () => {
     const buttons = wrapper.findAll('button')
     const runBtn = buttons.find(b => b.text().includes('Run'))
     await runBtn?.trigger('click')
-    await wrapper.vm.$nextTick()
+    await flushPromises()
     expect(wrapper.text()).toContain('WASM exploded')
   })
 
   it('loads preset XES on mount via $fetch', async () => {
     await mountDemo({ preset: 'small-example' })
-    expect(vi.mocked($fetch)).toHaveBeenCalledWith(
+    expect(vi.mocked(($fetch as any))).toHaveBeenCalledWith(
       '/samples/small-example.xes',
       expect.objectContaining({ responseType: 'text' }),
     )
