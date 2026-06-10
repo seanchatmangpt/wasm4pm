@@ -9,5 +9,8 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/**/index.ts'],
     },
+    benchmark: {
+      include: ['src/**/__benchmarks__/**/*.bench.ts'],
+    },
   },
 });

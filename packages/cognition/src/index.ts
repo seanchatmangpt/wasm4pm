@@ -13,5 +13,6 @@ export * from './contract/guard.js';
 export * from './receipt/chain.js';
 export * from './receipt/replay.js';
 export * from './adversarial/catalogue.js';
+export * from './bvc.js';
 export * from './system/build.js';
 export * from './system/verify.js';

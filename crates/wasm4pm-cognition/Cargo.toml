@@ -39,4 +39,9 @@ actor-mac-fallback = []
 serde_json = { workspace = true }
 proptest = { workspace = true }
 trybuild = "1.0"
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[[bench]]
+name = "breed_latency"
+harness = false
 

@@ -2735,6 +2735,7 @@ name = "wasm4pm-cognition"
 version = "26.6.9"
 dependencies = [
  "blake3",
+ "criterion",
  "ed25519-dalek",
  "hex",
  "indexmap",

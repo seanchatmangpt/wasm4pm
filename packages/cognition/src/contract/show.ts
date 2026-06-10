@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import { ShowReportSchema } from '../schemas.js';
+import { ZOD_VALIDATION_ENABLED } from '../validation-config.js';
 import type { ShowReport } from '../types.js';
 
 export interface ShowOptions {
@@ -28,6 +29,7 @@ function formatZodIssues(issues: Array<{path: (string|number)[], code: string, m
 }
 
 function assertShowReport(raw: unknown): ShowReport {
+  if (!ZOD_VALIDATION_ENABLED) return raw as ShowReport;
   const result = ShowReportSchema.safeParse(raw);
   if (!result.success) {
     throw new CognitionError(

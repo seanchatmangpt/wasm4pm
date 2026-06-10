@@ -10,6 +10,7 @@
 //! field-walking code required.
 
 import { CognitionError } from '../errors.js';
+import { ZOD_VALIDATION_ENABLED } from '../validation-config.js';
 import {
   ContractResultSchema,
   ReplayRecordSchema,
@@ -35,6 +36,7 @@ function parseWith<T>(
   raw: unknown,
   op: string,
 ): T {
+  if (!ZOD_VALIDATION_ENABLED) return raw as T;
   const result = schema.safeParse(raw);
   if (!result.success) {
     reject(op, result.error?.message ?? 'schema validation failed');
@@ -44,6 +46,7 @@ function parseWith<T>(
 
 /** `cognition_run` output per `wasm.rs:182-190`. */
 export function assertContractResult(raw: unknown): ContractResult {
+  if (!ZOD_VALIDATION_ENABLED) return raw as ContractResult;
   const result = ContractResultSchema.safeParse(raw);
   if (!result.success) {
     reject('cognition_run', result.error.message);

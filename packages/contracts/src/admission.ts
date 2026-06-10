@@ -50,3 +50,16 @@ export const DEFAULT_NONCE_LEDGER_PATH = '.wasm4pm/nonce-ledger.jsonl';
 export const DEFAULT_POLICY_PATH = '.wasm4pm/admission-policy.json';
 export const DEFAULT_BOUNDARY_MAP_PATH = '.wasm4pm/boundary-map.json';
 export const DEFAULT_REVOCATION_PATH = '.wasm4pm/revoked-validators.json';
+
+/**
+ * BVCAdmissionResult — typed gate marker for the Breed Validation Certificate
+ * admission check.  Plain interface; no Zod schema required.
+ *
+ * Produced by evaluating computeBVC() and mapping to an admission decision.
+ */
+export interface BVCAdmissionResult {
+  admitted: boolean;
+  bvc_score: number;
+  failing_dimensions: string[];
+  breed: string;
+}

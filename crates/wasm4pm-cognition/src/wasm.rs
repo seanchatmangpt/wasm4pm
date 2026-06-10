@@ -210,6 +210,9 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         return Err(wasm_err("breed must be 1..=256 chars"));
     }
 
+    // Compute input hash before dispatch (covers raw request bytes).
+    let input_hash = blake3::hash(input_json.as_bytes()).to_hex().to_string();
+
     // Dispatch to the breed's run() method.
     let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
@@ -240,6 +243,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "status": "ok",
         "breed": input.breed,
         "run_id": run_id,
+        "input_hash": input_hash,
         "output_hash": output_hash,
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,

@@ -31,7 +31,7 @@ export const CandidateSchema = z.object({
   id: z.string(),
   score: z.number(),
   eliminated: z.boolean(),
-  elimination_reason: z.string().optional(),
+  elimination_reason: z.string().nullish(),
 });
 export type Candidate = z.infer<typeof CandidateSchema>;
 
@@ -117,7 +117,7 @@ export const BreedOutputSchema = z.object({
   breed: z.string(),
   candidates: z.array(CandidateSchema),
   facts: z.array(FactSchema),
-  selected: z.string().optional(),
+  selected: z.string().nullable().optional(),
   explanation: z.string(),
   inference_trace: z.array(TraceStepSchema).optional(),
 });
@@ -166,6 +166,7 @@ export const ContractResultSchema = z.object({
   status: z.literal('ok'),
   breed: BreedIdSchema,
   run_id: z.string().min(1),
+  input_hash: z.string().min(1),
   output_hash: z.string().min(1),
   replay_pointer: z.string(),
   options_profile: z.string().nullable(),

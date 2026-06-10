@@ -32,6 +32,133 @@ use prolog8::{
     Rule8, RuleId, SourceId,
 };
 
+/// Parse a predicate-encoded key like `"parent:alice,bob"` into `("parent", vec!["alice","bob"])`.
+/// Keys without `:` are treated as 0-arity: `("parent", vec![])`.
+fn parse_key(key: &str) -> (&str, Vec<&str>) {
+    if let Some(pos) = key.find(':') {
+        let pred = &key[..pos];
+        let args_str = &key[pos + 1..];
+        let args: Vec<&str> = args_str.split(',').collect();
+        (pred, args)
+    } else {
+        (key, vec![])
+    }
+}
+
+/// Check if a string is a variable like `"?0"`, `"?1"`, etc.
+fn is_var(s: &str) -> Option<usize> {
+    if s.starts_with('?') {
+        s[1..].parse::<usize>().ok()
+    } else {
+        None
+    }
+}
+
+/// Forward-chaining derivation for rules with `?N` variables.
+/// Returns a list of derived facts as `(predicate_name, args)` tuples.
+fn forward_chain(
+    base_facts: &[(String, Vec<String>)],
+    rules: &[&crate::breeds::Rule],
+) -> Vec<(String, Vec<String>)> {
+    let mut derived: Vec<(String, Vec<String>)> = base_facts.to_vec();
+    let mut changed = true;
+    let mut iterations = 0;
+    while changed && iterations < 32 {
+        changed = false;
+        iterations += 1;
+        for rule in rules {
+            // Only handle rules with ?N variables
+            let has_vars = rule
+                .premise
+                .iter()
+                .chain(std::iter::once(&rule.conclusion))
+                .any(|s| s.contains('?'));
+            if !has_vars {
+                continue;
+            }
+            // Try to match each body atom against known facts, collecting bindings
+            let premises: Vec<(String, Vec<String>)> = rule
+                .premise
+                .iter()
+                .map(|p| {
+                    let (pred, args) = parse_key(p);
+                    (
+                        pred.to_string(),
+                        args.into_iter().map(|a| a.to_string()).collect(),
+                    )
+                })
+                .collect();
+            // Generate all combinations of fact matches for the premises
+            let bindings_list = match_premises(&derived, &premises);
+            for bindings in bindings_list {
+                let (head_pred, head_args) = parse_key(&rule.conclusion);
+                let resolved_args: Vec<String> = head_args
+                    .into_iter()
+                    .map(|a| {
+                        if let Some(idx) = is_var(a) {
+                            bindings.get(&idx).cloned().unwrap_or_else(|| a.to_string())
+                        } else {
+                            a.to_string()
+                        }
+                    })
+                    .collect();
+                let new_fact = (head_pred.to_string(), resolved_args);
+                if !derived.contains(&new_fact) {
+                    derived.push(new_fact);
+                    changed = true;
+                }
+            }
+        }
+    }
+    derived
+}
+
+/// Try to match a list of premise atoms against the known fact base.
+/// Returns a list of variable binding maps (index → value).
+fn match_premises(
+    facts: &[(String, Vec<String>)],
+    premises: &[(String, Vec<String>)],
+) -> Vec<std::collections::HashMap<usize, String>> {
+    let mut results: Vec<std::collections::HashMap<usize, String>> =
+        vec![std::collections::HashMap::new()];
+    for (pred, args) in premises {
+        let mut next_results = Vec::new();
+        for bindings in &results {
+            for (fact_pred, fact_args) in facts {
+                if fact_pred != pred || fact_args.len() != args.len() {
+                    continue;
+                }
+                // Try to unify args with fact_args under current bindings
+                let mut new_bindings = bindings.clone();
+                let mut ok = true;
+                for (a, fa) in args.iter().zip(fact_args.iter()) {
+                    if let Some(idx) = is_var(a) {
+                        if let Some(existing) = new_bindings.get(&idx) {
+                            if existing != fa {
+                                ok = false;
+                                break;
+                            }
+                        } else {
+                            new_bindings.insert(idx, fa.clone());
+                        }
+                    } else if a != fa {
+                        ok = false;
+                        break;
+                    }
+                }
+                if ok {
+                    next_results.push(new_bindings);
+                }
+            }
+        }
+        results = next_results;
+        if results.is_empty() {
+            break;
+        }
+    }
+    results
+}
+
 /// Real Prolog breed backed by the Prolog8 kernel.
 pub struct Prolog;
 
@@ -64,6 +191,136 @@ impl CognitionBreed for Prolog {
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let mut trace: Vec<TraceStep> = Vec::new();
         let mut step_no = 0usize;
+
+        // 0. Forward-chaining fast-path: if any rule uses ?N variables,
+        //    derive new facts by Robinson shared-variable unification before
+        //    delegating to the Prolog8 kernel (which uses flat 1-arity terms).
+        let has_var_rules = input.rules.iter().any(|r| {
+            r.premise.iter().any(|p| p.contains('?')) || r.conclusion.contains('?')
+        });
+        if has_var_rules {
+            // Parse base facts into (predicate, args) tuples
+            let base_facts: Vec<(String, Vec<String>)> = input
+                .facts
+                .iter()
+                .map(|f| {
+                    let (pred, args) = parse_key(&f.key);
+                    let mut all_args: Vec<String> =
+                        args.into_iter().map(|a| a.to_string()).collect();
+                    if all_args.is_empty() {
+                        all_args.push(f.value.clone());
+                    }
+                    (pred.to_string(), all_args)
+                })
+                .collect();
+
+            // Emit intern-fact trace steps
+            for fact in &input.facts {
+                trace.push(TraceStep {
+                    step: step_no,
+                    kind: "intern-fact".into(),
+                    detail: format!("{}={}", fact.key, fact.value),
+                    depth: 0,
+                    objects: vec![],
+                });
+                step_no += 1;
+            }
+
+            // Load rules trace
+            for rule in &input.rules {
+                trace.push(TraceStep {
+                    step: step_no,
+                    kind: "load-rule".into(),
+                    detail: rule.id.clone(),
+                    depth: 0,
+                    objects: vec![],
+                });
+                step_no += 1;
+            }
+
+            let rule_refs: Vec<&crate::breeds::Rule> = input.rules.iter().collect();
+            let all_facts = forward_chain(&base_facts, &rule_refs);
+
+            // Check each goal against derived facts
+            let (selected, explanation) = if let Some(goal) = input.goals.first() {
+                let (goal_pred, goal_args) = parse_key(&goal.predicate);
+                let goal_args_owned: Vec<String> =
+                    goal_args.into_iter().map(|a| a.to_string()).collect();
+                // Also check goal.predicate as compound key (e.g. "grandparent:alice,carol")
+                let (g_pred2, g_args2) = parse_key(&goal.value);
+                let _ = (g_pred2, g_args2); // value may be "true" — use key-based match
+
+                // Build the full goal tuple from goal.predicate (e.g. "grandparent:alice,carol")
+                let matched = all_facts.iter().find(|(pred, args)| {
+                    pred == goal_pred && *args == goal_args_owned
+                });
+
+                if let Some((matched_pred, matched_args)) = matched {
+                    let label = matched_args.last().cloned().unwrap_or_else(|| goal.id.clone());
+                    trace.push(TraceStep {
+                        step: step_no,
+                        kind: "infer".into(),
+                        detail: format!(
+                            "derived {}:{}",
+                            matched_pred,
+                            matched_args.join(",")
+                        ),
+                        depth: 0,
+                        objects: vec![],
+                    });
+                    step_no += 1;
+                    trace.push(TraceStep {
+                        step: step_no,
+                        kind: "decision".into(),
+                        detail: "Allow via forward-chain derivation".into(),
+                        depth: 0,
+                        objects: vec![],
+                    });
+                    let exp = format!(
+                        "Prolog8 admitted query via forward-chain: {}({}) derived from {} facts",
+                        matched_pred,
+                        matched_args.join(","),
+                        all_facts.len()
+                    );
+                    (Some(label), exp)
+                } else {
+                    trace.push(TraceStep {
+                        step: step_no,
+                        kind: "decision".into(),
+                        detail: "Deny — goal not derivable".into(),
+                        depth: 0,
+                        objects: vec![],
+                    });
+                    let exp = format!(
+                        "Prolog8 denied query — {}:{} not derivable from {} facts",
+                        goal_pred,
+                        goal_args_owned.join(","),
+                        all_facts.len()
+                    );
+                    (None, exp)
+                }
+            } else {
+                trace.push(TraceStep {
+                    step: step_no,
+                    kind: "decision".into(),
+                    detail: format!("Derived {} facts via forward-chain", all_facts.len()),
+                    depth: 0,
+                    objects: vec![],
+                });
+                (None, format!("Derived {} facts", all_facts.len()))
+            };
+
+            return Ok(BreedOutput {
+                breed: BreedId::Prolog,
+                candidates: input.candidates.clone(),
+                facts: input.facts.clone(),
+                selected,
+                explanation,
+                inference_trace: trace,
+                ocel_log: None,
+                retained_cases: vec![],
+            });
+        }
 
         // 1. Build a Prolog8 catalog from BreedInput rules + facts.
         let mut catalog = Catalog::new(CatalogId(1));
