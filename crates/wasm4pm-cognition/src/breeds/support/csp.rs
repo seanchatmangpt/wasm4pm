@@ -64,6 +64,10 @@ impl CspSolver {
         match op {
             "!=" => val1 != val2,
             "==" => val1 == val2,
+            "<" => val1.parse::<i32>().unwrap_or(0) < val2.parse::<i32>().unwrap_or(0),
+            "<=" => val1.parse::<i32>().unwrap_or(0) <= val2.parse::<i32>().unwrap_or(0),
+            ">" => val1.parse::<i32>().unwrap_or(0) > val2.parse::<i32>().unwrap_or(0),
+            ">=" => val1.parse::<i32>().unwrap_or(0) >= val2.parse::<i32>().unwrap_or(0),
             _ => false, // Fallback
         }
     }
@@ -74,8 +78,20 @@ impl CspSolver {
         
         let op = self.constraints.iter()
             .find(|c| (c.var1 == x && c.var2 == y) || (c.var1 == y && c.var2 == x))
-            .map(|c| c.op.clone())
-            .unwrap_or_else(|| "!=".to_string()); // Default or maybe no constraint
+            .map(|c| {
+                if c.var1 == x {
+                    c.op.clone()
+                } else {
+                    match c.op.as_str() {
+                        "<" => ">".to_string(),
+                        "<=" => ">=".to_string(),
+                        ">" => "<".to_string(),
+                        ">=" => "<=".to_string(),
+                        _ => c.op.clone(),
+                    }
+                }
+            })
+            .unwrap_or_else(|| "!=".to_string());
 
         let dx = domains.get(x).unwrap().clone();
         let dy = domains.get(y).unwrap().clone();

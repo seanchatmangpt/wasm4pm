@@ -72,6 +72,8 @@ impl CognitionBreed for FramesInheritance {
         let mut visited = HashSet::new();
         let mut result = None;
         let mut distance = 0;
+        let mut default_val = None;
+        let mut default_frame = None;
 
         loop {
             if visited.contains(&current_frame) {
@@ -96,10 +98,13 @@ impl CognitionBreed for FramesInheritance {
                     break;
                 }
             }
-            if let Some(slots) = default_slots.get(&current_frame) {
-                if let Some(val) = slots.get(&target_slot) {
-                    result = Some((val.clone(), current_frame.clone(), "default".to_string()));
-                    break;
+            
+            if default_val.is_none() {
+                if let Some(slots) = default_slots.get(&current_frame) {
+                    if let Some(val) = slots.get(&target_slot) {
+                        default_val = Some(val.clone());
+                        default_frame = Some(current_frame.clone());
+                    }
                 }
             }
 
@@ -109,6 +114,10 @@ impl CognitionBreed for FramesInheritance {
             } else {
                 break;
             }
+        }
+
+        if result.is_none() && default_val.is_some() {
+            result = Some((default_val.unwrap(), default_frame.unwrap(), "default".to_string()));
         }
 
         if let Some((val, found_frame, kind)) = result {
@@ -181,7 +190,7 @@ mod tests {
                 Fact { key: "frame:zilk:isa".to_string(), value: "welp".to_string() },
                 Fact { key: "frame:welp:isa".to_string(), value: "snorf".to_string() },
                 Fact { key: "frame:snorf:slot:color:default".to_string(), value: "blue".to_string() },
-                Fact { key: "frame:welp:slot:color".to_string(), value: "red".to_string() },
+                Fact { key: "frame:welp:slot:color:default".to_string(), value: "red".to_string() },
             ],
             cases: vec![],
             rules: vec![],
@@ -191,9 +200,8 @@ mod tests {
         let out = breed.run(&input).expect("should succeed");
         assert_eq!(out.selected, Some("red".to_string()));
         
-        // Assert distance == 1 for welp (since zilk is 0)
         let walk_steps: Vec<_> = out.inference_trace.iter().filter(|s| s.kind == "frame-walk").collect();
-        assert_eq!(walk_steps.len(), 2);
+        assert_eq!(walk_steps.len(), 3);
     }
     
     #[test]

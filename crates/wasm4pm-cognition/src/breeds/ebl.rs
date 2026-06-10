@@ -407,9 +407,38 @@ mod tests {
         assert!(rule_fact.value.contains("concave"));
         assert!(rule_fact.value.contains("drinkable"));
 
-        // Hidden oracle test: apply learned rule to obj_x
-        let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
-        let applied = rule_fact.value.replace("?y_g1", "obj_x");
-        assert_eq!(applied, "has_handle(obj_x), concave(obj_x) => drinkable(obj_x)");
+        // Hidden oracle test: apply learned rule to obj2
+        let rule_str = rule_fact.value.clone();
+        let parts: Vec<&str> = rule_str.split(" => ").collect();
+        let premises: Vec<String> = parts[0].split(", ").map(|s| s.to_string()).collect();
+        let conclusion = parts[1].to_string();
+
+        let learned_rule = Rule {
+            id: "learned_rule_1".to_string(),
+            premise: premises,
+            conclusion: conclusion,
+            certainty: 1.0,
+        };
+
+        let apply_input = BreedInput {
+            intent: "apply".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "has_handle(obj2)".to_string(), value: "true".to_string() },
+                Fact { key: "concave(obj2)".to_string(), value: "true".to_string() },
+            ],
+            cases: vec![],
+            rules: vec![learned_rule],
+            goals: vec![Goal {
+                id: "g2".to_string(),
+                predicate: "drinkable(obj2)".to_string(),
+                value: "true".to_string(),
+            }],
+            state: vec![],
+        };
+
+        let apply_output = Ebl.run(&apply_input).expect("EBL apply run failed");
+        let fired_learned = apply_output.inference_trace.iter().any(|t| t.kind == "ebl-explain" && t.detail == "rule: learned_rule_1");
+        assert!(fired_learned, "Trace must show the learned rule id firing");
     }
 }
