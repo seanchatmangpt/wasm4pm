@@ -81,8 +81,9 @@ merely conjectured.
 The MYCIN non-falsifiability argument can now be stated precisely.  Let $X_{\text{MYCIN}}$
 be the space of patient symptom vectors and $Y_{\text{MYCIN}}$ be the space of
 antibiotic recommendations with associated confidence factors.  The 1976 binary
-produces outputs via the Certainty Factor calculus (Definition~\ref{def:cf-calculus}
-in Chapter~\ref{chap:mycin-breed}), but the binary itself emits no certificate
+produces outputs via the Certainty Factor calculus---the rule
+$\CF(H,E) = \CF_{\mathrm{old}} + \CF_{\mathrm{new}}(1-\CF_{\mathrm{old}})$
+for evidence with the same sign, as defined by \citet{shortliffe1976}---but the binary itself emits no certificate
 binding its inputs to its outputs, and no invariant check that would distinguish
 rule-firing from table lookup.  The evaluation suite $T_{\text{eval}}$ used in the
 published study was finite and small relative to $\lvert X_{\text{MYCIN}} \rvert$.
