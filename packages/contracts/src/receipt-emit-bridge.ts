@@ -14,6 +14,7 @@ export interface ReceiptEmitRecord {
   timestamp: string;
   fields: {
     'run.id': string;
+    'trace.id': string;
     'mcpp.receipt.signer': 'proof_aggregator';
     'mcpp.receipt.signature': string;
     'mcpp.receipt.algorithm': string;
@@ -36,6 +37,7 @@ export function emitReceiptEmit(receipt: Receipt): ReceiptEmitRecord {
     timestamp: receipt.end_time,
     fields: {
       'run.id': receipt.run_id,
+      'trace.id': receipt.trace_id ?? '',
       'mcpp.receipt.signer': 'proof_aggregator',
       'mcpp.receipt.signature': signature,
       'mcpp.receipt.algorithm': receipt.algorithm.name,

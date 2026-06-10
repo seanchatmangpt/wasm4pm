@@ -14,7 +14,7 @@ Three hooks are configured to ensure Claude Code **cannot fail** when working wi
 Runs on every session start (including after context compaction).
 
 **Output to Claude's context:**
-- Health summary: `✓ wasm4pm environment: HEALTHY (20 ok, 3 warn, 0 fail)`
+- Health summary: `✓ wasm4pm environment: HEALTHY (42 ok, 0 defects)`
 - Or degradation notice with list: `✗ wasm4pm environment: DEGRADED (failures listed)`
 - Checkpoint status: `Checkpoint: 20/100 traces processed (last: 2026-04-11T19:04:59Z)`
 

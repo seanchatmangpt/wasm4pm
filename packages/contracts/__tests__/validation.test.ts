@@ -2,7 +2,7 @@
  * Tests for receipt validation and tampering detection
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ReceiptBuilder } from '../src/receipt-builder';
 import {
   validateReceipt,
@@ -30,6 +30,7 @@ describe('receipt validation', () => {
       })
       .setAlgorithm({ name: 'test-algo', version: '1.0' })
       .setModel({ nodes: 5, edges: 8 })
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
   });
 
@@ -126,6 +127,7 @@ describe('receipt validation', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
       expect(verifyReceiptHashes(orderReceipt, configReordered, input, plan).valid).toBe(true);
     });

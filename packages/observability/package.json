@@ -12,6 +12,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./file-span-exporter": {
+      "import": "./dist/file-span-exporter.js",
+      "types": "./dist/file-span-exporter.d.ts"
     }
   },
   "files": [

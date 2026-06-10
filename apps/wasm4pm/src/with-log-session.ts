@@ -232,10 +232,6 @@ export async function withLogSession<T>(
   try {
     return await fn(wasm, logHandle);
   } finally {
-    try {
-      (wasm['delete_object'] as (h: string) => void)(logHandle);
-    } catch {
-      // Best-effort cleanup — do not mask the original error
-    }
+    (wasm['delete_object'] as (h: string) => void)(logHandle);
   }
 }

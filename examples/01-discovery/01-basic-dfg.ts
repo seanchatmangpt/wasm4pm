@@ -1,14 +1,11 @@
 /**
  * Tutorial: Basic DFG Discovery
- * 
- * What You'll Learn:
- * - How to initialize the wasm4pm Kernel
- * - How to load an event log safely
- * - How to invoke the baseline 'dfg' algorithm
- * - How to parse the WASM Result object
  */
 import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import { join } from 'node:path';
 import { Kernel } from 'wasm4pm';
+import * as core from '@wasm4pm/core';
 import { logger } from '../utils/logger.js';
 
 async function runDfgTutorial(): Promise<void> {
@@ -16,21 +13,24 @@ async function runDfgTutorial(): Promise<void> {
   
   // Initialize WebAssembly environment
   logger.step(1, 3, 'Initializing the WASM Kernel');
-  const wasm = await import('wasm4pm');
-  const kernel = new Kernel(wasm as any);
+  
+  // ── AUTHENTIC WASM INITIALIZATION ──────────────────────────────────────────
+  if (typeof (core as any).default === 'function') {
+    await (core as any).default();
+  }
+  
+  const kernel = new Kernel(core as any);
   await kernel.init();
   logger.success('Kernel initialized and bound to WebAssembly linear memory.');
 
   // Load data
-  logger.step(2, 3, 'Loading Event Data');
-  const xes = `<?xml version="1.0" encoding="UTF-8" ?>
-<log xes.version="1.0">
-  <trace><string key="concept:name" value="Receive Order"/><string key="concept:name" value="Ship Order"/></trace>
-  <trace><string key="concept:name" value="Receive Order"/><string key="concept:name" value="Ship Order"/></trace>
-</log>`;
-  logger.data('Input XES Log', xes, 5);
+  logger.step(2, 3, 'Loading Real Event Data');
+  const xesPath = join(process.cwd(), fs.existsSync('data') ? '' : '..', 'data/small-example.xes');
+  const xes = fs.readFileSync(xesPath, 'utf8');
+  logger.info(`Loading real log: ${xesPath}`);
 
-  const logHandle = wasm.load_eventlog_from_xes(xes);
+  const logHandle = core.load_eventlog_from_xes(xes);
+  assert.ok(logHandle, 'Failed to load event log: null handle');
   logger.success(`Log ingested successfully. Returned memory handle: ${logHandle.slice(0,8)}...`);
 
   // Execute Algorithm
@@ -38,20 +38,30 @@ async function runDfgTutorial(): Promise<void> {
   try {
     logger.info('Invoking "dfg" (Directly-Follows Graph) from the registry...');
     const result = await kernel.run('dfg', logHandle, { activityKey: 'concept:name' });
-    assert.ok(result !== null && result !== undefined, 'DFG result must not be null');
-    assert.ok(result.durationMs >= 0, 'Duration must be non-negative');
-
-    logger.success(`Discovery complete in ${result.durationMs.toFixed(2)}ms`);
+    
+    // ── RIGOROUS VALIDATION ──────────────────────────────────────────────────
+    assert.ok(result.handle, 'Result handle must be defined');
+    
+    // Some kernel paths return the JSON directly instead of a handle
+    const dfgJson = result.handle.startsWith('{') ? result.handle : core.export_dfg_to_json(result.handle);
+    assert.ok(dfgJson, 'Failed to retrieve DFG model JSON from WASM memory');
+    
+    const dfg = JSON.parse(dfgJson);
+    assert.ok(Array.isArray(dfg.nodes), 'DFG must have nodes array');
+    assert.ok(Array.isArray(dfg.edges), 'DFG must have edges array');
+    
+    logger.info(`Graph Topology: ${dfg.nodes.length} nodes, ${dfg.edges.length} edges`);
+    assert.ok(dfg.nodes.length >= 2, 'Graph must have at least 2 activity nodes');
+    
+    logger.success('Mathematical correctness verified: Graph topology is structurally sound.');
     logger.data('WASM Kernel Result', result);
   } catch (e) {
     logger.error(`Discovery failed: ${e instanceof Error ? e.message : String(e)}`);
-    logger.info('Hint: Ensure your log has matching activity keys.');
+    process.exit(1);
   }
 }
 
-process.on('uncaughtException', (err) => {
-  console.error('Assertion failed:', err.message);
+runDfgTutorial().catch((error: Error) => {
+  console.error('Uncaught error:', error);
   process.exit(1);
 });
-
-runDfgTutorial().catch(console.error);

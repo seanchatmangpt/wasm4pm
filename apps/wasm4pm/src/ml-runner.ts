@@ -658,7 +658,7 @@ export async function executeMlTask(
       const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
       const traceCount = (stats?.trace_count as number) ?? (stats?.traceCount as number) ?? 0;
       const variantCount = (stats?.variant_count as number) ?? (stats?.variantCount as number) ?? 0;
-      const activityCount = (stats?.num_activities as number) ?? 15; // fallback
+      const activityCount = (stats?.num_activities as number) ?? (stats?.activityCount as number) ?? 0;
 
       // Detect characteristics and suggest k if not provided
       const characteristics = detectLogCharacteristics(traceCount, variantCount, activityCount);

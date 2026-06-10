@@ -402,12 +402,11 @@ pub fn admit_change(candidate: &serde_json::Value, config: &AdmissionConfig) -> 
         };
     }
 
-    // C7: Objects non-empty
-    let objects_empty = candidate
+    // C7: Objects structural soundness
+    let objects_arr = candidate
         .get("objects")
-        .and_then(|v| v.as_array())
-        .map(|arr| arr.is_empty())
-        .unwrap_or(true);
+        .and_then(|v| v.as_array());
+    let objects_empty = objects_arr.map(|arr| arr.is_empty()).unwrap_or(true);
     if objects_empty {
         write_residual(candidate, "C7", "ObjectsEmpty");
         return AdmissionResult {
@@ -416,6 +415,52 @@ pub fn admit_change(candidate: &serde_json::Value, config: &AdmissionConfig) -> 
             refusal_code: Some("ObjectsEmpty".to_string()),
             receipt_hash: None,
         };
+    }
+    // C7b: each object must have a non-empty "id" string
+    if let Some(arr) = objects_arr {
+        for obj in arr {
+            let id_ok = obj.get("id")
+                .and_then(|v| v.as_str())
+                .map(|s| !s.is_empty())
+                .unwrap_or(false);
+            if !id_ok {
+                write_residual(candidate, "C7", "ObjectMissingId");
+                return AdmissionResult {
+                    admitted: false,
+                    failing_conjunct: Some("C7".to_string()),
+                    refusal_code: Some("ObjectMissingId".to_string()),
+                    receipt_hash: None,
+                };
+            }
+            let type_ok = obj.get("type")
+                .and_then(|v| v.as_str())
+                .map(|s| !s.is_empty())
+                .unwrap_or(false);
+            if !type_ok {
+                write_residual(candidate, "C7", "ObjectMissingType");
+                return AdmissionResult {
+                    admitted: false,
+                    failing_conjunct: Some("C7".to_string()),
+                    refusal_code: Some("ObjectMissingType".to_string()),
+                    receipt_hash: None,
+                };
+            }
+        }
+        // C7c: no duplicate object ids
+        let mut seen_ids = std::collections::HashSet::new();
+        for obj in arr {
+            if let Some(id) = obj.get("id").and_then(|v| v.as_str()) {
+                if !seen_ids.insert(id) {
+                    write_residual(candidate, "C7", "ObjectDuplicateId");
+                    return AdmissionResult {
+                        admitted: false,
+                        failing_conjunct: Some("C7".to_string()),
+                        refusal_code: Some("ObjectDuplicateId".to_string()),
+                        receipt_hash: None,
+                    };
+                }
+            }
+        }
     }
 
     // C1: Signature — checked last so C2-C7 tests can isolate their conjuncts

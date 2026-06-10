@@ -511,6 +511,10 @@ export const compare = defineCommand({
       type: 'boolean',
       description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
+    'cohort': {
+      type: 'string' as const,
+      description: 'Partition traces by case attribute for cohort comparison (e.g. --cohort org:resource)',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human' | 'csv') ?? 'human';

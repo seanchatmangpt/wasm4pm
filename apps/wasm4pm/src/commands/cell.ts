@@ -113,59 +113,10 @@ export const cell = defineCommand({
               const result = wasm.cell_build?.(ontologyContent, JSON.stringify({ config: configContent, sign: !noSign }));
 
               if (!result) {
-                // WASM function not available — produce a structured stub result
-                const now = new Date();
-                const ts = now.toISOString().replace(/[:.]/g, '').slice(0, 15);
-                const inputHash = Array.from(ontologyContent.slice(0, 32))
-                  .map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('').slice(0, 12);
-                const partHash = Array.from(targetName)
-                  .map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join('').repeat(3).slice(0, 12);
-                const proofReceipt = (inputHash + partHash).slice(0, 12);
-                const partFile = `${targetName}.part.wasm`;
-                const receiptFile = `.wasm4pm/receipts/cell-${ts}.json`;
-
-                const stubParsed = {
-                  status: 'built',
-                  target: targetName,
-                  version: ontologyVersion,
-                  part_file: partFile,
-                  receipt_file: receiptFile,
-                  input_hash: inputHash + '...',
-                  part_hash: partHash + '...',
-                  proof_receipt: proofReceipt + '...',
-                  activities,
-                  routes,
-                  proof_requirements: proofRequirements,
-                  replay_fixtures: fixtures,
-                  elapsed_ms: Date.now() - t0,
-                };
-
-                if (format === 'human') {
-                  const p = new ConsoleProjection({ verbose: false, quiet: false });
-                  p.log('');
-                  p.log('  Phase 2: BLAKE3 Receipt Embedding');
-                  p.log(`    ✔ Input hash:    ${stubParsed.input_hash} (ontology + config)`);
-                  p.log(`    ✔ Part hash:     ${stubParsed.part_hash} (generated artifact)`);
-                  p.log(`    ✔ Proof receipt: ${stubParsed.proof_receipt}`);
-                  p.log('');
-                  p.log('  Phase 3: Replay Fixture Embedding');
-                  if (fixtures > 0) {
-                    p.log(`    ✔ ${fixtures} replay fixture${fixtures !== 1 ? 's' : ''} embedded`);
-                    p.log(`    ✔ All fixtures conform to declared routes`);
-                  } else {
-                    p.log(`    ✔ No replay fixtures declared (add replay_fixtures to ontology)`);
-                  }
-                  p.log('');
-                  p.log(`  Output:  ${stubParsed.part_file}`);
-                  p.log(`  Receipt: ${stubParsed.receipt_file}`);
-                  p.log('');
-                  p.log(`  Verify with: wpm cell verify ${stubParsed.part_file}`);
-                  p.log('');
-                }
-
-                const cmdResult = makeResult('cell build', stubParsed, Date.now() - t0, EXIT_CODES.success);
-                emitResult(cmdResult, emitOptions);
-                return;
+                // WASM function not available — return error
+                const err = makeErrorResult('cell build', new Error('cell_build not available in this build'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
+                emitResult(err, emitOptions);
+                return await exitWithFlush(err.exit_code);
               }
 
               let parsed: Record<string, unknown>;
@@ -266,49 +217,10 @@ export const cell = defineCommand({
               const result = wasm.cell_verify?.(cellId);
 
               if (!result) {
-                // Produce a structured stub verification result
-                const stubParsed = {
-                  status: 'verified',
-                  cell_id: cellId,
-                  layers_checked: 4,
-                  layers_passed: 4,
-                  blake3_integrity: true,
-                  ontology_conformance: true,
-                  replay_fixtures: true,
-                  proof_requirements: true,
-                  activities_declared: 0,
-                  routes_reachable: 0,
-                  fixtures_passed: 0,
-                  fixtures_total: 0,
-                  proof_requirements_met: 0,
-                  proof_requirements_total: 0,
-                  verdict: 'VERIFIED',
-                };
-
-                if (format === 'human') {
-                  const p = new ConsoleProjection({ verbose: false, quiet: false });
-                  p.log('  Layer 1: BLAKE3 Integrity');
-                  p.log('    ✔ Part hash matches embedded receipt');
-                  p.log('    ✔ Receipt chain is unbroken');
-                  p.log('');
-                  p.log('  Layer 2: Ontology Conformance');
-                  p.log('    ✔ All declared activities present');
-                  p.log('    ✔ All routes are reachable');
-                  p.log('    ✔ No undeclared activities');
-                  p.log('');
-                  p.log('  Layer 3: Replay Fixture Verification');
-                  p.log('    ✔ All embedded replay fixtures pass conformance check');
-                  p.log('');
-                  p.log('  Layer 4: Proof Requirements');
-                  p.log('    ✔ All proof requirements satisfied');
-                  p.log('');
-                  p.log('  Verdict: VERIFIED ✔ (4/4 layers)');
-                  p.log('');
-                }
-
-                const cmdResult = makeResult('cell verify', stubParsed, Date.now() - t0, EXIT_CODES.success);
-                emitResult(cmdResult, emitOptions);
-                return;
+                // WASM function not available — return error
+                const err = makeErrorResult('cell verify', new Error('cell_verify not available in this build'), EXIT_CODES.execution_error, 'WASM_FUNCTION_UNAVAILABLE');
+                emitResult(err, emitOptions);
+                return await exitWithFlush(err.exit_code);
               }
 
               const parsed = (typeof result === 'string' ? JSON.parse(result) : result) as Record<string, unknown>;

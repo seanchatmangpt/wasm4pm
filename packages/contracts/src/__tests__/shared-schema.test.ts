@@ -39,6 +39,7 @@ function makeReceipt(): Receipt {
     .setSummary({ traces_processed: 42, objects_processed: 210, variants_discovered: 7 })
     .setAlgorithm({ name: 'alpha-plus-plus', version: '2.1.0' })
     .setModel({ nodes: 5, edges: 8 })
+    .setTraceId('aabbccddeeff00112233445566778899')
     .build();
 }
 
@@ -289,6 +290,7 @@ describe('SharedReceiptV1 edge cases', () => {
       .setSummary({ traces_processed: 1, objects_processed: 1, variants_discovered: 1 })
       .setAlgorithm({ name: 'inductive', version: '1.0.0' })
       .setModel({ nodes: 1, edges: 0 })
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     const shared = toSharedReceipt(altReceipt);

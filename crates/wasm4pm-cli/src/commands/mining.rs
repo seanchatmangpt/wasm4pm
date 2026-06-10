@@ -18,8 +18,15 @@ mod heuristic {
 }
 mod conformance {
     use wasm4pm_compat::{event_log::EventLog, models::DFG};
-    pub struct ConformanceResult { pub fitness: f64, pub precision: Option<f64> }
-    pub fn check_conformance_token_replay(_log: &EventLog, _dfg: &DFG, _key: &str) -> anyhow::Result<ConformanceResult> {
+    pub struct ConformanceResult {
+        pub fitness: f64,
+        pub precision: Option<f64>,
+    }
+    pub fn check_conformance_token_replay(
+        _log: &EventLog,
+        _dfg: &DFG,
+        _key: &str,
+    ) -> anyhow::Result<ConformanceResult> {
         anyhow::bail!("token replay conformance not available in this build")
     }
 }

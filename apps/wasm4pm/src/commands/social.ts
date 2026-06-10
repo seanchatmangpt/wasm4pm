@@ -736,27 +736,21 @@ export const social = defineCommand({
               });
 
               if (!ctx.args['no-save']) {
-                try {
-                  const inputBytes = await fs
-                    .readFile(inputPath!)
-                    .catch(() => Buffer.from(inputPath!));
-                  const receipt: CommandReceipt = {
-                    ...newReceipt('social'),
-                    command: 'social',
-                    input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
-                    status: 'success',
-                    summary: {
-                      metric,
-                      resources_count: payload.network.nodes.length,
-                      edges_count: payload.network.edges.length,
-                      bottleneck_count: payload.bottleneckResources.length,
-                    },
-                  };
-                  saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
-                }
+                const inputBytes = await fs.readFile(inputPath!);
+                const receipt: CommandReceipt = {
+                  ...newReceipt('social'),
+                  command: 'social',
+                  input_hash: blake3Hex(inputBytes),
+                  output_hash: blake3Hex(JSON.stringify(payload)),
+                  status: 'success',
+                  summary: {
+                    metric,
+                    resources_count: payload.network.nodes.length,
+                    edges_count: payload.network.edges.length,
+                    bottleneck_count: payload.bottleneckResources.length,
+                  },
+                };
+                saveCommandReceipt(receipt);
               }
 
               return await exitWithFlush(result.exit_code);

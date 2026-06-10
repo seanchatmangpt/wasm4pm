@@ -70,6 +70,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # Poka-yoke: version consistency across all manifests
+      - name: Verify version consistency
+        run: bash .github/scripts/verify-versions.sh
+
+      # Poka-yoke: FM-5 prohibition — no vi.mock/jest.mock on init.js in cognition tests
+      - name: FM-5 gate — no init.js mocking in cognition tests
+        run: |
+          if grep -r "vi\.mock\|jest\.mock" packages/cognition/src --include="*.test.ts" 2>/dev/null | grep -q "init"; then
+            echo "FM-5 VIOLATION: init.js mock detected in cognition tests"
+            exit 1
+          fi
+          echo "FM-5 gate: OK"
+
       # TPS Pipeline Quality Gate (Equipment + Quality + Operation + Logistics Kaizen)
       - name: TPS Pipeline Quality Gate
         run: node scripts/tps-pipeline-check.mjs

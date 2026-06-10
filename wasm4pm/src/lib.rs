@@ -356,6 +356,7 @@ pub mod hand_stats;
 pub mod hierarchical;
 pub mod hot_kernels;
 #[cfg(feature = "streaming_basic")]
+pub mod dfg_io;
 pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
@@ -385,6 +386,8 @@ pub mod oc_conformance;
 pub mod oc_performance;
 #[cfg(feature = "ocel")]
 pub mod oc_petri_net;
+#[cfg(feature = "ocel")]
+pub mod ocel_csv;
 #[cfg(feature = "ocel")]
 pub mod ocel_flatten;
 #[cfg(feature = "ocel")]
@@ -2971,7 +2974,7 @@ pub fn circuit_breaker_reset() -> Result<String, JsValue> {
 
 // OCEL functions are exported directly from their modules with cfg gates:
 // - ocel_io.rs: load_ocel2_from_json, export_ocel2_to_json, validate_ocel
-// - ocel_flatten.rs: list_ocel_object_types, get_ocel_type_statistics, flatten_ocel_to_eventlog
+// - ocel_flatten.rs: list_ocel_object_types, get_ocel_type_statistics, flatten_ocel_to_eventlog, measure_ocel_flattening_loss
 // - oc_petri_net.rs: discover_oc_petri_net
 // - oc_conformance.rs: oc_conformance_check
 // - oc_performance.rs: oc_performance_analysis

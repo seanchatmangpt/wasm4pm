@@ -3,6 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan, getSuggestions } from '@wasm4pm/planner';
+import { computeParetoFront } from './suggest.js';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult, EmitOptions } from '../output.js';
@@ -72,7 +73,7 @@ export const run = defineCommand({
       '  wpm run log.xes                               # Default discovery (Heuristic Miner)\n' +
       '  wpm run log.xes -a inductive                  # Discover using Inductive Miner\n' +
       '  wpm run log.ocel.json -a ocel_dfg             # Object-centric DFG discovery\n' +
-      '  wpm run log.xes --with-quality                # Compute fitness & precision after discovery\n' +
+      '  wpm run log.xes                               # Quality metrics computed by default (--no-with-quality to skip)\n' +
       '  wpm run log.xes -o result.json                # Save output to a specific file\n\n' +
       STANDARD_EXIT_CODE_DOCS,
   },
@@ -162,18 +163,19 @@ export const run = defineCommand({
     },
     'with-quality': {
       type: 'boolean',
+      default: true,
       description:
-        'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
+        'Compute and display quality metrics (fitness, precision, simplicity) after discovery (use --no-with-quality to skip)',
     },
     'assert-fitness': {
       type: 'string',
       description:
-        'Fail with exit 4 if fitness drops below this threshold (0-1). Implies --with-quality.',
+        'Fail with exit 4 if fitness drops below this threshold (0-1).',
     },
     'assert-precision': {
       type: 'string',
       description:
-        'Fail with exit 4 if precision drops below this threshold (0-1). Implies --with-quality.',
+        'Fail with exit 4 if precision drops below this threshold (0-1).',
     },
     'set-baseline': {
       type: 'boolean',
@@ -382,10 +384,30 @@ export const run = defineCommand({
               const suggestions = getSuggestions(
                 { traceCount: estTraces, eventCount: estEvents, variantCount: Math.round(estTraces * 0.1) },
                 goal,
-                1,
+                5,
               );
 
-              if (suggestions[0]) {
+              const { front: paretoFront } = computeParetoFront(suggestions);
+              const paretoPool = paretoFront.length > 0 ? paretoFront : suggestions;
+
+              let selected = paretoPool[0];
+              if (profile === 'fast') {
+                selected = paretoPool.reduce((best, c) => (c.speed > best.speed ? c : best), paretoPool[0]!);
+              } else if (profile === 'quality') {
+                selected = paretoPool.reduce((best, c) => (c.quality > best.quality ? c : best), paretoPool[0]!);
+              }
+              // balanced: use first Pareto member (already sorted by name, score is best by getSuggestions order)
+
+              if (selected) {
+                autoSelectedAlgo = selected.algorithm;
+                if (!quiet && format === 'human') {
+                  process.stderr.write(
+                    `Auto-selected algorithm: ${autoSelectedAlgo} ` +
+                    `(Pareto-optimal: quality=${selected.quality}, speed=${selected.speed}) ` +
+                    `for profile=${profile}\n`
+                  );
+                }
+              } else if (suggestions[0]) {
                 autoSelectedAlgo = suggestions[0].algorithm;
                 if (!quiet && format === 'human') {
                   process.stderr.write(
@@ -962,37 +984,22 @@ export const run = defineCommand({
               let resolvedAlgoFinal = resolvedAlgo;
 
               {
-                // Build fallback chain: start with requested algorithm, then try simpler ones
-                // in the same quality bracket (sorted by ascending speed = simpler/faster).
-                const registry = getRegistry();
-                const allAlgos = registry.list();
-                const requested = allAlgos.find((a) => a.id === resolvedAlgo);
-                const qualityBracket = requested
-                  ? allAlgos
-                      .filter(
-                        (a) => a.qualityTier >= requested.qualityTier - 20 && a.id !== resolvedAlgo
-                      )
-                      .sort((a, b) => a.speedTier - b.speedTier) // simpler first
-                      .slice(0, MAX_RETRIES - 1)
-                      .map((a) => a.id as typeof resolvedAlgo)
-                  : [];
-                const chain = [resolvedAlgo, ...qualityBracket];
+                // JIDOKA: No fallback chain. If requested algorithm fails, we report the defect.
+                const chain = [resolvedAlgo];
 
                 let lastError: unknown;
                 let succeeded = false;
 
-                let eventCount = 1000;
-                let traceCount = 100;
-                let activityCount = 10;
-                try {
-                  if (typeof wasm.analyze_event_statistics === 'function') {
-                    const statsRaw = wasm.analyze_event_statistics(logHandle);
-                    const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-                    eventCount = stats.total_events ?? stats.eventCount ?? 1000;
-                    traceCount = stats.total_cases ?? stats.traceCount ?? 100;
-                    activityCount = stats.unique_activities ?? stats.activityCount ?? 10;
-                  }
-                } catch { /* best effort */ }
+                // Mandatory statistics check
+                const statsRaw = wasm.analyze_event_statistics(logHandle);
+                const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+                const eventCount = stats.total_events ?? stats.eventCount;
+                const traceCount = stats.total_cases ?? stats.traceCount;
+                const activityCount = stats.unique_activities ?? stats.activityCount;
+
+                if (eventCount === undefined || traceCount === undefined) {
+                   throw new Error('Failed to extract mandatory log statistics.');
+                }
 
                 const complexity = classifyComplexity(eventCount, activityCount, traceCount);
                 const algorithmTier = detectAlgorithmTier(resolvedAlgo);
@@ -1013,34 +1020,11 @@ export const run = defineCommand({
                   );
                 }
 
-                for (const algo of chain) {
-                  try {
-                    const result = await runDiscovery(wasm, algo, logHandle, activityKey, parsedParams);
-                    raw = result.raw;
-                    elapsedMs = result.elapsedMs;
-                    resolvedAlgoFinal = algo;
-                    succeeded = true;
-                    if (algo !== resolvedAlgo) {
-                      process.stderr.write(
-                        `⚠ ${resolvedAlgo} failed, succeeded with fallback: ${algo}\n`
-                      );
-                    }
-                    break;
-                  } catch (err) {
-                    lastError = err;
-                    if (noRetry || chain.length === 1) break;
-                    process.stderr.write(
-                      `⚠ ${algo} failed (${err instanceof Error ? err.message : String(err)}), trying fallback...\n`
-                    );
-                  }
-                }
-
-                if (!succeeded) {
-                  throw lastError ?? new Error(`All algorithms failed for ${resolvedAlgo}`);
-                }
+                const result = await runDiscovery(wasm, resolvedAlgo, logHandle, activityKey, parsedParams);
+                raw = result.raw;
+                elapsedMs = result.elapsedMs;
+                resolvedAlgoFinal = resolvedAlgo;
               }
-
-              // resolvedAlgoFinal holds the algorithm that actually succeeded (may differ from resolvedAlgo)
 
               // Validate discovery output shape — fail loudly on unknown shapes.
               // discriminateWithSpan emits an OTEL span (service.name=wasm4pm,
@@ -1105,6 +1089,7 @@ export const run = defineCommand({
                 fitness: number;
                 precision: number;
                 simplicity: number;
+                generalization: number | null;
               } | null = null;
               if (needsQuality) {
                 // Normalise result first to check model type
@@ -1193,7 +1178,25 @@ export const run = defineCommand({
                       simplicity = 1.0 / (1.0 + numEdges / 10.0);
                     }
 
-                    qualityMetrics = { fitness, precision, simplicity };
+                    // Generalization via WASM token-replay generalization (pm4py-equivalent)
+                    let generalization: number | null = null;
+                    if (typeof wasm.generalization === 'function' && modelHandle) {
+                      try {
+                        const genRaw = withWasmSpan(
+                          'generalization',
+                          { activity_key: activityKey, model_type: 'petri_net' },
+                          () => wasm.generalization(logHandle, modelHandle, activityKey)
+                        );
+                        const gen = typeof genRaw === 'string' ? JSON.parse(genRaw) : genRaw;
+                        if (gen.generalization !== undefined) {
+                          generalization = gen.generalization;
+                        }
+                      } catch {
+                        // generalization failure is non-fatal; leave null
+                      }
+                    }
+
+                    qualityMetrics = { fitness, precision, simplicity, generalization };
                   } catch {
                     // quality metrics failure is non-fatal; will be reported in consoleRenderer
                   }
@@ -1373,9 +1376,7 @@ export const run = defineCommand({
 
                 // Step 9c: Persist BLAKE3 receipt for proof-of-execution
                 try {
-                  const inputBytes = await fs
-                    .readFile(inputPath)
-                    .catch(() => Buffer.from(inputPath));
+                  const inputBytes = await fs.readFile(inputPath);
                   const receipt: CommandReceipt = {
                     ...newReceipt('run'),
                     input_hash: blake3Hex(inputBytes),
@@ -1970,6 +1971,34 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     // OCEL statistics are best-effort and non-fatal
   }
 
+  // Surface flattening information loss for OCEL algorithms
+  if (typeof wasm['measure_ocel_flattening_loss'] === 'function') {
+    try {
+      const lossRaw = (wasm['measure_ocel_flattening_loss'] as (h: string) => unknown)(ocelHandle);
+      const lossData = typeof lossRaw === 'string' ? JSON.parse(lossRaw) : lossRaw;
+      if (
+        lossData !== null &&
+        typeof lossData === 'object' &&
+        Array.isArray((lossData as Record<string, unknown>)['flattening_loss'])
+      ) {
+        const highLoss = (
+          (lossData as Record<string, unknown>)['flattening_loss'] as Array<Record<string, unknown>>
+        ).filter(
+          (r) =>
+            typeof r['duplicate_event_ratio'] === 'number' &&
+            (r['duplicate_event_ratio'] as number) > 0.05
+        );
+        if (highLoss.length > 0 && format === 'human') {
+          process.stderr.write(
+            `[flattening-loss] Warning: ${highLoss.length} object type(s) have >5% event duplication ratio when flattening to case-centric log\n`
+          );
+        }
+      }
+    } catch {
+      /* non-fatal — flattening loss measurement is informational only */
+    }
+  }
+
   // Discover — default: per-type DFG (most informative for OCEL)
   // Each branch is wrapped in a 'wasm4pm.ocel.discover' span so Jaeger shows
   // the discovery step as a distinct child span under the parent 'run' span.
@@ -2057,24 +2086,21 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       payload as unknown as Record<string, unknown>
     );
 
-    try {
-      const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
-      const receipt = {
-        ...newReceipt('run'),
-        input_hash: blake3Hex(inputBytes),
-        output_hash: blake3Hex(JSON.stringify(semanticPayload)),
-        status: 'success' as const,
-        summary: {
-          algorithm: discoveryAlgo,
-          activityKey: opts.activityKey,
-          elapsedMs: Math.round(elapsedMs * 100) / 100,
-          inputFormat: 'ocel',
-        },
-      };
-      saveCommandReceipt(receipt);
-    } catch {
-      /* receipt write must never break the command */
-    }
+    const inputBytes = await fs.readFile(inputPath);
+    const receipt = {
+      ...newReceipt('run'),
+      input_hash: blake3Hex(inputBytes),
+      input_file: inputPath,
+      output_hash: blake3Hex(JSON.stringify(semanticPayload)),
+      status: 'success' as const,
+      summary: {
+        algorithm: discoveryAlgo,
+        activityKey: opts.activityKey,
+        elapsedMs: Math.round(elapsedMs * 100) / 100,
+        inputFormat: 'ocel',
+      },
+    };
+    await saveCommandReceipt(receipt);
   }
 
   // Output

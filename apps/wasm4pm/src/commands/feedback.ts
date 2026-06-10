@@ -732,6 +732,136 @@ const exportCmd = defineCommand({
   },
 });
 
+// ─── usage ────────────────────────────────────────────────────────────────────
+
+/** Known commands for zero-invocation cross-reference. */
+const KNOWN_COMMANDS = [
+  'run', 'analyze', 'conformance', 'quality', 'compare', 'diff', 'validate',
+  'deduplicate', 'predict', 'suggest', 'explain', 'interpret', 'trace',
+  'batch', 'pipeline', 'workflow', 'agent', 'watch', 'oracle', 'proof',
+  'bench', 'benchmark', 'init', 'config', 'status', 'doctor', 'results',
+  'receipt', 'models', 'algorithms', 'examples', 'completions', 'repl',
+  'cognition', 'ml', 'prolog8', 'swarm', 'cell', 'social', 'temporal',
+  'drift-watch', 'prefix-conformance', 'self-conformance', 'conformance-enhanced',
+  'simulate', 'select-algorithm', 'powl', 'truex', 'membrane', 'supabase',
+  'feedback',
+];
+
+interface UsageRow {
+  command: string;
+  count: number;
+  last_used_iso: string | null;
+}
+
+const usageCmd = defineCommand({
+  meta: {
+    name: 'usage',
+    description: 'Show command invocation counts from receipt history. Example: wpm feedback usage',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+
+    return withSpan('feedback.usage', {}, async () => {
+      const t0 = Date.now();
+
+      const receiptsDir = path.resolve(process.cwd(), '.wasm4pm', 'receipts');
+      let files: string[] = [];
+      try {
+        const all = await fs.readdir(receiptsDir);
+        files = all.filter((f) => f.endsWith('.json') && f !== 'latest.json');
+      } catch {
+        // Directory does not exist yet — treat as empty
+      }
+
+      let receipts_scanned = 0;
+      const counts: Record<string, number> = {};
+      const lastUsed: Record<string, string> = {};
+
+      for (const file of files) {
+        try {
+          const raw = await fs.readFile(path.join(receiptsDir, file), 'utf8');
+          const parsed = JSON.parse(raw) as Record<string, unknown>;
+          receipts_scanned++;
+
+          // Extract command field — CommandReceipt has `.command`
+          const cmd = typeof parsed['command'] === 'string' ? parsed['command'] : null;
+          if (!cmd) continue;
+
+          // Normalise: strip subcommand path (e.g. "feedback submit" → "feedback submit")
+          const key = cmd.trim();
+          counts[key] = (counts[key] ?? 0) + 1;
+
+          const ts = typeof parsed['timestamp'] === 'string' ? parsed['timestamp'] : null;
+          if (ts && (!lastUsed[key] || ts > lastUsed[key]!)) {
+            lastUsed[key] = ts;
+          }
+        } catch {
+          // Skip malformed receipts
+        }
+      }
+
+      // Build sorted rows
+      const by_command: UsageRow[] = Object.entries(counts)
+        .map(([command, count]) => ({ command, count, last_used_iso: lastUsed[command] ?? null }))
+        .sort((a, b) => b.count - a.count);
+
+      // Zero-invocation candidates: known commands not seen in receipts
+      const seenRoots = new Set(by_command.map((r) => r.command.split(' ')[0]));
+      const zero_invocation_candidates = KNOWN_COMMANDS.filter((c) => !seenRoots.has(c)).sort();
+
+      const payload = {
+        schema: 'wasm4pm.feedback.usage.v1',
+        receipts_scanned,
+        by_command,
+        zero_invocation_candidates,
+      };
+
+      const result = makeResult('feedback usage', payload, Date.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (res, p) => {
+        const d = res.payload as typeof payload;
+        p.log('');
+        p.success('Command Usage (from receipts)');
+        p.log('==============================');
+        p.log(`Receipts scanned: ${d.receipts_scanned}`);
+        p.log('');
+
+        if (d.by_command.length === 0) {
+          p.log('No receipt data found. Run commands with wpm to build usage history.');
+        } else {
+          const colW = [35, 12, 28];
+          const header = ['Command', 'Invocations', 'Last Used'];
+          p.log(header.map((h, i) => h.padEnd(colW[i] ?? 12)).join(' '));
+          p.log('-'.repeat(colW.reduce((a, b) => a + b + 1, 0)));
+          for (const row of d.by_command) {
+            const cols = [
+              row.command.padEnd(colW[0] ?? 35),
+              String(row.count).padEnd(colW[1] ?? 12),
+              (row.last_used_iso ?? 'n/a').padEnd(colW[2] ?? 28),
+            ];
+            p.log(cols.join(' '));
+          }
+        }
+
+        if (d.zero_invocation_candidates.length > 0) {
+          p.log('');
+          p.log(`Zero-invocation commands (${d.zero_invocation_candidates.length}):`);
+          p.log('  ' + d.zero_invocation_candidates.join(', '));
+        }
+        p.log('');
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
 // ─── Root feedback command ─────────────────────────────────────────────────────
 
 /**
@@ -745,6 +875,7 @@ const exportCmd = defineCommand({
  * - wpm feedback stats [--algorithm <algo>]              Algorithm feedback stats ()
  * - wpm feedback clear [--algorithm <algo>]              Clear algorithm feedback ()
  * - wpm feedback export [--algorithm <algo>]             Export to CSV ()
+ * - wpm feedback usage                                   Show command invocation counts
  */
 export const feedback = defineCommand({
   meta: {
@@ -759,5 +890,6 @@ export const feedback = defineCommand({
     stats,
     clear,
     export: exportCmd,
+    usage: usageCmd,
   },
 });

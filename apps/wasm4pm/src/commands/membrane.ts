@@ -1485,7 +1485,7 @@ const membraneCheck = defineCommand({
         // Check 2: envelopes directory has ≥1 manifest
         try {
           const { readdir } = await import('fs/promises');
-          const files = await readdir(ENVELOPES_DIR).catch(() => [] as string[]);
+          const files = await readdir(ENVELOPES_DIR);
           const manifests = files.filter((f) => f.endsWith('.json'));
           checks.push({
             name: 'envelopes present',

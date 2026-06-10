@@ -1623,6 +1623,56 @@ Walks a directory of `.json` receipt files, orders them by `previous_receipt_has
 | C6 | `BoundaryDenied` | `B(state, event_type) = 0` — transition not admitted |
 | C7 | `ObjectsEmpty` | Objects array absent or empty |
 
+## Event Log & Model I/O Functions
+
+Functions for loading event logs and process models from various formats. All returned handles are opaque strings passed to subsequent algorithm calls.
+
+### CSV / XES.GZ / DFG
+
+```typescript
+// Load an event log from a CSV string. Returns a JSON string with { handle, trace_count, event_count }.
+load_ocel_from_csv(csv_string: string): string  // Result<String, JsValue>
+
+// Load a compressed XES event log from raw bytes (e.g. from fs.readFileSync on a .xes.gz file).
+// Returns a JsValue with { handle, trace_count, event_count }.
+load_eventlog_from_xes_gz(bytes: Uint8Array): JsValue  // Result<JsValue, JsValue>
+
+// Load a directly-follows graph from plain text format (one "A,B,count" row per line).
+// Returns a JsValue with { handle, node_count, edge_count }.
+load_dfg_from_text(content: string): JsValue  // Result<JsValue, JsValue>
+```
+
+### POWL Model Loading
+
+```typescript
+// Load a POWL v1 model from its JSON or repr string representation.
+// Returns a JsValue with { handle, root, node_count, repr }.
+load_powl_from_string(powl_str: string): JsValue  // Result<JsValue, JsValue>
+
+// Load a POWL model from the v2 DSL format (sequence: ->(A,B), parallel: +(A,B),
+// xor: X(A,B), loop: *(A,B), partial-order: PO{A,B; A->B}).
+// Returns a JsValue with { handle, root, node_count, repr }.
+load_powl_v2_from_string(dsl: string): JsValue  // Result<JsValue, JsValue>
+```
+
+**Usage pattern:**
+```typescript
+const loader = WasmLoader.getInstance();
+await loader.init();
+const wasm = loader.get() as any;
+
+// v1 (JSON or repr string)
+const result = JSON.parse(wasm.load_powl_from_string('->( A, B )'));
+// result: { handle: 'abc123', root: 0, node_count: 3, repr: '->(A, B)' }
+
+// v2 DSL
+const result2 = JSON.parse(wasm.load_powl_v2_from_string('*(A, B)'));
+```
+
+**CLI equivalent:** `wpm powl load --input model.powl` (v1) or `wpm powl load --input model.powl2 --v2` (v2 DSL).
+
+---
+
 ## Serialization Notes
 
 - All `Result<JsValue, JsValue>` returns use `serde_json::to_string()` + `JsValue::from_str()` — NOT `serde_wasm_bindgen` (known bug with `json!()` macro)

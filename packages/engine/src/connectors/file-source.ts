@@ -231,20 +231,12 @@ export class FileSourceAdapter implements SourceAdapter {
    * Note: Using SHA256 via crypto module as blake3 has import issues in test environments
    */
   async fingerprint(source: unknown): Promise<string> {
-    try {
-      // Hash the file path and content
-      const content = await fs.readFile(this.config.filePath, 'utf-8');
-      const configStr = JSON.stringify(source);
-      const combined = `${this.config.filePath}|${configStr}|${content}`;
-      const hash = createHash('sha256').update(combined, 'utf-8').digest('hex');
-      return hash; // Return 64-char hex (256-bit SHA256)
-    } catch (e) {
-      // Fallback: hash just the path and config if we can't read content
-      const configStr = JSON.stringify(source);
-      const combined = `${this.config.filePath}|${configStr}`;
-      const hash = createHash('sha256').update(combined, 'utf-8').digest('hex');
-      return hash;
-    }
+    // Hash the file path and content. No fallback allowed.
+    const content = await fs.readFile(this.config.filePath, 'utf-8');
+    const configStr = JSON.stringify(source);
+    const combined = `${this.config.filePath}|${configStr}|${content}`;
+    const hash = createHash('sha256').update(combined, 'utf-8').digest('hex');
+    return hash; // Return 64-char hex (256-bit SHA256)
   }
 
   /**

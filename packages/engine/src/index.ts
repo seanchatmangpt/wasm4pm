@@ -89,7 +89,6 @@ export type { Checkpoint } from './checkpointing.js';
 export {
   MemoryCheckpointStore,
   FileCheckpointStore,
-  SqliteCheckpointStore,
   type ICheckpointStore,
   type CheckpointMetadata,
   type RunFilter,

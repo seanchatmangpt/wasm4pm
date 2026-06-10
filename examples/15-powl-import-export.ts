@@ -1,71 +1,58 @@
 /**
  * Case Study: Vendor Cross-Platform Integration
- *
- * Business Context:
- * A global conglomerate acquires a company using legacy BPMN systems.
- * They need to formally bridge imported BPMN and PNML models.
  */
 import assert from 'node:assert/strict';
 import { Kernel } from 'wasm4pm';
+import * as core from '@wasm4pm/core';
 import { logger } from './utils/logger.js';
 
 async function runVendorIntegration(): Promise<void> {
-  logger.header('🔄', 'Vendor Cross-Platform Integration', 'Bridging XML process topologies via POWL');
-
-  const wasm = await import('wasm4pm');
-  const kernel = new Kernel(wasm as any);
+  logger.header('🔄', 'Vendor Cross-Platform Integration', 'Bridging real XML process topologies via POWL');
+  
+  if (typeof (core as any).default === 'function') {
+    await (core as any).default();
+  }
+  const kernel = new Kernel(core as any);
   await kernel.init();
 
-  logger.step(1, 2, 'Importing Legacy XML Models');
+  logger.step(1, 2, 'Importing Model Payloads');
+  // Real PNML structure
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<pnml>
+<pnml xmlns="http://www.pnml.org/version-2009/grammar/pnml">
   <net id="net1" type="http://www.pnml.org/version-2009/grammar/ptnet">
     <page id="n0">
       <place id="p1"><name><text>start</text></name></place>
+      <transition id="t1"><name><text>a</text></name></transition>
+      <arc id="a1" source="p1" target="t1"/>
     </page>
   </net>
 </pnml>`;
 
-  let handle: string = 'mock_handle';
-  logger.success('PNML/BPMN payloads mapped into internal buffers.');
+  logger.success('PNML payload mapped into internal buffer.');
 
   logger.step(2, 2, 'Projecting Topologies into Mathematical Space');
-
-  // Define a valid POWL sequence model for process tree conversion
-  const powlJson = JSON.stringify({
-    operator: "sequence",
-    children: [
-      { activity: "Register" },
-      { activity: "Approve" },
-      { activity: "Complete" }
-    ]
-  });
-
-  const algorithms = [
-    'bpmn_import', 'pnml_import', 'yawl_export'
-  ];
-
-  for (const algo of algorithms) {
-    try {
-      const result = await kernel.run(algo, handle, {
-        pnml_xml: xml,
-        bpmn_xml: xml
-      });
-      logger.success(`[${algo.padEnd(25)}] executed in ${result.durationMs.toFixed(2)}ms`);
-    } catch (e) {
-      logger.warn(`[${algo.padEnd(25)}] constrained by XML depth (skipped)`);
-    }
-  }
-
-  // Convert POWL to process tree directly via WASM
   try {
-    const treeResult = (wasm as any).powl_to_process_tree(powlJson);
-    // Verify the result is valid JSON
-    const treeJson = JSON.parse(treeResult);
-    assert.ok(treeJson !== null && typeof treeJson === 'object', 'Process tree result must be a non-null object');
-    logger.success(`[${'powl_to_process_tree'.padEnd(25)}] POWL→ProcessTree conversion verified`);
+    // pnml_import doesn't strictly need a log handle if it's purely importing the model
+    const result = await kernel.run('pnml_import', 'mock_log', { 
+      pnml_xml: xml
+    });
+    
+    // ── RIGOROUS VALIDATION ────────────────────────────────────────────────
+    assert.ok(result.handle, 'PNML Result handle must be defined');
+    
+    const pnJson = core.export_petri_net_to_json(result.handle);
+    assert.ok(pnJson, 'Imported Petri net JSON missing');
+    const petriNet = JSON.parse(pnJson);
+    assert.ok(petriNet.places.length > 0, 'Imported Petri net must have places');
+    
+    logger.success(`[pnml_import] executed in ${result.durationMs.toFixed(2)}ms`);
+    logger.info(`Synthesized model has ${petriNet.places.length} places and ${petriNet.transitions.length} transitions.`);
   } catch (e) {
-    logger.warn(`[${'powl_to_process_tree'.padEnd(25)}] constrained by XML depth (skipped)`);
+    logger.error(`Import failed: ${e instanceof Error ? e.message : String(e)}`);
+    process.exit(1);
   }
 }
-runVendorIntegration().catch(console.error);
+runVendorIntegration().catch((error: Error) => {
+  console.error('Uncaught error:', error);
+  process.exit(1);
+});

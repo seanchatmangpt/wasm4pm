@@ -269,6 +269,7 @@ describe('Receipt Chain: Receipt Structure', () => {
       })
       .setAlgorithm({ name: 'test-algo', version: '1.0' })
       .setModel({ nodes: 5, edges: 8 })
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt).toHaveProperty('config_hash');
@@ -295,6 +296,7 @@ describe('Receipt Chain: Receipt Structure', () => {
       .setSummary({})
       .setAlgorithm({ name: 'test', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(isReceipt(receipt)).toBe(true);
@@ -313,6 +315,7 @@ describe('Receipt Chain: Receipt Structure', () => {
       .setSummary({})
       .setAlgorithm({ name: 'test', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt.run_id).toBe(runId);
@@ -381,6 +384,7 @@ describe('Receipt Chain: Serialization Roundtrip', () => {
       })
       .setAlgorithm({ name: 'test-algo', version: '1.0' })
       .setModel({ nodes: 3, edges: 4 })
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     const serialized = JSON.stringify(original);
@@ -405,6 +409,7 @@ describe('Receipt Chain: Serialization Roundtrip', () => {
       .setSummary({})
       .setAlgorithm({ name: 'test', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     const serialized = JSON.stringify(original);
@@ -432,6 +437,7 @@ describe('Receipt Chain: Reproducibility', () => {
       .setSummary({})
       .setAlgorithm({ name: 'dfg', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     const receipt2 = new ReceiptBuilder()
@@ -445,6 +451,7 @@ describe('Receipt Chain: Reproducibility', () => {
       .setSummary({})
       .setAlgorithm({ name: 'dfg', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt1.config_hash).toBe(receipt2.config_hash);
@@ -472,6 +479,7 @@ describe('Receipt Chain: Reproducibility', () => {
       .setSummary({})
       .setAlgorithm({ name: 'dfg', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     const receipt2 = new ReceiptBuilder()
@@ -485,6 +493,7 @@ describe('Receipt Chain: Reproducibility', () => {
       .setSummary({})
       .setAlgorithm({ name: 'dfg', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt1.output_hash).not.toBe(receipt2.output_hash);
@@ -509,6 +518,7 @@ describe('Receipt Chain: Error Handling', () => {
       .setSummary({})
       .setAlgorithm({ name: 'test', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt.error).toBeDefined();
@@ -529,6 +539,7 @@ describe('Receipt Chain: Error Handling', () => {
       .setSummary({})
       .setAlgorithm({ name: 'test', version: '1.0' })
       .setModel({})
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
 
     expect(receipt.config_hash).toMatch(/^[0-9a-f]{64}$/i);

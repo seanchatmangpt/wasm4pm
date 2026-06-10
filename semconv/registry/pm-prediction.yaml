@@ -1,0 +1,113 @@
+groups:
+  - id: pm.prediction
+    type: attribute_group
+    prefix: pm.prediction
+    brief: Predictive process mining operations
+    attributes:
+      - id: prediction_type
+        type: string
+        brief: Prediction target (next_activity, case_duration, outcome, anomaly)
+        requirement_level: required
+      - id: model_type
+        type: string
+        brief: Model type used (ngram, markov, ml, statistical)
+        requirement_level: opt_in
+      - id: context_length
+        type: int
+        brief: Number of preceding activities in context
+        requirement_level: opt_in
+      - id: prediction_confidence
+        type: double
+        brief: Confidence score of prediction (0-1)
+        requirement_level: recommended
+      - id: top_k_candidates
+        type: int
+        brief: Number of top-k predictions returned
+        requirement_level: opt_in
+      - id: anomaly_score
+        type: double
+        brief: Anomaly score for trace (0-1 normalized)
+        requirement_level: opt_in
+
+  - id: pm.drift
+    type: attribute_group
+    prefix: pm.drift
+    brief: Concept drift detection operations
+    attributes:
+      - id: drift_detected
+        type: boolean
+        brief: Whether concept drift was detected
+        requirement_level: required
+      - id: drift_point_count
+        type: int
+        brief: Number of drift points identified
+        requirement_level: opt_in
+      - id: drift_direction
+        type: string
+        brief: Trend direction (rising, stable, falling)
+        requirement_level: opt_in
+      - id: window_size
+        type: int
+        brief: Number of traces per sliding window
+        requirement_level: opt_in
+      - id: smoothing_alpha
+        type: double
+        brief: EWMA smoothing factor (0-1)
+        requirement_level: opt_in
+      - id: max_distance
+        type: double
+        brief: Maximum drift distance observed
+        requirement_level: opt_in
+
+  - id: pm.predict.next_activity
+    type: span
+    prefix: pm.predict.next_activity
+    name: pm.predict.next_activity
+    span_kind: internal
+    brief: Predict next activity in running case
+    attributes:
+      - ref: pm.prediction.prediction_type
+        requirement_level: required
+      - ref: pm.prediction.model_type
+        requirement_level: opt_in
+      - ref: pm.prediction.context_length
+        requirement_level: opt_in
+      - ref: pm.prediction.top_k_candidates
+        requirement_level: opt_in
+      - ref: pm.prediction.prediction_confidence
+        requirement_level: recommended
+
+  - id: pm.predict.case_duration
+    type: span
+    prefix: pm.predict.case_duration
+    name: pm.predict.case_duration
+    span_kind: internal
+    brief: Predict remaining time for running case
+    attributes:
+      - ref: pm.prediction.prediction_type
+        requirement_level: opt_in
+      - ref: pm.prediction.model_type
+        requirement_level: opt_in
+      - id: predicted_remaining_time_ms
+        type: int
+        brief: Predicted remaining time in milliseconds
+        requirement_level: recommended
+      - ref: pm.prediction.prediction_confidence
+        requirement_level: recommended
+
+  - id: pm.score.anomaly
+    type: span
+    prefix: pm.score.anomaly
+    name: pm.score.anomaly
+    span_kind: internal
+    brief: Score trace for anomaly
+    attributes:
+      - ref: pm.prediction.prediction_type
+        requirement_level: opt_in
+      - ref: pm.prediction.anomaly_score
+        requirement_level: required
+      - id: is_anomalous
+        type: boolean
+        brief: Whether trace is flagged as anomalous
+        requirement_level: recommended
+

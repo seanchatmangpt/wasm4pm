@@ -2,8 +2,8 @@
   "receipt_type": "Wasm4pmExecutionReceipt",
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
-  "version": "26.5.29",
-  "commit": "d929cc2880edbce67300e01d3b225bea6622c976",
+  "version": "26.6.9",
+  "commit": "0d0732a16e2c20fe5bf52efc40a72389d7d3bbb0",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -19,13 +19,13 @@
   },
   "algorithms": [
     {
-      "id": "hill_climbing",
+      "id": "inductive_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920",
-      "duration_ms": 22.798,
+      "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61",
+      "duration_ms": 16.286,
       "expected_path": {
-        "route_id": "wpm.example.cg_belonging.hill_climbing.v1",
+        "route_id": "wpm.example.cg_belonging.inductive_miner.v1",
         "expected_ocel2": {
           "ocel": "2.0",
           "eventTypes": [
@@ -98,7 +98,7 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_hill_climbing_import_started",
+              "id": "evt_cg_belonging_inductive_miner_import_started",
               "type": "wpm.input.import.started",
               "time": "1970-01-01T00:00:00.000Z",
               "relationships": [
@@ -118,7 +118,7 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_import_completed",
+              "id": "evt_cg_belonging_inductive_miner_import_completed",
               "type": "wpm.input.import.completed",
               "time": "1970-01-01T00:00:00.010Z",
               "relationships": [
@@ -132,12 +132,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_registry_checked",
+              "id": "evt_cg_belonging_inductive_miner_registry_checked",
               "type": "wpm.algorithm.registry.checked",
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -146,16 +146,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_dispatched",
+              "id": "evt_cg_belonging_inductive_miner_dispatched",
               "type": "wpm.algorithm.dispatched",
               "time": "1970-01-01T00:00:00.030Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -169,54 +169,54 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_completed",
+              "id": "evt_cg_belonging_inductive_miner_completed",
               "type": "wpm.algorithm.completed",
               "time": "1970-01-01T00:00:00.040Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920",
-                "duration_ms": 22.798
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61",
+                "duration_ms": 16.286
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_result_hashed",
+              "id": "evt_cg_belonging_inductive_miner_result_hashed",
               "type": "wpm.result.hashed",
               "time": "1970-01-01T00:00:00.050Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920"
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61"
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_artifact_emitted",
+              "id": "evt_cg_belonging_inductive_miner_artifact_emitted",
               "type": "wpm.artifact.emitted",
               "time": "1970-01-01T00:00:00.060Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920"
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61"
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_task_closed",
+              "id": "evt_cg_belonging_inductive_miner_task_closed",
               "type": "wpm.task.closed",
               "time": "1970-01-01T00:00:00.070Z",
               "relationships": [
@@ -229,11 +229,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -246,12 +246,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_receipt_verification_started",
+              "id": "evt_cg_belonging_inductive_miner_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
               "time": "1970-01-01T00:00:00.080Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -264,12 +264,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_receipt_verification_completed",
+              "id": "evt_cg_belonging_inductive_miner_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
               "time": "1970-01-01T00:00:00.090Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -294,17 +294,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_hill_climbing",
+              "id": "algorithm_inductive_miner",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_hill_climbing_cg_belonging",
+              "id": "result_inductive_miner_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "cd8585a35ff586ee6a170894d6a292a4bc2eb54d9a5e67fca26820afeaa71128"
+        "expected_ocel2_hash": "837c4284b851b749ed077393eaab6c9be0ad2d53030b603a36d7088b3000e544"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -390,9 +390,9 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_hill_climbing_import_started",
+              "id": "evt_cg_belonging_inductive_miner_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:09.466Z",
+              "time": "2026-06-10T00:19:15.003Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -410,9 +410,9 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_import_completed",
+              "id": "evt_cg_belonging_inductive_miner_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:08.575Z",
+              "time": "2026-06-10T00:19:15.359Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -424,12 +424,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_registry_checked",
+              "id": "evt_cg_belonging_inductive_miner_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:10.178Z",
+              "time": "2026-06-10T00:19:17.075Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -438,16 +438,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_dispatched",
+              "id": "evt_cg_belonging_inductive_miner_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:10.584Z",
+              "time": "2026-06-10T00:19:13.150Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -461,56 +461,56 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_completed",
+              "id": "evt_cg_belonging_inductive_miner_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:07.678Z",
+              "time": "2026-06-10T00:19:15.495Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920",
-                "duration_ms": 22.798
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61",
+                "duration_ms": 16.286
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_result_hashed",
+              "id": "evt_cg_belonging_inductive_miner_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:08.000Z",
+              "time": "2026-06-10T00:19:14.899Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920"
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61"
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_artifact_emitted",
+              "id": "evt_cg_belonging_inductive_miner_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:09.131Z",
+              "time": "2026-06-10T00:19:14.701Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920"
+                "result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61"
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_task_closed",
+              "id": "evt_cg_belonging_inductive_miner_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:09.533Z",
+              "time": "2026-06-10T00:19:17.954Z",
               "relationships": [
                 {
                   "objectId": "example_cg_belonging",
@@ -521,11 +521,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_hill_climbing",
+                  "objectId": "algorithm_inductive_miner",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -538,12 +538,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_receipt_verification_started",
+              "id": "evt_cg_belonging_inductive_miner_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:13.052Z",
+              "time": "2026-06-10T00:19:20.085Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -556,12 +556,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_hill_climbing_receipt_verification_completed",
+              "id": "evt_cg_belonging_inductive_miner_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:13.029Z",
+              "time": "2026-06-10T00:19:18.095Z",
               "relationships": [
                 {
-                  "objectId": "result_hill_climbing_cg_belonging",
+                  "objectId": "result_inductive_miner_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -586,17 +586,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_hill_climbing",
+              "id": "algorithm_inductive_miner",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_hill_climbing_cg_belonging",
+              "id": "result_inductive_miner_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "d35a21f8816da67836675689faa0fe7f9586d992c716ab129e90cb9072015331",
-        "observed_result_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920"
+        "observed_ocel2_hash": "1b1ddccf66ce08d8a0c5fb84558e282638bb4d4d1695dbb019193ff8ce4b2239",
+        "observed_result_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,19 +623,19 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "0d3b3f2f5af45fa4a65c6b30f455bc4a919a5d3a122171b7b383e8575fd80920",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
+        "output_artifact_hash": "fde93e95d7ba53223ca92fe81a071e42284de3448fbc1827fe6b6f7abfdc5e61",
+        "registry_hash": "a2f93841010f542e876b06f3722f6152f4eac1427618868f25d57767f0aa5acb",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
-      "id": "aco",
+      "id": "genetic_algorithm",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3",
-      "duration_ms": 31.462,
+      "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3",
+      "duration_ms": 29.19,
       "expected_path": {
-        "route_id": "wpm.example.cg_belonging.aco.v1",
+        "route_id": "wpm.example.cg_belonging.genetic_algorithm.v1",
         "expected_ocel2": {
           "ocel": "2.0",
           "eventTypes": [
@@ -708,7 +708,7 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_aco_import_started",
+              "id": "evt_cg_belonging_genetic_algorithm_import_started",
               "type": "wpm.input.import.started",
               "time": "1970-01-01T00:00:00.000Z",
               "relationships": [
@@ -728,7 +728,7 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_import_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_import_completed",
               "type": "wpm.input.import.completed",
               "time": "1970-01-01T00:00:00.010Z",
               "relationships": [
@@ -742,12 +742,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_registry_checked",
+              "id": "evt_cg_belonging_genetic_algorithm_registry_checked",
               "type": "wpm.algorithm.registry.checked",
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -756,16 +756,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_dispatched",
+              "id": "evt_cg_belonging_genetic_algorithm_dispatched",
               "type": "wpm.algorithm.dispatched",
               "time": "1970-01-01T00:00:00.030Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -779,54 +779,54 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_completed",
               "type": "wpm.algorithm.completed",
               "time": "1970-01-01T00:00:00.040Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3",
-                "duration_ms": 31.462
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3",
+                "duration_ms": 29.19
               }
             },
             {
-              "id": "evt_cg_belonging_aco_result_hashed",
+              "id": "evt_cg_belonging_genetic_algorithm_result_hashed",
               "type": "wpm.result.hashed",
               "time": "1970-01-01T00:00:00.050Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3"
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3"
               }
             },
             {
-              "id": "evt_cg_belonging_aco_artifact_emitted",
+              "id": "evt_cg_belonging_genetic_algorithm_artifact_emitted",
               "type": "wpm.artifact.emitted",
               "time": "1970-01-01T00:00:00.060Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3"
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3"
               }
             },
             {
-              "id": "evt_cg_belonging_aco_task_closed",
+              "id": "evt_cg_belonging_genetic_algorithm_task_closed",
               "type": "wpm.task.closed",
               "time": "1970-01-01T00:00:00.070Z",
               "relationships": [
@@ -839,11 +839,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -856,12 +856,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_receipt_verification_started",
+              "id": "evt_cg_belonging_genetic_algorithm_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
               "time": "1970-01-01T00:00:00.080Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -874,12 +874,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_receipt_verification_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
               "time": "1970-01-01T00:00:00.090Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -904,17 +904,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_aco",
+              "id": "algorithm_genetic_algorithm",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_aco_cg_belonging",
+              "id": "result_genetic_algorithm_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "e4a9e8841330a0e04cd29b49e73bcb3d25f9a31d864f2406f87c744de727c330"
+        "expected_ocel2_hash": "8f09d551d76750146868aabc9078c29fcb571d9d47977e1a27cec8a6ce6d170c"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1000,9 +1000,9 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_aco_import_started",
+              "id": "evt_cg_belonging_genetic_algorithm_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:09.846Z",
+              "time": "2026-06-10T00:19:15.584Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -1020,9 +1020,9 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_import_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:09.591Z",
+              "time": "2026-06-10T00:19:14.792Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -1034,12 +1034,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_registry_checked",
+              "id": "evt_cg_belonging_genetic_algorithm_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:08.601Z",
+              "time": "2026-06-10T00:19:16.974Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -1048,16 +1048,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_dispatched",
+              "id": "evt_cg_belonging_genetic_algorithm_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:07.805Z",
+              "time": "2026-06-10T00:19:15.056Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -1071,56 +1071,56 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:12.017Z",
+              "time": "2026-06-10T00:19:17.417Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3",
-                "duration_ms": 31.462
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3",
+                "duration_ms": 29.19
               }
             },
             {
-              "id": "evt_cg_belonging_aco_result_hashed",
+              "id": "evt_cg_belonging_genetic_algorithm_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:11.490Z",
+              "time": "2026-06-10T00:19:15.509Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3"
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3"
               }
             },
             {
-              "id": "evt_cg_belonging_aco_artifact_emitted",
+              "id": "evt_cg_belonging_genetic_algorithm_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:10.993Z",
+              "time": "2026-06-10T00:19:14.985Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3"
+                "result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3"
               }
             },
             {
-              "id": "evt_cg_belonging_aco_task_closed",
+              "id": "evt_cg_belonging_genetic_algorithm_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:12.980Z",
+              "time": "2026-06-10T00:19:17.625Z",
               "relationships": [
                 {
                   "objectId": "example_cg_belonging",
@@ -1131,11 +1131,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_aco",
+                  "objectId": "algorithm_genetic_algorithm",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -1148,12 +1148,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_receipt_verification_started",
+              "id": "evt_cg_belonging_genetic_algorithm_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:11.226Z",
+              "time": "2026-06-10T00:19:16.314Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1166,12 +1166,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_aco_receipt_verification_completed",
+              "id": "evt_cg_belonging_genetic_algorithm_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:12.314Z",
+              "time": "2026-06-10T00:19:20.374Z",
               "relationships": [
                 {
-                  "objectId": "result_aco_cg_belonging",
+                  "objectId": "result_genetic_algorithm_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1196,17 +1196,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_aco",
+              "id": "algorithm_genetic_algorithm",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_aco_cg_belonging",
+              "id": "result_genetic_algorithm_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "c30d694b9df467c9dd519d7a88a93ab43a6c9ec5f87a543eb568a76304268151",
-        "observed_result_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3"
+        "observed_ocel2_hash": "85b1bf672371a166e86686fc501b19b31b0e10f7790d18da8c54020cde518373",
+        "observed_result_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,19 +1233,19 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "983db885f1f05bbd63db3a583b24955ebcea6fb694aec3434305648765d219c3",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
+        "output_artifact_hash": "273c8a321108f4302e4acab18a53dfeb0d6476188f2ff8441c1c6d69824868a3",
+        "registry_hash": "a2f93841010f542e876b06f3722f6152f4eac1427618868f25d57767f0aa5acb",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
-      "id": "simulated_annealing",
+      "id": "pso",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093",
-      "duration_ms": 10.535,
+      "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810",
+      "duration_ms": 13.689,
       "expected_path": {
-        "route_id": "wpm.example.cg_belonging.simulated_annealing.v1",
+        "route_id": "wpm.example.cg_belonging.pso.v1",
         "expected_ocel2": {
           "ocel": "2.0",
           "eventTypes": [
@@ -1318,7 +1318,7 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_simulated_annealing_import_started",
+              "id": "evt_cg_belonging_pso_import_started",
               "type": "wpm.input.import.started",
               "time": "1970-01-01T00:00:00.000Z",
               "relationships": [
@@ -1338,7 +1338,7 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_import_completed",
+              "id": "evt_cg_belonging_pso_import_completed",
               "type": "wpm.input.import.completed",
               "time": "1970-01-01T00:00:00.010Z",
               "relationships": [
@@ -1352,12 +1352,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_registry_checked",
+              "id": "evt_cg_belonging_pso_registry_checked",
               "type": "wpm.algorithm.registry.checked",
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -1366,16 +1366,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_dispatched",
+              "id": "evt_cg_belonging_pso_dispatched",
               "type": "wpm.algorithm.dispatched",
               "time": "1970-01-01T00:00:00.030Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -1389,54 +1389,54 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_completed",
+              "id": "evt_cg_belonging_pso_completed",
               "type": "wpm.algorithm.completed",
               "time": "1970-01-01T00:00:00.040Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093",
-                "duration_ms": 10.535
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810",
+                "duration_ms": 13.689
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_result_hashed",
+              "id": "evt_cg_belonging_pso_result_hashed",
               "type": "wpm.result.hashed",
               "time": "1970-01-01T00:00:00.050Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093"
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810"
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_artifact_emitted",
+              "id": "evt_cg_belonging_pso_artifact_emitted",
               "type": "wpm.artifact.emitted",
               "time": "1970-01-01T00:00:00.060Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093"
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810"
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_task_closed",
+              "id": "evt_cg_belonging_pso_task_closed",
               "type": "wpm.task.closed",
               "time": "1970-01-01T00:00:00.070Z",
               "relationships": [
@@ -1449,11 +1449,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -1466,12 +1466,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_receipt_verification_started",
+              "id": "evt_cg_belonging_pso_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
               "time": "1970-01-01T00:00:00.080Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1484,12 +1484,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_receipt_verification_completed",
+              "id": "evt_cg_belonging_pso_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
               "time": "1970-01-01T00:00:00.090Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1514,17 +1514,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_simulated_annealing",
+              "id": "algorithm_pso",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_simulated_annealing_cg_belonging",
+              "id": "result_pso_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "b8251492e8c860e46ee73fa00565a2e496d7473e9398ac87e258110a4c9cc405"
+        "expected_ocel2_hash": "29acece9678d29e3a4db1da30425b2094fc78f4588bf89b3a6a67879a4170d36"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1610,9 +1610,9 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_simulated_annealing_import_started",
+              "id": "evt_cg_belonging_pso_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:07.251Z",
+              "time": "2026-06-10T00:19:11.977Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -1630,9 +1630,9 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_import_completed",
+              "id": "evt_cg_belonging_pso_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:08.748Z",
+              "time": "2026-06-10T00:19:12.832Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -1644,12 +1644,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_registry_checked",
+              "id": "evt_cg_belonging_pso_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:08.659Z",
+              "time": "2026-06-10T00:19:16.840Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -1658,16 +1658,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_dispatched",
+              "id": "evt_cg_belonging_pso_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:07.305Z",
+              "time": "2026-06-10T00:19:13.905Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -1681,56 +1681,56 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_completed",
+              "id": "evt_cg_belonging_pso_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:09.583Z",
+              "time": "2026-06-10T00:19:14.964Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093",
-                "duration_ms": 10.535
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810",
+                "duration_ms": 13.689
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_result_hashed",
+              "id": "evt_cg_belonging_pso_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:11.596Z",
+              "time": "2026-06-10T00:19:16.995Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093"
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810"
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_artifact_emitted",
+              "id": "evt_cg_belonging_pso_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:09.648Z",
+              "time": "2026-06-10T00:19:18.767Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093"
+                "result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810"
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_task_closed",
+              "id": "evt_cg_belonging_pso_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:12.486Z",
+              "time": "2026-06-10T00:19:18.099Z",
               "relationships": [
                 {
                   "objectId": "example_cg_belonging",
@@ -1741,11 +1741,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_simulated_annealing",
+                  "objectId": "algorithm_pso",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -1758,12 +1758,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_receipt_verification_started",
+              "id": "evt_cg_belonging_pso_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:13.285Z",
+              "time": "2026-06-10T00:19:17.273Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1776,12 +1776,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_simulated_annealing_receipt_verification_completed",
+              "id": "evt_cg_belonging_pso_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:11.744Z",
+              "time": "2026-06-10T00:19:16.197Z",
               "relationships": [
                 {
-                  "objectId": "result_simulated_annealing_cg_belonging",
+                  "objectId": "result_pso_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -1806,17 +1806,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_simulated_annealing",
+              "id": "algorithm_pso",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_simulated_annealing_cg_belonging",
+              "id": "result_pso_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "d5baea898d79bd2189200c56211723a28ffc5dedacb3b9e05ac468f993c1d385",
-        "observed_result_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093"
+        "observed_ocel2_hash": "46f44ff1a960d23e7d48ef4de500cd2d0ec97ea441aae8472153574ab5922ccb",
+        "observed_result_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,19 +1843,19 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "6511fb1e5a7a72efa321c5c98158d58d222aad28ce84e25bfa0861bf40fb6093",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
+        "output_artifact_hash": "3ffbb4f367169f26d3b2a5473113d906462448160871fd30d7d426fd79e41810",
+        "registry_hash": "a2f93841010f542e876b06f3722f6152f4eac1427618868f25d57767f0aa5acb",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
-      "id": "declare",
+      "id": "a_star",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5",
-      "duration_ms": 30.076,
+      "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d",
+      "duration_ms": 55.544,
       "expected_path": {
-        "route_id": "wpm.example.cg_belonging.declare.v1",
+        "route_id": "wpm.example.cg_belonging.a_star.v1",
         "expected_ocel2": {
           "ocel": "2.0",
           "eventTypes": [
@@ -1928,7 +1928,7 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_declare_import_started",
+              "id": "evt_cg_belonging_a_star_import_started",
               "type": "wpm.input.import.started",
               "time": "1970-01-01T00:00:00.000Z",
               "relationships": [
@@ -1948,7 +1948,7 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_import_completed",
+              "id": "evt_cg_belonging_a_star_import_completed",
               "type": "wpm.input.import.completed",
               "time": "1970-01-01T00:00:00.010Z",
               "relationships": [
@@ -1962,12 +1962,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_registry_checked",
+              "id": "evt_cg_belonging_a_star_registry_checked",
               "type": "wpm.algorithm.registry.checked",
               "time": "1970-01-01T00:00:00.020Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -1976,16 +1976,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_dispatched",
+              "id": "evt_cg_belonging_a_star_dispatched",
               "type": "wpm.algorithm.dispatched",
               "time": "1970-01-01T00:00:00.030Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -1999,54 +1999,54 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_completed",
+              "id": "evt_cg_belonging_a_star_completed",
               "type": "wpm.algorithm.completed",
               "time": "1970-01-01T00:00:00.040Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5",
-                "duration_ms": 30.076
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d",
+                "duration_ms": 55.544
               }
             },
             {
-              "id": "evt_cg_belonging_declare_result_hashed",
+              "id": "evt_cg_belonging_a_star_result_hashed",
               "type": "wpm.result.hashed",
               "time": "1970-01-01T00:00:00.050Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5"
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d"
               }
             },
             {
-              "id": "evt_cg_belonging_declare_artifact_emitted",
+              "id": "evt_cg_belonging_a_star_artifact_emitted",
               "type": "wpm.artifact.emitted",
               "time": "1970-01-01T00:00:00.060Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5"
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d"
               }
             },
             {
-              "id": "evt_cg_belonging_declare_task_closed",
+              "id": "evt_cg_belonging_a_star_task_closed",
               "type": "wpm.task.closed",
               "time": "1970-01-01T00:00:00.070Z",
               "relationships": [
@@ -2059,11 +2059,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -2076,12 +2076,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_receipt_verification_started",
+              "id": "evt_cg_belonging_a_star_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
               "time": "1970-01-01T00:00:00.080Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -2094,12 +2094,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_receipt_verification_completed",
+              "id": "evt_cg_belonging_a_star_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
               "time": "1970-01-01T00:00:00.090Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -2124,17 +2124,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_declare",
+              "id": "algorithm_a_star",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_declare_cg_belonging",
+              "id": "result_a_star_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "1fadb8310b0101076a3cd9dfc2fdb8cfa53e99f1c1f1dc291ed933185aeb7bcc"
+        "expected_ocel2_hash": "67810aabeb9c946267d64c5ba8bc8d70beacecba711f7348ce8c984105f90666"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2220,9 +2220,9 @@
           ],
           "events": [
             {
-              "id": "evt_cg_belonging_declare_import_started",
+              "id": "evt_cg_belonging_a_star_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:07.637Z",
+              "time": "2026-06-10T00:19:14.970Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -2240,9 +2240,9 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_import_completed",
+              "id": "evt_cg_belonging_a_star_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:06.797Z",
+              "time": "2026-06-10T00:19:14.413Z",
               "relationships": [
                 {
                   "objectId": "log_cg_belonging",
@@ -2254,12 +2254,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_registry_checked",
+              "id": "evt_cg_belonging_a_star_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:09.774Z",
+              "time": "2026-06-10T00:19:16.095Z",
               "relationships": [
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 }
               ],
@@ -2268,16 +2268,16 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_dispatched",
+              "id": "evt_cg_belonging_a_star_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:10.502Z",
+              "time": "2026-06-10T00:19:16.204Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "objectId": "registry_v26.5.29",
+                  "objectId": "registry_v26.6.9",
                   "qualifier": "registry"
                 },
                 {
@@ -2291,56 +2291,56 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_completed",
+              "id": "evt_cg_belonging_a_star_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:07.612Z",
+              "time": "2026-06-10T00:19:14.078Z",
               "relationships": [
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5",
-                "duration_ms": 30.076
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d",
+                "duration_ms": 55.544
               }
             },
             {
-              "id": "evt_cg_belonging_declare_result_hashed",
+              "id": "evt_cg_belonging_a_star_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:11.949Z",
+              "time": "2026-06-10T00:19:14.502Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5"
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d"
               }
             },
             {
-              "id": "evt_cg_belonging_declare_artifact_emitted",
+              "id": "evt_cg_belonging_a_star_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:11.768Z",
+              "time": "2026-06-10T00:19:17.092Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5"
+                "result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d"
               }
             },
             {
-              "id": "evt_cg_belonging_declare_task_closed",
+              "id": "evt_cg_belonging_a_star_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:08.970Z",
+              "time": "2026-06-10T00:19:19.681Z",
               "relationships": [
                 {
                   "objectId": "example_cg_belonging",
@@ -2351,11 +2351,11 @@
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "algorithm_declare",
+                  "objectId": "algorithm_a_star",
                   "qualifier": "task-context"
                 },
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "task-context"
                 },
                 {
@@ -2368,12 +2368,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_receipt_verification_started",
+              "id": "evt_cg_belonging_a_star_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:11.539Z",
+              "time": "2026-06-10T00:19:20.235Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -2386,12 +2386,12 @@
               }
             },
             {
-              "id": "evt_cg_belonging_declare_receipt_verification_completed",
+              "id": "evt_cg_belonging_a_star_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:11.690Z",
+              "time": "2026-06-10T00:19:19.937Z",
               "relationships": [
                 {
-                  "objectId": "result_declare_cg_belonging",
+                  "objectId": "result_a_star_cg_belonging",
                   "qualifier": "verified-result"
                 },
                 {
@@ -2416,17 +2416,17 @@
               "attributes": {}
             },
             {
-              "id": "algorithm_declare",
+              "id": "algorithm_a_star",
               "type": "Algorithm",
               "attributes": {}
             },
             {
-              "id": "registry_v26.5.29",
+              "id": "registry_v26.6.9",
               "type": "AlgorithmRegistry",
               "attributes": {}
             },
             {
-              "id": "result_declare_cg_belonging",
+              "id": "result_a_star_cg_belonging",
               "type": "AlgorithmResult",
               "attributes": {}
             },
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "70e88bb11cb2501097df61390d5879134c62bc53bb0fb8df0df396e5c3c29576",
-        "observed_result_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5"
+        "observed_ocel2_hash": "635c45842c154b9b9728fe2d50e1d3f751eaa63838cf3baafeb6313a5ebc0eb9",
+        "observed_result_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,2454 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "5597772ad372acdbfa431ca83177fd818aff1c268a2e5deafede8375d346a7b5",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
-        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
-      }
-    },
-    {
-      "id": "optimized_dfg",
-      "registry_present": true,
-      "dispatched": true,
-      "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942",
-      "duration_ms": 12.322,
-      "expected_path": {
-        "route_id": "wpm.example.cg_belonging.optimized_dfg.v1",
-        "expected_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_optimized_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "1970-01-01T00:00:00.000Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "expected"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "1970-01-01T00:00:00.010Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "1970-01-01T00:00:00.020Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "1970-01-01T00:00:00.030Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "1970-01-01T00:00:00.040Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942",
-                "duration_ms": 12.322
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "1970-01-01T00:00:00.050Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "1970-01-01T00:00:00.060Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "1970-01-01T00:00:00.070Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "1970-01-01T00:00:00.080Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "1970-01-01T00:00:00.090Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_optimized_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_optimized_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "expected_ocel2_hash": "094dbd9ee82847b4008e4e546811bdd12af27b3bf2456c2b0644ef783b9d3155"
-      },
-      "observed_path": {
-        "observed_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_optimized_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:07.015Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "observed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:08.513Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:08.627Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:10.274Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:09.608Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942",
-                "duration_ms": 12.322
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:08.943Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:08.192Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:10.363Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_optimized_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:10.033Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_optimized_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:11.007Z",
-              "relationships": [
-                {
-                  "objectId": "result_optimized_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_optimized_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_optimized_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "observed_ocel2_hash": "7cde48db2d46580dfe7707ddcc1ea40614b1064734ca715ef58560cc01c8b024",
-        "observed_result_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942"
-      },
-      "alignment": {
-        "expected_vs_observed": "PendingVerification",
-        "missing_events": [],
-        "unexpected_events": [],
-        "refusal_state": "VerificationPending"
-      },
-      "boundary_evidence": {
-        "command": "npm run examples:gate",
-        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
-        "exit_code": 0,
-        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
-        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
-        "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "c3586fc05f0bf7583faff1f039d5d66376da1a4af4302a4236ec974d28140942",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
-        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
-      }
-    },
-    {
-      "id": "ilp",
-      "registry_present": true,
-      "dispatched": true,
-      "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227",
-      "duration_ms": 42.942,
-      "expected_path": {
-        "route_id": "wpm.example.cg_belonging.ilp.v1",
-        "expected_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_ilp_import_started",
-              "type": "wpm.input.import.started",
-              "time": "1970-01-01T00:00:00.000Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "expected"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "1970-01-01T00:00:00.010Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "1970-01-01T00:00:00.020Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "1970-01-01T00:00:00.030Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "1970-01-01T00:00:00.040Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227",
-                "duration_ms": 42.942
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "1970-01-01T00:00:00.050Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "1970-01-01T00:00:00.060Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_task_closed",
-              "type": "wpm.task.closed",
-              "time": "1970-01-01T00:00:00.070Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "1970-01-01T00:00:00.080Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "1970-01-01T00:00:00.090Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_ilp",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_ilp_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "expected_ocel2_hash": "d94d2bd9a4e6d454ac2d17d2ee358fcf3c030b08a38a69cd2734876dc4f40486"
-      },
-      "observed_path": {
-        "observed_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_ilp_import_started",
-              "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:07.212Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "observed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:05.741Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:09.063Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:09.887Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:07.340Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227",
-                "duration_ms": 42.942
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:11.580Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:10.281Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_task_closed",
-              "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:10.731Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_ilp",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:09.946Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_ilp_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:09.906Z",
-              "relationships": [
-                {
-                  "objectId": "result_ilp_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_ilp",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_ilp_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "observed_ocel2_hash": "f90b871f25f0082da01c63589876e47f67382005c68846c45ab351cd4df4d26b",
-        "observed_result_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227"
-      },
-      "alignment": {
-        "expected_vs_observed": "PendingVerification",
-        "missing_events": [],
-        "unexpected_events": [],
-        "refusal_state": "VerificationPending"
-      },
-      "boundary_evidence": {
-        "command": "npm run examples:gate",
-        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
-        "exit_code": 0,
-        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
-        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
-        "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "a9f50b3e5b7410e70bad7f74dfc25ed4fa2161b8d0952664926f8bf46842b227",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
-        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
-      }
-    },
-    {
-      "id": "simd_streaming_dfg",
-      "registry_present": true,
-      "dispatched": true,
-      "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37",
-      "duration_ms": 20.153,
-      "expected_path": {
-        "route_id": "wpm.example.cg_belonging.simd_streaming_dfg.v1",
-        "expected_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "1970-01-01T00:00:00.000Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "expected"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "1970-01-01T00:00:00.010Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "1970-01-01T00:00:00.020Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "1970-01-01T00:00:00.030Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "1970-01-01T00:00:00.040Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37",
-                "duration_ms": 20.153
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "1970-01-01T00:00:00.050Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "1970-01-01T00:00:00.060Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "1970-01-01T00:00:00.070Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "1970-01-01T00:00:00.080Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "1970-01-01T00:00:00.090Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_simd_streaming_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_simd_streaming_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "expected_ocel2_hash": "6c717267bb3b3dc682e13c51cfc413f100839cf8b8f3d6d0e6782c756ad02063"
-      },
-      "observed_path": {
-        "observed_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:06.199Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "observed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:07.805Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:06.809Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:09.569Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:07.510Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37",
-                "duration_ms": 20.153
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:12.088Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:08.602Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:09.760Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_simd_streaming_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:09.223Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_simd_streaming_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:11.003Z",
-              "relationships": [
-                {
-                  "objectId": "result_simd_streaming_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_simd_streaming_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_simd_streaming_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "observed_ocel2_hash": "9961d9f98c07119eb49f153cfbadb11e870709eedd27879ab8617efa518e8db6",
-        "observed_result_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37"
-      },
-      "alignment": {
-        "expected_vs_observed": "PendingVerification",
-        "missing_events": [],
-        "unexpected_events": [],
-        "refusal_state": "VerificationPending"
-      },
-      "boundary_evidence": {
-        "command": "npm run examples:gate",
-        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
-        "exit_code": 0,
-        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
-        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
-        "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "8fddcc32ce069a8d22770461e095cdc9634bae266fe8b68233610159bd8f5c37",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
-        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
-      }
-    },
-    {
-      "id": "hierarchical_dfg",
-      "registry_present": true,
-      "dispatched": true,
-      "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b",
-      "duration_ms": 47.416,
-      "expected_path": {
-        "route_id": "wpm.example.cg_belonging.hierarchical_dfg.v1",
-        "expected_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "1970-01-01T00:00:00.000Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "expected"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "1970-01-01T00:00:00.010Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "1970-01-01T00:00:00.020Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "1970-01-01T00:00:00.030Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "1970-01-01T00:00:00.040Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b",
-                "duration_ms": 47.416
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "1970-01-01T00:00:00.050Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "1970-01-01T00:00:00.060Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "1970-01-01T00:00:00.070Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "1970-01-01T00:00:00.080Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "1970-01-01T00:00:00.090Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_hierarchical_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_hierarchical_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "expected_ocel2_hash": "410075b95265ea4faa5b882f2c334d12fc312aa27ba490d81d00e91bb22a6059"
-      },
-      "observed_path": {
-        "observed_ocel2": {
-          "ocel": "2.0",
-          "eventTypes": [
-            {
-              "name": "wpm.input.import.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.input.import.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.registry.checked",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.dispatched",
-              "attributes": []
-            },
-            {
-              "name": "wpm.algorithm.completed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.result.hashed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.artifact.emitted",
-              "attributes": []
-            },
-            {
-              "name": "wpm.task.closed",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.started",
-              "attributes": []
-            },
-            {
-              "name": "wpm.receipt.verification.completed",
-              "attributes": []
-            }
-          ],
-          "objectTypes": [
-            {
-              "name": "Example",
-              "attributes": []
-            },
-            {
-              "name": "EventLog",
-              "attributes": []
-            },
-            {
-              "name": "Algorithm",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmRegistry",
-              "attributes": []
-            },
-            {
-              "name": "AlgorithmResult",
-              "attributes": []
-            },
-            {
-              "name": "Receipt",
-              "attributes": []
-            }
-          ],
-          "events": [
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_import_started",
-              "type": "wpm.input.import.started",
-              "time": "2026-06-05T18:40:08.883Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                },
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "example"
-                }
-              ],
-              "attributes": {
-                "format": "xes",
-                "activity_key": "concept:name",
-                "stage": "observed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_import_completed",
-              "type": "wpm.input.import.completed",
-              "time": "2026-06-05T18:40:06.147Z",
-              "relationships": [
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_registry_checked",
-              "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-05T18:40:11.097Z",
-              "relationships": [
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                }
-              ],
-              "attributes": {
-                "present": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_dispatched",
-              "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-05T18:40:09.694Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "selected-algorithm"
-                },
-                {
-                  "objectId": "registry_v26.5.29",
-                  "qualifier": "registry"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "input"
-                }
-              ],
-              "attributes": {
-                "registry_present": true,
-                "dispatched": true
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_completed",
-              "type": "wpm.algorithm.completed",
-              "time": "2026-06-05T18:40:11.051Z",
-              "relationships": [
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "executed-algorithm"
-                },
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b",
-                "duration_ms": 47.416
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_result_hashed",
-              "type": "wpm.result.hashed",
-              "time": "2026-06-05T18:40:10.522Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "output"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_artifact_emitted",
-              "type": "wpm.artifact.emitted",
-              "time": "2026-06-05T18:40:09.780Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "artifact"
-                }
-              ],
-              "attributes": {
-                "result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_task_closed",
-              "type": "wpm.task.closed",
-              "time": "2026-06-05T18:40:11.998Z",
-              "relationships": [
-                {
-                  "objectId": "example_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "log_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "algorithm_hierarchical_dfg",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "task-context"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "task-context"
-                }
-              ],
-              "attributes": {
-                "status": "Closed"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_receipt_verification_started",
-              "type": "wpm.receipt.verification.started",
-              "time": "2026-06-05T18:40:13.580Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "VerificationStarted"
-              }
-            },
-            {
-              "id": "evt_cg_belonging_hierarchical_dfg_receipt_verification_completed",
-              "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-05T18:40:14.106Z",
-              "relationships": [
-                {
-                  "objectId": "result_hierarchical_dfg_cg_belonging",
-                  "qualifier": "verified-result"
-                },
-                {
-                  "objectId": "receipt_cg_belonging",
-                  "qualifier": "receipt"
-                }
-              ],
-              "attributes": {
-                "state": "ReceiptVerified"
-              }
-            }
-          ],
-          "objects": [
-            {
-              "id": "example_cg_belonging",
-              "type": "Example",
-              "attributes": {}
-            },
-            {
-              "id": "log_cg_belonging",
-              "type": "EventLog",
-              "attributes": {}
-            },
-            {
-              "id": "algorithm_hierarchical_dfg",
-              "type": "Algorithm",
-              "attributes": {}
-            },
-            {
-              "id": "registry_v26.5.29",
-              "type": "AlgorithmRegistry",
-              "attributes": {}
-            },
-            {
-              "id": "result_hierarchical_dfg_cg_belonging",
-              "type": "AlgorithmResult",
-              "attributes": {}
-            },
-            {
-              "id": "receipt_cg_belonging",
-              "type": "Receipt",
-              "attributes": {}
-            }
-          ]
-        },
-        "observed_ocel2_hash": "8cacce0f2bd10780f4084c13303e5104119d753b6b84a684a5524e31b12d4de2",
-        "observed_result_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b"
-      },
-      "alignment": {
-        "expected_vs_observed": "PendingVerification",
-        "missing_events": [],
-        "unexpected_events": [],
-        "refusal_state": "VerificationPending"
-      },
-      "boundary_evidence": {
-        "command": "npm run examples:gate",
-        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
-        "exit_code": 0,
-        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
-        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
-        "input_artifact_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
-        "output_artifact_hash": "4098a37d441ee111759808506b336d8534c804f9f4a72affefb9ef1127428f3b",
-        "registry_hash": "7ad82ac3cd57671e1dc38b206b8ac3015e2d5cf4dd95f95561cac0e06b76d99c",
+        "output_artifact_hash": "abdcf7ec002bd208d2338e0532180ca00826af651e218084b5296a82fb1aed5d",
+        "registry_hash": "a2f93841010f542e876b06f3722f6152f4eac1427618868f25d57767f0aa5acb",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
-  "algorithm_count": 8,
-  "created_at": "2026-06-05T18:40:05.104Z",
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T00:19:11.365Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "76f4fab8f481ea7c0e0bbe04769b2d8d3f42aee66430be4d8d500330bec512fb"
+  "receipt_hash": "6df7c9070663a011a35bdb73a7cec4a4548857ac51795e6ef5410a653fe61b81"
 }

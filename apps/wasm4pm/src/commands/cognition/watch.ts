@@ -7,12 +7,13 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
 import { withSpanRaw } from '../_otel.js';
 
-/** Minimal receipt summary emitted on every re-run. */
+/** Minimal receipt summary emitted on every re-run — matches ContractResult from wasm.rs:182-190. */
 export interface WatchReceipt {
-  decision: 'Allow' | 'Deny';
-  hash: string;
-  findings: number;
-  contract: string;
+  status: 'ok';
+  breed: string;
+  run_id: string;
+  output_hash: string;
+  replay_pointer: string;
   elapsedMs: number;
 }
 
@@ -79,20 +80,14 @@ async function runContract(
   const result = await cognitionModule.runContract(contractName, input);
   const elapsedMs = performance.now() - t0;
 
-  // Map Rust output shape onto WatchReceipt:
-  //   status === 'ok'  → Allow (cognition_run only emits 'ok' on success;
-  //                     errors throw via `wasm_err`).
-  //   output_hash      → first 8 chars used as a short identifier.
-  //   findings is NOT emitted by cognition_run — always 0 here. Use
-  //   `cognition_verify` separately if you need adversarial findings.
+  // Map Rust ContractResult fields directly onto WatchReceipt.
+  // cognition_run only emits status='ok' on success; errors throw via wasm_err.
   return {
-    decision: result.status === 'ok' ? 'Allow' : 'Deny',
-    hash:
-      typeof result.output_hash === 'string'
-        ? result.output_hash.slice(0, 8)
-        : '00000000',
-    findings: 0,
-    contract: contractName,
+    status: 'ok',
+    breed: result.breed ?? contractName,
+    run_id: result.run_id ?? '',
+    output_hash: result.output_hash ?? '',
+    replay_pointer: result.replay_pointer ?? (result.output_hash ? result.output_hash.slice(0, 16) : ''),
     elapsedMs: Math.round(elapsedMs),
   };
 }
@@ -100,7 +95,9 @@ async function runContract(
 /** Format a receipt summary for human output. */
 function formatReceiptLine(receipt: WatchReceipt): string {
   const ts = new Date().toISOString().replace('T', ' ').slice(0, 19);
-  return `[${ts}] decision=${receipt.decision} hash=${receipt.hash} findings=${receipt.findings}`;
+  const decision = receipt.status === 'ok' ? 'Allow' : 'Deny';
+  const shortHash = receipt.output_hash.slice(0, 8);
+  return `[${ts}] decision=${decision} hash=${shortHash} run_id=${receipt.run_id}`;
 }
 
 export const watch = defineCommand({
@@ -194,7 +191,7 @@ export const watch = defineCommand({
             receipt,
           });
         } else if (isQuiet) {
-          console.log(receipt.hash);
+          console.log(receipt.output_hash.slice(0, 8));
         } else if (isVerbose) {
           // Print summary line then full inference_trace
           console.log(formatReceiptLine(receipt));

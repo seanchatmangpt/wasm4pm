@@ -11,7 +11,7 @@ type: rules
 3. **pnpm only** — never npm or yarn (workspace semantics).
 4. **Check WASM binary before editing TS consumers** — `wasm4pm/pkg/` must exist; if not, `pnpm build` first.
 5. **FM-5 forbidden**: never mock `init.js` in cognition tests (vi.mock/jest.mock/sinon.stub). At least one integration test must use real WASM.
-6. **BLAKE3 receipt chain mandatory** — every `wpm run`/`wpm cognition run` emits a receipt to `.wasm4pm/receipts/latest.json` with non-empty signature, input_hashes, output_hashes. No `--no-receipt`.
+6. **BLAKE3 receipt chain mandatory** — every `wpm run`/`wpm cognition run` emits a receipt to `.wasm4pm/receipts/latest.json` with non-empty `input_hash` and `output_hash`. No `--no-receipt`.
 7. **OTEL 100% coverage** — every public op emits spans with `service_name` + `status` ("ok"|"error"). No success claims without span evidence.
 8. **Andon: STOP THE LINE** on `error[E`, `test.*FAILED`, `FM-5 violation`, `panicked at`, or `<new-diagnostics>`. Fix before continuing — never defer.
 

@@ -68,6 +68,11 @@ pub enum StoredObject {
     /// A full streaming pipeline.
     #[cfg(feature = "streaming_full")]
     StreamingPipeline(StreamingPipeline),
+    /// A POWL model stored as (arena, root_index).
+    PowlModel {
+        arena: crate::powl_arena::PowlArena,
+        root: u32,
+    },
 }
 
 /// Global application state for managing objects in WASM handle system.
@@ -247,6 +252,10 @@ impl Clone for StoredObject {
             StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
             #[cfg(feature = "streaming_full")]
             StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
+            StoredObject::PowlModel { arena, root } => StoredObject::PowlModel {
+                arena: arena.clone(),
+                root: *root,
+            },
         }
     }
 }
@@ -268,6 +277,14 @@ pub fn get_or_init_state() -> &'static AppState {
 #[wasm_bindgen]
 pub fn delete_object(id: &str) -> Result<bool, JsValue> {
     get_or_init_state().delete_object(id)
+}
+
+/// JS-accessible function to check if a stored object exists by handle.
+#[wasm_bindgen]
+pub fn object_exists(id: &str) -> bool {
+    get_or_init_state()
+        .with_object(id, |obj| Ok(obj.is_some()))
+        .unwrap_or(false)
 }
 
 /// JS-accessible function to get the current number of stored objects.

@@ -12,6 +12,8 @@ node_modules/
 .pnpm-store/
 # pnpm-lock.yaml is committed for reproducible workspace installs.
 # package-lock.json is blocked by .github/workflows/repo-hygiene.yml, not by ignore.
+package-lock.json
+yarn.lock
 
 # TypeScript build
 dist/

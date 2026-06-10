@@ -9,7 +9,7 @@
 
 1. **Rust/WASM core** (`wasm4pm/`) — **60 algorithms** registered in the kernel registry, compiled to WebAssembly via wasm-pack. This is the deterministic algorithm backend.
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 11 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration, and observability.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 12 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration, and observability.
 
 **State Machine Source of Truth:** [Architecture Overview](docs/explanation/architecture_overview.md) (Engine State Machine section).
 
@@ -81,7 +81,9 @@ wasm4pm/
 | `@wasm4pm/observability` | CLI human output, JSONL machine output, OTEL spans |
 | `@wasm4pm/testing` | Parity, determinism, CLI, and certification harnesses |
 | `@wasm4pm/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
-| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
+| `@wasm4pm/cognition` | Cognition layer — 13 breeds incl. 4 autoinstinct (vision/semantics/neurosis/learning) |
+| `@wasm4pm/agents` | Agent orchestration layer |
+| `@wasm4pm/supabase` | Supabase integration adapter |
 
 ---
 

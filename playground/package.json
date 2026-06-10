@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/playground",
-  "version": "26.6.5",
+  "version": "26.6.9",
   "description": "Local dev behavior simulation — tests local source using real harnesses",
   "private": true,
   "type": "module",
@@ -18,12 +18,12 @@
     "vitest": "^1.1.0"
   },
   "dependencies": {
-    "@wasm4pm/config": "file:../packages/config",
-    "@wasm4pm/contracts": "file:../packages/contracts",
-    "@wasm4pm/engine": "file:../packages/engine",
-    "wasm4pm": "file:../packages/kernel",
-    "@wasm4pm/observability": "file:../packages/observability",
-    "@wasm4pm/planner": "file:../packages/planner",
-    "@wasm4pm/testing": "file:../packages/testing"
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "wasm4pm": "workspace:*",
+    "@wasm4pm/observability": "workspace:*",
+    "@wasm4pm/planner": "workspace:*",
+    "@wasm4pm/testing": "workspace:*"
   }
 }

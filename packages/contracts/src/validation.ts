@@ -34,6 +34,7 @@ export function validateReceipt(receipt: unknown): ValidationResult {
   // Check required string fields
   const requiredStrings = [
     'run_id',
+    'trace_id',
     'schema_version',
     'config_hash',
     'input_hash',
@@ -74,8 +75,13 @@ export function validateReceipt(receipt: unknown): ValidationResult {
   const validated = receipt as unknown as Receipt;
 
   // Schema version check
-  if (validated.schema_version !== '1.0') {
+  if (validated.schema_version !== '1.1') {
     warnings.push(`Unknown schema version: ${validated.schema_version}`);
+  }
+
+  // Validate trace_id format (32 hex chars) if non-empty
+  if (validated.trace_id && !/^[0-9a-f]{32}$/i.test(validated.trace_id)) {
+    errors.push('trace_id must be a 32-character hex string (W3C trace ID)');
   }
 
   // Validate run_id is a valid UUID

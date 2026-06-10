@@ -25,7 +25,7 @@ import { SpanContext, generateSpanId } from './context.js';
  * spans under a stale scope version, making reproducing past runs impossible.
  */
 export const OBSERVABILITY_SCOPE_NAME = '@wasm4pm/observability';
-export const OBSERVABILITY_SCOPE_VERSION = '26.6.5';
+export const OBSERVABILITY_SCOPE_VERSION = '26.6.9';
 
 // ---- Configuration ----
 

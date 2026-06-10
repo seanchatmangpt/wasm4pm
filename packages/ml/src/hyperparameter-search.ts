@@ -18,10 +18,10 @@
  * Returns sorted results by mean score (descending).
  */
 
-import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
-import { classifyTraces } from './classifiers.js';
+import { classifyTraces, regressRemainingTime } from './classifiers.js';
 import { clusterTraces } from './clustering.js';
-import type { FeatureMatrix } from './types.js';
+import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
+import type { FeatureMatrix, RegressionResult } from './types.js';
 
 export type { FeatureMatrix };
 
@@ -36,6 +36,8 @@ export interface EvalMetrics {
   recall?: number;
   silhouetteScore?: number;
   inertia?: number;
+  rmse?: number;
+  mae?: number;
   cvMeanAccuracy?: number;
   cvStdAccuracy?: number;
   cvFoldAccuracies?: number[];
@@ -196,7 +198,30 @@ async function _evaluateSingle(
     return { silhouetteScore: silhouette, inertia, accuracy: Math.max(0, silhouette) };
   }
 
-  // regress: stub returning 0 metrics (no regression evaluator needed for current tests)
+  if (task === 'regress') {
+    if (data.data.length < 2) return { accuracy: 0 };
+    // regressTraces expects Record<string,unknown>[] — build synthetic objects
+    const rows: Record<string, unknown>[] = data.data.map((row, i) => {
+      const obj: Record<string, unknown> = {
+        case_id: data.caseIds[i] ?? `c${i}`,
+        remaining_time: data.targets![i] ?? 0,
+      };
+      (data.featureNames ?? []).forEach((name, fi) => {
+        obj[name] = row[fi];
+      });
+      return obj;
+    });
+    const result = await regressRemainingTime(rows, {
+      method: ((params.method as string) ?? 'linear_regression') as import('./types.js').RegressionMethod,
+      degree: typeof params.degree === 'number' ? params.degree : 2,
+    });
+    return {
+      accuracy: result.rSquared,
+      rmse: result.rmse,
+      mae: result.mae,
+    };
+  }
+
   return { accuracy: 0 };
 }
 

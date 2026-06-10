@@ -408,34 +408,29 @@ export const predict = defineCommand({
                 if (savedPath && verbose) {
                   // debug already handled by projection.debug if needed
                 }
-                try {
-                  const inputBytes = await fs
-                    .readFile(inputPath)
-                    .catch(() => Buffer.from(inputPath));
-                  const predictionsCount = Array.isArray(
-                    (taskResult as Record<string, unknown>).predictions
-                  )
-                    ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
-                    : 0;
-                  const receipt: CommandReceipt = {
-                    ...newReceipt('predict'),
-                    command: 'predict',
-                    input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
-                    status: 'success',
-                    summary: {
-                      task,
-                      activity_key: activityKey,
-                      top_k: topK,
-                      ngram_order: ngramOrder,
-                      drift_window: driftWindow,
-                      predictions_count: predictionsCount,
-                    },
-                  };
-                  saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
-                }
+                const inputBytes = await fs.readFile(inputPath);
+                const predictionsCount = Array.isArray(
+                  (taskResult as Record<string, unknown>).predictions
+                )
+                  ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
+                  : 0;
+                const receipt: CommandReceipt = {
+                  ...newReceipt('predict'),
+                  command: 'predict',
+                  input_hash: blake3Hex(inputBytes),
+                  output_hash: blake3Hex(JSON.stringify(payload)),
+                  status: 'success',
+                  summary: {
+                    task,
+                    activity_key: activityKey,
+                    top_k: topK,
+                    ngram_order: ngramOrder,
+                    drift_window: driftWindow,
+                    predictions_count: predictionsCount,
+                    input_file: inputPath,
+                  },
+                };
+                saveCommandReceipt(receipt);
               }
 
               return await exitWithFlush(result.exit_code);

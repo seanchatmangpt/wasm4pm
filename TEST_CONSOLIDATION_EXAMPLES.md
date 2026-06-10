@@ -473,7 +473,7 @@ describe('dfg harness parity', () => {
 describe('dfg receipt chain', () => {
   it('produces valid receipt', async () => {
     const receipt = await runDfg(log);
-    expect(receipt.signature).toBeDefined();
+    expect(receipt.output_hash).toBeDefined();
   });
 });
 ```
@@ -537,7 +537,7 @@ describe('receipt chain validation', () => {
     '%s produces valid receipt',
     async (algo) => {
       const receipt = await run(algo, log);
-      expect(receipt.signature).toBeDefined();
+      expect(receipt.output_hash).toBeDefined();
       expect(receipt.input_hash).toBeDefined();
     }
   );

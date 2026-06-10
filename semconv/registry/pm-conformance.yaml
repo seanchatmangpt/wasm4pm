@@ -1,0 +1,97 @@
+groups:
+  - id: pm.conformance
+    type: attribute_group
+    prefix: pm.conformance
+    brief: Process conformance checking operations
+    attributes:
+      - id: fitness
+        type: double
+        brief: Conformance fitness score (0-1)
+        requirement_level: required
+      - id: precision
+        type: double
+        brief: Model precision score (0-1)
+        requirement_level: required
+      - id: generalization
+        type: double
+        brief: Model generalization score (0-1)
+        requirement_level: opt_in
+      - id: simplicity
+        type: double
+        brief: Model simplicity score (0-1)
+        requirement_level: opt_in
+      - id: deviation_count
+        type: int
+        brief: Number of deviating traces
+        requirement_level: opt_in
+      - id: conforms
+        type: boolean
+        brief: Whether log conforms to model
+        requirement_level: recommended
+
+  - id: pm.analysis
+    type: attribute_group
+    prefix: pm.analysis
+    brief: Process analysis and statistics operations
+    attributes:
+      - id: analysis_type
+        type: string
+        brief: Type of analysis (statistics, bottleneck, drift, variant)
+        requirement_level: required
+      - id: metric_name
+        type: string
+        brief: Name of analyzed metric
+        requirement_level: opt_in
+      - id: metric_value
+        type: double
+        brief: Numeric value of metric
+        requirement_level: opt_in
+      - id: threshold_applied
+        type: double
+        brief: Analysis threshold if applicable
+        requirement_level: opt_in
+      - id: anomaly_detected
+        type: boolean
+        brief: Whether anomaly or drift was detected
+        requirement_level: opt_in
+      - id: affected_count
+        type: int
+        brief: Number of traces/objects affected
+        requirement_level: opt_in
+
+  - id: pm.check.conformance
+    type: span
+    prefix: pm.check.conformance
+    name: pm.check.conformance
+    span_kind: internal
+    brief: Check conformance of event log to process model
+    attributes:
+      - ref: pm.conformance.fitness
+        requirement_level: required
+      - ref: pm.conformance.precision
+        requirement_level: required
+      - ref: pm.conformance.generalization
+        requirement_level: opt_in
+      - ref: pm.conformance.simplicity
+        requirement_level: opt_in
+      - ref: pm.conformance.deviation_count
+        requirement_level: opt_in
+      - ref: pm.conformance.conforms
+        requirement_level: recommended
+
+  - id: pm.analyze.drift
+    type: span
+    prefix: pm.analyze.drift
+    name: pm.analyze.drift
+    span_kind: internal
+    brief: Detect concept drift in event log
+    attributes:
+      - ref: pm.drift.drift_detected
+        requirement_level: required
+      - ref: pm.drift.drift_point_count
+        requirement_level: opt_in
+      - ref: pm.drift.drift_direction
+        requirement_level: opt_in
+      - ref: pm.drift.max_distance
+        requirement_level: opt_in
+

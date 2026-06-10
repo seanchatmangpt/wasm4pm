@@ -67,9 +67,13 @@ const DEFAULTS: Record<string, Record<string, number>> = {
  */
 export function machineThreshold(category: string, operation: string): number {
   const timings = loadTimings();
-  return timings?.thresholds?.[category]?.[operation]
-    ?? DEFAULTS[category]?.[operation]
-    ?? 1000; // ultra-conservative fallback
+  const val = timings?.thresholds?.[category]?.[operation]
+    ?? DEFAULTS[category]?.[operation];
+    
+  if (val === undefined) {
+    throw new Error(`Missing timing threshold for ${category}.${operation}. Run 'wpm benchmark --calibrate' to update expectations.`);
+  }
+  return val;
 }
 
 /**

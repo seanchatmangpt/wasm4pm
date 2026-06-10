@@ -126,7 +126,7 @@ pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
 /// Attribute value types for event data.
 ///
 /// Mirrors the XES standard attribute types.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "tag", content = "value")]
 pub enum AttributeValue {
     /// UTF-8 string value.
@@ -1551,6 +1551,26 @@ impl StreamingConformanceChecker {
                     state: TraceState::Alive,
                     astar_frontier: None,
                 });
+
+            if !state.activities.is_empty() {
+                let prev = state.activities.last().unwrap();
+                let pair = (prev.clone(), activity.to_string());
+                if let Some(ref dfg_edges) = self.dfg_edges {
+                    if !dfg_edges.contains(&pair) {
+                        state.state = TraceState::Blocked;
+                        state.missing_tokens += 1;
+                    }
+                }
+            } else {
+                // First activity: check if it's a valid start activity
+                if let Some(ref start_activities) = self.start_activities {
+                    if !start_activities.contains(activity) {
+                        state.state = TraceState::Blocked;
+                        state.missing_tokens += 1;
+                    }
+                }
+            }
+
             state.activities.push(activity.to_string());
         }
     }
