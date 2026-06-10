@@ -1,0 +1,50 @@
+{
+  "intent": "check formula A G (p -> A F q)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ctl:formula",
+      "value": "A G (p -> A F q)"
+    },
+    {
+      "key": "ctl:initial",
+      "value": "s0"
+    },
+    {
+      "key": "state:s0",
+      "value": ""
+    },
+    {
+      "key": "state:s1",
+      "value": ""
+    },
+    {
+      "key": "state:s2",
+      "value": ""
+    },
+    {
+      "key": "transition:s0:s1",
+      "value": ""
+    },
+    {
+      "key": "transition:s1:s2",
+      "value": ""
+    },
+    {
+      "key": "transition:s2:s2",
+      "value": ""
+    },
+    {
+      "key": "label:s0:p",
+      "value": ""
+    },
+    {
+      "key": "label:s2:q",
+      "value": ""
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

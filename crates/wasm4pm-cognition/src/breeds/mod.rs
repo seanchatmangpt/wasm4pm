@@ -52,6 +52,10 @@ pub mod bayesian_network;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).
+pub mod ctl_check;
+/// ILP FOIL module
+pub mod ilp;
+pub mod naive_physics;
 pub mod support;
 
 pub use dispatch::{dispatch_breed, dispatch_breed_test};

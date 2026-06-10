@@ -565,3 +565,72 @@ fn exactly_17_breed_pairs_covered() {
     ];
     assert_eq!(covered.len(), 17, "must cover exactly 17 breeds");
 }
+
+#[test]
+fn ctl_check_determinism() {
+    let breed = wasm4pm_cognition::breeds::ctl_check::CtlCheck;
+    let mut facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "A G (p -> A F q)".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ctl:initial".into(), value: "s0".into() },
+    ];
+    let states = vec!["s0", "s1", "s2"];
+    let trans = vec![("s0", "s1"), ("s1", "s2"), ("s2", "s2")];
+    for s in &states {
+        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("state:{}", s), value: "".into() });
+    }
+    for (u, v) in &trans {
+        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("transition:{}:{}", u, v), value: "".into() });
+    }
+    facts.push(wasm4pm_cognition::breeds::Fact { key: "label:s0:p".into(), value: "".into() });
+    facts.push(wasm4pm_cognition::breeds::Fact { key: "label:s2:q".into(), value: "".into() });
+
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out1 = breed.run(&input).unwrap();
+    let out2 = breed.run(&input).unwrap();
+    assert_eq!(out1.selected, out2.selected);
+    assert_eq!(out1.inference_trace, out2.inference_trace);
+}
+
+#[test]
+fn ilp_determinism() {
+    let breed = wasm4pm_cognition::breeds::ilp::Ilp;
+    let facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ilp:target".into(), value: "grandparent".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "a,b".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "b,c".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos".into(), value: "a,c".into() },
+        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "c,a".into() },
+        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "b,c".into() },
+    ];
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out1 = breed.run(&input).unwrap();
+    let out2 = breed.run(&input).unwrap();
+    assert_eq!(out1.selected, out2.selected);
+    assert_eq!(out1.inference_trace, out2.inference_trace);
+}
+
+#[test]
+fn naive_physics_determinism() {
+    let breed = wasm4pm_cognition::breeds::naive_physics::NaivePhysicsBreed;
+    let facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "np:object:cup".into(), value: "container".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:object:water".into(), value: "liquid".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:relation:contains:cup".into(), value: "water".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:state:cup".into(), value: "tilted".into() },
+    ];
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out1 = breed.run(&input).unwrap();
+    let out2 = breed.run(&input).unwrap();
+    assert_eq!(out1.selected, out2.selected);
+    assert_eq!(out1.inference_trace, out2.inference_trace);
+}

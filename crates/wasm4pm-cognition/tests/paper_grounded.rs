@@ -1658,3 +1658,36 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+
+#[test]
+fn ctl_check_paper_grounded() {
+    let fixture_path = "tests/fixtures/papers/ctl_check.json";
+    let fixture_data = std::fs::read_to_string(fixture_path)
+        .unwrap_or_else(|_| panic!("Failed to read fixture: {}", fixture_path));
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_data).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_value(fixture).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("ctl_check", &input).unwrap();
+    assert_eq!(output.selected.as_deref(), Some("true"));
+}
+
+#[test]
+fn ilp_paper_grounded() {
+    let fixture_path = "tests/fixtures/papers/ilp.json";
+    let fixture_data = std::fs::read_to_string(fixture_path)
+        .unwrap_or_else(|_| panic!("Failed to read fixture: {}", fixture_path));
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_data).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_value(fixture).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("ilp", &input).unwrap();
+    assert!(output.explanation.contains("Learned"));
+}
+
+#[test]
+fn naive_physics_paper_grounded() {
+    let fixture_path = "tests/fixtures/papers/naive_physics.json";
+    let fixture_data = std::fs::read_to_string(fixture_path)
+        .unwrap_or_else(|_| panic!("Failed to read fixture: {}", fixture_path));
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_data).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_value(fixture).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("naive_physics", &input).unwrap();
+    assert!(output.explanation.contains("spill"));
+}

@@ -466,3 +466,50 @@ fn bayesian_network_empty_goals_refused() {
     assert!(result.unwrap_err().contains("query"));
 }
 
+
+#[test]
+fn ctl_check_refusal_too_many_states() {
+    let breed = wasm4pm_cognition::breeds::ctl_check::CtlCheck;
+    let mut facts = vec![wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "E F p".into() }];
+    for i in 0..65 {
+        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("state:{}!", i), value: "".into() });
+    }
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let err = breed.preconditions(&input).unwrap_err();
+    assert!(err.contains("States exceed 64"));
+}
+
+#[test]
+fn ilp_refusal_too_many_bg_facts() {
+    let breed = wasm4pm_cognition::breeds::ilp::Ilp;
+    let mut facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ilp:target".into(), value: "target".into() },
+    ];
+    for i in 0..65 {
+        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("bg:f{}", i), value: "a,b".into() });
+    }
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let err = breed.preconditions(&input).unwrap_err();
+    assert!(err.contains("bg facts exceed 64"));
+}
+
+#[test]
+fn naive_physics_refusal_too_many_objects() {
+    let breed = wasm4pm_cognition::breeds::naive_physics::NaivePhysicsBreed;
+    let mut facts = vec![];
+    for i in 0..65 {
+        facts.push(wasm4pm_cognition::breeds::Fact { key: format!("np:object:o{}", i), value: "block".into() });
+    }
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let err = breed.preconditions(&input).unwrap_err();
+    assert!(err.contains("exceed 64"));
+}

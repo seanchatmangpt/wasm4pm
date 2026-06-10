@@ -1,0 +1,122 @@
+{
+  "model_id": "naive_physics-l1-v1",
+  "model_level": "L1",
+  "breed_id": "naive_physics",
+  "object_types": [
+    "run"
+  ],
+  "places": [
+    {
+      "id": "p0",
+      "name": "ready",
+      "object_type": "run"
+    },
+    {
+      "id": "p1",
+      "name": "reasoning",
+      "object_type": "run"
+    },
+    {
+      "id": "p2",
+      "name": "predicting",
+      "object_type": "run"
+    },
+    {
+      "id": "p3",
+      "name": "done",
+      "object_type": "run"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "name": "load-scene",
+      "label": "load-scene"
+    },
+    {
+      "id": "t2",
+      "name": "apply-axiom",
+      "label": "apply-axiom"
+    },
+    {
+      "id": "t3",
+      "name": "predict",
+      "label": "predict"
+    },
+    {
+      "id": "t4",
+      "name": "decision",
+      "label": "decision"
+    }
+  ],
+  "arcs": [
+    {
+      "from": "p0",
+      "to": "t1",
+      "type": "consume"
+    },
+    {
+      "from": "t1",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t2",
+      "type": "consume"
+    },
+    {
+      "from": "t2",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t3",
+      "type": "consume"
+    },
+    {
+      "from": "t3",
+      "to": "p2",
+      "type": "produce"
+    },
+    {
+      "from": "p2",
+      "to": "t3",
+      "type": "consume"
+    },
+    {
+      "from": "t3",
+      "to": "p2",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t4",
+      "type": "consume"
+    },
+    {
+      "from": "t4",
+      "to": "p3",
+      "type": "produce"
+    },
+    {
+      "from": "p2",
+      "to": "t4",
+      "type": "consume"
+    },
+    {
+      "from": "t4",
+      "to": "p3",
+      "type": "produce"
+    }
+  ],
+  "initial_marking": {
+    "p0": 1
+  },
+  "final_markings": [
+    {
+      "p3": 1
+    }
+  ]
+}

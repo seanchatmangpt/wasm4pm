@@ -1,0 +1,34 @@
+{
+  "intent": "learn grandparent",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ilp:target",
+      "value": "grandparent"
+    },
+    {
+      "key": "bg:parent",
+      "value": "a,b"
+    },
+    {
+      "key": "bg:parent",
+      "value": "b,c"
+    },
+    {
+      "key": "pos",
+      "value": "a,c"
+    },
+    {
+      "key": "neg",
+      "value": "c,a"
+    },
+    {
+      "key": "neg",
+      "value": "b,c"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

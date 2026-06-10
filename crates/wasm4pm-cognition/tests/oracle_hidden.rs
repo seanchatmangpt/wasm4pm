@@ -1475,3 +1475,104 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+
+#[test]
+fn ctl_check_hidden_ef_holds_af_fails() {
+    let breed = wasm4pm_cognition::breeds::ctl_check::CtlCheck;
+    let mut facts_af = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "A F p".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ctl:initial".into(), value: "s0".into() },
+    ];
+    let mut facts_ef = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ctl:formula".into(), value: "E F p".into() },
+        wasm4pm_cognition::breeds::Fact { key: "ctl:initial".into(), value: "s0".into() },
+    ];
+    let states = vec!["s0", "s1", "s2", "s3"];
+    let trans = vec![("s0", "s1"), ("s0", "s2"), ("s1", "s1"), ("s2", "s3"), ("s3", "s3")];
+    for s in &states {
+        let f = wasm4pm_cognition::breeds::Fact { key: format!("state:{}", s), value: "".into() };
+        facts_af.push(f.clone());
+        facts_ef.push(f);
+    }
+    for (u, v) in &trans {
+        let f = wasm4pm_cognition::breeds::Fact { key: format!("transition:{}:{}", u, v), value: "".into() };
+        facts_af.push(f.clone());
+        facts_ef.push(f);
+    }
+    let p_fact = wasm4pm_cognition::breeds::Fact { key: "label:s3:p".into(), value: "".into() };
+    facts_af.push(p_fact.clone());
+    facts_ef.push(p_fact);
+
+    let input_af = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts: facts_af, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    let input_ef = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts: facts_ef, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out_af = breed.run(&input_af).unwrap();
+    assert_eq!(out_af.selected.as_deref(), Some("false"));
+    let has_cex = out_af.inference_trace.iter().any(|t| t.kind == "counterexample-step");
+    assert!(has_cex);
+
+    let out_ef = breed.run(&input_ef).unwrap();
+    assert_eq!(out_ef.selected.as_deref(), Some("true"));
+}
+
+#[test]
+fn ilp_hidden_oracle_learns_ancestor() {
+    let breed = wasm4pm_cognition::breeds::ilp::Ilp;
+    let facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "ilp:target".into(), value: "ancestor".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "pam,bob".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "tom,bob".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "tom,liz".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "bob,ann".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "bob,pat".into() },
+        wasm4pm_cognition::breeds::Fact { key: "bg:parent".into(), value: "pat,jim".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos".into(), value: "pam,bob".into() },
+        wasm4pm_cognition::breeds::Fact { key: "pos".into(), value: "tom,bob".into() },
+        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "bob,tom".into() },
+        wasm4pm_cognition::breeds::Fact { key: "neg".into(), value: "pam,tom".into() },
+    ];
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out = breed.run(&input).unwrap();
+    let mut found_add = false;
+    for step in &out.inference_trace {
+        if step.kind == "add-literal" && step.detail == "parent(X,Y)" {
+            found_add = true;
+        }
+    }
+    assert!(found_add, "Should have learned parent(X,Y)");
+}
+
+#[test]
+fn naive_physics_hidden_oracle_transitive_falls() {
+    let breed = wasm4pm_cognition::breeds::naive_physics::NaivePhysicsBreed;
+    let facts = vec![
+        wasm4pm_cognition::breeds::Fact { key: "np:object:a".into(), value: "block".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:object:b".into(), value: "block".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:object:c".into(), value: "block".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:object:d".into(), value: "block".into() },
+        wasm4pm_cognition::breeds::Fact { key: "np:relation:supports:b".into(), value: "a".into() }, // b supports a
+        wasm4pm_cognition::breeds::Fact { key: "np:relation:supports:c".into(), value: "b".into() }, // c supports b
+        wasm4pm_cognition::breeds::Fact { key: "np:relation:supports:d".into(), value: "c".into() }, // d supports c
+        // d is unsupported, so d falls, c falls, b falls, a falls
+    ];
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "".into(), candidates: vec![], facts, cases: vec![], rules: vec![], goals: vec![], state: vec![]
+    };
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let out = breed.run(&input).unwrap();
+    let mut a_falls = false;
+    for f in &out.facts {
+        if f.key == "np:state:a" && f.value == "falls" {
+            a_falls = true;
+        }
+    }
+    assert!(a_falls, "a should fall transitively");
+}

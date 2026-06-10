@@ -1,0 +1,26 @@
+{
+  "intent": "predict spill",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "np:object:cup",
+      "value": "container"
+    },
+    {
+      "key": "np:object:water",
+      "value": "liquid"
+    },
+    {
+      "key": "np:relation:contains:cup",
+      "value": "water"
+    },
+    {
+      "key": "np:state:cup",
+      "value": "tilted"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

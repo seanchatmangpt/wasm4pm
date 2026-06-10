@@ -1,0 +1,142 @@
+{
+  "model_id": "ilp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ilp",
+  "object_types": [
+    "run"
+  ],
+  "places": [
+    {
+      "id": "p0",
+      "name": "ready",
+      "object_type": "run"
+    },
+    {
+      "id": "p1",
+      "name": "working",
+      "object_type": "run"
+    },
+    {
+      "id": "p2",
+      "name": "done",
+      "object_type": "run"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t1",
+      "name": "load-example",
+      "label": "load-example"
+    },
+    {
+      "id": "t2",
+      "name": "propose-literal",
+      "label": "propose-literal"
+    },
+    {
+      "id": "t3",
+      "name": "score-gain",
+      "label": "score-gain"
+    },
+    {
+      "id": "t4",
+      "name": "add-literal",
+      "label": "add-literal"
+    },
+    {
+      "id": "t5",
+      "name": "cover-remove",
+      "label": "cover-remove"
+    },
+    {
+      "id": "t6",
+      "name": "emit-clause",
+      "label": "emit-clause"
+    },
+    {
+      "id": "t7",
+      "name": "decision",
+      "label": "decision"
+    }
+  ],
+  "arcs": [
+    {
+      "from": "p0",
+      "to": "t1",
+      "type": "consume"
+    },
+    {
+      "from": "t1",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t2",
+      "type": "consume"
+    },
+    {
+      "from": "t2",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t3",
+      "type": "consume"
+    },
+    {
+      "from": "t3",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t4",
+      "type": "consume"
+    },
+    {
+      "from": "t4",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t5",
+      "type": "consume"
+    },
+    {
+      "from": "t5",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t6",
+      "type": "consume"
+    },
+    {
+      "from": "t6",
+      "to": "p1",
+      "type": "produce"
+    },
+    {
+      "from": "p1",
+      "to": "t7",
+      "type": "consume"
+    },
+    {
+      "from": "t7",
+      "to": "p2",
+      "type": "produce"
+    }
+  ],
+  "initial_marking": {
+    "p0": 1
+  },
+  "final_markings": [
+    {
+      "p2": 1
+    }
+  ]
+}
