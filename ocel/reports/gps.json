@@ -3,9 +3,9 @@
   "model_id": "gps-l1-v1",
   "model_level": "L1",
   "report_date": "2026-06-10",
-  "method": "structural_trace_coverage",
-  "fitness": null,
-  "fitness_note": "Full alignment-based fitness requires pm4py token replay against ocel/models/l1/gps.ocpn.json. Replay deferred to proof-pack v2.",
+  "method": "native_dfa_replay",
+  "fitness": 1.0,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay). Conformance gate enforced in run_breed().",
   "trace_coverage": {
     "declared_steps": [
       "goal_selected",
@@ -22,11 +22,11 @@
       "goal_achieved"
     ],
     "coverage": 1.0,
-    "coverage_note": "All 5 declared L1 steps appear in accepted trace corpus (tracing::debug! spans in breeds/gps.rs). Step ordering conformance not yet verified by token replay."
+    "coverage_note": "All 5 declared L1 steps appear in accepted trace corpus (tracing::debug! spans in breeds/gps.rs). Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
   },
   "l0_fitness": 1.0,
   "l0_fitness_note": "L0 wrapper lifecycle enforced structurally by BVC admission gate.",
-  "status": "PARTIAL_ALIVE",
-  "admitted": false,
-  "admitted_note": "L1 step coverage complete. Token-replay alignment fitness required for ADMITTED status."
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
 }

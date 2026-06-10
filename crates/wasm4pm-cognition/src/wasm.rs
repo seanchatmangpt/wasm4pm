@@ -197,24 +197,32 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
 /// "model-not-yet-defined" if no model file exists for the breed.
 fn compute_model_hash(breed: &str) -> String {
     let json: Option<&str> = match breed {
-        "mycin"                   => Some(include_str!("../../../ocel/models/l1/mycin.ocpn.json")),
-        "prolog"                  => Some(include_str!("../../../ocel/models/l1/prolog.ocpn.json")),
-        "strips"                  => Some(include_str!("../../../ocel/models/l1/strips.ocpn.json")),
-        "soar"                    => Some(include_str!("../../../ocel/models/l1/soar.ocpn.json")),
-        "hearsay"                 => Some(include_str!("../../../ocel/models/l1/hearsay.ocpn.json")),
-        "cbr"                     => Some(include_str!("../../../ocel/models/l1/cbr.ocpn.json")),
-        "gps"                     => Some(include_str!("../../../ocel/models/l1/gps.ocpn.json")),
-        "dendral"                 => Some(include_str!("../../../ocel/models/l1/dendral.ocpn.json")),
-        "eliza"                   => Some(include_str!("../../../ocel/models/l1/eliza.ocpn.json")),
-        "autoinstinct_vision"     => Some(include_str!("../../../ocel/models/l1/autoinstinct_vision.ocpn.json")),
-        "autoinstinct_semantics"  => Some(include_str!("../../../ocel/models/l1/autoinstinct_semantics.ocpn.json")),
-        "autoinstinct_neurosis"   => Some(include_str!("../../../ocel/models/l1/autoinstinct_neurosis.ocpn.json")),
-        "autoinstinct_learning"   => Some(include_str!("../../../ocel/models/l1/autoinstinct_learning.ocpn.json")),
-        _                         => None,
+        "mycin" => Some(include_str!("../../../ocel/models/l1/mycin.ocpn.json")),
+        "prolog" => Some(include_str!("../../../ocel/models/l1/prolog.ocpn.json")),
+        "strips" => Some(include_str!("../../../ocel/models/l1/strips.ocpn.json")),
+        "soar" => Some(include_str!("../../../ocel/models/l1/soar.ocpn.json")),
+        "hearsay" => Some(include_str!("../../../ocel/models/l1/hearsay.ocpn.json")),
+        "cbr" => Some(include_str!("../../../ocel/models/l1/cbr.ocpn.json")),
+        "gps" => Some(include_str!("../../../ocel/models/l1/gps.ocpn.json")),
+        "dendral" => Some(include_str!("../../../ocel/models/l1/dendral.ocpn.json")),
+        "eliza" => Some(include_str!("../../../ocel/models/l1/eliza.ocpn.json")),
+        "autoinstinct_vision" => Some(include_str!(
+            "../../../ocel/models/l1/autoinstinct_vision.ocpn.json"
+        )),
+        "autoinstinct_semantics" => Some(include_str!(
+            "../../../ocel/models/l1/autoinstinct_semantics.ocpn.json"
+        )),
+        "autoinstinct_neurosis" => Some(include_str!(
+            "../../../ocel/models/l1/autoinstinct_neurosis.ocpn.json"
+        )),
+        "autoinstinct_learning" => Some(include_str!(
+            "../../../ocel/models/l1/autoinstinct_learning.ocpn.json"
+        )),
+        _ => None,
     };
     match json {
         Some(s) => blake3::hash(s.as_bytes()).to_hex().to_string(),
-        None    => "model-not-yet-defined".to_string(),
+        None => "model-not-yet-defined".to_string(),
     }
 }
 
@@ -250,7 +258,9 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         .to_string();
     let replay_pointer = output_hash[..16].to_string();
     let ocel_hash = if let Some(ref ocel_log) = output.ocel_log {
-        blake3::hash(ocel_log.to_string().as_bytes()).to_hex().to_string()
+        blake3::hash(ocel_log.to_string().as_bytes())
+            .to_hex()
+            .to_string()
     } else {
         String::new()
     };
@@ -272,12 +282,42 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     };
     REGISTRY.with(|r| r.borrow_mut().insert(run_id.clone(), receipt.clone()));
 
-    // Build conformance summary for ContractResult
-    let conformance_summary = if output.ocel_log.is_some() {
-        serde_json::json!({ "fitness": 1.0, "model_id": input.breed, "refusals": [] })
+    // Build conformance summary — run_breed() already enforced the F7 gate,
+    // so if we reach here conformance passed. Re-derive actual fitness from ocel_log.
+    let conformance_summary = if let Some(ref ocel_log) = output.ocel_log {
+        if let Some(model) = crate::ocel::get_model(&input.breed) {
+            let ocel: crate::ocel::OcelLog = serde_json::from_value(ocel_log.clone())
+                .unwrap_or_else(|_| crate::ocel::OcelLog {
+                    log_id: run_id.clone(),
+                    events: vec![],
+                    objects: vec![],
+                });
+            let result = crate::ocel::validate_ocel_alignment(&ocel, model);
+            serde_json::json!({
+                "fitness": result.fitness,
+                "model_id": result.model_id,
+                "refusals": result.refusals
+            })
+        } else {
+            serde_json::json!({ "fitness": 1.0, "model_id": null, "refusals": [], "note": "l0_only_no_l1_model" })
+        }
     } else {
         serde_json::json!({ "fitness": null, "model_id": null, "refusals": ["no_ocel_log"] })
     };
+
+    // Ed25519 signing — deterministic actor keyed from a stable constant.
+    #[cfg(feature = "actor-ed25519")]
+    let (signature_hex, public_key_id) = {
+        use crate::autosystems::receipt::ActorSigner;
+        let signer = ActorSigner::from_seed(
+            *blake3::hash(b"wasm4pm.cognition.v1.default-actor").as_bytes()
+        );
+        let receipt_msg = format!("{}|{}|{}", run_id, input_hash, output_hash);
+        let sig_bytes = signer.sign(receipt_msg.as_bytes());
+        (hex::encode(&sig_bytes), hex::encode(signer.id.as_bytes()))
+    };
+    #[cfg(not(feature = "actor-ed25519"))]
+    let (signature_hex, public_key_id) = (String::from("ed25519-disabled"), String::from("n/a"));
 
     let result = serde_json::json!({
         "status": "ok",
@@ -292,6 +332,9 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "options_profile": input.options.profile,
         "output": output,
         "conformance": conformance_summary,
+        "signature": signature_hex,
+        "public_key_id": public_key_id,
+        "signature_algorithm": "ed25519",
     });
     to_js_str(&result)
 }
