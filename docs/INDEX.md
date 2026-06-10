@@ -65,6 +65,15 @@ These sections are not part of the four Diátaxis quadrants but complement them.
 
 ---
 
+## Examples
+
+Runnable code demonstrating the platform end-to-end.
+
+- [examples/README.md](../examples/README.md) — ML, RL, prediction, Truex, and full-workflow examples
+- [examples/cognition/README.md](../examples/cognition/README.md) — all 9 Old AI breeds with intent.json + run.sh
+
+---
+
 ## Operational records
 
 Internal governance files — not user documentation.

@@ -33,3 +33,9 @@ Predictive monitoring also includes identifying if the process has changed over 
 # Detect concept drift in a log window of 20 traces
 wpm predict drift -i data/small-example.xes --drift-window 20
 ```
+
+## Examples
+
+- `examples/prediction-next-activity.ts` — n-gram next-activity forecasting: `tsx examples/prediction-next-activity.ts log.xes`
+- `examples/drift-detection.ts` — EWMA concept drift: `tsx examples/drift-detection.ts log.xes 100 0.3`
+- `examples/03-prediction/01-next-activity.ts` — basic prediction walkthrough

@@ -1,0 +1,15 @@
+{
+  "intent": "strips-planning",
+  "candidates": [],
+  "facts": [
+    { "key": "on_table", "value": "A" },
+    { "key": "clear", "value": "A" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    { "id": "goal_A_on_B", "premise": ["clear(B)", "holding(A)"], "conclusion": "on(A,B)", "certainty": 1.0 },
+    { "id": "goal_B_on_C", "premise": ["clear(C)", "holding(B)"], "conclusion": "on(B,C)", "certainty": 1.0 }
+  ],
+  "state": []
+}

@@ -1,0 +1,9 @@
+{
+  "intent": "John gave Mary the book",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

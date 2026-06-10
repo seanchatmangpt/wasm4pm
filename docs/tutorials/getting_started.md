@@ -115,4 +115,5 @@ See [Truex Receipt Verification](truex_receipts.md) for admitted/refused example
 - [Predictive Monitoring](predictive_monitoring.md) — `wpm predict` for next-activity, remaining-time, drift
 - [Truex Receipt Verification](truex_receipts.md) — OCEL 2.0 envelope verification
 - [CLI Reference](../reference/cli_commands.md) — full command catalog
+- [Examples](../../examples/README.md) — runnable ML, prediction, Truex, and cognition examples
 - [README](../../README.md) — algorithm domains and deployment profiles

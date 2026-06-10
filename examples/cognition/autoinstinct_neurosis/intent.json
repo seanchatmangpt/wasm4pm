@@ -1,0 +1,16 @@
+{
+  "intent": "affect-simulation",
+  "candidates": [
+    { "id": "stranger_approaches", "architecture": "social", "outcome_score": 0.8, "facts": [] },
+    { "id": "loud_noise", "architecture": "sensory", "outcome_score": 0.9, "facts": [] }
+  ],
+  "facts": [
+    { "key": "belief:paranoia", "value": "0.7" },
+    { "key": "belief:hostility", "value": "0.4" },
+    { "key": "belief:trust", "value": "0.2" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

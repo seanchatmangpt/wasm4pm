@@ -1,0 +1,15 @@
+{
+  "intent": "blocks-world-perception",
+  "candidates": [],
+  "facts": [
+    { "key": "block", "value": "A" },
+    { "key": "block", "value": "B" },
+    { "key": "pyramid", "value": "C" },
+    { "key": "supported_by:B", "value": "A" },
+    { "key": "supported_by:C", "value": "B" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

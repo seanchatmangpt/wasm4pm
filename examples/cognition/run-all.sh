@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-EXAMPLES=(eliza cbr prolog mycin)
+EXAMPLES=(eliza mycin cbr prolog strips dendral gps soar hearsay)
 PASS=0
 FAIL=0
 

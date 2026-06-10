@@ -358,3 +358,19 @@ All breeds share a common `Rule` struct (`breeds/mod.rs`):
 ```
 
 `certainty` is **required** — it has no serde default. Omitting it causes a deserialization error.
+
+---
+
+## 8. Running All 9 Breeds
+
+All 9 Old AI breeds have working examples under `examples/cognition/`. Each directory contains `intent.json` and `run.sh`:
+
+```bash
+# Run one breed
+bash examples/cognition/mycin/run.sh
+
+# Run all 9 breeds
+bash examples/cognition/run-all.sh
+```
+
+Full example index: [examples/cognition/README.md](../../examples/cognition/README.md)
