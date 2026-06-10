@@ -1,0 +1,27 @@
+{
+  "breed": "description_logic",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Baader et al. 2003"
+  },
+  "input": {
+    "intent": "classify",
+    "facts": [
+      { "key": "subclass", "value": "A,B" },
+      { "key": "subclass", "value": "B,C" },
+      { "key": "class", "value": "x,A" },
+      { "key": "disjoint", "value": "C,D" }
+    ],
+    "rules": [],
+    "candidates": [
+      { "id": "x", "score": 0.5, "eliminated": false, "elimination_reason": null }
+    ],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "consistent": "true",
+    "member_xc": "true"
+  }
+}

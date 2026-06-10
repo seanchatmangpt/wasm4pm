@@ -534,6 +534,106 @@ export function minimalEblInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// ASP — asp.rs. Stable Models.
+// ---------------------------------------------------------------------------
+export function minimalAspInput(): BreedInput {
+  return {
+    intent: 'solve',
+    candidates: [
+      { id: 'a', score: 0.5, eliminated: false },
+      { id: 'b', score: 0.5, eliminated: false },
+    ],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['not b'], conclusion: 'a', certainty: 1.0 },
+      { id: 'r2', premise: ['not a'], conclusion: 'b', certainty: 1.0 },
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DESCRIPTION LOGIC — description_logic.rs. Ontological subsumption & consistency.
+// ---------------------------------------------------------------------------
+export function minimalDescriptionLogicInput(): BreedInput {
+  return {
+    intent: 'classify',
+    candidates: [
+      { id: 'x', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'subclass', value: 'A,B' },
+      { key: 'subclass', value: 'B,C' },
+      { key: 'class', value: 'x,A' },
+      { key: 'disjoint', value: 'C,D' },
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ABDUCTIVE LP — abductive_lp.rs. Abductive Logic Programming.
+// ---------------------------------------------------------------------------
+export function minimalAbductiveLpInput(): BreedInput {
+  return {
+    intent: 'abduce',
+    candidates: [
+      { id: 'c', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'abducible', value: 'a' },
+      { key: 'abducible', value: 'b' },
+      { key: 'abducible', value: 'c' },
+      { key: 'abducible', value: 'd' },
+      { key: 'context', value: 'd' },
+    ],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['a', 'b'], conclusion: 'g', certainty: 1.0 },
+      { id: 'r2', premise: ['c'], conclusion: 'g', certainty: 1.0 },
+      { id: 'r_ic', premise: ['a', 'd'], conclusion: 'false', certainty: 1.0 },
+    ],
+    goals: [
+      { id: 'g1', predicate: 'goal', value: 'g' },
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ABDUCTIVE IBE — abductive_ibe.rs. Thagard ECHO coherence model.
+// ---------------------------------------------------------------------------
+export function minimalAbductiveIbeInput(): BreedInput {
+  return {
+    intent: 'coherence',
+    candidates: [
+      { id: 'H1', score: 0.5, eliminated: false },
+      { id: 'H2', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'evidence', value: 'E1' },
+      { key: 'evidence', value: 'E2' },
+      { key: 'hypothesis', value: 'H1' },
+      { key: 'hypothesis', value: 'H2' },
+      { key: 'contradicts', value: 'H1,H2' },
+    ],
+    cases: [],
+    rules: [
+      { id: 'expl1', premise: ['H1'], conclusion: 'E1', certainty: 1.0 },
+      { id: 'expl2', premise: ['H1'], conclusion: 'E2', certainty: 1.0 },
+      { id: 'expl3', premise: ['H2'], conclusion: 'E1', certainty: 1.0 },
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

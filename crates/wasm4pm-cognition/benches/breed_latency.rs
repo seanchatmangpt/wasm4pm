@@ -14,6 +14,8 @@ use wasm4pm_cognition::breeds::{
     bayesian_network::BayesianNetwork, csp_ac3::CspAc3, default_logic::DefaultLogic,
     htn_planning::HtnPlanning, dempster_shafer::DempsterShafer,
     frames_inheritance::FramesInheritance, ebl::Ebl,
+    asp::Asp, description_logic::DescriptionLogic,
+    abductive_lp::AbductiveLp, abductive_ibe::AbductiveIbe,
     BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
@@ -259,6 +261,10 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "fuzzy_logic", FuzzyLogic);
     bench_breed!(group, "bayesian_network", BayesianNetwork);
     bench_breed!(group, "dempster_shafer", DempsterShafer);
+    bench_breed!(group, "asp", Asp);
+    bench_breed!(group, "description_logic", DescriptionLogic);
+    bench_breed!(group, "abductive_lp", AbductiveLp);
+    bench_breed!(group, "abductive_ibe", AbductiveIbe);
 
     let mut fi_input = input.clone();
     fi_input.intent = "resolve widget_a weight".to_string();

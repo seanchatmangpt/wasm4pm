@@ -407,7 +407,7 @@ mod tests {
         assert!(rule_fact.value.contains("concave"));
         assert!(rule_fact.value.contains("drinkable"));
 
-        // Hidden oracle test: apply learned rule to obj2
+        // Hidden oracle test: apply learned rule to obj99
         let rule_str = rule_fact.value.clone();
         let parts: Vec<&str> = rule_str.split(" => ").collect();
         let premises: Vec<String> = parts[0].split(", ").map(|s| s.to_string()).collect();
@@ -424,14 +424,14 @@ mod tests {
             intent: "apply".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "has_handle(obj2)".to_string(), value: "true".to_string() },
-                Fact { key: "concave(obj2)".to_string(), value: "true".to_string() },
+                Fact { key: "has_handle(obj99)".to_string(), value: "true".to_string() },
+                Fact { key: "concave(obj99)".to_string(), value: "true".to_string() },
             ],
             cases: vec![],
             rules: vec![learned_rule],
             goals: vec![Goal {
                 id: "g2".to_string(),
-                predicate: "drinkable(obj2)".to_string(),
+                predicate: "drinkable(obj99)".to_string(),
                 value: "true".to_string(),
             }],
             state: vec![],

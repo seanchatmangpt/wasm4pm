@@ -156,14 +156,18 @@ impl CognitionBreed for DescriptionLogic {
             value: consistent.to_string(),
         });
 
-        // Add derived subsumptions and memberships to facts
-        for (a, b) in &subsumes {
+        // Add derived subsumptions and memberships to facts (sorted for determinism)
+        let mut sorted_subsumes: Vec<(String, String)> = subsumes.into_iter().collect();
+        sorted_subsumes.sort();
+        for (a, b) in sorted_subsumes {
             out_facts.push(Fact {
                 key: format!("subsumes:{}:{}", a, b),
                 value: "true".to_string(),
             });
         }
-        for (x, c) in &member {
+        let mut sorted_member: Vec<(String, String)> = member.iter().cloned().collect();
+        sorted_member.sort();
+        for (x, c) in sorted_member {
             out_facts.push(Fact {
                 key: format!("member:{}:{}", x, c),
                 value: "true".to_string(),

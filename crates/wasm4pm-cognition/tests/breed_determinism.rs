@@ -406,6 +406,94 @@ fn ebl_input() -> BreedInput {
     }
 }
 
+fn asp_input() -> BreedInput {
+    BreedInput {
+        intent: "solve".into(),
+        candidates: vec![
+            Candidate { id: "a".into(), score: 0.5, eliminated: false, elimination_reason: None },
+            Candidate { id: "b".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule { id: "r1".into(), premise: vec!["not b".into()], conclusion: "a".into(), certainty: 1.0 },
+            Rule { id: "r2".into(), premise: vec!["not a".into()], conclusion: "b".into(), certainty: 1.0 },
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn description_logic_input() -> BreedInput {
+    BreedInput {
+        intent: "classify".into(),
+        candidates: vec![
+            Candidate { id: "x".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "subclass".into(), value: "A,B".into() },
+            Fact { key: "subclass".into(), value: "B,C".into() },
+            Fact { key: "class".into(), value: "x,A".into() },
+            Fact { key: "disjoint".into(), value: "C,D".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn abductive_lp_input() -> BreedInput {
+    BreedInput {
+        intent: "abduce".into(),
+        candidates: vec![
+            Candidate { id: "c".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "abducible".into(), value: "a".into() },
+            Fact { key: "abducible".into(), value: "b".into() },
+            Fact { key: "abducible".into(), value: "c".into() },
+            Fact { key: "abducible".into(), value: "d".into() },
+            Fact { key: "context".into(), value: "d".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule { id: "r1".into(), premise: vec!["a".into(), "b".into()], conclusion: "g".into(), certainty: 1.0 },
+            Rule { id: "r2".into(), premise: vec!["c".into()], conclusion: "g".into(), certainty: 1.0 },
+            Rule { id: "r_ic".into(), premise: vec!["a".into(), "d".into()], conclusion: "false".into(), certainty: 1.0 },
+        ],
+        goals: vec![
+            Goal { id: "g1".into(), predicate: "goal".into(), value: "g".into() },
+        ],
+        state: vec![],
+    }
+}
+
+fn abductive_ibe_input() -> BreedInput {
+    BreedInput {
+        intent: "coherence".into(),
+        candidates: vec![
+            Candidate { id: "H1".into(), score: 0.5, eliminated: false, elimination_reason: None },
+            Candidate { id: "H2".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "evidence".into(), value: "E1".into() },
+            Fact { key: "evidence".into(), value: "E2".into() },
+            Fact { key: "hypothesis".into(), value: "H1".into() },
+            Fact { key: "hypothesis".into(), value: "H2".into() },
+            Fact { key: "contradicts".into(), value: "H1,H2".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule { id: "expl1".into(), premise: vec!["H1".into()], conclusion: "E1".into(), certainty: 1.0 },
+            Rule { id: "expl2".into(), premise: vec!["H1".into()], conclusion: "E2".into(), certainty: 1.0 },
+            Rule { id: "expl3".into(), premise: vec!["H2".into()], conclusion: "E1".into(), certainty: 1.0 },
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
 
 // ---------------------------------------------------------------------------
 // Helper: run breed twice, assert serialized output is identical
@@ -666,12 +754,32 @@ fn determinism_ebl() {
     assert_deterministic("ebl", &ebl_input());
 }
 
+#[test]
+fn determinism_asp() {
+    assert_deterministic("asp", &asp_input());
+}
+
+#[test]
+fn determinism_description_logic() {
+    assert_deterministic("description_logic", &description_logic_input());
+}
+
+#[test]
+fn determinism_abductive_lp() {
+    assert_deterministic("abductive_lp", &abductive_lp_input());
+}
+
+#[test]
+fn determinism_abductive_ibe() {
+    assert_deterministic("abductive_ibe", &abductive_ibe_input());
+}
+
 // ---------------------------------------------------------------------------
-// Count assertion: exactly 23 breed determinism tests exist in this suite
+// Count assertion: exactly 27 breed determinism tests exist in this suite
 // ---------------------------------------------------------------------------
 
 #[test]
-fn exactly_23_breed_pairs_covered() {
+fn exactly_27_breed_pairs_covered() {
     let covered = [
         "eliza",
         "cbr",
@@ -696,6 +804,10 @@ fn exactly_23_breed_pairs_covered() {
         "dempster_shafer",
         "frames_inheritance",
         "ebl",
+        "asp",
+        "description_logic",
+        "abductive_lp",
+        "abductive_ibe",
     ];
-    assert_eq!(covered.len(), 23, "must cover exactly 23 breeds");
+    assert_eq!(covered.len(), 27, "must cover exactly 27 breeds");
 }

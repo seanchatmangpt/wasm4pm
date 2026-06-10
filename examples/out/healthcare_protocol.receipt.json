@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.6.10",
-  "commit": "fbc6bef0450ad55597d295210b6f3b0a0a3d2763",
+  "commit": "434c1af091437aa79dad4c9deda1a9099848d55b",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "alignments",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1",
-      "duration_ms": 58.659,
+      "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f",
+      "duration_ms": 18.959,
       "expected_path": {
         "route_id": "wpm.example.healthcare_protocol.alignments.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1",
-                "duration_ms": 58.659
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f",
+                "duration_ms": 18.959
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1"
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1"
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "c03f87d088b2463c5e6ad2dcb4c2cbe113309de6f268559bdbd18e1fc5faf5fc"
+        "expected_ocel2_hash": "38da7de126c5cc9ebcea8ce1ce0c5ae1dced52891420d77044ac47e05ae05396"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:14.712Z",
+              "time": "2026-06-10T23:51:47.189Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -412,7 +412,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:11.660Z",
+              "time": "2026-06-10T23:51:47.922Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -426,7 +426,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:16.052Z",
+              "time": "2026-06-10T23:51:50.756Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -440,7 +440,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:13.357Z",
+              "time": "2026-06-10T23:51:52.688Z",
               "relationships": [
                 {
                   "objectId": "algorithm_alignments",
@@ -463,7 +463,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:16.443Z",
+              "time": "2026-06-10T23:51:50.980Z",
               "relationships": [
                 {
                   "objectId": "algorithm_alignments",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1",
-                "duration_ms": 58.659
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f",
+                "duration_ms": 18.959
               }
             },
             {
               "id": "evt_healthcare_protocol_alignments_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:13.718Z",
+              "time": "2026-06-10T23:51:49.951Z",
               "relationships": [
                 {
                   "objectId": "result_alignments_healthcare_protocol",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1"
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f"
               }
             },
             {
               "id": "evt_healthcare_protocol_alignments_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:15.839Z",
+              "time": "2026-06-10T23:51:53.489Z",
               "relationships": [
                 {
                   "objectId": "result_alignments_healthcare_protocol",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1"
+                "result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f"
               }
             },
             {
               "id": "evt_healthcare_protocol_alignments_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:15.641Z",
+              "time": "2026-06-10T23:51:54.245Z",
               "relationships": [
                 {
                   "objectId": "example_healthcare_protocol",
@@ -540,7 +540,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:15.414Z",
+              "time": "2026-06-10T23:51:55.094Z",
               "relationships": [
                 {
                   "objectId": "result_alignments_healthcare_protocol",
@@ -558,7 +558,7 @@
             {
               "id": "evt_healthcare_protocol_alignments_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:18.058Z",
+              "time": "2026-06-10T23:51:53.957Z",
               "relationships": [
                 {
                   "objectId": "result_alignments_healthcare_protocol",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "86e1d0048eef5ad505c5de63679f8bfa54f69196305c3ef138dffc1fa48efdc4",
-        "observed_result_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1"
+        "observed_ocel2_hash": "d0724a3861804e0702d44a244d167be0557a7bea09e7731633de275c23b2aa05",
+        "observed_result_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
-        "output_artifact_hash": "8c3ccee66ed043acad6ded588089f7d3f30486f2a05ee597e7c8ba2183eef7b1",
+        "output_artifact_hash": "96fbe39e93430a5086ad42d17bcba9ee3b2af879b50282a8dd2f19e38199c82f",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "complexity_metrics",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986",
-      "duration_ms": 55.927,
+      "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede",
+      "duration_ms": 39.675,
       "expected_path": {
         "route_id": "wpm.example.healthcare_protocol.complexity_metrics.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986",
-                "duration_ms": 55.927
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede",
+                "duration_ms": 39.675
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986"
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986"
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "45e8598a8ef57c872ee5f8b74252e1e7124adc431e512e05f1de730079679f6d"
+        "expected_ocel2_hash": "7cd7e4354c235d58f665149baba8c8976e6c603b8047b9e07b7ba385163c74e1"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:14.799Z",
+              "time": "2026-06-10T23:51:48.512Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:12.460Z",
+              "time": "2026-06-10T23:51:49.455Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:14.366Z",
+              "time": "2026-06-10T23:51:48.539Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:12.085Z",
+              "time": "2026-06-10T23:51:52.717Z",
               "relationships": [
                 {
                   "objectId": "algorithm_complexity_metrics",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:15.833Z",
+              "time": "2026-06-10T23:51:49.973Z",
               "relationships": [
                 {
                   "objectId": "algorithm_complexity_metrics",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986",
-                "duration_ms": 55.927
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede",
+                "duration_ms": 39.675
               }
             },
             {
               "id": "evt_healthcare_protocol_complexity_metrics_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:16.149Z",
+              "time": "2026-06-10T23:51:51.556Z",
               "relationships": [
                 {
                   "objectId": "result_complexity_metrics_healthcare_protocol",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986"
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede"
               }
             },
             {
               "id": "evt_healthcare_protocol_complexity_metrics_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:15.862Z",
+              "time": "2026-06-10T23:51:53.619Z",
               "relationships": [
                 {
                   "objectId": "result_complexity_metrics_healthcare_protocol",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986"
+                "result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede"
               }
             },
             {
               "id": "evt_healthcare_protocol_complexity_metrics_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:16.192Z",
+              "time": "2026-06-10T23:51:51.929Z",
               "relationships": [
                 {
                   "objectId": "example_healthcare_protocol",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:18.511Z",
+              "time": "2026-06-10T23:51:53.403Z",
               "relationships": [
                 {
                   "objectId": "result_complexity_metrics_healthcare_protocol",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:18.180Z",
+              "time": "2026-06-10T23:51:55.242Z",
               "relationships": [
                 {
                   "objectId": "result_complexity_metrics_healthcare_protocol",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "192066086e41d66d927bb3f6a06364e5eebbba5c199c5f575387c5d027dc5b33",
-        "observed_result_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986"
+        "observed_ocel2_hash": "1fdbea3a4ea4b7c7c4fea031c5615b7fd07d9df0ddafe5f12419f83df2bd00dc",
+        "observed_result_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
-        "output_artifact_hash": "1a3c0c73aa54110555e21c106ecbc50d9441f99c7acb58c2d1af864a38073986",
+        "output_artifact_hash": "175eb16b39109849441640e27543ae38c6a0ec62b80e4dd91c3eeadbf1fbbede",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "pnml_import",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1",
-      "duration_ms": 52.314,
+      "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380",
+      "duration_ms": 25.287,
       "expected_path": {
         "route_id": "wpm.example.healthcare_protocol.pnml_import.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1",
-                "duration_ms": 52.314
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380",
+                "duration_ms": 25.287
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1"
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1"
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "da7363a5807d820e4107f7c07ebe54c6d58fe913eb5a164aaa6d07529ea61a7a"
+        "expected_ocel2_hash": "c0a3d6c2a60fed43d7f033c266c7c4b6ead488e0d55575a9a7854c5fd594fc79"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:11.406Z",
+              "time": "2026-06-10T23:51:51.967Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:14.449Z",
+              "time": "2026-06-10T23:51:52.412Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:14.384Z",
+              "time": "2026-06-10T23:51:53.016Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:15.206Z",
+              "time": "2026-06-10T23:51:49.184Z",
               "relationships": [
                 {
                   "objectId": "algorithm_pnml_import",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:13.201Z",
+              "time": "2026-06-10T23:51:50.426Z",
               "relationships": [
                 {
                   "objectId": "algorithm_pnml_import",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1",
-                "duration_ms": 52.314
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380",
+                "duration_ms": 25.287
               }
             },
             {
               "id": "evt_healthcare_protocol_pnml_import_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:13.132Z",
+              "time": "2026-06-10T23:51:50.763Z",
               "relationships": [
                 {
                   "objectId": "result_pnml_import_healthcare_protocol",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1"
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380"
               }
             },
             {
               "id": "evt_healthcare_protocol_pnml_import_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:15.809Z",
+              "time": "2026-06-10T23:51:54.533Z",
               "relationships": [
                 {
                   "objectId": "result_pnml_import_healthcare_protocol",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1"
+                "result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380"
               }
             },
             {
               "id": "evt_healthcare_protocol_pnml_import_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:16.619Z",
+              "time": "2026-06-10T23:51:55.457Z",
               "relationships": [
                 {
                   "objectId": "example_healthcare_protocol",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:16.705Z",
+              "time": "2026-06-10T23:51:52.215Z",
               "relationships": [
                 {
                   "objectId": "result_pnml_import_healthcare_protocol",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_healthcare_protocol_pnml_import_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:16.545Z",
+              "time": "2026-06-10T23:51:54.990Z",
               "relationships": [
                 {
                   "objectId": "result_pnml_import_healthcare_protocol",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "dc0dd9baf387a3ba08a4a85dde8aed14b7838493bb82ba80b6841fcfc01d9ceb",
-        "observed_result_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1"
+        "observed_ocel2_hash": "d6898f6df3e8e94b439860fb90c68b32ad2ff51760d505afd1ab005da57af2b8",
+        "observed_result_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
-        "output_artifact_hash": "b33a94169b685cc6bd9af2a76a593a92f6c77f7e0faa2950d4695fe3f34638d1",
+        "output_artifact_hash": "1362ef8220d559eba5fac39d0fe547475c6622d0a1fe3f5610d7981ca42d6380",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "bpmn_import",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d",
-      "duration_ms": 43.236,
+      "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f",
+      "duration_ms": 39.82,
       "expected_path": {
         "route_id": "wpm.example.healthcare_protocol.bpmn_import.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d",
-                "duration_ms": 43.236
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f",
+                "duration_ms": 39.82
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d"
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d"
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "b753758f0c2b61691469d7ee2a859f3a0e02fdd9d7745e426fdfc882bc52c185"
+        "expected_ocel2_hash": "160d802318d622bd17412d0ba52b576482185f0947a0e8ab0f041955d73fab36"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:13.395Z",
+              "time": "2026-06-10T23:51:47.506Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:13.795Z",
+              "time": "2026-06-10T23:51:49.720Z",
               "relationships": [
                 {
                   "objectId": "log_healthcare_protocol",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:13.695Z",
+              "time": "2026-06-10T23:51:52.154Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:12.492Z",
+              "time": "2026-06-10T23:51:53.497Z",
               "relationships": [
                 {
                   "objectId": "algorithm_bpmn_import",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:12.351Z",
+              "time": "2026-06-10T23:51:53.682Z",
               "relationships": [
                 {
                   "objectId": "algorithm_bpmn_import",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d",
-                "duration_ms": 43.236
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f",
+                "duration_ms": 39.82
               }
             },
             {
               "id": "evt_healthcare_protocol_bpmn_import_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:15.637Z",
+              "time": "2026-06-10T23:51:53.199Z",
               "relationships": [
                 {
                   "objectId": "result_bpmn_import_healthcare_protocol",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d"
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f"
               }
             },
             {
               "id": "evt_healthcare_protocol_bpmn_import_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:15.577Z",
+              "time": "2026-06-10T23:51:53.244Z",
               "relationships": [
                 {
                   "objectId": "result_bpmn_import_healthcare_protocol",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d"
+                "result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f"
               }
             },
             {
               "id": "evt_healthcare_protocol_bpmn_import_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:15.535Z",
+              "time": "2026-06-10T23:51:53.669Z",
               "relationships": [
                 {
                   "objectId": "example_healthcare_protocol",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:17.547Z",
+              "time": "2026-06-10T23:51:51.567Z",
               "relationships": [
                 {
                   "objectId": "result_bpmn_import_healthcare_protocol",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:19.072Z",
+              "time": "2026-06-10T23:51:52.012Z",
               "relationships": [
                 {
                   "objectId": "result_bpmn_import_healthcare_protocol",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "56ef507405ba4cd57ca3c43a970e7bc49846357b513a27a37099178e316a1f0f",
-        "observed_result_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d"
+        "observed_ocel2_hash": "04c43f592cff728f9fdef58d4e9428904453ce5ebac7f97832e90683bffef3bc",
+        "observed_result_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
-        "output_artifact_hash": "bfce98641822b676923ad4436f8b366276039d886c9f6f53af2e47f4ed3a060d",
+        "output_artifact_hash": "1c93bf839fef92919caad6b23caadce402b795bc6ce72f5a28c6339e45af822f",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-10T23:41:10.285Z",
+  "created_at": "2026-06-10T23:51:47.043Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "2b5e60d3c15eb7e3126f6500a0a530a72527fd691b15ed73493e3841fb28dcdb"
+  "receipt_hash": "c0083df08cdbf0de04a3744c3745d424223f0fd4369878f36fd5f202cd23ce6e"
 }

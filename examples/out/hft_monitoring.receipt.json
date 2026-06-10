@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.6.10",
-  "commit": "fbc6bef0450ad55597d295210b6f3b0a0a3d2763",
+  "commit": "434c1af091437aa79dad4c9deda1a9099848d55b",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "ocel_petri_net",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
-      "duration_ms": 50.824,
+      "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8",
+      "duration_ms": 36.749,
       "expected_path": {
         "route_id": "wpm.example.hft_monitoring.ocel_petri_net.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
-                "duration_ms": 50.824
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8",
+                "duration_ms": 36.749
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "8e8b15fa0905e08f4c4e489e12599746cf7ba05c4601c4b146f5880dd09ba198"
+        "expected_ocel2_hash": "03107bbb96fc31616ffb100c718c6b7d57f487e3b7c3961e1ae96f19c4ecf9e3"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:11.046Z",
+              "time": "2026-06-10T23:51:50.484Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -412,7 +412,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:12.270Z",
+              "time": "2026-06-10T23:51:52.409Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -426,7 +426,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:11.339Z",
+              "time": "2026-06-10T23:51:52.573Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -440,7 +440,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:12.737Z",
+              "time": "2026-06-10T23:51:51.712Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_petri_net",
@@ -463,7 +463,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:12.775Z",
+              "time": "2026-06-10T23:51:53.567Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_petri_net",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
-                "duration_ms": 50.824
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8",
+                "duration_ms": 36.749
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_petri_net_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:14.644Z",
+              "time": "2026-06-10T23:51:54.434Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_petri_net_hft_monitoring",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_petri_net_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:16.972Z",
+              "time": "2026-06-10T23:51:53.449Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_petri_net_hft_monitoring",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+                "result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_petri_net_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:15.240Z",
+              "time": "2026-06-10T23:51:51.565Z",
               "relationships": [
                 {
                   "objectId": "example_hft_monitoring",
@@ -540,7 +540,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:15.588Z",
+              "time": "2026-06-10T23:51:52.515Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_petri_net_hft_monitoring",
@@ -558,7 +558,7 @@
             {
               "id": "evt_hft_monitoring_ocel_petri_net_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:18.597Z",
+              "time": "2026-06-10T23:51:56.548Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_petri_net_hft_monitoring",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "559c30817c2ca5867b29e6211f90ed455e24c70c1d299e3228ea43415fc06c30",
-        "observed_result_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac"
+        "observed_ocel2_hash": "ee617c6062a9651f7ad3b055fb5d45ce0f58481d8e6faff7561db1b7280d6527",
+        "observed_result_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
-        "output_artifact_hash": "c3fcf5bb86fd146590be3f673a9c7632ddd7237a9983dbec3baf7471d216daac",
+        "output_artifact_hash": "089b510c1e032c8056c8f2749efe724013c7f6e8e0fe0448f017fe2db413a2f8",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "ocel_encode",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
-      "duration_ms": 11.747,
+      "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e",
+      "duration_ms": 19.184,
       "expected_path": {
         "route_id": "wpm.example.hft_monitoring.ocel_encode.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
-                "duration_ms": 11.747
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e",
+                "duration_ms": 19.184
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "6df6dfe5c0e17cc287b2330a8df25b17d53d746f9af8f3eaafe747aaa8b33c6c"
+        "expected_ocel2_hash": "f5b6246931f8050db8b120566a409b9388119ceb5309a50247a99bae112d541f"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:11.520Z",
+              "time": "2026-06-10T23:51:47.568Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:14.101Z",
+              "time": "2026-06-10T23:51:48.266Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:13.609Z",
+              "time": "2026-06-10T23:51:50.261Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:13.356Z",
+              "time": "2026-06-10T23:51:49.606Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_encode",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:17.321Z",
+              "time": "2026-06-10T23:51:51.242Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_encode",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
-                "duration_ms": 11.747
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e",
+                "duration_ms": 19.184
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_encode_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:15.038Z",
+              "time": "2026-06-10T23:51:52.494Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_encode_hft_monitoring",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_encode_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:13.697Z",
+              "time": "2026-06-10T23:51:52.160Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_encode_hft_monitoring",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+                "result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_encode_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:15.967Z",
+              "time": "2026-06-10T23:51:50.954Z",
               "relationships": [
                 {
                   "objectId": "example_hft_monitoring",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:16.428Z",
+              "time": "2026-06-10T23:51:53.276Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_encode_hft_monitoring",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_hft_monitoring_ocel_encode_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:15.904Z",
+              "time": "2026-06-10T23:51:53.556Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_encode_hft_monitoring",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "b4cd25d09297ba5db53b870b922add6bba12e6e6db4ca7350365a51593d52189",
-        "observed_result_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b"
+        "observed_ocel2_hash": "e80ad271e69b001c4d0369670597ae5d45ec34ae18441c23abd8147a2ed93e53",
+        "observed_result_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
-        "output_artifact_hash": "5f66889a5f2233fa2b46e242cb39e392a6629d848277fc110dcfa2e8f010ad2b",
+        "output_artifact_hash": "eb7e2381ab93a00c11a94b38c913ea0560676a4de9ce49b970656a586cec751e",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "ocel_ocla",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
-      "duration_ms": 25.059,
+      "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13",
+      "duration_ms": 40.042,
       "expected_path": {
         "route_id": "wpm.example.hft_monitoring.ocel_ocla.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
-                "duration_ms": 25.059
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13",
+                "duration_ms": 40.042
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "9cca922d3087dc13b53c2ece145ab2df3207de727691b10095072d0f7e14e2b0"
+        "expected_ocel2_hash": "873b8a039fcba09ae4805ff45ed80867656bf5c13d622f3e0e515cc31dca1d7d"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:12.915Z",
+              "time": "2026-06-10T23:51:47.176Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:12.536Z",
+              "time": "2026-06-10T23:51:48.902Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:13.002Z",
+              "time": "2026-06-10T23:51:52.675Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:11.879Z",
+              "time": "2026-06-10T23:51:51.888Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_ocla",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:16.149Z",
+              "time": "2026-06-10T23:51:52.196Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_ocla",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
-                "duration_ms": 25.059
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13",
+                "duration_ms": 40.042
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_ocla_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:14.585Z",
+              "time": "2026-06-10T23:51:50.772Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_ocla_hft_monitoring",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_ocla_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:14.821Z",
+              "time": "2026-06-10T23:51:51.460Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_ocla_hft_monitoring",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+                "result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_ocla_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:18.627Z",
+              "time": "2026-06-10T23:51:51.668Z",
               "relationships": [
                 {
                   "objectId": "example_hft_monitoring",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:16.836Z",
+              "time": "2026-06-10T23:51:52.926Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_ocla_hft_monitoring",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_hft_monitoring_ocel_ocla_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:17.758Z",
+              "time": "2026-06-10T23:51:52.047Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_ocla_hft_monitoring",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "721503bcaec6678dd11874154c56880c6e103b1b630edc12fce52d861c4f03f8",
-        "observed_result_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d"
+        "observed_ocel2_hash": "80f980cb85b9ad9211bf702a22423a80b930fa85358141e9bd3450cd91d7c5e8",
+        "observed_result_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
-        "output_artifact_hash": "8f31dddcf7aa2a89760b740405a4ad9b2f4392717cae4dcad1ef7a78bf39fd3d",
+        "output_artifact_hash": "1afcbd97a00b1860759118c1e5d93c3c8d755aaa9e0acba6c892afe3d0badf13",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "ocel_oc_declare",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
-      "duration_ms": 27.893,
+      "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63",
+      "duration_ms": 41.214,
       "expected_path": {
         "route_id": "wpm.example.hft_monitoring.ocel_oc_declare.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
-                "duration_ms": 27.893
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63",
+                "duration_ms": 41.214
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "5cf919693ba27a4ee4517f03f29545d10b30bccd569a43a2ac54b038ab3bf2bf"
+        "expected_ocel2_hash": "732bd088e3ebb8850fac3a0693f53e7040588cad9e4848d5901a0ad68b8a1e1d"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-10T23:41:10.566Z",
+              "time": "2026-06-10T23:51:49.173Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-10T23:41:13.723Z",
+              "time": "2026-06-10T23:51:47.987Z",
               "relationships": [
                 {
                   "objectId": "log_hft_monitoring",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-10T23:41:11.594Z",
+              "time": "2026-06-10T23:51:51.531Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-10T23:41:11.862Z",
+              "time": "2026-06-10T23:51:51.401Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_oc_declare",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-10T23:41:16.612Z",
+              "time": "2026-06-10T23:51:53.608Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ocel_oc_declare",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
-                "duration_ms": 27.893
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63",
+                "duration_ms": 41.214
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-10T23:41:15.541Z",
+              "time": "2026-06-10T23:51:52.171Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_oc_declare_hft_monitoring",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-10T23:41:13.747Z",
+              "time": "2026-06-10T23:51:51.330Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_oc_declare_hft_monitoring",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+                "result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63"
               }
             },
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-10T23:41:15.721Z",
+              "time": "2026-06-10T23:51:54.231Z",
               "relationships": [
                 {
                   "objectId": "example_hft_monitoring",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-10T23:41:14.725Z",
+              "time": "2026-06-10T23:51:53.493Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_oc_declare_hft_monitoring",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_hft_monitoring_ocel_oc_declare_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-10T23:41:16.012Z",
+              "time": "2026-06-10T23:51:55.356Z",
               "relationships": [
                 {
                   "objectId": "result_ocel_oc_declare_hft_monitoring",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "38450a7afb278c3aca80552857d73416d57aa8a2a2813b7804563ca2c7c1e8d4",
-        "observed_result_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae"
+        "observed_ocel2_hash": "0e5c35b65831d271fc5c705a3a802407ab66df4991daf92455c4883b0259788f",
+        "observed_result_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "8224d664bebff0d2b37063a7e81499aab3a78727f0a21f15b029e981c4f90157",
-        "output_artifact_hash": "a9714ef6d73a4d7ef35915134044bc5e5b66d3caaa91c497114166ad140c3fae",
+        "output_artifact_hash": "4b3693921daefd2df0d5e8f5243a164c699a78207859d22f1403dcb098ea1e63",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-10T23:41:10.329Z",
+  "created_at": "2026-06-10T23:51:47.086Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "c18e5c30263b35fceeae31c5cdf2ec8f9902f147c9a14f857b2b8318118731e9"
+  "receipt_hash": "05ef0964ae6f8c521a076bb325fca82f6363711ebef05ad0a4ac6c1425934440"
 }

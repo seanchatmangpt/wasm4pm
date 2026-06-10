@@ -11,7 +11,18 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as fixtures from './fixtures/breed-inputs.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const PAPERS_DIR = path.join(__dirname, 'fixtures', 'papers');
+
+function loadPaperFixture(breed: string): any {
+  const p = path.join(PAPERS_DIR, `${breed}.json`);
+  return JSON.parse(fs.readFileSync(p, 'utf-8'));
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyResult = any;
@@ -293,6 +304,112 @@ describe('ebl breed integration', () => {
     expect(ruleFact).toBeDefined();
     expect(ruleFact?.value).toContain('drinkable');
     expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
+describe('asp breed integration', () => {
+  it('finds stable models using Gelfond-Lifschitz reduct', async () => {
+    const result = (await fixtures.runBreed(
+      'asp',
+      fixtures.minimalAspInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Asp');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'stable_models_count');
+    expect(countFact).toBeDefined();
+    expect(countFact?.value).toBe('2');
+    expect(result.output.selected).toBeDefined();
+    expect(['a', 'b']).toContain(result.output.selected);
+  });
+});
+
+describe('description_logic breed integration', () => {
+  it('propagates subsumptions and checks consistency', async () => {
+    const result = (await fixtures.runBreed(
+      'description_logic',
+      fixtures.minimalDescriptionLogicInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('DescriptionLogic');
+    const consistentFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'consistent');
+    expect(consistentFact).toBeDefined();
+    expect(consistentFact?.value).toBe('true');
+    expect(result.output.selected).toBe('consistent');
+    const memberFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'member:x:C');
+    expect(memberFact).toBeDefined();
+  });
+});
+
+describe('abductive_lp breed integration', () => {
+  it('finds abductive explanations satisfying goals', async () => {
+    const result = (await fixtures.runBreed(
+      'abductive_lp',
+      fixtures.minimalAbductiveLpInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AbductiveLp');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'explanations_count');
+    expect(countFact).toBeDefined();
+    expect(countFact?.value).toBe('1');
+    expect(result.output.selected).toBe('c');
+  });
+});
+
+describe('abductive_ibe breed integration', () => {
+  it('performs explanatory coherence selection using ECHO', async () => {
+    const result = (await fixtures.runBreed(
+      'abductive_ibe',
+      fixtures.minimalAbductiveIbeInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AbductiveIbe');
+    expect(result.output.selected).toBe('H1');
+  });
+});
+
+describe('asp breed — paper fixture', () => {
+  it('solves stable models on Gelfond-Lifschitz example', async () => {
+    const fixture = loadPaperFixture('asp');
+    const result = (await fixtures.runBreed('asp', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Asp');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'stable_models_count');
+    expect(countFact?.value).toBe(fixture.expected.stable_models_count);
+  });
+});
+
+describe('description_logic breed — paper fixture', () => {
+  it('propagates subclass transitivity and checks consistency', async () => {
+    const fixture = loadPaperFixture('description_logic');
+    const result = (await fixtures.runBreed('description_logic', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('DescriptionLogic');
+    const consistentFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'consistent');
+    expect(consistentFact?.value).toBe(fixture.expected.consistent);
+    const memberFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'member:x:C');
+    expect(memberFact).toBeDefined();
+  });
+});
+
+describe('abductive_lp breed — paper fixture', () => {
+  it('finds minimal abductive explanation under ICs', async () => {
+    const fixture = loadPaperFixture('abductive_lp');
+    const result = (await fixtures.runBreed('abductive_lp', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AbductiveLp');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'explanations_count');
+    expect(countFact?.value).toBe(fixture.expected.explanations_count);
+    expect(result.output.selected).toBe(fixture.expected.selected);
+  });
+});
+
+describe('abductive_ibe breed — paper fixture', () => {
+  it('selects best explanation using coherence ECHO network', async () => {
+    const fixture = loadPaperFixture('abductive_ibe');
+    const result = (await fixtures.runBreed('abductive_ibe', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AbductiveIbe');
+    expect(result.output.selected).toBe(fixture.expected.selected);
   });
 });
 

@@ -235,7 +235,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "ilp",
@@ -277,7 +277,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "csp_ac3",
@@ -389,7 +389,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "abductive_ibe",
@@ -403,7 +403,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "partial_order_plan",
