@@ -72,10 +72,12 @@ pub fn parse_dfg_text(content: &str) -> Result<DfgResult, String> {
     if i >= rows.len() {
         return Err("Unexpected EOF before start-activity count".to_string());
     }
-    let num_sa: usize = rows[i]
-        .trim()
-        .parse()
-        .map_err(|_| format!("Line {}: expected start-activity count, got {:?}", i, rows[i]))?;
+    let num_sa: usize = rows[i].trim().parse().map_err(|_| {
+        format!(
+            "Line {}: expected start-activity count, got {:?}",
+            i, rows[i]
+        )
+    })?;
     i += 1;
 
     let mut start_activities: HashMap<String, u64> = HashMap::with_capacity(num_sa);
@@ -175,7 +177,11 @@ pub fn parse_dfg_text(content: &str) -> Result<DfgResult, String> {
 
 // ── Helper ────────────────────────────────────────────────────────────────────
 
-fn parse_idx_x_count(line: &str, activities: &[String], lineno: usize) -> Result<(String, u64), String> {
+fn parse_idx_x_count(
+    line: &str,
+    activities: &[String],
+    lineno: usize,
+) -> Result<(String, u64), String> {
     let (idx_str, count_str) = line
         .trim()
         .split_once('x')
@@ -218,7 +224,11 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
         *node_freq.entry(to.clone()).or_insert(0) += *count as usize;
     }
     // Ensure SA and EA activities also appear even if isolated
-    for act in result.start_activities.keys().chain(result.end_activities.keys()) {
+    for act in result
+        .start_activities
+        .keys()
+        .chain(result.end_activities.keys())
+    {
         node_freq.entry(act.clone()).or_insert(0);
     }
 
@@ -254,7 +264,12 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
     let app_state = state::get_or_init_state();
     let handle = app_state
         .store_object(state::StoredObject::DFG(dfg))
-        .map_err(|e| error::wasm_err(codes::INTERNAL_ERROR, format!("State store failed: {:?}", e)))?;
+        .map_err(|e| {
+            error::wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("State store failed: {:?}", e),
+            )
+        })?;
 
     let response = serde_json::json!({
         "handle": handle,
@@ -266,7 +281,12 @@ pub fn load_dfg_from_text(content: &str) -> Result<JsValue, JsValue> {
 
     serde_json::to_string(&response)
         .map(|s| JsValue::from_str(&s))
-        .map_err(|e| error::wasm_err(codes::INTERNAL_ERROR, format!("JSON serialisation failed: {}", e)))
+        .map_err(|e| {
+            error::wasm_err(
+                codes::INTERNAL_ERROR,
+                format!("JSON serialisation failed: {}", e),
+            )
+        })
 }
 
 // ── Unit tests ────────────────────────────────────────────────────────────────

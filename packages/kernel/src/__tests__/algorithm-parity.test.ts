@@ -180,7 +180,7 @@ type AlgoEntry = {
   id: string;
   params?: Record<string, unknown>;
   // If true, the algorithm is known to need a special WASM build or infra not in
-  // the generic stub — skip with a TODO comment.
+  // the generic stub — skip with a note in the skip field.
   skip?: string;
 };
 
@@ -245,7 +245,7 @@ const UNTESTED_ALGOS: AlgoEntry[] = [
   { id: 'predict_outcome', params: { prefix_json: '["A","B"]' } },
 
   // ── Skipped: requires feature-cloud WASM build ────────────────────────
-  // TODO: enable once agentic_pipeline is exposed in test WASM builds.
+  // Skipped: agentic_pipeline is not yet exposed in test WASM builds.
   { id: 'agentic_pipeline', skip: 'requires feature-cloud WASM build' },
 ];
 

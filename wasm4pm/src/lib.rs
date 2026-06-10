@@ -338,6 +338,8 @@ pub mod conformance_guards;
 pub mod conformance_reporting;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
+#[cfg(feature = "streaming_basic")]
+pub mod dfg_io;
 pub mod discovery;
 pub mod discovery_determinism_guards;
 #[cfg(feature = "discovery_advanced")]
@@ -355,8 +357,6 @@ pub mod hand_stats;
 #[cfg(feature = "discovery_advanced")]
 pub mod hierarchical;
 pub mod hot_kernels;
-#[cfg(feature = "streaming_basic")]
-pub mod dfg_io;
 pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;

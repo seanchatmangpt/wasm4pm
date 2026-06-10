@@ -20,7 +20,8 @@ const END_TIME = '2026-05-16T10:00:05.000Z';
 function makeReceipt(overrides: Record<string, any> = {}): Record<string, any> {
   return {
     run_id: VALID_UUID,
-    schema_version: '1.0',
+    schema_version: '1.1',
+    trace_id: 'a'.repeat(32),
     config_hash: 'a'.repeat(64),
     input_hash: 'b'.repeat(64),
     plan_hash: 'c'.repeat(64),

@@ -298,7 +298,11 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
                         let source = attr_value(e, b"source").unwrap_or_default();
                         let target = attr_value(e, b"target").unwrap_or_default();
                         if !source.is_empty() && !target.is_empty() {
-                            raw_arcs.push(ArcData { source, target, weight: None });
+                            raw_arcs.push(ArcData {
+                                source,
+                                target,
+                                weight: None,
+                            });
                         }
                     }
                     (ParseState::Transition, "toolspecific") => {
@@ -472,9 +476,7 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
     let mut net = PetriNet::new();
 
     for p in places {
-        let label = p
-            .label
-            .unwrap_or_else(|| p.id.clone());
+        let label = p.label.unwrap_or_else(|| p.id.clone());
         net.places.push(PetriNetPlace {
             id: p.id,
             label,
@@ -490,14 +492,12 @@ pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
             .unwrap_or_else(|| t.id.clone());
 
         // Silent if explicitly marked, or no <name> child and no name attr, or label empty
-        let is_invisible = if t.is_silent
-            || (!t.has_name && t.name_attr.is_none())
-            || label.is_empty()
-        {
-            Some(true)
-        } else {
-            None
-        };
+        let is_invisible =
+            if t.is_silent || (!t.has_name && t.name_attr.is_none()) || label.is_empty() {
+                Some(true)
+            } else {
+                None
+            };
 
         net.transitions.push(PetriNetTransition {
             id: t.id,
