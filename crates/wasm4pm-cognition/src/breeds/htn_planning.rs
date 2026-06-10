@@ -3,6 +3,7 @@ use crate::breeds::{
 };
 use std::collections::HashSet;
 
+/// Hierarchical Task Network Planning breed
 pub struct HtnPlanning;
 
 fn atoms_of(state: &[StateAtom]) -> HashSet<String> {

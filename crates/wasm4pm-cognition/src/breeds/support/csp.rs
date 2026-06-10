@@ -1,3 +1,4 @@
+#![allow(missing_docs)]
 use std::collections::{HashMap, VecDeque};
 use std::collections::HashSet;
 

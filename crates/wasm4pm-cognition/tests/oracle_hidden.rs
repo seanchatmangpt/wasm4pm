@@ -12,7 +12,7 @@
 //! Pure Rust — no wasm_bindgen, no mocking.
 
 use wasm4pm_cognition::breeds::{
-    dispatch_breed_test, BreedInput, Candidate, Fact, Goal, Rule, StateAtom,
+    dispatch_breed_test, BreedInput, Candidate, Fact, Goal, Rule, StateAtom, Case,
 };
 
 // ---------------------------------------------------------------------------

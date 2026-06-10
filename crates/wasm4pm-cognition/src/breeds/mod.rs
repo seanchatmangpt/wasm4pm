@@ -7,26 +7,47 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Module for autoinstinct_learning
 pub mod autoinstinct_learning;
+/// Module for autoinstinct_neurosis
 pub mod autoinstinct_neurosis;
+/// Module for autoinstinct_semantics
 pub mod autoinstinct_semantics;
+/// Module for autoinstinct_vision
 pub mod autoinstinct_vision;
+/// Module for cbr
 pub mod cbr;
+/// Module for ebl
 pub mod ebl;
+/// Module for default_logic
 pub mod default_logic;
+/// Module for csp_ac3
 pub mod csp_ac3;
+/// Module for dendral
 pub mod dendral;
+/// Module for frame
 pub mod frame;
+/// Module for gps
 pub mod gps;
+/// Module for htn_planning
 pub mod htn_planning;
+/// Module for hearsay
 pub mod hearsay;
+/// Module for production_rules
 pub mod production_rules;
+/// Module for prolog
 pub mod prolog;
+/// Module for soar
 pub mod soar;
+/// Module for strips
 pub mod strips;
+/// Module for ltl_monitor
 pub mod ltl_monitor;
+/// Module for allen_temporal
 pub mod allen_temporal;
+/// Module for fuzzy_logic
 pub mod fuzzy_logic;
+/// Module for bayesian_network
 pub mod bayesian_network;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;

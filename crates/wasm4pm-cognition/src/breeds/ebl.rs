@@ -14,6 +14,7 @@ use crate::breeds::{
 };
 use std::collections::{HashMap, HashSet};
 
+/// Explanation-Based Learning breed
 pub struct Ebl;
 
 #[derive(Clone, Debug, PartialEq)]

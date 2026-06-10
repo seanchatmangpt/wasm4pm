@@ -8,6 +8,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
 };
 
+/// Constraint Satisfaction Problem breed
 pub struct CspAc3;
 
 impl CognitionBreed for CspAc3 {

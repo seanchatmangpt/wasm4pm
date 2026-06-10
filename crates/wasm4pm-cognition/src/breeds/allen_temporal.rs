@@ -3,6 +3,7 @@ use crate::breeds::{
 };
 use std::collections::{HashMap, VecDeque};
 
+/// Allen's Interval Algebra breed
 pub struct AllenTemporal;
 
 const INVERSE: [usize; 13] = [1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 12];
@@ -23,6 +24,7 @@ const fn rel(s1: i32, e1: i32, s2: i32, e2: i32) -> usize {
     else { 12 }
 }
 
+/// Compute composition table
 pub const fn compute_table() -> [[u16; 13]; 13] {
     let mut t = [[0u16; 13]; 13];
     let mut x_s = 1; while x_s <= 6 {
