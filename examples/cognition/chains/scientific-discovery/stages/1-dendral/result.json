@@ -146,9 +146,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9fae0117a8c12aac7a8ce006b3d490c0b748de43eb2c715f8fcb5086fe8cf0cf.json"
   },
   "meta": {
-    "run_id": "4c6ae22a-650e-4174-b4ba-6fe141c90a2e",
-    "timestamp": "2026-06-10T08:09:55.890Z",
-    "duration_ms": 23,
+    "run_id": "0431b661-b911-4857-b0b1-cb44509296a9",
+    "timestamp": "2026-06-10T15:46:48.264Z",
+    "duration_ms": 13,
     "version": "26.6.9"
   }
 }

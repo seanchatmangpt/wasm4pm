@@ -8,149 +8,36 @@
     "breed": "autoinstinct_semantics",
     "status": "ok",
     "output": {
-      "breed": "AutoinstinctSemantics",
+      "breed": "autoinstinctsemantics",
       "candidates": [],
       "facts": [],
-      "selected": null,
       "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"John gave Mary the book\"",
       "inference_trace": [
         {
           "step": 0,
           "kind": "init-parser",
           "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 1,
           "kind": "no-act-found",
           "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         }
-      ],
-      "ocel_log": {
-        "object_types": [
-          "run",
-          "breed",
-          "candidate",
-          "fact",
-          "rule",
-          "hypothesis",
-          "plan_step",
-          "decision"
-        ],
-        "event_types": [
-          "init-parser",
-          "no-act-found",
-          "run-end",
-          "run-start"
-        ],
-        "objects": [
-          {
-            "object_id": "breed:autoinstinct_semantics",
-            "object_type": "breed",
-            "attributes": {}
-          },
-          {
-            "object_id": "run:748321a7",
-            "object_type": "run",
-            "attributes": {}
-          }
-        ],
-        "events": [
-          {
-            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-start",
-            "activity": "run-start",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "breed": "autoinstinct_semantics",
-              "logical_step": 0
-            },
-            "o2o": [
-              [
-                "run",
-                "run:748321a7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_semantics"
-              ]
-            ]
-          },
-          {
-            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-0",
-            "activity": "init-parser",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
-              "logical_step": 1
-            },
-            "o2o": [
-              [
-                "run",
-                "run:748321a7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_semantics"
-              ]
-            ]
-          },
-          {
-            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-1",
-            "activity": "no-act-found",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
-              "logical_step": 2
-            },
-            "o2o": [
-              [
-                "run",
-                "run:748321a7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_semantics"
-              ]
-            ]
-          },
-          {
-            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-end",
-            "activity": "run-end",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "logical_step": 3
-            },
-            "o2o": [
-              [
-                "run",
-                "run:748321a7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_semantics"
-              ]
-            ]
-          }
-        ]
-      },
-      "retained_cases": []
+      ]
     },
     "run_id": "93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b",
     "output_hash": "3b61a92be807bf735c91b07bece64000abde1871ce339bf3205a94d4e9afba1d",
     "replay_pointer": "3b61a92be807bf73",
     "inference_step_count": 2,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_semantics/.wasm4pm/receipts/93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b.json"
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b.json"
   },
   "meta": {
-    "run_id": "d6803b01-bf88-4a26-845e-cfa671801be7",
-    "timestamp": "2026-06-10T06:51:29.828Z",
-    "duration_ms": 10,
+    "run_id": "08b2a8f4-f312-4fde-b267-1dffabe30b28",
+    "timestamp": "2026-06-10T15:46:44.257Z",
+    "duration_ms": 13,
     "version": "26.6.9"
   }
 }

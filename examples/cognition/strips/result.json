@@ -8,7 +8,7 @@
     "breed": "strips",
     "status": "ok",
     "output": {
-      "breed": "Strips",
+      "breed": "strips",
       "candidates": [],
       "facts": [],
       "selected": "stack_A_on_B",
@@ -18,221 +18,44 @@
           "step": 0,
           "kind": "iterate-depth",
           "detail": "d=0",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 1,
           "kind": "iterate-depth",
           "detail": "d=1",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 2,
           "kind": "subgoal",
           "detail": "on=A_B",
-          "depth": 15,
-          "objects": []
+          "depth": 15
         },
         {
           "step": 3,
           "kind": "try-action",
           "detail": "stack_A_on_B",
-          "depth": 15,
-          "objects": []
+          "depth": 15
         },
         {
           "step": 4,
           "kind": "execute",
           "detail": "stack_A_on_B",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         }
-      ],
-      "ocel_log": {
-        "object_types": [
-          "run",
-          "breed",
-          "candidate",
-          "fact",
-          "rule",
-          "hypothesis",
-          "plan_step",
-          "decision"
-        ],
-        "event_types": [
-          "execute",
-          "iterate-depth",
-          "run-end",
-          "run-start",
-          "subgoal",
-          "try-action"
-        ],
-        "objects": [
-          {
-            "object_id": "breed:strips",
-            "object_type": "breed",
-            "attributes": {}
-          },
-          {
-            "object_id": "run:89c79891",
-            "object_type": "run",
-            "attributes": {}
-          }
-        ],
-        "events": [
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-start",
-            "activity": "run-start",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "breed": "strips",
-              "logical_step": 0
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-0",
-            "activity": "iterate-depth",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "d=0",
-              "logical_step": 1
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-1",
-            "activity": "iterate-depth",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "d=1",
-              "logical_step": 2
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-2",
-            "activity": "subgoal",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 15,
-              "detail": "on=A_B",
-              "logical_step": 3
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-3",
-            "activity": "try-action",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 15,
-              "detail": "stack_A_on_B",
-              "logical_step": 4
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-4",
-            "activity": "execute",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "stack_A_on_B",
-              "logical_step": 5
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          },
-          {
-            "event_id": "89c798916754ff3913cd0904fb5d764d45405068b2635ae124b99b2f3455283e-end",
-            "activity": "run-end",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "logical_step": 6
-            },
-            "o2o": [
-              [
-                "run",
-                "run:89c79891"
-              ],
-              [
-                "breed",
-                "breed:strips"
-              ]
-            ]
-          }
-        ]
-      },
-      "retained_cases": []
+      ]
     },
     "run_id": "e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689",
     "output_hash": "70d70d6f6164c53156fa6461026125799cdf4ef1fa100fe9042939f050cc8565",
     "replay_pointer": "70d70d6f6164c531",
     "inference_step_count": 5,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/strips/.wasm4pm/receipts/e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689.json"
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689.json"
   },
   "meta": {
-    "run_id": "169b2620-a3cc-46d1-9dd3-493206c084e8",
-    "timestamp": "2026-06-10T06:51:27.906Z",
+    "run_id": "700c1eaa-c045-495c-9e32-22b79fc8f810",
+    "timestamp": "2026-06-10T15:46:41.957Z",
     "duration_ms": 12,
     "version": "26.6.9"
   }

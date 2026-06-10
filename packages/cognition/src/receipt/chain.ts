@@ -32,9 +32,8 @@ export type {
 export { replayReceipt } from './replay.js';
 export type { ReplayOptions } from './replay.js';
 
-// ChainVerifyOutcome and CausalCheckResult are defined in schemas.ts (Zod-inferred)
-// and re-exported from types.ts. Re-export them here for backwards compatibility.
-export type { ChainVerifyOutcome, CausalCheckResult } from '../types.js';
+// ChainVerifyOutcome and CausalCheckResult are authoritative in schemas.ts.
+// Do NOT re-export here — they are already exposed via index.ts → schemas.js.
 
 /**
  * Verify causal consistency of a cognition receipt:

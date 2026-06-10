@@ -105,9 +105,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/7c5c50954aa4a153d213db27bd082d29f50059ae9834b8fb9f2a13133c625c5b.json"
   },
   "meta": {
-    "run_id": "ecc1afc5-bace-4e95-9620-ff96d2c156c0",
-    "timestamp": "2026-06-10T08:09:53.676Z",
-    "duration_ms": 62,
+    "run_id": "944a79bd-d0dd-4373-9f4d-aaa07e460e4a",
+    "timestamp": "2026-06-10T15:46:47.085Z",
+    "duration_ms": 13,
     "version": "26.6.9"
   }
 }

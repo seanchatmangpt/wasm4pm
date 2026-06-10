@@ -8,25 +8,22 @@
     "breed": "autoinstinct_vision",
     "status": "ok",
     "output": {
-      "breed": "AutoinstinctVision",
+      "breed": "autoinstinctvision",
       "candidates": [
         {
           "id": "A",
           "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
+          "eliminated": false
         },
         {
           "id": "B",
           "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
+          "eliminated": false
         },
         {
           "id": "C",
           "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
+          "eliminated": false
         }
       ],
       "facts": [
@@ -58,193 +55,39 @@
           "step": 0,
           "kind": "observe-object",
           "detail": "observed A as block (on table)",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 1,
           "kind": "observe-object",
           "detail": "observed B as block (supported_by=A)",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 2,
           "kind": "observe-object",
           "detail": "observed C as pyramid (supported_by=B)",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 3,
           "kind": "find-clear-object",
           "detail": "clear object found: C",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         }
-      ],
-      "ocel_log": {
-        "object_types": [
-          "run",
-          "breed",
-          "candidate",
-          "fact",
-          "rule",
-          "hypothesis",
-          "plan_step",
-          "decision"
-        ],
-        "event_types": [
-          "find-clear-object",
-          "observe-object",
-          "run-end",
-          "run-start"
-        ],
-        "objects": [
-          {
-            "object_id": "breed:autoinstinct_vision",
-            "object_type": "breed",
-            "attributes": {}
-          },
-          {
-            "object_id": "run:e096dce7",
-            "object_type": "run",
-            "attributes": {}
-          }
-        ],
-        "events": [
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-start",
-            "activity": "run-start",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "breed": "autoinstinct_vision",
-              "logical_step": 0
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          },
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-0",
-            "activity": "observe-object",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "observed A as block (on table)",
-              "logical_step": 1
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          },
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-1",
-            "activity": "observe-object",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "observed B as block (supported_by=A)",
-              "logical_step": 2
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          },
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-2",
-            "activity": "observe-object",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "observed C as pyramid (supported_by=B)",
-              "logical_step": 3
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          },
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-3",
-            "activity": "find-clear-object",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "clear object found: C",
-              "logical_step": 4
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          },
-          {
-            "event_id": "e096dce7eb28622a8e7803fc0114f9182931f5ea039c08ed10aa0e46681a9043-end",
-            "activity": "run-end",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "logical_step": 5
-            },
-            "o2o": [
-              [
-                "run",
-                "run:e096dce7"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_vision"
-              ]
-            ]
-          }
-        ]
-      },
-      "retained_cases": []
+      ]
     },
     "run_id": "c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f",
     "output_hash": "0dddfce965370d09910c3f8b6530e98c60675799bc30c2b4e6f91f706d0fed23",
     "replay_pointer": "0dddfce965370d09",
     "inference_step_count": 4,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_vision/.wasm4pm/receipts/c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f.json"
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f.json"
   },
   "meta": {
-    "run_id": "d84af06c-bb22-47e6-a1e9-6bf9892eb8df",
-    "timestamp": "2026-06-10T06:51:30.159Z",
-    "duration_ms": 10,
+    "run_id": "dae181dc-73fc-49f6-b1f1-5fd812e9043b",
+    "timestamp": "2026-06-10T15:46:44.635Z",
+    "duration_ms": 12,
     "version": "26.6.9"
   }
 }

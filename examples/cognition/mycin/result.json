@@ -8,7 +8,7 @@
     "breed": "mycin",
     "status": "ok",
     "output": {
-      "breed": "Mycin",
+      "breed": "mycin",
       "candidates": [],
       "facts": [
         {
@@ -39,138 +39,27 @@
           "step": 0,
           "kind": "fire-rule",
           "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 1,
           "kind": "fire-rule",
           "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         }
-      ],
-      "ocel_log": {
-        "object_types": [
-          "run",
-          "breed",
-          "candidate",
-          "fact",
-          "rule",
-          "hypothesis",
-          "plan_step",
-          "decision"
-        ],
-        "event_types": [
-          "fire-rule",
-          "run-end",
-          "run-start"
-        ],
-        "objects": [
-          {
-            "object_id": "breed:mycin",
-            "object_type": "breed",
-            "attributes": {}
-          },
-          {
-            "object_id": "run:b76b5725",
-            "object_type": "run",
-            "attributes": {}
-          }
-        ],
-        "events": [
-          {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-start",
-            "activity": "run-start",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "breed": "mycin",
-              "logical_step": 0
-            },
-            "o2o": [
-              [
-                "run",
-                "run:b76b5725"
-              ],
-              [
-                "breed",
-                "breed:mycin"
-              ]
-            ]
-          },
-          {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-0",
-            "activity": "fire-rule",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
-              "logical_step": 1
-            },
-            "o2o": [
-              [
-                "run",
-                "run:b76b5725"
-              ],
-              [
-                "breed",
-                "breed:mycin"
-              ]
-            ]
-          },
-          {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-1",
-            "activity": "fire-rule",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
-              "logical_step": 2
-            },
-            "o2o": [
-              [
-                "run",
-                "run:b76b5725"
-              ],
-              [
-                "breed",
-                "breed:mycin"
-              ]
-            ]
-          },
-          {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-end",
-            "activity": "run-end",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "logical_step": 3
-            },
-            "o2o": [
-              [
-                "run",
-                "run:b76b5725"
-              ],
-              [
-                "breed",
-                "breed:mycin"
-              ]
-            ]
-          }
-        ]
-      },
-      "retained_cases": []
+      ]
     },
     "run_id": "f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b",
     "output_hash": "f0886d11be3240a21a29504fcc0fa0de341c844bcd2aeb395678fead1db401d6",
     "replay_pointer": "f0886d11be3240a2",
     "inference_step_count": 2,
     "rules_evaluated": 2,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/mycin/.wasm4pm/receipts/f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b.json"
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b.json"
   },
   "meta": {
-    "run_id": "02d354a4-f776-444a-91ef-2efdb28fb458",
-    "timestamp": "2026-06-10T06:51:26.316Z",
-    "duration_ms": 11,
+    "run_id": "e3838b9f-2973-40e9-b252-101afd6e3229",
+    "timestamp": "2026-06-10T15:46:40.053Z",
+    "duration_ms": 12,
     "version": "26.6.9"
   }
 }

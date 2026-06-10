@@ -35,9 +35,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/5c6500261a5d3931123c9360c75bd93e7dbe35ee4d51be09bba2833e182e0948.json"
   },
   "meta": {
-    "run_id": "3cb4cb62-5f10-4861-8e53-a061d6f77a89",
-    "timestamp": "2026-06-10T08:09:50.532Z",
-    "duration_ms": 15,
+    "run_id": "9b33aa02-9764-4d66-9f84-2c5b20bf8699",
+    "timestamp": "2026-06-10T15:46:45.463Z",
+    "duration_ms": 12,
     "version": "26.6.9"
   }
 }

@@ -8,19 +8,17 @@
     "breed": "autoinstinct_neurosis",
     "status": "ok",
     "output": {
-      "breed": "AutoinstinctNeurosis",
+      "breed": "autoinstinctneurosis",
       "candidates": [
         {
           "id": "stranger_approaches",
           "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
+          "eliminated": false
         },
         {
           "id": "loud_noise",
           "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
+          "eliminated": false
         }
       ],
       "facts": [
@@ -44,194 +42,39 @@
           "step": 0,
           "kind": "seed-beliefs",
           "detail": "seeded 3 beliefs from facts",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 1,
           "kind": "curious",
           "detail": "stimulus=\"stranger_approaches\" strength=0.800 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 2,
           "kind": "curious",
           "detail": "stimulus=\"loud_noise\" strength=0.900 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         },
         {
           "step": 3,
           "kind": "affect-snapshot",
           "detail": "fear=0.000 anger=0.000 mistrust=0.100 beliefs=5",
-          "depth": 0,
-          "objects": []
+          "depth": 0
         }
-      ],
-      "ocel_log": {
-        "object_types": [
-          "run",
-          "breed",
-          "candidate",
-          "fact",
-          "rule",
-          "hypothesis",
-          "plan_step",
-          "decision"
-        ],
-        "event_types": [
-          "affect-snapshot",
-          "curious",
-          "run-end",
-          "run-start",
-          "seed-beliefs"
-        ],
-        "objects": [
-          {
-            "object_id": "breed:autoinstinct_neurosis",
-            "object_type": "breed",
-            "attributes": {}
-          },
-          {
-            "object_id": "run:ab93c227",
-            "object_type": "run",
-            "attributes": {}
-          }
-        ],
-        "events": [
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-start",
-            "activity": "run-start",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "breed": "autoinstinct_neurosis",
-              "logical_step": 0
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          },
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-0",
-            "activity": "seed-beliefs",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "seeded 3 beliefs from facts",
-              "logical_step": 1
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          },
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-1",
-            "activity": "curious",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "stimulus=\"stranger_approaches\" strength=0.800 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
-              "logical_step": 2
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          },
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-2",
-            "activity": "curious",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "stimulus=\"loud_noise\" strength=0.900 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
-              "logical_step": 3
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          },
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-3",
-            "activity": "affect-snapshot",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "depth": 0,
-              "detail": "fear=0.000 anger=0.000 mistrust=0.100 beliefs=5",
-              "logical_step": 4
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          },
-          {
-            "event_id": "ab93c22793a8791d78d2ae300635965396ef975f117d2840aace0dfdbf56214a-end",
-            "activity": "run-end",
-            "timestamp": "1970-01-01T00:00:00Z",
-            "attributes": {
-              "logical_step": 5
-            },
-            "o2o": [
-              [
-                "run",
-                "run:ab93c227"
-              ],
-              [
-                "breed",
-                "breed:autoinstinct_neurosis"
-              ]
-            ]
-          }
-        ]
-      },
-      "retained_cases": []
+      ]
     },
     "run_id": "75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0",
     "output_hash": "d5cc6811264052354a4d8629ef82695575eec303b36334910cd8933d35be06c5",
     "replay_pointer": "d5cc681126405235",
     "inference_step_count": 4,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_neurosis/.wasm4pm/receipts/75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0.json"
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0.json"
   },
   "meta": {
-    "run_id": "46ed11b3-e856-413a-a634-2efa78a76156",
-    "timestamp": "2026-06-10T06:51:29.516Z",
-    "duration_ms": 11,
+    "run_id": "92d91602-be0e-442e-aa22-0b88776ed934",
+    "timestamp": "2026-06-10T15:46:43.873Z",
+    "duration_ms": 13,
     "version": "26.6.9"
   }
 }
