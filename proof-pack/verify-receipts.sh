@@ -26,7 +26,23 @@ fi
 echo "input_hash:  $input_hash"
 echo "output_hash: $output_hash"
 
+# Cross-run uniqueness: collect all receipt_hash values from receipts dir and
+# assert no two receipts share the same hash.
+RECEIPT_DIR=".wasm4pm/receipts"
+if [[ -d "$RECEIPT_DIR" ]]; then
+  mapfile -t all_hashes < <(find "$RECEIPT_DIR" -name "*.json" -exec jq -r '.receipt_hash // empty' {} \; 2>/dev/null | grep -v '^$' | sort)
+  if [[ ${#all_hashes[@]} -gt 0 ]]; then
+    dupes=$(printf '%s\n' "${all_hashes[@]}" | sort | uniq -d)
+    if [[ -n "$dupes" ]]; then
+      echo "FAIL: duplicate receipt_hash values detected:" >&2
+      echo "$dupes" >&2
+      exit 1
+    fi
+    echo "receipt_hash uniqueness: OK (${#all_hashes[@]} receipts, no duplicates)"
+  fi
+fi
+
 echo ""
-echo "NOTE: ocel_hash, model_hash, wasm_hash — PENDING (not yet emitted by runtime)"
+echo "NOTE: model_hash and wasm_hash now emitted by runtime (compute_model_hash in wasm.rs)"
 echo ""
 echo "=== Receipt verification passed ==="

@@ -1,0 +1,30 @@
+{
+  "breed_id": "autoinstinct_vision",
+  "model_id": "autoinstinct_vision-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-10",
+  "method": "structural_trace_coverage",
+  "fitness": null,
+  "fitness_note": "Full alignment-based fitness requires pm4py token replay against ocel/models/l1/autoinstinct_vision.ocpn.json. Replay deferred to proof-pack v2.",
+  "trace_coverage": {
+    "declared_steps": [
+      "object_detected",
+      "relation_inferred",
+      "support_structure_built",
+      "scene_description_emitted"
+    ],
+    "observed_in_traces": [
+      "object_detected",
+      "relation_inferred",
+      "support_structure_built",
+      "scene_description_emitted"
+    ],
+    "coverage": 1.0,
+    "coverage_note": "All 4 declared L1 steps appear in accepted trace corpus (tracing::debug! spans in breeds/autoinstinct_vision.rs). Step ordering conformance not yet verified by token replay."
+  },
+  "l0_fitness": 1.0,
+  "l0_fitness_note": "L0 wrapper lifecycle enforced structurally by BVC admission gate.",
+  "status": "PARTIAL_ALIVE",
+  "admitted": false,
+  "admitted_note": "L1 step coverage complete. Token-replay alignment fitness required for ADMITTED status."
+}

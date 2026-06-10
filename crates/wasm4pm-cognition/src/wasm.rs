@@ -193,6 +193,31 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
     to_js_str(&report)
 }
 
+/// Return BLAKE3 hex of the L1 OCPN model JSON for a known breed, or
+/// "model-not-yet-defined" if no model file exists for the breed.
+fn compute_model_hash(breed: &str) -> String {
+    let json: Option<&str> = match breed {
+        "mycin"                   => Some(include_str!("../../../ocel/models/l1/mycin.ocpn.json")),
+        "prolog"                  => Some(include_str!("../../../ocel/models/l1/prolog.ocpn.json")),
+        "strips"                  => Some(include_str!("../../../ocel/models/l1/strips.ocpn.json")),
+        "soar"                    => Some(include_str!("../../../ocel/models/l1/soar.ocpn.json")),
+        "hearsay"                 => Some(include_str!("../../../ocel/models/l1/hearsay.ocpn.json")),
+        "cbr"                     => Some(include_str!("../../../ocel/models/l1/cbr.ocpn.json")),
+        "gps"                     => Some(include_str!("../../../ocel/models/l1/gps.ocpn.json")),
+        "dendral"                 => Some(include_str!("../../../ocel/models/l1/dendral.ocpn.json")),
+        "eliza"                   => Some(include_str!("../../../ocel/models/l1/eliza.ocpn.json")),
+        "autoinstinct_vision"     => Some(include_str!("../../../ocel/models/l1/autoinstinct_vision.ocpn.json")),
+        "autoinstinct_semantics"  => Some(include_str!("../../../ocel/models/l1/autoinstinct_semantics.ocpn.json")),
+        "autoinstinct_neurosis"   => Some(include_str!("../../../ocel/models/l1/autoinstinct_neurosis.ocpn.json")),
+        "autoinstinct_learning"   => Some(include_str!("../../../ocel/models/l1/autoinstinct_learning.ocpn.json")),
+        _                         => None,
+    };
+    match json {
+        Some(s) => blake3::hash(s.as_bytes()).to_hex().to_string(),
+        None    => "model-not-yet-defined".to_string(),
+    }
+}
+
 /// Run cognition contract with breed execution. Strict input validation:
 /// 10 MiB cap, schema with `deny_unknown_fields`, breed length bounds.
 #[wasm_bindgen]
@@ -230,6 +255,16 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         String::new()
     };
 
+    // BLAKE3 of the WASM binary injected by CI via WASM4PM_WASM_HASH; "build-time-unavailable"
+    // when building outside the wasm-pack pipeline (native tests, cargo check).
+    let wasm_hash = option_env!("WASM4PM_WASM_HASH")
+        .unwrap_or("build-time-unavailable")
+        .to_string();
+
+    // BLAKE3 of the L1 OCPN model JSON for this breed, included at compile time.
+    // Returns "model-not-yet-defined" if the breed has no model file.
+    let model_hash = compute_model_hash(&input.breed);
+
     let receipt = CognitionReceipt {
         run_id: run_id.clone(),
         output_hash: output_hash.clone(),
@@ -251,6 +286,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "input_hash": input_hash,
         "output_hash": output_hash,
         "ocel_hash": ocel_hash,
+        "wasm_hash": wasm_hash,
+        "model_hash": model_hash,
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,
         "output": output,

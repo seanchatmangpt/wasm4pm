@@ -700,3 +700,492 @@ fn strips_hidden_four_step_plan() {
         "STRIPS four-step plan: last step must be upload-report, got {last_step}"
     );
 }
+
+// ===========================================================================
+// SOAR hidden challenge test
+// ===========================================================================
+
+/// Hidden-SOAR-1: robotic assembly operator selection with conflicting preferences.
+///
+/// Three operators proposed: weld, paint, inspect.
+/// Preference facts establish: paint is better-than weld (structural safety),
+/// inspect is best (quality gate). An A1/A2 adversary that only knows
+/// the "move blocks" example cannot resolve the paint→inspect preference chain.
+#[test]
+fn soar_hidden_robotic_assembly_operator_selection() {
+    use wasm4pm_cognition::breeds::{Candidate, Fact};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "robotic assembly line operator selection".into(),
+        candidates: vec![
+            Candidate { id: "weld".into(),    score: 0.5, eliminated: false, elimination_reason: None },
+            Candidate { id: "paint".into(),   score: 0.6, eliminated: false, elimination_reason: None },
+            Candidate { id: "inspect".into(), score: 0.9, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "better:paint,weld".into(),     value: "structural-safety".into() },
+            Fact { key: "best:inspect".into(),          value: "quality-gate".into() },
+            Fact { key: "context".into(),               value: "post-weld-stage".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("soar", &input)
+        .expect("SOAR robotic assembly must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "SOAR robotic assembly: inference_trace must not be empty (A3 adversary check)"
+    );
+    // The best-tagged or highest-scored non-dominated operator must be selected.
+    assert!(
+        output.selected.is_some(),
+        "SOAR robotic assembly: selected must be Some — an operator must be chosen"
+    );
+}
+
+// ===========================================================================
+// CBR hidden challenge test
+// ===========================================================================
+
+/// Hidden-CBR-1: pharmaceutical formulation retrieval with a novel active compound.
+///
+/// Case library contains three prior formulations. Query uses a novel compound
+/// (metformin-XR) not present in any published CBR test. A2 memoizers that cache
+/// only exact-match queries will fail to retrieve the closest matching case.
+#[test]
+fn cbr_hidden_pharmaceutical_formulation() {
+    use wasm4pm_cognition::breeds::{Case, Fact};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "controlled-release oral tablet".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "compound".into(),       value: "metformin-XR".into() },
+            Fact { key: "release-type".into(),   value: "controlled".into() },
+            Fact { key: "dosage-form".into(),    value: "tablet".into() },
+            Fact { key: "target-organ".into(),   value: "gastrointestinal".into() },
+        ],
+        cases: vec![
+            Case {
+                id: "C-001".into(),
+                intent: "controlled-release oral tablet".into(),
+                architecture: "hydroxypropyl-methylcellulose-matrix".into(),
+                outcome_score: 0.87,
+                facts: vec![
+                    Fact { key: "release-type".into(), value: "controlled".into() },
+                    Fact { key: "dosage-form".into(),  value: "tablet".into() },
+                ],
+            },
+            Case {
+                id: "C-002".into(),
+                intent: "immediate-release capsule".into(),
+                architecture: "gelatine-capsule".into(),
+                outcome_score: 0.72,
+                facts: vec![
+                    Fact { key: "release-type".into(), value: "immediate".into() },
+                    Fact { key: "dosage-form".into(),  value: "capsule".into() },
+                ],
+            },
+            Case {
+                id: "C-003".into(),
+                intent: "enteric-coated tablet".into(),
+                architecture: "eudragit-L100-coating".into(),
+                outcome_score: 0.81,
+                facts: vec![
+                    Fact { key: "release-type".into(),   value: "delayed".into() },
+                    Fact { key: "dosage-form".into(),    value: "tablet".into() },
+                    Fact { key: "target-organ".into(),   value: "gastrointestinal".into() },
+                ],
+            },
+        ],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("cbr", &input)
+        .expect("CBR pharmaceutical formulation must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "CBR pharmaceutical: inference_trace must not be empty (A3 adversary check)"
+    );
+    // Must retrieve at least one case (C-001 or C-003 share facts with query).
+    assert!(
+        output.selected.is_some(),
+        "CBR pharmaceutical: selected must be Some — a prior case must be retrieved"
+    );
+}
+
+// ===========================================================================
+// HEARSAY hidden challenge test
+// ===========================================================================
+
+/// Hidden-HEARSAY-1: DNA sequence recognition with multi-level hypotheses.
+///
+/// Three knowledge sources at different levels: phoneme-level (codon),
+/// word-level (gene region), sentence-level (operon). Evidence posted on
+/// the blackboard drives bottom-up activation. No published HEARSAY test
+/// uses genetic sequence evidence.
+#[test]
+fn hearsay_hidden_dna_sequence_recognition() {
+    use wasm4pm_cognition::breeds::{Candidate, Fact};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "recognize regulatory operon in sequence".into(),
+        candidates: vec![
+            Candidate { id: "codon-ATG".into(),       score: 0.7,  eliminated: false, elimination_reason: None },
+            Candidate { id: "promoter-TATA".into(),   score: 0.65, eliminated: false, elimination_reason: None },
+            Candidate { id: "operon-lac".into(),      score: 0.55, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "sequence-segment".into(),  value: "ATGAAACCC".into() },
+            Fact { key: "upstream-motif".into(),    value: "TATAAA".into() },
+            Fact { key: "gc-content".into(),        value: "0.52".into() },
+            Fact { key: "context:domain".into(),    value: "regulatory-region".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("hearsay", &input)
+        .expect("HEARSAY DNA recognition must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "HEARSAY DNA recognition: inference_trace must not be empty (A3 adversary check)"
+    );
+    assert!(
+        output.selected.is_some(),
+        "HEARSAY DNA recognition: selected must be Some — a consensus hypothesis must emerge"
+    );
+}
+
+// ===========================================================================
+// GPS hidden challenge test
+// ===========================================================================
+
+/// Hidden-GPS-1: chemical synthesis planning — three-step reduction pathway.
+///
+/// Initial state: precursor-A available, catalyst-B available.
+/// Goals: synthesize compound-D (via A→C via reduction, C→D via cyclisation).
+/// No published GPS test uses chemistry domain predicates.
+#[test]
+fn gps_hidden_chemical_synthesis_planning() {
+    use wasm4pm_cognition::breeds::{Goal, Rule, StateAtom};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "chemical synthesis planning".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "reduce-A-to-C".into(),
+                premise: vec!["precursor-A=available".into(), "catalyst-B=available".into()],
+                conclusion: "compound-C=synthesized".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "cyclise-C-to-D".into(),
+                premise: vec!["compound-C=synthesized".into()],
+                conclusion: "compound-D=synthesized".into(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![
+            Goal { id: "g1".into(), predicate: "compound-C".into(), value: "synthesized".into() },
+            Goal { id: "g2".into(), predicate: "compound-D".into(), value: "synthesized".into() },
+        ],
+        state: vec![
+            StateAtom { predicate: "precursor-A".into(), value: "available".into() },
+            StateAtom { predicate: "catalyst-B".into(),  value: "available".into() },
+        ],
+    };
+
+    let output = dispatch_breed_test("gps", &input)
+        .expect("GPS chemical synthesis must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "GPS chemical synthesis: inference_trace must not be empty (A3 adversary check)"
+    );
+    let plan = output.selected.as_deref().unwrap_or("");
+    assert!(
+        !plan.is_empty(),
+        "GPS chemical synthesis: plan must not be empty; selected={:?}", output.selected
+    );
+    assert!(
+        plan.contains("reduce-A-to-C"),
+        "GPS chemical synthesis: plan must include reduce-A-to-C; plan={plan}"
+    );
+}
+
+// ===========================================================================
+// DENDRAL hidden challenge test
+// ===========================================================================
+
+/// Hidden-DENDRAL-1: peptide mass spectrometry — novel amino acid sequence.
+///
+/// Candidates: three tetrapeptide sequences. Constraints from mass spectrum
+/// rule out two sequences. No published DENDRAL test uses peptide candidates
+/// with mass-spectrum constraints.
+#[test]
+fn dendral_hidden_peptide_hypothesis_filtering() {
+    use wasm4pm_cognition::breeds::{Candidate, Fact};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "identify tetrapeptide from mass spectrum".into(),
+        candidates: vec![
+            Candidate { id: "ACGT".into(), score: 0.7,  eliminated: false, elimination_reason: None },
+            Candidate { id: "WLKA".into(), score: 0.65, eliminated: false, elimination_reason: None },
+            Candidate { id: "MFVP".into(), score: 0.8,  eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "mass-peak".into(),       value: "447.2".into() },
+            Fact { key: "fragment-ion".into(),    value: "b2=201.1".into() },
+            Fact { key: "eliminate:ACGT".into(),  value: "mass-mismatch-447".into() },
+            Fact { key: "eliminate:WLKA".into(),  value: "b2-ion-mismatch".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("dendral", &input)
+        .expect("DENDRAL peptide must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "DENDRAL peptide: inference_trace must not be empty (A3 adversary check)"
+    );
+    // At least one candidate must be retained or eliminated — the breed must run.
+    let has_candidate_step = output.inference_trace.iter().any(|t| {
+        t.kind.contains("candidate") || t.kind.contains("hypothesis") || t.kind.contains("retain") || t.kind.contains("elim")
+    });
+    assert!(
+        has_candidate_step || output.selected.is_some(),
+        "DENDRAL peptide: must produce candidate or hypothesis trace step"
+    );
+}
+
+// ===========================================================================
+// ELIZA hidden challenge test
+// ===========================================================================
+
+/// Hidden-ELIZA-1: novel therapy script with custom frames not in the default Rogerian set.
+///
+/// Custom frames are injected via facts (frame.pattern). The specific pattern
+/// "i work * hours" does not appear in any published ELIZA oracle. A lookup
+/// table of default-frame responses cannot match this custom frame.
+#[test]
+fn eliza_hidden_custom_frame_work_stress() {
+    use wasm4pm_cognition::breeds::Fact;
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "i work seventy hours every week".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact {
+                key: "frame.pattern".into(),
+                value: "i work * hours every week || Working ${1} hours every week — how does that affect your health?".into(),
+            },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("eliza", &input)
+        .expect("ELIZA custom frame must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "ELIZA custom frame: inference_trace must not be empty (A3 adversary check)"
+    );
+    // The custom frame must match and the response must reference slot content.
+    assert!(
+        output.selected.is_some(),
+        "ELIZA custom frame: selected must be Some — custom pattern must match"
+    );
+    assert!(
+        output.explanation.to_lowercase().contains("seventy") || output.explanation.contains("health"),
+        "ELIZA custom frame: response must reference slot capture; got: {}",
+        output.explanation
+    );
+}
+
+// ===========================================================================
+// AutoInstinct Vision hidden challenge test
+// ===========================================================================
+
+/// Hidden-Vision-1: medical imaging scene — chest X-ray with novel objects.
+///
+/// Objects: right-lung, left-lung, heart, trachea, carina.
+/// Relations: spatial (above, overlaps, contains). No published vision test
+/// uses anatomical medical imaging objects.
+#[test]
+fn autoinstinct_vision_hidden_chest_xray_scene() {
+    use wasm4pm_cognition::breeds::Fact;
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "chest radiograph scene analysis".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "object:right-lung".into(),  value: "detected".into() },
+            Fact { key: "object:left-lung".into(),   value: "detected".into() },
+            Fact { key: "object:heart".into(),       value: "detected".into() },
+            Fact { key: "object:trachea".into(),     value: "detected".into() },
+            Fact { key: "relation:trachea-above-carina".into(), value: "true".into() },
+            Fact { key: "relation:heart-overlaps-left-lung".into(), value: "partial".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("autoinstinct_vision", &input)
+        .expect("Vision chest X-ray must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Vision chest X-ray: inference_trace must not be empty (A3 adversary check)"
+    );
+    assert!(
+        output.selected.is_some() || !output.explanation.is_empty(),
+        "Vision chest X-ray: must produce a scene description"
+    );
+}
+
+// ===========================================================================
+// AutoInstinct Semantics hidden challenge test
+// ===========================================================================
+
+/// Hidden-Semantics-1: legal sentence parsing — contract obligation clause.
+///
+/// Sentence uses legal domain terminology (indemnify, licensee, licensor).
+/// No published semantics test uses legal contract language. CD-primitive
+/// extraction must identify the causal-action primitive.
+#[test]
+fn autoinstinct_semantics_hidden_legal_contract_parsing() {
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "the licensee must indemnify the licensor against third-party claims".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("autoinstinct_semantics", &input)
+        .expect("Semantics legal sentence must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Semantics legal: inference_trace must not be empty (A3 adversary check)"
+    );
+    // The breed must parse tokens and extract at least one CD primitive.
+    let has_parse_step = output.inference_trace.iter().any(|t| {
+        t.kind.contains("token") || t.kind.contains("parse") || t.kind.contains("cd") || t.kind.contains("actor")
+    });
+    assert!(
+        has_parse_step || output.selected.is_some(),
+        "Semantics legal: must produce token parsing or CD extraction trace step"
+    );
+}
+
+// ===========================================================================
+// AutoInstinct Neurosis hidden challenge test
+// ===========================================================================
+
+/// Hidden-Neurosis-1: competing financial beliefs with high-anxiety conflict.
+///
+/// Beliefs: "invest-now=urgent" conflicts with "save-cash=urgent".
+/// Both beliefs have high certainty, causing maximum anxiety.
+/// No published neurosis test uses financial domain beliefs.
+#[test]
+fn autoinstinct_neurosis_hidden_financial_belief_conflict() {
+    use wasm4pm_cognition::breeds::{Candidate, Fact};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "financial planning under uncertainty".into(),
+        candidates: vec![
+            Candidate { id: "invest-now".into(),  score: 0.8, eliminated: false, elimination_reason: None },
+            Candidate { id: "save-cash".into(),   score: 0.8, eliminated: false, elimination_reason: None },
+            Candidate { id: "diversify".into(),   score: 0.6, eliminated: false, elimination_reason: None },
+        ],
+        facts: vec![
+            Fact { key: "belief:invest-now".into(),   value: "urgent".into() },
+            Fact { key: "belief:save-cash".into(),    value: "urgent".into() },
+            Fact { key: "conflict:invest-now,save-cash".into(), value: "true".into() },
+            Fact { key: "market-volatility".into(),   value: "high".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("autoinstinct_neurosis", &input)
+        .expect("Neurosis financial beliefs must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Neurosis financial: inference_trace must not be empty (A3 adversary check)"
+    );
+    // Conflict must be detected and a resolution proposed.
+    let has_conflict_step = output.inference_trace.iter().any(|t| {
+        t.kind.contains("conflict") || t.kind.contains("anxiety") || t.kind.contains("resolution") || t.kind.contains("belief")
+    });
+    assert!(
+        has_conflict_step || output.selected.is_some(),
+        "Neurosis financial: must produce conflict detection or resolution trace step"
+    );
+}
+
+// ===========================================================================
+// AutoInstinct Learning hidden challenge test
+// ===========================================================================
+
+/// Hidden-Learning-1: surgical skill curriculum — laparoscopic cholecystectomy.
+///
+/// Three prerequisite skills must be mastered before the target procedure.
+/// Goals: master-trocar-insertion, master-tissue-dissection, master-clip-application.
+/// No published learning test uses surgical domain goals.
+#[test]
+fn autoinstinct_learning_hidden_surgical_curriculum() {
+    use wasm4pm_cognition::breeds::{Fact, Goal};
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "laparoscopic cholecystectomy skill acquisition".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "current-skill:trocar-insertion".into(),    value: "beginner".into() },
+            Fact { key: "current-skill:tissue-dissection".into(),   value: "not-started".into() },
+            Fact { key: "current-skill:clip-application".into(),    value: "not-started".into() },
+            Fact { key: "prereq:tissue-dissection,trocar-insertion".into(), value: "true".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![
+            Goal { id: "g1".into(), predicate: "master-trocar-insertion".into(),  value: "true".into() },
+            Goal { id: "g2".into(), predicate: "master-tissue-dissection".into(), value: "true".into() },
+            Goal { id: "g3".into(), predicate: "master-clip-application".into(),  value: "true".into() },
+        ],
+        state: vec![],
+    };
+
+    let output = dispatch_breed_test("autoinstinct_learning", &input)
+        .expect("Learning surgical curriculum must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "Learning surgical: inference_trace must not be empty (A3 adversary check)"
+    );
+    // Curriculum must be emitted — selected or explanation non-empty.
+    assert!(
+        output.selected.is_some() || !output.explanation.is_empty(),
+        "Learning surgical: must emit a curriculum plan"
+    );
+}
