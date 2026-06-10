@@ -1,0 +1,58 @@
+\paragraph{Process-aware information systems (PAIS).}
+Van der Aalst et al.~\cite{van_der_aalst_wfnet_soundness_1997} laid the foundation
+for PAIS by defining workflow nets and soundness. Process mining as an analytic
+discipline was formalised in~\cite{van_der_aalst_2016_process_mining}. Our
+contribution moves process semantics from analytic post-processing to pre-admission
+control --- a temporal inversion not present in prior PAIS or process mining work.
+
+\paragraph{Conformance checking.}
+Token replay~\cite{rozinat_van_der_aalst_2008} and alignment-based
+conformance~\cite{adriansyah_et_al_alignments_2011} measure how well a recorded
+log fits a model. These approaches require a completed log. Our boundary predicate
+$B(s,e)$ enforces conformance \emph{before} the event enters the log: it is
+conformance as a gate, not conformance as a measurement.
+
+\paragraph{Object-centric process mining.}
+Object-centric Petri nets~\cite{van_der_aalst_berti_2020} and the formal OCEL
+multigraph~\cite{berti_van_der_aalst_oc_dfg_2023} provide the object-event
+semantics we exploit in Proposition~\ref{prop:objsub}. OCEL~2.0 is the standard
+log format~\cite{berti_et_al_ocel2_spec_2024}; OCPQ~\cite{kuesters_van_der_aalst_ocpq_2025}
+provides object-centric querying that composes with our framework.
+
+\paragraph{Blockchain-based audit trails.}
+Several proposals use distributed ledgers to provide tamper-evident
+logs~\cite{lopez_pineda_blockchain_2019}. Our approach differs in two ways: (i) we
+do not require a distributed ledger --- local BLAKE3 receipt chains plus a central
+store suffice --- and (ii) we enforce admissibility \emph{before} the change occurs,
+whereas blockchain audit trails record after the fact.
+
+\paragraph{Attribute-based and policy-based access control.}
+XACML~\cite{xacml_standard_2013} and attribute-based access control (ABAC)
+govern who may \emph{read or initiate} a change. Our framework governs
+\emph{whether the change is admitted as valid state}, which is orthogonal:
+an authorised actor may still produce a change that fails $\verifyreceipt$ or
+$B(s,e) = 0$, and is therefore refused. Access control and change admissibility
+compose; neither subsumes the other.
+
+\paragraph{Anomaly detection and fraud analytics.}
+Probabilistic anomaly detection~\cite{ko_comuzzi_anomaly_2021} and process
+deviation monitoring~\cite{bose_et_al_concept_drift_pm_2014} identify suspicious behaviour
+statistically. Our approach is categorical, not probabilistic: either
+$\accept(x) = 1$ or not. The approaches are complementary: anomaly detection
+over the admitted receipt stream can surface policy gaps (the boundary bypass
+channel) that the framework does not close on its own.
+
+\paragraph{Formal methods and model checking.}
+Boundary predicates are closely related to guard conditions on Petri net
+transitions. Model checking tools (SPIN, nuXmv) could in principle verify the
+completeness of a boundary predicate specification --- that is, that all illegal
+transitions satisfy $B(s,e) = 0$. We leave formal verification of the boundary
+predicate for future work; the present contribution is the architecture that makes
+such verification meaningful.
+
+\paragraph{Post-quantum cryptography.}
+The case for migrating enterprise systems to post-quantum signatures is surveyed
+in~\cite{bernstein_lange_pqc_2017}. NIST's standards~\cite{nist_fips_204_2024,nist_fips_205_2024}
+provide the concrete algorithms. To our knowledge, ours is the first work to
+apply post-quantum signing specifically to enterprise change admission receipts,
+motivated by the long verification horizon of compliance audit trails.

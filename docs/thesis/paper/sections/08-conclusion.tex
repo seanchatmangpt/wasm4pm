@@ -1,0 +1,50 @@
+We have introduced the \emph{Enterprise Change Admissibility Framework}, which
+extends van der Aalst's admitted symbolic event semantics and boundary predicates
+into a governance law for all enterprise state change. The central claim ---
+$\accept(x) \Rightarrow x \in \Aent$ --- is not a claim of invincibility. It is
+a claim that the path from invalid input to accepted state is blocked by a
+conjunction of independently auditable predicates, and that every way that
+conjunction can be broken is a named, bounded assumption.
+
+The framework's primary contribution is a \emph{temporal inversion}: process
+mining moves from after-the-fact analytics into pre-admission control. An
+enterprise that adopts this architecture does not merely log what its processes
+did; it requires that changes demonstrate process membership before they count.
+
+Eight classes of adversarial mutation --- raw writes, state skips, object
+substitution, backdating, replay, schema-valid fraud, rogue admin edits, and
+AI-agent hallucinated actions --- are inaccessible to acceptance without breaking
+one of seven named assumptions. The wasm4pm reference implementation instantiates
+the framework with BLAKE3 receipt chains, OCEL~2.0 logs, thirteen refusal states,
+and post-quantum ML-DSA signing.
+
+\paragraph{Limitations and future work.}
+
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{Boundary predicate completeness.} The 13 refusal states are
+        motivated by observed attack patterns; a formal completeness proof against
+        a threat model would close the boundary bypass channel. We leave this for
+        future work using Petri net reachability analysis over the declared process
+        model.
+  \item \textbf{Stochastic algorithm seeds.} wasm4pm's stochastic algorithms use
+        a fixed seed (42). Configurable, audited seeding would allow receipt-verified
+        stochastic analysis.
+  \item \textbf{CLI--WASM trace correlation.} The TypeScript CLI and Rust/WASM core
+        currently emit independent OTEL trace IDs. Distributed trace correlation
+        across the boundary would close the implementation bypass channel for
+        cross-boundary spans.
+  \item \textbf{Auditor endorsement.} The evidentiary weight of the receipt chain
+        in a legal or regulatory context requires a Big Four or regulatory body to
+        accept it as a compliance artefact. The framework is ready; the endorsement
+        is institutional rather than technical.
+\end{enumerate}
+
+\paragraph{The category shift.}
+
+Every durable enterprise security problem is ultimately a change problem:
+\emph{who changed the role, the approval, the contract, the model, the policy?}
+Current systems answer by auditing after the fact. This paper argues that the
+answer should be \emph{by construction}: only admitted, signed, process-valid,
+receipt-bearing change can become enterprise state. That is Proof-Bound Enterprise
+Change, and it is a different primitive from validation, access control, or anomaly
+detection.

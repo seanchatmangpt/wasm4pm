@@ -1,0 +1,25 @@
+\begin{abstract}
+Enterprise systems currently permit change through any surface that can influence
+state: form fields, API calls, direct database writes, workflow overrides, and
+increasingly, AI-agent tool calls. Auditing reconstructs what happened after the
+fact. We invert this discipline. Extending van der Aalst's process mining model
+of admitted symbolic events and boundary predicates into the domain of
+enterprise change governance, we define the \emph{admitted change universe}
+$\Aent$ --- the set of signed, typed, object-linked, process-admitted,
+policy-bound, receipt-valid changes --- and prove the main theorem:
+$\accept(x) \Rightarrow x \in \Aent$. Under this law, eight classes of
+adversarial mutation --- including raw database writes, process-state skips,
+object substitution, backdating, replay, schema-valid fraud, rogue admin edits,
+and AI-agent hallucinated actions --- become inaccessible to acceptance without
+breaking a cryptographic, algorithmic, or implementation assumption we name
+explicitly. We implement the framework in \emph{wasm4pm}, a deterministic
+WebAssembly process mining platform, using BLAKE3 receipt chains, OCEL~2.0
+object-centric event logs, and a boundary predicate instantiated as thirteen
+non-overlapping refusal states. The contribution is not a claim of
+invincibility; it is a formal reduction of the adversary's goal to a
+disjunction of named, bounded assumptions.
+\end{abstract}
+
+\keywords{process mining \and enterprise change governance \and receipt chains
+\and admissibility \and post-quantum cryptography \and OCEL~2.0 \and boundary
+predicates}

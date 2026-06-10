@@ -1,0 +1,130 @@
+We prove that eight classes of adversarial mutation are inaccessible to acceptance
+under the framework. For each class we give: the attack description, the component
+of $\accept$ that fails, and the formal statement.
+
+\begin{proposition}[Unreceipted Raw Mutation]
+\label{prop:raw}
+A direct state mutation (e.g., a raw SQL \texttt{UPDATE}) that does not produce a
+valid receipt is inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+Such a mutation is submitted as $x$ with $\verifyreceipt(R) = 0$: no OCEL~2.0 log
+is embedded or referenced, and no challenge nonce was minted before execution.
+By Definition~\ref{def:accept}, $\accept(x) = 0$.
+By Corollary~\ref{cor:refuse}, the change is refused or residualized. \qed
+\end{proof}
+
+\begin{proposition}[Process-State Skip]
+\label{prop:skip}
+A change that attempts a state transition not admitted from the current process
+state (e.g., \texttt{draft $\to$ paid} when only \texttt{draft $\to$ submitted}
+is lawful) is inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+Let $s_{\mathrm{current}} = \textit{draft}$ and $e = \textit{MarkPaid}$.
+The boundary predicate satisfies $B(\textit{draft}, \textit{MarkPaid}) = 0$.
+By Definition~\ref{def:accept}, $\accept(x) = 0$.
+By Definition~\ref{def:mu}, $\mu(s, e) = s$; state does not change. \qed
+\end{proof}
+
+\begin{proposition}[Object Substitution]
+\label{prop:objsub}
+A change that binds an event to the wrong object (e.g., an approval attached to a
+different invoice from the one the approver saw) is inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+The signature $\sigma$ is computed over $h(a \| e \| O \| \ldots)$ where $O$
+encodes the canonical OCEL~2.0 object-event relation. Substituting a different
+object set $O'$ invalidates $\sigma$: $\verifysig(\sigma, h(\ldots \| O' \| \ldots)) = 0$.
+Alternatively, if the attacker re-signs with $O'$, they must forge the authority
+key, which reduces to breaking ML-DSA. Hence $\accept(x) = 0$. \qed
+\end{proof}
+
+\begin{proposition}[Backdated Change]
+\label{prop:backdate}
+A change claiming to have occurred at an earlier time is inaccessible to
+acceptance as valid state.
+\end{proposition}
+\begin{proof}
+The receipt chain imposes causal order: $R_t$ includes $h(R_{t-1})$. A backdated
+change would need to be inserted at position $k < t$ in the chain, requiring a
+collision in $h(R_{k-1})$ (BLAKE3 preimage resistance) or re-signing all
+downstream receipts $R_k, \ldots, R_t$ with valid authority keys. The timestamp
+field $t$ is also bound into $\sigma$, so re-dating without re-signing fails
+$\verifysig$. \qed
+\end{proof}
+
+\begin{proposition}[Replay]
+\label{prop:replay}
+A previously accepted valid change cannot be replayed as a new acceptance.
+\end{proposition}
+\begin{proof}
+A replayed event carries the original nonce $n$, which has already been consumed.
+$\operatorname{Fresh}(n) = 0$, so $\accept(x) = 0$. Furthermore, $\sigma$ binds
+$R_{\mathrm{prior}}$: if the process has advanced since the original acceptance,
+the prior receipt in $\sigma$ no longer matches the current chain head, causing
+$\verifysig$ to fail. \qed
+\end{proof}
+
+\begin{proposition}[Schema-Valid Fraud]
+\label{prop:schema}
+A change that is syntactically and schema-valid but process-invalid is
+inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+Schema validity is a necessary but not sufficient condition for $\accept$.
+The conjunct $B(s, e) = 1$ requires the event to be admissible from the current
+process state, regardless of whether its payload is well-formed. A schema-valid
+\texttt{\{"status":"approved"\}} is refused whenever
+$B(s_{\mathrm{current}}, \textit{ApprovalGranted}) = 0$. \qed
+\end{proof}
+
+\begin{proposition}[Rogue Admin Mutation]
+\label{prop:admin}
+An administrator cannot directly alter enterprise state without satisfying the
+admitted-change witness.
+\end{proposition}
+\begin{proof}
+Administrative privilege in the framework means the authority to emit events of
+privileged types; it does not mean the authority to bypass $\accept$. The change
+$x$ produced by an admin must still satisfy $\verifysig$, $\verifyreceipt$,
+$B(s, e) = 1$, $\operatorname{PolicyAllowed}$, and $\operatorname{ValidatorAllowed}$.
+Administrative authority is encoded in the actor component $a$ and checked by
+$\verifysig$ --- the admin is inside the process, not above it. \qed
+\end{proof}
+
+\begin{proposition}[AI-Agent Hallucinated Action]
+\label{prop:agent}
+An action produced by an AI agent that does not carry a valid admitted-change
+witness is inaccessible to acceptance as enterprise state.
+\end{proposition}
+\begin{proof}
+An agent action is a candidate change $x_{\mathrm{agent}}$. If the agent cannot
+produce a valid $\sigma$, a fresh nonce $n$, a receipt $R$ with embedded OCEL logs,
+and satisfy $B(s, e) = 1$, then $\accept(x_{\mathrm{agent}}) = 0$ and the action
+is residualized. The agent may continue operating, but its output does not enter
+enterprise state. This converts agents from open-ended mutation engines into
+receipt-bearing process participants. \qed
+\end{proof}
+
+Table~\ref{tab:inaccessibility} summarises the failing predicate for each class.
+
+\begin{table}[t]
+\centering
+\caption{Attack classes and the predicate component that blocks acceptance.}
+\label{tab:inaccessibility}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Attack class} & \textbf{Failing predicate component} \\
+\midrule
+Raw database/API write          & $\verifyreceipt(R) = 0$ \\
+Process-state skip              & $B(s,e) = 0$ \\
+Object substitution             & $\verifysig(\sigma,\cdot) = 0$ (forged relation) \\
+Backdating                      & $h(R_{k-1})$ collision or $\verifysig$ on $t$ \\
+Replay                          & $\operatorname{Fresh}(n) = 0$ \\
+Schema-valid fraud              & $B(s,e) = 0$ \\
+Rogue admin direct edit         & $\verifysig$ or $\operatorname{PolicyAllowed}$ \\
+AI-agent hallucinated action    & $\verifyreceipt$ or $B(s,e) = 0$ \\
+\bottomrule
+\end{tabularx}
+\end{table}

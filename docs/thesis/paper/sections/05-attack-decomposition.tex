@@ -1,0 +1,84 @@
+The inaccessibility propositions of Section~\ref{sec:inaccessibility} are conditional
+on the underlying cryptographic and implementation assumptions holding. We now make
+those assumptions explicit and bound the probability of accepting an invalid change
+as a disjunction over named failure channels.
+
+\begin{theorem}[Attack Surface Decomposition]
+\label{thm:decomp}
+The probability that an adversary causes an invalid change to be accepted satisfies:
+\begin{align*}
+  \Pr[\exists\, x \notin \Aent : \accept(x) = 1] \;\leq\;
+  &\Pr[\text{PQC forge}] \\
+  +\; &\Pr[\text{receipt forge}] \\
+  +\; &\Pr[\text{boundary bypass}] \\
+  +\; &\Pr[\text{policy gap}] \\
+  +\; &\Pr[\text{validator compromise}] \\
+  +\; &\Pr[\text{object-model gap}] \\
+  +\; &\Pr[\text{implementation bypass}]
+\end{align*}
+\end{theorem}
+\begin{proof}
+By a union bound over all conjuncts of $\accept$: the adversary must cause at
+least one conjunct to evaluate incorrectly. Each term corresponds to exactly one
+failure mode enumerated below. \qed
+\end{proof}
+
+We characterise each channel.
+
+\paragraph{PQC forge.} The adversary forges a valid ML-DSA or SLH-DSA signature
+without possessing the authority secret key. Under the hardness of Module-LWE
+(ML-DSA) or SPHINCS+ (SLH-DSA) this probability is negligible in the security
+parameter~\cite{nist_fips_204_2024,nist_fips_205_2024,bernstein_lange_pqc_2017}.
+This channel subsumes all of Propositions~\ref{prop:raw}--\ref{prop:agent} where
+the attack requires re-signing.
+
+\paragraph{Receipt forge.} The adversary constructs a receipt that satisfies
+$\verifyreceipt(R) = 1$ for a transition that did not occur. This requires either
+a BLAKE3 preimage or second-preimage ($2^{128}$ work minimum) or a collision in
+the OCEL~2.0 canonicalisation hash. The refusal states
+\texttt{ObservedOCELMissing}, \texttt{PathHashOnlyReceipt},
+\texttt{FixtureMutationDetected}, and \texttt{SelfCertifiedAlignment}
+are engineering instantiations of this channel.
+
+\paragraph{Boundary bypass.} The adversary exploits an incomplete or incorrect
+boundary predicate $B$ --- a transition that should be refused is not in
+the boundary map. This is a \emph{modelling} failure rather than a cryptographic
+one; its probability is bounded by the completeness of the process model.
+This is the primary risk for novel event types not yet in the declared model.
+
+\paragraph{Policy gap.} The adversary submits a change under a policy version $p$
+that does not encode the intended constraint. Version binding ($p$ bound into
+$\sigma$) prevents policy downgrade, but it does not prevent \emph{incorrect}
+policy content. Policy authoring is the human-in-the-loop component.
+
+\paragraph{Validator compromise.} The validator that computes $B(s,e)$ and issues
+the admission signature is itself compromised. Mitigations include HSM-anchored
+validator keys, validator version binding in $\sigma$, and out-of-band re-verification.
+
+\paragraph{Object-model gap.} The OCEL~2.0 object-type schema does not distinguish
+objects that are semantically different. For example, if all invoices share a type
+but the model does not enforce that an approval event binds the \emph{same} invoice
+as the preceding receipt, object substitution (Proposition~\ref{prop:objsub})
+may succeed. This is bounded by the precision of the object model.
+
+\paragraph{Implementation bypass.} Bugs in the admission gate allow
+$\accept(x) = 1$ to be returned incorrectly. This is a software quality risk,
+bounded by testing coverage, formal verification of the gate, and the boundary
+evidence requirements (refusal states \texttt{BoundaryEvidenceMissing},
+\texttt{RuntimeObserverMissing}).
+
+\subsection*{What This Decomposition Provides}
+
+The decomposition does not make the system invincible. It makes the system
+\emph{falsifiable}: each channel has a specific type (cryptographic, algorithmic,
+modelling, operational, implementation), a specific bounded probability, and a
+specific mitigation path. The security claim is not ``we cannot be hacked'' but:
+
+\begin{quote}
+\itshape Unauthorized change cannot be accepted as valid enterprise state unless
+the adversary breaks one of the seven named assumptions. Everything outside the
+admitted universe is refused or residualized.
+\end{quote}
+
+This is, deliberately, the language of formal security arguments rather than
+marketing.

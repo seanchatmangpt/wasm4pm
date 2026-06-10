@@ -1,0 +1,108 @@
+We instantiate the formal framework in \emph{wasm4pm}, an open-source process
+mining platform~\cite{chatman_wasm4pm_2026} with 60 deterministic algorithms
+compiled from Rust to WebAssembly.
+
+\subsection{Architecture}
+
+wasm4pm has two layers with complementary roles:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item A \textbf{Rust/WASM core} providing 60 process mining algorithms ---
+        discovery (DFG, Heuristic Miner, Inductive Miner), conformance
+        checking (token replay, alignments), object-centric querying (OCPQ), and
+        machine learning primitives. Algorithms are deterministic by construction:
+        all RNG is seeded, all hash-map iteration is sorted. Same input implies
+        bit-exact output, verified as a CI merge gate.
+
+  \item A \textbf{TypeScript monorepo} of eleven packages wrapping the WASM core
+        with a CLI (\texttt{wpm}), Zod-validated configuration, an execution
+        planner, OpenTelemetry spans, and a Supabase persistence layer for receipts
+        and TrueX envelopes.
+\end{enumerate}
+
+\subsection{TrueX Envelopes as Concrete Admitted Changes}
+
+The \emph{TrueX envelope} is the concrete realisation of a member
+$x \in \Aent$ in wasm4pm. Its fields map directly to the components of
+Definition~\ref{def:omega}:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{ll>{\itshape}X}
+\toprule
+\textbf{Envelope field} & \textbf{Formal component} & Type \\
+\midrule
+\texttt{session\_id}          & $a$ (actor/session)       & UUID \\
+\texttt{ocel2\_batch\_hash}   & $h(O)$ (object log hash)  & BLAKE3 hex \\
+\texttt{receipt\_hash}        & $h(R)$ (receipt hash)     & BLAKE3 hex \\
+\texttt{admission\_status}    & $B(s,e)$ outcome          & \texttt{ReceiptAdmitted} \\
+\texttt{equivalence\_class}   & $s$ (process state class) & string \\
+\texttt{expected\_path\_hash} & $h(\text{model path})$    & BLAKE3 hex \\
+\texttt{truex\_profile}       & $v$ (validator version)   & string \\
+\texttt{trace\_id}            & OTel span correlation     & string \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The \texttt{admission\_status} field carries the string \texttt{ReceiptAdmitted}
+only when the verifier has checked all conjuncts of $\accept$. Self-certified
+alignment (\texttt{SelfCertifiedAlignment} refusal state) is architecturally
+prevented: the field is computed by the verifier and sealed into the envelope hash,
+never written by the producer.
+
+\subsection{Boundary Predicate as 13-State Refusal Taxonomy}
+
+The boundary predicate $B(s,e)$ is implemented as a taxonomy of thirteen
+non-overlapping refusal states, each a \textsc{deny}-level gate:
+
+\begin{itemize}[leftmargin=2em,noitemsep]
+  \item \textbf{Ingress validation:} \texttt{ObservedOCELMissing},
+        \texttt{ExpectedOCELMissing}, \texttt{PathHashOnlyReceipt}
+  \item \textbf{Adversarial detection:} \texttt{ObservedTraceMutationWithoutBoundary},
+        \texttt{FixtureMutationDetected}
+  \item \textbf{Envelope verification:} \texttt{RuntimeObserverMissing}
+  \item \textbf{Cryptographic:} \texttt{ChallengeNonceMissing},
+        \texttt{ChallengeNonceMismatch}, \texttt{ObservedTraceNotChallengeBound}
+  \item \textbf{Evidence:} \texttt{BoundaryEvidenceMissing},
+        \texttt{SummaryOnlyReceipt}
+  \item \textbf{Authority:} \texttt{SelfCertifiedAlignment}
+  \item \textbf{Hierarchy:} \texttt{ProofClassOverclaimed}
+\end{itemize}
+
+Each state corresponds to a distinct failure mode in Theorem~\ref{thm:decomp}
+(receipt forge or boundary bypass channels).
+
+\subsection{Receipt Chain}
+
+Every \texttt{wpm run} writes a BLAKE3 receipt to
+\texttt{.wasm4pm/receipts/<run-id>.json}. The receipt carries:
+\texttt{run\_id}, \texttt{command}, \texttt{input\_hash}, \texttt{output\_hash},
+\texttt{status}, \texttt{payload} (full OCEL~2.0 log reference), and
+\texttt{git\_commit}. Receipts are chained by including the prior receipt's hash
+and can be synchronised to a central Supabase store via the \texttt{@wasm4pm/supabase}
+package, which implements the offline queue with a 5-attempt dead-letter cap.
+
+\subsection{Determinism as a Receipt Precondition}
+
+The WASM determinism guarantee --- same input, bit-exact output across all
+platforms --- is a necessary condition for receipt reproducibility. A non-deterministic
+analysis would produce different \texttt{output\_hash} values on different machines,
+making receipts unverifiable. wasm4pm enforces determinism at the CI merge gate;
+stochastic algorithms use a fixed seed (42), configurable seed support is future work.
+
+\subsection{Operational Verification: Doctor Status}
+
+The \texttt{wpm doctor --supabase} command instantiates the $\accept$ predicate
+verification as an operational status progression:
+
+\begin{description}[leftmargin=2em]
+  \item[\texttt{prepublish\_only}] Credentials absent, Supabase unreachable,
+        migrations not applied, or service role key missing.
+  \item[\texttt{configured}] All credentials present, reachable, migrations applied.
+  \item[\texttt{live\_verified}] Full smoke test passed: probe receipt upserted,
+        read back, dead-letter written, TrueX envelope ingested via Edge Function.
+        A BLAKE3-hashed runtime receipt is emitted to
+        \texttt{.wasm4pm/receipts/supabase\_runtime.receipt.json}.
+\end{description}
+
+The \texttt{live\_verified} status is itself a receipt --- a proof that the
+admission pipeline was operational at a given point in time.

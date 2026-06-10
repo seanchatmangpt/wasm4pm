@@ -1,0 +1,107 @@
+We now develop the formal model. Let $\mathcal{A}$ be a set of actors,
+$\mathcal{E}$ a set of event types, $\mathcal{O}$ a set of typed object sets,
+$\mathcal{S}$ a set of process states, $\mathcal{P}$ a set of policy versions,
+$\mathcal{V}$ a set of validator versions, and $\Sigma$ a set of signatures.
+
+\begin{definition}[Enterprise Change Universe]
+\label{def:omega}
+The \emph{enterprise change universe} is:
+\[
+  \Omega_{\mathrm{change}} = \mathcal{A} \times \mathcal{E} \times \mathcal{O}
+  \times \mathcal{S} \times \mathcal{R} \times \mathcal{P} \times \mathcal{V}
+  \times \mathcal{T} \times \mathcal{N} \times \mathcal{R} \times \Sigma
+\]
+where $\mathcal{R}$ is the set of receipts, $\mathcal{T}$ the set of timestamps,
+and $\mathcal{N}$ the set of nonces. A \emph{candidate change} is a tuple
+$x = (a, e, O, s, R_{\mathrm{prior}}, p, v, t, n, R, \sigma)$.
+\end{definition}
+
+\begin{definition}[Valid Receipt]
+\label{def:valid-receipt}
+A receipt $R$ is \emph{valid} for transition $s \xrightarrow{e} s'$ if:
+(i) $R$ embeds or content-addressably references the full OCEL~2.0 logs for the
+transition; (ii) $R$ carries the hashes $h(R_{\mathrm{prior}})$, $h(\textit{in})$,
+$h(\textit{out})$; (iii) the alignment state is computed by the verifier, not
+self-certified by the producer; and (iv) a challenge nonce minted before execution
+appears bound into the observed event payload. We write $\verifyreceipt(R) = 1$.
+\end{definition}
+
+\begin{definition}[Acceptance Predicate]
+\label{def:accept}
+The \emph{acceptance predicate} for a candidate change
+$x = (a, e, O, s, R_{\mathrm{prior}}, p, v, t, n, R, \sigma)$ is:
+\begin{align}
+  \accept(x) \;=\; &\verifysig(\sigma,\, h(a \| e \| O \| s \| R_{\mathrm{prior}} \| p \| v \| t \| n)) \notag\\
+  \wedge\; &\verifyreceipt(R) \notag\\
+  \wedge\; &\operatorname{PolicyAllowed}(p) \notag\\
+  \wedge\; &\operatorname{ValidatorAllowed}(v) \notag\\
+  \wedge\; &\operatorname{Fresh}(n) \notag\\
+  \wedge\; &B(s, e) = 1 \notag\\
+  \wedge\; &\operatorname{ObjectsValid}(O) \notag
+\end{align}
+where $\operatorname{Fresh}(n)$ holds iff nonce $n$ has not been consumed in any
+prior accepted change, and $\operatorname{ObjectsValid}(O)$ holds iff the
+object-event relation encoded in $O$ is consistent with the OCEL~2.0 schema and
+signed into $\sigma$.
+\end{definition}
+
+\begin{definition}[Admitted Change Set]
+\label{def:A}
+The \emph{admitted change set} is:
+\[
+  \Aent \;=\; \{x \in \Omega_{\mathrm{change}} \mid \accept(x) = 1\}
+\]
+\end{definition}
+
+\begin{theorem}[Acceptance Implies Membership]
+\label{thm:main}
+For any candidate change $x \in \Omega_{\mathrm{change}}$:
+\[
+  \accept(x) = 1 \;\Rightarrow\; x \in \Aent
+\]
+\end{theorem}
+\begin{proof}
+By Definition~\ref{def:A}, $\Aent$ is exactly the set of $x$ for which
+$\accept(x) = 1$. The implication follows by set membership. \qed
+\end{proof}
+
+While Theorem~\ref{thm:main} is immediate by definition, its force is
+\emph{operational}: it states that the acceptance gate is the sole path from
+$\Omega_{\mathrm{change}}$ to enterprise state. No change enters without passing
+every conjunct of $\accept$.
+
+\begin{corollary}[Refusal or Residualization of Non-Members]
+\label{cor:refuse}
+For any candidate change $x \in \Omega_{\mathrm{change}}$:
+\[
+  x \notin \Aent \;\Rightarrow\; \refuse(x) \;\vee\; \residualize(x)
+\]
+\end{corollary}
+
+Here $\refuse(x)$ means the change is rejected outright and $\residualize(x)$
+means it is quarantined as a \emph{residual} --- recorded as an out-of-band
+observation without being incorporated into enterprise state. Residualization is
+the lossless option for changes that carry partial evidence: the data is preserved
+for investigation but is not state-authoritative.
+
+\begin{definition}[State Transition Law]
+\label{def:mu}
+The enterprise state transition function $\mu : S \times E \to S$ satisfies:
+\[
+  \mu(s, e) = \begin{cases}
+    s' & \text{if } B(s, e) = 1 \text{ and } \accept(x) = 1 \text{ for the change carrying } e \\
+    s  & \text{otherwise}
+  \end{cases}
+\]
+Transitions that do not satisfy $\accept$ leave state unchanged.
+\end{definition}
+
+\subsection*{The Chesterton Fence as a State Law}
+
+Chesterton's Fence principle~\cite{chesterton_orthodoxy_1908} holds that a
+boundary should not be removed until its purpose is understood. The boundary
+predicate $B(s,e)$ is the formal expression of this principle for enterprise state:
+every transition is fenced, and the fence may only be crossed by a change that
+satisfies all of $\accept$. Crucially, the fence does not prevent the \emph{attempt}
+--- an adversary may submit any $x \in \Omega_{\mathrm{change}}$ --- but it prevents
+the attempt from \emph{counting} as valid state unless the witness is produced.

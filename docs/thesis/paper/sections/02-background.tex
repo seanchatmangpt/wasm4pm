@@ -1,0 +1,78 @@
+\subsection{Process Mining and OCEL~2.0}
+\label{sec:bg-pm}
+
+Process mining operates on event logs to discover process models, check
+conformance, and enhance existing models~\cite{van_der_aalst_2016_process_mining}.
+The canonical event log $L$ is a multiset of traces, each trace being a sequence
+of events over a set of activities. An event $e$ carries at minimum an activity
+label $a(e)$, a timestamp $t(e)$, and a case identifier $c(e)$.
+
+\emph{Object-Centric Event Logs} (OCEL~2.0)~\cite{ghahfarokhi_et_al_ocel_2021,berti_et_al_ocel2_spec_2024}
+generalise this model: an event $e$ is associated with a \emph{set} of typed
+objects $O(e) \subseteq \mathcal{O}$, removing the single-case assumption that
+forces artificial case notions on multi-entity processes. Formally, an OCEL is a
+tuple $(\mathcal{E}, \mathcal{O}, \mathcal{A}, \mathcal{T}, \textit{evAttr},
+\textit{objAttr})$ where $\mathcal{E}$ is a set of events, $\mathcal{O}$ a set
+of objects, $\mathcal{A}$ a set of activities, and $\mathcal{T}$ a set of object
+types~\cite{berti_et_al_ocel2_spec_2024}.
+
+The \emph{boundary predicate} $B : S \times E \to \{0,1\}$, where $S$ is the set
+of process states and $E$ the set of event types, encodes whether an event is
+admissible from a given state. If $B(s,e) = 0$, the state transition function is
+required to satisfy $\mu(s,e) = s$ --- the event produces no change. Boundary
+predicates appear implicitly throughout conformance checking literature
+(e.g., as guard conditions on Petri net transitions~\cite{van_der_aalst_2016_process_mining});
+we make them an explicit first-class component of the admissibility model.
+
+\subsection{Receipt Chains}
+\label{sec:bg-receipts}
+
+A \emph{receipt} $R_t$ is a cryptographic record that the state transition
+$s_t \xrightarrow{e_t} s_{t+1}$ occurred with specific inputs and outputs.
+We write $R_t \vdash s_{t+1} = \mu(s_t, e_t)$ to mean that receipt $R_t$
+witnesses the transition. Receipts compose into a chain:
+\[
+  R_0 \to R_1 \to \cdots \to R_n
+\]
+where $R_t$ includes the hash $h(R_{t-1})$ of its predecessor, the input hash
+$h(\textit{in}_t)$, the output hash $h(\textit{out}_t)$, and the run identifier
+$\textit{rid}_t$. The chain is BLAKE3-hashed throughout; BLAKE3 offers 256-bit
+security with verified resistance to length-extension attacks and is suitable for
+streaming computation over large event logs.
+
+A receipt is \emph{not} a receipt if it carries only hash values without the
+backing event data. The \emph{axiom of receipt substance} states:
+
+\begin{quote}
+\itshape A receipt containing only expected hash, observed hash, alignment state,
+and receipt hash is an unverifiable claim, not evidence.
+\end{quote}
+
+Accordingly, a valid receipt in our framework must embed or content-addressably
+reference the full OCEL~2.0 logs it witnesses. We formalise the consequence in
+Definition~\ref{def:valid-receipt} (Section~\ref{sec:model}).
+
+The proof class hierarchy orders receipts by evidential strength:
+$\textsc{FixtureProof} \prec \textsc{PredicateProof} \prec \textsc{ChicagoProof}
+\prec \textsc{BoundaryProof}$. A receipt may not claim a higher class unless all
+conditions of that class are satisfied (refusal state \texttt{ProofClassOverclaimed}).
+
+\subsection{Post-Quantum Cryptographic Signing}
+\label{sec:bg-pqc}
+
+Classic ECDSA and RSA signatures are vulnerable to Shor's algorithm on a
+sufficiently large quantum computer~\cite{bernstein_lange_pqc_2017}. Enterprise
+receipt chains must be verifiable for years or decades; a receipt signed today may
+need to be re-verified after quantum computing becomes practical. NIST's
+2024 post-quantum standards address this: FIPS~204 specifies
+\emph{ML-DSA} (Module-Lattice-Based Digital Signature Algorithm, based on
+CRYSTALS-Dilithium)~\cite{nist_fips_204_2024} and FIPS~205 specifies
+\emph{SLH-DSA} (Stateless Hash-Based Digital Signature Algorithm, based on
+SPHINCS+)~\cite{nist_fips_205_2024}.
+
+We model the signing operation abstractly as
+$\sigma = \operatorname{Sign}(sk, h(e \| O \| P \| R \| V))$
+where $sk$ is the signer's secret key, $e$ the event, $O$ the object set,
+$P$ the policy version, $R$ the prior receipt, and $V$ the validator version.
+Verification is $\verifysig(\sigma, pk, m) \in \{0,1\}$.
+The concrete algorithm is ML-DSA-44 or higher; the abstraction is algorithm-agnostic.

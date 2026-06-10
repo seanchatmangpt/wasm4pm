@@ -1,0 +1,57 @@
+Enterprise systems face a structural problem: the surfaces through which change enters
+the system are too many, too permeable, and too decoupled from the processes that
+are supposed to govern them. An attacker who gains database access can issue
+\texttt{UPDATE invoice SET status = 'paid'} without any approval event having occurred.
+A privileged administrator can promote a user to admin directly, bypassing the
+workflow that was designed to require a second approval. An AI agent, given a tool
+that calls a write API, can modify enterprise state as a side-effect of any prompt
+it is given --- with no cryptographic binding to its declared mandate.
+
+Current defences respond after the fact: logs are written, anomaly detectors flag
+deviations, and audit trails attempt to reconstruct what happened. Process mining,
+in van der Aalst's canonical formulation, discovers and verifies process models
+against event logs recorded after execution~\cite{van_der_aalst_2016_process_mining}.
+The insight of this paper is to \emph{invert the temporal position} of that
+discipline: instead of mining a log to check whether a completed process conformed,
+we require that a process-valid event be produced and admitted \emph{before} the
+change is allowed to alter enterprise state.
+
+\subsection*{Contributions}
+
+This paper makes four contributions:
+
+\begin{enumerate}[label=(\arabic*)]
+  \item \textbf{The Enterprise Change Admissibility Framework.}
+        We define the admitted change universe $\Aent$ as a Cartesian product of
+        actor, event type, object relation, process state, prior receipt, policy
+        version, validator version, nonce, output receipt, and signature. We state
+        and prove the main theorem: $\accept(x) \Rightarrow x \in \Aent$.
+
+  \item \textbf{Eight inaccessibility propositions.}
+        We prove that eight classes of adversarial mutation --- raw database writes,
+        process-state skips, object substitution, backdating, replay, schema-valid
+        fraud, rogue admin edits, and AI-agent hallucinated actions --- are
+        inaccessible to acceptance under the framework. Each proposition identifies
+        the specific predicate component that fails.
+
+  \item \textbf{A named attack decomposition.}
+        We bound the probability of accepting an invalid change as a disjunction of
+        seven named assumptions, each with a distinct security category. This
+        replaces vague security claims with a falsifiable structure.
+
+  \item \textbf{A reference implementation.}
+        We instantiate the framework in \emph{wasm4pm}~\cite{chatman_wasm4pm_2026},
+        a deterministic WebAssembly process mining platform, using BLAKE3 receipt
+        chains, OCEL~2.0 object-centric event logs~\cite{berti_et_al_ocel2_spec_2024},
+        and a boundary predicate expressed as thirteen non-overlapping refusal states.
+\end{enumerate}
+
+\subsection*{Structure}
+
+Section~\ref{sec:background} covers process mining, OCEL~2.0, receipt chains, and
+post-quantum cryptographic signing. Section~\ref{sec:model} develops the formal
+model and proves the main theorem. Section~\ref{sec:inaccessibility} proves the
+eight inaccessibility propositions. Section~\ref{sec:attacks} gives the attack
+decomposition. Section~\ref{sec:impl} describes the wasm4pm implementation.
+Section~\ref{sec:related} surveys related work. Section~\ref{sec:conclusion}
+concludes.
