@@ -20,6 +20,7 @@ pub mod production_rules;
 pub mod prolog;
 pub mod soar;
 pub mod strips;
+pub mod support;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
