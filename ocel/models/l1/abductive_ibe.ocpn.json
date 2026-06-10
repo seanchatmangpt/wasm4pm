@@ -1,0 +1,31 @@
+{
+  "id": "ocel_abductive_ibe_v1",
+  "name": "Abductive IBE Lifecycle Model",
+  "phases": [
+    {
+      "name": "collect-observations",
+      "kinds": [
+        "collect-observations"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "scoring",
+      "kinds": [
+        "score-hypothesis",
+        "compare"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "best-explanation",
+      "kinds": [
+        "best-explanation"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

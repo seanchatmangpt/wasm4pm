@@ -466,3 +466,24 @@ fn bayesian_network_empty_goals_refused() {
     assert!(result.unwrap_err().contains("query"));
 }
 
+
+#[test]
+fn test_abductive_ibe_refusal() {
+    let input = empty_base();
+    let res = dispatch_breed_test("abductive_ibe", &input);
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_event_calculus_refusal() {
+    let input = empty_base();
+    let res = dispatch_breed_test("event_calculus", &input);
+    assert!(res.is_err());
+}
+
+#[test]
+fn test_partial_order_plan_refusal() {
+    let input = empty_base();
+    let res = dispatch_breed_test("partial_order_plan", &input);
+    assert!(res.is_err());
+}

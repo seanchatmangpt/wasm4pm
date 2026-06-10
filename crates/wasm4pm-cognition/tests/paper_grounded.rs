@@ -1658,3 +1658,84 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+
+
+// ===========================================================================
+// ABDUCTIVE IBE paper grounded test
+// ===========================================================================
+
+#[test]
+fn abductive_ibe_paper_test() {
+    let mut input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "abductive ibe test".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "observation:O1".into(), value: "".into() },
+            Fact { key: "hyp:H1".into(), value: "10.0".into() },
+            Fact { key: "explains:H1:O1".into(), value: "".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("abductive_ibe", &input)
+        .expect("must not err");
+    assert!(!output.inference_trace.is_empty());
+}
+
+// ===========================================================================
+// EVENT CALCULUS paper grounded test
+// ===========================================================================
+
+#[test]
+fn event_calculus_paper_test() {
+    let mut input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "event calculus test".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "ec.initially:on".into(), value: "".into() },
+            Fact { key: "ec.happens:toggle1:5".into(), value: "".into() },
+            Fact { key: "ec.terminates:toggle1:on".into(), value: "".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![
+            Goal { id: "on".into(), predicate: "holdsat".into(), value: "4".into() },
+            Goal { id: "on".into(), predicate: "holdsat".into(), value: "6".into() }
+        ],
+        state: vec![],
+    };
+
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("event_calculus", &input)
+        .expect("must not err");
+    assert!(!output.inference_trace.is_empty());
+}
+
+// ===========================================================================
+// PARTIAL ORDER PLAN paper grounded test
+// ===========================================================================
+
+#[test]
+fn partial_order_plan_paper_test() {
+    let mut input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "partial order plan test".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule { id: "go-store".into(), premise: vec!["at=home".into()], conclusion: "at=store;!at=home".into(), certainty: 1.0 },
+        ],
+        goals: vec![
+            Goal { id: "at".into(), predicate: "at".into(), value: "store".into() }
+        ],
+        state: vec![
+            StateAtom { predicate: "at".into(), value: "home".into() }
+        ],
+    };
+
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("partial_order_plan", &input)
+        .expect("must not err");
+    assert!(!output.inference_trace.is_empty());
+}

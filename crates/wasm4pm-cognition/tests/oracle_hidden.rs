@@ -1475,3 +1475,91 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+
+
+// ===========================================================================
+// ABDUCTIVE IBE hidden challenge test
+// ===========================================================================
+
+#[test]
+fn abductive_ibe_hidden_test() {
+    let mut input = base("hidden abductive ibe test");
+    input.facts = vec![
+        fact("observation:symptom-1", ""),
+        fact("observation:symptom-2", ""),
+        fact("hyp:disease-a", "10.0"),
+        fact("hyp:disease-b", "15.0"),
+        fact("explains:disease-a:symptom-1", ""),
+        fact("explains:disease-b:symptom-1", ""),
+        fact("explains:disease-b:symptom-2", ""),
+    ];
+
+    let output = dispatch_breed_test("abductive_ibe", &input)
+        .expect("abductive_ibe hidden test must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "abductive_ibe: inference_trace must not be empty (A3 adversary check)"
+    );
+
+    let plan = output.selected.unwrap_or_default();
+    assert!(
+        plan.contains("disease"),
+        "abductive_ibe: best explanation must contain a disease"
+    );
+}
+
+// ===========================================================================
+// EVENT CALCULUS hidden challenge test
+// ===========================================================================
+
+#[test]
+fn event_calculus_hidden_test() {
+    let mut input = base("hidden event calculus test");
+    input.facts = vec![
+        fact("ec.initially:on", ""),
+        fact("ec.happens:toggle1:5", ""),
+        fact("ec.terminates:toggle1:on", ""),
+    ];
+    input.goals = vec![
+        goal("on", "holdsat", "4"),
+        goal("on", "holdsat", "6"),
+    ];
+
+    let output = dispatch_breed_test("event_calculus", &input)
+        .expect("event_calculus hidden test must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "event_calculus: inference_trace must not be empty (A3 adversary check)"
+    );
+}
+
+// ===========================================================================
+// PARTIAL ORDER PLAN hidden challenge test
+// ===========================================================================
+
+#[test]
+fn partial_order_plan_hidden_test() {
+    let mut input = base("hidden partial order plan test");
+    input.state = vec![state_atom("at", "home")];
+    input.goals = vec![goal("at", "store", ""), goal("have", "milk", "")];
+    input.rules = vec![
+        rule("go-store", vec!["at=home"], "at=store;!at=home", 1.0),
+        rule("buy-milk", vec!["at=store"], "have=milk", 1.0),
+    ];
+
+    let output = dispatch_breed_test("partial_order_plan", &input)
+        .expect("partial_order_plan hidden test must not return Err");
+
+    assert!(
+        !output.inference_trace.is_empty(),
+        "partial_order_plan: inference_trace must not be empty (A3 adversary check)"
+    );
+
+    let plan = output.selected.unwrap_or_default();
+    assert!(
+        plan.contains("go-store") && plan.contains("buy-milk"),
+        "partial_order_plan: plan must contain both steps"
+    );
+}

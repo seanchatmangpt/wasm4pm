@@ -1,0 +1,32 @@
+{
+  "id": "ocel_event_calculus_v1",
+  "name": "Event Calculus Lifecycle Model",
+  "phases": [
+    {
+      "name": "load-narrative",
+      "kinds": [
+        "load-narrative"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "evaluation",
+      "kinds": [
+        "evaluate-happens",
+        "clipped-check",
+        "holdsat-verdict"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "answer",
+      "kinds": [
+        "answer"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

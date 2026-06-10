@@ -1,0 +1,36 @@
+{
+  "id": "ocel_partial_order_plan_v1",
+  "name": "Partial Order Plan Lifecycle Model",
+  "phases": [
+    {
+      "name": "init-plan",
+      "kinds": [
+        "init-plan"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "planning",
+      "kinds": [
+        "open-condition",
+        "add-link",
+        "add-step",
+        "detect-threat",
+        "promote",
+        "demote",
+        "backtrack"
+      ],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "plan-complete",
+      "kinds": [
+        "plan-complete"
+      ],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}
