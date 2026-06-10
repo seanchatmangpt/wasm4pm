@@ -980,9 +980,7 @@ export const run = defineCommand({
                 return await exitWithFlush(EXIT_CODES.success);
               }
 
-              // Step 6: Execute discovery with intelligent retry
-              const MAX_RETRIES = 3;
-              const noRetry = Boolean(ctx.args['no-retry']);
+              // Step 6: Execute discovery
 
               let raw: unknown = undefined;
               let elapsedMs = 0;
@@ -990,11 +988,6 @@ export const run = defineCommand({
 
               {
                 // JIDOKA: No fallback chain. If requested algorithm fails, we report the defect.
-                const chain = [resolvedAlgo];
-
-                let lastError: unknown;
-                let succeeded = false;
-
                 // Mandatory statistics check
                 const statsRaw = wasm.analyze_event_statistics(logHandle);
                 const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
@@ -1413,19 +1406,6 @@ export const run = defineCommand({
                 finalPrecision = qualityMetrics.precision;
               }
               finalExitCode = EXIT_CODES.success;
-
-              // Step 9a: Build semantic payload for deterministic hashing (excludes timing metrics)
-              const semanticPayload = {
-                status: 'success',
-                algorithm: resolvedAlgoFinal,
-                activityKey,
-                input: inputPath,
-                model: resultData,
-                ...(logStats && { logStats }),
-                ...(Object.keys(mlResults).length > 0 && { ml: mlResults }),
-                ...(qualityMetrics && { quality: qualityMetrics }),
-                ...(preflightWarnings.length > 0 && { preflightWarnings }),
-              };
 
               // Step 9b: Auto-save result to .wasm4pm/results/ (unless --no-save).
               // citty maps --no-save → ctx.args.save === false (strips the 'no-' prefix).
@@ -2165,7 +2145,7 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
         inputFormat: 'ocel',
       },
     };
-    await saveCommandReceipt(receipt);
+    saveCommandReceipt(receipt);
   }
 
   // Output

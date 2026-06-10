@@ -31,7 +31,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
-wasm-bindgen = "0.2.92"
+wasm-bindgen = "=0.2.100"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
 serde_json = { workspace = true }

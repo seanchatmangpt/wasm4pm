@@ -79,6 +79,7 @@
     "@wasm4pm/ml": "workspace:*"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",

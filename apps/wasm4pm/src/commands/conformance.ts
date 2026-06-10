@@ -20,7 +20,8 @@ function computeConfidenceInterval(
   }
 
   const p_hat = successes / trials;
-  const z = 1.96; // 95% CI critical value
+  // z-score for the requested confidence level (1.96 for 95%, 2.576 for 99%)
+  const z = confidence >= 0.99 ? 2.576 : confidence >= 0.95 ? 1.96 : 1.645;
 
   // Agresti-Coull adjustment (adds pseudo-observations)
   const z_squared = z * z;
