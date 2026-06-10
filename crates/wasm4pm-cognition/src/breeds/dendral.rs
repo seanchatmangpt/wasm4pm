@@ -133,6 +133,7 @@ impl CognitionBreed for Dendral {
                         kind: "eliminate".to_string(),
                         detail: format!("{} by {}: {}", c.id, constraint, reason),
                         depth: 0,
+                        objects: vec![],
                     });
                     break;
                 }
@@ -143,6 +144,7 @@ impl CognitionBreed for Dendral {
                     kind: "survive".to_string(),
                     detail: c.id.clone(),
                     depth: 0,
+                    objects: vec![],
                 });
             }
         }
@@ -173,6 +175,8 @@ impl CognitionBreed for Dendral {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 

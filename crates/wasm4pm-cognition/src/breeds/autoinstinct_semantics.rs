@@ -48,6 +48,7 @@ impl CognitionBreed for AutoinstinctSemantics {
             kind: "init-parser".to_string(),
             detail: format!("SemanticParser created; parsing intent: {:?}", input.intent),
             depth: 0,
+            objects: vec![],
         });
 
         let frame_opt = parser.parse(&input.intent);
@@ -59,6 +60,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                     kind: "no-act-found".to_string(),
                     detail: format!("no CD primitive matched for intent: {:?}", input.intent),
                     depth: 0,
+                    objects: vec![],
                 });
                 (
                     None,
@@ -92,6 +94,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                         rule_id, act_name, frame.actor, frame.object
                     ),
                     depth: 0,
+                    objects: vec![],
                 });
 
                 if let Some(ref to) = frame.to {
@@ -100,6 +103,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                         kind: "extract-recipient".to_string(),
                         detail: format!("to={}", to),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
                 if let Some(ref from) = frame.from {
@@ -108,6 +112,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                         kind: "extract-source".to_string(),
                         detail: format!("from={}", from),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
 
@@ -178,6 +183,8 @@ impl CognitionBreed for AutoinstinctSemantics {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
@@ -311,6 +318,8 @@ mod tests {
             selected: None,
             explanation: "test".to_string(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
         let result = breed.postconditions(&output);
         assert!(result.is_err());

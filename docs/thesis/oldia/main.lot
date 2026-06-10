@@ -1,0 +1,11 @@
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {4.1}{\ignorespaces Rust test files in \texttt {crates/wasm4pm-cognition/tests/}}}{36}{table.4.1}%
+\contentsline {table}{\numberline {4.2}{\ignorespaces Test distribution by oracle rank (655 total)}}{37}{table.4.2}%
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {table}{\numberline {A.1}{\ignorespaces Complete test file inventory for \texttt {wasm4pm-cognition} (verified 2026-06-09). Oracle rank L1 = known-input or property-based unfakeable oracle; L2 = routing/dispatch coverage; L3 = integration/end-to-end.}}{60}{table.A.1}%

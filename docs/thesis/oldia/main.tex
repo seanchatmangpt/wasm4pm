@@ -1,0 +1,59 @@
+\documentclass[12pt,a4paper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{epigraph}
+\usepackage[ruled,vlined]{algorithm2e}
+\geometry{margin=1in}
+\hypersetup{colorlinks=true, linkcolor=blue, citecolor=blue, urlcolor=blue}
+
+% Define Rust language for listings (not built-in)
+\lstdefinelanguage{Rust}{
+  keywords={as,async,await,break,const,continue,crate,dyn,else,enum,extern,false,fn,for,if,impl,in,let,loop,match,mod,move,mut,pub,ref,return,self,Self,static,struct,super,trait,true,type,unsafe,use,where,while},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  sensitive=true,
+}
+
+% Code listing style
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  language=Rust,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+}
+
+\title{OLDIA: Operational Lifecycle Determinism in Intelligent Architectures\\
+\large Validated, Falsified, and Deployed at Civilization Scale}
+\author{Sean Chatman\\wasm4pm Research Group}
+\date{June 2026}
+
+\begin{document}
+\maketitle
+\input{acknowledgments}
+\tableofcontents
+\listoftables
+\input{00-abstract}
+\input{01-introduction}
+\input{02-background}
+\input{03-framework}
+\input{04-falsification}
+\input{05-fortune5}
+\input{06-inventors}
+\input{07-conclusion}
+\input{A-appendix}
+\bibliographystyle{plainnat}
+\bibliography{references}
+\end{document}

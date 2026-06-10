@@ -225,6 +225,145 @@ fn dispatch_hearsay_routes() {
 }
 
 #[test]
+fn dispatch_autoinstinct_neurosis_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact {
+            key: "belief:safety".into(),
+            value: "0.8".into(),
+        },
+        Fact {
+            key: "belief:control".into(),
+            value: "0.3".into(),
+        },
+    ];
+    let output = dispatch_breed_test("autoinstinct_neurosis", &input)
+        .expect("autoinstinct_neurosis dispatch failed");
+
+    assert_eq!(
+        output.breed,
+        BreedId::AutoinstinctNeurosis,
+        "breed mismatch"
+    );
+    assert!(
+        !output.inference_trace.is_empty(),
+        "autoinstinct_neurosis must produce non-empty trace"
+    );
+    assert!(
+        output
+            .selected
+            .as_deref()
+            .map(|s| s.contains("fear"))
+            .unwrap_or(false),
+        "selected must contain affect state with 'fear'"
+    );
+}
+
+#[test]
+fn dispatch_autoinstinct_vision_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact {
+            key: "cube".into(),
+            value: "A".into(),
+        },
+        Fact {
+            key: "pyramid".into(),
+            value: "B".into(),
+        },
+        Fact {
+            key: "supported_by:B".into(),
+            value: "A".into(),
+        },
+    ];
+    let output = dispatch_breed_test("autoinstinct_vision", &input)
+        .expect("autoinstinct_vision dispatch failed");
+
+    assert_eq!(output.breed, BreedId::AutoinstinctVision, "breed mismatch");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "autoinstinct_vision must produce non-empty trace"
+    );
+    // B is on top of A → B is the clear object
+    assert_eq!(
+        output.selected.as_deref(),
+        Some("B"),
+        "B must be clear object"
+    );
+}
+
+#[test]
+fn dispatch_autoinstinct_semantics_routes() {
+    let mut input = minimal_input();
+    input.intent = "John give book to Mary".into();
+    let output = dispatch_breed_test("autoinstinct_semantics", &input)
+        .expect("autoinstinct_semantics dispatch failed");
+
+    assert_eq!(
+        output.breed,
+        BreedId::AutoinstinctSemantics,
+        "breed mismatch"
+    );
+    assert!(
+        !output.inference_trace.is_empty(),
+        "autoinstinct_semantics must produce non-empty trace"
+    );
+    // Atrans extracted from "give"
+    assert!(
+        output
+            .selected
+            .as_deref()
+            .map(|s| s.contains("Atrans"))
+            .unwrap_or(false),
+        "selected must contain Atrans CD primitive"
+    );
+}
+
+#[test]
+fn dispatch_autoinstinct_learning_routes() {
+    let mut input = minimal_input();
+    // 3 goals, no initial facts → planner flips 3 bits to reach goal
+    input.goals = vec![
+        Goal {
+            id: "g0".into(),
+            predicate: "achieve".into(),
+            value: "sub-goal-0".into(),
+        },
+        Goal {
+            id: "g1".into(),
+            predicate: "achieve".into(),
+            value: "sub-goal-1".into(),
+        },
+        Goal {
+            id: "g2".into(),
+            predicate: "achieve".into(),
+            value: "sub-goal-2".into(),
+        },
+    ];
+    input.facts = vec![];
+    let output = dispatch_breed_test("autoinstinct_learning", &input)
+        .expect("autoinstinct_learning dispatch failed");
+
+    assert_eq!(
+        output.breed,
+        BreedId::AutoinstinctLearning,
+        "breed mismatch"
+    );
+    assert!(
+        !output.inference_trace.is_empty(),
+        "autoinstinct_learning must produce non-empty trace"
+    );
+    assert!(
+        output
+            .selected
+            .as_deref()
+            .map(|s| s.contains("steps to goal"))
+            .unwrap_or(false),
+        "selected must describe steps to goal"
+    );
+}
+
+#[test]
 fn dispatch_unknown_breed_rejects() {
     let input = minimal_input();
     let result = dispatch_breed_test("unknown-breed", &input);

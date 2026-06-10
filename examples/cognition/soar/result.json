@@ -1,0 +1,220 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "soar",
+    "breed": "soar",
+    "status": "ok",
+    "output": {
+      "breed": "Soar",
+      "candidates": [
+        {
+          "id": "op-fetch",
+          "score": 0.6000000238418579,
+          "eliminated": true,
+          "elimination_reason": "dominated by op-search"
+        },
+        {
+          "id": "op-search",
+          "score": 0.800000011920929,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "op-propose",
+          "score": 0.5,
+          "eliminated": true,
+          "elimination_reason": "prohibit"
+        }
+      ],
+      "facts": [
+        {
+          "key": "pref",
+          "value": "better:op-search:op-fetch"
+        },
+        {
+          "key": "pref",
+          "value": "prohibit:op-propose"
+        },
+        {
+          "key": "state",
+          "value": "problem-space=blocks-world"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:op-search:reason:decisive"
+        }
+      ],
+      "selected": "op-search",
+      "explanation": "SOAR decisive selected Some(\"op-search\") (best=0, worst=0, require=0, prohibit=1, better-pairs=1)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "prohibit",
+          "detail": "op-propose",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "dominate",
+          "detail": "op-search > op-fetch",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "evaluate-single",
+          "detail": "op-search",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "dominate",
+          "evaluate-single",
+          "prohibit",
+          "run-end",
+          "run-start"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:soar",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:39074369",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "39074369ff10666bcb723c1cf00dbd55369f00e9903c6a6cd1feb441cd00ffd7-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "soar",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:39074369"
+              ],
+              [
+                "breed",
+                "breed:soar"
+              ]
+            ]
+          },
+          {
+            "event_id": "39074369ff10666bcb723c1cf00dbd55369f00e9903c6a6cd1feb441cd00ffd7-0",
+            "activity": "prohibit",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "op-propose",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:39074369"
+              ],
+              [
+                "breed",
+                "breed:soar"
+              ]
+            ]
+          },
+          {
+            "event_id": "39074369ff10666bcb723c1cf00dbd55369f00e9903c6a6cd1feb441cd00ffd7-1",
+            "activity": "dominate",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "op-search > op-fetch",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:39074369"
+              ],
+              [
+                "breed",
+                "breed:soar"
+              ]
+            ]
+          },
+          {
+            "event_id": "39074369ff10666bcb723c1cf00dbd55369f00e9903c6a6cd1feb441cd00ffd7-2",
+            "activity": "evaluate-single",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "op-search",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:39074369"
+              ],
+              [
+                "breed",
+                "breed:soar"
+              ]
+            ]
+          },
+          {
+            "event_id": "39074369ff10666bcb723c1cf00dbd55369f00e9903c6a6cd1feb441cd00ffd7-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:39074369"
+              ],
+              [
+                "breed",
+                "breed:soar"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef",
+    "output_hash": "729ad206d43b056f8c44e3af477b5c931bb17acaf148db2891d9d8f6e1719857",
+    "replay_pointer": "729ad206d43b056f",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/soar/.wasm4pm/receipts/666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef.json"
+  },
+  "meta": {
+    "run_id": "c3e2b34b-fa65-4b64-bb37-c4cddf89a7a1",
+    "timestamp": "2026-06-10T05:51:39.997Z",
+    "duration_ms": 51,
+    "version": "26.6.9"
+  }
+}

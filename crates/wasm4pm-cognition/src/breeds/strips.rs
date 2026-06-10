@@ -145,6 +145,7 @@ fn idfs(
         kind: "subgoal".to_string(),
         detail: unsat.clone(),
         depth: (MAX_PLAN_DEPTH - depth) as u32,
+        objects: vec![],
     });
     for action in actions {
         let eff = parse_effect(&action.conclusion);
@@ -159,6 +160,7 @@ fn idfs(
             kind: "try-action".to_string(),
             detail: action.id.clone(),
             depth: (MAX_PLAN_DEPTH - depth) as u32,
+            objects: vec![],
         });
         let next = apply_with_frames(action, state, frame_axioms);
         if let Some(rest) = idfs(&next, goals, actions, depth - 1, trace, frame_axioms) {
@@ -206,6 +208,7 @@ impl CognitionBreed for Strips {
                 kind: "check-presatisfied".to_string(),
                 detail: format!("{} goals already satisfied in initial state", goals.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -215,6 +218,7 @@ impl CognitionBreed for Strips {
                 kind: "frame-axioms-loaded".to_string(),
                 detail: format!("{} frame axioms", frame_axioms.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -225,6 +229,7 @@ impl CognitionBreed for Strips {
                 kind: "iterate-depth".to_string(),
                 detail: format!("d={}", d),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(p) = idfs(&initial, &goals, &input.rules, d, &mut trace, &frame_axioms) {
                 plan = Some(p);
@@ -260,6 +265,7 @@ impl CognitionBreed for Strips {
                 kind: "execute".to_string(),
                 detail: action.id.clone(),
                 depth: 0,
+                objects: vec![],
             });
         }
         if !goals_satisfied(&goals, &s) {
@@ -294,6 +300,8 @@ impl CognitionBreed for Strips {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 

@@ -1,16 +1,15 @@
-//! Breed: Prolog — Robinson unification + bounded SLD resolution via Prolog8.
+//! Breed: Prolog — flat-term Robinson unification over positional ?N variables.
 //!
-//! Level 10 fixes (Robinson 1965):
-//! 1. **Completeness barriers**: Future enhancement: raise arity/body/var limits from 8 to 16
-//!    (Robinson's spec is unbounded; 8-cap was ARD-mandated)
-//! 2. **Occurs-check for soundness**: The Prolog8 kernel supports occurs-check for cyclic
-//!    unifications like `X=f(X)`. However, the current breed encoding interns each
-//!    `BreedInput` fact/rule as a **ground** atom (`var_count: 0`) — there are no logic
-//!    variables in the encoded clauses, so occurs-check is **trivially satisfied** at the
-//!    breed boundary. Soundness against `X=f(X)` is enforced by Prolog8 if/when the
-//!    breed grows to encode non-ground rules (deferred from PR #69).
-//! 3. **Loop detection**: Tracks visited (predicate, args) pairs to terminate infinite recursion
-//! 4. **Explicit recursion depth limit**: 128 levels max for bounded execution
+//! Kernel capabilities (implemented in prolog8::kernel):
+//! 1. **Robinson unification**: Flat-term unification over ?N positional variables (N=0..7).
+//!    Occurs check trivially satisfied on flat (non-recursive) terms.
+//! 2. **SLD resolution**: Bounded worklist with visited-set cap at 256 states.
+//!    Shared variables across body atoms (e.g. ?1 in both body[0] and body[1]) propagate
+//!    bindings correctly — enabling grandparent-style transitive chains.
+//! 3. **Variable encoding**: ?N variables are encoded as TermId(0x8000_0000 + N) in Rule8
+//!    atoms. N=0..7, validated by ARD byte caps (var_count ≤ 8).
+//! 4. **Loop detection**: Visited (pred_id, resolved_args) set terminates recursion.
+//!    On cap (256): returns answers found so far (never panics).
 //!
 //! This breed delegates to the `prolog8` crate (Prolog8 PRD/ARD) which
 //! enforces ARD-mandated byte caps:
@@ -118,6 +117,7 @@ impl CognitionBreed for Prolog {
                 kind: "intern-fact".into(),
                 detail: format!("{}={}", fact.key, fact.value),
                 depth: 0,
+                objects: vec![],
             });
             step_no += 1;
         }
@@ -210,6 +210,7 @@ impl CognitionBreed for Prolog {
                 kind: "load-rule".into(),
                 detail: rule_input.id.clone(),
                 depth: 0,
+                objects: vec![],
             });
             step_no += 1;
         }
@@ -262,6 +263,7 @@ impl CognitionBreed for Prolog {
                 q.atom.pred_id.0, q.atom.binding_mask
             ),
             depth: 0,
+            objects: vec![],
         });
         step_no += 1;
 
@@ -276,6 +278,7 @@ impl CognitionBreed for Prolog {
                     kind: "decision".into(),
                     detail: format!("Allow with {} proof nodes", first.proof.len()),
                     depth: 0,
+                    objects: vec![],
                 });
                 // Prefer output binding; fall back to the bound argument label
                 // (so that a fully-ground "did fact match?" query returns the
@@ -307,6 +310,7 @@ impl CognitionBreed for Prolog {
                     kind: "decision".into(),
                     detail: format!("Deny with {} negative proof nodes", d.proof.len()),
                     depth: 0,
+                    objects: vec![],
                 });
                 let exp = format!(
                     "Prolog8 denied query (negative proof nodes: {}, receipt: {:x?})",
@@ -321,6 +325,7 @@ impl CognitionBreed for Prolog {
                     kind: "invalid".into(),
                     detail: format!("admission rejected: {:?}", code),
                     depth: 0,
+                    objects: vec![],
                 });
                 return Err(BreedError {
                     breed: BreedId::Prolog,
@@ -336,6 +341,8 @@ impl CognitionBreed for Prolog {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 

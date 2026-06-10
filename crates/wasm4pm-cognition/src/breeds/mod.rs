@@ -165,7 +165,7 @@ pub struct BreedInput {
 ///
 /// Trace steps are append-only evidence that a real algorithm executed.
 /// An empty trace is a fraud signal: the breed did no work.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct TraceStep {
     /// Monotonic step index (0-based)
     pub step: usize,
@@ -175,6 +175,9 @@ pub struct TraceStep {
     pub detail: String,
     /// Recursion depth at the time of the step
     pub depth: u32,
+    /// Object references for OCEL 2.0: (object_type, object_id) pairs
+    #[serde(default)]
+    pub objects: Vec<(String, String)>,
 }
 
 /// Output from a breed's `run()` method.
@@ -193,6 +196,12 @@ pub struct BreedOutput {
     /// Append-only inference trace: real algorithms produce non-empty traces.
     #[serde(default)]
     pub inference_trace: Vec<TraceStep>,
+    /// OCEL 2.0 event log derived from inference_trace (no wall-clock: uses logical steps)
+    #[serde(default)]
+    pub ocel_log: Option<serde_json::Value>,
+    /// Cases retained from this run (max 1 per run; host owns persistence)
+    #[serde(default)]
+    pub retained_cases: Vec<Case>,
 }
 
 /// Receipt from a breed's `run()` method: BLAKE3 hashes for integrity.

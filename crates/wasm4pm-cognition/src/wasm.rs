@@ -23,6 +23,7 @@ use crate::breeds::{
     prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
     CognitionBreed,
 };
+use crate::evidence::check_trace_laws;
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
 
@@ -52,11 +53,32 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
 fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutput, String> {
     b.preconditions(input)
         .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
-    let output = b
+    let mut output = b
         .run(input)
         .map_err(|e| format!("{}: {}", e.breed, e.message))?;
     b.postconditions(&output)
         .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
+
+    // Derive OCEL and validate conformance (van der Aalst doctrine)
+    let breed_id = format!("{}", b.id());
+    let trace_str = serde_json::to_string(&output.inference_trace).unwrap_or_default();
+    let tmp_run_id = blake3::hash(trace_str.as_bytes()).to_hex().to_string();
+    let ocel_log = crate::ocel::derive_ocel(&breed_id, &tmp_run_id, &output.inference_trace);
+
+    if let Some(model) = crate::ocel::get_model(&breed_id) {
+        let conformance = crate::ocel::validate_ocel_alignment(&ocel_log, model);
+        if !conformance.is_conforming {
+            return Err(format!(
+                "{}: OCEL conformance failure (fitness={:.3}): {}",
+                breed_id,
+                conformance.fitness,
+                conformance.refusals.join("; ")
+            ));
+        }
+    }
+
+    output.ocel_log = Some(serde_json::to_value(&ocel_log).unwrap_or(serde_json::Value::Null));
+
     Ok(output)
 }
 
@@ -207,6 +229,13 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     };
     REGISTRY.with(|r| r.borrow_mut().insert(run_id.clone(), receipt.clone()));
 
+    // Build conformance summary for ContractResult
+    let conformance_summary = if output.ocel_log.is_some() {
+        serde_json::json!({ "fitness": 1.0, "model_id": input.breed, "refusals": [] })
+    } else {
+        serde_json::json!({ "fitness": null, "model_id": null, "refusals": ["no_ocel_log"] })
+    };
+
     let result = serde_json::json!({
         "status": "ok",
         "breed": input.breed,
@@ -215,6 +244,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,
         "output": output,
+        "conformance": conformance_summary,
     });
     to_js_str(&result)
 }
@@ -234,11 +264,31 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
 
     // Wrap JSON as EvidenceSource and run all detectors.
     let src = JsonEvidenceSource {
-        inner: result_value,
+        inner: result_value.clone(),
         chain: ReceiptChain::new(),
     };
     let registry = FindingRegistry::new();
-    let findings = registry.run_all(&src);
+    let mut findings = registry.run_all(&src);
+
+    // Run trace-law checker if the result carries an inference trace.
+    if let Some(steps_value) = result_value
+        .get("output")
+        .and_then(|o| o.get("inference_trace"))
+    {
+        if let Ok(steps) =
+            serde_json::from_value::<Vec<crate::breeds::TraceStep>>(steps_value.clone())
+        {
+            let trace_violations = check_trace_laws(&steps);
+            for msg in trace_violations {
+                findings.push(crate::autosystems::findings::Finding {
+                    code: "BROKEN_LOGICAL_CLOCK".to_string(),
+                    severity: crate::autosystems::findings::Severity::Fatal,
+                    message: msg.clone(),
+                    evidence: vec![msg],
+                });
+            }
+        }
+    }
 
     let finding_jsons: Vec<serde_json::Value> = findings
         .into_iter()

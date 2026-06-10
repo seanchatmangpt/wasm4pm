@@ -1,0 +1,176 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "mycin",
+    "breed": "mycin",
+    "status": "ok",
+    "output": {
+      "breed": "Mycin",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "antibiotic",
+          "value": "penicillin"
+        },
+        {
+          "key": "diagnosis",
+          "value": "strep_infection"
+        },
+        {
+          "key": "gram_positive_cocci",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "strep",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "throat",
+          "value": "cf=1.000"
+        }
+      ],
+      "selected": "organism=gram_positive_cocci",
+      "explanation": "MYCIN fired 2 rules; final selection Some(\"organism=gram_positive_cocci\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "fire-rule",
+          "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "fire-rule",
+          "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "fire-rule",
+          "run-end",
+          "run-start"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:mycin",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:b76b5725",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "mycin",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b76b5725"
+              ],
+              [
+                "breed",
+                "breed:mycin"
+              ]
+            ]
+          },
+          {
+            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-0",
+            "activity": "fire-rule",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b76b5725"
+              ],
+              [
+                "breed",
+                "breed:mycin"
+              ]
+            ]
+          },
+          {
+            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-1",
+            "activity": "fire-rule",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b76b5725"
+              ],
+              [
+                "breed",
+                "breed:mycin"
+              ]
+            ]
+          },
+          {
+            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b76b5725"
+              ],
+              [
+                "breed",
+                "breed:mycin"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b",
+    "output_hash": "f0886d11be3240a21a29504fcc0fa0de341c844bcd2aeb395678fead1db401d6",
+    "replay_pointer": "f0886d11be3240a2",
+    "inference_step_count": 2,
+    "rules_evaluated": 2,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/mycin/.wasm4pm/receipts/f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b.json"
+  },
+  "meta": {
+    "run_id": "ede1431f-267e-40a8-852e-93e0d483bb91",
+    "timestamp": "2026-06-10T05:51:36.410Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

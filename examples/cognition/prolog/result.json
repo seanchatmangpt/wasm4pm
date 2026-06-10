@@ -1,0 +1,220 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "prolog",
+    "breed": "prolog",
+    "status": "ok",
+    "output": {
+      "breed": "Prolog",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "parent",
+          "value": "alice"
+        },
+        {
+          "key": "parent",
+          "value": "bob"
+        }
+      ],
+      "selected": "alice",
+      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [c0, 35, 66, 8])",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "intern-fact",
+          "detail": "parent=alice",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "intern-fact",
+          "detail": "parent=bob",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "kernel-query",
+          "detail": "pred_id=1 binding_mask=0b1",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 3,
+          "kind": "decision",
+          "detail": "Allow with 1 proof nodes",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "decision",
+          "intern-fact",
+          "kernel-query",
+          "run-end",
+          "run-start"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:prolog",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:b6d9affa",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "prolog",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          },
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-0",
+            "activity": "intern-fact",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "parent=alice",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          },
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-1",
+            "activity": "intern-fact",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "parent=bob",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          },
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-2",
+            "activity": "kernel-query",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "pred_id=1 binding_mask=0b1",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          },
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-3",
+            "activity": "decision",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "Allow with 1 proof nodes",
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          },
+          {
+            "event_id": "b6d9affa7831b1be27c8d607d72114f6c85330ea427188c9f1210461d167ddc2-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 5
+            },
+            "o2o": [
+              [
+                "run",
+                "run:b6d9affa"
+              ],
+              [
+                "breed",
+                "breed:prolog"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "5d010e6f9039a59a7209dc0267896ff5ad3aa48cb0bdc3c61d41c90671b4ce23",
+    "output_hash": "a8ca0fc451e8f268d89f4296374a4bba1df515574f843ffff9577532a54152f6",
+    "replay_pointer": "a8ca0fc451e8f268",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/prolog/.wasm4pm/receipts/5d010e6f9039a59a7209dc0267896ff5ad3aa48cb0bdc3c61d41c90671b4ce23.json"
+  },
+  "meta": {
+    "run_id": "e13f90fb-bfa4-471a-aa69-0e6ef14b3ac8",
+    "timestamp": "2026-06-10T05:51:37.584Z",
+    "duration_ms": 49,
+    "version": "26.6.9"
+  }
+}

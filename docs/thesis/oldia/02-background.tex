@@ -1,0 +1,485 @@
+\chapter{Background and Related Work}
+\label{chap:background}
+
+This chapter surveys the intellectual heritage of the thirteen reasoning breeds
+implemented in OLDIA, establishes the theoretical gap that motivates the
+research, and reviews the three technical pillars on which the implementation
+rests: process mining with OCEL~2.0, WebAssembly as a deterministic deployment
+substrate, and BLAKE3 cryptographic receipt chains.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{The Classical AI Reasoning Systems}
+\label{sec:classical-ai}
+
+The thirteen breeds instantiated in OLDIA span five decades of AI research,
+from the earliest production-rule systems of the 1960s to the autoinstinct
+breeds introduced in 2026.  Each breed is characterised by a distinct
+computational model, a set of mathematical invariants, and a body of
+domain-specific theory.  The following subsections cover historical context,
+original authorship, and the core algorithmic insight for each breed.
+
+% ── 2.1.1 ──────────────────────────────────────────────────────────────────
+\subsection{MYCIN (Shortliffe, 1976)}
+\label{subsec:mycin}
+
+MYCIN~\cite{shortliffe1976} was developed at Stanford as a clinical
+decision-support system for antibiotic selection in bacterial infections.  Its
+central contribution is the \emph{Certainty Factor} (CF) algebra, a
+non-probabilistic calculus for combining evidence from production rules.
+
+The combination formula distinguishes three sign cases.  When both evidence
+values $a$ and $b$ are positive:
+\begin{equation}
+  \mathrm{CF}(a,b) = a + b - ab
+  \label{eq:cf-pos}
+\end{equation}
+When both are negative:
+\begin{equation}
+  \mathrm{CF}(a,b) = a + b + ab
+  \label{eq:cf-neg}
+\end{equation}
+When the signs differ:
+\begin{equation}
+  \mathrm{CF}(a,b) = \frac{a + b}{1 - \min(|a|,|b|)}
+  \label{eq:cf-mixed}
+\end{equation}
+
+A strict threshold of $\mathrm{CF} > 0.2$ is required before a hypothesis
+advances.  The boundary is continuous and unfakeable: in the OLDIA test suite
+a CF of exactly $0.200$ is rejected while $0.201$ is accepted
+(\texttt{tests/breed\_adversarial.rs}, test~\texttt{mycin\_cf\_boundary}).
+Equation~\ref{eq:cf-pos} expresses bounded Dempster--Shafer-style fusion:
+positive evidence accumulates sublinearly, preventing runaway certainty.
+
+% ── 2.1.2 ──────────────────────────────────────────────────────────────────
+\subsection{HEARSAY-II (Erman \& Lesser, 1980)}
+\label{subsec:hearsay}
+
+HEARSAY-II~\cite{erman1980} was built for the ARPA Speech Understanding
+Research project.  Its architectural innovation is the \emph{blackboard}:
+a shared, structured working memory on which independent \emph{Knowledge
+Sources} (KSs) collaborate without direct coupling.
+
+Each KS registers \emph{Knowledge Source Activation Records} (KSARs).  An
+opportunistic scheduler selects the highest-rated KSAR at each cycle:
+\begin{equation}
+  \mathrm{rating} = \mathrm{ks\_certainty} \times \mathrm{trigger\_cf}
+  \label{eq:ksar-rating}
+\end{equation}
+
+Hypothesis fusion uses a \emph{noisy-OR} model: independent supporting
+hypotheses combine multiplicatively on the failure side, so joint support
+$= 1 - \prod_i (1 - p_i)$.  The unfakeable scheduling invariant verified in
+OLDIA is that a higher-rated KSAR always fires before a lower-rated one
+regardless of declaration order (\texttt{hearsay\_opportunistic\_order}).
+The implementation (\texttt{hearsay.rs}, 584~lines) uses
+\texttt{f32::total\_cmp} for deterministic priority-queue ordering and
+re-rates stale KSARs when blackboard state changes.
+
+% ── 2.1.3 ──────────────────────────────────────────────────────────────────
+\subsection{SOAR (Newell, Laird \& Rosenbloom, 1987)}
+\label{subsec:soar}
+
+SOAR~\cite{laird1987} is a unified cognitive architecture motivated by
+Newell's call for a single computational model of mind.  Its operator
+selection mechanism uses a \emph{preference algebra} with six relations:
+\textsc{require}, \textsc{prohibit}, \textsc{better-than},
+\textsc{worse-than}, \textsc{best}, and \textsc{indifferent}.
+
+When preferences produce a \emph{tie impasse}---no operator is strictly
+preferred---SOAR creates a subgoal to resolve the impasse.  In OLDIA the
+subgoal depth is bounded to two to guarantee termination; this matches the
+standard bounded-rationality assumption in the SOAR literature.  The
+antisymmetry invariant---circular \textsc{worse-than} preferences produce
+deterministic termination rather than infinite regress---is verified in
+\texttt{soar\_antisymmetry}.  The implementation (\texttt{soar.rs},
+675~lines) outputs \texttt{chunk.pref} records that expose the operator
+selection trace for process-mining audit.
+
+% ── 2.1.4 ──────────────────────────────────────────────────────────────────
+\subsection{Case-Based Reasoning (Kolodner, 1993; Aamodt \& Plaza, 1994)}
+\label{subsec:cbr}
+
+Case-Based Reasoning (CBR)~\cite{kolodner1993,aamodt1994} derives solutions
+by analogy with past cases.  The \emph{4R cycle} is the canonical process
+model: \textbf{Retrieve}, \textbf{Reuse}, \textbf{Revise}, \textbf{Retain}.
+
+OLDIA implements all four stages.  Retrieval uses Jaccard similarity indexed
+over a \texttt{BTreeMap} for deterministic ordering.  Reuse applies
+substitutional adaptation.  Revise validates the adapted solution against
+domain constraints.  Retain selects high-quality cases for storage, assigning
+each a BLAKE3-derived case identifier to guarantee stable cross-run identity.
+The identity invariant---identical query and case produce Jaccard similarity
+exactly $1.0$---is verified in \texttt{cbr\_jaccard\_identity}.
+
+% ── 2.1.5 ──────────────────────────────────────────────────────────────────
+\subsection{Prolog and Robinson Unification (Robinson, 1965; Colmerauer, 1972)}
+\label{subsec:prolog}
+
+Robinson's \emph{resolution principle}~\cite{robinson1965} established that
+first-order theorem proving is reducible to a single inference rule applied to
+clauses in conjunctive normal form.  Colmerauer's Prolog~\cite{colmerauer1972}
+operationalised this as SLD resolution over Horn clauses, producing the first
+practical logic programming language.
+
+OLDIA implements flat-term Robinson unification with positional variables
+written \texttt{?N}.  The unification kernel (\texttt{prolog8/kernel.rs},
+1143~lines) supports bounded SLD resolution to prevent divergence.  The
+canonical unfakeable test is the grandparent derivation:
+\begin{verbatim}
+grandparent(?0,?2) :- parent(?0,?1), parent(?1,?2).
+\end{verbatim}
+Given facts \texttt{parent(alice,bob)} and \texttt{parent(bob,carol)}, the
+system must derive \texttt{grandparent(alice,carol)}.  This query is
+unfakeable without shared-variable unification: pattern matching alone cannot
+chain through the intermediate variable \texttt{?1}.
+
+% ── 2.1.6 ──────────────────────────────────────────────────────────────────
+\subsection{STRIPS (Fikes \& Nilsson, 1971)}
+\label{subsec:strips}
+
+STRIPS~\cite{fikes1971} introduced the \emph{add/delete list} representation
+for planning operators and the \emph{frame axiom} convention: an action
+changes only what its lists explicitly specify.  The planner searches forward
+from an initial state using iterative deepening.
+
+Two formal properties define STRIPS correctness.  \emph{Plan soundness}
+requires that every action's preconditions are satisfied in the state at the
+point of application.  \emph{Plan completeness} requires that all goal
+literals are true in the final state.  OLDIA verifies both properties at
+runtime: a simulated execution walks the plan step-by-step, verifying each
+precondition and confirming goal satisfaction
+(\texttt{strips\_plan\_soundness}).
+
+% ── 2.1.7 ──────────────────────────────────────────────────────────────────
+\subsection{GPS (Newell \& Simon, 1963)}
+\label{subsec:gps}
+
+The General Problem Solver~\cite{newell1963} introduced \emph{means-ends
+analysis}: an agent selects operators by comparing the current state with a
+goal state, identifying the most significant difference, and applying an
+operator that reduces that difference.  A \emph{difference table} maps
+difference types to applicable operators.
+
+Operator selection in OLDIA uses fewest unmet preconditions as the heuristic.
+The unfakeable invariant is \emph{difference reduction monotonicity}: each
+plan step must reduce or maintain the number of unmet goal facts---a plan step
+that increases the difference count is a formal defect.  GPS also requires
+\emph{difference coverage}: the plan must address every unmet goal fact
+(\texttt{gps\_difference\_coverage}).
+
+% ── 2.1.8 ──────────────────────────────────────────────────────────────────
+\subsection{DENDRAL (Buchanan \& Feigenbaum, 1978)}
+\label{subsec:dendral}
+
+DENDRAL~\cite{buchanan1978} was the first expert system to match domain
+expert performance, deriving molecular structures from mass spectrometry data.
+Its inference model is \emph{hypothesis generation with hard constraints}:
+a generate-and-test loop eliminates candidates that violate forbidden
+structural patterns.
+
+The \emph{forbid} constraint is absolute in OLDIA.  A candidate matching a
+forbidden pattern is eliminated regardless of its plausibility score: the
+highest-scoring candidate in the enumerated set is still removed if it is
+forbidden (\texttt{dendral\_forbid\_absolute}).  This is the key distinction
+from soft-constraint optimisation: forbid is a monotone elimination rule, not
+a penalty.
+
+% ── 2.1.9 ──────────────────────────────────────────────────────────────────
+\subsection{ELIZA (Weizenbaum, 1966)}
+\label{subsec:eliza}
+
+ELIZA~\cite{weizenbaum1966} demonstrated that a simple pattern-transformation
+system could create the illusion of understanding.  Its mechanism is a
+\emph{keystack}: patterns are ordered by specificity priority, and the
+highest-priority matching pattern triggers a response transformation.
+
+Three invariants are verified in OLDIA.  \emph{Specificity ordering} requires
+that a higher-priority pattern fires before lower-priority alternatives.
+\emph{Pronoun reflection} requires that first-person pronouns in the input are
+reflected correctly in the response.  \emph{Catch-all guarantee} requires that
+the system always produces a response---there is no input for which the keystack
+returns empty.
+
+% ── 2.1.10 ─────────────────────────────────────────────────────────────────
+\subsection{Autoinstinct Breeds (van der Aalst lineage, 2026)}
+\label{subsec:autoinstinct}
+
+Four autoinstinct breeds extend the classical canon with implementations drawn
+from the same 1960s--1970s AI lineage.
+
+\paragraph{AutoinstinctLearning.}
+Inspired by STRIPS/HACKER~\cite{winston1975}, this breed implements bitwise
+heuristic planning.  The unfakeable mathematical invariant is
+\emph{monotone distance reduction}: the Hamming-like distance to the goal
+state must be non-increasing across plan steps.  A plan that permits
+backsliding is provably incorrect.
+
+\paragraph{AutoinstinctNeurosis.}
+Based on Colby's PARRY affect machine~\cite{colby1975}, this breed models
+belief-conflict processing and paranoia.  Affect state transitions are
+governed by belief conflicts detected in the input; the conflict severity
+determines the strength of the paranoid response.
+
+\paragraph{AutoinstinctVision.}
+Derived from Winograd's SHRDLU Blocks World perception~\cite{winograd1972},
+this breed implements symbolic scene understanding.  The key data structures
+are the \emph{supported-by} chain (which block rests on which) and the
+\emph{clear-object} predicate (a block is clear if nothing rests on it).
+
+\paragraph{AutoinstinctSemantics.}
+Based on Schank's Conceptual Dependency theory~\cite{schank1972}, this breed
+maps natural language utterances to primitive acts: \textsc{atrans}
+(abstract transfer), \textsc{ptrans} (physical transfer), and \textsc{mtrans}
+(mental transfer).  Semantic coverage---every input clause maps to at least one
+primitive act---is the core invariant.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{The Operational Falsifiability Problem}
+\label{sec:falsifiability}
+
+Popper's falsifiability criterion~\cite{popper1959} holds that a scientific
+claim is meaningful only if it is in principle refutable by observation.
+Applied to AI reasoning systems, the criterion demands that claims about
+reasoning behaviour be refutable by examining what the system actually does at
+runtime.
+
+The thirteen classical systems surveyed above were theoretically falsifiable:
+each had a documented algorithmic model against which behaviour could in
+principle be compared.  MYCIN's certainty factor algebra was published in
+mathematical detail.  SOAR's preference semantics were formally specified.
+STRIPS plans were structurally verifiable.  Yet in practice these systems were
+\emph{operationally opaque}: there was no infrastructure for recording,
+replaying, or auditing the actual sequence of reasoning steps taken during a
+run.  A clinician using MYCIN could see its conclusions but could not
+independently verify that the CF combination formula had been applied
+correctly, that the threshold had been honoured, or that no rule had fired
+out of order.
+
+This gap between theoretical falsifiability and operational transparency is
+what we term the \emph{operational falsifiability problem}.  It has three
+dimensions.  First, \emph{execution opacity}: the internal reasoning trace is
+not recorded in any durable, inspectable form.  Second, \emph{model-log
+divergence}: even when some logging exists, there is no systematic method for
+comparing the logged behaviour against the declared process model.  Third,
+\emph{cryptographic unattestedness}: there is no proof that a logged trace
+corresponds to a specific input/output pair, so logs can be altered or
+fabricated after the fact.
+
+The absence of audit infrastructure was not merely a practical inconvenience;
+it was an epistemological deficiency.  Without durable, cryptographically
+attested, process-mined event logs, claims that a system ``behaved correctly''
+reduce to assertions rather than proofs.  OLDIA addresses all three dimensions:
+it records every reasoning step as an OCEL~2.0 event, validates the log
+against a declared DFA lifecycle model at the run choke point, and attests the
+entire output---including the event log---with a BLAKE3 receipt.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Process Mining and OCEL 2.0}
+\label{sec:process-mining}
+
+Process mining~\cite{vanderaalst2016} is the discipline of extracting
+process knowledge from event logs recorded by information systems.  It
+occupies the intersection of data mining, machine learning, and formal process
+modelling.  The three core activities are \emph{process discovery} (learning a
+process model from a log), \emph{conformance checking} (measuring the fit
+between a log and a declared model), and \emph{enhancement} (improving an
+existing model using log evidence).
+
+Conformance checking is evaluated against four quality dimensions introduced
+by van der Aalst.  \emph{Fitness} measures the fraction of log traces that
+are replayable on the process model.  \emph{Precision} measures the fraction
+of model behaviour that is actually observed in the log (a permissive model
+that allows arbitrary behaviour scores low precision).  \emph{Generalization}
+measures how well the model explains unseen traces.  \emph{Simplicity} penalises
+unnecessarily complex models.  The fitness threshold of $>0.85$ is the
+standard gate for a valid process model in the wasm4pm ecosystem.
+
+\subsection{Object-Centric Event Logs (OCEL 2.0)}
+\label{subsec:ocel}
+
+Classical process mining assumes a flat, case-centric log: each event belongs
+to exactly one case.  This assumption fails for AI reasoning systems, in which
+a single run may simultaneously evolve multiple objects---a rule, a
+hypothesis, a case, a plan, and an operator are distinct objects with
+independent lifecycles that interact during a single episode.
+
+OCEL~2.0~\cite{ghahfarokhi2021} generalises the event log to the
+\emph{object-centric} setting.  An OCEL event references a set of objects
+rather than a single case identifier, and each object type carries its own
+lifecycle model.  The key data structures are:
+\begin{itemize}
+  \item \texttt{OcelEvent}: event identifier, activity name, logical timestamp,
+        map from object type to object identifier list.
+  \item \texttt{OcelObject}: object identifier, object type, attribute map.
+  \item \texttt{OcelLog}: set of events, set of objects, object-type map.
+\end{itemize}
+
+OLDIA derives an OCEL log from every breed run via the
+\texttt{derive\_ocel(breed\_id, run\_id, \&[TraceStep])} function
+(\texttt{src/ocel.rs}, 632~lines).  Timestamps are \emph{logical steps}
+rather than wall-clock times, eliminating non-determinism from concurrency or
+scheduling jitter.
+
+\subsection{DFA Conformance Checking}
+\label{subsec:dfa}
+
+Each of the thirteen breeds has a declared \emph{lifecycle model}: a
+deterministic finite automaton (DFA) specifying the legal sequence of
+reasoning phases.  For example, the MYCIN lifecycle is
+$\text{init} \to \text{rule\_eval} \to \text{cf\_combine} \to \text{threshold} \to \text{conclude}$.
+The CBR lifecycle enforces the 4R ordering:
+$\text{retrieve} \to \text{reuse} \to \text{revise} \to \text{retain}$.
+
+The function \texttt{validate\_ocel\_alignment(log, model)} implements a DFA
+phase checker: it replays the event sequence of each object against the
+breed's DFA, returning a \texttt{ConformanceResult} that includes fitness,
+the set of non-conforming objects, and a phase-violation trace.
+\texttt{check\_temporal\_conformance(log)} additionally verifies that logical
+steps are strictly monotone---no event may carry the same or smaller step
+index as a preceding event for the same object.
+
+Both checks are wired at the \texttt{run\_breed} choke point in
+\texttt{wasm.rs}: a non-conforming execution is refused at the boundary
+rather than allowed to produce an attested but invalid receipt.
+
+\subsection{Why Process Mining Is the Natural Audit Framework}
+\label{subsec:pm-audit}
+
+Process mining is not merely a useful tool for auditing AI reasoning systems;
+it is the \emph{natural} framework for this task, for three reasons.
+
+First, reasoning systems are inherently process-structured: they move through
+phases (hypothesis generation, evidence combination, preference resolution,
+goal reduction) in a declared order.  Process mining is designed exactly to
+verify whether observed event sequences conform to declared process models.
+
+Second, OCEL~2.0 captures the multi-object nature of AI reasoning.  A single
+MYCIN run involves multiple rules, each with its own CF, and multiple
+hypotheses, each with their own lifecycle.  A flat event log would collapse
+this structure; OCEL preserves it.
+
+Third, the van der Aalst fitness/precision/generalization/simplicity framework
+provides quantitative metrics that translate directly into pass/fail criteria
+for automated CI gates.  A breed that achieves $\text{fitness} < 0.85$ fails
+the conformance gate and cannot produce an attested receipt.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{WebAssembly as a Deployment Target}
+\label{sec:wasm}
+
+WebAssembly (WASM)~\cite{haas2017} is a stack-based virtual instruction set
+designed for safe, portable, near-native-speed execution.  It was standardised
+by the W3C in 2019 and is now supported natively in all major browsers and
+Node.js runtimes.
+
+\subsection{Determinism Guarantees}
+\label{subsec:wasm-determinism}
+
+WASM is \emph{deterministic by specification}: given the same module, the same
+linear memory initialisation, and the same sequence of host function calls, the
+execution produces bit-identical output on every platform.  This property is
+essential for OLDIA.  Determinism is a merge gate in the wasm4pm project: the
+\texttt{breed\_determinism.rs} test suite runs each of the thirteen breeds
+twice on the same input and compares outputs with bit-exact equality.  Any
+non-determinism---from unordered \texttt{HashMap} iteration, floating-point
+platform variance, or unseeded random number generation---is a defect that
+blocks merge.
+
+The \texttt{to\_js\_str()} function in \texttt{utilities.rs} is the
+canonical WASM boundary serialiser; \texttt{to\_js()} silently returns
+\texttt{\{\}} on \texttt{wasm32} targets and is forbidden for structured
+output.
+
+\subsection{Build Targets and Toolchain}
+\label{subsec:wasm-toolchain}
+
+OLDIA uses \texttt{wasm-pack} to compile the Rust crate
+\texttt{wasm4pm-cognition} to both the \texttt{nodejs} target (for CI and
+server-side use) and the \texttt{browser} target (for in-browser deployment).
+The one-time compilation cost is approximately 21~seconds on 2026 hardware.
+Once compiled, breed execution typically completes in 2--50~microseconds,
+making WASM-hosted AI reasoning competitive with native execution for
+interactive applications.
+
+The TypeScript monorepo (\texttt{packages/}) wraps the WASM boundary via
+the \texttt{@wasm4pm/kernel} package, which loads the compiled module through
+\texttt{WasmLoader}---a singleton that must be explicitly reset between test
+runs to prevent state leakage.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{BLAKE3 and Cryptographic Receipt Chains}
+\label{sec:blake3}
+
+BLAKE3~\cite{oconnor2021} is a cryptographic hash function that is
+simultaneously faster than MD5, cryptographically secure (preimage resistance,
+second-preimage resistance, collision resistance), and deterministic across
+platforms.  It supports tree-based parallelism and produces 256-bit digests.
+
+\subsection{Receipt Construction}
+\label{subsec:receipt}
+
+OLDIA constructs receipts as follows.  After a breed run completes, the
+\texttt{BreedOutput} struct (which contains the reasoning result, the OCEL log,
+and metadata) is serialised to canonical JSON via \texttt{serde\_json}.  The
+BLAKE3 hash of this serialisation is the \texttt{output\_hash}:
+\begin{equation}
+  \texttt{output\_hash} = \mathrm{BLAKE3}(\mathrm{serde\_json}(\texttt{BreedOutput}))
+  \label{eq:output-hash}
+\end{equation}
+
+Because \texttt{BreedOutput} contains the OCEL log, the \texttt{output\_hash}
+is simultaneously a receipt of the reasoning result \emph{and} a receipt of
+the process trace.  A verifier who holds the input and the receipt can
+independently reproduce the hash; any divergence indicates either a different
+input or a different execution.
+
+The \texttt{run\_id} is derived from the breed identifier and the output hash:
+\begin{equation}
+  \texttt{run\_id} = \mathrm{BLAKE3}(\texttt{breed} \;\|\; \texttt{output\_hash})
+  \label{eq:run-id}
+\end{equation}
+
+The \texttt{replay\_pointer} is the first 16 characters of the
+\texttt{output\_hash}, providing a short human-readable identifier for log
+correlation.
+
+\subsection{Cryptographic Proof of Process}
+\label{subsec:proof-of-process}
+
+The receipt chain closes the operational falsifiability problem.  Theoretical
+falsifiability (the algorithm is documented) plus process conformance (the
+event log conforms to the declared DFA) plus cryptographic attestation (the
+BLAKE3 receipt binds the log to the specific input/output pair) yields what we
+term \emph{operational provability}: a third party can verify, without access
+to the running system, that a specific input was processed by a specific breed
+according to its declared lifecycle, and that the stated output was produced.
+
+This is the epistemological foundation of OLDIA.  The BLAKE3 receipt does not
+merely record that something happened; it constitutes evidence that a lawful
+process happened.  In the terminology of the van der Aalst constitution: if the
+receipt exists and the OCEL log it covers is conformant, then it worked.
+
+%% ────────────────────────────────────────────────────────────────────────────
+\section{Summary}
+\label{sec:background-summary}
+
+This chapter has established the intellectual genealogy of the thirteen OLDIA
+breeds, identified the operational falsifiability problem that motivates the
+research, and reviewed the three technical pillars of the implementation.
+
+The classical AI systems from 1963 to 1993---GPS, STRIPS, MYCIN, HEARSAY-II,
+SOAR, CBR, Prolog, DENDRAL, ELIZA---were theoretically falsifiable but lacked
+the audit infrastructure needed for operational proof.  The four autoinstinct
+breeds extend this lineage while inheriting the same gap.  OCEL~2.0 process
+mining provides the natural audit framework: object-centric event logs capture
+multi-object reasoning lifecycles, DFA conformance checking verifies that
+declared phase orderings were honoured, and the fitness/precision metrics
+provide quantitative pass/fail gates.  WebAssembly guarantees
+bit-exact determinism across platforms, and BLAKE3 receipt chains
+cryptographically attest that a specific input produced a specific conformant
+execution.  Together these three pillars transform ``the code says it worked''
+into ``the event log proves a lawful process happened.''
+
+Chapter~\ref{chap:design} describes how these elements are combined in the
+OLDIA architecture.

@@ -1,0 +1,135 @@
+\contentsline {chapter}{Acknowledgments}{1}{chapter*.1}%
+\contentsline {chapter}{Abstract}{1}{chapter*.4}%
+\contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}%
+\contentsline {section}{\numberline {1.1}The Epistemological Crisis in Deployed AI}{3}{section.1.1}%
+\contentsline {subsection}{\numberline {1.1.1}Theory without operational proof}{3}{subsection.1.1.1}%
+\contentsline {subsection}{\numberline {1.1.2}The deployment gap in practice}{4}{subsection.1.1.2}%
+\contentsline {section}{\numberline {1.2}The Research Questions}{4}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Contributions}{5}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}The wasm4pm cognition breed framework}{5}{subsection.1.3.1}%
+\contentsline {subsection}{\numberline {1.3.2}The OCEL provability layer}{6}{subsection.1.3.2}%
+\contentsline {subsection}{\numberline {1.3.3}The BLAKE3 receipt chain}{6}{subsection.1.3.3}%
+\contentsline {subsection}{\numberline {1.3.4}The unfakeable oracle test suite}{6}{subsection.1.3.4}%
+\contentsline {subsection}{\numberline {1.3.5}A taxonomy of Fortune-5 deployment patterns}{6}{subsection.1.3.5}%
+\contentsline {section}{\numberline {1.4}Document Structure}{6}{section.1.4}%
+\contentsline {section}{\numberline {1.5}Terminology}{7}{section.1.5}%
+\contentsline {chapter}{\numberline {2}Background and Related Work}{9}{chapter.2}%
+\contentsline {section}{\numberline {2.1}The Classical AI Reasoning Systems}{9}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}MYCIN (Shortliffe, 1976)}{9}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}HEARSAY-II (Erman \& Lesser, 1980)}{10}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}SOAR (Newell, Laird \& Rosenbloom, 1987)}{10}{subsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.1.4}Case-Based Reasoning (Kolodner, 1993; Aamodt \& Plaza, 1994)}{10}{subsection.2.1.4}%
+\contentsline {subsection}{\numberline {2.1.5}Prolog and Robinson Unification (Robinson, 1965; Colmerauer, 1972)}{10}{subsection.2.1.5}%
+\contentsline {subsection}{\numberline {2.1.6}STRIPS (Fikes \& Nilsson, 1971)}{11}{subsection.2.1.6}%
+\contentsline {subsection}{\numberline {2.1.7}GPS (Newell \& Simon, 1963)}{11}{subsection.2.1.7}%
+\contentsline {subsection}{\numberline {2.1.8}DENDRAL (Buchanan \& Feigenbaum, 1978)}{11}{subsection.2.1.8}%
+\contentsline {subsection}{\numberline {2.1.9}ELIZA (Weizenbaum, 1966)}{11}{subsection.2.1.9}%
+\contentsline {subsection}{\numberline {2.1.10}Autoinstinct Breeds (van der Aalst lineage, 2026)}{12}{subsection.2.1.10}%
+\contentsline {paragraph}{AutoinstinctLearning.}{12}{section*.5}%
+\contentsline {paragraph}{AutoinstinctNeurosis.}{12}{section*.6}%
+\contentsline {paragraph}{AutoinstinctVision.}{12}{section*.7}%
+\contentsline {paragraph}{AutoinstinctSemantics.}{12}{section*.8}%
+\contentsline {section}{\numberline {2.2}The Operational Falsifiability Problem}{12}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Process Mining and OCEL 2.0}{13}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Object-Centric Event Logs (OCEL 2.0)}{13}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}DFA Conformance Checking}{14}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Why Process Mining Is the Natural Audit Framework}{14}{subsection.2.3.3}%
+\contentsline {section}{\numberline {2.4}WebAssembly as a Deployment Target}{14}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}Determinism Guarantees}{14}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Build Targets and Toolchain}{15}{subsection.2.4.2}%
+\contentsline {section}{\numberline {2.5}BLAKE3 and Cryptographic Receipt Chains}{15}{section.2.5}%
+\contentsline {subsection}{\numberline {2.5.1}Receipt Construction}{15}{subsection.2.5.1}%
+\contentsline {subsection}{\numberline {2.5.2}Cryptographic Proof of Process}{16}{subsection.2.5.2}%
+\contentsline {section}{\numberline {2.6}Summary}{16}{section.2.6}%
+\contentsline {chapter}{\numberline {3}The OLDIA Framework: Architecture and Design}{17}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Design Principles}{17}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Operational Falsifiability as a First-Class Property}{17}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}No Wall-Clock Timestamps}{17}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}OCEL Log Inside \texttt {output\_hash}}{18}{subsection.3.1.3}%
+\contentsline {subsection}{\numberline {3.1.4}Single Choke Point Enforcement}{18}{subsection.3.1.4}%
+\contentsline {subsection}{\numberline {3.1.5}Additive-Only \texttt {ContractResult}}{18}{subsection.3.1.5}%
+\contentsline {section}{\numberline {3.2}The Breed Contract Interface}{18}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}The \texttt {TraceStep} Struct}{19}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}The \texttt {BreedOutput} Struct}{19}{subsection.3.2.2}%
+\contentsline {section}{\numberline {3.3}The OCEL 2.0 Provability Layer}{20}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}OCEL 2.0 Data Structures}{20}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Log Derivation}{20}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.3}Lifecycle Models}{21}{subsection.3.3.3}%
+\contentsline {paragraph}{MYCIN Lifecycle Model.}{21}{section*.9}%
+\contentsline {paragraph}{Hearsay Lifecycle Model.}{21}{section*.10}%
+\contentsline {subsection}{\numberline {3.3.4}Conformance Checking}{22}{subsection.3.3.4}%
+\contentsline {subsection}{\numberline {3.3.5}Temporal Conformance}{22}{subsection.3.3.5}%
+\contentsline {section}{\numberline {3.4}The \texttt {run\_breed} Enforcement Point}{22}{section.3.4}%
+\contentsline {section}{\numberline {3.5}The \texttt {ContractResult} and Receipt Chain}{24}{section.3.5}%
+\contentsline {section}{\numberline {3.6}The Determinism Guarantee}{25}{section.3.6}%
+\contentsline {paragraph}{HashMap and HashSet Iteration Order.}{25}{section*.11}%
+\contentsline {paragraph}{\texttt {f32} Comparison.}{25}{section*.12}%
+\contentsline {paragraph}{Certainty Factor Clamping.}{25}{section*.13}%
+\contentsline {paragraph}{Verification Harness.}{25}{section*.14}%
+\contentsline {section}{\numberline {3.7}The Fidelity Upgrades}{26}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Hearsay: KSAR Priority Queue}{26}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}SOAR: Bounded Subgoal on Tie Impasse}{26}{subsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.7.3}CBR: Full 4R Cycle}{27}{subsection.3.7.3}%
+\contentsline {subsection}{\numberline {3.7.4}Prolog: Flat-Term Robinson Unification}{27}{subsection.3.7.4}%
+\contentsline {section}{\numberline {3.8}Summary}{28}{section.3.8}%
+\contentsline {chapter}{\numberline {4}Falsification Methodology and Test Evidence}{29}{chapter.4}%
+\contentsline {section}{\numberline {4.1}The Falsifiability Hierarchy}{29}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Rank 0: Compilation}{29}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Rank 1: Mathematical Theorem}{29}{subsection.4.1.2}%
+\contentsline {subsection}{\numberline {4.1.3}Rank 2: Domain Contract}{30}{subsection.4.1.3}%
+\contentsline {subsection}{\numberline {4.1.4}Rank 3: Operational Invariant}{30}{subsection.4.1.4}%
+\contentsline {subsection}{\numberline {4.1.5}Rank 4: Unfakeable Oracle}{30}{subsection.4.1.5}%
+\contentsline {section}{\numberline {4.2}The Unfakeable Oracle Catalogue}{31}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}MYCIN --- CF Strict Boundary (Rank 4)}{31}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Prolog --- Grandparent Derivation (Rank 4)}{31}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}STRIPS --- Plan Soundness Simulation (Rank 4)}{31}{subsection.4.2.3}%
+\contentsline {subsection}{\numberline {4.2.4}CBR --- Jaccard Identity (Rank 4)}{32}{subsection.4.2.4}%
+\contentsline {subsection}{\numberline {4.2.5}Hearsay --- Opportunistic Order (Rank 4)}{32}{subsection.4.2.5}%
+\contentsline {subsection}{\numberline {4.2.6}AutoinstinctLearning --- Monotone Distance (Rank 4)}{33}{subsection.4.2.6}%
+\contentsline {subsection}{\numberline {4.2.7}GPS --- Difference Coverage (Rank 3)}{33}{subsection.4.2.7}%
+\contentsline {subsection}{\numberline {4.2.8}DENDRAL --- Forbid Absoluteness (Rank 4)}{33}{subsection.4.2.8}%
+\contentsline {subsection}{\numberline {4.2.9}SOAR --- Antisymmetry (Rank 3)}{33}{subsection.4.2.9}%
+\contentsline {subsection}{\numberline {4.2.10}ELIZA --- Keystack Priority (Rank 3)}{34}{subsection.4.2.10}%
+\contentsline {subsection}{\numberline {4.2.11}AutoinstinctSemantics --- ATRANS/PTRANS (Rank 4)}{34}{subsection.4.2.11}%
+\contentsline {section}{\numberline {4.3}The OCEL Negative Battery}{34}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Determinism as a Mathematical Property}{35}{section.4.4}%
+\contentsline {section}{\numberline {4.5}The Test Corpus Scale}{35}{section.4.5}%
+\contentsline {subsection}{\numberline {4.5.1}Rust Test File Breakdown}{36}{subsection.4.5.1}%
+\contentsline {subsection}{\numberline {4.5.2}TypeScript Test Breakdown}{36}{subsection.4.5.2}%
+\contentsline {subsection}{\numberline {4.5.3}Oracle Rank Distribution}{37}{subsection.4.5.3}%
+\contentsline {subsection}{\numberline {4.5.4}Timing Evidence}{37}{subsection.4.5.4}%
+\contentsline {section}{\numberline {4.6}Summary}{37}{section.4.6}%
+\contentsline {chapter}{\numberline {5}Fortune 5 Deployment Patterns at Microsecond Latency}{39}{chapter.5}%
+\contentsline {section}{\numberline {5.1}The Operational Economics of Microsecond Reasoning}{39}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Pattern 1: Clinical Trial Audit Infrastructure (MYCIN Class)}{40}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Pattern 2: Supply Chain Plan Certification (STRIPS Class)}{41}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Pattern 3: Regulatory Preference Enforcement (SOAR Class)}{42}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Pattern 4: R\&D Institutional Memory (CBR Class)}{43}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Pattern 5: Customer Signal Fusion (Hearsay Class)}{43}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Pattern 6: Quality Defect Hypothesis (DENDRAL Class)}{44}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Pattern 7: Contract Intelligence (Prolog Class)}{45}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Pattern 8: Goal-Directed Planning Under Constraint (GPS Class)}{46}{section.5.9}%
+\contentsline {section}{\numberline {5.10}The Composition Pattern}{47}{section.5.10}%
+\contentsline {section}{\numberline {5.11}Summary}{48}{section.5.11}%
+\contentsline {chapter}{\numberline {6}Beyond the Original Vision: Capabilities the Inventors Could Not Have Imagined}{49}{chapter.6}%
+\contentsline {section}{\numberline {6.1}The Substrate Was Wrong by Six to Nine Orders of Magnitude}{49}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Operational Falsifiability as a New Discipline}{50}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Ensemble Reasoning at Operational Tempo}{50}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Composition Without Integration Work}{51}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Process Mining Over Reasoning Chains}{52}{section.6.5}%
+\contentsline {section}{\numberline {6.6}Cryptographic Provenance as Civil Infrastructure}{52}{section.6.6}%
+\contentsline {section}{\numberline {6.7}The Speed Enables Real-Time Conformance Checking}{53}{section.6.7}%
+\contentsline {section}{\numberline {6.8}The Unfakeable Test Suite as a New Kind of Specification}{54}{section.6.8}%
+\contentsline {section}{\numberline {6.9}Summary: A New Epistemic Category}{55}{section.6.9}%
+\contentsline {chapter}{\numberline {7}Conclusion and Future Work}{56}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Summary of Contributions}{56}{section.7.1}%
+\contentsline {section}{\numberline {7.2}The Central Claim Restated}{57}{section.7.2}%
+\contentsline {section}{\numberline {7.3}The Civilization-Scale Claim}{58}{section.7.3}%
+\contentsline {section}{\numberline {7.4}Future Work}{58}{section.7.4}%
+\contentsline {section}{\numberline {7.5}Closing}{59}{section.7.5}%
+\contentsline {chapter}{\numberline {A}Test Suite Evidence}{60}{appendix.A}%
+\contentsline {section}{\numberline {A.1}Complete Test File Inventory}{60}{section.A.1}%
+\contentsline {section}{\numberline {A.2}The 13 Lifecycle Models}{60}{section.A.2}%
+\contentsline {section}{\numberline {A.3}The Prolog Grandparent Test (Annotated)}{62}{section.A.3}%
+\contentsline {section}{\numberline {A.4}The OCEL Conformance Refusal Mechanism}{63}{section.A.4}%
+\contentsline {section}{\numberline {A.5}Determinism Properties}{65}{section.A.5}%

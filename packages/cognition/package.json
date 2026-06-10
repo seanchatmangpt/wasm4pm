@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
+    "blake3": "^2.1.4",
     "wasm4pm-cognition": "./pkg"
   },
   "devDependencies": {

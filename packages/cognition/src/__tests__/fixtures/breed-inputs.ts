@@ -304,6 +304,92 @@ export function minimalHearsayInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// AUTOINSTINCT NEUROSIS — neurosis.rs. Requires ≥1 fact. "belief:CONCEPT" key format.
+// ---------------------------------------------------------------------------
+export function autoinstinctNeurosisInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_neurosis',
+    contract: {
+      intent: '',
+      facts: [
+        { key: 'belief:safety', value: '0.8' },
+        { key: 'belief:control', value: '0.3' },
+      ],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT VISION — vision.rs. Requires ≥1 fact. key=shape, value=object_id.
+// "supported_by:<OBJ>" key records support relationships.
+// ---------------------------------------------------------------------------
+export function autoinstinctVisionInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_vision',
+    contract: {
+      intent: '',
+      facts: [
+        { key: 'cube', value: 'A' },
+        { key: 'pyramid', value: 'B' },
+        { key: 'supported_by:B', value: 'A' },
+      ],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT SEMANTICS — semantics.rs. Requires non-empty intent sentence.
+// Parses intent using Schank CD primitives; facts/tokens not used.
+// ---------------------------------------------------------------------------
+export function autoinstinctSemanticsInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_semantics',
+    contract: {
+      intent: 'John give book to Mary',
+      candidates: [],
+      facts: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT LEARNING — learning.rs. Requires ≥1 goal. Goals form goal bitmask;
+// facts form initial state bitmask. 0 initial facts → planner must flip all goal bits.
+// ---------------------------------------------------------------------------
+export function autoinstinctLearningInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_learning',
+    contract: {
+      intent: '',
+      facts: [],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [
+        { id: 'g0', predicate: 'achieve', value: 'sub-goal-0' },
+        { id: 'g1', predicate: 'achieve', value: 'sub-goal-1' },
+        { id: 'g2', predicate: 'achieve', value: 'sub-goal-2' },
+      ],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

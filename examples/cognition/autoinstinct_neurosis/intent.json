@@ -1,8 +1,8 @@
 {
   "intent": "affect-simulation",
   "candidates": [
-    { "id": "stranger_approaches", "architecture": "social", "outcome_score": 0.8, "facts": [] },
-    { "id": "loud_noise", "architecture": "sensory", "outcome_score": 0.9, "facts": [] }
+    { "id": "stranger_approaches", "score": 0.8, "eliminated": false, "elimination_reason": null },
+    { "id": "loud_noise", "score": 0.9, "eliminated": false, "elimination_reason": null }
   ],
   "facts": [
     { "key": "belief:paranoia", "value": "0.7" },

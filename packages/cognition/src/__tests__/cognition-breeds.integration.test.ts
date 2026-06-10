@@ -143,6 +143,83 @@ describe('hearsay breed integration', () => {
 });
 
 // =============================================================================
+// autoinstinct breed integration tests (FM-5 compliant — no vi.mock)
+// =============================================================================
+
+describe('eliza breed integration', () => {
+  it('produces a reflective response for an intent', async () => {
+    const result = (await fixtures.runBreed(
+      'eliza',
+      fixtures.minimalElizaInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Eliza');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+    expect(result.output.explanation.length).toBeGreaterThan(0);
+  });
+});
+
+describe('autoinstinct_neurosis breed integration', () => {
+  it('seeds beliefs, processes stimuli, returns affect summary', async () => {
+    const { breed, contract } = fixtures.autoinstinctNeurosisInput();
+    const result = (await fixtures.runBreed(breed, contract)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AutoinstinctNeurosis');
+    // Rank-2: selected must be a JSON affect state with fear/anger/mistrust
+    expect(result.output.selected).toBeTruthy();
+    const affectState = JSON.parse(result.output.selected as string);
+    expect(typeof affectState.fear).toBe('number');
+    expect(typeof affectState.anger).toBe('number');
+    expect(typeof affectState.mistrust).toBe('number');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+    expect(result.output_hash).toBeTruthy();
+  });
+});
+
+describe('autoinstinct_vision breed integration', () => {
+  it('observes blocks-world scene and finds a clear object', async () => {
+    const { breed, contract } = fixtures.autoinstinctVisionInput();
+    const result = (await fixtures.runBreed(breed, contract)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AutoinstinctVision');
+    // Rank-2: B is on top of A → B is the clear object
+    expect(result.output.selected).toBe('B');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+    expect(result.output_hash).toBeTruthy();
+  });
+});
+
+describe('autoinstinct_semantics breed integration', () => {
+  it('extracts Atrans CD primitive from give-sentence intent', async () => {
+    const { breed, contract } = fixtures.autoinstinctSemanticsInput();
+    const result = (await fixtures.runBreed(breed, contract)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AutoinstinctSemantics');
+    // Rank-2: "John give book to Mary" → Atrans act, actor=John, object=book, to=Mary
+    expect(result.output.selected).toBeTruthy();
+    const frame = JSON.parse(result.output.selected as string);
+    expect(frame.act).toBe('Atrans');
+    expect(frame.actor).toBe('John');
+    expect(frame.object).toBe('book');
+    expect(frame.to).toBe('Mary');
+    expect(result.output_hash).toBeTruthy();
+  });
+});
+
+describe('autoinstinct_learning breed integration', () => {
+  it('produces a plan that reaches the goal state', async () => {
+    const { breed, contract } = fixtures.autoinstinctLearningInput();
+    const result = (await fixtures.runBreed(breed, contract)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AutoinstinctLearning');
+    // Rank-2: 3 goals, 0 initial facts → plan must reach goal (selected contains "steps to goal")
+    expect(result.output.selected).toMatch(/steps to goal/);
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+    expect(result.output_hash).toBeTruthy();
+  });
+});
+
+// =============================================================================
 // cognition_verify integration (positive + negative oracle)
 // =============================================================================
 

@@ -78,6 +78,7 @@ fn solve(
         kind: "reduce-gap".to_string(),
         detail: goal.to_string(),
         depth,
+        objects: vec![],
     });
     let mut last_err = format!("no operator produces {}", goal);
     for action in actions {
@@ -112,6 +113,7 @@ fn solve(
             kind: "apply-operator".to_string(),
             detail: action.id.clone(),
             depth,
+            objects: vec![],
         });
         visiting.remove(goal);
         return Ok(());
@@ -160,6 +162,7 @@ impl CognitionBreed for Gps {
                     kind: "check-presatisfied".into(),
                     detail: format!("goal {} is already satisfied", goal.id),
                     depth: 0,
+                    objects: vec![],
                 });
             } else {
                 all_presatisfied = false;
@@ -218,6 +221,8 @@ impl CognitionBreed for Gps {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 

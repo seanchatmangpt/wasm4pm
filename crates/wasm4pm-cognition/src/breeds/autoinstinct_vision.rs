@@ -104,6 +104,7 @@ impl CognitionBreed for AutoinstinctVision {
                 kind: "observe-object".to_string(),
                 detail,
                 depth: 0,
+                objects: vec![],
             });
             sys.observe(poly.clone());
         }
@@ -115,6 +116,7 @@ impl CognitionBreed for AutoinstinctVision {
                 kind: "observe-object".to_string(),
                 detail: "no parseable polyhedra in facts".to_string(),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -130,6 +132,7 @@ impl CognitionBreed for AutoinstinctVision {
                 None => "no clear object found".to_string(),
             },
             depth: 0,
+            objects: vec![],
         });
 
         let candidates: Vec<Candidate> = polyhedra
@@ -161,6 +164,8 @@ impl CognitionBreed for AutoinstinctVision {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
@@ -270,6 +275,8 @@ mod tests {
             selected: None,
             explanation: "test".into(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
         assert!(breed.postconditions(&output).is_err());
     }

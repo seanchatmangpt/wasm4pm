@@ -1,0 +1,325 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "cbr",
+    "breed": "cbr",
+    "status": "ok",
+    "output": {
+      "breed": "Cbr",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ingredient",
+          "value": "flour"
+        },
+        {
+          "key": "ingredient",
+          "value": "egg"
+        },
+        {
+          "key": "prep_time",
+          "value": "5min"
+        }
+      ],
+      "selected": "pancakes",
+      "explanation": "CBR best=pancakes sim=0.500 weighted=0.450",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "build-index",
+          "detail": "index built for 2 cases",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "retrieve-candidates",
+          "detail": "retrieved 2 candidates from 2 total cases",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "score-case",
+          "detail": "pancakes sim=0.500 score=0.450",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 3,
+          "kind": "score-case",
+          "detail": "scones sim=0.200 score=0.140",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 4,
+          "kind": "reuse-adapt",
+          "detail": "pancakes adapted 0 facts",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 5,
+          "kind": "revise-accept",
+          "detail": "pancakes sim=0.667",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 6,
+          "kind": "retain-case",
+          "detail": "retained-fd60ef00",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "build-index",
+          "retain-case",
+          "retrieve-candidates",
+          "reuse-adapt",
+          "revise-accept",
+          "run-end",
+          "run-start",
+          "score-case"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:cbr",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:70949a24",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "cbr",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-0",
+            "activity": "build-index",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "index built for 2 cases",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-1",
+            "activity": "retrieve-candidates",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "retrieved 2 candidates from 2 total cases",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-2",
+            "activity": "score-case",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "pancakes sim=0.500 score=0.450",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-3",
+            "activity": "score-case",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "scones sim=0.200 score=0.140",
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-4",
+            "activity": "reuse-adapt",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "pancakes adapted 0 facts",
+              "logical_step": 5
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-5",
+            "activity": "revise-accept",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "pancakes sim=0.667",
+              "logical_step": 6
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-6",
+            "activity": "retain-case",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "retained-fd60ef00",
+              "logical_step": 7
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          },
+          {
+            "event_id": "70949a24e0175f0b9e6a39eb7fac6628749d8eb571f2e69fdf898c2eaba243f0-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 8
+            },
+            "o2o": [
+              [
+                "run",
+                "run:70949a24"
+              ],
+              [
+                "breed",
+                "breed:cbr"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": [
+        {
+          "id": "retained-fd60ef00",
+          "intent": "best-recipe",
+          "architecture": "pancakes",
+          "outcome_score": 0.44999998807907104,
+          "facts": [
+            {
+              "key": "ingredient",
+              "value": "egg"
+            },
+            {
+              "key": "prep_time",
+              "value": "5min"
+            }
+          ]
+        }
+      ]
+    },
+    "run_id": "7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d",
+    "output_hash": "0f4e3c1bb49303487a88879835d5170521d3356612bbe5364280dd55df9828b5",
+    "replay_pointer": "0f4e3c1bb4930348",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/cbr/.wasm4pm/receipts/7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d.json"
+  },
+  "meta": {
+    "run_id": "4993970c-6d64-4fc0-9b5b-fb94d6b8ba15",
+    "timestamp": "2026-06-10T05:51:37.007Z",
+    "duration_ms": 39,
+    "version": "26.6.9"
+  }
+}

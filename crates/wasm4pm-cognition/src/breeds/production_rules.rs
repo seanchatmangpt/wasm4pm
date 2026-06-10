@@ -126,6 +126,7 @@ impl CognitionBreed for Mycin {
                 kind: "fire-rule".to_string(),
                 detail: format!("{} ⇒ {} (cf={:.3})", rule.id, rule.conclusion, new_cf),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -174,6 +175,8 @@ impl CognitionBreed for Mycin {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
@@ -209,35 +212,60 @@ mod tests {
     fn test_combine_cf_both_positive() {
         let result = combine_cf(0.6, 0.4);
         let expected = 0.6_f32 + 0.4 - 0.6 * 0.4; // 0.76
-        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 1e-5,
+            "expected {}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
     fn test_combine_cf_both_negative() {
         let result = combine_cf(-0.3, -0.4);
         let expected = -0.3_f32 + -0.4 + (-0.3 * -0.4); // -0.58
-        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 1e-5,
+            "expected {}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
     fn test_combine_cf_mixed_positive_wins() {
         let result = combine_cf(0.5, -0.2);
         let expected = (0.5_f32 + -0.2) / (1.0 - 0.2_f32); // 0.375
-        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+        assert!(
+            (result - expected).abs() < 1e-5,
+            "expected {}, got {}",
+            expected,
+            result
+        );
     }
 
     #[test]
     fn test_combine_cf_mixed_negative_wins() {
+        // combine_cf(a, b) with a<0, b>0: denom = 1 - min(|a|, |b|) = 1 - min(0.5, 0.2) = 0.8
+        // result = (a + b) / denom = (-0.5 + 0.2) / 0.8 = -0.375
         let result = combine_cf(-0.5, 0.2);
-        let expected = (0.2_f32 + -0.5) / (1.0 - 0.5_f32); // -0.6
-        assert!((result - expected).abs() < 1e-5, "expected {}, got {}", expected, result);
+        let expected = (-0.5_f32 + 0.2) / (1.0 - 0.2_f32); // -0.375
+        assert!(
+            (result - expected).abs() < 1e-5,
+            "expected {}, got {}",
+            expected,
+            result
+        );
     }
 
     // CF exactly 0.2 should NOT propagate (premise_satisfied requires CF > 0.2)
     #[test]
     fn test_cf_threshold_boundary_below() {
         let input = make_input(
-            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![Fact {
+                key: "x".into(),
+                value: "1".into(),
+            }],
             vec![
                 Rule {
                     id: "r1".into(),
@@ -254,15 +282,24 @@ mod tests {
             ],
         );
         let output = Mycin.run(&input).expect("run ok");
-        let r2_fired = output.inference_trace.iter().any(|t| t.detail.contains("z=reached"));
-        assert!(!r2_fired, "r2 must not fire when premise CF == 0.2 (strict > 0.2 threshold)");
+        let r2_fired = output
+            .inference_trace
+            .iter()
+            .any(|t| t.detail.contains("z=reached"));
+        assert!(
+            !r2_fired,
+            "r2 must not fire when premise CF == 0.2 (strict > 0.2 threshold)"
+        );
     }
 
     // CF 0.201 is above threshold → chained rule fires
     #[test]
     fn test_cf_threshold_boundary_above() {
         let input = make_input(
-            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![Fact {
+                key: "x".into(),
+                value: "1".into(),
+            }],
             vec![
                 Rule {
                     id: "r1".into(),
@@ -279,39 +316,66 @@ mod tests {
             ],
         );
         let output = Mycin.run(&input).expect("run ok");
-        let r2_fired = output.inference_trace.iter().any(|t| t.detail.contains("z=reached"));
+        let r2_fired = output
+            .inference_trace
+            .iter()
+            .any(|t| t.detail.contains("z=reached"));
         assert!(r2_fired, "r2 must fire when premise CF > 0.2");
     }
 
-    // Tie-break: smallest key wins when CFs are equal
+    // Tie-break: when two inferred conclusions share the highest CF, smallest key wins.
+    // We produce two k=v conclusions of identical certainty and verify the selected
+    // is the lexicographically smaller one. The seed fact value is seeded as a bare
+    // string (no '='), so it cannot appear as selected.
     #[test]
     fn test_tie_break_smallest_key_wins() {
+        // Seed: "status" = "active"  → WM gets "status=active"=1.0 AND "active"=1.0
+        // "status=active" contains '=' so it will compete. We need it NOT to outrank
+        // our two conclusions. Give conclusions CF > 1.0? No, CF is clamped to 1.0.
+        // Instead: make the seed fact NOT produce a k=v entry that contains '='.
+        // The seed inserts "status=active" (CF=1.0). Both rule conclusions are 0.7.
+        // "status=active" (1.0) wins. So this test verifies determinism of the seed
+        // value itself AND that tie between inferred conclusions is broken by key order.
+        // For a pure tie-break test, use certainty 1.0 for both conclusions:
         let input = make_input(
-            vec![Fact { key: "x".into(), value: "1".into() }],
+            vec![Fact {
+                key: "trigger".into(),
+                value: "on".into(),
+            }],
             vec![
                 Rule {
                     id: "r-z".into(),
-                    premise: vec!["x=1".into()],
-                    conclusion: "z=1".into(),
-                    certainty: 0.7,
+                    premise: vec!["trigger=on".into()],
+                    conclusion: "z=winner".into(),
+                    certainty: 1.0,
                 },
                 Rule {
                     id: "r-a".into(),
-                    premise: vec!["x=1".into()],
-                    conclusion: "a=1".into(),
-                    certainty: 0.7,
+                    premise: vec!["trigger=on".into()],
+                    conclusion: "a=winner".into(),
+                    certainty: 1.0,
                 },
             ],
         );
         let output = Mycin.run(&input).expect("run ok");
-        assert_eq!(output.selected.as_deref(), Some("a=1"), "smallest key must win tie");
+        // trigger=on seeded at CF=1.0; both z=winner and a=winner inferred at CF=1.0.
+        // Three candidates tie at CF=1.0. Sorted by key ascending: "a=winner" < "trigger=on" < "z=winner".
+        // Smallest key wins → selected == "a=winner".
+        assert_eq!(
+            output.selected.as_deref(),
+            Some("a=winner"),
+            "smallest key must win tie"
+        );
     }
 
     // Cycle defence: A→B cycle terminates within 2*rules.len() iterations
     #[test]
     fn test_cycle_defence() {
         let input = make_input(
-            vec![Fact { key: "a".into(), value: "start".into() }],
+            vec![Fact {
+                key: "a".into(),
+                value: "start".into(),
+            }],
             vec![
                 Rule {
                     id: "r1".into(),
@@ -330,7 +394,8 @@ mod tests {
         let output = Mycin.run(&input).expect("cycle must terminate");
         assert!(
             output.inference_trace.len() <= 4,
-            "cycle must terminate; trace len={}", output.inference_trace.len()
+            "cycle must terminate; trace len={}",
+            output.inference_trace.len()
         );
     }
 }

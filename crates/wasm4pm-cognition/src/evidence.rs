@@ -7,6 +7,7 @@
 
 use crate::authority::AuthorityKind;
 use crate::autosystems::receipt::ReceiptChain;
+use crate::breeds::TraceStep;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -99,6 +100,40 @@ pub trait EvidenceSource: Send + Sync {
     fn external_chain_root(&self) -> Option<[u8; 32]> {
         None
     }
+}
+
+/// Check logical-clock laws for a breed inference trace.
+///
+/// Returns a list of human-readable violation messages (empty = all laws pass):
+/// 1. Step indices must be strictly monotone from 0.
+/// 2. Depth changes by at most +1 per step (no depth jumps).
+/// 3. Kind strings must be non-empty.
+pub fn check_trace_laws(steps: &[TraceStep]) -> Vec<String> {
+    let mut violations: Vec<String> = Vec::new();
+    for (i, s) in steps.iter().enumerate() {
+        // Law 1: strictly monotone from 0
+        if s.step != i {
+            violations.push(format!(
+                "BROKEN_LOGICAL_CLOCK: step at position {} has index {} (expected {})",
+                i, s.step, i
+            ));
+        }
+        // Law 2: depth increases by at most +1
+        if i > 0 {
+            let prev_depth = steps[i - 1].depth;
+            if s.depth > prev_depth + 1 {
+                violations.push(format!(
+                    "BROKEN_LOGICAL_CLOCK: depth jump at step {} — prev_depth={} curr_depth={}",
+                    i, prev_depth, s.depth
+                ));
+            }
+        }
+        // Law 3: non-empty kind
+        if s.kind.is_empty() {
+            violations.push(format!("BROKEN_LOGICAL_CLOCK: empty kind at step {}", i));
+        }
+    }
+    violations
 }
 
 /// Evidence-source backed by ingested OTEL spans.

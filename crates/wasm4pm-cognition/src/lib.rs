@@ -40,6 +40,7 @@ pub mod evidence;
 pub mod ghf;
 pub mod log_adapter;
 pub mod observability;
+pub mod ocel;
 pub mod registry;
 
 #[cfg(feature = "wasm")]

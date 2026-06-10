@@ -1,0 +1,215 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "Dendral",
+      "candidates": [
+        {
+          "id": "centralized-cloud",
+          "score": 0.8999999761581421,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:centralized-cloud"
+        },
+        {
+          "id": "offline-edge",
+          "score": 0.75,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "hybrid-offline",
+          "score": 0.8500000238418579,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "constraint",
+          "value": "forbid:centralized-cloud"
+        },
+        {
+          "key": "constraint",
+          "value": "require:offline"
+        },
+        {
+          "key": "constraint",
+          "value": "min-score:0.5"
+        }
+      ],
+      "selected": "hybrid-offline",
+      "explanation": "DENDRAL applied 3 constraints; 2/3 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "eliminate",
+          "detail": "centralized-cloud by forbid:centralized-cloud: forbidden by constraint forbid:centralized-cloud",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "survive",
+          "detail": "offline-edge",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "survive",
+          "detail": "hybrid-offline",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "eliminate",
+          "run-end",
+          "run-start",
+          "survive"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:dendral",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:295a8e3b",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "295a8e3bc401a3bf0453555cacd33ccca58b580d7334d7ec95d719d41283fbf8-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "dendral",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:295a8e3b"
+              ],
+              [
+                "breed",
+                "breed:dendral"
+              ]
+            ]
+          },
+          {
+            "event_id": "295a8e3bc401a3bf0453555cacd33ccca58b580d7334d7ec95d719d41283fbf8-0",
+            "activity": "eliminate",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "centralized-cloud by forbid:centralized-cloud: forbidden by constraint forbid:centralized-cloud",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:295a8e3b"
+              ],
+              [
+                "breed",
+                "breed:dendral"
+              ]
+            ]
+          },
+          {
+            "event_id": "295a8e3bc401a3bf0453555cacd33ccca58b580d7334d7ec95d719d41283fbf8-1",
+            "activity": "survive",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "offline-edge",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:295a8e3b"
+              ],
+              [
+                "breed",
+                "breed:dendral"
+              ]
+            ]
+          },
+          {
+            "event_id": "295a8e3bc401a3bf0453555cacd33ccca58b580d7334d7ec95d719d41283fbf8-2",
+            "activity": "survive",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "hybrid-offline",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:295a8e3b"
+              ],
+              [
+                "breed",
+                "breed:dendral"
+              ]
+            ]
+          },
+          {
+            "event_id": "295a8e3bc401a3bf0453555cacd33ccca58b580d7334d7ec95d719d41283fbf8-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:295a8e3b"
+              ],
+              [
+                "breed",
+                "breed:dendral"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb",
+    "output_hash": "9442f99ed7d0b0d839dad34b0d57e0669b87b2e38e52cf2aa242d3ba650760da",
+    "replay_pointer": "9442f99ed7d0b0d8",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb.json"
+  },
+  "meta": {
+    "run_id": "e26a4719-dd87-4b25-ab3f-0da043c6de9c",
+    "timestamp": "2026-06-10T05:51:38.865Z",
+    "duration_ms": 16,
+    "version": "26.6.9"
+  }
+}

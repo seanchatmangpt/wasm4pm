@@ -1,0 +1,210 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "gps",
+    "breed": "gps",
+    "status": "ok",
+    "output": {
+      "breed": "Gps",
+      "candidates": [],
+      "facts": [],
+      "selected": "put-on-shirt,get-dressed",
+      "explanation": "GPS plan (2 ops): put-on-shirt → get-dressed",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "reduce-gap",
+          "detail": "dressed=yes",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "reduce-gap",
+          "detail": "shirt=on",
+          "depth": 1,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "apply-operator",
+          "detail": "put-on-shirt",
+          "depth": 1,
+          "objects": []
+        },
+        {
+          "step": 3,
+          "kind": "apply-operator",
+          "detail": "get-dressed",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "apply-operator",
+          "reduce-gap",
+          "run-end",
+          "run-start"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:gps",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:f5582ecb",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "gps",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          },
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-0",
+            "activity": "reduce-gap",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "dressed=yes",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          },
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-1",
+            "activity": "reduce-gap",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 1,
+              "detail": "shirt=on",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          },
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-2",
+            "activity": "apply-operator",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 1,
+              "detail": "put-on-shirt",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          },
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-3",
+            "activity": "apply-operator",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "get-dressed",
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          },
+          {
+            "event_id": "f5582ecb712367d46231853eb09fb973622d55d74a53362eed1127f28fcb2575-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 5
+            },
+            "o2o": [
+              [
+                "run",
+                "run:f5582ecb"
+              ],
+              [
+                "breed",
+                "breed:gps"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7",
+    "output_hash": "9f81a6c98331c6a900c8604a973146ba967b3e892ae055d689a95366cd1874fd",
+    "replay_pointer": "9f81a6c98331c6a9",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/gps/.wasm4pm/receipts/62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7.json"
+  },
+  "meta": {
+    "run_id": "0a2422c9-5827-4076-8873-0e53cae3a225",
+    "timestamp": "2026-06-10T05:51:39.374Z",
+    "duration_ms": 15,
+    "version": "26.6.9"
+  }
+}

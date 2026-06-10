@@ -1,0 +1,211 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "Eliza",
+      "candidates": [],
+      "facts": [],
+      "selected": "i feel *",
+      "explanation": "Tell me more about feeling sad about your deadlines.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 2,
+          "kind": "match-pattern",
+          "detail": "i feel *",
+          "depth": 0,
+          "objects": []
+        },
+        {
+          "step": 3,
+          "kind": "bind-slot",
+          "detail": "${1}=sad about my deadlines",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "bind-slot",
+          "match-pattern",
+          "run-end",
+          "run-start",
+          "try-pattern"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:eliza",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:6d1ea41d",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "eliza",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          },
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-0",
+            "activity": "try-pattern",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "i am * because *",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          },
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-1",
+            "activity": "try-pattern",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "i feel *",
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          },
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-2",
+            "activity": "match-pattern",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "i feel *",
+              "logical_step": 3
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          },
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-3",
+            "activity": "bind-slot",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "${1}=sad about my deadlines",
+              "logical_step": 4
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          },
+          {
+            "event_id": "6d1ea41dd7e56b60967d3a43cdc3882b18f4623e25d8e6b1ca26c342b3d68ee6-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 5
+            },
+            "o2o": [
+              [
+                "run",
+                "run:6d1ea41d"
+              ],
+              [
+                "breed",
+                "breed:eliza"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722",
+    "output_hash": "9932078050af4f41040f5f277540604fc0fb4f8f68536c195e28df0050496ccf",
+    "replay_pointer": "9932078050af4f41",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/eliza/.wasm4pm/receipts/1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722.json"
+  },
+  "meta": {
+    "run_id": "f96d5273-e919-4512-806b-193a7b9a07df",
+    "timestamp": "2026-06-10T05:51:35.883Z",
+    "duration_ms": 16,
+    "version": "26.6.9"
+  }
+}

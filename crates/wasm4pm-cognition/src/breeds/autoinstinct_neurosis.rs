@@ -87,6 +87,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
             kind: "seed-beliefs".to_string(),
             detail: format!("seeded {} beliefs from facts", beliefs.len()),
             depth: 0,
+            objects: vec![],
         });
 
         // Step 2: collect stimuli — use candidate ids, or fall back to "default_stimulus".
@@ -120,6 +121,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
                     stimulus, strength, delta_fear, delta_anger, delta_mistrust
                 ),
                 depth: 0,
+                objects: vec![],
             });
 
             // Emit a candidate describing the affect change for this stimulus.
@@ -150,6 +152,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
                 state.beliefs.len()
             ),
             depth: 0,
+            objects: vec![],
         });
 
         // Step 5: serialize selected as affect summary.
@@ -186,6 +189,8 @@ impl CognitionBreed for AutoinstinctNeurosis {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
@@ -352,6 +357,8 @@ mod tests {
             selected: None,
             explanation: "empty".into(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
         assert!(breed.postconditions(&output).is_err());
     }

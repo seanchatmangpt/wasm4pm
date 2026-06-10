@@ -202,6 +202,7 @@ impl CognitionBreed for Eliza {
                 kind: "try-pattern".to_string(),
                 detail: frame.pattern.clone(),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(slots) = try_match(&frame.pattern, &text) {
                 let response = render(&frame.template, &slots);
@@ -210,6 +211,7 @@ impl CognitionBreed for Eliza {
                     kind: "match-pattern".to_string(),
                     detail: frame.pattern.clone(),
                     depth: 0,
+                    objects: vec![],
                 });
                 for (i, s) in slots.iter().enumerate() {
                     trace.push(TraceStep {
@@ -217,6 +219,7 @@ impl CognitionBreed for Eliza {
                         kind: "bind-slot".to_string(),
                         detail: format!("${{{}}}={}", i + 1, s),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
                 return Ok(BreedOutput {
@@ -226,6 +229,8 @@ impl CognitionBreed for Eliza {
                     selected: Some(frame.pattern.clone()),
                     explanation: response,
                     inference_trace: trace,
+                    ocel_log: None,
+                    retained_cases: vec![],
                 });
             }
         }
@@ -237,6 +242,8 @@ impl CognitionBreed for Eliza {
             selected: None,
             explanation: "No pattern matched.".to_string(),
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
