@@ -17,6 +17,7 @@ blake3 = { workspace = true }
 smallvec = { workspace = true }
 indexmap = { version = "2.2", features = ["serde"] }
 once_cell = "1.19"
+tracing = { workspace = true }
 hex = "0.4"
 regex = "1.10"
 prolog8 = { workspace = true }
@@ -44,4 +45,3 @@ criterion = { version = "0.5", features = ["html_reports"] }
 [[bench]]
 name = "breed_latency"
 harness = false
-

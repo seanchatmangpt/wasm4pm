@@ -168,8 +168,13 @@ the hash function, not of the authority that computed it.  Non-repudiation requi
 additionally a digital signature where the authority holds the private key.  The receipt
 schema (Appendix~\ref{app:receipt-schema}) distinguishes these: \texttt{input\_hash} and
 \texttt{output\_hash} establish content binding; \texttt{signature} and
-\texttt{public\_key\_id} establish accountable execution binding.  Until signing is
-implemented, receipts carry PARTIAL standing: tamper-evident but not accountable.
+\texttt{public\_key\_id} establish accountable execution binding.  As of v26.6.10,
+\texttt{signature} and \texttt{public\_key\_id} are emitted by \texttt{cognition\_run()}
+using a deterministic Ed25519 actor keyed from a compile-time constant seed.  This
+provides \emph{process-binding integrity}: a verifier can confirm the receipt was produced
+by a runtime possessing that seed.  Production deployment requires replacing the default
+actor with an institutionally managed keypair to achieve \emph{accountable execution
+binding} (non-repudiation in the legal sense).
 
 Concretely, once a receipt $\rho$ is emitted by \texttt{cognition\_run()} and saved to
 \texttt{.wasm4pm/receipts/latest.json}, any post-hoc modification to the committed fields
@@ -177,9 +182,10 @@ Concretely, once a receipt $\rho$ is emitted by \texttt{cognition\_run()} and sa
 detectable by recomputing the hash.  Because determinism is a merge gate in wasm4pm
 (same inputs must produce bit-exact output), a verifier can replay the computation and
 confirm the receipt.  This establishes content-binding integrity but not cryptographic
-non-repudiation: the runtime could in principle produce a receipt for a computation it
-did not perform (or deny one it did) until the \texttt{signature}/\texttt{public\_key\_id}
-fields are populated by a key held exclusively by the authorised execution environment.
+process-binding integrity: with the v26.6.10 Ed25519 default actor, a verifier can detect
+any post-hoc substitution of the committed fields.  Full non-repudiation (binding the
+receipt to a named legal actor) additionally requires replacing the default actor with
+an institutionally managed keypair held exclusively by the authorised execution environment.
 
 \paragraph{(iii) Third-party auditability.}
 A third-party auditor possessing only the receipt chain $(\rho_1, \ldots, \rho_n)$ and
@@ -219,8 +225,11 @@ the trust properties of (i)--(iii) rest.
 
 This chapter proved that the wasm4pm reasoning receipt chain is not an engineering
 convenience but an epistemic infrastructure satisfying four civilizational trust properties:
-non-forgeability, non-repudiation, third-party auditability, and --- following the v26.6.10
-\texttt{input\_hash} addition at the WASM boundary --- causal completeness.  Together,
+non-forgeability, process-binding integrity,\footnote{The receipt chain satisfies
+process-binding integrity (Ed25519 default actor, v26.6.10) but not non-repudiation in
+the legal/regulatory sense, which requires an institutionally managed keypair.}
+third-party auditability, and --- following the v26.6.10 \texttt{input\_hash} addition
+at the WASM boundary --- causal completeness.  Together,
 Chapters~\ref{chap:speed} and~\ref{chap:receipt} establish the two sides of the
 accountability equation: the speed phase transitions of Chapter~\ref{chap:speed} make
 ensemble reasoning feasible; the receipt functor of this chapter makes every conclusion in

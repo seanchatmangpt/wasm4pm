@@ -36,17 +36,17 @@ These breeds encode the classical AI reasoning paradigms that defined the field 
 
 | # | Breed | Canonical Reference | Status | Gap to ADMITTED |
 |---|---|---|---|---|
-| 1 | MYCIN | Rule-based medical diagnosis (Shortliffe, 1976) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 2 | STRIPS | State-space planning (Fikes & Nilsson, 1971) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 3 | SOAR | Unified cognitive architecture (Laird et al., 1987) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 4 | HEARSAY-II | Blackboard architecture (Erman et al., 1980) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 5 | Prolog | Logic programming / SLD resolution (Colmerauer, 1972) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 6 | CBR | Case-based reasoning (Schank, 1982; Kolodner, 1993) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 7 | GPS | General Problem Solver / means-ends analysis (Newell & Simon, 1957) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 8 | DENDRAL | Meta-DENDRAL structural inference (Feigenbaum et al., 1969) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 9 | ELIZA | Pattern-matching dialogue (Weizenbaum, 1966) | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
+| 1 | MYCIN | Rule-based medical diagnosis (Shortliffe, 1976) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 2 | STRIPS | State-space planning (Fikes & Nilsson, 1971) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 3 | SOAR | Unified cognitive architecture (Laird et al., 1987) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 4 | HEARSAY-II | Blackboard architecture (Erman et al., 1980) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 5 | Prolog | Logic programming / SLD resolution (Colmerauer, 1972) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 6 | CBR | Case-based reasoning (Schank, 1982; Kolodner, 1993) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 7 | GPS | General Problem Solver / means-ends analysis (Newell & Simon, 1957) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 8 | DENDRAL | Meta-DENDRAL structural inference (Feigenbaum et al., 1969) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 9 | ELIZA | Pattern-matching dialogue (Weizenbaum, 1966) | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
 
-**Tier summary:** 0 ADMITTED / 9 PARTIAL_ALIVE / 0 UNSUPPORTED
+**Tier summary:** 9 ADMITTED / 0 PARTIAL_ALIVE / 0 UNSUPPORTED
 
 ---
 
@@ -76,36 +76,36 @@ These breeds are the self-governing, perception-driven layer implemented as `aut
 
 | # | Breed | Autoinstinct Variant | Status | Gap to ADMITTED |
 |---|---|---|---|---|
-| 1 | Vision | `autoinstinct_vision` | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 2 | Semantics | `autoinstinct_semantics` | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 3 | Neurosis | `autoinstinct_neurosis` | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
-| 4 | Learning | `autoinstinct_learning` | PARTIAL_ALIVE | Missing L1 OCEL model, signed receipts |
+| 1 | Vision | `autoinstinct_vision` | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 2 | Semantics | `autoinstinct_semantics` | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 3 | Neurosis | `autoinstinct_neurosis` | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
+| 4 | Learning | `autoinstinct_learning` | ADMITTED | bc998553 (2026-06-10): L1 OCPN model + native DFA replay (fitness=1.0) + Ed25519 signed receipts |
 
-**Tier summary:** 0 ADMITTED / 4 PARTIAL_ALIVE / 0 UNSUPPORTED
+**Tier summary:** 4 ADMITTED / 0 PARTIAL_ALIVE / 0 UNSUPPORTED
 
 ---
 
 ## CertifiedRegistry_2026_06 — Implemented Breeds (13 total)
 
-These 13 breeds have a live Rust/WASM implementation. None are ADMITTED as of 2026-06-10. All are PARTIAL_ALIVE pending L1 OCEL models and signed receipts.
+These 13 breeds have a live Rust/WASM implementation. All 13 are ADMITTED as of 2026-06-10 (bc998553): L1 OCPN models, native DFA replay at fitness=1.0, and Ed25519 signed receipts.
 
 | # | Breed | Tier | Variant / Module | Status |
 |---|---|---|---|---|
-| 1 | MYCIN | R_historical | `mycin` | PARTIAL_ALIVE |
-| 2 | STRIPS | R_historical | `strips` | PARTIAL_ALIVE |
-| 3 | SOAR | R_historical | `soar` | PARTIAL_ALIVE |
-| 4 | HEARSAY-II | R_historical | `hearsay_ii` | PARTIAL_ALIVE |
-| 5 | Prolog | R_historical | `prolog` | PARTIAL_ALIVE |
-| 6 | CBR | R_historical | `cbr` | PARTIAL_ALIVE |
-| 7 | GPS | R_historical | `gps` | PARTIAL_ALIVE |
-| 8 | DENDRAL | R_historical | `dendral` | PARTIAL_ALIVE |
-| 9 | ELIZA | R_historical | `eliza` | PARTIAL_ALIVE |
-| 10 | Vision | R_autonomic | `autoinstinct_vision` | PARTIAL_ALIVE |
-| 11 | Semantics | R_autonomic | `autoinstinct_semantics` | PARTIAL_ALIVE |
-| 12 | Neurosis | R_autonomic | `autoinstinct_neurosis` | PARTIAL_ALIVE |
-| 13 | Learning | R_autonomic | `autoinstinct_learning` | PARTIAL_ALIVE |
+| 1 | MYCIN | R_historical | `mycin` | ADMITTED |
+| 2 | STRIPS | R_historical | `strips` | ADMITTED |
+| 3 | SOAR | R_historical | `soar` | ADMITTED |
+| 4 | HEARSAY-II | R_historical | `hearsay_ii` | ADMITTED |
+| 5 | Prolog | R_historical | `prolog` | ADMITTED |
+| 6 | CBR | R_historical | `cbr` | ADMITTED |
+| 7 | GPS | R_historical | `gps` | ADMITTED |
+| 8 | DENDRAL | R_historical | `dendral` | ADMITTED |
+| 9 | ELIZA | R_historical | `eliza` | ADMITTED |
+| 10 | Vision | R_autonomic | `autoinstinct_vision` | ADMITTED |
+| 11 | Semantics | R_autonomic | `autoinstinct_semantics` | ADMITTED |
+| 12 | Neurosis | R_autonomic | `autoinstinct_neurosis` | ADMITTED |
+| 13 | Learning | R_autonomic | `autoinstinct_learning` | ADMITTED |
 
-**Registry totals:** 13 implemented (0 ADMITTED, 13 PARTIAL_ALIVE) | 9 UNSUPPORTED | 22 total defined
+**Registry totals:** 13 implemented (13 ADMITTED, 0 PARTIAL_ALIVE) | 9 UNSUPPORTED | 22 total defined
 
 ---
 

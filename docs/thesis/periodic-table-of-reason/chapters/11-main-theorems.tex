@@ -200,7 +200,7 @@ the p99 request rate of any currently observed industrial control loop. $\square
 A manufacturing pipeline satisfying $C_0 \wedge C_1 \wedge C_2 \wedge C_3$ — algorithmic
 completeness, receipt continuity, process conformance, and universal breed certification
 — simultaneously satisfies the four civilizational trust requirements: auditability,
-non-repudiation, reproducibility, and regulatory admissibility.
+process-binding integrity, reproducibility, and regulatory admissibility.
 \end{theorem}
 
 \noindent\textit{Proof by reference.} Theorem~\ref{thm:civilizational-trust}
@@ -210,9 +210,12 @@ component of the Universal Causal Equation:
   \item \textbf{Auditability} — the BLAKE3 receipt chain ($C_1 \wedge C_3$) provides a
         tamper-evident log of every reasoning step, satisfying FDA 21 CFR Part 11,
         MiFID~II Article~25, and Dodd-Frank \S{}956.
-  \item \textbf{Non-repudiation} — the \texttt{input\_hash} / \texttt{output\_hash}
-        pair, emitted at the WASM boundary, cryptographically binds each inference to its
-        inputs; no party can deny having performed a certified inference.
+  \item \textbf{Process-binding integrity} — the \texttt{input\_hash} /
+        \texttt{output\_hash} pair, emitted at the WASM boundary, cryptographically binds
+        each inference to its inputs; combined with the Ed25519 \texttt{signature} field
+        (default actor, v26.6.10), a verifier can detect any post-hoc substitution.
+        Full non-repudiation in the legal sense requires replacing the default actor with
+        an institutionally managed keypair.
   \item \textbf{Reproducibility} — $C_{\mathrm{determ}} = 1$ for all breeds guarantees
         that identical inputs reproduce identical outputs, a necessary precondition for
         scientific reproducibility standards (van der Aalst Constitution,
