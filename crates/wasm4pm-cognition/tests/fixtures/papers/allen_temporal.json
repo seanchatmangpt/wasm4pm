@@ -8,13 +8,22 @@
   },
   "input": {
     "intent": "Verify consistency and transitive closure of interval constraints",
+    "candidates": [
+      {
+        "id": "temporal-consistent",
+        "score": 0.0,
+        "eliminated": false,
+        "elimination_reason": null
+      }
+    ],
     "facts": [
       {"key": "relation", "value": "A meets B"},
       {"key": "relation", "value": "B meets C"}
     ],
     "cases": [],
     "rules": [],
-    "goals": []
+    "goals": [],
+    "state": []
   },
   "expected": {
     "consistent": true,

@@ -438,6 +438,7 @@ fn allen_temporal_empty_facts_refused() {
     let input = empty_base(); // no facts
 
     let result = AllenTemporal.preconditions(&input);
+    println!("AllenTemporal result: {:?}", result);
     assert!(result.is_err(), "AllenTemporal must refuse empty facts");
     assert!(result.unwrap_err().contains("constraint"));
 }
@@ -465,4 +466,49 @@ fn bayesian_network_empty_goals_refused() {
     assert!(result.is_err(), "BayesianNetwork must refuse empty goals");
     assert!(result.unwrap_err().contains("query"));
 }
+
+#[test]
+fn csp_ac3_empty_vars_refused() {
+    use wasm4pm_cognition::breeds::csp_ac3::CspAc3;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no vars
+
+    let result = CspAc3.preconditions(&input);
+    assert!(result.is_err(), "CspAc3 must refuse empty variables");
+    assert!(result.unwrap_err().contains("variable"));
+}
+
+#[test]
+fn default_logic_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::default_logic::DefaultLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no rules
+
+    let result = DefaultLogic.preconditions(&input);
+    assert!(result.is_err(), "DefaultLogic must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn htn_planning_empty_goals_or_rules_refused() {
+    use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    // Case 1: empty goals
+    let mut input = empty_base();
+    input.rules = vec![rule("op:do", vec![], "done", 1.0)];
+    let result = HtnPlanning.preconditions(&input);
+    let err_msg = result.unwrap_err();
+    assert!(err_msg.contains("task") || err_msg.contains("goal"));
+
+    // Case 2: empty rules
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "task", "t1")];
+    let result = HtnPlanning.preconditions(&input);
+    assert!(result.is_err(), "HtnPlanning must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
 

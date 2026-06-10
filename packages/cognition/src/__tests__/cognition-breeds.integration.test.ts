@@ -229,6 +229,33 @@ describe('htn_planning breed integration', () => {
   });
 });
 
+describe('csp_ac3 breed integration', () => {
+  it('solves a constraint satisfaction problem', async () => {
+    const result = (await fixtures.runBreed(
+      'csp_ac3',
+      fixtures.minimalCspAc3Input()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('CspAc3');
+    expect(result.output.explanation).toBe('SAT: V1=B, V2=G');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
+describe('default_logic breed integration', () => {
+  it('finds an extension for default rules', async () => {
+    const result = (await fixtures.runBreed(
+      'default_logic',
+      fixtures.minimalDefaultLogicInput()
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('DefaultLogic');
+    expect(result.output.selected).toContain('tweety');
+    expect(result.output.selected).toContain('flies');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
 // =============================================================================
 // cognition_verify integration (positive + negative oracle)
 // =============================================================================

@@ -11,7 +11,8 @@ use wasm4pm_cognition::breeds::{
     cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
     prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    bayesian_network::BayesianNetwork, csp_ac3::CspAc3, default_logic::DefaultLogic,
+    htn_planning::HtnPlanning, BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -78,6 +79,22 @@ fn make_input() -> BreedInput {
             Fact {
                 key: "Alarm".into(),
                 value: "true".into(),
+            },
+            Fact {
+                key: "csp-var".into(),
+                value: "V1:R,G,B".into(),
+            },
+            Fact {
+                key: "csp-var".into(),
+                value: "V2:R,G,B".into(),
+            },
+            Fact {
+                key: "csp-constraint".into(),
+                value: "V1!=V2".into(),
+            },
+            Fact {
+                key: "tweety".into(),
+                value: "tweety".into(),
             },
         ],
         cases: vec![
@@ -169,6 +186,12 @@ fn make_input() -> BreedInput {
                 conclusion: "Alarm=true".into(),
                 certainty: 0.001,
             },
+            Rule {
+                id: "r_default".into(),
+                premise: vec!["tweety".into(), "unless:non_flying".into()],
+                conclusion: "flies".into(),
+                certainty: 1.0,
+            },
         ],
         goals: vec![
             Goal {
@@ -227,7 +250,8 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_neurosis", AutoinstinctNeurosis);
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
     bench_breed!(group, "htn_planning", HtnPlanning);
-    bench_breed!(group, "htn_planning", wasm4pm_cognition::breeds::htn_planning::HtnPlanning);
+    bench_breed!(group, "csp_ac3", CspAc3);
+    bench_breed!(group, "default_logic", DefaultLogic);
     bench_breed!(group, "ltl_monitor", LtlMonitor);
     bench_breed!(group, "allen_temporal", AllenTemporal);
     bench_breed!(group, "fuzzy_logic", FuzzyLogic);

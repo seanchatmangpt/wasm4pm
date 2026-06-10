@@ -1658,3 +1658,185 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+#[test]
+fn csp_ac3_paper_grounded() {
+    let path = "tests/fixtures/papers/csp_ac3.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (
+                        f.get("key").and_then(|v| v.as_str()),
+                        f.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        facts.push(Fact {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            };
+
+            let breed = csp_ac3::CspAc3;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("CspAc3 paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::CspAc3);
+            assert!(output.selected.is_some());
+            assert_eq!(output.explanation, "SAT: V1=B, V2=G");
+        }
+    }
+}
+
+#[test]
+fn default_logic_paper_grounded() {
+    let path = "tests/fixtures/papers/default_logic.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (
+                        f.get("key").and_then(|v| v.as_str()),
+                        f.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        facts.push(Fact {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (
+                        r.get("id").and_then(|v| v.as_str()),
+                        r.get("conclusion").and_then(|v| v.as_str()),
+                        r.get("certainty").and_then(|v| v.as_f64()),
+                    ) {
+                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        rules.push(Rule {
+                            id: id.to_string(),
+                            premise: premises,
+                            conclusion: conclusion.to_string(),
+                            certainty: certainty as f32,
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules,
+                goals: vec![],
+                state: vec![],
+            };
+
+            let breed = default_logic::DefaultLogic;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("DefaultLogic paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::DefaultLogic);
+            let selected = output.selected.as_ref().unwrap();
+            assert!(selected.contains("tweety"));
+            assert!(selected.contains("flies"));
+        }
+    }
+}
+
+#[test]
+fn htn_planning_paper_grounded() {
+    let path = "tests/fixtures/papers/htn_planning.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut state = Vec::new();
+            if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
+                for s in arr {
+                    if let (Some(pred), Some(val)) = (
+                        s.get("predicate").and_then(|v| v.as_str()),
+                        s.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        state.push(StateAtom {
+                            predicate: pred.to_string(),
+                            value: val.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (
+                        r.get("id").and_then(|v| v.as_str()),
+                        r.get("conclusion").and_then(|v| v.as_str()),
+                        r.get("certainty").and_then(|v| v.as_f64()),
+                    ) {
+                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        rules.push(Rule {
+                            id: id.to_string(),
+                            premise: premises,
+                            conclusion: conclusion.to_string(),
+                            certainty: certainty as f32,
+                        });
+                    }
+                }
+            }
+
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    if let (Some(id), Some(predicate), Some(value)) = (
+                        g.get("id").and_then(|v| v.as_str()),
+                        g.get("predicate").and_then(|v| v.as_str()),
+                        g.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        goals.push(Goal {
+                            id: id.to_string(),
+                            predicate: predicate.to_string(),
+                            value: value.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts: vec![],
+                cases: vec![],
+                rules,
+                goals,
+                state,
+            };
+
+            let breed = htn_planning::HtnPlanning;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("HtnPlanning paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::HtnPlanning);
+            assert_eq!(output.selected.as_deref(), Some("op:walk"));
+        }
+    }
+}
+
+

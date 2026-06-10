@@ -194,22 +194,10 @@ fn autoinstinct_learning_input() -> BreedInput {
 
 fn ltl_monitor_input() -> BreedInput {
     let mut input = minimal_input();
-    input.intent = "G (req -> F res)".into();
-    input.cases = vec![
-        Case {
-            id: "state0".into(),
-            intent: "".into(),
-            architecture: "".into(),
-            outcome_score: 1.0,
-            facts: vec![Fact { key: "req".into(), value: "true".into() }],
-        },
-        Case {
-            id: "state1".into(),
-            intent: "".into(),
-            architecture: "".into(),
-            outcome_score: 1.0,
-            facts: vec![Fact { key: "res".into(), value: "true".into() }],
-        },
+    input.intent = "ltl check".into();
+    input.facts = vec![
+        Fact { key: "ltl:formula".into(), value: "G req".into() },
+        Fact { key: "trace:0".into(), value: "req".into() },
     ];
     input
 }
@@ -254,58 +242,90 @@ fn fuzzy_logic_input() -> BreedInput {
 
 fn bayesian_network_input() -> BreedInput {
     BreedInput {
-        intent: "Bayesian".into(),
+        intent: "Bayesian network exact query".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "Alarm".into(), value: "true".into() },
+            Fact { key: "cpt:Burglary".into(), value: "0.001".into() },
+            Fact { key: "cpt:Earthquake".into(), value: "0.002".into() },
+            Fact { key: "cpt:Alarm|Burglary,Earthquake".into(), value: "0.95,0.94,0.29,0.001".into() },
+            Fact { key: "evidence:Alarm".into(), value: "true".into() },
         ],
         cases: vec![],
-        rules: vec![
-            Rule {
-                id: "r-burg".into(),
-                premise: vec![],
-                conclusion: "Burglary=true".into(),
-                certainty: 0.001,
-            },
-            Rule {
-                id: "r-eq".into(),
-                premise: vec![],
-                conclusion: "Earthquake=true".into(),
-                certainty: 0.002,
-            },
-            Rule {
-                id: "r-alarm1".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.95,
-            },
-            Rule {
-                id: "r-alarm2".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.94,
-            },
-            Rule {
-                id: "r-alarm3".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.29,
-            },
-            Rule {
-                id: "r-alarm4".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.001,
-            },
-        ],
+        rules: vec![],
         goals: vec![
             Goal {
                 id: "g1".into(),
                 predicate: "query".into(),
-                value: "Burglary".into(),
+                value: "prob:Burglary".into(),
             }
         ],
         state: vec![],
+    }
+}
+
+fn csp_ac3_input() -> BreedInput {
+    BreedInput {
+        intent: "solve".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "csp-var".into(), value: "X:0,1".into() },
+            Fact { key: "csp-var".into(), value: "Y:0,1".into() },
+            Fact { key: "csp-constraint".into(), value: "X!=Y".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn default_logic_input() -> BreedInput {
+    BreedInput {
+        intent: "solve".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "bird".into(), value: "tweety".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["tweety".into(), "unless:non_flying".into()],
+                conclusion: "flies".into(),
+                certainty: 1.0,
+            }
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn htn_planning_input() -> BreedInput {
+    BreedInput {
+        intent: "plan".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "method:go:walk".into(),
+                premise: vec!["at=home".into()],
+                conclusion: "op:walk".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "op:walk".into(),
+                premise: vec![],
+                conclusion: "at=dest".into(),
+                certainty: 1.0,
+            }
+        ],
+        goals: vec![
+            Goal { id: "g1".into(), predicate: "task".into(), value: "go".into() }
+        ],
+        state: vec![
+            StateAtom { predicate: "at".into(), value: "home".into() }
+        ],
     }
 }
 
@@ -538,12 +558,27 @@ fn determinism_bayesian_network() {
     assert_deterministic("bayesian_network", &bayesian_network_input());
 }
 
+#[test]
+fn determinism_csp_ac3() {
+    assert_deterministic("csp_ac3", &csp_ac3_input());
+}
+
+#[test]
+fn determinism_default_logic() {
+    assert_deterministic("default_logic", &default_logic_input());
+}
+
+#[test]
+fn determinism_htn_planning() {
+    assert_deterministic("htn_planning", &htn_planning_input());
+}
+
 // ---------------------------------------------------------------------------
-// Count assertion: exactly 17 breed determinism tests exist in this suite
+// Count assertion: exactly 20 breed determinism tests exist in this suite
 // ---------------------------------------------------------------------------
 
 #[test]
-fn exactly_17_breed_pairs_covered() {
+fn exactly_20_breed_pairs_covered() {
     let covered = [
         "eliza",
         "cbr",
@@ -562,6 +597,9 @@ fn exactly_17_breed_pairs_covered() {
         "allen_temporal",
         "fuzzy_logic",
         "bayesian_network",
+        "csp_ac3",
+        "default_logic",
+        "htn_planning",
     ];
-    assert_eq!(covered.len(), 17, "must cover exactly 17 breeds");
+    assert_eq!(covered.len(), 20, "must cover exactly 20 breeds");
 }

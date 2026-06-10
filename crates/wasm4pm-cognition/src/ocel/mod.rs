@@ -99,6 +99,8 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "bayesian_network" => Some(&models_p1::BAYESIAN_NETWORK_MODEL),
         "htn_planning" => Some(&models_p1::HTN_PLANNING_MODEL),
         "dempster_shafer" => Some(&models_p1::DEMPSTER_SHAFER_MODEL),
+        "csp_ac3" => Some(&models_p1::CSP_AC3_MODEL),
+        "default_logic" => Some(&models_p1::DEFAULT_LOGIC_MODEL),
         _ => None,
     }
 }

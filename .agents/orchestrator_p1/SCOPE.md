@@ -14,10 +14,10 @@
 ## Milestones
 | # | Name | Scope | Dependencies | Status |
 |---|------|-------|-------------|--------|
-| 1 | ltl_monitor | Implement and verify LTL runtime monitor breed | None | PLANNED |
-| 2 | allen_temporal | Implement and verify Allen's Temporal Interval Algebra breed | None | PLANNED |
-| 3 | fuzzy_logic | Implement and verify Fuzzy Logic inference breed | None | PLANNED |
-| 4 | bayesian_network | Implement and verify Bayesian Inference breed | None | PLANNED |
+| 1 | ltl_monitor | Implement and verify LTL runtime monitor breed | None | DONE |
+| 2 | allen_temporal | Implement and verify Allen's Temporal Interval Algebra breed | None | DONE |
+| 3 | fuzzy_logic | Implement and verify Fuzzy Logic inference breed | None | DONE |
+| 4 | bayesian_network | Implement and verify Bayesian Inference breed | None | DONE |
 | 5 | csp_ac3 | Implement and verify Constraint Satisfaction (AC-3) breed | None | PLANNED |
 | 6 | default_logic | Implement and verify Default Logic extension finder breed | None | PLANNED |
 | 7 | htn_planning | Implement and verify Hierarchical Task Network planner breed | None | PLANNED |

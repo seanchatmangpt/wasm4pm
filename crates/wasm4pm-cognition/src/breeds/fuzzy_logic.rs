@@ -22,15 +22,37 @@ pub enum Mf {
 
 impl Mf {
     pub fn parse(s: &str) -> Option<Self> {
-        let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() != 2 { return None; }
-        let type_str = parts[0];
-        let nums_str: Vec<&str> = parts[1].split(',').collect();
-        let nums: Vec<f32> = nums_str.iter().filter_map(|x| x.parse().ok()).collect();
-        match type_str {
-            "tri" if nums.len() == 3 => Some(Mf::Tri(nums[0], nums[1], nums[2])),
-            "trap" if nums.len() == 4 => Some(Mf::Trap(nums[0], nums[1], nums[2], nums[3])),
-            _ => None,
+        let s = s.trim();
+        let is_tri = s.starts_with("triangular") || s.starts_with("tri");
+        let is_trap = s.starts_with("trapezoidal") || s.starts_with("trap");
+        if !is_tri && !is_trap {
+            return None;
+        }
+        
+        let mut nums = Vec::new();
+        let num_part = if let Some(idx) = s.find(':') {
+            &s[idx+1..]
+        } else {
+            if let Some(first_digit_idx) = s.find(|c: char| c.is_ascii_digit() || c == '-' || c == '.') {
+                &s[first_digit_idx..]
+            } else {
+                return None;
+            }
+        };
+        
+        for part in num_part.split(',') {
+            let cleaned: String = part.chars().filter(|&c| c.is_ascii_digit() || c == '-' || c == '.' || c == '+').collect();
+            if let Ok(val) = cleaned.parse::<f32>() {
+                nums.push(val);
+            }
+        }
+        
+        if is_tri && nums.len() == 3 {
+            Some(Mf::Tri(nums[0], nums[1], nums[2]))
+        } else if is_trap && nums.len() == 4 {
+            Some(Mf::Trap(nums[0], nums[1], nums[2], nums[3]))
+        } else {
+            None
         }
     }
 
@@ -86,7 +108,7 @@ impl CognitionBreed for FuzzyLogic {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let has_input = input.facts.iter().any(|f| f.key.starts_with("fuzzy:input:"));
+        let has_input = input.facts.iter().any(|f| f.key.starts_with("fuzzy:input:") || f.value.parse::<f32>().is_ok());
         let has_rules = !input.rules.is_empty();
         if !has_input || !has_rules {
             return Err("Fuzzy logic requires fuzzy:input facts and rules".to_string());
@@ -108,11 +130,39 @@ impl CognitionBreed for FuzzyLogic {
             step_count += 1;
         };
 
+        // Term key normalization helper
+        let normalize_term = |s: &str| -> String {
+            let s = s.trim();
+            if s.contains(" is ") {
+                let parts: Vec<&str> = s.split(" is ").collect();
+                if parts.len() == 2 {
+                    return format!("fuzzy:{}:{}", parts[0].trim(), parts[1].trim());
+                }
+            }
+            if let Some(rest) = s.strip_prefix("fuzzy_set:") {
+                return format!("fuzzy:{}", rest);
+            }
+            if s.starts_with("fuzzy:") {
+                return s.to_string();
+            }
+            // fallback
+            if s.contains(':') {
+                format!("fuzzy:{}", s)
+            } else {
+                s.to_string()
+            }
+        };
+
         let mut terms: HashMap<String, Mf> = HashMap::new();
         for fact in &input.facts {
-            if fact.key.starts_with("fuzzy:") && !fact.key.starts_with("fuzzy:input:") && !fact.key.starts_with("fuzzy:output:") {
+            let key_norm = if fact.key.starts_with("fuzzy_set:") {
+                format!("fuzzy:{}", &fact.key["fuzzy_set:".len()..])
+            } else {
+                fact.key.clone()
+            };
+            if key_norm.starts_with("fuzzy:") && !key_norm.starts_with("fuzzy:input:") && !key_norm.starts_with("fuzzy:output:") {
                 if let Some(mf) = Mf::parse(&fact.value) {
-                    terms.insert(fact.key.clone(), mf);
+                    terms.insert(key_norm, mf);
                 }
             }
         }
@@ -122,6 +172,10 @@ impl CognitionBreed for FuzzyLogic {
             if let Some(var) = fact.key.strip_prefix("fuzzy:input:") {
                 if let Ok(val) = fact.value.parse::<f32>() {
                     inputs.insert(var.to_string(), val);
+                }
+            } else if fact.key != "formula" && fact.key != "ltl:formula" && fact.key != "relation" && !fact.key.starts_with("fuzzy_set:") && !fact.key.starts_with("fuzzy:") {
+                if let Ok(val) = fact.value.parse::<f32>() {
+                    inputs.insert(fact.key.clone(), val);
                 }
             }
         }
@@ -156,7 +210,8 @@ impl CognitionBreed for FuzzyLogic {
             let mut fire_strength = 1.0_f32;
             let mut can_fire = true;
             for premise in &rule.premise {
-                if let Some(&mu) = fuzzified.get(premise) {
+                let norm_premise = normalize_term(premise);
+                if let Some(&mu) = fuzzified.get(&norm_premise) {
                     if mu < fire_strength {
                         fire_strength = mu;
                     }
@@ -167,10 +222,10 @@ impl CognitionBreed for FuzzyLogic {
             }
             if can_fire {
                 add_trace("fuzzy-fire", format!("rule {} fired with strength {}", rule.id, fire_strength));
-                let out_term = &rule.conclusion;
-                let current = aggregated.get(out_term).copied().unwrap_or(0.0);
+                let out_term = normalize_term(&rule.conclusion);
+                let current = aggregated.get(&out_term).copied().unwrap_or(0.0);
                 if fire_strength > current {
-                    aggregated.insert(out_term.clone(), fire_strength);
+                    aggregated.insert(out_term, fire_strength);
                 }
             }
         }
@@ -221,6 +276,10 @@ impl CognitionBreed for FuzzyLogic {
                 add_trace("fuzzy-defuzz", format!("{} = {}", out_var, centroid));
                 out_facts.push(Fact {
                     key: format!("fuzzy:output:{}", out_var),
+                    value: centroid.to_string(),
+                });
+                out_facts.push(Fact {
+                    key: out_var.clone(),
                     value: centroid.to_string(),
                 });
             }

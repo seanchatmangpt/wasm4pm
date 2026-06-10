@@ -291,7 +291,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "analogy_sme",
@@ -333,7 +333,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "htn_planning",

@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet, VecDeque};
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep, Fact,
 };
 
 /// Bayesian Network breed (Pearl 1988).
@@ -34,18 +34,13 @@ impl CognitionBreed for BayesianNetwork {
                 node_count += 1;
             }
         }
-        if node_count > 16 {
-            return Err("max 16 nodes supported".to_string());
-        }
         for goal in &input.goals {
             if goal.predicate == "query" {
-                if goal.value.starts_with("prob:") || goal.value.starts_with("dsep:") {
-                    has_query = true;
-                }
+                has_query = true;
             }
         }
         if !has_query {
-            return Err("missing query goal (prob: or dsep:)".to_string());
+            return Err("missing query goal".to_string());
         }
         Ok(())
     }
@@ -75,11 +70,96 @@ impl CognitionBreed for BayesianNetwork {
                     }
                 }
                 cpts.push((fact.key.clone(), fact.value.clone()));
-            } else if fact.key.starts_with("evidence:") {
-                let node = fact.key["evidence:".len()..].to_string();
-                all_nodes.insert(node.clone());
-                let val = fact.value == "true";
-                evidence.insert(node, val);
+            } else {
+                let (node_name, val_bool) = if let Some(node) = fact.key.strip_prefix("evidence:") {
+                    (node.to_string(), fact.value == "true")
+                } else if fact.key != "formula" && fact.key != "ltl:formula" && fact.key != "relation" && (fact.value == "true" || fact.value == "false") {
+                    (fact.key.clone(), fact.value == "true")
+                } else {
+                    continue;
+                };
+                all_nodes.insert(node_name.clone());
+                evidence.insert(node_name, val_bool);
+            }
+        }
+
+        // Group rules by child variable to build CPTs
+        let mut child_rules: HashMap<String, Vec<&crate::breeds::Rule>> = HashMap::new();
+        for rule in &input.rules {
+            let concl = rule.conclusion.trim();
+            if let Some(eq_idx) = concl.find('=') {
+                let child_name = concl[..eq_idx].trim().to_string();
+                child_rules.entry(child_name).or_default().push(rule);
+            }
+        }
+
+        for (child_name, rules) in child_rules {
+            all_nodes.insert(child_name.clone());
+            let mut parents = HashSet::new();
+            for rule in &rules {
+                for premise in &rule.premise {
+                    if let Some(eq_idx) = premise.find('=') {
+                        let parent_name = premise[..eq_idx].trim().to_string();
+                        parents.insert(parent_name);
+                    }
+                }
+            }
+            let mut parents_sorted: Vec<String> = parents.into_iter().collect();
+            parents_sorted.sort();
+            for p in &parents_sorted {
+                all_nodes.insert(p.clone());
+            }
+
+            let mut probs = vec![0.0; 1 << parents_sorted.len()];
+            for p_idx in 0..(1 << parents_sorted.len()) {
+                let mut parent_vals = HashMap::new();
+                for (j, p_name) in parents_sorted.iter().enumerate() {
+                    let val = ((p_idx >> (parents_sorted.len() - 1 - j)) & 1) == 1;
+                    parent_vals.insert(p_name.clone(), val);
+                }
+
+                let mut matched_prob = 0.0;
+                for rule in &rules {
+                    let mut matches = true;
+                    for premise in &rule.premise {
+                        if let Some(eq_idx) = premise.find('=') {
+                            let p_name = premise[..eq_idx].trim();
+                            let p_val_str = premise[eq_idx+1..].trim();
+                            let expected_val = p_val_str == "true";
+                            if parent_vals.get(p_name) != Some(&expected_val) {
+                                matches = false;
+                                break;
+                            }
+                        } else {
+                            matches = false;
+                            break;
+                        }
+                    }
+                    if matches {
+                        let concl = rule.conclusion.trim();
+                        if let Some(eq_idx) = concl.find('=') {
+                            let val_str = concl[eq_idx+1..].trim();
+                            if val_str == "true" {
+                                matched_prob = rule.certainty as f64;
+                            } else {
+                                matched_prob = 1.0 - rule.certainty as f64;
+                            }
+                        }
+                        break;
+                    }
+                }
+                probs[p_idx] = matched_prob;
+            }
+
+            let cpt_key = if parents_sorted.is_empty() {
+                format!("cpt:{}", child_name)
+            } else {
+                format!("cpt:{}|{}", child_name, parents_sorted.join(","))
+            };
+            let cpt_val = probs.iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",");
+            
+            if !cpts.iter().any(|(k, _)| k == &cpt_key) {
+                cpts.push((cpt_key, cpt_val));
             }
         }
         
@@ -131,7 +211,12 @@ impl CognitionBreed for BayesianNetwork {
             step_count += 1;
         }
         
-        let q_str = query.unwrap();
+        let q_raw = query.ok_or_else(|| BreedError { breed: self.id(), message: "missing query goal".to_string() })?;
+        let q_str = if q_raw.starts_with("prob:") || q_raw.starts_with("dsep:") {
+            q_raw
+        } else {
+            format!("prob:{}", q_raw)
+        };
         let explanation;
         
         if q_str.starts_with("prob:") {
@@ -276,7 +361,6 @@ impl CognitionBreed for BayesianNetwork {
                     prob_f += final_f.table[idx];
                 }
             }
-            
             let prob = if prob_t + prob_f == 0.0 {
                 0.0
             } else {
@@ -293,6 +377,23 @@ impl CognitionBreed for BayesianNetwork {
             });
             explanation = verdict;
             
+            // Add probability fact
+            let mut out_facts = input.facts.clone();
+            out_facts.push(Fact {
+                key: format!("probability:{}", q_node_name),
+                value: format!("{:.9}", prob),
+            });
+
+            return Ok(BreedOutput {
+                breed: self.id(),
+                candidates: input.candidates.clone(),
+                facts: out_facts,
+                selected: None,
+                explanation,
+                inference_trace: trace,
+                ocel_log: None,
+                retained_cases: vec![],
+            });
         } else if q_str.starts_with("dsep:") {
             let inner = &q_str["dsep:".len()..];
             let parts: Vec<&str> = inner.split('|').collect();

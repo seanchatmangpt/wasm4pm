@@ -1475,3 +1475,83 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+#[test]
+fn csp_ac3_hidden_coloring() {
+    let mut input = base("Constraint Satisfaction 3-coloring");
+    input.facts = vec![
+        fact("csp-var", "A:1,2,3"),
+        fact("csp-var", "B:1,2,3"),
+        fact("csp-var", "C:1,2,3"),
+        fact("csp-constraint", "A!=B"),
+        fact("csp-constraint", "B!=C"),
+        fact("csp-constraint", "A!=C"),
+    ];
+
+    let output = dispatch_breed_test("csp_ac3", &input)
+        .expect("csp_ac3 run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    assert!(output.selected.is_some());
+    assert_eq!(output.explanation, "SAT: A=1, B=2, C=3");
+}
+
+#[test]
+fn default_logic_hidden_extension() {
+    let mut input = base("Default logic bird example");
+    input.facts = vec![
+        fact("bird", "penguin"),
+        fact("penguin", "penguin"),
+    ];
+    input.rules = vec![
+        rule("r_default", vec!["bird", "unless:non_flying"], "flies", 1.0),
+        rule("r_penguin", vec!["penguin"], "non_flying", 1.0),
+    ];
+
+    let output = dispatch_breed_test("default_logic", &input)
+        .expect("default_logic run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let selected = output.selected.as_ref().unwrap();
+    assert!(selected.contains("non_flying"));
+    assert!(!selected.contains("flies"));
+}
+
+#[test]
+fn htn_planning_hidden_travel() {
+    let mut input = base("HTN planning check");
+    input.state = vec![
+        StateAtom { predicate: "at".into(), value: "home".into() },
+        StateAtom { predicate: "car_working".into(), value: "true".into() },
+    ];
+    input.goals = vec![
+        Goal { id: "g1".into(), predicate: "task".into(), value: "go_to_dest".into() },
+    ];
+    input.rules = vec![
+        Rule {
+            id: "method:go_to_dest:drive".into(),
+            premise: vec!["at=home".into(), "car_working=true".into()],
+            conclusion: "op:start_car;op:drive_to_dest".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "op:start_car".into(),
+            premise: vec!["car_working=true".into()],
+            conclusion: "car_started=true".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "op:drive_to_dest".into(),
+            premise: vec!["car_started=true".into()],
+            conclusion: "!at=home;at=dest".into(),
+            certainty: 1.0,
+        },
+    ];
+
+    let output = dispatch_breed_test("htn_planning", &input)
+        .expect("htn_planning run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    assert_eq!(output.selected.as_deref(), Some("op:start_car,op:drive_to_dest"));
+}
+
+

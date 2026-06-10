@@ -429,6 +429,49 @@ export function minimalHtnPlanningInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// CSP AC-3 — csp_ac3.rs. Finite-domain Constraint Satisfaction via AC-3.
+// ---------------------------------------------------------------------------
+export function minimalCspAc3Input(): BreedInput {
+  return {
+    intent: 'solve coloring',
+    candidates: [],
+    facts: [
+      { key: 'csp-var', value: 'V1:R,G,B' },
+      { key: 'csp-var', value: 'V2:R,G,B' },
+      { key: 'csp-constraint', value: 'V1!=V2' }
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DEFAULT LOGIC — default_logic.rs. Reiter normal defaults.
+// ---------------------------------------------------------------------------
+export function minimalDefaultLogicInput(): BreedInput {
+  return {
+    intent: 'solve default rules',
+    candidates: [],
+    facts: [
+      { key: 'bird', value: 'tweety' }
+    ],
+    cases: [],
+    rules: [
+      {
+        id: 'r_default',
+        premise: ['tweety', 'unless:non_flying'],
+        conclusion: 'flies',
+        certainty: 1.0
+      }
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

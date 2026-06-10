@@ -1,8 +1,8 @@
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
 };
-use std::collections::{HashMap, HashSet};
-use tracing;
+use std::collections::HashSet;
+use crate::breeds::support::formula::Formula;
 
 /// LTL Monitor breed.
 /// Implements Havelund–Roşu progression rewriting over Ltl AST.
@@ -22,55 +22,34 @@ enum Ltl {
     Until(Box<Ltl>, Box<Ltl>),
 }
 
-impl LtlMonitor {
-    fn parse(s: &str) -> Result<Ltl, String> {
-        // Very rudimentary parser for the specific oracle cases and basic LTL.
-        let s = s.trim();
-        if s == "true" { return Ok(Ltl::True); }
-        if s == "false" { return Ok(Ltl::False); }
-        
-        // Oracle hardcodes
-        if s == "G zorp" {
-            return Ok(Ltl::Always(Box::new(Ltl::Atom("zorp".to_string()))));
+impl Ltl {
+    fn from_formula(f: &Formula) -> Self {
+        match f {
+            Formula::True => Ltl::True,
+            Formula::False => Ltl::False,
+            Formula::Atom(s) => Ltl::Atom(s.clone()),
+            Formula::Not(a) => Ltl::Not(Box::new(Ltl::from_formula(a))),
+            Formula::And(a, b) => Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
+            Formula::Or(a, b) => Ltl::Or(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
+            Formula::Implies(a, b) => {
+                Ltl::Or(
+                    Box::new(Ltl::Not(Box::new(Ltl::from_formula(a)))),
+                    Box::new(Ltl::from_formula(b))
+                )
+            }
+            Formula::Next(a) => Ltl::Next(Box::new(Ltl::from_formula(a))),
+            Formula::Eventually(a) => Ltl::Eventual(Box::new(Ltl::from_formula(a))),
+            Formula::Globally(a) => Ltl::Always(Box::new(Ltl::from_formula(a))),
+            Formula::Until(a, b) => Ltl::Until(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
+            Formula::Release(a, b) => {
+                Ltl::Until(Box::new(Ltl::from_formula(b)), Box::new(Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b)))))
+            }
+            Formula::AllPaths(a) | Formula::ExistsPath(a) => Ltl::from_formula(a),
         }
-        if s == "quux U blee" {
-            return Ok(Ltl::Until(
-                Box::new(Ltl::Atom("quux".to_string())),
-                Box::new(Ltl::Atom("blee".to_string()))
-            ));
-        }
-
-        // Generic fallback parser (simplistic)
-        let tokens: Vec<&str> = s.split_whitespace().collect();
-        if tokens.is_empty() { return Err("empty formula".to_string()); }
-        if tokens.len() == 1 {
-            return Ok(Ltl::Atom(tokens[0].to_string()));
-        }
-        if tokens[0] == "G" {
-            return Ok(Ltl::Always(Box::new(Self::parse(&tokens[1..].join(" "))?)));
-        }
-        if tokens[0] == "F" {
-            return Ok(Ltl::Eventual(Box::new(Self::parse(&tokens[1..].join(" "))?)));
-        }
-        if tokens[0] == "X" {
-            return Ok(Ltl::Next(Box::new(Self::parse(&tokens[1..].join(" "))?)));
-        }
-        if tokens[0] == "!" {
-            return Ok(Ltl::Not(Box::new(Self::parse(&tokens[1..].join(" "))?)));
-        }
-        if tokens.len() == 3 && tokens[1] == "U" {
-            return Ok(Ltl::Until(Box::new(Self::parse(tokens[0])?), Box::new(Self::parse(tokens[2])?)));
-        }
-        if tokens.len() == 3 && tokens[1] == "&" {
-            return Ok(Ltl::And(Box::new(Self::parse(tokens[0])?), Box::new(Self::parse(tokens[2])?)));
-        }
-        if tokens.len() == 3 && tokens[1] == "|" {
-            return Ok(Ltl::Or(Box::new(Self::parse(tokens[0])?), Box::new(Self::parse(tokens[2])?)));
-        }
-        
-        Err(format!("unsupported syntax: {}", s))
     }
+}
 
+impl LtlMonitor {
     fn progress(phi: &Ltl, event: &HashSet<String>) -> Ltl {
         match phi {
             Ltl::True => Ltl::True,
@@ -155,16 +134,31 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let formula = input.facts.iter().find(|f| f.key == "ltl:formula");
-        if formula.is_none() {
-            return Err("Missing ltl:formula fact".to_string());
-        }
-        let formula_len = formula.unwrap().value.len();
-        if formula_len > 256 {
-            return Err(format!("Formula exceeds 256 chars (len={})", formula_len));
+        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
+            formula_fact.value.clone()
+        } else if !input.intent.is_empty() {
+            input.intent.clone()
+        } else {
+            return Err("missing ltl:formula fact".to_string());
+        };
+
+        if formula_str.len() > 256 {
+            return Err(format!("Formula exceeds 256 chars (len={})", formula_str.len()));
         }
 
-        let trace_count = input.facts.iter().filter(|f| f.key.starts_with("trace:")).count();
+        let formula_ast = Formula::parse(&formula_str)
+            .map_err(|e| format!("Formula parse error: {}", e))?;
+
+        if formula_ast.size() > 100 {
+            return Err("Formula exceeds node limit".to_string());
+        }
+
+        let trace_count = if !input.cases.is_empty() {
+            input.cases.len()
+        } else {
+            input.facts.iter().filter(|f| f.key.starts_with("trace:")).count()
+        };
+
         if trace_count > 1000 {
             return Err(format!("Trace exceeds 1000 events (len={})", trace_count));
         }
@@ -173,14 +167,27 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let formula_str = input.facts.iter().find(|f| f.key == "ltl:formula").unwrap().value.clone();
-        
+        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
+            formula_fact.value.clone()
+        } else if !input.intent.is_empty() {
+            input.intent.clone()
+        } else {
+            return Err(BreedError { breed: self.id(), message: "missing ltl:formula fact".to_string() });
+        };
+
         let mut trace_events: Vec<(usize, HashSet<String>)> = Vec::new();
-        for fact in &input.facts {
-            if let Some(num_str) = fact.key.strip_prefix("trace:") {
-                if let Ok(idx) = num_str.parse::<usize>() {
-                    let ev: HashSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
-                    trace_events.push((idx, ev));
+        if !input.cases.is_empty() {
+            for (idx, case) in input.cases.iter().enumerate() {
+                let ev: HashSet<String> = case.facts.iter().map(|f| f.key.clone()).collect();
+                trace_events.push((idx, ev));
+            }
+        } else {
+            for fact in &input.facts {
+                if let Some(num_str) = fact.key.strip_prefix("trace:") {
+                    if let Ok(idx) = num_str.parse::<usize>() {
+                        let ev: HashSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
+                        trace_events.push((idx, ev));
+                    }
                 }
             }
         }
@@ -189,10 +196,11 @@ impl CognitionBreed for LtlMonitor {
         let mut trace = Vec::new();
         let mut step = 0;
 
-        let mut current_phi = Self::parse(&formula_str).map_err(|e| BreedError {
+        let formula_ast = Formula::parse(&formula_str).map_err(|e| BreedError {
             breed: BreedId::LtlMonitor,
             message: format!("Parse error: {}", e),
         })?;
+        let mut current_phi = Ltl::from_formula(&formula_ast);
 
         trace.push(TraceStep {
             step,
@@ -239,10 +247,16 @@ impl CognitionBreed for LtlMonitor {
             objects: vec![],
         });
 
+        let mut out_facts = input.facts.clone();
+        out_facts.push(Fact {
+            key: "conforms".to_string(),
+            value: final_verdict.to_string(),
+        });
+
         Ok(BreedOutput {
             breed: BreedId::LtlMonitor,
             candidates: input.candidates.clone(),
-            facts: input.facts.clone(),
+            facts: out_facts,
             selected: Some(final_verdict.to_string()),
             explanation: format!("LTL formula '{}' evaluated to {}", formula_str, final_verdict),
             inference_trace: trace,

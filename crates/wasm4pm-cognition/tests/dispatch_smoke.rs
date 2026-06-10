@@ -542,6 +542,16 @@ fn test_all_55_breeds_exhaustiveness() {
         BreedId::AutoinstinctSemantics,
         BreedId::AutoinstinctNeurosis,
         BreedId::AutoinstinctVision,
+        BreedId::LtlMonitor,
+        BreedId::AllenTemporal,
+        BreedId::FuzzyLogic,
+        BreedId::BayesianNetwork,
+        BreedId::CspAc3,
+        BreedId::DefaultLogic,
+        BreedId::HtnPlanning,
+        BreedId::Ebl,
+        BreedId::DempsterShafer,
+        BreedId::FramesInheritance,
     ];
 
     for &breed_id in BreedId::ALL {

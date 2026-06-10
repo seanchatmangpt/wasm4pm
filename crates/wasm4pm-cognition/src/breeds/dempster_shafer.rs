@@ -7,6 +7,7 @@ use crate::breeds::{
 };
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
+/// Dempster-Shafer breed
 pub struct DempsterShafer;
 
 type Subset = u8;

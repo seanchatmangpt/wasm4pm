@@ -49,6 +49,10 @@ pub mod allen_temporal;
 pub mod fuzzy_logic;
 /// Module for bayesian_network
 pub mod bayesian_network;
+/// Module for dempster_shafer
+pub mod dempster_shafer;
+/// Module for frames_inheritance
+pub mod frames_inheritance;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).

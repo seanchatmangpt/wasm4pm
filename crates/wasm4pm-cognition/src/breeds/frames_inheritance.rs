@@ -32,6 +32,9 @@ impl CognitionBreed for FramesInheritance {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let parts: Vec<&str> = input.intent.split_whitespace().collect();
+        if parts.len() < 3 || parts[0] != "resolve" {
+            return Err(BreedError { breed: self.id(), message: "intent must be 'resolve <frame> <slot>'".to_string() });
+        }
         let target_frame = parts[1].to_string();
         let target_slot = parts[2].to_string();
 

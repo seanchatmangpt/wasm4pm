@@ -8,6 +8,7 @@
   },
   "input": {
     "intent": "Fuzzy control inference",
+    "candidates": [],
     "facts": [
       {"key": "temperature", "value": "25.0"},
       {"key": "fuzzy_set:temperature:warm", "value": "triangular 20,25,30"},
@@ -22,7 +23,8 @@
         "certainty": 1.0
       }
     ],
-    "goals": []
+    "goals": [],
+    "state": []
   },
   "expected": {
     "defuzzified_ventilation": 50.0

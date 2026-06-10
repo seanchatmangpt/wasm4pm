@@ -8,6 +8,7 @@
   },
   "input": {
     "intent": "G (req -> F res)",
+    "candidates": [],
     "facts": [],
     "cases": [
       {
@@ -37,7 +38,8 @@
       }
     ],
     "rules": [],
-    "goals": []
+    "goals": [],
+    "state": []
   },
   "expected": {
     "satisfies": true

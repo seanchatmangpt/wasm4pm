@@ -1,87 +1,111 @@
 use super::{BreedLifecycleModel, LifecyclePhase};
 
-/// LTL Monitor lifecycle: evaluate-state* -> evaluate-formula
+/// LTL Monitor lifecycle: ltl-init -> ltl-progress* -> ltl-verdict
 pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "ltl_monitor",
     phases: &[
         LifecyclePhase {
-            name: "evaluate-states",
-            kinds: &["evaluate-state"],
+            name: "init",
+            kinds: &["ltl-init"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "progress",
+            kinds: &["ltl-progress"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "evaluate-formula",
-            kinds: &["evaluate-formula"],
+            name: "verdict",
+            kinds: &["ltl-verdict"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// Allen Temporal lifecycle: init -> propagate* -> inconsistent?
+/// Allen Temporal lifecycle: allen-load* -> allen-compose* -> allen-verdict
 pub static ALLEN_TEMPORAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "allen_temporal",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["init"],
+            name: "load",
+            kinds: &["allen-load"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "propagation",
-            kinds: &["propagate", "inconsistent"],
+            kinds: &["allen-compose"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["allen-verdict"],
+            min_occurrences: 1,
+            max_occurrences: 1,
         },
     ],
 };
 
-/// Fuzzy Logic lifecycle: fuzzify -> fire-rule* -> defuzzify*
+/// Fuzzy Logic lifecycle: fuzzy-fuzzify* -> fuzzy-fire* -> fuzzy-aggregate* -> fuzzy-defuzz*
 pub static FUZZY_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "fuzzy_logic",
     phases: &[
         LifecyclePhase {
             name: "fuzzification",
-            kinds: &["fuzzify"],
+            kinds: &["fuzzy-fuzzify"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "rules-evaluation",
-            kinds: &["fire-rule"],
+            kinds: &["fuzzy-fire"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "aggregation",
+            kinds: &["fuzzy-aggregate"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "defuzzification",
-            kinds: &["defuzzify"],
-            min_occurrences: 0,
+            kinds: &["fuzzy-defuzz"],
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
     ],
 };
 
-/// Bayesian Network lifecycle: init -> enumerate* -> query-result
+/// Bayesian Network lifecycle: bn-load-cpt* -> bn-observe* -> bn-eliminate* -> bn-verdict
 pub static BAYESIAN_NETWORK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "bayesian_network",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["init"],
+            name: "load-cpt",
+            kinds: &["bn-load-cpt"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "enumeration",
-            kinds: &["enumerate"],
+            name: "observe",
+            kinds: &["bn-observe"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "query-result",
-            kinds: &["query-result"],
+            name: "eliminate",
+            kinds: &["bn-eliminate"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["bn-verdict"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
@@ -127,4 +151,55 @@ pub static DEMPSTER_SHAFER_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
     ],
 };
+
+/// CSP AC-3 lifecycle: csp-init -> csp-revise/csp-assign/csp-backtrack* -> csp-verdict
+pub static CSP_AC3_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "csp_ac3",
+    phases: &[
+        LifecyclePhase {
+            name: "init",
+            kinds: &["csp-init"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "propagation",
+            kinds: &["csp-revise", "csp-assign", "csp-backtrack"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["csp-verdict"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+/// Default Logic lifecycle: default-load -> default-block/default-fire* -> default-extension
+pub static DEFAULT_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "default_logic",
+    phases: &[
+        LifecyclePhase {
+            name: "load",
+            kinds: &["default-load"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "reasoning",
+            kinds: &["default-block", "default-fire"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["default-extension"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
+
 
