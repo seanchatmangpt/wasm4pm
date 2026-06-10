@@ -412,3 +412,136 @@ fn autoinstinct_learning_all_goals_achieved() {
         }
     }
 }
+
+// ===========================================================================
+// P1 TIER — refusal tests (one per breed)
+// ===========================================================================
+
+/// ltl_monitor: missing ltl:formula fact must be refused.
+#[test]
+fn ltl_monitor_missing_formula_refused() {
+    use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.facts = vec![fact("trace:0", "zorp")];
+    let err = LtlMonitor.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("ltl:formula"));
+}
+
+/// ltl_monitor: oversized formula (>256 chars) must be refused.
+#[test]
+fn ltl_monitor_oversized_formula_refused() {
+    use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.facts = vec![
+        fact("ltl:formula", &"a & ".repeat(65).trim_end_matches(" & ").to_string()),
+        fact("trace:0", "a"),
+    ];
+    // 65 * 4 - 3 = 257 chars
+    let err = LtlMonitor.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("256"));
+}
+
+/// allen_temporal: empty facts/state must be refused (AT-3 audit fix).
+#[test]
+fn allen_temporal_empty_facts_refused() {
+    use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let input = empty_base();
+    let err = AllenTemporal.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("relation") || err.contains("interval"));
+}
+
+/// fuzzy_logic: missing fuzzy:input facts must be refused.
+#[test]
+fn fuzzy_logic_missing_input_refused() {
+    use wasm4pm_cognition::breeds::fuzzy_logic::FuzzyLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.facts = vec![fact("fuzzy:zlorp:mid", "tri:2,5,8")];
+    input.rules = vec![rule("r1", vec!["fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0)];
+    let err = FuzzyLogic.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("fuzzy:input"));
+}
+
+/// bayesian_network: missing query goal must be refused.
+#[test]
+fn bayesian_network_missing_query_refused() {
+    use wasm4pm_cognition::breeds::bayesian_network::BayesianNetwork;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.facts = vec![fact("cpt:Q", "0.3")];
+    let err = BayesianNetwork.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("query"));
+}
+
+/// csp_ac3: more than 24 variables must be refused.
+#[test]
+fn csp_ac3_too_many_vars_refused() {
+    use wasm4pm_cognition::breeds::csp_ac3::CspAc3;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    for i in 0..25 {
+        input.facts.push(fact("csp-var", &format!("V{}:a,b", i)));
+    }
+    let err = CspAc3.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("25 > 24"));
+}
+
+/// default_logic: empty rules must be refused.
+#[test]
+fn default_logic_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::default_logic::DefaultLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.facts = vec![fact("obs", "wibble")];
+    let err = DefaultLogic.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("rule"));
+}
+
+/// htn_planning: rules without method:/op: ids must be refused.
+#[test]
+fn htn_planning_malformed_rules_refused() {
+    use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "task", "journey")];
+    input.rules = vec![rule("plain-rule", vec![], "x=y", 1.0)];
+    let err = HtnPlanning.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("method:"));
+}
+
+/// dempster_shafer: empty rules (no BPAs) must be refused.
+#[test]
+fn dempster_shafer_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::dempster_shafer::DempsterShafer;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.goals = vec![goal("query", "query", "flim")];
+    let err = DempsterShafer.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("probability assignments"));
+}
+
+/// frames_inheritance: malformed intent must be refused.
+#[test]
+fn frames_inheritance_malformed_intent_refused() {
+    use wasm4pm_cognition::breeds::frames_inheritance::FramesInheritance;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.intent = "what color is zilk".into();
+    input.facts = vec![fact("frame:zilk:isa", "welp")];
+    let err = FramesInheritance.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("resolve"));
+}
+
+/// ebl: missing domain theory must be refused.
+#[test]
+fn ebl_missing_domain_theory_refused() {
+    use wasm4pm_cognition::breeds::ebl::Ebl;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "drinkable(obj1)", "true")];
+    let err = Ebl.preconditions(&input).expect_err("must refuse");
+    assert!(err.contains("domain theory"));
+}

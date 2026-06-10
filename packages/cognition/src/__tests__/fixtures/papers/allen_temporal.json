@@ -1,0 +1,20 @@
+{
+  "breed": "allen_temporal",
+  "provenance": {
+    "paper": "Allen 1983",
+    "citation": "Allen, J. F. (1983). Maintaining Knowledge about Temporal Intervals. Communications of the ACM, 26(11), 832-843.",
+    "locus": "Table 1 (transitivity table) and Figure 5 (constraint propagation example). Published entry: m ; d = (o s d) — 'A meets B' composed with 'B during C' constrains A vs C to overlaps/starts/during.",
+    "extraction": "verbatim table entry",
+    "notes": "The asserted value 'o|d|s' is the Table 1 transitivity entry for meets-composed-with-during, in this implementation's fixed relation-index order p,pi,m,mi,o,oi,d,di,s,si,f,fi,eq."
+  },
+  "input": {
+    "intent": "propagate temporal constraints",
+    "facts": [
+      { "key": "relation", "value": "A,B,m" },
+      { "key": "relation", "value": "B,C,d" }
+    ]
+  },
+  "expected": {
+    "derived": { "derived:A,C": "o|d|s", "derived:C,A": "oi|di|si" }
+  }
+}

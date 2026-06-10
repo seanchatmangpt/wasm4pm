@@ -7,19 +7,33 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub mod allen_temporal;
 pub mod autoinstinct_learning;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
+pub mod bayesian_network;
 pub mod cbr;
+pub mod csp_ac3;
+pub mod default_logic;
+pub mod dempster_shafer;
 pub mod dendral;
+/// Breed dispatch (full lifecycle + test harness).
+pub mod dispatch;
+pub mod ebl;
 pub mod frame;
+pub mod frames_inheritance;
+pub mod fuzzy_logic;
 pub mod gps;
 pub mod hearsay;
+pub mod htn_planning;
+pub mod ltl_monitor;
 pub mod production_rules;
 pub mod prolog;
 pub mod soar;
 pub mod strips;
+/// Combinator core: shared proven algebraic machinery (Stage C1).
+pub mod support;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -50,6 +64,26 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
+    /// LTL runtime monitor via Havelund–Roşu progression (2001)
+    LtlMonitor,
+    /// Allen interval algebra path consistency (Allen 1983)
+    AllenTemporal,
+    /// Mamdani fuzzy inference (Mamdani & Assilian 1975)
+    FuzzyLogic,
+    /// Bayesian network: exact VE + d-separation (Pearl 1988)
+    BayesianNetwork,
+    /// CSP: AC-3 + MAC backtracking (Mackworth 1977)
+    CspAc3,
+    /// Reiter default logic (Reiter 1980)
+    DefaultLogic,
+    /// SHOP2-style HTN planning (Nau et al. 2003)
+    HtnPlanning,
+    /// Dempster–Shafer evidence combination (Shafer 1976)
+    DempsterShafer,
+    /// Minsky frame inheritance (Minsky 1974)
+    FramesInheritance,
+    /// Explanation-based learning (Mitchell et al. 1986)
+    Ebl,
 }
 
 impl fmt::Display for BreedId {
@@ -68,6 +102,16 @@ impl fmt::Display for BreedId {
             BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
             BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
             BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
+            BreedId::LtlMonitor => write!(f, "ltl_monitor"),
+            BreedId::AllenTemporal => write!(f, "allen_temporal"),
+            BreedId::FuzzyLogic => write!(f, "fuzzy_logic"),
+            BreedId::BayesianNetwork => write!(f, "bayesian_network"),
+            BreedId::CspAc3 => write!(f, "csp_ac3"),
+            BreedId::DefaultLogic => write!(f, "default_logic"),
+            BreedId::HtnPlanning => write!(f, "htn_planning"),
+            BreedId::DempsterShafer => write!(f, "dempster_shafer"),
+            BreedId::FramesInheritance => write!(f, "frames_inheritance"),
+            BreedId::Ebl => write!(f, "ebl"),
         }
     }
 }
@@ -305,60 +349,34 @@ pub trait CognitionBreed: Send + Sync {
 /// // Validation successful
 /// ```
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    use crate::breeds::autoinstinct_learning::AutoinstinctLearning;
-    use crate::breeds::autoinstinct_neurosis::AutoinstinctNeurosis;
-    use crate::breeds::autoinstinct_semantics::AutoinstinctSemantics;
-    use crate::breeds::autoinstinct_vision::AutoinstinctVision;
-    use crate::breeds::cbr::Cbr;
-    use crate::breeds::dendral::Dendral;
-    use crate::breeds::frame::Eliza;
-    use crate::breeds::gps::Gps;
-    use crate::breeds::hearsay::Hearsay;
-    use crate::breeds::production_rules::Mycin;
-    use crate::breeds::prolog::Prolog;
-    use crate::breeds::soar::Soar;
-    use crate::breeds::strips::Strips;
+    dispatch::dispatch_breed_test(breed, input)
+}
 
-    match breed {
-        "eliza" => Eliza
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_neurosis" => AutoinstinctNeurosis
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_semantics" => AutoinstinctSemantics
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_vision" => AutoinstinctVision
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_learning" => AutoinstinctLearning
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        other => Err(format!("unknown breed: {}", other)),
-    }
+impl BreedId {
+    /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
+    pub const ALL: [BreedId; 23] = [
+        BreedId::Eliza,
+        BreedId::Cbr,
+        BreedId::Dendral,
+        BreedId::Strips,
+        BreedId::Prolog,
+        BreedId::Mycin,
+        BreedId::Gps,
+        BreedId::Soar,
+        BreedId::Hearsay,
+        BreedId::AutoinstinctLearning,
+        BreedId::AutoinstinctSemantics,
+        BreedId::AutoinstinctNeurosis,
+        BreedId::AutoinstinctVision,
+        BreedId::LtlMonitor,
+        BreedId::AllenTemporal,
+        BreedId::FuzzyLogic,
+        BreedId::BayesianNetwork,
+        BreedId::CspAc3,
+        BreedId::DefaultLogic,
+        BreedId::HtnPlanning,
+        BreedId::DempsterShafer,
+        BreedId::FramesInheritance,
+        BreedId::Ebl,
+    ];
 }

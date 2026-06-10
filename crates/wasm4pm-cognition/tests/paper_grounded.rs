@@ -1414,3 +1414,300 @@ fn autoinstinct_semantics_paper_grounded() {
         }
     }
 }
+
+// ============================================================================
+// P1 TIER — paper-grounded oracles with published values asserted
+// ============================================================================
+
+/// Shared fixture parser for the P1 tier: builds a `BreedInput` from a
+/// fixture's `input`-shaped JSON object (intent/facts/rules/goals/state).
+fn parse_breed_input(inp: &serde_json::Value) -> BreedInput {
+    let mut facts = Vec::new();
+    if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+        for f in arr {
+            if let (Some(k), Some(v)) = (
+                f.get("key").and_then(|v| v.as_str()),
+                f.get("value").and_then(|v| v.as_str()),
+            ) {
+                facts.push(Fact { key: k.to_string(), value: v.to_string() });
+            }
+        }
+    }
+    let mut rules = Vec::new();
+    if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+        for r in arr {
+            if let (Some(id), Some(conclusion), Some(certainty)) = (
+                r.get("id").and_then(|v| v.as_str()),
+                r.get("conclusion").and_then(|v| v.as_str()),
+                r.get("certainty").and_then(|v| v.as_f64()),
+            ) {
+                let premise = r
+                    .get("premise")
+                    .and_then(|v| v.as_array())
+                    .map(|a| a.iter().filter_map(|p| p.as_str().map(String::from)).collect())
+                    .unwrap_or_default();
+                rules.push(Rule {
+                    id: id.to_string(),
+                    premise,
+                    conclusion: conclusion.to_string(),
+                    certainty: certainty as f32,
+                });
+            }
+        }
+    }
+    let mut goals = Vec::new();
+    if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+        for g in arr {
+            if let (Some(id), Some(pred), Some(val)) = (
+                g.get("id").and_then(|v| v.as_str()),
+                g.get("predicate").and_then(|v| v.as_str()),
+                g.get("value").and_then(|v| v.as_str()),
+            ) {
+                goals.push(Goal {
+                    id: id.to_string(),
+                    predicate: pred.to_string(),
+                    value: val.to_string(),
+                });
+            }
+        }
+    }
+    let mut state = Vec::new();
+    if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
+        for s in arr {
+            if let (Some(pred), Some(val)) = (
+                s.get("predicate").and_then(|v| v.as_str()),
+                s.get("value").and_then(|v| v.as_str()),
+            ) {
+                state.push(StateAtom { predicate: pred.to_string(), value: val.to_string() });
+            }
+        }
+    }
+    BreedInput {
+        intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("test").to_string(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules,
+        goals,
+        state,
+    }
+}
+
+fn load_fixture(breed: &str) -> serde_json::Value {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("mandatory paper fixture {} missing: {}", path, e));
+    serde_json::from_str(&content).unwrap_or_else(|e| panic!("fixture {} unparsable: {}", path, e))
+}
+
+/// Havelund & Roşu 2001 — progression over a finite trace: the traffic-light
+/// safety formula is SATISFIED on the conforming trace (good-prefix G
+/// semantics) and VIOLATED at exactly the red∧green event on the bad trace.
+#[test]
+fn ltl_monitor_paper_grounded() {
+    let json = load_fixture("ltl_monitor");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
+    let exp = &json["expected"];
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(if exp["verdict"].as_bool().unwrap() { "true" } else { "false" }),
+        "Havelund-Rosu 2001: conforming trace must satisfy G (red -> !green)"
+    );
+    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress as u64, exp["progress_steps"].as_u64().unwrap());
+
+    let bad = parse_breed_input(&json["violating_input"]);
+    let out_bad = dispatch_breed_test("ltl_monitor", &bad).expect("ltl run");
+    assert_eq!(out_bad.selected.as_deref(), Some("false"));
+    let progress_bad = out_bad.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress_bad as u64, exp["violating_progress_steps"].as_u64().unwrap());
+}
+
+/// Allen 1983 Table 1 — m∘d = (o s d): published transitivity-table entry.
+#[test]
+fn allen_temporal_paper_grounded() {
+    let json = load_fixture("allen_temporal");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("allen_temporal", &input).expect("allen run");
+    for (key, val) in json["expected"]["derived"].as_object().unwrap() {
+        let actual = out
+            .facts
+            .iter()
+            .find(|f| &f.key == key)
+            .unwrap_or_else(|| panic!("missing derived fact {}", key));
+        assert_eq!(
+            &actual.value,
+            val.as_str().unwrap(),
+            "Allen 1983 Table 1 entry mismatch for {}",
+            key
+        );
+    }
+}
+
+/// Mamdani & Assilian 1975 — min-firing + max aggregation + centroid:
+/// hand-derived 101-point discrete centroid of Tri(0,25,100) = 41.66667.
+#[test]
+fn fuzzy_logic_paper_grounded() {
+    let json = load_fixture("fuzzy_logic");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("fuzzy_logic", &input).expect("fuzzy run");
+    let exp = &json["expected"];
+    let fire = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "fuzzy-fire")
+        .expect("fire step");
+    let strength: f64 = fire.detail.rsplit(' ').next().unwrap().parse().unwrap();
+    assert!((strength - exp["fire_strength"].as_f64().unwrap()).abs() < 1e-9);
+    let out_fact = out
+        .facts
+        .iter()
+        .find(|f| f.key == exp["output_fact"].as_str().unwrap())
+        .expect("output fact");
+    let centroid: f64 = out_fact.value.parse().unwrap();
+    assert!(
+        (centroid - exp["centroid"].as_f64().unwrap()).abs()
+            < exp["centroid_tolerance"].as_f64().unwrap(),
+        "Mamdani centroid of asymmetric Tri(0,25,100) must be 41.66667 (+-1e-3), got {}",
+        centroid
+    );
+}
+
+/// Pearl 1988 — burglary network: P(B | j, m) = 0.284171835… to 1e-6.
+#[test]
+fn bayesian_network_paper_grounded() {
+    let json = load_fixture("bayesian_network");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("bayesian_network", &input).expect("bn run");
+    let verdict = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "bn-verdict")
+        .expect("verdict step");
+    let p: f64 = verdict.detail.split('=').nth(1).unwrap().parse().unwrap();
+    let expected = json["expected"]["posterior"].as_f64().unwrap();
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    assert!(
+        (p - expected).abs() < tol,
+        "Pearl 1988 P(B|j,m) must be 0.284171835 (+-1e-6), got {}",
+        p
+    );
+}
+
+/// Mackworth 1977 — AC-3 + search on a complete inequality triangle:
+/// exact lex-least coloring.
+#[test]
+fn csp_ac3_paper_grounded() {
+    let json = load_fixture("csp_ac3");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("csp_ac3", &input).expect("csp run");
+    assert_eq!(out.explanation, json["expected"]["explanation"].as_str().unwrap());
+    assert!(out.inference_trace.iter().any(|t| t.kind == "csp-assign"));
+}
+
+/// Reiter 1980 — Tweety: the penguin exception blocks the flies default.
+#[test]
+fn default_logic_paper_grounded() {
+    let json = load_fixture("default_logic");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("default_logic", &input).expect("dl run");
+    let ext = out.selected.expect("extension");
+    let atoms: Vec<&str> = ext.split(", ").collect();
+    for atom in json["expected"]["extension_contains"].as_array().unwrap() {
+        assert!(
+            atoms.contains(&atom.as_str().unwrap()),
+            "Reiter 1980 extension must contain {}: {}",
+            atom,
+            ext
+        );
+    }
+    for atom in json["expected"]["extension_excludes"].as_array().unwrap() {
+        assert!(
+            !atoms.contains(&atom.as_str().unwrap()),
+            "Reiter 1980 extension must NOT contain {}: {}",
+            atom,
+            ext
+        );
+    }
+    assert!(out.inference_trace.iter().any(|t| t.kind == "default-block"));
+}
+
+/// Nau et al. 2003 — SHOP2 total-order decomposition: exact delivery plan.
+#[test]
+fn htn_planning_paper_grounded() {
+    let json = load_fixture("htn_planning");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("htn_planning", &input).expect("htn run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["plan"].as_str().unwrap()),
+        "SHOP2 logistics plan must be load,drive,unload exactly"
+    );
+}
+
+/// Shafer 1976 — two witnesses at 0.9: Bel(life) = 0.99 exactly.
+#[test]
+fn dempster_shafer_paper_grounded() {
+    let json = load_fixture("dempster_shafer");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("dempster_shafer", &input).expect("ds run");
+    let bel: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "belief:life")
+        .expect("belief fact")
+        .value
+        .parse()
+        .unwrap();
+    let expected = json["expected"]["belief"].as_f64().unwrap();
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    assert!(
+        (bel - expected).abs() < tol,
+        "Shafer 1976 two-witness Bel must be 0.99 exactly, got {}",
+        bel
+    );
+}
+
+/// Minsky 1974 — default inheritance: my_chair inherits legs=4 from chair.
+#[test]
+fn frames_inheritance_paper_grounded() {
+    let json = load_fixture("frames_inheritance");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("frames_inheritance", &input).expect("frames run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["selected"].as_str().unwrap())
+    );
+    let walks = out.inference_trace.iter().filter(|t| t.kind == "frame-walk").count();
+    assert_eq!(walks as u64, json["expected"]["walk_steps"].as_u64().unwrap());
+}
+
+/// Mitchell et al. 1986 — SafeToStack EBG: the learned operational rule is
+/// fully variablized over the training constants.
+#[test]
+fn ebl_paper_grounded() {
+    let json = load_fixture("ebl");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("ebl", &input).expect("ebl run");
+    let learned = out
+        .facts
+        .iter()
+        .find(|f| f.key == "ebl:rule")
+        .expect("ebl:rule fact")
+        .value
+        .clone();
+    let exp = &json["expected"];
+    for s in exp["rule_contains"].as_array().unwrap() {
+        assert!(learned.contains(s.as_str().unwrap()), "rule must contain {}: {}", s, learned);
+    }
+    for s in exp["rule_excludes"].as_array().unwrap() {
+        assert!(
+            !learned.contains(s.as_str().unwrap()),
+            "training constant {} must be variablized away: {}",
+            s,
+            learned
+        );
+    }
+    assert!(learned.contains('?'), "Mitchell 1986 EBG must produce a variablized rule");
+}

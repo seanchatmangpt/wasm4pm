@@ -1,0 +1,27 @@
+{
+  "breed": "ebl",
+  "provenance": {
+    "paper": "Mitchell, Keller & Kedar-Cabelli 1986",
+    "citation": "Mitchell, T. M., Keller, R. M., & Kedar-Cabelli, S. T. (1986). Explanation-Based Generalization: A Unifying View. Machine Learning, 1(1), 47-80.",
+    "locus": "Section 3 — the SafeToStack(obj1,obj2) worked example: SafeToStack <- Lighter; Lighter derived from the objects' weights; goal regression over the explanation yields an operational rule with variables.",
+    "extraction": "verbatim example (flattened weight literals; no arithmetic Less in this breed's term language)",
+    "notes": "Training: safe_to_stack(obj1,obj2) proved from weight(obj1,light), weight(obj2,heavy). EBG must yield an operational rule whose premises mention only the observable weight predicates with VARIABLES in the object positions."
+  },
+  "input": {
+    "intent": "learn safe_to_stack",
+    "facts": [
+      { "key": "weight(obj1,light)", "value": "true" },
+      { "key": "weight(obj2,heavy)", "value": "true" }
+    ],
+    "rules": [
+      { "id": "r_safe", "premise": ["lighter(?x,?y)"], "conclusion": "safe_to_stack(?x,?y)", "certainty": 1.0 },
+      { "id": "r_lighter", "premise": ["weight(?x,light)", "weight(?y,heavy)"], "conclusion": "lighter(?x,?y)", "certainty": 1.0 }
+    ],
+    "goals": [ { "id": "g1", "predicate": "safe_to_stack(obj1,obj2)", "value": "true" } ]
+  },
+  "expected": {
+    "rule_contains": ["weight(", "safe_to_stack("],
+    "rule_excludes": ["obj1", "obj2"],
+    "has_variable": true
+  }
+}

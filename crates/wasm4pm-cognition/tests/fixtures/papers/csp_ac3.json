@@ -1,0 +1,24 @@
+{
+  "breed": "csp_ac3",
+  "provenance": {
+    "paper": "Mackworth 1977",
+    "citation": "Mackworth, A. K. (1977). Consistency in Networks of Relations. Artificial Intelligence, 8(1), 99-118.",
+    "locus": "Section 3 (AC-3 algorithm) applied to the paper's running class of binary constraint networks; graph coloring is the canonical inequality network.",
+    "extraction": "algorithm + hand-derived solution",
+    "notes": "Complete triangle over lex-ordered 3-value domains. Hand derivation under MRV + lexicographic value order + MAC: X=B, then Y in {G,R} -> Y=G, then Z in {R} -> Z=R."
+  },
+  "input": {
+    "intent": "color the constraint network",
+    "facts": [
+      { "key": "csp-var", "value": "X:B,G,R" },
+      { "key": "csp-var", "value": "Y:B,G,R" },
+      { "key": "csp-var", "value": "Z:B,G,R" },
+      { "key": "csp-constraint", "value": "X!=Y" },
+      { "key": "csp-constraint", "value": "Y!=Z" },
+      { "key": "csp-constraint", "value": "X!=Z" }
+    ]
+  },
+  "expected": {
+    "explanation": "SAT: X=B, Y=G, Z=R"
+  }
+}
