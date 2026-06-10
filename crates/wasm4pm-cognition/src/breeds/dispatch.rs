@@ -4,7 +4,8 @@ use crate::breeds::{
     cbr::Cbr, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
     production_rules::Mycin, prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, default_logic::DefaultLogic, BreedInput, BreedOutput, CognitionBreed,
+    bayesian_network::BayesianNetwork, default_logic::DefaultLogic, pomdp::Pomdp,
+    markov_logic::MarkovLogic, BreedInput, BreedOutput, CognitionBreed,
 };
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
@@ -97,8 +98,8 @@ pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, St
         "rl_symbolic" => Err("unsupported breed: rl_symbolic".to_string()),
         "ctl_check" => Err("unsupported breed: ctl_check".to_string()),
         "naive_physics" => Err("unsupported breed: naive_physics".to_string()),
-        "pomdp" => Err("unsupported breed: pomdp".to_string()),
-        "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
+        "pomdp" => run_breed(&Pomdp, input),
+        "markov_logic" => run_breed(&MarkovLogic, input),
         "meta_reasoning" => Err("unsupported breed: meta_reasoning".to_string()),
         "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
         "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),
@@ -160,8 +161,8 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
         "rl_symbolic" => Err("unsupported breed: rl_symbolic".to_string()),
         "ctl_check" => Err("unsupported breed: ctl_check".to_string()),
         "naive_physics" => Err("unsupported breed: naive_physics".to_string()),
-        "pomdp" => Err("unsupported breed: pomdp".to_string()),
-        "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
+        "pomdp" => run_breed(&Pomdp, input),
+        "markov_logic" => run_breed(&MarkovLogic, input),
         "meta_reasoning" => Err("unsupported breed: meta_reasoning".to_string()),
         "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
         "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),

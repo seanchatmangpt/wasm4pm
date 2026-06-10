@@ -1,0 +1,57 @@
+{
+  "input": {
+    "intent": "solve_tiger",
+    "facts": [
+      { "key": "pomdp:state", "value": "tiger_left" },
+      { "key": "pomdp:state", "value": "tiger_right" },
+      { "key": "pomdp:action", "value": "listen" },
+      { "key": "pomdp:action", "value": "open_left" },
+      { "key": "pomdp:action", "value": "open_right" },
+      { "key": "pomdp:obs", "value": "hear_left" },
+      { "key": "pomdp:obs", "value": "hear_right" },
+
+      { "key": "pomdp:init", "value": "tiger_left:0.5" },
+      { "key": "pomdp:init", "value": "tiger_right:0.5" },
+
+      { "key": "pomdp:trans:tiger_left,listen,tiger_left", "value": "1.0" },
+      { "key": "pomdp:trans:tiger_right,listen,tiger_right", "value": "1.0" },
+      { "key": "pomdp:trans:tiger_left,open_left,tiger_left", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_left,open_left,tiger_right", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_right,open_left,tiger_left", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_right,open_left,tiger_right", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_left,open_right,tiger_left", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_left,open_right,tiger_right", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_right,open_right,tiger_left", "value": "0.5" },
+      { "key": "pomdp:trans:tiger_right,open_right,tiger_right", "value": "0.5" },
+
+      { "key": "pomdp:obs_prob:listen,tiger_left,hear_left", "value": "0.85" },
+      { "key": "pomdp:obs_prob:listen,tiger_left,hear_right", "value": "0.15" },
+      { "key": "pomdp:obs_prob:listen,tiger_right,hear_left", "value": "0.15" },
+      { "key": "pomdp:obs_prob:listen,tiger_right,hear_right", "value": "0.85" },
+      { "key": "pomdp:obs_prob:open_left,tiger_left,hear_left", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_left,tiger_left,hear_right", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_left,tiger_right,hear_left", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_left,tiger_right,hear_right", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_right,tiger_left,hear_left", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_right,tiger_left,hear_right", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_right,tiger_right,hear_left", "value": "0.5" },
+      { "key": "pomdp:obs_prob:open_right,tiger_right,hear_right", "value": "0.5" },
+
+      { "key": "pomdp:reward:tiger_left,listen", "value": "-1.0" },
+      { "key": "pomdp:reward:tiger_right,listen", "value": "-1.0" },
+      { "key": "pomdp:reward:tiger_left,open_left", "value": "-100.0" },
+      { "key": "pomdp:reward:tiger_right,open_left", "value": "10.0" },
+      { "key": "pomdp:reward:tiger_left,open_right", "value": "10.0" },
+      { "key": "pomdp:reward:tiger_right,open_right", "value": "-100.0" },
+
+      { "key": "pomdp:gamma", "value": "0.95" },
+      { "key": "pomdp:horizon", "value": "4" },
+      
+      { "key": "pomdp:history", "value": "listen,hear_left" }
+    ]
+  },
+  "expected": {
+    "posterior_tiger_left": 0.85,
+    "action": "listen"
+  }
+}

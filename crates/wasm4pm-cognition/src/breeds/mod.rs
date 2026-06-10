@@ -49,6 +49,10 @@ pub mod allen_temporal;
 pub mod fuzzy_logic;
 /// Module for bayesian_network
 pub mod bayesian_network;
+/// Module for pomdp
+pub mod pomdp;
+/// Module for markov_logic
+pub mod markov_logic;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).

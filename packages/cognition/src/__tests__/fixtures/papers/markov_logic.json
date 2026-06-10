@@ -1,0 +1,17 @@
+{
+  "input": {
+    "intent": "map_inference",
+    "facts": [
+      { "key": "mln:atom", "value": "A" },
+      { "key": "mln:atom", "value": "B" },
+      { "key": "mln:atom", "value": "C" },
+      { "key": "mln:clause", "value": "!A,B:1.5" },
+      { "key": "mln:clause", "value": "!B,C:2.0" },
+      { "key": "mln:clause", "value": "A:0.5" },
+      { "key": "mln:evidence", "value": "C:false" }
+    ]
+  },
+  "expected": {
+    "cost": 0.5
+  }
+}
