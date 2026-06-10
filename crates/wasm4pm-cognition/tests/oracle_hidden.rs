@@ -1926,6 +1926,7 @@ fn partial_order_plan_hidden_threat() {
     ];
     input.rules = vec![
         rule("move-blee-glorp", vec!["robot_at=blee_loc"], "robot_at=glorp_loc;!robot_at=blee_loc;!clean(blee_loc)=true", 1.0),
+        rule("move-glorp-blee", vec!["robot_at=glorp_loc"], "robot_at=blee_loc;!robot_at=glorp_loc;!clean(glorp_loc)=true", 1.0),
         rule("clean-blee", vec!["robot_at=blee_loc"], "clean(blee_loc)=true", 1.0),
         rule("pick-zorp-blee", vec!["at(zorp_pkg)=blee_loc", "robot_at=blee_loc"], "holding(zorp_pkg)=true;!at(zorp_pkg)=blee_loc", 1.0),
         rule("drop-zorp-glorp", vec!["holding(zorp_pkg)=true", "robot_at=glorp_loc"], "at(zorp_pkg)=glorp_loc;!holding(zorp_pkg)=true", 1.0),
