@@ -49,6 +49,7 @@ import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
 import { suggest } from './commands/suggest.js';
+import { autopilot } from './commands/autopilot.js';
 import { pipeline } from './commands/pipeline.js';
 import { oracle } from './commands/oracle.js';
 import { workflow } from './commands/workflow.js';
@@ -166,6 +167,7 @@ ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: config algorithm, else profile default)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
   ${GREEN}wpm run${RESET} <log.xes> --auto-select      Auto-pick best algorithm for the configured profile
+  ${GREEN}wpm autopilot${RESET} <log.xes>             Closed-loop AutoML: fingerprint → recommend → run → interpret → learn
   ${GREEN}wpm suggest${RESET} <log.xes>               Analyse log and recommend top algorithms for your goal
   ${GREEN}wpm suggest${RESET} <log.xes> --goal quality Show highest-quality algorithm recommendations
   ${GREEN}wpm compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
@@ -326,6 +328,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     run,
     analyze: analyzeCommand,
     suggest,
+    autopilot,
     compare,
     quality,
     conformance,

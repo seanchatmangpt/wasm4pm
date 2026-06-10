@@ -11,6 +11,7 @@
  */
 
 import { z } from 'zod';
+import { benchSpeedScore } from './benchmark-costs.js';
 
 export const LogStatsSchema = z.object({
   traceCount: z.number(),
@@ -146,23 +147,29 @@ interface CandidateEntry {
   expectedPrecision: number;
 }
 
+/** Speed values for benchmarked algorithms come from measured dispatch costs
+ *  (benchmark-costs.ts, normalized 0-100); unmeasured keep hand-authored values. */
 const DISCOVERY_CANDIDATES: CandidateEntry[] = [
-  { id: 'dfg',                quality: 30, speed: 95, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.40 },
+  { id: 'dfg',                quality: 30, speed: benchSpeedScore('dfg') ?? 95, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.40 },
   { id: 'process_skeleton',   quality: 25, speed: 97, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.30 },
   { id: 'simd_streaming_dfg', quality: 28, speed: 98, scalesWell: true,  streamingOnly: true,  expectedFitness: 1.0, expectedPrecision: 0.38 },
-  { id: 'heuristic_miner',    quality: 50, speed: 75, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.72 },
+  { id: 'heuristic_miner',    quality: 50, speed: benchSpeedScore('heuristic_miner') ?? 75, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.72 },
   { id: 'alpha_plus_plus',    quality: 50, speed: 80, scalesWell: false, expectedFitness: 0.80, expectedPrecision: 0.68 },
-  { id: 'inductive_miner',    quality: 55, speed: 70, scalesWell: true,  expectedFitness: 0.87, expectedPrecision: 0.74 },
-  { id: 'hill_climbing',      quality: 55, speed: 60, scalesWell: false, expectedFitness: 0.84, expectedPrecision: 0.70 },
+  { id: 'inductive_miner',    quality: 55, speed: benchSpeedScore('inductive_miner') ?? 70, scalesWell: true,  expectedFitness: 0.87, expectedPrecision: 0.74 },
+  { id: 'hill_climbing',      quality: 55, speed: benchSpeedScore('hill_climbing') ?? 60, scalesWell: false, expectedFitness: 0.84, expectedPrecision: 0.70 },
   { id: 'declare',            quality: 50, speed: 65, scalesWell: false, expectedFitness: 0.78, expectedPrecision: 0.65 },
-  { id: 'simulated_annealing',quality: 65, speed: 45, scalesWell: false, expectedFitness: 0.86, expectedPrecision: 0.76 },
+  { id: 'simulated_annealing',quality: 65, speed: benchSpeedScore('simulated_annealing') ?? 45, scalesWell: false, expectedFitness: 0.86, expectedPrecision: 0.76 },
   { id: 'a_star',             quality: 70, speed: 40, scalesWell: false, expectedFitness: 0.88, expectedPrecision: 0.78 },
   { id: 'aco',                quality: 75, speed: 35, scalesWell: false, expectedFitness: 0.90, expectedPrecision: 0.80 },
   { id: 'pso',                quality: 75, speed: 30, scalesWell: false, expectedFitness: 0.90, expectedPrecision: 0.80 },
   { id: 'genetic_algorithm',  quality: 80, speed: 25, scalesWell: false, expectedFitness: 0.93, expectedPrecision: 0.83 },
-  { id: 'ilp',                quality: 90, speed: 20, scalesWell: false, expectedFitness: 0.97, expectedPrecision: 0.90 },
+  { id: 'ilp',                quality: 90, speed: benchSpeedScore('ilp') ?? 20, scalesWell: false, expectedFitness: 0.97, expectedPrecision: 0.90 },
   { id: 'optimized_dfg',      quality: 85, speed: 30, scalesWell: true,  expectedFitness: 0.95, expectedPrecision: 0.82 },
   { id: 'alignments',         quality: 85, speed: 15, scalesWell: false, expectedFitness: 0.95, expectedPrecision: 0.88 },
+  { id: 'batches',            quality: 55, speed: benchSpeedScore('batches') ?? 80, scalesWell: true,  expectedFitness: 0.80, expectedPrecision: 0.65 },
+  { id: 'correlation_miner',  quality: 60, speed: benchSpeedScore('correlation_miner') ?? 78, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.70 },
+  { id: 'transition_system',  quality: 50, speed: benchSpeedScore('transition_system') ?? 78, scalesWell: true,  expectedFitness: 0.85, expectedPrecision: 0.68 },
+  { id: 'log_to_trie',        quality: 50, speed: benchSpeedScore('log_to_trie') ?? 77, scalesWell: true,  expectedFitness: 0.85, expectedPrecision: 0.66 },
 ];
 
 /**
