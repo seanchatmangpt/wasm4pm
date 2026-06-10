@@ -219,6 +219,16 @@ describe('autoinstinct_learning breed integration', () => {
   });
 });
 
+describe('htn_planning breed integration', () => {
+  it('produces a total-order task decomposition plan', async () => {
+    const result = (await fixtures.runBreed('htn_planning', fixtures.minimalHtnPlanningInput())) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('HtnPlanning');
+    expect(result.output.selected).toBe('op:hail_taxi,op:pay_taxi');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
 // =============================================================================
 // cognition_verify integration (positive + negative oracle)
 // =============================================================================

@@ -2,7 +2,7 @@
 //! routes correctly through the dispatch mechanism and produces non-empty traces.
 
 use wasm4pm_cognition::breeds::{
-    dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
+    dispatch_breed, dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
 
 /// Create a minimal valid BreedInput for testing.
@@ -523,4 +523,103 @@ fn dispatch_output_receipt_consistency() {
     // Verify input is serializable
     let input_json = serde_json::to_string(&input).expect("input must be JSON serializable");
     assert!(!input_json.is_empty(), "input JSON must not be empty");
+}
+
+#[test]
+fn test_all_55_breeds_exhaustiveness() {
+    let input = minimal_input();
+    let supported_breeds = [
+        BreedId::Eliza,
+        BreedId::Cbr,
+        BreedId::Dendral,
+        BreedId::Strips,
+        BreedId::Prolog,
+        BreedId::Mycin,
+        BreedId::Gps,
+        BreedId::Soar,
+        BreedId::Hearsay,
+        BreedId::AutoinstinctLearning,
+        BreedId::AutoinstinctSemantics,
+        BreedId::AutoinstinctNeurosis,
+        BreedId::AutoinstinctVision,
+    ];
+
+    for &breed_id in BreedId::ALL {
+        let breed_name = breed_id.to_string();
+        let is_supported = supported_breeds.contains(&breed_id);
+
+        let res_dispatch = dispatch_breed(&breed_name, &input);
+        let res_test = dispatch_breed_test(&breed_name, &input);
+
+        if is_supported {
+            match (res_dispatch, res_test) {
+                (Ok(out1), Ok(out2)) => {
+                    assert_eq!(out1.breed, breed_id);
+                    assert_eq!(out2.breed, breed_id);
+                }
+                (Err(err1), Ok(out2)) => {
+                    assert_eq!(out2.breed, breed_id);
+                    assert!(
+                        err1.contains("precondition failed") ||
+                        err1.contains("postcondition failed") ||
+                        err1.contains("OCEL conformance failure"),
+                        "Supported breed {} failed at dispatch with Err({:?}) but succeeded at test",
+                        breed_name, err1
+                    );
+                }
+                (Err(_), Err(_)) => {
+                    // Both failed, which is possible on minimal input
+                }
+                (Ok(out1), Err(err2)) => {
+                    panic!("Supported breed {}: dispatch succeeded ({:?}) but test failed ({:?})", breed_name, out1.breed, err2);
+                }
+            }
+        } else {
+            match (res_dispatch, res_test) {
+                (Err(err1), Err(err2)) => {
+                    assert_eq!(err1, err2);
+                    assert!(
+                        err1.contains("unsupported breed"),
+                        "Unsupported breed {} did not return unsupported breed error: {:?}",
+                        breed_name, err1
+                    );
+                }
+                other => {
+                    panic!("Unsupported breed {} did not fail on both dispatch and test: {:?}", breed_name, other);
+                }
+            }
+        }
+    }
+}
+
+
+/// Exhaustiveness: model_source and lifecycle_model_for agree for every BreedId —
+/// an implemented breed has BOTH an OCPN JSON source (which must parse) and a
+/// lifecycle model; an unimplemented breed has NEITHER.
+#[test]
+fn model_source_matches_lifecycle_model_for_every_breed() {
+    use wasm4pm_cognition::ocel::{lifecycle_model_for, model_sources::model_source};
+
+    for &breed_id in BreedId::ALL {
+        let name = breed_id.to_string();
+        let src = model_source(&name);
+        let model = lifecycle_model_for(&name);
+        assert_eq!(
+            src.is_some(),
+            model.is_some(),
+            "breed {}: model_source().is_some()={} but lifecycle_model_for().is_some()={}",
+            name,
+            src.is_some(),
+            model.is_some()
+        );
+        if let Some(json) = src {
+            let parsed: serde_json::Value = serde_json::from_str(json)
+                .unwrap_or_else(|e| panic!("breed {}: OCPN JSON does not parse: {}", name, e));
+            assert!(parsed.is_object(), "breed {}: OCPN JSON root must be an object", name);
+        }
+        if let Some(m) = model {
+            assert_eq!(m.breed_id, name, "breed {}: lifecycle model breed_id mismatch", name);
+            assert!(!m.phases.is_empty(), "breed {}: lifecycle model has no phases", name);
+        }
+    }
 }

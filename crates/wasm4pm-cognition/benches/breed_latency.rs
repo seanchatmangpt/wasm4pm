@@ -9,7 +9,9 @@ use wasm4pm_cognition::breeds::{
     autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
     autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
     cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
-    prolog::Prolog, soar::Soar, strips::Strips, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    prolog::Prolog, soar::Soar, strips::Strips,
+    ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
+    bayesian_network::BayesianNetwork, BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -51,6 +53,30 @@ fn make_input() -> BreedInput {
             },
             Fact {
                 key: "budget:high".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "formula".into(),
+                value: "G true".into(),
+            },
+            Fact {
+                key: "relation".into(),
+                value: "A meets B".into(),
+            },
+            Fact {
+                key: "temperature".into(),
+                value: "25.0".into(),
+            },
+            Fact {
+                key: "fuzzy_set:temperature:warm".into(),
+                value: "triangular 20,25,30".into(),
+            },
+            Fact {
+                key: "fuzzy_set:ventilation:medium".into(),
+                value: "triangular 10,50,90".into(),
+            },
+            Fact {
+                key: "Alarm".into(),
                 value: "true".into(),
             },
         ],
@@ -101,6 +127,48 @@ fn make_input() -> BreedInput {
                 conclusion: "prefer:managed-service".into(),
                 certainty: 0.70,
             },
+            Rule {
+                id: "rfuzzy".into(),
+                premise: vec!["temperature is warm".into()],
+                conclusion: "ventilation is medium".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r-burg".into(),
+                premise: vec![],
+                conclusion: "Burglary=true".into(),
+                certainty: 0.001,
+            },
+            Rule {
+                id: "r-eq".into(),
+                premise: vec![],
+                conclusion: "Earthquake=true".into(),
+                certainty: 0.002,
+            },
+            Rule {
+                id: "r-alarm1".into(),
+                premise: vec!["Burglary=true".into(), "Earthquake=true".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.95,
+            },
+            Rule {
+                id: "r-alarm2".into(),
+                premise: vec!["Burglary=true".into(), "Earthquake=false".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.94,
+            },
+            Rule {
+                id: "r-alarm3".into(),
+                premise: vec!["Burglary=false".into(), "Earthquake=true".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.29,
+            },
+            Rule {
+                id: "r-alarm4".into(),
+                premise: vec!["Burglary=false".into(), "Earthquake=false".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.001,
+            },
         ],
         goals: vec![
             Goal {
@@ -112,6 +180,11 @@ fn make_input() -> BreedInput {
                 id: "g2".into(),
                 predicate: "cost".into(),
                 value: "controlled".into(),
+            },
+            Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "Burglary".into(),
             },
         ],
         state: vec![
@@ -153,6 +226,12 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_semantics", AutoinstinctSemantics);
     bench_breed!(group, "autoinstinct_neurosis", AutoinstinctNeurosis);
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
+    bench_breed!(group, "htn_planning", HtnPlanning);
+    bench_breed!(group, "htn_planning", wasm4pm_cognition::breeds::htn_planning::HtnPlanning);
+    bench_breed!(group, "ltl_monitor", LtlMonitor);
+    bench_breed!(group, "allen_temporal", AllenTemporal);
+    bench_breed!(group, "fuzzy_logic", FuzzyLogic);
+    bench_breed!(group, "bayesian_network", BayesianNetwork);
 
     group.finish();
 }

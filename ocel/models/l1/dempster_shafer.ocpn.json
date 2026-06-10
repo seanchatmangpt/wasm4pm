@@ -1,0 +1,24 @@
+{
+  "id": "ocel_dempster_shafer_v1",
+  "name": "Dempster-Shafer Lifecycle Model",
+  "phases": [
+    {
+      "name": "load-bpa",
+      "kinds": ["ds-load-bpa"],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "combine",
+      "kinds": ["ds-combine"],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "belief",
+      "kinds": ["ds-belief"],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    }
+  ]
+}

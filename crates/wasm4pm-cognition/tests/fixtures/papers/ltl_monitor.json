@@ -1,0 +1,45 @@
+{
+  "breed": "ltl_monitor",
+  "provenance": {
+    "paper": "Havelund-2001-LTL-monitoring.pdf",
+    "citation": "K. Havelund, G. Rosu (2001). Monitoring Programs using LTL. Electronic Notes in Theoretical Computer Science, Vol. 55, No. 2.",
+    "locus": "§3 Illustrative monitoring example",
+    "extraction": "grounded"
+  },
+  "input": {
+    "intent": "G (req -> F res)",
+    "facts": [],
+    "cases": [
+      {
+        "id": "state0",
+        "intent": "",
+        "architecture": "",
+        "outcome_score": 1.0,
+        "facts": [
+          {"key": "req", "value": "true"}
+        ]
+      },
+      {
+        "id": "state1",
+        "intent": "",
+        "architecture": "",
+        "outcome_score": 1.0,
+        "facts": []
+      },
+      {
+        "id": "state2",
+        "intent": "",
+        "architecture": "",
+        "outcome_score": 1.0,
+        "facts": [
+          {"key": "res", "value": "true"}
+        ]
+      }
+    ],
+    "rules": [],
+    "goals": []
+  },
+  "expected": {
+    "satisfies": true
+  }
+}

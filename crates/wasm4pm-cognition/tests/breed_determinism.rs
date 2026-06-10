@@ -192,6 +192,123 @@ fn autoinstinct_learning_input() -> BreedInput {
     }
 }
 
+fn ltl_monitor_input() -> BreedInput {
+    let mut input = minimal_input();
+    input.intent = "G (req -> F res)".into();
+    input.cases = vec![
+        Case {
+            id: "state0".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 1.0,
+            facts: vec![Fact { key: "req".into(), value: "true".into() }],
+        },
+        Case {
+            id: "state1".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 1.0,
+            facts: vec![Fact { key: "res".into(), value: "true".into() }],
+        },
+    ];
+    input
+}
+
+fn allen_temporal_input() -> BreedInput {
+    BreedInput {
+        intent: "Allen".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "relation".into(), value: "A meets B".into() },
+            Fact { key: "relation".into(), value: "B meets C".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn fuzzy_logic_input() -> BreedInput {
+    BreedInput {
+        intent: "Fuzzy".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "temperature".into(), value: "25.0".into() },
+            Fact { key: "fuzzy_set:temperature:warm".into(), value: "triangular 20,25,30".into() },
+            Fact { key: "fuzzy_set:ventilation:medium".into(), value: "triangular 10,50,90".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r1".into(),
+                premise: vec!["temperature is warm".into()],
+                conclusion: "ventilation is medium".into(),
+                certainty: 1.0,
+            }
+        ],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn bayesian_network_input() -> BreedInput {
+    BreedInput {
+        intent: "Bayesian".into(),
+        candidates: vec![],
+        facts: vec![
+            Fact { key: "Alarm".into(), value: "true".into() },
+        ],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "r-burg".into(),
+                premise: vec![],
+                conclusion: "Burglary=true".into(),
+                certainty: 0.001,
+            },
+            Rule {
+                id: "r-eq".into(),
+                premise: vec![],
+                conclusion: "Earthquake=true".into(),
+                certainty: 0.002,
+            },
+            Rule {
+                id: "r-alarm1".into(),
+                premise: vec!["Burglary=true".into(), "Earthquake=true".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.95,
+            },
+            Rule {
+                id: "r-alarm2".into(),
+                premise: vec!["Burglary=true".into(), "Earthquake=false".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.94,
+            },
+            Rule {
+                id: "r-alarm3".into(),
+                premise: vec!["Burglary=false".into(), "Earthquake=true".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.29,
+            },
+            Rule {
+                id: "r-alarm4".into(),
+                premise: vec!["Burglary=false".into(), "Earthquake=false".into()],
+                conclusion: "Alarm=true".into(),
+                certainty: 0.001,
+            },
+        ],
+        goals: vec![
+            Goal {
+                id: "g1".into(),
+                predicate: "query".into(),
+                value: "Burglary".into(),
+            }
+        ],
+        state: vec![],
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Helper: run breed twice, assert serialized output is identical
 // ---------------------------------------------------------------------------
@@ -401,12 +518,32 @@ fn hearsay_fact_order_independence() {
     );
 }
 
+#[test]
+fn determinism_ltl_monitor() {
+    assert_deterministic("ltl_monitor", &ltl_monitor_input());
+}
+
+#[test]
+fn determinism_allen_temporal() {
+    assert_deterministic("allen_temporal", &allen_temporal_input());
+}
+
+#[test]
+fn determinism_fuzzy_logic() {
+    assert_deterministic("fuzzy_logic", &fuzzy_logic_input());
+}
+
+#[test]
+fn determinism_bayesian_network() {
+    assert_deterministic("bayesian_network", &bayesian_network_input());
+}
+
 // ---------------------------------------------------------------------------
-// Count assertion: exactly 13 breed determinism tests exist in this suite
+// Count assertion: exactly 17 breed determinism tests exist in this suite
 // ---------------------------------------------------------------------------
 
 #[test]
-fn exactly_13_breed_pairs_covered() {
+fn exactly_17_breed_pairs_covered() {
     let covered = [
         "eliza",
         "cbr",
@@ -421,6 +558,10 @@ fn exactly_13_breed_pairs_covered() {
         "autoinstinct_semantics",
         "autoinstinct_neurosis",
         "autoinstinct_learning",
+        "ltl_monitor",
+        "allen_temporal",
+        "fuzzy_logic",
+        "bayesian_network",
     ];
-    assert_eq!(covered.len(), 13, "must cover exactly 13 breeds");
+    assert_eq!(covered.len(), 17, "must cover exactly 17 breeds");
 }

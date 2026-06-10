@@ -44,67 +44,6 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
     Ok(js_val(&s))
 }
 
-/// Run a breed through its full lifecycle: preconditions → run → postconditions.
-///
-/// Enforces the `CognitionBreed` contract at the WASM boundary:
-/// - `preconditions` must pass before execution begins (TPS fail-fast).
-/// - `postconditions` must pass after execution (FM-5 fraud guard: empty
-///   inference_trace is rejected as proof that real work did not occur).
-fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutput, String> {
-    b.preconditions(input)
-        .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
-    let mut output = b
-        .run(input)
-        .map_err(|e| format!("{}: {}", e.breed, e.message))?;
-    b.postconditions(&output)
-        .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
-
-    // Derive OCEL and validate conformance (van der Aalst doctrine)
-    let breed_id = format!("{}", b.id());
-    let trace_str = serde_json::to_string(&output.inference_trace).unwrap_or_default();
-    let tmp_run_id = blake3::hash(trace_str.as_bytes()).to_hex().to_string();
-    let ocel_log = crate::ocel::derive_ocel(&breed_id, &tmp_run_id, &output.inference_trace);
-
-    if let Some(model) = crate::ocel::get_model(&breed_id) {
-        let conformance = crate::ocel::validate_ocel_alignment(&ocel_log, model);
-        if !conformance.is_conforming {
-            return Err(format!(
-                "{}: OCEL conformance failure (fitness={:.3}): {}",
-                breed_id,
-                conformance.fitness,
-                conformance.refusals.join("; ")
-            ));
-        }
-    }
-
-    output.ocel_log = Some(serde_json::to_value(&ocel_log).unwrap_or(serde_json::Value::Null));
-
-    Ok(output)
-}
-
-/// Dispatch to the correct breed's `run()` method.
-///
-/// Each branch delegates to `run_breed`, which enforces pre- and post-conditions
-/// so the empty-trace fraud signal is caught at the WASM boundary.
-fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => run_breed(&Eliza, input),
-        "cbr" => run_breed(&Cbr, input),
-        "dendral" => run_breed(&Dendral, input),
-        "strips" => run_breed(&Strips, input),
-        "prolog" => run_breed(&Prolog, input),
-        "mycin" => run_breed(&Mycin, input),
-        "gps" => run_breed(&Gps, input),
-        "soar" => run_breed(&Soar, input),
-        "hearsay" => run_breed(&Hearsay, input),
-        "autoinstinct_neurosis" => run_breed(&AutoinstinctNeurosis, input),
-        "autoinstinct_semantics" => run_breed(&AutoinstinctSemantics, input),
-        "autoinstinct_vision" => run_breed(&AutoinstinctVision, input),
-        "autoinstinct_learning" => run_breed(&AutoinstinctLearning, input),
-        other => Err(format!("unknown breed: {}", other)),
-    }
-}
-
 /// JSON-backed evidence source for adversarial detection.
 /// Implements `EvidenceSource` by extracting typed information from a JSON value.
 struct JsonEvidenceSource {
@@ -196,30 +135,7 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
 /// Return BLAKE3 hex of the L1 OCPN model JSON for a known breed, or
 /// "model-not-yet-defined" if no model file exists for the breed.
 fn compute_model_hash(breed: &str) -> String {
-    let json: Option<&str> = match breed {
-        "mycin" => Some(include_str!("../../../ocel/models/l1/mycin.ocpn.json")),
-        "prolog" => Some(include_str!("../../../ocel/models/l1/prolog.ocpn.json")),
-        "strips" => Some(include_str!("../../../ocel/models/l1/strips.ocpn.json")),
-        "soar" => Some(include_str!("../../../ocel/models/l1/soar.ocpn.json")),
-        "hearsay" => Some(include_str!("../../../ocel/models/l1/hearsay.ocpn.json")),
-        "cbr" => Some(include_str!("../../../ocel/models/l1/cbr.ocpn.json")),
-        "gps" => Some(include_str!("../../../ocel/models/l1/gps.ocpn.json")),
-        "dendral" => Some(include_str!("../../../ocel/models/l1/dendral.ocpn.json")),
-        "eliza" => Some(include_str!("../../../ocel/models/l1/eliza.ocpn.json")),
-        "autoinstinct_vision" => Some(include_str!(
-            "../../../ocel/models/l1/autoinstinct_vision.ocpn.json"
-        )),
-        "autoinstinct_semantics" => Some(include_str!(
-            "../../../ocel/models/l1/autoinstinct_semantics.ocpn.json"
-        )),
-        "autoinstinct_neurosis" => Some(include_str!(
-            "../../../ocel/models/l1/autoinstinct_neurosis.ocpn.json"
-        )),
-        "autoinstinct_learning" => Some(include_str!(
-            "../../../ocel/models/l1/autoinstinct_learning.ocpn.json"
-        )),
-        _ => None,
-    };
+    let json: Option<&str> = crate::ocel::model_sources::model_source(breed);
     match json {
         Some(s) => blake3::hash(s.as_bytes()).to_hex().to_string(),
         None => "model-not-yet-defined".to_string(),
@@ -246,8 +162,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     // Compute input hash before dispatch (covers raw request bytes).
     let input_hash = blake3::hash(input_json.as_bytes()).to_hex().to_string();
 
-    // Dispatch to the breed's run() method.
-    let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
+    /// Dispatch to the breed's run() method.
+        let output = crate::breeds::dispatch::dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
     // Compute deterministic hashes over the actual BreedOutput.
     let output_payload = serde_json::to_string(&output)
@@ -288,7 +204,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         if let Some(model) = crate::ocel::get_model(&input.breed) {
             let ocel: crate::ocel::OcelLog = serde_json::from_value(ocel_log.clone())
                 .unwrap_or_else(|_| crate::ocel::OcelLog {
-                    log_id: run_id.clone(),
+                    object_types: vec![],
+                    event_types: vec![],
                     events: vec![],
                     objects: vec![],
                 });
@@ -313,7 +230,7 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
             ActorSigner::from_seed(*blake3::hash(b"wasm4pm.cognition.v1.default-actor").as_bytes());
         let receipt_msg = format!("{}|{}|{}", run_id, input_hash, output_hash);
         let sig_bytes = signer.sign(receipt_msg.as_bytes());
-        (hex::encode(&sig_bytes), hex::encode(signer.id.as_bytes()))
+        (hex::encode(&sig_bytes), hex::encode(&signer.id.public_key))
     };
     #[cfg(not(feature = "actor-ed25519"))]
     let (signature_hex, public_key_id) = (String::from("ed25519-disabled"), String::from("n/a"));

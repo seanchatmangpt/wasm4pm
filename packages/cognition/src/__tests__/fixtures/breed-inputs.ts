@@ -390,6 +390,45 @@ export function autoinstinctLearningInput(): { breed: string; contract: BreedInp
 }
 
 // ---------------------------------------------------------------------------
+// HTN PLANNING — htn_planning.rs. Shop2-style total order decomposition.
+// ---------------------------------------------------------------------------
+export function minimalHtnPlanningInput(): BreedInput {
+  return {
+    intent: 'travel',
+    candidates: [],
+    facts: [],
+    cases: [],
+    state: [
+      { predicate: 'at', value: 'home' },
+      { predicate: 'cash', value: 'high' }
+    ],
+    goals: [
+      { id: 'g1', predicate: 'task', value: 'travel' }
+    ],
+    rules: [
+      {
+        id: 'method:travel:taxi',
+        premise: ['at=home'],
+        conclusion: 'op:hail_taxi;op:pay_taxi',
+        certainty: 1.0
+      },
+      {
+        id: 'op:hail_taxi',
+        premise: [],
+        conclusion: 'in=taxi',
+        certainty: 1.0
+      },
+      {
+        id: 'op:pay_taxi',
+        premise: ['in=taxi', 'cash=high'],
+        conclusion: '!in=taxi;at=dest',
+        certainty: 1.0
+      }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

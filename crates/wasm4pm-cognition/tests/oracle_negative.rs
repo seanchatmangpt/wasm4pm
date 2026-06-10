@@ -412,3 +412,57 @@ fn autoinstinct_learning_all_goals_achieved() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Tier P1 Breeds Negative Tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn ltl_monitor_empty_formula_refused() {
+    use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.intent = "".into(); // empty formula
+
+    let result = LtlMonitor.preconditions(&input);
+    assert!(result.is_err(), "LtlMonitor must refuse empty formula");
+    assert!(result.unwrap_err().contains("formula"));
+}
+
+#[test]
+fn allen_temporal_empty_facts_refused() {
+    use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no facts
+
+    let result = AllenTemporal.preconditions(&input);
+    assert!(result.is_err(), "AllenTemporal must refuse empty facts");
+    assert!(result.unwrap_err().contains("constraint"));
+}
+
+#[test]
+fn fuzzy_logic_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::fuzzy_logic::FuzzyLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no rules
+
+    let result = FuzzyLogic.preconditions(&input);
+    assert!(result.is_err(), "FuzzyLogic must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn bayesian_network_empty_goals_refused() {
+    use wasm4pm_cognition::breeds::bayesian_network::BayesianNetwork;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no goals
+
+    let result = BayesianNetwork.preconditions(&input);
+    assert!(result.is_err(), "BayesianNetwork must refuse empty goals");
+    assert!(result.unwrap_err().contains("query"));
+}
+

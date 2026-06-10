@@ -1,0 +1,27 @@
+{
+  "model_id": "allen_temporal-l1-v1",
+  "model_level": "L1",
+  "breed_id": "allen_temporal",
+  "object_types": ["run", "breed"],
+  "places": [
+    {"id": "p1", "name": "init", "object_type": "run"},
+    {"id": "p2", "name": "propagating", "object_type": "breed"},
+    {"id": "p3", "name": "consistent", "object_type": "breed"},
+    {"id": "p4", "name": "inconsistent", "object_type": "breed"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "init", "label": "init"},
+    {"id": "t2", "name": "propagate", "label": "propagate"},
+    {"id": "t3", "name": "inconsistent", "label": "inconsistent"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p2": 1}, {"p4": 1}]
+}

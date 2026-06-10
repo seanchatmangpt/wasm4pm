@@ -1362,3 +1362,116 @@ fn autoinstinct_learning_hidden_surgical_curriculum() {
         "Learning surgical: must emit a curriculum plan"
     );
 }
+
+// ===========================================================================
+// Tier P1 Breeds Hidden Tests
+// ===========================================================================
+
+#[test]
+fn ltl_monitor_hidden_response_pattern() {
+    use wasm4pm_cognition::breeds::Fact;
+    let mut input = base("LTL response pattern check");
+    input.facts = vec![
+        fact("formula", "G (req -> F res)"),
+    ];
+    input.cases = vec![
+        Case {
+            id: "state0".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 1.0,
+            facts: vec![Fact { key: "req".into(), value: "true".into() }],
+        },
+        Case {
+            id: "state1".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 1.0,
+            facts: vec![],
+        },
+        Case {
+            id: "state2".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 1.0,
+            facts: vec![Fact { key: "res".into(), value: "true".into() }],
+        },
+    ];
+
+    let output = dispatch_breed_test("ltl_monitor", &input)
+        .expect("LTL Monitor run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let conforms_fact = output.facts.iter().find(|f| f.key == "conforms").expect("conforms fact exists");
+    assert_eq!(conforms_fact.value, "true");
+}
+
+#[test]
+fn allen_temporal_hidden_transitivity() {
+    let mut input = base("Allen interval transitivity check");
+    input.facts = vec![
+        fact("relation", "A meets B"),
+        fact("relation", "B meets C"),
+    ];
+
+    let output = dispatch_breed_test("allen_temporal", &input)
+        .expect("AllenTemporal run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let rel_ac = output.facts.iter().find(|f| f.key == "relation:A:C").expect("relation:A:C exists");
+    // A meets B and B meets C => A precedes C (i.e. 'p')
+    assert_eq!(rel_ac.value, "p");
+}
+
+#[test]
+fn fuzzy_logic_hidden_ventilation() {
+    let mut input = base("Fuzzy control check");
+    input.facts = vec![
+        fact("temperature", "25.0"),
+        fact("fuzzy_set:temperature:warm", "triangular 20,25,30"),
+        fact("fuzzy_set:ventilation:medium", "triangular 10,50,90"),
+    ];
+    input.rules = vec![
+        rule("r1", vec!["temperature is warm"], "ventilation is medium", 1.0),
+    ];
+
+    let output = dispatch_breed_test("fuzzy_logic", &input)
+        .expect("FuzzyLogic run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let vent_fact = output.facts.iter().find(|f| f.key == "ventilation").expect("ventilation fact exists");
+    let vent_val: f64 = vent_fact.value.parse().expect("must parse as float");
+    // Temp=25 is exactly the peak of warm, so membership = 1.0. Rule fires at 1.0.
+    // Centroid of ventilation is medium (symmetrical triangle 10,50,90) is 50.0.
+    assert!((vent_val - 50.0).abs() < 1.0);
+}
+
+#[test]
+fn bayesian_network_hidden_burglar_alarm() {
+    let mut input = base("Bayesian burglary network query");
+    input.facts = vec![
+        fact("Alarm", "true"),
+    ];
+    input.rules = vec![
+        rule("r-burg", vec![], "Burglary=true", 0.001),
+        rule("r-eq", vec![], "Earthquake=true", 0.002),
+        rule("r-alarm1", vec!["Burglary=true", "Earthquake=true"], "Alarm=true", 0.95),
+        rule("r-alarm2", vec!["Burglary=true", "Earthquake=false"], "Alarm=true", 0.94),
+        rule("r-alarm3", vec!["Burglary=false", "Earthquake=true"], "Alarm=true", 0.29),
+        rule("r-alarm4", vec!["Burglary=false", "Earthquake=false"], "Alarm=true", 0.001),
+    ];
+    input.goals = vec![
+        goal("g1", "query", "Burglary"),
+    ];
+
+    let output = dispatch_breed_test("bayesian_network", &input)
+        .expect("BayesianNetwork run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let prob_fact = output.facts.iter().find(|f| f.key == "probability:Burglary").expect("probability fact exists");
+    let prob_val: f64 = prob_fact.value.parse().expect("must parse as float");
+    // P(Burglary | Alarm) = P(Burglary, Alarm) / P(Alarm)
+    // Let's verify it is within valid range [0, 1] and strictly positive
+    assert!(prob_val > 0.0 && prob_val < 1.0);
+}
+

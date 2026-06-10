@@ -1414,3 +1414,247 @@ fn autoinstinct_semantics_paper_grounded() {
         }
     }
 }
+
+// ============================================================================
+// Tier P1 Breeds Paper Grounded Tests
+// ============================================================================
+
+#[test]
+fn ltl_monitor_paper_grounded() {
+    let path = "tests/fixtures/papers/ltl_monitor.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut cases = Vec::new();
+            if let Some(arr) = inp.get("cases").and_then(|v| v.as_array()) {
+                for c in arr {
+                    if let Some(id) = c.get("id").and_then(|v| v.as_str()) {
+                        let mut case_facts = Vec::new();
+                        if let Some(c_arr) = c.get("facts").and_then(|v| v.as_array()) {
+                            for f in c_arr {
+                                if let (Some(k), Some(v)) = (
+                                    f.get("key").and_then(|v| v.as_str()),
+                                    f.get("value").and_then(|v| v.as_str()),
+                                ) {
+                                    case_facts.push(Fact {
+                                        key: k.to_string(),
+                                        value: v.to_string(),
+                                    });
+                                }
+                            }
+                        }
+                        cases.push(Case {
+                            id: id.to_string(),
+                            intent: "".into(),
+                            architecture: "".into(),
+                            outcome_score: 1.0,
+                            facts: case_facts,
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts: vec![],
+                cases,
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            };
+
+            let breed = ltl_monitor::LtlMonitor;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("LtlMonitor paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::LtlMonitor);
+            let conforms = output.facts.iter().find(|f| f.key == "conforms").expect("conforms fact exists");
+            assert_eq!(conforms.value, "true");
+        }
+    }
+}
+
+#[test]
+fn allen_temporal_paper_grounded() {
+    let path = "tests/fixtures/papers/allen_temporal.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (
+                        f.get("key").and_then(|v| v.as_str()),
+                        f.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        facts.push(Fact {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            };
+
+            let breed = allen_temporal::AllenTemporal;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("AllenTemporal paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::AllenTemporal);
+            let rel = output.facts.iter().find(|f| f.key == "relation:A:C").expect("relation exists");
+            assert_eq!(rel.value, "p");
+        }
+    }
+}
+
+#[test]
+fn fuzzy_logic_paper_grounded() {
+    let path = "tests/fixtures/papers/fuzzy_logic.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (
+                        f.get("key").and_then(|v| v.as_str()),
+                        f.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        facts.push(Fact {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (
+                        r.get("id").and_then(|v| v.as_str()),
+                        r.get("conclusion").and_then(|v| v.as_str()),
+                        r.get("certainty").and_then(|v| v.as_f64()),
+                    ) {
+                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        rules.push(Rule {
+                            id: id.to_string(),
+                            premise: premises,
+                            conclusion: conclusion.to_string(),
+                            certainty: certainty as f32,
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules,
+                goals: vec![],
+                state: vec![],
+            };
+
+            let breed = fuzzy_logic::FuzzyLogic;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("FuzzyLogic paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::FuzzyLogic);
+            let fact = output.facts.iter().find(|f| f.key == "ventilation").expect("ventilation exists");
+            let val: f64 = fact.value.parse().unwrap();
+            assert!((val - 50.0).abs() < 1.0);
+        }
+    }
+}
+
+#[test]
+fn bayesian_network_paper_grounded() {
+    let path = "tests/fixtures/papers/bayesian_network.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (
+                        f.get("key").and_then(|v| v.as_str()),
+                        f.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        facts.push(Fact {
+                            key: k.to_string(),
+                            value: v.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (
+                        r.get("id").and_then(|v| v.as_str()),
+                        r.get("conclusion").and_then(|v| v.as_str()),
+                        r.get("certainty").and_then(|v| v.as_f64()),
+                    ) {
+                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
+                        rules.push(Rule {
+                            id: id.to_string(),
+                            premise: premises,
+                            conclusion: conclusion.to_string(),
+                            certainty: certainty as f32,
+                        });
+                    }
+                }
+            }
+
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    if let (Some(id), Some(predicate), Some(value)) = (
+                        g.get("id").and_then(|v| v.as_str()),
+                        g.get("predicate").and_then(|v| v.as_str()),
+                        g.get("value").and_then(|v| v.as_str()),
+                    ) {
+                        goals.push(Goal {
+                            id: id.to_string(),
+                            predicate: predicate.to_string(),
+                            value: value.to_string(),
+                        });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules,
+                goals,
+                state: vec![],
+            };
+
+            let breed = bayesian_network::BayesianNetwork;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("BayesianNetwork paper grounded run must succeed");
+            assert_eq!(output.breed, BreedId::BayesianNetwork);
+            let fact = output.facts.iter().find(|f| f.key == "probability:Burglary").expect("prob exists");
+            let val: f64 = fact.value.parse().unwrap();
+            assert!(val > 0.0 && val < 1.0);
+        }
+    }
+}
+

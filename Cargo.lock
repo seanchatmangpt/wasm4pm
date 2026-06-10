@@ -2743,6 +2743,7 @@ dependencies = [
  "once_cell",
  "prolog8",
  "proptest",
+ "rand 0.8.5",
  "rand_core 0.6.4",
  "regex",
  "serde",

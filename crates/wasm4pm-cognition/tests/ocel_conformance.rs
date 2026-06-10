@@ -9,7 +9,7 @@ use wasm4pm_cognition::breeds::{
     TraceStep,
 };
 use wasm4pm_cognition::ocel::{
-    check_temporal_conformance, derive_ocel, get_model, validate_ocel_alignment, OcelEvent, OcelLog,
+    check_temporal_conformance, derive_ocel, lifecycle_model_for, validate_ocel_alignment, OcelEvent, OcelLog,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ fn mycin_missing_fire_rule_fails_conformance() {
         make_trace_step(1, "decision", "mycin:selected"),
     ];
     let log = derive_ocel("mycin", "test-run-id-12345678", &steps);
-    let model = get_model("mycin").expect("mycin model must exist");
+    let model = lifecycle_model_for("mycin").expect("mycin model must exist");
     let result = validate_ocel_alignment(&log, model);
     assert!(
         result.fitness < 1.0,
@@ -192,7 +192,7 @@ fn valid_mycin_trace_fitness_one() {
         make_trace_step(3, "decision", "mycin:selected"),
     ];
     let log = derive_ocel("mycin", "test-run-id-12345678", &steps);
-    let model = get_model("mycin").expect("mycin model must exist");
+    let model = lifecycle_model_for("mycin").expect("mycin model must exist");
     let result = validate_ocel_alignment(&log, model);
     assert_eq!(
         result.fitness, 1.0,
@@ -245,8 +245,22 @@ fn ocel_log_logical_steps_monotone() {
 
 // ── all 13 breeds must produce fitness==1.0 ──────────────────────────────────
 
-fn assert_breed_conforming(breed: &str, input: &BreedInput) {
-    let output = dispatch_breed_test(breed, input)
+use rand::seq::SliceRandom;
+use rand::{SeedableRng, rngs::SmallRng};
+
+fn assert_breed_conforming(breed: &str) {
+    let fixture_path = format!("tests/fixtures/papers/{}.json", breed);
+    let fixture_data = std::fs::read_to_string(&fixture_path)
+        .unwrap_or_else(|_| panic!("Failed to read fixture: {}", fixture_path));
+    
+    let fixture: serde_json::Value = serde_json::from_str(&fixture_data).unwrap();
+    let input: BreedInput = if fixture.get("input").is_some() {
+        serde_json::from_value(fixture["input"].clone()).unwrap()
+    } else {
+        serde_json::from_value(fixture).unwrap()
+    };
+
+    let output = dispatch_breed_test(breed, &input)
         .unwrap_or_else(|e| panic!("{} dispatch failed: {}", breed, e));
 
     assert!(
@@ -261,58 +275,51 @@ fn assert_breed_conforming(breed: &str, input: &BreedInput) {
 
     // Temporal conformance
     check_temporal_conformance(&ocel_log)
-        .unwrap_or_else(|e| panic!("{}: temporal conformance failed: {}", breed, e));
+        .unwrap_or_else(|e| panic!("{}: Temporal conformance failed: {}", breed, e));
 
-    // Lifecycle conformance (only for breeds with declared models)
-    if let Some(model) = get_model(breed) {
+    // Lifecycle conformance
+    if let Some(model) = lifecycle_model_for(breed) {
         let result = validate_ocel_alignment(&ocel_log, model);
-        assert_eq!(
-            result.fitness,
-            1.0,
-            "{}: expected fitness=1.0, got {}. Refusals: {:?}\nTrace kinds: {:?}",
-            breed,
-            result.fitness,
-            result.refusals,
-            output
-                .inference_trace
-                .iter()
-                .map(|s| &s.kind)
-                .collect::<Vec<_>>()
+
+        assert!(
+            result.is_conforming,
+            "{}: should be conforming but refused: {:?}",
+            breed, result.refusals
         );
-        assert!(result.is_conforming, "{}: must be conforming", breed);
+        assert_eq!(result.fitness, 1.0, "{}: fitness should be 1.0", breed);
+
+        // Negative injection: shuffle the trace and ensure it's not 1.0 conforming
+        if output.inference_trace.len() > 1 {
+            let mut shuffled_trace = output.inference_trace.clone();
+            let mut rng = SmallRng::seed_from_u64(42);
+            shuffled_trace.shuffle(&mut rng);
+            
+            let shuffled_log = derive_ocel(breed, &run_id, &shuffled_trace);
+            let shuffled_result = validate_ocel_alignment(&shuffled_log, model);
+            
+            // Either temporal fails, or fitness is < 1.0, or refusals exist
+            let temporal_ok = check_temporal_conformance(&shuffled_log).is_ok();
+            assert!(
+                !temporal_ok || !shuffled_result.is_conforming || shuffled_result.fitness < 1.0,
+                "{}: Shuffled trace must not have 1.0 fitness and be conforming", breed
+            );
+        }
     }
 }
 
 #[test]
-fn all_13_breeds_ocel_conforming() {
-    let base_input = minimal_input();
-    let cbr_input = input_with_cases();
+fn all_admitted_breeds_ocel_conforming() {
+    let registry_data = std::fs::read_to_string("breeds/registry.json")
+        .expect("failed to read registry.json");
+    let registry: Vec<serde_json::Value> = serde_json::from_str(&registry_data)
+        .expect("failed to parse registry.json");
 
-    let reachable_input = input_with_reachable_goals();
-    let evidence_input = input_with_evidence();
+    for entry in registry {
+        let breed_id = entry["breed_id"].as_str().expect("missing breed_id");
+        let status = entry["status"].as_str().expect("missing status");
 
-    // Breeds that use base input
-    for breed in &[
-        "eliza",
-        "dendral",
-        "prolog",
-        "soar",
-        "hearsay",
-        "autoinstinct_neurosis",
-        "autoinstinct_semantics",
-        "autoinstinct_vision",
-        "autoinstinct_learning",
-    ] {
-        assert_breed_conforming(breed, &base_input);
+        if status != "UNSUPPORTED" {
+            assert_breed_conforming(breed_id);
+        }
     }
-
-    // MYCIN needs evidence facts
-    assert_breed_conforming("mycin", &evidence_input);
-
-    // STRIPS and GPS need a reachable goal
-    assert_breed_conforming("strips", &reachable_input);
-    assert_breed_conforming("gps", &reachable_input);
-
-    // CBR needs cases
-    assert_breed_conforming("cbr", &cbr_input);
 }
