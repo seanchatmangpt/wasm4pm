@@ -9,11 +9,16 @@ packages:
   - 'tests/archive'
 
 allowBuilds:
+  '@parcel/watcher': set this to true or false
+  better-sqlite3: set this to true or false
   blake3: true
   cpu-features: true
   esbuild: true
+  maplibre-gl: set this to true or false
   protobufjs: true
   ssh2: true
+  unrs-resolver: set this to true or false
+  vue-demi: set this to true or false
 
 onlyBuiltDependencies:
   - blake3

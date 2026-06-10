@@ -16,32 +16,10 @@ import { validateKernelResult } from './validation.js';
 import { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
 import {
   DFGSchema,
-  ProcessTreeSchema,
 } from '@wasm4pm/contracts';
+import { validateWasmPayload } from './zod-validators.js';
 import { z } from 'zod';
 
-/**
- * Validate a parsed WASM output against a Zod schema.
- * On failure, throws KernelError with exit code SOURCE_ERROR (2) and a
- * descriptive message listing the failing fields.
- */
-function validateWasmBoundary<T>(
-  schema: z.ZodType<T>,
-  value: unknown,
-  algorithmName: string
-): T {
-  const result = schema.safeParse(value);
-  if (!result.success) {
-    const issues = result.error.issues
-      .map((i) => `${i.path.join('.')}: ${i.message}`)
-      .join('; ');
-    throw new KernelError(
-      `WASM output validation failed for ${algorithmName}: ${issues}`,
-      'SOURCE_ERROR' as any
-    );
-  }
-  return result.data;
-}
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
 export { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
@@ -1203,7 +1181,7 @@ export class Kernel {
         const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
         const tree = parseWasmOutput<Record<string, unknown>>(json);
         if (tree !== null && typeof tree === 'object' && !(tree instanceof Promise)) {
-          validateWasmBoundary(ProcessTreeSchema, tree, 'inductive_miner');
+          validateWasmPayload('inductive_miner', tree);
         }
         return {
           ...(tree && typeof tree === 'object' ? tree : {}),

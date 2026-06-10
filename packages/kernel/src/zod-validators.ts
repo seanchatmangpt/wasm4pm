@@ -150,6 +150,20 @@ export const AutomlResultSchema = z.object({
   predictions: z.array(z.unknown()).optional(),
 });
 
+// Inductive miner returns nested recursive tree (not the flattened ProcessTreeSchema)
+const InductiveMinerNodeSchema: z.ZodType<unknown> = z.lazy(() =>
+  z.object({
+    node_type: z.enum(['sequence', 'xor', 'parallel', 'loop', 'leaf']),
+    label: z.string().optional(),
+    children: z.array(InductiveMinerNodeSchema),
+  })
+);
+export const InductiveMinerResultSchema = z.object({
+  algorithm: z.literal('inductive_miner'),
+  root: InductiveMinerNodeSchema,
+  nodes: z.number().int().min(0),
+});
+
 // ---------------------------------------------------------------------------
 // Algorithm-id → schema registry
 // ---------------------------------------------------------------------------
@@ -184,6 +198,7 @@ const ALGORITHM_SCHEMAS: Record<string, AnyZodSchema> = {
   automl_classify: AutomlResultSchema,
   automl_forecast: AutomlResultSchema,
   automl_regress: AutomlResultSchema,
+  inductive_miner: InductiveMinerResultSchema,
 };
 
 // ---------------------------------------------------------------------------

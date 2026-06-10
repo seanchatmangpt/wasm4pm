@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import type {
   configSchema,
   sourceConfigSchema,
@@ -30,7 +30,12 @@ import type {
   supabaseIntegrationConfigSchema,
   integrationsConfigSchema,
 } from './schema.js';
-import type { ProvenanceMap } from './provenance.js';
+import {
+  executionProfileSchema,
+  outputFormatSchema,
+  sinkKindSchema,
+} from './schema.js';
+import { provenanceMapSchema } from './provenance.js';
 
 // --- Inferred types from Zod schemas ---
 
@@ -73,47 +78,50 @@ export type OtelExporter = NonNullable<OtelConfig>['exporter'];
 
 // --- Resolved config (with metadata) ---
 
+export const configMetadataSchema = z.object({
+  loadTime: z.number(),
+  hash: z.string(),
+  provenance: provenanceMapSchema,
+});
+
 export interface Config extends BaseConfig {
-  metadata: {
-    loadTime: number;
-    hash: string;
-    provenance: ProvenanceMap;
-  };
+  metadata: z.infer<typeof configMetadataSchema>;
 }
 
 // --- Loading options ---
 
-export interface CliOverrides {
-  profile?: ExecutionProfile;
-  configPath?: string;
-  outputFormat?: OutputFormat;
-  outputDestination?: string;
-  watchEnabled?: boolean;
-  algorithm?: string;
-  algorithmParams?: Record<string, unknown>;
-  sinkKind?: SinkKind;
-  sinkPath?: string;
-  sinkUrl?: string;
+export const cliOverridesSchema = z.object({
+  profile: executionProfileSchema.optional(),
+  configPath: z.string().optional(),
+  outputFormat: outputFormatSchema.optional(),
+  outputDestination: z.string().optional(),
+  watchEnabled: z.boolean().optional(),
+  algorithm: z.string().optional(),
+  algorithmParams: z.record(z.string(), z.unknown()).optional(),
+  sinkKind: sinkKindSchema.optional(),
+  sinkPath: z.string().optional(),
+  sinkUrl: z.string().optional(),
   // Prediction overrides
-  predictionEnabled?: boolean;
-  predictionTasks?: string[];
-  predictionActivityKey?: string;
-  predictionNgramOrder?: number;
-  predictionDriftWindow?: number;
+  predictionEnabled: z.boolean().optional(),
+  predictionTasks: z.array(z.string()).optional(),
+  predictionActivityKey: z.string().optional(),
+  predictionNgramOrder: z.number().optional(),
+  predictionDriftWindow: z.number().optional(),
   // ML overrides
-  mlEnabled?: boolean;
-  mlTasks?: string[];
+  mlEnabled: z.boolean().optional(),
+  mlTasks: z.array(z.string()).optional(),
   // RL overrides
-  rlEnabled?: boolean;
-  rlAgents?: string[];
-  rlLearningRate?: number;
-  rlDiscountFactor?: number;
-  rlEpsilon?: number;
-  [key: string]: unknown;
-}
+  rlEnabled: z.boolean().optional(),
+  rlAgents: z.array(z.string()).optional(),
+  rlLearningRate: z.number().optional(),
+  rlDiscountFactor: z.number().optional(),
+  rlEpsilon: z.number().optional(),
+}).catchall(z.unknown());
+export type CliOverrides = z.infer<typeof cliOverridesSchema>;
 
-export interface LoadConfigOptions {
-  cliOverrides?: CliOverrides;
-  configSearchPaths?: string[];
-  env?: NodeJS.ProcessEnv;
-}
+export const loadConfigOptionsSchema = z.object({
+  cliOverrides: cliOverridesSchema.optional(),
+  configSearchPaths: z.array(z.string()).optional(),
+  env: z.record(z.string(), z.string().optional()).optional(),
+});
+export type LoadConfigOptions = z.infer<typeof loadConfigOptionsSchema>;

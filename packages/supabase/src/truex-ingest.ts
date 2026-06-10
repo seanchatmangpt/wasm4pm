@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { hashJsonString } from '@wasm4pm/contracts';
 import {
   assertSupabaseResponse,
@@ -8,26 +9,37 @@ import { SupabaseIntegrationError, type SupabaseIntegrationConfig } from './conf
 
 export const TRUEX_ADMITTED = 'ReceiptAdmitted';
 
-export interface TruexEnvelope {
-  truex_profile?: string;
-  trace_id?: string;
-  span_id?: string;
-  session_id: string;
-  device_id?: string;
-  admission_status: string;
-  equivalence_class?: string;
-  expected_path_hash?: string;
-  ocel2_batch_hash: string;
-  receipt_hash: string;
-  ocel2?: Record<string, unknown>;
-  [key: string]: unknown;
-}
+// ---------------------------------------------------------------------------
+// TruexEnvelope
+// ---------------------------------------------------------------------------
 
-export interface TruexIngestResult {
-  receipt_hash: string;
-  inserted: boolean;
-  via: 'edge_function' | 'direct_upsert';
-}
+export const TruexEnvelopeSchema = z.object({
+  truex_profile: z.string().optional(),
+  trace_id: z.string().optional(),
+  span_id: z.string().optional(),
+  session_id: z.string(),
+  device_id: z.string().optional(),
+  admission_status: z.string(),
+  equivalence_class: z.string().optional(),
+  expected_path_hash: z.string().optional(),
+  ocel2_batch_hash: z.string(),
+  receipt_hash: z.string(),
+  ocel2: z.record(z.string(), z.unknown()).optional(),
+}).catchall(z.unknown());
+
+export type TruexEnvelope = z.infer<typeof TruexEnvelopeSchema>;
+
+// ---------------------------------------------------------------------------
+// TruexIngestResult
+// ---------------------------------------------------------------------------
+
+export const TruexIngestResultSchema = z.object({
+  receipt_hash: z.string(),
+  inserted: z.boolean(),
+  via: z.enum(['edge_function', 'direct_upsert']),
+});
+
+export type TruexIngestResult = z.infer<typeof TruexIngestResultSchema>;
 
 const REQUIRED_ENVELOPE_FIELDS = [
   'session_id',

@@ -11,39 +11,44 @@
  * No external dependencies — pure TypeScript implementation.
  */
 
-/**
- * Result of a scaling operation: scaled data + inverse transform parameters.
- */
-export interface ScaledResult {
-  /** Scaled feature matrix (same shape as input) */
-  scaled: number[][];
-  /** Per-feature scaling parameters (for inverse transform) */
-  scaleParams: ScaleParams;
-}
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// ScaleParams
+// ---------------------------------------------------------------------------
+
+export const ScaleParamsSchema = z.object({
+  /** Scaling method used: 'standardize' | 'minmax' | 'robust' | 'mean' */
+  method: z.enum(['standardize', 'minmax', 'robust', 'mean']),
+  means: z.array(z.number()).optional(),
+  stds: z.array(z.number()).optional(),
+  mins: z.array(z.number()).optional(),
+  maxs: z.array(z.number()).optional(),
+  medians: z.array(z.number()).optional(),
+  iqrs: z.array(z.number()).optional(),
+});
 
 /**
  * Parameters needed to inverse-transform scaled data back to original scale.
  * Structure varies by scaling method.
  */
-export interface ScaleParams {
-  /** Scaling method used: 'standardize' | 'minmax' | 'robust' | 'mean' */
-  method: 'standardize' | 'minmax' | 'robust' | 'mean';
+export type ScaleParams = z.infer<typeof ScaleParamsSchema>;
 
-  // For standardization: means and standard deviations
-  means?: number[];
-  stds?: number[];
+// ---------------------------------------------------------------------------
+// ScaledResult
+// ---------------------------------------------------------------------------
 
-  // For min-max: minimum and maximum per feature
-  mins?: number[];
-  maxs?: number[];
+export const ScaledResultSchema = z.object({
+  /** Scaled feature matrix (same shape as input) */
+  scaled: z.array(z.array(z.number())),
+  /** Per-feature scaling parameters (for inverse transform) */
+  scaleParams: ScaleParamsSchema,
+});
 
-  // For robust: medians and IQRs per feature
-  medians?: number[];
-  iqrs?: number[];
-
-  // For mean: means, mins, maxs per feature
-  // (means and maxs reused from above)
-}
+/**
+ * Result of a scaling operation: scaled data + inverse transform parameters.
+ */
+export type ScaledResult = z.infer<typeof ScaledResultSchema>;
 
 /**
  * Standardize features to zero-mean, unit-variance (Z-score normalization).
@@ -421,24 +426,18 @@ export function inverseTransform(scaledData: number[][], scaleParams: ScaleParam
  * @param data - Numeric feature matrix
  * @returns Statistics for all 4 scaling methods
  */
-export interface ScalingComparison {
-  /** Per-feature mean after scaling */
-  standardize_means: number[];
-  /** Per-feature std after scaling */
-  standardize_stds: number[];
-  /** Per-feature min after scaling */
-  minmax_mins: number[];
-  /** Per-feature max after scaling */
-  minmax_maxs: number[];
-  /** Per-feature median after scaling */
-  robust_medians: number[];
-  /** Per-feature IQR after scaling */
-  robust_iqrs: number[];
-  /** Recommended method based on data characteristics */
-  recommendedMethod: 'standardize' | 'minmax' | 'robust' | 'mean';
-  /** Reason for recommendation */
-  reason: string;
-}
+export const ScalingComparisonSchema = z.object({
+  standardize_means: z.array(z.number()),
+  standardize_stds: z.array(z.number()),
+  minmax_mins: z.array(z.number()),
+  minmax_maxs: z.array(z.number()),
+  robust_medians: z.array(z.number()),
+  robust_iqrs: z.array(z.number()),
+  recommendedMethod: z.enum(['standardize', 'minmax', 'robust', 'mean']),
+  reason: z.string(),
+});
+
+export type ScalingComparison = z.infer<typeof ScalingComparisonSchema>;
 
 export function compareScalingMethods(data: number[][]): ScalingComparison {
   const standardized = standardizeFeatures(data);

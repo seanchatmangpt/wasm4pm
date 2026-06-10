@@ -5,296 +5,325 @@
  * using process mining principles (soundness, conformance, multi-surface corroboration).
  */
 
+import { z } from 'zod';
+
+// ── Enum-like literal unions ─────────────────────────────────────────────────
+
 /** Agent execution mode */
-export type AgentMode = 'continuous' | 'on_demand';
+export const AgentModeSchema = z.enum(['continuous', 'on_demand']);
+export type AgentMode = z.infer<typeof AgentModeSchema>;
 
 /** Agent severity level */
-export type Severity = 'critical' | 'warning';
-
-/** Violation detected by an agent */
-export interface Violation {
-  /** Agent that detected the violation */
-  agent_name: string;
-  /** Type of violation */
-  violation_type: string;
-  /** Severity level */
-  severity: Severity;
-  /** Evidence supporting the violation */
-  evidence: Record<string, unknown>;
-  /** Process mining proof (fitness, precision, etc.) */
-  process_mining_proof: ProcessMiningProof | null;
-  /** Timestamp of detection */
-  timestamp: string;
-  /** Whether this violation blocks manufacturing */
-  blocked_manufacturing: boolean;
-  /** Target that needs correction */
-  target: string;
-}
-
-/** Process mining quality metrics */
-export interface ProcessMiningProof {
-  /** Log-to-model fitness (0.0-1.0) */
-  fitness: number;
-  /** Model-to-log precision (0.0-1.0) */
-  precision: number;
-  /** Generalization score (0.0-1.0) */
-  generalization: number;
-  /** Simplicity score (0.0-1.0) */
-  simplicity: number;
-  /** Number of deviations found */
-  deviations: number;
-  /** Algorithm used for discovery */
-  algorithm: string;
-}
+export const SeveritySchema = z.enum(['critical', 'warning']);
+export type Severity = z.infer<typeof SeveritySchema>;
 
 /** Correction type (autonomous self-healing) */
-export type CorrectionType =
-  | 'config_restoration'
-  | 'evidence_repair'
-  | 'code_refactoring'
-  | 'process_correction'
-  | 'authority_restoration'
-  | 'stub_elimination'
-  | 'receipt_chain_repair';
+export const CorrectionTypeSchema = z.enum([
+  'config_restoration',
+  'evidence_repair',
+  'code_refactoring',
+  'process_correction',
+  'authority_restoration',
+  'stub_elimination',
+  'receipt_chain_repair',
+]);
+export type CorrectionType = z.infer<typeof CorrectionTypeSchema>;
+
+/** Agent registry status */
+export const AgentStatusSchema = z.enum(['active', 'disabled', 'error', 'degraded']);
+export type AgentStatus = z.infer<typeof AgentStatusSchema>;
+
+// ── Data schemas ─────────────────────────────────────────────────────────────
+
+/** Process mining quality metrics */
+export const ProcessMiningProofSchema = z.object({
+  /** Log-to-model fitness (0.0-1.0) */
+  fitness: z.number(),
+  /** Model-to-log precision (0.0-1.0) */
+  precision: z.number(),
+  /** Generalization score (0.0-1.0) */
+  generalization: z.number(),
+  /** Simplicity score (0.0-1.0) */
+  simplicity: z.number(),
+  /** Number of deviations found */
+  deviations: z.number(),
+  /** Algorithm used for discovery */
+  algorithm: z.string(),
+});
+export type ProcessMiningProof = z.infer<typeof ProcessMiningProofSchema>;
+
+/** Violation detected by an agent */
+export const ViolationSchema = z.object({
+  /** Agent that detected the violation */
+  agent_name: z.string(),
+  /** Type of violation */
+  violation_type: z.string(),
+  /** Severity level */
+  severity: SeveritySchema,
+  /** Evidence supporting the violation */
+  evidence: z.record(z.string(), z.unknown()),
+  /** Process mining proof (fitness, precision, etc.) */
+  process_mining_proof: ProcessMiningProofSchema.nullable(),
+  /** Timestamp of detection */
+  timestamp: z.string(),
+  /** Whether this violation blocks manufacturing */
+  blocked_manufacturing: z.boolean(),
+  /** Target that needs correction */
+  target: z.string(),
+});
+export type Violation = z.infer<typeof ViolationSchema>;
 
 /** Audit log entry (immutable) */
-export interface AuditEntry {
+export const AuditEntrySchema = z.object({
   /** Timestamp of the correction */
-  timestamp: string;
+  timestamp: z.string(),
   /** Agent that performed the correction */
-  agent_name: string;
+  agent_name: z.string(),
   /** Type of correction applied */
-  correction_type: CorrectionType;
+  correction_type: CorrectionTypeSchema,
   /** Violation that triggered correction */
-  violation: Violation;
+  violation: ViolationSchema,
   /** Human-readable description of the action */
-  correction_action: string;
+  correction_action: z.string(),
   /** Whether the correction succeeded */
-  correction_success: boolean;
+  correction_success: z.boolean(),
   /** Additional details */
-  correction_details: Record<string, unknown>;
+  correction_details: z.record(z.string(), z.unknown()),
   /** Artifact ID (if applicable) */
-  artifact_id: string | null;
+  artifact_id: z.string().nullable(),
   /** Snapshot of state before correction (for undo) */
-  snapshot_data: Record<string, unknown> | null;
-}
+  snapshot_data: z.record(z.string(), z.unknown()).nullable(),
+});
+export type AuditEntry = z.infer<typeof AuditEntrySchema>;
 
 /** Agent validation result */
-export interface AgentResult {
+export const AgentResultSchema = z.object({
   /** Whether validation passed (no violations) */
-  passed: boolean;
+  passed: z.boolean(),
   /** Violations found */
-  violations: Violation[];
+  violations: z.array(ViolationSchema),
   /** Process mining proof */
-  process_mining_proof: ProcessMiningProof | null;
+  process_mining_proof: ProcessMiningProofSchema.nullable(),
   /** Execution time in milliseconds */
-  execution_time_ms: number;
+  execution_time_ms: z.number(),
   /** Agent name */
-  agent_name: string;
+  agent_name: z.string(),
   /** Raw output from agent */
-  raw_output: string;
-}
+  raw_output: z.string(),
+});
+export type AgentResult = z.infer<typeof AgentResultSchema>;
 
 /** Autonomous agent result (with corrections) */
-export interface AutonomousAgentResult extends AgentResult {
+export const AutonomousAgentResultSchema = AgentResultSchema.extend({
   /** Corrections applied */
-  corrections: AuditEntry[];
+  corrections: z.array(AuditEntrySchema),
   /** Whether re-validation passed after corrections */
-  revalidated: boolean;
-}
-
-/** Agent configuration */
-export interface AgentConfig {
-  /** Unique agent identifier */
-  name: string;
-  /** Human-readable description */
-  description: string;
-  /** Execution mode */
-  mode: AgentMode;
-  /** Target proof gates (empty for non-gate agents) */
-  target_gates: string[];
-  /** Whether the agent is enabled */
-  enabled: boolean;
-  /** Correction type this agent can apply */
-  correction_type: CorrectionType | null;
-  /** Version string */
-  version: string;
-  /** Tags for categorization */
-  tags: string[];
-  /** Thresholds for violation detection */
-  thresholds: AgentThresholds;
-}
+  revalidated: z.boolean(),
+});
+export type AutonomousAgentResult = z.infer<typeof AutonomousAgentResultSchema>;
 
 /** Agent detection thresholds */
-export interface AgentThresholds {
+export const AgentThresholdsSchema = z.object({
   /** Minimum fitness for conformance (default: 0.95) */
-  min_fitness: number;
+  min_fitness: z.number(),
   /** Minimum precision (default: 0.80) */
-  min_precision: number;
+  min_precision: z.number(),
   /** Maximum allowed deviations */
-  max_deviations: number;
+  max_deviations: z.number(),
   /** Timeout in milliseconds for agent execution */
-  timeout_ms: number;
-}
+  timeout_ms: z.number(),
+});
+export type AgentThresholds = z.infer<typeof AgentThresholdsSchema>;
 
-/** MAPE-K cycle result */
-export interface MAPEKCycleResult {
-  /** Unique cycle identifier */
-  cycle_id: string;
-  /** Whether the cycle completed successfully */
-  success: boolean;
-  /** Monitor phase results */
-  monitor: MonitorResult;
-  /** Analyze phase results */
-  analyze: AnalyzeResult;
-  /** Plan phase results */
-  plan: PlanResult;
-  /** Execute phase results */
-  execute: ExecuteResult;
-  /** Learn phase results */
-  learn: LearnResult;
-  /** Total cycle duration in milliseconds */
-  duration_ms: number;
-}
-
-/** Monitor phase: capture metrics from 4 surfaces */
-export interface MonitorResult {
-  /** Execution surface (receipt chains, artifact state) */
-  execution: SurfaceEvidence;
-  /** Telemetry surface (OTel traces) */
-  telemetry: SurfaceEvidence;
-  /** State surface (knowledge graph) */
-  state: SurfaceEvidence;
-  /** Process surface (OCEL events) */
-  process: SurfaceEvidence;
-}
+/** Agent configuration */
+export const AgentConfigSchema = z.object({
+  /** Unique agent identifier */
+  name: z.string(),
+  /** Human-readable description */
+  description: z.string(),
+  /** Execution mode */
+  mode: AgentModeSchema,
+  /** Target proof gates (empty for non-gate agents) */
+  target_gates: z.array(z.string()),
+  /** Whether the agent is enabled */
+  enabled: z.boolean(),
+  /** Correction type this agent can apply */
+  correction_type: CorrectionTypeSchema.nullable(),
+  /** Version string */
+  version: z.string(),
+  /** Tags for categorization */
+  tags: z.array(z.string()),
+  /** Thresholds for violation detection */
+  thresholds: AgentThresholdsSchema,
+});
+export type AgentConfig = z.infer<typeof AgentConfigSchema>;
 
 /** Evidence from a single surface */
-export interface SurfaceEvidence {
+export const SurfaceEvidenceSchema = z.object({
   /** Whether this surface has valid evidence */
-  valid: boolean;
+  valid: z.boolean(),
   /** Number of evidence items */
-  count: number;
+  count: z.number(),
   /** Fitness score (if applicable) */
-  fitness: number | null;
+  fitness: z.number().nullable(),
   /** Raw evidence data */
-  data: Record<string, unknown>;
-}
+  data: z.record(z.string(), z.unknown()),
+});
+export type SurfaceEvidence = z.infer<typeof SurfaceEvidenceSchema>;
+
+/** Monitor phase: capture metrics from 4 surfaces */
+export const MonitorResultSchema = z.object({
+  /** Execution surface (receipt chains, artifact state) */
+  execution: SurfaceEvidenceSchema,
+  /** Telemetry surface (OTel traces) */
+  telemetry: SurfaceEvidenceSchema,
+  /** State surface (knowledge graph) */
+  state: SurfaceEvidenceSchema,
+  /** Process surface (OCEL events) */
+  process: SurfaceEvidenceSchema,
+});
+export type MonitorResult = z.infer<typeof MonitorResultSchema>;
 
 /** Analyze phase: detect violations using agents */
-export interface AnalyzeResult {
+export const AnalyzeResultSchema = z.object({
   /** All violations detected */
-  violations: Violation[];
+  violations: z.array(ViolationSchema),
   /** Number of critical-severity violations */
-  critical_count: number;
+  critical_count: z.number(),
   /** Number of warning-severity violations */
-  warning_count: number;
+  warning_count: z.number(),
   /** Agents that detected violations */
-  agents_triggered: string[];
-}
-
-/** Plan phase: generate corrective actions */
-export interface PlanResult {
-  /** Ordered list of corrective actions */
-  actions: CorrectiveAction[];
-  /** Number of critical-severity corrective actions */
-  critical_actions: number;
-  /** Number of warning-severity corrective actions */
-  warning_actions: number;
-}
+  agents_triggered: z.array(z.string()),
+});
+export type AnalyzeResult = z.infer<typeof AnalyzeResultSchema>;
 
 /** A single corrective action */
-export interface CorrectiveAction {
+export const CorrectiveActionSchema = z.object({
   /** Agent that will apply the correction */
-  agent: string;
+  agent: z.string(),
   /** Type of correction */
-  type: CorrectionType;
+  type: CorrectionTypeSchema,
   /** Target of the correction */
-  target: string;
+  target: z.string(),
   /** Severity of the triggering violation */
-  severity: Severity;
+  severity: SeveritySchema,
   /** Whether this action requires approval */
-  requires_approval: boolean;
-}
+  requires_approval: z.boolean(),
+});
+export type CorrectiveAction = z.infer<typeof CorrectiveActionSchema>;
+
+/** Plan phase: generate corrective actions */
+export const PlanResultSchema = z.object({
+  /** Ordered list of corrective actions */
+  actions: z.array(CorrectiveActionSchema),
+  /** Number of critical-severity corrective actions */
+  critical_actions: z.number(),
+  /** Number of warning-severity corrective actions */
+  warning_actions: z.number(),
+});
+export type PlanResult = z.infer<typeof PlanResultSchema>;
 
 /** Execute phase: apply corrections */
-export interface ExecuteResult {
+export const ExecuteResultSchema = z.object({
   /** Corrections applied */
-  corrections: AuditEntry[];
+  corrections: z.array(AuditEntrySchema),
   /** Number of successful corrections */
-  successful_count: number;
+  successful_count: z.number(),
   /** Number of failed corrections */
-  failed_count: number;
-}
+  failed_count: z.number(),
+});
+export type ExecuteResult = z.infer<typeof ExecuteResultSchema>;
 
 /** One entry in the threshold audit log produced by the Learn phase */
-export interface ThresholdAuditEntry {
+export const ThresholdAuditEntrySchema = z.object({
   /** Agent whose threshold changed */
-  agentId: string;
+  agentId: z.string(),
   /** Violation type that drove the change */
-  violationType: string;
+  violationType: z.string(),
   /** Drift score that triggered adaptation */
-  driftScore: number;
+  driftScore: z.number(),
   /** Threshold field that was mutated */
-  field: keyof AgentThresholds;
+  field: z.enum(['min_fitness', 'min_precision', 'max_deviations', 'timeout_ms']),
   /** Value before adaptation */
-  before: number;
+  before: z.number(),
   /** Value after adaptation */
-  after: number;
+  after: z.number(),
   /** Human-readable explanation of the change */
-  reason: string;
-}
+  reason: z.string(),
+});
+export type ThresholdAuditEntry = z.infer<typeof ThresholdAuditEntrySchema>;
 
 /** Learn phase: update knowledge */
-export interface LearnResult {
+export const LearnResultSchema = z.object({
   /** Whether knowledge was updated */
-  knowledge_updated: boolean;
+  knowledge_updated: z.boolean(),
   /** Drift detection scores */
-  drift_scores: Record<string, number> | null;
+  drift_scores: z.record(z.string(), z.number()).nullable(),
   /** Ontology patches applied */
-  ontology_patches: number;
+  ontology_patches: z.number(),
   /**
    * Audit trail of threshold changes applied during this Learn phase.
    * Each entry records which agent threshold changed, by how much, and why.
    * Empty when no thresholds changed (score at floor/ceiling or score == 0 and
    * agent has fewer than 5 runs).
    */
-  thresholdAuditLog: ThresholdAuditEntry[];
-}
-
-/** Agent registry status */
-export type AgentStatus = 'active' | 'disabled' | 'error' | 'degraded';
+  thresholdAuditLog: z.array(ThresholdAuditEntrySchema),
+});
+export type LearnResult = z.infer<typeof LearnResultSchema>;
 
 /** Runtime agent state in registry */
-export interface AgentRuntimeState {
+export const AgentRuntimeStateSchema = z.object({
   /** Agent configuration */
-  config: AgentConfig;
+  config: AgentConfigSchema,
   /** Current status */
-  status: AgentStatus;
+  status: AgentStatusSchema,
   /** Total executions */
-  total_runs: number;
+  total_runs: z.number(),
   /** Total violations detected */
-  total_violations: number;
+  total_violations: z.number(),
   /** Total corrections applied */
-  total_corrections: number;
+  total_corrections: z.number(),
   /** Last execution timestamp */
-  last_run: string | null;
+  last_run: z.string().nullable(),
   /** Last error message */
-  last_error: string | null;
-}
+  last_error: z.string().nullable(),
+});
+export type AgentRuntimeState = z.infer<typeof AgentRuntimeStateSchema>;
 
 /** Multi-surface corroboration result */
-export interface CorroborationResult {
+export const CorroborationResultSchema = z.object({
   /** Number of surfaces that passed */
-  surfaces_passed: number;
+  surfaces_passed: z.number(),
   /** Details per surface */
-  execution: { valid: boolean; evidence: string };
-  telemetry: { valid: boolean; evidence: string };
-  state: { valid: boolean; evidence: string };
-  process: { valid: boolean; evidence: string };
+  execution: z.object({ valid: z.boolean(), evidence: z.string() }),
+  telemetry: z.object({ valid: z.boolean(), evidence: z.string() }),
+  state: z.object({ valid: z.boolean(), evidence: z.string() }),
+  process: z.object({ valid: z.boolean(), evidence: z.string() }),
   /** Whether at least 3 surfaces corroborate */
-  corroborated: boolean;
-}
+  corroborated: z.boolean(),
+});
+export type CorroborationResult = z.infer<typeof CorroborationResultSchema>;
+
+/** MAPE-K cycle result */
+export const MAPEKCycleResultSchema = z.object({
+  /** Unique cycle identifier */
+  cycle_id: z.string(),
+  /** Whether the cycle completed successfully */
+  success: z.boolean(),
+  /** Monitor phase results */
+  monitor: MonitorResultSchema,
+  /** Analyze phase results */
+  analyze: AnalyzeResultSchema,
+  /** Plan phase results */
+  plan: PlanResultSchema,
+  /** Execute phase results */
+  execute: ExecuteResultSchema,
+  /** Learn phase results */
+  learn: LearnResultSchema,
+  /** Total cycle duration in milliseconds */
+  duration_ms: z.number(),
+});
+export type MAPEKCycleResult = z.infer<typeof MAPEKCycleResultSchema>;
 
 /** The 8 Van der Aalst agent names */
 export const VAN_DERAALST_AGENTS = [

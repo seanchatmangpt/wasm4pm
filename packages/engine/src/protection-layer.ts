@@ -2,6 +2,8 @@
  * Enhanced Protection Layer with Per-Algorithm Circuit Breakers and Graceful Degradation
  */
 
+import { z } from 'zod';
+
 /**
  * Degradation levels from best to worst performance
  */
@@ -15,15 +17,17 @@ export enum DegradationLevel {
 /**
  * Per-algorithm circuit breaker state
  */
-export interface AlgorithmCircuitBreaker {
-  algorithmName: string;
-  state: 'Closed' | 'HalfOpen' | 'Open';
-  successCount: number;
-  failureCount: number;
-  failureThreshold: number;        // Close when failureCount > threshold
-  successThresholdForRecovery: number; // Open → Closed when successCount > threshold
-  lastTransitionTime: number;      // milliseconds since epoch
-}
+export const AlgorithmCircuitBreakerSchema = z.object({
+  algorithmName: z.string(),
+  state: z.enum(['Closed', 'HalfOpen', 'Open']),
+  successCount: z.number(),
+  failureCount: z.number(),
+  failureThreshold: z.number(),
+  successThresholdForRecovery: z.number(),
+  lastTransitionTime: z.number(),
+});
+
+export type AlgorithmCircuitBreaker = z.infer<typeof AlgorithmCircuitBreakerSchema>;
 
 /**
  * Protection result indicating when to activate graceful degradation
@@ -150,7 +154,7 @@ export class ProtectionManager {
    * @param failedAlgorithmCount Number of algorithms with open circuits
    * @returns Protection decision with degradation level
    */
-  makeProtectionDecision(spcAlerts: number, failedAlgorithmCount: number): ProtectionDecision {
+  makeProtectionDecision(spcAlerts: number, _failedAlgorithmCount: number): ProtectionDecision {
     const openBreakers = this.getOpenCircuitBreakers();
     let newDegradationLevel = DegradationLevel.NONE;
 

@@ -6,7 +6,7 @@
 //! links into `ReceiptChain` for verification; or use `replayReceipt` from
 //! `./replay` for WASM-backed replay.
 
-import type { ReceiptLink } from '../types.js';
+import type { ReceiptLink, ChainVerifyOutcome, CausalCheckResult } from '../types.js';
 import { createHash } from 'node:crypto';
 
 /** Compute BLAKE3 hex of a string (pure-JS: delegates to node:crypto sha3 fallback when blake3 native unavailable). */
@@ -32,23 +32,9 @@ export type {
 export { replayReceipt } from './replay.js';
 export type { ReplayOptions } from './replay.js';
 
-/** Outcome of `verifyChainStrict`. `ok=true` iff every invariant held. */
-export interface ChainVerifyOutcome {
-  ok: boolean;
-  reason?:
-    | 'genesis_has_prev_hash'
-    | 'missing_prev_hash'
-    | 'prev_hash_mismatch'
-    | 'missing_combined_hash'
-    | 'non_monotonic_index';
-  at_index?: number;
-}
-
-/** Result of causal consistency checks on a single receipt. */
-export interface CausalCheckResult {
-  ok: boolean;
-  violations: string[];
-}
+// ChainVerifyOutcome and CausalCheckResult are defined in schemas.ts (Zod-inferred)
+// and re-exported from types.ts. Re-export them here for backwards compatibility.
+export type { ChainVerifyOutcome, CausalCheckResult } from '../types.js';
 
 /**
  * Verify causal consistency of a cognition receipt:

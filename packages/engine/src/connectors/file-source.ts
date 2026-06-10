@@ -6,8 +6,8 @@
  * with exponential backoff for transient errors.
  */
 
+import { z } from 'zod';
 import { promises as fs } from 'fs';
-import { createReadStream } from 'fs';
 import { createHash } from 'crypto';
 import {
   SourceAdapter,
@@ -23,10 +23,12 @@ import { createError } from '@wasm4pm/contracts';
 /**
  * Configuration for FileSourceAdapter
  */
-export interface FileSourceConfig {
-  filePath: string;
-  format?: 'xes' | 'json' | 'ocel' | 'auto';
-}
+export const FileSourceConfigSchema = z.object({
+  filePath: z.string(),
+  format: z.enum(['xes', 'json', 'ocel', 'auto']).optional(),
+});
+
+export type FileSourceConfig = z.infer<typeof FileSourceConfigSchema>;
 
 /**
  * Simple line-based stream for reading events from files
@@ -39,7 +41,7 @@ class FileEventStream implements EventStream {
 
   constructor(
     fileContent: string,
-    private format: 'xes' | 'json' | 'ocel'
+    format: 'xes' | 'json' | 'ocel'
   ) {
     // For XES, keep as single block; for JSON/OCEL, split into objects
     if (format === 'xes') {
@@ -330,9 +332,8 @@ export class FileSourceAdapter implements SourceAdapter {
    * Determine if an error is transient (retryable)
    */
   private isTransientError(e: unknown): boolean {
-    const err = e as { code?: string; message?: string };
+    const err = e as { code?: string };
     const code = err.code ?? '';
-    const message = err.message ?? '';
 
     // Transient: EAGAIN, EBUSY, ETIMEDOUT, etc.
     if (code.match(/^E(AGAIN|BUSY|TIMEDOUT|INTR|IO)$/)) {

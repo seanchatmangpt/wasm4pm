@@ -1,17 +1,30 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { z } from 'zod';
 
-export interface SyncQueueItem {
-  id: string;
-  kind: 'command_receipt' | 'truex_envelope';
-  payload: Record<string, unknown>;
-  enqueued_at: string;
-  attempts: number;
-}
+// ---------------------------------------------------------------------------
+// SyncQueueItem
+// ---------------------------------------------------------------------------
 
-export interface SyncQueueFile {
-  pending: SyncQueueItem[];
-}
+export const SyncQueueItemSchema = z.object({
+  id: z.string(),
+  kind: z.enum(['command_receipt', 'truex_envelope']),
+  payload: z.record(z.string(), z.unknown()),
+  enqueued_at: z.string(),
+  attempts: z.number(),
+});
+
+export type SyncQueueItem = z.infer<typeof SyncQueueItemSchema>;
+
+// ---------------------------------------------------------------------------
+// SyncQueueFile
+// ---------------------------------------------------------------------------
+
+export const SyncQueueFileSchema = z.object({
+  pending: z.array(SyncQueueItemSchema),
+});
+
+export type SyncQueueFile = z.infer<typeof SyncQueueFileSchema>;
 
 const DEFAULT_QUEUE_PATH = '.wasm4pm/sync-queue.json';
 

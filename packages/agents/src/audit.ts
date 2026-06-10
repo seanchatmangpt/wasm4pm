@@ -7,41 +7,45 @@
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
-import type { AuditEntry, CorrectionType, Severity, VanDerAalstAgentName } from './types.js';
+import { z } from 'zod';
+import type { AuditEntry, CorrectionType } from './types.js';
+import { CorrectionTypeSchema, SeveritySchema } from './types.js';
 
 /** Query filter for audit entries */
-export interface AuditQuery {
+export const AuditQuerySchema = z.object({
   /** Filter by agent name */
-  agent?: string;
+  agent: z.string().optional(),
   /** Filter by correction type */
-  correction_type?: CorrectionType;
+  correction_type: CorrectionTypeSchema.optional(),
   /** Filter by severity */
-  severity?: Severity;
+  severity: SeveritySchema.optional(),
   /** Filter by success/failure */
-  success?: boolean;
+  success: z.boolean().optional(),
   /** Maximum number of entries to return */
-  limit?: number;
+  limit: z.number().optional(),
   /** Start timestamp (ISO string) */
-  since?: string;
+  since: z.string().optional(),
   /** End timestamp (ISO string) */
-  until?: string;
-}
+  until: z.string().optional(),
+});
+export type AuditQuery = z.infer<typeof AuditQuerySchema>;
 
 /** Audit summary statistics */
-export interface AuditSummary {
+export const AuditSummarySchema = z.object({
   /** Total entries */
-  total_entries: number;
+  total_entries: z.number(),
   /** Entries by agent */
-  by_agent: Record<string, number>;
+  by_agent: z.record(z.string(), z.number()),
   /** Entries by correction type */
-  by_correction_type: Record<CorrectionType, number>;
+  by_correction_type: z.record(CorrectionTypeSchema, z.number()),
   /** Success rate */
-  success_rate: number;
+  success_rate: z.number(),
   /** Critical corrections */
-  critical_count: number;
+  critical_count: z.number(),
   /** Most recent timestamp */
-  last_activity: string | null;
-}
+  last_activity: z.string().nullable(),
+});
+export type AuditSummary = z.infer<typeof AuditSummarySchema>;
 
 /**
  * Audit Store — persistent storage for agent correction audit trail

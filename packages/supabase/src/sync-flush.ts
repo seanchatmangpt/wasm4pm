@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { hashJsonString } from '@wasm4pm/contracts';
 import { createSupabaseWriteClient } from './client.js';
 import {
@@ -29,11 +30,17 @@ export {
   runSupabaseDoctor,
 } from './live-boundary.js';
 
-export interface SyncQueueFlushResult {
-  processed: number;
-  failed: number;
-  acked: string[];
-}
+// ---------------------------------------------------------------------------
+// SyncQueueFlushResult
+// ---------------------------------------------------------------------------
+
+export const SyncQueueFlushResultSchema = z.object({
+  processed: z.number(),
+  failed: z.number(),
+  acked: z.array(z.string()),
+});
+
+export type SyncQueueFlushResult = z.infer<typeof SyncQueueFlushResultSchema>;
 
 /** Items that have failed this many times are moved to deadletter and removed from the queue. */
 const MAX_FLUSH_ATTEMPTS = 5;

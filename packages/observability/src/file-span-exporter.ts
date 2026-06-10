@@ -11,50 +11,42 @@
 
 import { mkdirSync, appendFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { z } from 'zod';
+
+/**
+ * Zod schema for the RawSpan shape consumed by self-conformance.ts.
+ * Coerces OTLP proto nanosecond strings to numbers and normalises the
+ * status.code integer enum to its string equivalent.
+ */
+export const RawSpanSchema = z.object({
+  trace_id: z.string(),
+  span_id: z.string(),
+  name: z.string(),
+  kind: z.string().default('INTERNAL'),
+  start_time: z.union([z.number(), z.string().transform((v) => parseInt(v, 10))]).default(0),
+  end_time: z.union([z.number(), z.string().transform((v) => parseInt(v, 10))]).default(0),
+  status: z
+    .object({
+      code: z.union([
+        z.number().transform((n) => ({ 0: 'UNSET', 1: 'OK', 2: 'ERROR' }[n] ?? 'UNSET')),
+        z.string(),
+      ]),
+      message: z.string().optional(),
+    })
+    .default({ code: 'UNSET' }),
+  attributes: z.record(z.union([z.string(), z.number(), z.boolean()])).default({}),
+});
 
 /** RawSpan shape consumed by self-conformance.ts */
-export interface RawSpan {
-  trace_id: string;
-  span_id: string;
-  name: string;
-  kind: string;
-  start_time: number;
-  end_time: number;
-  status: { code: string; message?: string };
-  attributes: Record<string, string | number | boolean>;
-}
+export type RawSpan = z.infer<typeof RawSpanSchema>;
 
-const STATUS_CODE_MAP: Record<number, string> = { 0: 'UNSET', 1: 'OK', 2: 'ERROR' };
-
+/**
+ * Normalise a raw OTLP span object into a typed RawSpan.
+ * Uses RawSpanSchema.parse so coercions and defaults are applied by Zod.
+ * Throws ZodError if the incoming object is structurally invalid.
+ */
 function normalizeSpan(raw: Record<string, unknown>): RawSpan {
-  // start_time / end_time may arrive as nanosecond strings (OTLP proto encoding)
-  // or already as numbers. Normalise to numbers.
-  const toNumber = (v: unknown): number => {
-    if (typeof v === 'number') return v;
-    if (typeof v === 'string') return parseInt(v, 10);
-    return 0;
-  };
-
-  // status.code may be a number (proto enum) or already a string.
-  const rawStatus = (raw['status'] ?? {}) as Record<string, unknown>;
-  const codeRaw = rawStatus['code'];
-  const codeStr =
-    typeof codeRaw === 'number'
-      ? (STATUS_CODE_MAP[codeRaw] ?? 'UNSET')
-      : typeof codeRaw === 'string'
-        ? codeRaw
-        : 'UNSET';
-
-  return {
-    trace_id: String(raw['trace_id'] ?? ''),
-    span_id: String(raw['span_id'] ?? ''),
-    name: String(raw['name'] ?? ''),
-    kind: String(raw['kind'] ?? 'INTERNAL'),
-    start_time: toNumber(raw['start_time']),
-    end_time: toNumber(raw['end_time']),
-    status: { code: codeStr, message: rawStatus['message'] as string | undefined },
-    attributes: (raw['attributes'] ?? {}) as Record<string, string | number | boolean>,
-  };
+  return RawSpanSchema.parse(raw);
 }
 
 export class FileSpanExporter {

@@ -56,7 +56,7 @@ function buildStub(): KernelWasmModule {
     discover_dfg: (h, _k) => handle('dfg', h),
     discover_alpha_plus_plus: (h, _k, _s) => handle('alpha', h),
     discover_heuristic_miner: (h, _k, _t) => handle('heuristic', h),
-    discover_inductive_miner: (h, _k, _n) => `{"handle":"${handle('inductive', h)}","operator":"sequence","children":[]}`,
+    discover_inductive_miner: (h, _k, _n) => `{"algorithm":"inductive_miner","root":{"node_type":"sequence","children":[]},"nodes":0}`,
     discover_genetic_algorithm: (h, _k, _p, _g) => handle('genetic', h),
     discover_pso_algorithm: (h, _k, _s, _i) => handle('pso', h),
     discover_astar: (h, _k, _m) => handle('astar', h),

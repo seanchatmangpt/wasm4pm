@@ -41,7 +41,8 @@
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
-    "wasm4pm-cognition": "./pkg"
+    "wasm4pm-cognition": "./pkg",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

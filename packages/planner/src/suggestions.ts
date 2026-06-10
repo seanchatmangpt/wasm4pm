@@ -10,17 +10,20 @@
  * propagates here.
  */
 
-export interface LogStats {
-  traceCount: number;
-  eventCount: number;
-  variantCount: number;
+import { z } from 'zod';
+
+export const LogStatsSchema = z.object({
+  traceCount: z.number(),
+  eventCount: z.number(),
+  variantCount: z.number(),
   /** Number of distinct activity names, if known. */
-  activityCount?: number;
+  activityCount: z.number().optional(),
   /** Whether org:resource attribute is present (enables social network mining). */
-  hasResources?: boolean;
+  hasResources: z.boolean().optional(),
   /** Whether time:timestamp attribute is present (enables temporal analysis). */
-  hasTimestamps?: boolean;
-}
+  hasTimestamps: z.boolean().optional(),
+});
+export type LogStats = z.infer<typeof LogStatsSchema>;
 
 export type SuggestionGoal =
   | 'fast'
@@ -73,37 +76,43 @@ export const VALID_GOALS: SuggestionGoal[] = [
   'predict outcomes',
 ];
 
-export interface AlgorithmRecommendation {
-  algorithm: string;
-  quality: number;
-  speed: number;
+export const AlgorithmRecommendationSchema = z.object({
+  algorithm: z.string(),
+  quality: z.number(),
+  speed: z.number(),
   /** Composite score in [0, 1]. */
-  score: number;
-  reason: string;
+  score: z.number(),
+  reason: z.string(),
   /** Expected fitness estimate as a fraction (0–1). */
-  expectedFitness?: number;
+  expectedFitness: z.number().optional(),
   /** Expected precision estimate as a fraction (0–1). */
-  expectedPrecision?: number;
-  estimatedTimeMs?: number;
+  expectedPrecision: z.number().optional(),
+  estimatedTimeMs: z.number().optional(),
   /** Detailed explain lines (only populated when explainMode=true). */
-  explainLines?: string[];
-}
+  explainLines: z.array(z.string()).optional(),
+});
+export type AlgorithmRecommendation = z.infer<typeof AlgorithmRecommendationSchema>;
 
 /** Analysis commands recommended as follow-ups for a given goal + log profile. */
-export interface AnalysisRecommendation {
-  command: string;
-  reason: string;
-  example: string;
-}
+export const AnalysisRecommendationSchema = z.object({
+  command: z.string(),
+  reason: z.string(),
+  example: z.string(),
+});
+export type AnalysisRecommendation = z.infer<typeof AnalysisRecommendationSchema>;
 
-export interface SuggestionResult {
-  goal: SuggestionGoal;
-  logStats: LogStats;
-  recommendations: AlgorithmRecommendation[];
-  analysisRecommendations: AnalysisRecommendation[];
-  topPick: string | null;
-  runCommand: string | null;
-}
+export const SuggestionResultSchema = z.object({
+  goal: z.enum([
+    'fast', 'balanced', 'quality', 'conformance', 'streaming',
+    'find bottlenecks', 'check compliance', 'predict outcomes',
+  ]),
+  logStats: LogStatsSchema,
+  recommendations: z.array(AlgorithmRecommendationSchema),
+  analysisRecommendations: z.array(AnalysisRecommendationSchema),
+  topPick: z.string().nullable(),
+  runCommand: z.string().nullable(),
+});
+export type SuggestionResult = z.infer<typeof SuggestionResultSchema>;
 
 /**
  * Composite scoring weight per goal.

@@ -3,35 +3,43 @@
  * Implements weighted preference framework for health, quality, and performance objectives
  */
 
+import { z } from 'zod';
+
 /**
  * Multi-dimensional objective scores (0-1 range)
  */
-export interface MultiObjectiveScores {
-  health: number;       // System health (0=failed, 1=normal)
-  quality: number;      // Process model quality (fitness/precision blend)
-  performance: number;  // Execution speed and throughput (0=slowest, 1=fastest)
-}
+export const MultiObjectiveScoresSchema = z.object({
+  health: z.number(),
+  quality: z.number(),
+  performance: z.number(),
+});
+
+export type MultiObjectiveScores = z.infer<typeof MultiObjectiveScoresSchema>;
 
 /**
  * Decision preferences for weighting objectives
  */
-export interface DecisionPreferences {
-  healthWeight: number;       // 0-1, sum with other weights = 1.0
-  qualityWeight: number;
-  performanceWeight: number;
-}
+export const DecisionPreferencesSchema = z.object({
+  healthWeight: z.number(),
+  qualityWeight: z.number(),
+  performanceWeight: z.number(),
+});
+
+export type DecisionPreferences = z.infer<typeof DecisionPreferencesSchema>;
 
 /**
  * Decision result with confidence and rationale
  */
-export interface AutonomicDecision {
-  primaryObjective: keyof MultiObjectiveScores;
-  confidence: number;                    // 0-1: consensus across objectives
-  scores: MultiObjectiveScores;
-  preferenceWeights: DecisionPreferences;
-  compositeScore: number;                // Weighted average
-  rationale: string;
-}
+export const AutonomicDecisionSchema = z.object({
+  primaryObjective: z.enum(['health', 'quality', 'performance']),
+  confidence: z.number(),
+  scores: MultiObjectiveScoresSchema,
+  preferenceWeights: DecisionPreferencesSchema,
+  compositeScore: z.number(),
+  rationale: z.string(),
+});
+
+export type AutonomicDecision = z.infer<typeof AutonomicDecisionSchema>;
 
 /**
  * Default preferences: balanced across all three

@@ -5,6 +5,8 @@
  * Ensures format compliance, schema validity, and data quality.
  */
 
+import { z } from 'zod';
+
 // ─── Types ────────────────────────────────────────────────────────────────
 
 export interface ValidationError {
@@ -19,34 +21,66 @@ export interface ValidationResult {
   warnings: ValidationError[];
 }
 
-export interface XESSchema {
-  version?: string;
-  features?: string[];
-  extensions?: Array<{ name: string; prefix: string; uri: string }>;
-  traces?: XESTrace[];
-}
+/**
+ * Zod schema for XESEvent — single event inside a XES trace.
+ * XES event files are parsed from disk (readFileSync) so their shape
+ * must be validated before use.
+ */
+export const XESEventSchema = z.object({
+  attributes: z.record(z.string(), z.unknown()).optional(),
+});
 
-export interface XESTrace {
-  attributes?: Record<string, unknown>;
-  events?: XESEvent[];
-}
+export type XESEvent = z.infer<typeof XESEventSchema>;
 
-export interface XESEvent {
-  attributes?: Record<string, unknown>;
-}
+/**
+ * Zod schema for XESTrace — a single trace inside a XES log.
+ */
+export const XESTraceSchema = z.object({
+  attributes: z.record(z.string(), z.unknown()).optional(),
+  events: z.array(XESEventSchema).optional(),
+});
 
-export interface EventLogSchema {
-  traces: Array<{
-    'concept:name'?: string;
-    events: Array<{
-      'concept:name': string;
-      'time:timestamp'?: string;
-      'org:resource'?: string;
-      'lifecycle:transition'?: string;
-      [key: string]: unknown;
-    }>;
-  }>;
-}
+export type XESTrace = z.infer<typeof XESTraceSchema>;
+
+/**
+ * Zod schema for XESSchema — the top-level structure of a parsed XES log.
+ * This IS the validation surface: any file that fails parse is structurally
+ * non-conforming and must not enter the process-mining pipeline.
+ */
+export const XESSchemaSchema = z.object({
+  version: z.string().optional(),
+  features: z.array(z.string()).optional(),
+  extensions: z
+    .array(z.object({ name: z.string(), prefix: z.string(), uri: z.string() }))
+    .optional(),
+  traces: z.array(XESTraceSchema).optional(),
+});
+
+export type XESSchema = z.infer<typeof XESSchemaSchema>;
+
+/**
+ * Zod schema for EventLogSchema — the normalised in-memory event log.
+ * Used by validateEventLog() and readFileSync-based certification paths.
+ */
+export const EventLogSchemaSchema = z.object({
+  traces: z.array(
+    z.object({
+      'concept:name': z.string().optional(),
+      events: z.array(
+        z
+          .object({
+            'concept:name': z.string(),
+            'time:timestamp': z.string().optional(),
+            'org:resource': z.string().optional(),
+            'lifecycle:transition': z.string().optional(),
+          })
+          .passthrough()
+      ),
+    })
+  ),
+});
+
+export type EventLogSchema = z.infer<typeof EventLogSchemaSchema>;
 
 // ─── XES Validation ───────────────────────────────────────────────────────
 
@@ -506,8 +540,6 @@ export function validateTraceCompleteness(
     });
   } else {
     // Check that all expected activities appear in each trace
-    const expectedSet = new Set(expectedActivities);
-
     log.traces?.forEach((trace, traceIndex) => {
       const tracePath = `traces[${traceIndex}]`;
       const foundActivities = new Set(trace.events?.map((e) => e['concept:name']) || []);

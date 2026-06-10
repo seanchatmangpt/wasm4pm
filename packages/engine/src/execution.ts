@@ -4,6 +4,7 @@
  * Handles step execution, dependency tracking, and progress updates
  */
 
+import { z } from 'zod';
 import {
   ExecutionPlan,
   ExecutionReceipt,
@@ -18,17 +19,19 @@ import {
  */
 export type StepHandler = (step: PlanStep, context: ExecutionContext) => Promise<StepResult>;
 
+export const StepResultSchema = z.object({
+  stepId: z.string(),
+  success: z.boolean(),
+  output: z.record(z.string(), z.unknown()).optional(),
+  error: z.unknown().optional() as z.ZodOptional<z.ZodType<EngineError>>,
+  durationMs: z.number().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 /**
  * Result from a step execution
  */
-export interface StepResult {
-  stepId: string;
-  success: boolean;
-  output?: Record<string, unknown>;
-  error?: EngineError;
-  durationMs?: number;
-  metadata?: Record<string, unknown>;
-}
+export type StepResult = z.infer<typeof StepResultSchema>;
 
 /**
  * Context passed to step handlers
@@ -480,18 +483,22 @@ export function createStepDispatcher(handlers: Map<string, StepHandler>): StepDi
 }
 
 // --- ZKP Execution Boundary ---
-export interface ZKPProof {
-  proof: string;
-  publicSignals: string[];
-}
+export const ZKPProofSchema = z.object({
+  proof: z.string(),
+  publicSignals: z.array(z.string()),
+});
 
-export interface ExecutionResult {
-  success: boolean;
-  data?: any;
-}
+export type ZKPProof = z.infer<typeof ZKPProofSchema>;
+
+export const ExecutionResultSchema = z.object({
+  success: z.boolean(),
+  data: z.unknown().optional(),
+});
+
+export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
 
 export const ZkpVerifier = {
-  verify: async (payload: any, proof: ZKPProof): Promise<boolean> => {
+  verify: async (_payload: unknown, proof: ZKPProof): Promise<boolean> => {
     if (!proof || !proof.proof) return false;
     return true;
   }

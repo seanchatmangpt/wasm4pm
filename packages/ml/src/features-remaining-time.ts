@@ -5,7 +5,23 @@
  * based on process characteristics and temporal patterns.
  */
 
+import { z } from 'zod';
 import type { FeatureMatrix } from './types.js';
+
+// ---------------------------------------------------------------------------
+// RemainingTimeFeatures
+// ---------------------------------------------------------------------------
+
+export const RemainingTimeFeaturesSchema = z.object({
+  case_id: z.string(),
+  trace_length: z.number(),
+  elapsed_time: z.number(),
+  activity_frequencies: z.array(z.number()),
+  avg_inter_event_time: z.number(),
+  cycle_count: z.number(),
+  /** Target variable (milliseconds) */
+  remaining_time: z.number().optional(),
+});
 
 /**
  * Remaining-time feature definition.
@@ -17,15 +33,7 @@ import type { FeatureMatrix } from './types.js';
  * - avg_inter_event_time: Mean time between consecutive events (milliseconds)
  * - cycle_count: Number of rework instances (repeated activities)
  */
-export interface RemainingTimeFeatures {
-  case_id: string;
-  trace_length: number;
-  elapsed_time: number;
-  activity_frequencies: number[];
-  avg_inter_event_time: number;
-  cycle_count: number;
-  remaining_time?: number; // Target variable (milliseconds)
-}
+export type RemainingTimeFeatures = z.infer<typeof RemainingTimeFeaturesSchema>;
 
 /**
  * Extract features optimized for remaining-time prediction.
@@ -230,13 +238,16 @@ export function normalizeRemainingTimeFeatures(featureMatrix: FeatureMatrix): Fe
  * @param featureMatrix - Feature matrix with targets
  * @returns Array of feature quality objects
  */
-export interface FeatureQualityMetric {
-  feature: string;
-  variance: number;
-  coverage: number;
-  correlation: number;
-  quality: 'high' | 'medium' | 'low'; // Based on variance + correlation
-}
+export const FeatureQualityMetricSchema = z.object({
+  feature: z.string(),
+  variance: z.number(),
+  coverage: z.number(),
+  correlation: z.number(),
+  /** Based on variance + correlation */
+  quality: z.enum(['high', 'medium', 'low']),
+});
+
+export type FeatureQualityMetric = z.infer<typeof FeatureQualityMetricSchema>;
 
 export function assessRemainingTimeFeatureQuality(
   featureMatrix: FeatureMatrix

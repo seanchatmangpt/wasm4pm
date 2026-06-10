@@ -12,35 +12,40 @@
  * quantitative evidence.
  */
 
+import { z } from 'zod';
 import type { ClassificationResult } from './types.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Type definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface OverfittingIndicator {
+export const OverfittingIndicatorSchema = z.object({
   /** Detector name */
-  detector: string;
+  detector: z.string(),
   /** Severity level */
-  severity: 'none' | 'warning' | 'critical';
+  severity: z.enum(['none', 'warning', 'critical']),
   /** Numeric evidence (0-1 scale for most detectors) */
-  score: number;
+  score: z.number(),
   /** Human-readable explanation */
-  message: string;
+  message: z.string(),
   /** Actionable recommendation */
-  recommendation: string;
-}
+  recommendation: z.string(),
+});
 
-export interface OverfittingAnalysis {
+export type OverfittingIndicator = z.infer<typeof OverfittingIndicatorSchema>;
+
+export const OverfittingAnalysisSchema = z.object({
   /** Overall severity (highest from all detectors) */
-  overallSeverity: 'none' | 'warning' | 'critical';
+  overallSeverity: z.enum(['none', 'warning', 'critical']),
   /** Individual detector results (sorted by severity) */
-  indicators: OverfittingIndicator[];
-  /** Summary risk level for decision-making */
-  riskLevel: number; // 0.0 (safe) to 1.0 (severe)
+  indicators: z.array(OverfittingIndicatorSchema),
+  /** Summary risk level for decision-making (0.0=safe, 1.0=severe) */
+  riskLevel: z.number(),
   /** Total number of concerning indicators */
-  concernCount: number;
-}
+  concernCount: z.number(),
+});
+
+export type OverfittingAnalysis = z.infer<typeof OverfittingAnalysisSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Detector 1: Cross-Validation Accuracy Gap

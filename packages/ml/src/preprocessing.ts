@@ -13,28 +13,30 @@
  * break distance metrics, outliers distort regression).
  */
 
-export interface PreprocessingReport {
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// PreprocessingReport
+// ---------------------------------------------------------------------------
+
+export const PreprocessingReportSchema = z.object({
   /** Pass/fail status */
-  status: 'pass' | 'fail';
-
+  status: z.enum(['pass', 'fail']),
   /** Count of zero-variance columns removed */
-  zeroVarianceColumnsRemoved: number;
-
+  zeroVarianceColumnsRemoved: z.number(),
   /** Count of rows with missing values imputed */
-  rowsWithMissingValuesImputed: number;
-
+  rowsWithMissingValuesImputed: z.number(),
   /** Count of outliers detected and capped */
-  outliersDetected: number;
-
+  outliersDetected: z.number(),
   /** True if feature dimension is sufficient for sample size */
-  suffientSampleRatio: boolean;
-
+  suffientSampleRatio: z.boolean(),
   /** Count of features after preprocessing (includes scaled features) */
-  finalFeatureCount: number;
-
+  finalFeatureCount: z.number(),
   /** Warnings/errors encountered */
-  issues: string[];
-}
+  issues: z.array(z.string()),
+});
+
+export type PreprocessingReport = z.infer<typeof PreprocessingReportSchema>;
 
 /**
  * Guard 1: Detect and remove zero-variance columns.

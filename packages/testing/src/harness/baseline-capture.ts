@@ -12,54 +12,53 @@
  * Oracle rank: Rank 2 (Domain contract — quality baselines serve as regression thresholds)
  */
 
+import { z } from 'zod';
+
 /**
- * Baseline metric for a single algorithm run
+ * Zod schema for AlgorithmBaseline.
+ *
+ * WASM output is parsed with JSON.parse() in computeMetrics(). The
+ * to_js / to_js_str gotcha (CLAUDE.md) means WASM contract drift can
+ * silently change field names or types. This schema catches that drift
+ * at test time rather than at assertion time.
  */
-export interface AlgorithmBaseline {
+export const AlgorithmBaselineSchema = z.object({
   /** Unique identifier combining algorithm and test parameters */
-  id: string;
-
+  id: z.string(),
   /** Algorithm name (from registry) */
-  algorithm: string;
-
+  algorithm: z.string(),
   /** Input event log size (number of traces) */
-  logSize: number;
-
+  logSize: z.number().int().nonnegative(),
   /** Number of activities in log */
-  activityCount: number;
-
+  activityCount: z.number().int().nonnegative(),
   /** Fitness score (0-1, token-based replay) */
-  fitness: number;
-
+  fitness: z.number().min(0).max(1),
   /** Precision score (0-1) */
-  precision: number;
-
+  precision: z.number().min(0).max(1),
   /** Quality score aggregate (0-1, average of fitness and precision) */
-  qualityScore: number;
-
+  qualityScore: z.number().min(0).max(1),
   /** Number of nodes in output model */
-  nodeCount: number;
-
+  nodeCount: z.number().int().nonnegative(),
   /** Number of edges in output model */
-  edgeCount: number;
-
+  edgeCount: z.number().int().nonnegative(),
   /** Execution duration in milliseconds */
-  durationMs: number;
-
+  durationMs: z.number().nonnegative(),
   /** Deployment profile (mobile/iot/edge/fog/browser) */
-  profile: string;
-
-  /** Timestamp of capture */
-  capturedAt: string;
-
+  profile: z.string(),
+  /** Timestamp of capture (ISO 8601) */
+  capturedAt: z.string(),
   /** Optional metadata about the input log */
-  logMetadata?: {
-    activityKey: string;
-    eventCount: number;
-    traces: number;
-    uniqueVariants: number;
-  };
-}
+  logMetadata: z
+    .object({
+      activityKey: z.string(),
+      eventCount: z.number().int().nonnegative(),
+      traces: z.number().int().nonnegative(),
+      uniqueVariants: z.number().int().nonnegative(),
+    })
+    .optional(),
+});
+
+export type AlgorithmBaseline = z.infer<typeof AlgorithmBaselineSchema>;
 
 /**
  * Options for baseline capture
@@ -139,10 +138,10 @@ export async function captureAlgorithmBaseline(
  * Compute quality metrics from algorithm output
  */
 async function computeMetrics(
-  kernel: unknown,
+  _kernel: unknown,
   algorithmId: string,
   resultHandle: string,
-  logHandle: string,
+  _logHandle: string,
   context: {
     durationMs: number;
     profile: string;
@@ -218,7 +217,9 @@ async function computeMetrics(
   const logSize = 100; // Default; would extract from actual log
   const activityCount = 10; // Default; would extract from actual log
 
-  return {
+  // Parse through Zod schema so WASM contract drift is caught here, not
+  // silently at assertion time.
+  return AlgorithmBaselineSchema.parse({
     id: `${algorithmId}_n${logSize}_a${activityCount}`,
     algorithm: algorithmId,
     logSize,
@@ -239,7 +240,7 @@ async function computeMetrics(
           uniqueVariants: Math.ceil(logSize * 0.4),
         }
       : undefined,
-  };
+  });
 }
 
 /**

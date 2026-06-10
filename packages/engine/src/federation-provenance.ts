@@ -7,11 +7,11 @@
  * Section 2.4 & 2.3 of the Three-Layer Architecture Contract Specification.
  */
 
+import { z } from 'zod';
 import { hash as blake3 } from 'blake3';
 import {
   ProvenanceChain,
   ResultEnvelope,
-  LatencyClass,
   deriveLatencyClass,
   ModelIR,
 } from '@wasm4pm/contracts';
@@ -151,20 +151,22 @@ export function computeProvenanceChain(
   };
 }
 
+export const RawModelOutputSchema = z.object({
+  model: z.record(z.string(), z.unknown()),
+  model_hash: z.string(),
+  deterministic: z.boolean(),
+  algorithm_version: z.string(),
+  latency_class: z.string(),
+  algorithm_duration_ms: z.number(),
+});
+
 /**
  * RawModelOutput type matching WASM serialization.
  *
  * This matches the Rust struct in wasm4pm/src/provenance.rs.
  * JavaScript receives this as JSON from WASM discovery functions.
  */
-export interface RawModelOutput {
-  model: Record<string, unknown>; // Discovered model JSON (DFG, PetriNet, etc.)
-  model_hash: string; // BLAKE3 hash (64 hex characters = 256 bits)
-  deterministic: boolean;
-  algorithm_version: string;
-  latency_class: string;
-  algorithm_duration_ms: number;
-}
+export type RawModelOutput = z.infer<typeof RawModelOutputSchema>;
 
 /**
  * Builds a complete ModelIR from a RawModelOutput.

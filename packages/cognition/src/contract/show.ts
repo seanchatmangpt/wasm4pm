@@ -4,37 +4,38 @@ import { WasmLoader } from '../init.js';
 import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
-import type { BreedDescriptor, ShowReport } from '../types.js';
+import { ShowReportSchema } from '../schemas.js';
+import type { ShowReport } from '../types.js';
 
 export interface ShowOptions {
   spanSink?: SpanSink;
 }
 
+function formatZodIssues(issues: Array<{path: (string|number)[], code: string, message: string, expected?: unknown, received?: unknown}>): string {
+  return issues.map(i => {
+    const pathStr = i.path.reduce((acc: string, p: string | number, idx: number) => {
+      if (typeof p === 'number') return acc + `[${p}]`;
+      return idx === 0 ? String(p) : acc + `.${p}`;
+    }, '');
+    if ((i.code === 'invalid_type' || i.code === 'invalid_union') && /received undefined/i.test(i.message)) {
+      const typeMatch = i.message.match(/expected (\w+)/i);
+      const expected = typeMatch ? typeMatch[1] : 'the correct type';
+      const article = /^[aeiou]/i.test(expected) ? 'an' : 'a';
+      return `${pathStr} must be ${article} ${expected}`;
+    }
+    return `${pathStr}: ${i.message}`;
+  }).join('; ');
+}
+
 function assertShowReport(raw: unknown): ShowReport {
-  const isObj = (v: unknown): v is Record<string, unknown> =>
-    typeof v === 'object' && v !== null && !Array.isArray(v);
-  const reject = (reason: string): never => {
+  const result = ShowReportSchema.safeParse(raw);
+  if (!result.success) {
     throw new CognitionError(
-      `cognition_show: WASM output rejected by field-contract guard: ${reason}`,
+      `cognition_show: WASM output rejected by field-contract guard: ${formatZodIssues(result.error.issues as Parameters<typeof formatZodIssues>[0])}`,
       'OUTPUT_PARSE_FAILED',
     );
-  };
-  if (!isObj(raw)) reject(`expected object, got ${typeof raw}`);
-  const r = raw as Record<string, unknown>;
-  if (!Array.isArray(r.breeds)) reject('breeds must be an array');
-  const breeds = r.breeds as unknown[];
-  for (let i = 0; i < breeds.length; i++) {
-    const b = breeds[i];
-    if (!isObj(b)) reject(`breeds[${i}] must be an object`);
-    const bb = b as Record<string, unknown>;
-    if (typeof bb.id !== 'string' || bb.id.length === 0)
-      reject(`breeds[${i}].id must be non-empty string`);
-    if (typeof bb.name !== 'string' || bb.name.length === 0)
-      reject(`breeds[${i}].name must be non-empty string`);
-    if (typeof bb.year !== 'number' || !Number.isFinite(bb.year))
-      reject(`breeds[${i}].year must be finite number`);
   }
-  return { breeds: breeds as BreedDescriptor[] };
+  return result.data;
 }
 
 export async function showCognition(

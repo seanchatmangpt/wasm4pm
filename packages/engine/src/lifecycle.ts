@@ -4,7 +4,8 @@
  * Validates state transitions, enforces invariants, and emits lifecycle events
  */
 
-import { EngineState, EngineError } from '@wasm4pm/contracts';
+import { z } from 'zod';
+import { EngineState } from '@wasm4pm/contracts';;
 import {
   canTransition,
   getValidTransitions,
@@ -14,16 +15,18 @@ import {
 // Re-export for baseline admissibility
 export { TransitionValidator };
 
+export const LifecycleEventSchema = z.object({
+  timestamp: z.date(),
+  fromState: z.string() as z.ZodType<EngineState>,
+  toState: z.string() as z.ZodType<EngineState>,
+  reason: z.string().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
 /**
  * Lifecycle event emitted when state transitions occur
  */
-export interface LifecycleEvent {
-  timestamp: Date;
-  fromState: EngineState;
-  toState: EngineState;
-  reason?: string;
-  metadata?: Record<string, unknown>;
-}
+export type LifecycleEvent = z.infer<typeof LifecycleEventSchema>;
 
 /**
  * State machine managing engine lifecycle transitions

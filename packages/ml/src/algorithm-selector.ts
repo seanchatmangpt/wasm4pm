@@ -16,45 +16,51 @@
  *   - <0.7: Weak recommendation (uncertain; multiple algorithms reasonable)
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// LogProfile
+// ---------------------------------------------------------------------------
+
+export const LogProfileSchema = z.object({
+  /** Number of traces in the log */
+  traceCount: z.number(),
+  /** Number of unique activities (process complexity indicator) */
+  activityCount: z.number(),
+  /** Shannon entropy of activity frequencies (0=deterministic, 1=uniform) */
+  entropy: z.number(),
+  /** Average trace length (process breadth indicator) */
+  avgTraceLength: z.number(),
+  /** Variance of feature values (0=homogeneous, >1=diverse) */
+  featureVariance: z.number(),
+  /** Number of distinct traces (variants) */
+  variantCount: z.number(),
+});
+
 /**
  * Log profile characteristics extracted from WASM features.
  */
-export interface LogProfile {
-  /** Number of traces in the log */
-  traceCount: number;
+export type LogProfile = z.infer<typeof LogProfileSchema>;
 
-  /** Number of unique activities (process complexity indicator) */
-  activityCount: number;
+// ---------------------------------------------------------------------------
+// AlgorithmRecommendation
+// ---------------------------------------------------------------------------
 
-  /** Shannon entropy of activity frequencies (0=deterministic, 1=uniform) */
-  entropy: number;
-
-  /** Average trace length (process breadth indicator) */
-  avgTraceLength: number;
-
-  /** Variance of feature values (0=homogeneous, >1=diverse) */
-  featureVariance: number;
-
-  /** Number of distinct traces (variants) */
-  variantCount: number;
-}
+export const AlgorithmRecommendationSchema = z.object({
+  /** Recommended algorithm name (e.g., 'weibull', 'regress', 'knn', 'ngram') */
+  algorithm: z.string(),
+  /** Confidence score (0-1): higher = stronger recommendation */
+  confidence: z.number(),
+  /** Human-readable explanation for the recommendation */
+  reason: z.string(),
+  /** Alternative algorithms (ranked by suitability) */
+  alternatives: z.array(z.string()),
+});
 
 /**
  * Algorithm recommendation result.
  */
-export interface AlgorithmRecommendation {
-  /** Recommended algorithm name (e.g., 'weibull', 'regress', 'knn', 'ngram') */
-  algorithm: string;
-
-  /** Confidence score (0-1): higher = stronger recommendation */
-  confidence: number;
-
-  /** Human-readable explanation for the recommendation */
-  reason: string;
-
-  /** Alternative algorithms (ranked by suitability) */
-  alternatives: string[];
-}
+export type AlgorithmRecommendation = z.infer<typeof AlgorithmRecommendationSchema>;
 
 /**
  * Compute Shannon entropy of activity frequencies.
@@ -144,7 +150,7 @@ export function extractLogProfile(
   // Compute feature variance (sample numeric features)
   const numericFeatures: number[] = [];
   for (const feature of features) {
-    for (const [key, val] of Object.entries(feature)) {
+    for (const [_key, val] of Object.entries(feature)) {
       if (typeof val === 'number' && !Number.isNaN(val) && Number.isFinite(val)) {
         numericFeatures.push(val);
       }
@@ -309,7 +315,7 @@ function selectDriftAlgorithm(profile: LogProfile): AlgorithmRecommendation {
  *   - High complexity: transition probability matrix (captures process structure)
  *   - Any: transition probabilities (always applicable)
  */
-function selectFeaturesAlgorithm(profile: LogProfile): AlgorithmRecommendation {
+function selectFeaturesAlgorithm(_profile: LogProfile): AlgorithmRecommendation {
   return {
     algorithm: 'transition_probabilities',
     confidence: 0.9,
@@ -324,7 +330,7 @@ function selectFeaturesAlgorithm(profile: LogProfile): AlgorithmRecommendation {
  * Decision tree:
  *   - Always: M/M/1 queue model (standard queueing model)
  */
-function selectResourceAlgorithm(profile: LogProfile): AlgorithmRecommendation {
+function selectResourceAlgorithm(_profile: LogProfile): AlgorithmRecommendation {
   return {
     algorithm: 'mm1_queue',
     confidence: 0.8,
