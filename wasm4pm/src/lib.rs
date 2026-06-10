@@ -93,6 +93,8 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
+/// Accept(x) = C1..C7 admissibility framework.
+pub mod admission;
 /// baseline for bcinr.
 pub mod bcinr_compat;
 /// Cache residency helpers for warm-starting the WASM module.
@@ -3409,15 +3411,21 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
     let envelope: serde_json::Value = serde_json::from_str(envelope_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
 
-    // Stub: receipt verification module not yet implemented
-    // let (result, batch, receipt) = wasm4pm_algos::truex::verify_receipt(&envelope);
+    // Use ReceiptDoctor to audit the receipt envelope
+    let report = crate::receipt::ReceiptDoctor::audit(&envelope);
 
-    let status = "ReceiptAdmitted"; // Placeholder: no verification performed
-    let batch = ""; // Stub: batch hash not computed
-    let receipt = ""; // Stub: receipt hash not computed
+    let status = match report.state {
+        crate::receipt::ReceiptDoctorState::Admitted => "ReceiptAdmitted",
+        crate::receipt::ReceiptDoctorState::Refused => "ReceiptRefused",
+    };
+
+    let batch = ""; // Batch hashing not yet integrated into WASM entry point
+    let receipt = ""; // Receipt root hashing not yet integrated into WASM entry point
 
     let out = serde_json::json!({
         "status": status,
+        "admitted": report.admitted,
+        "findings": report.findings,
         "equivalence_class": "EquivalentUnderProfileV1",
         "computed_batch_hash": batch,
         "computed_receipt_hash": receipt

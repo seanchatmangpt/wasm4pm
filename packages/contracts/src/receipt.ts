@@ -92,6 +92,11 @@ export interface Receipt {
 
   // Performance profile
   profile?: ExecutionProfile;
+
+  // Ed25519 signature fields (C1 admissibility)
+  signature?: string;
+  signer_pubkey?: string;
+  sig_algorithm?: string;
 }
 
 /**

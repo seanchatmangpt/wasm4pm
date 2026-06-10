@@ -30,7 +30,7 @@ wasm-opt = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm4pm-compat = { version = "26.6.8", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
@@ -53,9 +53,11 @@ rand_distr = "0.4"
 tracing = "0.1"
 statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
-blake3 = "1"
+blake3 = { workspace = true }
 sha2 = { workspace = true }
-wasm4pm-cognition = { version = "26.6.5", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
+ed25519-dalek = { version = "2.1", default-features = false, features = ["rand_core"] }
+getrandom = { version = "0.2", features = ["js"] }
+wasm4pm-cognition = { workspace = true, default-features = false, optional = true }
 miniml = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -77,7 +79,7 @@ tempfile = { workspace = true }
 regex = "1"
 naga = { version = "0.19", features = ["wgsl-in"] }
 quick-xml = "0.37"
-miniml = { version = "26.6.5", path = "../crates/miniml-core" }
+miniml = { workspace = true }
 
 [[bench]]
 name = "fast_algorithms"

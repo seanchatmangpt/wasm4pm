@@ -250,3 +250,6 @@ export {
 
 // Process-Model Registry - M1
 export * from './model-registry.js';
+
+// Admission framework — Accept(x) = C1..C7
+export * from './admission.js';

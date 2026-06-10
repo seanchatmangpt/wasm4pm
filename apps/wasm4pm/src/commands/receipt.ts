@@ -10,6 +10,11 @@ import { producerSafeReport } from './receipt/producer-safe-report.js';
 import { operatorPrivateReport } from './receipt/operator-private-report.js';
 import { truthforge } from './receipt/truthforge.js';
 import { show } from './receipt/show.js';
+import { keygen } from './receipt/keygen.js';
+import { mintNonce } from './receipt/mint-nonce.js';
+import { admit } from './receipt/admit.js';
+import { verifyChain } from './receipt/verify-chain.js';
+import { residuals } from './receipt/residuals.js';
 
 export const receipt = defineCommand({
   meta: {
@@ -28,5 +33,10 @@ export const receipt = defineCommand({
     'producer-safe-report': producerSafeReport,
     'operator-private-report': operatorPrivateReport,
     'truthforge': truthforge,
+    keygen,
+    'mint-nonce': mintNonce,
+    admit,
+    'verify-chain': verifyChain,
+    residuals,
   },
 });

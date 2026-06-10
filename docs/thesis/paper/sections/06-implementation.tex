@@ -160,12 +160,19 @@ The status is thus itself an instance of the framework: the claim ``the
 admission pipeline works'' is only accepted when accompanied by a verifiable
 receipt, closing the self-reference loop.
 
-\paragraph{Limitations of the current implementation.} Three gaps between the
-formal model and the shipped system are tracked openly: ML-DSA signing is
-specified but the deployed chain currently relies on BLAKE3 integrity plus
-transport authentication, with signature integration staged behind the
-crypto-agility interface of Section~\ref{sec:channels}; CLI-side and WASM-side
-OpenTelemetry traces are not yet correlated into a single distributed trace;
-and stochastic algorithm seeds are fixed rather than configurable-and-audited.
-None of these affect the validity of the propositions --- they delimit which
-proof classes the current artifacts can claim.
+\paragraph{Implementation coverage.} The current deployment closes all seven conjuncts of
+$\accept(x)$. Conjunct~C1 is realised by \texttt{ed25519-dalek} signing over the canonical
+BLAKE3 hash of $(a \| e \| O \| s \| R_{\mathrm{prior}} \| p \| v \| t \| n)$; the
+\texttt{sig\_algorithm} field carries the algorithm identifier for crypto-agility migration
+(Section~\ref{sec:channels}), with ML-DSA-65 as the declared forward target staged behind the
+same interface. Conjunct~C5 is realised by a persistent consumed-nonce ledger
+(\texttt{.wasm4pm/nonces/consumed.jsonl}), checked at admission and appended on acceptance;
+re-submission of any consumed nonce is refused with \texttt{NonceConsumed} before the chain
+checks proceed. C2 chain validation is enforced by \texttt{verify\_receipt\_chain}, which
+walks the receipts directory, follows hash links from the genesis entry, and verifies each
+$h(R_{t-1})$ against a fresh BLAKE3 of the prior receipt body. The proof-gate suite includes
+one negative test per conjunct (C1--C7), each injecting a candidate that fails exactly the
+target conjunct and asserting the correct \texttt{failing\_conjunct} field. OpenTelemetry
+CLI-side and WASM-side spans are emitted in the same trace context; distributed-trace
+correlation across the JS--WASM boundary is on the roadmap. Stochastic algorithm seeds are
+fixed for the determinism merge gate; a seed-audit subcommand is planned.
