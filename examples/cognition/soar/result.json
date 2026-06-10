@@ -212,9 +212,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/soar/.wasm4pm/receipts/666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef.json"
   },
   "meta": {
-    "run_id": "c3e2b34b-fa65-4b64-bb37-c4cddf89a7a1",
-    "timestamp": "2026-06-10T05:51:39.997Z",
-    "duration_ms": 51,
+    "run_id": "ad1f23a4-4a56-43f0-8b6e-5992440bb8c0",
+    "timestamp": "2026-06-10T06:51:26.953Z",
+    "duration_ms": 10,
     "version": "26.6.9"
   }
 }

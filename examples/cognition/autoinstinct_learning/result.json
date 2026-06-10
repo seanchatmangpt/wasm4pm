@@ -1,0 +1,144 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_learning",
+    "breed": "autoinstinct_learning",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctLearning",
+      "candidates": [
+        {
+          "id": "plan-step-0",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "on_table",
+          "value": "A"
+        },
+        {
+          "key": "clear",
+          "value": "A"
+        }
+      ],
+      "selected": "1 steps to goal",
+      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00000011, final_state=0b00000011, goal_reached=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "plan-step",
+          "detail": "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+          "depth": 0,
+          "objects": []
+        }
+      ],
+      "ocel_log": {
+        "object_types": [
+          "run",
+          "breed",
+          "candidate",
+          "fact",
+          "rule",
+          "hypothesis",
+          "plan_step",
+          "decision"
+        ],
+        "event_types": [
+          "plan-step",
+          "run-end",
+          "run-start"
+        ],
+        "objects": [
+          {
+            "object_id": "breed:autoinstinct_learning",
+            "object_type": "breed",
+            "attributes": {}
+          },
+          {
+            "object_id": "run:0e14244e",
+            "object_type": "run",
+            "attributes": {}
+          }
+        ],
+        "events": [
+          {
+            "event_id": "0e14244e857d6cee3913ba1bb1ce1b4aa1a6b46a341efb17cd2c7001f01af434-start",
+            "activity": "run-start",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "breed": "autoinstinct_learning",
+              "logical_step": 0
+            },
+            "o2o": [
+              [
+                "run",
+                "run:0e14244e"
+              ],
+              [
+                "breed",
+                "breed:autoinstinct_learning"
+              ]
+            ]
+          },
+          {
+            "event_id": "0e14244e857d6cee3913ba1bb1ce1b4aa1a6b46a341efb17cd2c7001f01af434-0",
+            "activity": "plan-step",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "depth": 0,
+              "detail": "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+              "logical_step": 1
+            },
+            "o2o": [
+              [
+                "run",
+                "run:0e14244e"
+              ],
+              [
+                "breed",
+                "breed:autoinstinct_learning"
+              ]
+            ]
+          },
+          {
+            "event_id": "0e14244e857d6cee3913ba1bb1ce1b4aa1a6b46a341efb17cd2c7001f01af434-end",
+            "activity": "run-end",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "attributes": {
+              "logical_step": 2
+            },
+            "o2o": [
+              [
+                "run",
+                "run:0e14244e"
+              ],
+              [
+                "breed",
+                "breed:autoinstinct_learning"
+              ]
+            ]
+          }
+        ]
+      },
+      "retained_cases": []
+    },
+    "run_id": "7130631c2fdf19c04415ee25b3eb78b79bc59d072acbd73a27987e3f9b6a6ac9",
+    "output_hash": "98a21d56937ae82e6ecc7814b0f0a97469590d280639018178bcba4395de6a1e",
+    "replay_pointer": "98a21d56937ae82e",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_learning/.wasm4pm/receipts/7130631c2fdf19c04415ee25b3eb78b79bc59d072acbd73a27987e3f9b6a6ac9.json"
+  },
+  "meta": {
+    "run_id": "18d26307-9092-4d7e-a102-f3ac8e38847b",
+    "timestamp": "2026-06-10T06:51:29.191Z",
+    "duration_ms": 10,
+    "version": "26.6.9"
+  }
+}

@@ -525,9 +525,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/hearsay/.wasm4pm/receipts/ce0bc33caa5e8a48f9c7761d7f4a35236ac52944c0013d393a032e6324df91c5.json"
   },
   "meta": {
-    "run_id": "b5651a2f-4448-4066-b8e7-24da9c6a2677",
-    "timestamp": "2026-06-10T05:51:40.636Z",
-    "duration_ms": 23,
+    "run_id": "dbfbb2c4-fc5e-4e30-a515-2d442831de46",
+    "timestamp": "2026-06-10T06:51:26.632Z",
+    "duration_ms": 12,
     "version": "26.6.9"
   }
 }

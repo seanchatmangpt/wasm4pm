@@ -202,9 +202,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/gps/.wasm4pm/receipts/62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7.json"
   },
   "meta": {
-    "run_id": "0a2422c9-5827-4076-8873-0e53cae3a225",
-    "timestamp": "2026-06-10T05:51:39.374Z",
-    "duration_ms": 15,
+    "run_id": "1a0abd3a-69a9-4b44-8ed6-48775bc8e17b",
+    "timestamp": "2026-06-10T06:51:28.229Z",
+    "duration_ms": 12,
     "version": "26.6.9"
   }
 }

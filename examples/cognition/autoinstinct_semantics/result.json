@@ -4,48 +4,27 @@
   "message": "cognition run completed successfully",
   "exit_code": 0,
   "payload": {
-    "contract": "mycin",
-    "breed": "mycin",
+    "contract": "autoinstinct_semantics",
+    "breed": "autoinstinct_semantics",
     "status": "ok",
     "output": {
-      "breed": "Mycin",
+      "breed": "AutoinstinctSemantics",
       "candidates": [],
-      "facts": [
-        {
-          "key": "antibiotic",
-          "value": "penicillin"
-        },
-        {
-          "key": "diagnosis",
-          "value": "strep_infection"
-        },
-        {
-          "key": "gram_positive_cocci",
-          "value": "cf=1.000"
-        },
-        {
-          "key": "strep",
-          "value": "cf=1.000"
-        },
-        {
-          "key": "throat",
-          "value": "cf=1.000"
-        }
-      ],
-      "selected": "organism=gram_positive_cocci",
-      "explanation": "MYCIN fired 2 rules; final selection Some(\"organism=gram_positive_cocci\")",
+      "facts": [],
+      "selected": null,
+      "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"John gave Mary the book\"",
       "inference_trace": [
         {
           "step": 0,
-          "kind": "fire-rule",
-          "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
+          "kind": "init-parser",
+          "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
           "depth": 0,
           "objects": []
         },
         {
           "step": 1,
-          "kind": "fire-rule",
-          "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
+          "kind": "no-act-found",
+          "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
           "depth": 0,
           "objects": []
         }
@@ -62,84 +41,85 @@
           "decision"
         ],
         "event_types": [
-          "fire-rule",
+          "init-parser",
+          "no-act-found",
           "run-end",
           "run-start"
         ],
         "objects": [
           {
-            "object_id": "breed:mycin",
+            "object_id": "breed:autoinstinct_semantics",
             "object_type": "breed",
             "attributes": {}
           },
           {
-            "object_id": "run:b76b5725",
+            "object_id": "run:748321a7",
             "object_type": "run",
             "attributes": {}
           }
         ],
         "events": [
           {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-start",
+            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-start",
             "activity": "run-start",
             "timestamp": "1970-01-01T00:00:00Z",
             "attributes": {
-              "breed": "mycin",
+              "breed": "autoinstinct_semantics",
               "logical_step": 0
             },
             "o2o": [
               [
                 "run",
-                "run:b76b5725"
+                "run:748321a7"
               ],
               [
                 "breed",
-                "breed:mycin"
+                "breed:autoinstinct_semantics"
               ]
             ]
           },
           {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-0",
-            "activity": "fire-rule",
+            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-0",
+            "activity": "init-parser",
             "timestamp": "1970-01-01T00:00:00Z",
             "attributes": {
               "depth": 0,
-              "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
+              "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
               "logical_step": 1
             },
             "o2o": [
               [
                 "run",
-                "run:b76b5725"
+                "run:748321a7"
               ],
               [
                 "breed",
-                "breed:mycin"
+                "breed:autoinstinct_semantics"
               ]
             ]
           },
           {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-1",
-            "activity": "fire-rule",
+            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-1",
+            "activity": "no-act-found",
             "timestamp": "1970-01-01T00:00:00Z",
             "attributes": {
               "depth": 0,
-              "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
+              "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
               "logical_step": 2
             },
             "o2o": [
               [
                 "run",
-                "run:b76b5725"
+                "run:748321a7"
               ],
               [
                 "breed",
-                "breed:mycin"
+                "breed:autoinstinct_semantics"
               ]
             ]
           },
           {
-            "event_id": "b76b5725d7af1009e7b40621eedec602079c937944c6ec043c44d2add7e4b818-end",
+            "event_id": "748321a73754f01cbe3a57214e9253217601011d69090d4acc2d527765ca8fcc-end",
             "activity": "run-end",
             "timestamp": "1970-01-01T00:00:00Z",
             "attributes": {
@@ -148,11 +128,11 @@
             "o2o": [
               [
                 "run",
-                "run:b76b5725"
+                "run:748321a7"
               ],
               [
                 "breed",
-                "breed:mycin"
+                "breed:autoinstinct_semantics"
               ]
             ]
           }
@@ -160,17 +140,17 @@
       },
       "retained_cases": []
     },
-    "run_id": "f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b",
-    "output_hash": "f0886d11be3240a21a29504fcc0fa0de341c844bcd2aeb395678fead1db401d6",
-    "replay_pointer": "f0886d11be3240a2",
+    "run_id": "93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b",
+    "output_hash": "3b61a92be807bf735c91b07bece64000abde1871ce339bf3205a94d4e9afba1d",
+    "replay_pointer": "3b61a92be807bf73",
     "inference_step_count": 2,
-    "rules_evaluated": 2,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/mycin/.wasm4pm/receipts/f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b.json"
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_semantics/.wasm4pm/receipts/93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b.json"
   },
   "meta": {
-    "run_id": "02d354a4-f776-444a-91ef-2efdb28fb458",
-    "timestamp": "2026-06-10T06:51:26.316Z",
-    "duration_ms": 11,
+    "run_id": "d6803b01-bf88-4a26-845e-cfa671801be7",
+    "timestamp": "2026-06-10T06:51:29.828Z",
+    "duration_ms": 10,
     "version": "26.6.9"
   }
 }

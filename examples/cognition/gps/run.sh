@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# GPS — General Problem Solver, means-ends analysis (1957)
+# GPS — means-ends analysis with difference reduction table (Newell & Simon 1963).
 set -euo pipefail
 cd "$(dirname "$0")"
-REPO_ROOT="$(cd ../../.. && pwd)"
 
 if command -v wpm >/dev/null 2>&1; then
   WPM=wpm
 else
-  WPM="node $REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
+  REPO_ROOT="$(cd ../../.. && pwd)"
+  WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── GPS: get-dressed means-ends planning ───"
+echo "─── gps: initial state + goals → means-ends plan via difference reduction ───"
 $WPM cognition run --contract gps --input intent.json --format json | tee result.json

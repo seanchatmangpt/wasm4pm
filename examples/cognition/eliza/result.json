@@ -203,9 +203,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/eliza/.wasm4pm/receipts/1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722.json"
   },
   "meta": {
-    "run_id": "f96d5273-e919-4512-806b-193a7b9a07df",
-    "timestamp": "2026-06-10T05:51:35.883Z",
-    "duration_ms": 16,
+    "run_id": "8941262e-115f-47a8-a439-4f000d614357",
+    "timestamp": "2026-06-10T06:51:28.876Z",
+    "duration_ms": 10,
     "version": "26.6.9"
   }
 }

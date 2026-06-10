@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CBR example — Jaccard-similarity case retrieval over recipe ingredients.
+# CBR — 4R cycle: Retrieve (Jaccard), Reuse (BTreeMap merge), Revise, Retain (BLAKE3 id).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -7,8 +7,8 @@ if command -v wpm >/dev/null 2>&1; then
   WPM=wpm
 else
   REPO_ROOT="$(cd ../../.. && pwd)"
-  WPM="node $REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
+  WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── CBR: best recipe for {flour, egg, prep_time:5min} ───"
+echo "─── cbr: query case → retrieve top match (Jaccard), reuse, revise, retain ───"
 $WPM cognition run --contract cbr --input intent.json --format json | tee result.json

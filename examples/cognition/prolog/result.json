@@ -212,9 +212,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/prolog/.wasm4pm/receipts/5d010e6f9039a59a7209dc0267896ff5ad3aa48cb0bdc3c61d41c90671b4ce23.json"
   },
   "meta": {
-    "run_id": "e13f90fb-bfa4-471a-aa69-0e6ef14b3ac8",
-    "timestamp": "2026-06-10T05:51:37.584Z",
-    "duration_ms": 49,
+    "run_id": "456d01c2-81a6-4dd9-83fe-ce4c49e73262",
+    "timestamp": "2026-06-10T06:51:27.587Z",
+    "duration_ms": 11,
     "version": "26.6.9"
   }
 }
