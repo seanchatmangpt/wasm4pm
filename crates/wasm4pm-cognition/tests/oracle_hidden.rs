@@ -1475,3 +1475,55 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+
+#[test]
+fn meta_reasoning_hidden_conflict_detection() {
+    let mut input = base("meta_reasoning conflict challenge");
+    
+    // Inject mycin-vs-prolog contradiction
+    // mycin says diagnosis=flu (cf 0.8)
+    // prolog says diagnosis=not_flu (cf 0.9)
+    input.facts = vec![
+        fact("breed:mycin:conclusion", "diagnosis=flu"),
+        fact("breed:mycin:confidence", "0.8"),
+        fact("breed:prolog:conclusion", "diagnosis=not_flu"),
+        fact("breed:prolog:confidence", "0.9"),
+        // Additional identical conclusions (negative control)
+        fact("breed:eliza:conclusion", "diagnosis=not_flu"),
+        fact("breed:eliza:confidence", "0.85"),
+    ];
+    
+    let output = dispatch_breed_test("meta_reasoning", &input)
+        .expect("MetaReasoning hidden test must not return Err");
+        
+    assert!(
+        !output.inference_trace.is_empty(),
+        "MetaReasoning hidden test: inference_trace must not be empty (A3 adversary check)"
+    );
+    
+    let conflict_steps: Vec<_> = output.inference_trace.iter()
+        .filter(|t| t.kind == "conflict-detected")
+        .collect();
+        
+    // Conflict between mycin and prolog (explicit negation)
+    // Conflict between mycin and eliza (explicit negation)
+    // prolog and eliza have identical conclusions and conf_divergence = 0.05 < 0.5, so NO conflict.
+    assert_eq!(
+        conflict_steps.len(), 2,
+        "Expected exactly 2 conflicts (mycin vs prolog, mycin vs eliza), got {}", conflict_steps.len()
+    );
+    
+    let mycin_prolog_conflict = conflict_steps.iter()
+        .any(|t| t.detail.contains("mycin") && t.detail.contains("prolog"));
+    assert!(mycin_prolog_conflict, "Must name both mycin and prolog in the conflict step");
+    
+    // Check winner: not_flu has 0.9 + 0.85 = 1.75
+    // flu has 0.8
+    // not_flu wins. Wait, our `final_selected` logic just takes the string "diagnosis=not_flu"
+    // Actually the logic uses the raw conclusion string.
+    assert_eq!(
+        output.selected.as_deref(),
+        Some("diagnosis=not_flu"),
+        "Voting must pick diagnosis=not_flu"
+    );
+}

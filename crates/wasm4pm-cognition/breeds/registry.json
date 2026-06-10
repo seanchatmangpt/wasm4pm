@@ -310,7 +310,7 @@
   {
     "breed_id": "ltl_monitor",
     "breed_name": "LTL Monitor",
-    "historical_ancestor": "LTL Monitor (Havelund & Roşu, 2001) (ltl_monitor)",
+    "historical_ancestor": "LTL Monitor (Havelund & Ro\u015fu, 2001) (ltl_monitor)",
     "generalized_family": "R_generalized_temporal",
     "input_schema": "ltl_monitor_input_v1",
     "output_schema": "ltl_monitor_output_v1",
@@ -683,7 +683,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "ADMITTED"
   },
   {
     "breed_id": "construction_grammar",

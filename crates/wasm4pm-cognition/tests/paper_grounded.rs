@@ -1658,3 +1658,20 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+
+#[test]
+fn meta_reasoning_paper_grounded() {
+    let fixture_str = include_str!("fixtures/papers/meta_reasoning.json");
+    let fixture: serde_json::Value = serde_json::from_str(fixture_str).unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_value(fixture["input"].clone()).unwrap();
+    let expected_winner = fixture["expected"]["winning_conclusion"].as_str().unwrap();
+
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("meta_reasoning", &input)
+        .expect("MetaReasoning paper fixture must not return Err");
+
+    assert_eq!(
+        output.selected.as_deref(),
+        Some(expected_winner),
+        "MetaReasoning paper fixture: must resolve to expected winner"
+    );
+}

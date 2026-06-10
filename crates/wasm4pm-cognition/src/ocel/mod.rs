@@ -74,6 +74,8 @@ pub struct LifecyclePhase {
 pub mod models_p0;
 /// Static per-breed lifecycle models (P1 tier).
 pub mod models_p1;
+/// Static per-breed lifecycle models (P4 tier).
+pub mod models_p4;
 /// `include_str!` sources for hand-authored OCPN model JSON files.
 pub mod model_sources;
 
@@ -99,6 +101,7 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "bayesian_network" => Some(&models_p1::BAYESIAN_NETWORK_MODEL),
         "htn_planning" => Some(&models_p1::HTN_PLANNING_MODEL),
         "dempster_shafer" => Some(&models_p1::DEMPSTER_SHAFER_MODEL),
+        "meta_reasoning" => Some(&models_p4::META_REASONING_MODEL),
         _ => None,
     }
 }

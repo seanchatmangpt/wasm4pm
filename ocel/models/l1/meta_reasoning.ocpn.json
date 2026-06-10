@@ -1,0 +1,38 @@
+{
+  "name": "meta_reasoning",
+  "places": [
+    "p_start",
+    "p_ingest",
+    "p_conflict",
+    "p_vote",
+    "p_resolve",
+    "p_end"
+  ],
+  "transitions": [
+    "run-start",
+    "ingest-report",
+    "conflict-detected",
+    "vote",
+    "resolve",
+    "run-end"
+  ],
+  "arcs": [
+    {"source": "p_start", "target": "run-start"},
+    {"source": "run-start", "target": "p_ingest"},
+    {"source": "p_ingest", "target": "ingest-report"},
+    {"source": "ingest-report", "target": "p_ingest"},
+    {"source": "p_ingest", "target": "p_conflict"},
+    {"source": "p_conflict", "target": "conflict-detected"},
+    {"source": "conflict-detected", "target": "p_conflict"},
+    {"source": "p_conflict", "target": "p_vote"},
+    {"source": "p_vote", "target": "vote"},
+    {"source": "vote", "target": "p_vote"},
+    {"source": "p_vote", "target": "p_resolve"},
+    {"source": "p_resolve", "target": "resolve"},
+    {"source": "resolve", "target": "p_end"},
+    {"source": "p_resolve", "target": "p_end"},
+    {"source": "p_end", "target": "run-end"}
+  ],
+  "initial_marking": ["p_start"],
+  "final_marking": []
+}

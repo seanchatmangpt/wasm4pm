@@ -623,3 +623,20 @@ fn model_source_matches_lifecycle_model_for_every_breed() {
         }
     }
 }
+
+#[test]
+fn meta_reasoning_dispatch_smoke() {
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "smoke".into(),
+        candidates: vec![],
+        facts: vec![
+            wasm4pm_cognition::breeds::Fact { key: "breed:smoke:conclusion".into(), value: "x=1".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    let output = wasm4pm_cognition::breeds::dispatch_breed_test("meta_reasoning", &input).unwrap();
+    assert_eq!(output.breed, wasm4pm_cognition::breeds::BreedId::MetaReasoning);
+}

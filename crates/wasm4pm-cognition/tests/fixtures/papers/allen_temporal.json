@@ -3,18 +3,26 @@
   "provenance": {
     "paper": "Allen-1983-Temporal-Interval-Algebra.pdf",
     "citation": "J. F. Allen (1983). Maintaining Knowledge about Temporal Intervals. Communications of the ACM, Vol. 26, No. 11, pp. 832-843.",
-    "locus": "§3 Interval Relations and Composition",
+    "locus": "\u00a73 Interval Relations and Composition",
     "extraction": "grounded"
   },
   "input": {
     "intent": "Verify consistency and transitive closure of interval constraints",
     "facts": [
-      {"key": "relation", "value": "A meets B"},
-      {"key": "relation", "value": "B meets C"}
+      {
+        "key": "relation",
+        "value": "A meets B"
+      },
+      {
+        "key": "relation",
+        "value": "B meets C"
+      }
     ],
     "cases": [],
     "rules": [],
-    "goals": []
+    "goals": [],
+    "candidates": [],
+    "state": []
   },
   "expected": {
     "consistent": true,

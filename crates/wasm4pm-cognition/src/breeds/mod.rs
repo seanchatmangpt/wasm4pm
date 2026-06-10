@@ -54,6 +54,8 @@ pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).
 pub mod support;
 
+pub mod meta_reasoning;
+
 pub use dispatch::{dispatch_breed, dispatch_breed_test};
 
 /// Unique identifier for each old-AI breed system.

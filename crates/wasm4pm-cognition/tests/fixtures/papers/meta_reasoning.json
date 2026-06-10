@@ -1,0 +1,47 @@
+{
+  "breed": "meta_reasoning",
+  "provenance": {
+    "paper": "Cox, M. T., & Raja, A. (2011). Metareasoning: Thinking about thinking. MIT Press.",
+    "citation": "Cox, M. T., & Raja, A. (2011). Metareasoning: Thinking about thinking. MIT Press.",
+    "locus": "General architectural model for integrating multiple reasoners and detecting conflicts.",
+    "extraction": "synthetic",
+    "notes": "Demonstrates conflict detection and confidence-weighted voting across multiple breed conclusions."
+  },
+  "input": {
+    "intent": "resolve conflicts between multiple reasoners",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "breed:prolog:conclusion",
+        "value": "action=retreat"
+      },
+      {
+        "key": "breed:prolog:confidence",
+        "value": "0.7"
+      },
+      {
+        "key": "breed:mycin:conclusion",
+        "value": "action=attack"
+      },
+      {
+        "key": "breed:mycin:confidence",
+        "value": "0.8"
+      },
+      {
+        "key": "breed:soar:conclusion",
+        "value": "action=attack"
+      },
+      {
+        "key": "breed:soar:confidence",
+        "value": "0.6"
+      }
+    ],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "winning_conclusion": "action=attack"
+  }
+}

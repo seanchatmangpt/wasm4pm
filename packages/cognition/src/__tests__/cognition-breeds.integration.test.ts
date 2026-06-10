@@ -272,3 +272,12 @@ describe('cognition_verify integration', () => {
     expect(verifyResult.findings.length).toBeGreaterThan(0);
   });
 });
+
+  describe("meta_reasoning", () => {
+    it("runs paper fixture via wasm", () => {
+      const fixture = loadFixture("meta_reasoning.json");
+      const result = runBreed("meta_reasoning", fixture.input);
+      expect(result.selected).toBe(fixture.expected.winning_conclusion);
+      expect(result.inference_trace.length).toBeGreaterThan(0);
+    });
+});

@@ -4,7 +4,8 @@ use crate::breeds::{
     cbr::Cbr, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
     production_rules::Mycin, prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, default_logic::DefaultLogic, BreedInput, BreedOutput, CognitionBreed,
+    bayesian_network::BayesianNetwork, default_logic::DefaultLogic,
+    meta_reasoning::MetaReasoning, BreedInput, BreedOutput, CognitionBreed,
 };
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
@@ -99,7 +100,7 @@ pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, St
         "naive_physics" => Err("unsupported breed: naive_physics".to_string()),
         "pomdp" => Err("unsupported breed: pomdp".to_string()),
         "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
-        "meta_reasoning" => Err("unsupported breed: meta_reasoning".to_string()),
+        "meta_reasoning" => run_breed(&MetaReasoning, input),
         "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
         "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),
         "tableaux" => Err("unsupported breed: tableaux".to_string()),
@@ -162,7 +163,7 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
         "naive_physics" => Err("unsupported breed: naive_physics".to_string()),
         "pomdp" => Err("unsupported breed: pomdp".to_string()),
         "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
-        "meta_reasoning" => Err("unsupported breed: meta_reasoning".to_string()),
+        "meta_reasoning" => MetaReasoning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
         "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),
         "tableaux" => Err("unsupported breed: tableaux".to_string()),

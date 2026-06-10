@@ -466,3 +466,17 @@ fn bayesian_network_empty_goals_refused() {
     assert!(result.unwrap_err().contains("query"));
 }
 
+
+#[test]
+fn meta_reasoning_empty_reports_refused() {
+    use wasm4pm_cognition::breeds::meta_reasoning::MetaReasoning;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no reports
+    
+    // precondition passes, but run fails postcondition due to empty trace
+    let result = MetaReasoning.run(&input);
+    assert!(result.is_err(), "MetaReasoning must refuse empty reports via empty trace postcondition");
+    let msg = format!("{:?}", result.unwrap_err());
+    assert!(msg.to_lowercase().contains("trace"));
+}
