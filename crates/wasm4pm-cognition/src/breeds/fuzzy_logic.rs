@@ -357,21 +357,42 @@ mod tests {
     fn test_fuzzy_hidden_oracle() {
         let breed = FuzzyLogic;
         let mut input = make_input();
-        // Hidden oracle: Fresh interpolation point μ to 1e-5 (Tri(2,5,8) at 3.7 -> 0.56667)
-        input.facts.push(Fact { key: "fuzzy:x:mid".to_string(), value: "tri:2,5,8".to_string() });
-        input.facts.push(Fact { key: "fuzzy:y:mid".to_string(), value: "tri:0,50,100".to_string() });
-        input.facts.push(Fact { key: "fuzzy:input:x".to_string(), value: "3.7".to_string() });
+        input.facts.clear();
+        input.rules.clear();
+        
+        // Asymmetric aggregated shape: two rules, unequal firing strengths, overlapping trapezoids.
+        // Rule 1: x is a -> y is c. Strength = 0.8
+        // Rule 2: x is b -> y is d. Strength = 0.4
+        // A = tri:0,5,10. At x=4, mu_A(4) = 4/5 = 0.8
+        // B = tri:0,10,20. At x=4, mu_B(4) = 4/10 = 0.4
+        // C = trap:0,10,20,30
+        // D = trap:15,30,40,50
+        input.facts.push(Fact { key: "fuzzy:x:a".to_string(), value: "tri:0,5,10".to_string() });
+        input.facts.push(Fact { key: "fuzzy:x:b".to_string(), value: "tri:0,10,20".to_string() });
+        input.facts.push(Fact { key: "fuzzy:y:c".to_string(), value: "trap:0,10,20,30".to_string() });
+        input.facts.push(Fact { key: "fuzzy:y:d".to_string(), value: "trap:15,30,40,50".to_string() });
+        
+        input.facts.push(Fact { key: "fuzzy:input:x".to_string(), value: "4.0".to_string() });
+        
         input.rules.push(Rule {
-            id: "r3".to_string(),
-            premise: vec!["fuzzy:x:mid".to_string()],
-            conclusion: "fuzzy:y:mid".to_string(),
+            id: "r1".to_string(),
+            premise: vec!["fuzzy:x:a".to_string()],
+            conclusion: "fuzzy:y:c".to_string(),
+            certainty: 1.0,
+        });
+        input.rules.push(Rule {
+            id: "r2".to_string(),
+            premise: vec!["fuzzy:x:b".to_string()],
+            conclusion: "fuzzy:y:d".to_string(),
             certainty: 1.0,
         });
         
         let output = breed.run(&input).unwrap();
-        // Fire should have strength 0.56667
-        let fire_trace = output.inference_trace.iter().find(|t| t.kind == "fuzzy-fire" && t.detail.starts_with("rule r3")).unwrap();
-        assert!(fire_trace.detail.contains("0.56667"));
+        
+        let out_fact = output.facts.iter().find(|f| f.key == "fuzzy:output:y").unwrap();
+        // Hand-integrated 101-point centroid is 22.18748
+        println!("actual centroid is {}", out_fact.value); let centroid: f32 = out_fact.value.parse().unwrap();
+        assert!((centroid - 22.18748).abs() < 1e-5);
     }
 
     #[test]

@@ -1426,53 +1426,66 @@ fn allen_temporal_hidden_transitivity() {
 #[test]
 fn fuzzy_logic_hidden_ventilation() {
     let mut input = base("Fuzzy control check");
+    // Asymmetric aggregated shape: two rules, unequal firing strengths, overlapping trapezoids.
     input.facts = vec![
-        fact("temperature", "25.0"),
-        fact("fuzzy_set:temperature:warm", "triangular 20,25,30"),
-        fact("fuzzy_set:ventilation:medium", "triangular 10,50,90"),
+        fact("fuzzy_set:x:a", "triangular 0,5,10"),
+        fact("fuzzy_set:x:b", "triangular 0,10,20"),
+        fact("fuzzy_set:y:c", "trapezoidal 0,10,20,30"),
+        fact("fuzzy_set:y:d", "trapezoidal 15,30,40,50"),
+        fact("x", "4.0"),
     ];
     input.rules = vec![
-        rule("r1", vec!["temperature is warm"], "ventilation is medium", 1.0),
+        rule("r1", vec!["x is a"], "y is c", 1.0),
+        rule("r2", vec!["x is b"], "y is d", 1.0),
     ];
 
     let output = dispatch_breed_test("fuzzy_logic", &input)
         .expect("FuzzyLogic run must succeed");
     
     assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let vent_fact = output.facts.iter().find(|f| f.key == "ventilation").expect("ventilation fact exists");
+    let vent_fact = output.facts.iter().find(|f| f.key == "y").expect("y fact exists");
     let vent_val: f64 = vent_fact.value.parse().expect("must parse as float");
-    // Temp=25 is exactly the peak of warm, so membership = 1.0. Rule fires at 1.0.
-    // Centroid of ventilation is medium (symmetrical triangle 10,50,90) is 50.0.
-    assert!((vent_val - 50.0).abs() < 1.0);
+    // Hand-integrated 101-point centroid is 22.18748
+    assert!((vent_val - 22.18748).abs() < 1e-5);
 }
 
 #[test]
 fn bayesian_network_hidden_burglar_alarm() {
-    let mut input = base("Bayesian burglary network query");
-    input.facts = vec![
-        fact("Alarm", "true"),
+    let mut input1 = base("Bayesian Q->R->S query 1");
+    // Q -> R -> S
+    // Q -> X <- Y (X is a collider)
+    input1.facts = vec![
+        fact("cpt:Q", "0.3"),
+        fact("cpt:R|Q", "0.4,0.8"), // P(R=t|Q=f)=0.4, P(R=t|Q=t)=0.8
+        fact("cpt:S|R", "0.1,0.7"), // P(S=t|R=f)=0.1, P(S=t|R=t)=0.7
+        fact("cpt:Y", "0.6"),
+        fact("cpt:X|Q,Y", "0.1,0.2,0.3,0.4"), // P(X=t | Q,Y)
     ];
-    input.rules = vec![
-        rule("r-burg", vec![], "Burglary=true", 0.001),
-        rule("r-eq", vec![], "Earthquake=true", 0.002),
-        rule("r-alarm1", vec!["Burglary=true", "Earthquake=true"], "Alarm=true", 0.95),
-        rule("r-alarm2", vec!["Burglary=true", "Earthquake=false"], "Alarm=true", 0.94),
-        rule("r-alarm3", vec!["Burglary=false", "Earthquake=true"], "Alarm=true", 0.29),
-        rule("r-alarm4", vec!["Burglary=false", "Earthquake=false"], "Alarm=true", 0.001),
-    ];
-    input.goals = vec![
-        goal("g1", "query", "Burglary"),
-    ];
-
-    let output = dispatch_breed_test("bayesian_network", &input)
-        .expect("BayesianNetwork run must succeed");
+    input1.goals = vec![goal("g1", "query", "S")];
     
-    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
-    let prob_fact = output.facts.iter().find(|f| f.key == "probability:Burglary").expect("probability fact exists");
-    let prob_val: f64 = prob_fact.value.parse().expect("must parse as float");
-    // P(Burglary | Alarm) = P(Burglary, Alarm) / P(Alarm)
-    // Let's verify it is within valid range [0, 1] and strictly positive
-    assert!(prob_val > 0.0 && prob_val < 1.0);
+    let out1 = dispatch_breed_test("bayesian_network", &input1).unwrap();
+    let prob_s: f64 = out1.facts.iter().find(|f| f.key == "probability:S").unwrap().value.parse().unwrap();
+    // P(R=t) = 0.3*0.8 + 0.7*0.4 = 0.24 + 0.28 = 0.52
+    // P(S=t) = 0.52*0.7 + 0.48*0.1 = 0.364 + 0.048 = 0.412
+    assert!((prob_s - 0.412).abs() < 1e-9);
+
+    let mut input2 = input1.clone();
+    input2.facts.push(fact("evidence:R", "true"));
+    let out2 = dispatch_breed_test("bayesian_network", &input2).unwrap();
+    let prob_s_r: f64 = out2.facts.iter().find(|f| f.key == "probability:S").unwrap().value.parse().unwrap();
+    // Markov-blanket screen P(S|R=t) = 0.7
+    assert!((prob_s_r - 0.7).abs() < 1e-9);
+    
+    let mut input3 = input1.clone();
+    input3.goals = vec![goal("g2", "query", "dsep:Q,Y")];
+    let out3 = dispatch_breed_test("bayesian_network", &input3).unwrap();
+    assert_eq!(out3.explanation, "dsep:Q,Y=true");
+    
+    let mut input4 = input1.clone();
+    input4.goals = vec![goal("g3", "query", "dsep:Q,Y|X")];
+    let out4 = dispatch_breed_test("bayesian_network", &input4).unwrap();
+    // Collider d-separation must FLIP when conditioning changes
+    assert_eq!(out4.explanation, "dsep:Q,Y|X=false");
 }
 
 #[test]
