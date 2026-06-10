@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { createOtelCollector } from './utils/otel-collector.js'
 
 test.describe('Sandbox — algorithm runner', () => {
   test('loads and redirects to /learn/tutorials/getting-started', async ({ page }) => {
@@ -12,13 +13,16 @@ test.describe('Sandbox — algorithm runner', () => {
     await expect(page.locator('code')).toBeVisible({ timeout: 10000 })
   })
 
-  test('WASM loads (ready state)', async ({ page }) => {
+  test('WASM loads (ready state) and emits wasm.init OTEL span', async ({ page }) => {
+    const otel = createOtelCollector(page)
     await page.goto('/play')
     // Wait for WASM to init — Run ⌘↵ button becomes enabled
     await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    otel.assertSpan('wasm.init', { service_name: 'playground-web', status: 'ok' })
   })
 
-  test('run DFG algorithm on small-example preset', async ({ page }) => {
+  test('run DFG algorithm on small-example preset and emits wasm.run OTEL span', async ({ page }) => {
+    const otel = createOtelCollector(page)
     await page.goto('/play?algo=dfg&preset=small-example')
     await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
     await page.getByRole('button', { name: /Run ⌘/i }).click()
@@ -26,6 +30,10 @@ test.describe('Sandbox — algorithm runner', () => {
     await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
     const text = await page.locator('pre').first().textContent()
     expect(text).toContain('{') // valid JSON
+    // Verify OTEL spans are well-formed: init + run both emitted
+    otel.assertSpan('wasm.init', { service_name: 'playground-web', status: 'ok' })
+    otel.assertSpan('wasm.run', { service_name: 'playground-web', status: 'ok', algorithm: 'dfg' })
+    otel.assertAllWellFormed()
   })
 
   test('receipt tab appears after successful run', async ({ page }) => {

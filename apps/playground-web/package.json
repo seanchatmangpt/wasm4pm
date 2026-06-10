@@ -12,8 +12,8 @@
     "dev:otel": "WASM4PM_OTEL_ENABLED=true WASM4PM_OTEL_ENDPOINT=http://localhost:4318 nuxt dev",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test",
-    "test:all": "vitest run && playwright test"
+    "test:e2e": "node node_modules/@playwright/test/cli.js test",
+    "test:all": "vitest run && node node_modules/@playwright/test/cli.js test"
   },
   "dependencies": {
     "@guolao/vue-monaco-editor": "^1.6.0",

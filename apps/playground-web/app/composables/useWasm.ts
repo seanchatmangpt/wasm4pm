@@ -103,12 +103,34 @@ export const useWasm = () => {
     const fn = resolveWasmFn(_wasm, name)
     if (!fn) {
       const probed = WASM_PREFIXES.map(p => `${p}${name}`).join(', ')
-      throw new Error(
-        `Algorithm not found: "${name}". Probed WASM exports: ${probed}`,
-      )
+      const err = `Algorithm not found: "${name}". Probed WASM exports: ${probed}`
+      if (!import.meta.server) {
+        $fetch('/api/otel-event', { method: 'POST', body: {
+          service_name: 'playground-web', event: 'wasm.run', status: 'error',
+          algorithm: name, error: err, duration_ms: 0,
+        } }).catch(() => {})
+      }
+      throw new Error(err)
     }
-    const result = fn(handle, activityKey, ...Object.values(params))
-    return typeof result === 'string' ? JSON.parse(result) : result
+    const t0 = performance.now()
+    let status = 'ok'
+    try {
+      const raw = fn(handle, activityKey, ...Object.values(params))
+      const result = typeof raw === 'string' ? JSON.parse(raw) : raw
+      return result
+    }
+    catch (e) {
+      status = 'error'
+      throw e
+    }
+    finally {
+      if (!import.meta.server) {
+        $fetch('/api/otel-event', { method: 'POST', body: {
+          service_name: 'playground-web', event: 'wasm.run', status,
+          algorithm: name, duration_ms: Math.round(performance.now() - t0),
+        } }).catch(() => {})
+      }
+    }
   }
 
   /**
