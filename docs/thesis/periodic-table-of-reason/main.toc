@@ -1,114 +1,129 @@
-\contentsline {chapter}{\numberline {1}The Unverifiability Problem: Historical and Mathematical}{4}{chapter.1}%
-\contentsline {section}{\numberline {1.1}The Epistemological Gap in Classical AI}{4}{section.1.1}%
-\contentsline {section}{\numberline {1.2}The wasm4pm Validation Framework}{6}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Summary}{7}{section.1.3}%
-\contentsline {chapter}{\numberline {2}The Breed Category and Formal Signatures}{8}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Breed Signatures}{8}{section.2.1}%
-\contentsline {section}{\numberline {2.2}The Breed Category $\mathbf {Breed}$}{9}{section.2.2}%
-\contentsline {section}{\numberline {2.3}The Implementation Space}{10}{section.2.3}%
-\contentsline {section}{\numberline {2.4}Summary}{11}{section.2.4}%
-\contentsline {chapter}{\numberline {3}Complete Test Suites and the Unfakeable Oracle Theorem}{12}{chapter.3}%
-\contentsline {section}{\numberline {3.1}Test Completeness}{12}{section.3.1}%
-\contentsline {section}{\numberline {3.2}The Unfakeable Oracle Theorem}{13}{section.3.2}%
-\contentsline {section}{\numberline {3.3}The Falsifiability Metric}{16}{section.3.3}%
-\contentsline {section}{\numberline {3.4}Summary}{17}{section.3.4}%
-\contentsline {chapter}{\numberline {4}OCEL Conformance as a Measure-Theoretic Framework}{18}{chapter.4}%
-\contentsline {section}{\numberline {4.1}The Breed Lifecycle Object-Centric Petri Net}{18}{section.4.1}%
-\contentsline {section}{\numberline {4.2}The OCEL Fitness Measure}{19}{section.4.2}%
-\contentsline {section}{\numberline {4.3}The Conformance Certificate Theorem}{20}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Process Mining Over the Accumulated Corpus}{21}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Summary}{22}{section.4.5}%
-\contentsline {chapter}{\numberline {5}The Epistemological Space: Thirteen Breeds as Basis Vectors}{23}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Constructing the Epistemological Space}{23}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Epistemic Independence}{24}{section.5.2}%
-\contentsline {paragraph}{\textsc {mycin} ($\mathbf {Breed}_1$).}{25}{section*.2}%
-\contentsline {paragraph}{\textsc {cbr} ($\mathbf {Breed}_6$).}{25}{section*.3}%
-\contentsline {paragraph}{\textsc {soar} ($\mathbf {Breed}_8$).}{26}{section*.4}%
-\contentsline {paragraph}{\textsc {bayesian} ($\mathbf {Breed}_2$).}{26}{section*.5}%
-\contentsline {paragraph}{\textsc {fuzzy} ($\mathbf {Breed}_3$).}{26}{section*.6}%
-\contentsline {paragraph}{\textsc {dempster-shafer} ($\mathbf {Breed}_4$).}{26}{section*.7}%
-\contentsline {paragraph}{\textsc {abductive} ($\mathbf {Breed}_5$).}{26}{section*.8}%
-\contentsline {paragraph}{\textsc {strips} ($\mathbf {Breed}_7$).}{26}{section*.9}%
-\contentsline {paragraph}{\textsc {inductive} ($\mathbf {Breed}_9$).}{27}{section*.10}%
-\contentsline {paragraph}{\textsc {temporal} ($\mathbf {Breed}_{10}$).}{27}{section*.11}%
-\contentsline {paragraph}{\textsc {ontological} ($\mathbf {Breed}_{11}$).}{27}{section*.12}%
-\contentsline {paragraph}{\textsc {constraint} ($\mathbf {Breed}_{12}$).}{27}{section*.13}%
-\contentsline {paragraph}{\textsc {analogical} ($\mathbf {Breed}_{13}$).}{27}{section*.14}%
-\contentsline {section}{\numberline {5.3}Summary}{27}{section.5.3}%
-\contentsline {chapter}{\numberline {6}The Breed Validation Certificate}{29}{chapter.6}%
-\contentsline {section}{\numberline {6.1}The Validation Measure}{29}{section.6.1}%
-\contentsline {paragraph}{Implementation.}{30}{section*.15}%
-\contentsline {section}{\numberline {6.2}The Breed Validation Certificate}{30}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Theorem 6.1 — BVC for All Thirteen Breeds}{31}{section.6.3}%
-\contentsline {paragraph}{$C_{\mathrm {test}} = 1$ for all $i$.}{31}{section*.16}%
-\contentsline {paragraph}{$C_{\mathrm {ocel}} = 1$ for all $i$.}{31}{section*.17}%
-\contentsline {paragraph}{$C_{\mathrm {receipt}} = 1$ for all $i$.}{31}{section*.18}%
-\contentsline {paragraph}{$C_{\mathrm {determ}} = 1$ for all $i$.}{31}{section*.19}%
-\contentsline {section}{\numberline {6.4}Summary}{32}{section.6.4}%
-\contentsline {chapter}{\numberline {7}The Fourth Constraint: Extending the Universal Causal Equation}{33}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Recapitulation of the Prior Series}{33}{section.7.1}%
-\contentsline {paragraph}{Constraint $C_0$ — Algorithmic Completeness.}{33}{section*.20}%
-\contentsline {paragraph}{Constraint $C_1$ — Receipt Continuity.}{33}{section*.21}%
-\contentsline {paragraph}{Constraint $C_2$ — Process Conformance.}{33}{section*.22}%
-\contentsline {section}{\numberline {7.2}The Missing Constraint}{34}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Theorem 7.2 --- The Four-Constraint Universal Equation}{35}{section.7.3}%
-\contentsline {section}{\numberline {7.4}Operational Semantics --- BVC as a Sheaf Condition}{36}{section.7.4}%
-\contentsline {section}{\numberline {7.5}Summary}{37}{section.7.5}%
-\contentsline {chapter}{\numberline {8}Speed-Enabled Phase Transitions in Reasoning Capability}{38}{chapter.8}%
-\contentsline {section}{\numberline {8.1}The Ensemble Size Function}{38}{section.8.1}%
-\contentsline {section}{\numberline {8.2}The Speed Phase Transition Theorem}{39}{section.8.2}%
-\contentsline {paragraph}{(i) Bayesian sensitivity analysis.}{40}{section*.23}%
-\contentsline {paragraph}{(ii) Pareto-frontier multi-objective planning.}{40}{section*.24}%
-\contentsline {paragraph}{(iii) Adversarial robustness auditing.}{41}{section*.25}%
-\contentsline {section}{\numberline {8.3}Ensemble Reasoning as a New Epistemic Mode}{41}{section.8.3}%
-\contentsline {section}{\numberline {8.4}Summary}{42}{section.8.4}%
-\contentsline {chapter}{\numberline {9}The Reasoning Receipt Chain as Epistemic Infrastructure}{43}{chapter.9}%
-\contentsline {section}{\numberline {9.1}BLAKE3 as a Commitment Scheme}{43}{section.9.1}%
-\contentsline {paragraph}{Causal completeness update.}{44}{section*.26}%
-\contentsline {paragraph}{Process-binding vs.\ zero-knowledge proof.}{44}{section*.27}%
-\contentsline {section}{\numberline {9.2}The Reasoning Receipt Functor}{45}{section.9.2}%
-\contentsline {paragraph}{(i) Non-forgeability.}{46}{section*.28}%
-\contentsline {paragraph}{(ii) Non-repudiation.}{46}{section*.29}%
-\contentsline {paragraph}{(iii) Third-party auditability.}{46}{section*.30}%
-\contentsline {paragraph}{(iv) Causal completeness.}{46}{section*.31}%
-\contentsline {section}{\numberline {9.3}Summary}{47}{section.9.3}%
-\contentsline {chapter}{\numberline {10}Fortune 5 Applications: Formal Deployment Mathematics}{48}{chapter.10}%
-\contentsline {section}{\numberline {10.1}MYCIN at Clinical-Trial Scale}{48}{section.10.1}%
-\contentsline {subsection}{\numberline {10.1.1}Context}{48}{subsection.10.1.1}%
-\contentsline {subsection}{\numberline {10.1.2}Latency Basis}{49}{subsection.10.1.2}%
-\contentsline {section}{\numberline {10.2}STRIPS at Logistics Tempo}{49}{section.10.2}%
-\contentsline {subsection}{\numberline {10.2.1}Context}{49}{subsection.10.2.1}%
-\contentsline {section}{\numberline {10.3}SOAR for Regulatory Preference Satisfaction}{50}{section.10.3}%
-\contentsline {subsection}{\numberline {10.3.1}Context}{50}{subsection.10.3.1}%
-\contentsline {section}{\numberline {10.4}Prolog for Institutional Legal Reasoning}{51}{section.10.4}%
-\contentsline {subsection}{\numberline {10.4.1}Context}{51}{subsection.10.4.1}%
-\contentsline {section}{\numberline {10.5}The Factory Cognitive Agent}{52}{section.10.5}%
-\contentsline {subsection}{\numberline {10.5.1}Overview}{52}{subsection.10.5.1}%
-\contentsline {subsection}{\numberline {10.5.2}Chain Structure}{52}{subsection.10.5.2}%
-\contentsline {subsection}{\numberline {10.5.3}BVC Coverage of the Factory Agent}{53}{subsection.10.5.3}%
-\contentsline {section}{\numberline {10.6}Summary}{53}{section.10.6}%
-\contentsline {chapter}{\numberline {11}Main Theorems}{55}{chapter.11}%
-\contentsline {section}{\numberline {11.1}Overview}{55}{section.11.1}%
-\contentsline {section}{\numberline {11.2}Theorem 11.1 — Unfakeable Oracle Existence}{55}{section.11.2}%
-\contentsline {section}{\numberline {11.3}Theorem 11.2 — OCEL Soundness, Completeness, and Fitness Universality}{56}{section.11.3}%
-\contentsline {section}{\numberline {11.4}Theorem 11.3 — Epistemic Independence}{56}{section.11.4}%
-\contentsline {section}{\numberline {11.5}Theorem 11.4 — BVC for All 13 Breeds}{57}{section.11.5}%
-\contentsline {paragraph}{$C_{\mathrm {test}} = 1$.}{57}{section*.32}%
-\contentsline {paragraph}{$C_{\mathrm {ocel}} = 1$.}{57}{section*.33}%
-\contentsline {paragraph}{$C_{\mathrm {receipt}} = 1$.}{57}{section*.34}%
-\contentsline {paragraph}{$C_{\mathrm {determ}} = 1$.}{57}{section*.35}%
-\contentsline {section}{\numberline {11.6}Theorem 11.5 — Necessity of the Fourth Constraint}{57}{section.11.6}%
-\contentsline {section}{\numberline {11.7}Theorem 11.6 — Speed Phase Transition}{58}{section.11.7}%
-\contentsline {section}{\numberline {11.8}Theorem 11.7 — Civilizational Trust Properties}{58}{section.11.8}%
-\contentsline {section}{\numberline {11.9}Consolidated Statement}{59}{section.11.9}%
-\contentsline {chapter}{\numberline {12}Verification Ladder and Falsifiers}{60}{chapter.12}%
-\contentsline {section}{\numberline {12.1}Verification Ladder}{60}{section.12.1}%
-\contentsline {section}{\numberline {12.2}Falsifiers}{62}{section.12.2}%
-\contentsline {section}{\numberline {12.3}Relationship Between Ladder and Falsifiers}{64}{section.12.3}%
-\contentsline {section}{\numberline {12.4}Openness to Refutation}{64}{section.12.4}%
-\contentsline {chapter}{\numberline {13}Conclusion: The Architecture of Reason}{66}{chapter.13}%
-\contentsline {section}{\numberline {13.1}Summary of Contributions}{66}{section.13.1}%
-\contentsline {section}{\numberline {13.2}The Popper--van der Aalst Synthesis}{67}{section.13.2}%
-\contentsline {section}{\numberline {13.3}The Periodic Table of Reason}{68}{section.13.3}%
-\contentsline {section}{\numberline {13.4}Implementation Completeness Statement}{69}{section.13.4}%
-\contentsline {section}{\numberline {13.5}The Complete Equation}{69}{section.13.5}%
+\contentsline {chapter}{\numberline {1}Imported Axioms and Prior Theorems}{4}{chapter.1}%
+\contentsline {chapter}{\numberline {2}The Unverifiability Problem: Historical and Mathematical}{9}{chapter.2}%
+\contentsline {section}{\numberline {2.1}The Epistemological Gap in Classical AI}{9}{section.2.1}%
+\contentsline {section}{\numberline {2.2}The wasm4pm Validation Framework}{11}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Summary}{12}{section.2.3}%
+\contentsline {chapter}{\numberline {3}The Breed Category and Formal Signatures}{13}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Breed Signatures}{13}{section.3.1}%
+\contentsline {section}{\numberline {3.2}The Breed Category $\mathbf {Breed}$}{14}{section.3.2}%
+\contentsline {section}{\numberline {3.3}The Implementation Space}{15}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Summary}{16}{section.3.4}%
+\contentsline {chapter}{\numberline {4}Complete Test Suites and the Oracle Adequacy Theorem}{17}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Test Completeness}{17}{section.4.1}%
+\contentsline {section}{\numberline {4.2}The Oracle Adequacy Theorem}{18}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The Falsifiability Metric}{21}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Summary}{22}{section.4.4}%
+\contentsline {chapter}{\numberline {5}OCEL Conformance as a Measure-Theoretic Framework}{23}{chapter.5}%
+\contentsline {section}{\numberline {5.1}The Breed Lifecycle Object-Centric Petri Net}{23}{section.5.1}%
+\contentsline {section}{\numberline {5.2}The OCEL Fitness Measure}{24}{section.5.2}%
+\contentsline {section}{\numberline {5.3}The Conformance Certificate Theorem}{25}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Process Mining Over the Accumulated Corpus}{26}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Summary}{27}{section.5.5}%
+\contentsline {chapter}{\numberline {6}The Epistemological Space: Thirteen Breeds as Basis Vectors}{28}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Constructing the Epistemological Space}{28}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Epistemic Independence}{30}{section.6.2}%
+\contentsline {paragraph}{\textsc {mycin} ($\mathbf {Breed}_1$).}{30}{section*.4}%
+\contentsline {paragraph}{\textsc {cbr} ($\mathbf {Breed}_6$).}{31}{section*.5}%
+\contentsline {paragraph}{\textsc {soar} ($\mathbf {Breed}_8$).}{31}{section*.6}%
+\contentsline {paragraph}{\textsc {bayesian} ($\mathbf {Breed}_2$).}{31}{section*.7}%
+\contentsline {paragraph}{\textsc {fuzzy} ($\mathbf {Breed}_3$).}{31}{section*.8}%
+\contentsline {paragraph}{\textsc {dempster-shafer} ($\mathbf {Breed}_4$).}{31}{section*.9}%
+\contentsline {paragraph}{\textsc {abductive} ($\mathbf {Breed}_5$).}{32}{section*.10}%
+\contentsline {paragraph}{\textsc {strips} ($\mathbf {Breed}_7$).}{32}{section*.11}%
+\contentsline {paragraph}{\textsc {inductive} ($\mathbf {Breed}_9$).}{32}{section*.12}%
+\contentsline {paragraph}{\textsc {temporal} ($\mathbf {Breed}_{10}$).}{32}{section*.13}%
+\contentsline {paragraph}{\textsc {ontological} ($\mathbf {Breed}_{11}$).}{32}{section*.14}%
+\contentsline {paragraph}{\textsc {constraint} ($\mathbf {Breed}_{12}$).}{32}{section*.15}%
+\contentsline {paragraph}{\textsc {analogical} ($\mathbf {Breed}_{13}$).}{32}{section*.16}%
+\contentsline {section}{\numberline {6.3}Summary}{33}{section.6.3}%
+\contentsline {chapter}{\numberline {7}The Breed Validation Certificate}{34}{chapter.7}%
+\contentsline {section}{\numberline {7.1}The Validation Measure}{34}{section.7.1}%
+\contentsline {paragraph}{Implementation.}{35}{section*.17}%
+\contentsline {section}{\numberline {7.2}The Breed Validation Certificate}{35}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Theorem 6.1 — BVC for All Thirteen Breeds}{36}{section.7.3}%
+\contentsline {paragraph}{$C_{\mathrm {test}} = 1$ for all $i$.}{36}{section*.18}%
+\contentsline {paragraph}{$C_{\mathrm {ocel}} = 1$ for all $i$.}{36}{section*.19}%
+\contentsline {paragraph}{$C_{\mathrm {receipt}} = 1$ for all $i$.}{36}{section*.20}%
+\contentsline {paragraph}{$C_{\mathrm {determ}} = 1$ for all $i$.}{36}{section*.21}%
+\contentsline {section}{\numberline {7.4}Summary}{37}{section.7.4}%
+\contentsline {chapter}{\numberline {8}The Fourth Constraint: Extending the Universal Causal Equation}{38}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Recapitulation of the Prior Series}{38}{section.8.1}%
+\contentsline {paragraph}{Constraint $C_0$ — Algorithmic Completeness.}{38}{section*.22}%
+\contentsline {paragraph}{Constraint $C_1$ — Receipt Continuity.}{38}{section*.23}%
+\contentsline {paragraph}{Constraint $C_2$ — Process Conformance.}{38}{section*.24}%
+\contentsline {section}{\numberline {8.2}The Missing Constraint}{39}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Theorem 7.2 --- The Four-Constraint Universal Equation}{40}{section.8.3}%
+\contentsline {section}{\numberline {8.4}Operational Semantics --- BVC as a Sheaf Condition}{41}{section.8.4}%
+\contentsline {section}{\numberline {8.5}Summary}{42}{section.8.5}%
+\contentsline {chapter}{\numberline {9}Speed-Enabled Phase Transitions in Reasoning Capability}{43}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Four-Regime Latency Taxonomy}{43}{section.9.1}%
+\contentsline {section}{\numberline {9.2}The Ensemble Size Function}{44}{section.9.2}%
+\contentsline {section}{\numberline {9.3}The Speed Phase Transition Theorem}{45}{section.9.3}%
+\contentsline {paragraph}{(i) Bayesian sensitivity analysis.}{46}{section*.25}%
+\contentsline {paragraph}{(ii) Pareto-frontier multi-objective planning.}{46}{section*.26}%
+\contentsline {paragraph}{(iii) Adversarial robustness auditing.}{46}{section*.27}%
+\contentsline {section}{\numberline {9.4}Ensemble Reasoning as a New Epistemic Mode}{47}{section.9.4}%
+\contentsline {section}{\numberline {9.5}Summary}{48}{section.9.5}%
+\contentsline {chapter}{\numberline {10}The Reasoning Receipt Chain as Epistemic Infrastructure}{49}{chapter.10}%
+\contentsline {section}{\numberline {10.1}BLAKE3 as a Commitment Scheme}{49}{section.10.1}%
+\contentsline {paragraph}{Causal completeness update.}{50}{section*.28}%
+\contentsline {paragraph}{Process-binding vs.\ zero-knowledge proof.}{50}{section*.29}%
+\contentsline {section}{\numberline {10.2}The Reasoning Receipt Functor}{51}{section.10.2}%
+\contentsline {paragraph}{(i) Non-forgeability.}{52}{section*.30}%
+\contentsline {paragraph}{(ii) Tamper-evident content binding (content integrity only, not authority binding).}{52}{section*.31}%
+\contentsline {paragraph}{(iii) Third-party auditability.}{52}{section*.32}%
+\contentsline {paragraph}{(iv) Causal completeness.}{53}{section*.33}%
+\contentsline {section}{\numberline {10.3}Summary}{53}{section.10.3}%
+\contentsline {chapter}{\numberline {11}Fortune 5 Applications: Formal Deployment Mathematics}{54}{chapter.11}%
+\contentsline {section}{\numberline {11.1}MYCIN at Clinical-Trial Scale}{54}{section.11.1}%
+\contentsline {subsection}{\numberline {11.1.1}Context}{54}{subsection.11.1.1}%
+\contentsline {subsection}{\numberline {11.1.2}Latency Basis}{55}{subsection.11.1.2}%
+\contentsline {section}{\numberline {11.2}STRIPS at Logistics Tempo}{55}{section.11.2}%
+\contentsline {subsection}{\numberline {11.2.1}Context}{55}{subsection.11.2.1}%
+\contentsline {section}{\numberline {11.3}SOAR for Regulatory Preference Satisfaction}{56}{section.11.3}%
+\contentsline {subsection}{\numberline {11.3.1}Context}{56}{subsection.11.3.1}%
+\contentsline {section}{\numberline {11.4}Prolog for Institutional Legal Reasoning}{57}{section.11.4}%
+\contentsline {subsection}{\numberline {11.4.1}Context}{57}{subsection.11.4.1}%
+\contentsline {section}{\numberline {11.5}The Factory Cognitive Agent}{58}{section.11.5}%
+\contentsline {subsection}{\numberline {11.5.1}Overview}{58}{subsection.11.5.1}%
+\contentsline {subsection}{\numberline {11.5.2}Chain Structure}{58}{subsection.11.5.2}%
+\contentsline {subsection}{\numberline {11.5.3}BVC Coverage of the Factory Agent}{59}{subsection.11.5.3}%
+\contentsline {section}{\numberline {11.6}Summary}{59}{section.11.6}%
+\contentsline {chapter}{\numberline {12}Main Theorems}{61}{chapter.12}%
+\contentsline {section}{\numberline {12.1}Overview}{61}{section.12.1}%
+\contentsline {section}{\numberline {12.2}Theorem 11.1 — Unfakeable Oracle Existence}{61}{section.12.2}%
+\contentsline {section}{\numberline {12.3}Theorem 11.2 — OCEL Soundness, Completeness, and Fitness Universality}{62}{section.12.3}%
+\contentsline {section}{\numberline {12.4}Theorem 11.3 — Epistemic Independence}{62}{section.12.4}%
+\contentsline {section}{\numberline {12.5}Theorem 11.4 — BVC for All 13 Breeds}{63}{section.12.5}%
+\contentsline {paragraph}{$C_{\mathrm {test}} = 1$.}{63}{section*.34}%
+\contentsline {paragraph}{$C_{\mathrm {ocel}} = 1$.}{63}{section*.35}%
+\contentsline {paragraph}{$C_{\mathrm {receipt}} = 1$.}{63}{section*.36}%
+\contentsline {paragraph}{$C_{\mathrm {determ}} = 1$.}{63}{section*.37}%
+\contentsline {section}{\numberline {12.6}Theorem 11.5 — Necessity of the Fourth Constraint}{63}{section.12.6}%
+\contentsline {section}{\numberline {12.7}Theorem 11.6 — Speed Phase Transition}{64}{section.12.7}%
+\contentsline {section}{\numberline {12.8}Theorem 11.7 — Civilizational Trust Properties}{64}{section.12.8}%
+\contentsline {section}{\numberline {12.9}Consolidated Statement}{65}{section.12.9}%
+\contentsline {chapter}{\numberline {13}Verification Ladder and Falsifiers}{66}{chapter.13}%
+\contentsline {section}{\numberline {13.1}Verification Ladder}{66}{section.13.1}%
+\contentsline {section}{\numberline {13.2}Falsifiers}{68}{section.13.2}%
+\contentsline {section}{\numberline {13.3}Relationship Between Ladder and Falsifiers}{70}{section.13.3}%
+\contentsline {section}{\numberline {13.4}Openness to Refutation}{70}{section.13.4}%
+\contentsline {chapter}{\numberline {14}Conclusion: The Architecture of Reason}{72}{chapter.14}%
+\contentsline {section}{\numberline {14.1}Summary of Contributions}{72}{section.14.1}%
+\contentsline {section}{\numberline {14.2}The Popper--van der Aalst Synthesis}{73}{section.14.2}%
+\contentsline {section}{\numberline {14.3}The Periodic Table of Reason}{74}{section.14.3}%
+\contentsline {section}{\numberline {14.4}Implementation Completeness Statement}{75}{section.14.4}%
+\contentsline {section}{\numberline {14.5}The Complete Equation}{75}{section.14.5}%
+\contentsline {chapter}{Proof-Pack: Independent Replay and Verification}{78}{chapter*.38}%
+\contentsline {section}{A — Repository and Commit Identity}{78}{section*.39}%
+\contentsline {section}{B — Certified Breed Registry Snapshot}{78}{section*.40}%
+\contentsline {section}{C — Test Corpus Summary}{79}{section*.41}%
+\contentsline {section}{D — Property Generator Summary}{79}{section*.42}%
+\contentsline {section}{E — Negative / Refusal Corpus}{79}{section*.43}%
+\contentsline {section}{F — OCEL Corpus and Replay Commands}{80}{section*.44}%
+\contentsline {section}{G — Receipt Schema and Sample Receipts}{80}{section*.45}%
+\contentsline {section}{H — Signature Verification Transcript}{80}{section*.46}%
+\contentsline {section}{I — Determinism Double-Run Transcript}{81}{section*.47}%
+\contentsline {section}{J — Benchmark Report}{81}{section*.48}%
+\contentsline {section}{K — Independent Replay Instructions}{82}{section*.49}%
+\contentsline {section}{L — Falsifier Conditions}{82}{section*.50}%

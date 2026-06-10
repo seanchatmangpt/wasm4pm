@@ -170,11 +170,10 @@ schema (Appendix~\ref{app:receipt-schema}) distinguishes these: \texttt{input\_h
 \texttt{output\_hash} establish content binding; \texttt{signature} and
 \texttt{public\_key\_id} establish accountable execution binding.  As of v26.6.10,
 \texttt{signature} and \texttt{public\_key\_id} are emitted by \texttt{cognition\_run()}
-using a deterministic Ed25519 actor keyed from a compile-time constant seed.  This
-provides \emph{process-binding integrity}: a verifier can confirm the receipt was produced
-by a runtime possessing that seed.  Production deployment requires replacing the default
-actor with an institutionally managed keypair to achieve \emph{accountable execution
-binding} (non-repudiation in the legal sense).
+using a deterministic Ed25519 actor keyed from a compile-time constant seed.  The Ed25519 signature with the default actor key provides \emph{process-binding integrity}
+for replay verification.  Production deployment requires replacing the default actor with
+an institutionally managed keypair to achieve \emph{accountable execution binding} in a
+legal or regulatory sense.
 
 Concretely, once a receipt $\rho$ is emitted by \texttt{cognition\_run()} and saved to
 \texttt{.wasm4pm/receipts/latest.json}, any post-hoc modification to the committed fields
