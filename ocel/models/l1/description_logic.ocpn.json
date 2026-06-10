@@ -1,0 +1,110 @@
+{
+  "id": "description_logic",
+  "name": "description_logic Lifecycle OCPN",
+  "places": [
+    {
+      "id": "p0",
+      "label": "init"
+    },
+    {
+      "id": "p1",
+      "label": "normalized"
+    },
+    {
+      "id": "p2",
+      "label": "fixpoint"
+    },
+    {
+      "id": "p3",
+      "label": "final"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "normalize",
+      "label": "normalize"
+    },
+    {
+      "id": "apply-cr1",
+      "label": "apply-cr1"
+    },
+    {
+      "id": "apply-cr2",
+      "label": "apply-cr2"
+    },
+    {
+      "id": "apply-cr3",
+      "label": "apply-cr3"
+    },
+    {
+      "id": "apply-cr4",
+      "label": "apply-cr4"
+    },
+    {
+      "id": "fixpoint",
+      "label": "fixpoint"
+    },
+    {
+      "id": "classify-verdict",
+      "label": "classify-verdict"
+    }
+  ],
+  "arcs": [
+    {
+      "source": "p0",
+      "target": "normalize"
+    },
+    {
+      "source": "normalize",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "apply-cr1"
+    },
+    {
+      "source": "apply-cr1",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "apply-cr2"
+    },
+    {
+      "source": "apply-cr2",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "apply-cr3"
+    },
+    {
+      "source": "apply-cr3",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "apply-cr4"
+    },
+    {
+      "source": "apply-cr4",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "fixpoint"
+    },
+    {
+      "source": "fixpoint",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "classify-verdict"
+    },
+    {
+      "source": "classify-verdict",
+      "target": "p3"
+    }
+  ]
+}

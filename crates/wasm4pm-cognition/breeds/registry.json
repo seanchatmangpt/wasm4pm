@@ -231,11 +231,11 @@
     "input_schema": "abductive_input_v1",
     "output_schema": "abductive_output_v1",
     "specification_relation": "hypothesis_best_explanation",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "oracle_suite_id": "oracle_abductive_lp_v1",
+    "ocel_model_id": "ocel_abductive_lp_v1",
+    "receipt_schema_id": "receipt_abductive_lp_v1",
+    "wasm_export_name": "cognition_run",
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "ilp",
@@ -273,11 +273,11 @@
     "input_schema": "ontological_input_v1",
     "output_schema": "ontological_output_v1",
     "specification_relation": "subsumption_classification_reasoning",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "oracle_suite_id": "oracle_description_logic_v1",
+    "ocel_model_id": "ocel_description_logic_v1",
+    "receipt_schema_id": "receipt_description_logic_v1",
+    "wasm_export_name": "cognition_run",
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "csp_ac3",
@@ -380,16 +380,16 @@
   {
     "breed_id": "asp",
     "breed_name": "Asp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
+    "historical_ancestor": "Answer Set Programming (Gelfond & Lifschitz, 1988)",
+    "generalized_family": "logic_programming",
     "input_schema": "asp_input_v1",
     "output_schema": "asp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "specification_relation": "stable_model_semantics",
+    "oracle_suite_id": "oracle_asp_v1",
+    "ocel_model_id": "ocel_asp_v1",
+    "receipt_schema_id": "receipt_asp_v1",
+    "wasm_export_name": "cognition_run",
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "abductive_ibe",

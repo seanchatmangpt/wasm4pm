@@ -1,0 +1,114 @@
+{
+  "id": "abductive_lp",
+  "name": "abductive_lp Lifecycle OCPN",
+  "places": [
+    {
+      "id": "p0",
+      "label": "init"
+    },
+    {
+      "id": "p1",
+      "label": "loaded"
+    },
+    {
+      "id": "p2",
+      "label": "search"
+    },
+    {
+      "id": "p3",
+      "label": "final"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "load-abducibles",
+      "label": "load-abducibles"
+    },
+    {
+      "id": "candidate-delta",
+      "label": "candidate-delta"
+    },
+    {
+      "id": "derive",
+      "label": "derive"
+    },
+    {
+      "id": "ic-check",
+      "label": "ic-check"
+    },
+    {
+      "id": "explain-accept",
+      "label": "explain-accept"
+    },
+    {
+      "id": "explain-reject",
+      "label": "explain-reject"
+    },
+    {
+      "id": "minimal-set",
+      "label": "minimal-set"
+    }
+  ],
+  "arcs": [
+    {
+      "source": "p0",
+      "target": "load-abducibles"
+    },
+    {
+      "source": "load-abducibles",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "candidate-delta"
+    },
+    {
+      "source": "candidate-delta",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "derive"
+    },
+    {
+      "source": "derive",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "ic-check"
+    },
+    {
+      "source": "ic-check",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "explain-accept"
+    },
+    {
+      "source": "explain-accept",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "explain-reject"
+    },
+    {
+      "source": "explain-reject",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "minimal-set"
+    },
+    {
+      "source": "minimal-set",
+      "target": "p3"
+    },
+    {
+      "source": "p1",
+      "target": "minimal-set"
+    }
+  ]
+}

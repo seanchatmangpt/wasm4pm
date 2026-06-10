@@ -1,0 +1,114 @@
+{
+  "id": "asp",
+  "name": "asp Lifecycle OCPN",
+  "places": [
+    {
+      "id": "p0",
+      "label": "init"
+    },
+    {
+      "id": "p1",
+      "label": "grounded"
+    },
+    {
+      "id": "p2",
+      "label": "reduct_phase"
+    },
+    {
+      "id": "p3",
+      "label": "final"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "ground",
+      "label": "ground"
+    },
+    {
+      "id": "guess-candidate",
+      "label": "guess-candidate"
+    },
+    {
+      "id": "reduct",
+      "label": "reduct"
+    },
+    {
+      "id": "least-model",
+      "label": "least-model"
+    },
+    {
+      "id": "stable-accept",
+      "label": "stable-accept"
+    },
+    {
+      "id": "stable-reject",
+      "label": "stable-reject"
+    },
+    {
+      "id": "answer-set",
+      "label": "answer-set"
+    }
+  ],
+  "arcs": [
+    {
+      "source": "p0",
+      "target": "ground"
+    },
+    {
+      "source": "ground",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "guess-candidate"
+    },
+    {
+      "source": "guess-candidate",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "reduct"
+    },
+    {
+      "source": "reduct",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "least-model"
+    },
+    {
+      "source": "least-model",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "stable-accept"
+    },
+    {
+      "source": "stable-accept",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "stable-reject"
+    },
+    {
+      "source": "stable-reject",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "answer-set"
+    },
+    {
+      "source": "answer-set",
+      "target": "p3"
+    },
+    {
+      "source": "p1",
+      "target": "answer-set"
+    }
+  ]
+}

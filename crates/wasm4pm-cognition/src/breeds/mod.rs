@@ -19,6 +19,12 @@ pub mod autoinstinct_vision;
 pub mod cbr;
 /// Module for ebl
 pub mod ebl;
+/// Module for asp
+pub mod asp;
+/// Module for description_logic
+pub mod description_logic;
+/// Module for abductive_lp
+pub mod abductive_lp;
 /// Module for default_logic
 pub mod default_logic;
 /// Module for csp_ac3
