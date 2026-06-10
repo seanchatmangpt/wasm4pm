@@ -40,10 +40,12 @@ const ALL_ALGORITHMS = [
   { id: 'ml_pca', alias: 'ml-pca', domain: 'ML', tier: 'balanced', description: 'PCA dimensionality reduction' }
 ] as const
 
-const search = ref('')
-const domainFilter = ref('')
+const ALL_DOMAIN = '__ALL__'
 
-const domains = computed(() => ['', ...new Set(ALL_ALGORITHMS.map(a => a.domain))])
+const search = ref('')
+const domainFilter = ref(ALL_DOMAIN)
+
+const domains = computed(() => [ALL_DOMAIN, ...new Set(ALL_ALGORITHMS.map(a => a.domain))])
 const tierColors: Record<string, string> = { fast: 'success', balanced: 'info', quality: 'warning' }
 
 const filtered = computed(() => ALL_ALGORITHMS.filter(a => {
@@ -51,7 +53,7 @@ const filtered = computed(() => ALL_ALGORITHMS.filter(a => {
     a.id.includes(search.value.toLowerCase()) ||
     a.alias.includes(search.value.toLowerCase()) ||
     a.description.toLowerCase().includes(search.value.toLowerCase())
-  const matchDomain = !domainFilter.value || a.domain === domainFilter.value
+  const matchDomain = domainFilter.value === ALL_DOMAIN || domainFilter.value === '' || a.domain === domainFilter.value
   return matchSearch && matchDomain
 }))
 
@@ -70,7 +72,7 @@ const columns = [
   <div class="algorithm-table my-6">
     <div class="flex gap-3 mb-4">
       <UInput v-model="search" placeholder="Search algorithms…" icon="i-lucide-search" class="flex-1" />
-      <USelect v-model="domainFilter" :items="domains.map(d => ({ label: d || 'All domains', value: d }))" class="w-44" />
+      <USelect v-model="domainFilter" :items="domains.map(d => ({ label: d === ALL_DOMAIN ? 'All domains' : d, value: d }))" class="w-44" />
     </div>
     <UTable :data="filtered" :columns="(columns as any)">
       <template #id-cell="{ row }">

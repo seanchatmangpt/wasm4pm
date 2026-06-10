@@ -53,10 +53,11 @@ const dimensions = computed(() => [
   <div class="quality-badge-group">
     <p v-if="label" class="quality-badge-label">{{ label }}</p>
     <div class="quality-badge-row">
-      <UTooltip
+      <span
         v-for="dim in dimensions"
         :key="dim.name"
-        :text="dim.tooltip"
+        :title="dim.tooltip"
+        class="quality-badge-tooltip"
       >
         <UBadge
           :color="dim.color"
@@ -65,7 +66,7 @@ const dimensions = computed(() => [
         >
           {{ dim.name }}: {{ fmt(dim.value) }}
         </UBadge>
-      </UTooltip>
+      </span>
     </div>
   </div>
 </template>

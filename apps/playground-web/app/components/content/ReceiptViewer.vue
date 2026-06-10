@@ -49,7 +49,7 @@ const shortHash = (h: string) => h.slice(0, 16) + '…'
       </div>
       <div class="flex gap-3">
         <span class="text-muted w-24 shrink-0">input_size</span>
-        <span>{{ receipt.input_size.toLocaleString() }} bytes</span>
+        <span>{{ (receipt.input_size ?? 0).toLocaleString() }} bytes</span>
       </div>
     </div>
   </div>
