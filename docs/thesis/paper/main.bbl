@@ -1,0 +1,338 @@
+\begin{thebibliography}{10}
+\providecommand{\url}[1]{\texttt{#1}}
+\providecommand{\urlprefix}{URL }
+\providecommand{\doi}[1]{https://doi.org/#1}
+
+\bibitem{change_mgmt_traceability_2016}
+Towards dependable change management and traceability for global software
+  development. Conference paper (2016), change governance and distributed
+  traceability requirements; motivates the admitted-change witness
+  architecture.
+
+\bibitem{ea_security_togaf_2017}
+An integrated conceptual model for information system security risk management
+  and enterprise architecture management based on {TOGAF}, {ArchiMate}, {IAF}
+  and {DoDAF}. Conference paper (2017), enterprise architecture and security
+  integration. Provides institutional context for the enterprise change
+  admissibility framework deployment.
+
+\bibitem{crypto_agility_maturity_2022}
+Towards a maturity model for crypto-agility assessment. Preprint (2022),
+  framework for assessing an organisation's readiness to migrate cryptographic
+  primitives; directly relevant to the PQC channel of the attack decomposition.
+
+\bibitem{ocel_2_standard_2023}
+Object-centric event log standard v2.0 (2023),
+  \url{https://www.ocel-standard.org/}, oCEL 2.0 community reference. Resources
+  paper at ICPM 2023 (Koren et al., CEUR-WS Vol. 3648, paper\_7195). Classified
+  consumer\_contract\_only: cited for format compliance, not algorithm
+  grounding.
+
+\bibitem{nist_ai_rmf_maturity_2024}
+Evolving {AI} risk management: A maturity model based on the {NIST AI} risk
+  management framework. Preprint (2024), nIST AI RMF applied as a maturity
+  model; relevant to AI-agent governance (Proposition 8).
+
+\bibitem{ethos_ai_agents_2024}
+On the {ETHOS} of {AI} agents: An ethical technology and holistic oversight
+  system. Preprint (2024), holistic oversight framework for AI agents;
+  motivates receipt-bearing participation requirement for agents.
+
+\bibitem{process_trace_kg_2024}
+Process trace querying using knowledge graphs and {Notation3}. Preprint (2024),
+  represents event logs as knowledge graphs; SPARQL/N3 querying of process
+  traces. Relevant to object-model precision (Section 5).
+
+\bibitem{blockchain_trilemma_2024}
+Quantifying the blockchain trilemma: A comparative analysis of algorand,
+  {Ethereum} 2.0, and beyond. Preprint (2024), analyses
+  decentralisation-security-scalability tradeoffs. Motivates the local receipt
+  chain approach over distributed ledger for enterprise admission.
+
+\bibitem{sok_ccmm_2024}
+{SoK}: Identifying limitations and bridging gaps of cybersecurity capability
+  maturity models. Preprint (2024), systematic analysis of security maturity
+  models; provides vocabulary for the operational tier of the attack
+  decomposition (Section 5).
+
+\bibitem{type_safe_process_evidence_2024}
+Type-safe process-evidence engineering. Preprint (2024), type-safe proofs of
+  execution; cryptographic receipt chains; formal evidence theory for admitted
+  process transitions.
+
+\bibitem{provenance_semantic_web_2025}
+Enhancing data integrity through provenance tracking in semantic {Web}
+  frameworks. Preprint (2025), rDF-based provenance tracking and cryptographic
+  integrity chains; semantic web complement to OCEL 2.0 receipt model.
+
+\bibitem{van_der_aalst_wfnet_soundness_1997}
+van~der Aalst, W.M.P.: Verification of workflow nets. In: Application and
+  Theory of Petri Nets 1997 ({ICATPN} 1997). Lecture Notes in Computer Science,
+  vol.~1248, pp. 407--426. Springer (1997). \doi{10.1007/3-540-63139-9_48},
+  peer-reviewed. Springer link.springer.com/chapter/10.1007/3-540-63139-9\_48
+  confirmed. Original WF-net soundness paper. Definitions: single source/sink,
+  option to complete, dead-transition freedom, boundedness.
+
+\bibitem{van_der_aalst_process_mining_2011}
+van~der Aalst, W.M.P.: Process Mining: Discovery, Conformance and Enhancement
+  of Business Processes. Springer, Berlin, Heidelberg (2011).
+  \doi{10.1007/978-3-642-19345-3}, first edition PM textbook. Defines play-in,
+  play-out, and replay as conceptual triad; establishes generalization and
+  simplicity as quality dimensions. Grounds playout algorithm concept.
+
+\bibitem{van_der_aalst_2016_process_mining}
+van~der Aalst, W.M.P.: Process Mining: Data Science in Action. Springer,
+  Berlin, Heidelberg, 2nd edn. (2016). \doi{10.1007/978-3-662-49851-4},
+  canonical textbook reference for DFG (Ch. 3), WF-net soundness,
+  generalization metrics (Sec. 9.3), process trees (Ch. 6), and quality
+  dimensions. Cited broadly across all algorithm families.
+
+\bibitem{van_der_aalst_conformance_checking_2018}
+van~der Aalst, W.M.P.: Conformance Checking: Relating Processes and Models.
+  Springer (2018), supports conformance checking algorithm family. Classified
+  supports\_family in citation inventory C22.
+
+\bibitem{van_der_aalst_no_ai_without_pi_2024}
+van~der Aalst, W.M.P.: No {AI} without {PI}! object-centric process mining as
+  the enabler for generative, predictive, and prescriptive artificial
+  intelligence. Technical Report (2024), argues that object-centric process
+  mining is a prerequisite for trustworthy AI in enterprise contexts.
+  Foundational motivation for applying OCEL 2.0 to AI agent governance.
+
+\bibitem{van_der_aalst_berti_2020}
+van~der Aalst, W.M.P., Berti, A.: Discovering object-centric petri nets.
+  Fundamenta Informaticae  \textbf{175}(1--4),  1--40 (2020).
+  \doi{10.3233/FI-2020-1946}, peer-reviewed journal. DBLP confirmed at
+  dblp.org/db/journals/fuin/fuin175.html. IOS Press ebooks confirmed.
+  arXiv:2010.02047. First formally complete process model for object-centric
+  event data.
+
+\bibitem{adriansyah_2014_phd}
+Adriansyah, A.: Aligning Observed and Modeled Behavior. {PhD} thesis,
+  Technische Universiteit Eindhoven (2014). \doi{10.6100/IR770080}, 252 pages.
+  ISBN: 978-90-386-3574-3. SIKS Dissertation Series. TU/e Research Portal
+  confirmed at
+  research.tue.nl/en/publications/aligning-observed-and-modeled-behavior/ and
+  full text at research.tue.nl/files/4032919/770080.pdf. Full formal treatment
+  of alignment-based conformance.
+
+\bibitem{adriansyah_et_al_alignments_2011}
+Adriansyah, A., van Dongen, B.F., van~der Aalst, W.M.P.: Conformance checking
+  using cost-based fitness analysis. In: Proceedings of the 15th {IEEE}
+  International Enterprise Distributed Object Computing Conference ({EDOC}
+  2011). pp. 55--64. IEEE (2011). \doi{10.1109/EDOC.2011.12}, peer-reviewed.
+  IEEE Xplore confirmed at ieeexplore.ieee.org/document/6037560/. DBLP
+  confirmed at dblp.org/pid/90/7976.html. First peer-reviewed paper introducing
+  cost-based alignment for conformance; A* over product automaton of log trace
+  and Petri net.
+
+\bibitem{bernstein_lange_pqc_2017}
+Bernstein, D.J., Lange, T.: Post-quantum cryptography. Nature
+  \textbf{549}(7671),  188--194 (2017). \doi{10.1038/nature23461}, survey of
+  post-quantum cryptography landscape. Motivates migration from ECDSA/RSA for
+  long-lived signatures.
+
+\bibitem{berti_van_der_aalst_oc_dfg_2023}
+Berti, A., van~der Aalst, W.M.P.: {OC-PM}: Analyzing object-centric event logs
+  and process models. International Journal on Software Tools for Technology
+  Transfer  \textbf{25},  1--17 (2023). \doi{10.1007/s10009-022-00668-w},
+  peer-reviewed journal. Springer confirmed at
+  link.springer.com/article/10.1007/s10009-022-00668-w. arXiv:2209.09725.
+  Formal multigraph definition of OC-DFG.
+
+\bibitem{berti_et_al_ocel2_spec_2024}
+Berti, A., Koren, I., Adams, J.N., Park, G., et~al.: {OCEL} ({Object-Centric
+  Event Log}) 2.0 specification. arXiv:2403.01975v1 [cs.DB] (2024),
+  \url{https://arxiv.org/abs/2403.01975}, oCEL 2.0 specification. 13 named
+  authors. Adds O2O relationships, dynamic object attributes, qualified arc
+  types; three exchange formats: SQLite, XML, JSON. arXiv preprint of spec
+  document.
+
+\bibitem{berti_pm4py_2023}
+Berti, A., van Zelst, S., Verbeek, E.: {PM4Py}: A Process Mining Library for
+  Python. Technical Report, RWTH Aachen (2023), standard Python process mining
+  library. Provides the baseline algorithm implementations against which
+  wasm4pm's deterministic WASM core is benchmarked.
+
+\bibitem{bose_et_al_concept_drift_pm_2014}
+Bose, R.P.J.C., van~der Aalst, W.M.P., {\v{Z}}liobait{\.{e}}, I., Pechenizkiy,
+  M.: Dealing with concept drifts in process mining. {IEEE} Transactions on
+  Neural Networks and Learning Systems  \textbf{25}(1),  154--171 (2014).
+  \doi{10.1109/TNNLS.2013.2278313}, peer-reviewed. IEEE TNNLS journal.
+  Canonical PM concept drift paper; grounds detect\_drift and compute\_ewma.
+
+\bibitem{buijs_et_al_quality_dimensions_2012}
+Buijs, J.C.A.M., van Dongen, B.F., van~der Aalst, W.M.P.: On the role of
+  fitness, precision, generalization and simplicity in process discovery. In:
+  {OTM} 2012 Confederated International Conferences ({CoopIS/DOA/ODBASE}).
+  Lecture Notes in Computer Science, vol.~7565, pp. 305--322. Springer (2012).
+  \doi{10.1007/978-3-642-33606-5_19}, peer-reviewed. Springer confirmed. DBLP
+  confirmed. First formalization of all four quality dimensions (fitness,
+  precision, generalization, simplicity) in a unified framework.
+
+\bibitem{chatman_wasm4pm_2026}
+Chatman, S.: {wasm4pm}: A deterministic {WebAssembly} process mining platform.
+  GitHub repository and npm package (2026),
+  \url{https://github.com/seanchatmangpt/wasm4pm}, 60 deterministic process
+  mining algorithms compiled from Rust to WebAssembly. Implements the
+  Enterprise Change Admissibility Framework via TrueX envelopes, BLAKE3 receipt
+  chains, and 13-state boundary predicate taxonomy.
+
+\bibitem{chesterton_orthodoxy_1908}
+Chesterton, G.K.: Orthodoxy. Dodd, Mead and Company, New York (1908), original
+  statement of the Chesterton's Fence principle (Chapter 4): do not remove a
+  fence until you understand why it was built.
+
+\bibitem{de_santis_compliance_predictive_2024}
+De~Santis, F., Park, G., van~der Aalst, W.M.P., Zanichelli, F.:
+  Compliance-aware predictive process monitoring: A neuro-symbolic approach.
+  In: Proceedings of BPM 2024 (2024), combines boundary predicates and neural
+  prediction for pre-emptive compliance checking; directly related to the
+  boundary predicate $B(s,e)$ model.
+
+\bibitem{desel_esparza_free_choice_1995}
+Desel, J., Esparza, J.: Free Choice Petri Nets, Cambridge Tracts in Theoretical
+  Computer Science, vol.~40. Cambridge University Press (1995), definitive
+  monograph on free-choice Petri nets. Admits polynomial soundness checking via
+  Rank Theorem. Tractable target class for automated conformance and POWL
+  translation.
+
+\bibitem{saura_llm_security_policies}
+Fern{\'a}ndez~Saura, P., Jayaram, K.R., Isahagian, V., Bernal~Bernab{\'e}, J.,
+  Skarmeta, A.: On automating security policies with contemporary {LLM}s. In:
+  Proceedings of IEEE Security \& Privacy Workshop (2024), aI agent tool use
+  and automated security policy enforcement; connects to the AI-agent
+  residualization model (Proposition 8).
+
+\bibitem{ghahfarokhi_et_al_ocel_2021}
+Ghahfarokhi, A.F., Park, G., Berti, A., van~der Aalst, W.M.P.: {OCEL}: A
+  standard for object-centric event logs. In: New Trends in Database and
+  Information Systems --- {ADBIS} 2021 Short Papers, Doctoral Consortium and
+  Workshops: DOING, SIMPDA, MADEISD, MegaData, CAoNS. Communications in
+  Computer and Information Science, vol.~1450, pp. 169--175. Springer (2021).
+  \doi{10.1007/978-3-030-85082-1_16}, peer-reviewed. Springer confirmed at
+  link.springer.com/chapter/10.1007/978-3-030-85082-1\_16. SIMPDA workshop at
+  ADBIS 2021, Tartu, Estonia, August 24-26, 2021. OCEL 1.0 format
+  specification. Authors: 4 (not 3 as in earlier stub).
+
+\bibitem{mlsmm_2023}
+Jedrzejewski, F.V., Fucci, D., Adamov, O.: {MLSMM}: Machine learning security
+  maturity model. Preprint (2023), aI/ML governance and maturity assessment;
+  informs the validator-compromise channel of Theorem 2.
+
+\bibitem{ko_comuzzi_anomaly_2021}
+Ko, J., Comuzzi, M.: Detecting anomalies in business process event logs using
+  statistical leverage. Information Sciences  \textbf{549},  53--67 (2021),
+  peer-reviewed journal. Information-theoretic edge-frequency anomaly scoring;
+  grounds ml\_anomaly algorithm.
+
+\bibitem{kourani_van_der_aalst_powl2_2024}
+Kourani, H., van~der Aalst, W.M.P.: {POWL 2.0}: Choice graphs and frequent
+  transitions. In: {CEUR} Workshop Proceedings. vol.~3783 (2024), cEUR-WS vol.
+  3783. Introduces FrequentTransitionNode (min\_freq, max\_freq API).
+  Definition 5 (MineDG) cited as correctness oracle for POWL 2.0 discovery in
+  wasm4pm.
+
+\bibitem{kuesters_van_der_aalst_oc_declare_2025}
+K{\"u}sters, A., van~der Aalst, W.M.P.: {OC-DECLARE}: Discovering
+  object-centric declarative patterns with synchronization. In: Business
+  Process Management --- {BPM} 2025. Lecture Notes in Computer Science, vol.
+  16044, pp. 162--179. Springer (2025). \doi{10.1007/978-3-032-02867-9_11},
+  peer-reviewed. BPM 2025, Seville, Spain. First paper on automated OC-DECLARE
+  discovery from OCEL.
+
+\bibitem{kuesters_van_der_aalst_ocpq_2025}
+K{\"u}sters, A., van~der Aalst, W.M.P.: {OCPQ}: Object-centric process querying
+  and constraints. In: {RCIS} (1) 2025. pp. 383--400 (2025).
+  \doi{10.1007/978-3-031-92474-3_23}, peer-reviewed conference (RCIS 2025, 19th
+  International Conference). arXiv:2506.11541. Formal Definitions 1--9 for OCPQ
+  query tree semantics. Rust implementation at github.com/aarkue/ocpq.
+
+\bibitem{ocel_xes_sparql_2024}
+Latif, S., Latif, H., Rahman, M.R.U.: Object-centric analysis of {XES} event
+  logs: Integrating {OCED} modeling with {SPARQL} queries. Preprint (2024),
+  semantic integration of OCEL with SPARQL; provides query layer over the
+  object-event relations used in Proposition 3 (object substitution).
+
+\bibitem{leemans_fahland_van_der_aalst_2013_constructive}
+Leemans, S.J.J., Fahland, D., van~der Aalst, W.M.P.: Discovering
+  block-structured process models from event logs --- a constructive approach.
+  In: Application and Theory of Petri Nets and Concurrency (Petri Nets 2013).
+  Lecture Notes in Computer Science, vol.~7927, pp. 311--329. Springer, Milan,
+  Italy (2013). \doi{10.1007/978-3-642-38697-8_17}, peer-reviewed. Springer
+  confirmed at link.springer.com/chapter/10.1007/978-3-642-38697-8\_17. DBLP
+  confirmed at dblp.org/db/conf/apn/pn2013.html and dblp.org/pid/131/1671.html.
+  June 24-28, 2013. Inductive Miner with soundness guarantee;
+  XOR/AND/LOOP/Sequence cut taxonomy.
+
+\bibitem{lopez_pineda_blockchain_2019}
+Lopez-Pintado, O., Garc{\'i}a-Ba{\~n}uelos, L., Dumas, M., Weber, I.,
+  Ponomarev, A.: {Caterpillar}: A business process execution engine on the
+  {Ethereum} blockchain. In: Information Systems. vol.~90, p. 101470. Elsevier
+  (2019). \doi{10.1016/j.is.2019.07.009}, blockchain-based process execution.
+  Provides immutable audit trail. Contrasts with our approach: we do not
+  require a distributed ledger.
+
+\bibitem{nist_fips_204_2024}
+{National Institute of Standards and Technology}: Module-lattice-based digital
+  signature standard ({ML-DSA}). Tech. Rep. {FIPS} 204, {U.S. Department of
+  Commerce} (2024), \url{https://doi.org/10.6028/NIST.FIPS.204}, based on
+  CRYSTALS-Dilithium. Specifies ML-DSA-44, ML-DSA-65, ML-DSA-87. Primary
+  signing algorithm recommended for enterprise receipt chains.
+
+\bibitem{nist_fips_205_2024}
+{National Institute of Standards and Technology}: Stateless hash-based digital
+  signature standard ({SLH-DSA}). Tech. Rep. {FIPS} 205, {U.S. Department of
+  Commerce} (2024), \url{https://doi.org/10.6028/NIST.FIPS.205}, based on
+  SPHINCS+. Hash-based; conservative fallback when lattice assumptions are
+  uncertain.
+
+\bibitem{xacml_standard_2013}
+{OASIS}: e{X}tensible access control markup language ({XACML}) version 3.0.
+  Tech. rep., {OASIS Standard} (2013),
+  \url{https://docs.oasis-open.org/xacml/3.0/xacml-3.0-core-spec-os-en.html},
+  attribute-based access control standard. Governs who may initiate change;
+  orthogonal to admissibility of the change itself.
+
+\bibitem{stix_v21_2022}
+{OASIS Cyber Threat Intelligence (CTI) TC}: {STIX} version 2.1. Tech. rep.,
+  {OASIS Standard} (2022),
+  \url{https://docs.oasis-open.org/cti/stix/v2.1/stix-v2.1.html}, structured
+  threat intelligence schema; formalises event representation with object
+  relations; relevant to the TrueX envelope design.
+
+\bibitem{presman_govt_pqc_2024}
+Presman, D.: The {U.S.} government's transition to post-quantum cryptography.
+  Government report (2024), describes NIST PQC migration timelines and
+  mandates. Motivates long-lived receipt signing with ML-DSA.
+
+\bibitem{rozinat_van_der_aalst_2008}
+Rozinat, A., van~der Aalst, W.M.P.: Conformance checking of processes based on
+  monitoring real behavior. Information Systems  \textbf{33}(1),  64--95
+  (2008). \doi{10.1016/j.is.2007.07.001}, peer-reviewed journal. ScienceDirect
+  confirmed at sciencedirect.com/science/article/abs/pii/S030643790700049X.
+  DBLP confirmed at dblp.org/pid/20/5156.html. Canonical token replay paper;
+  fitness formula fitness = 1 - (missing + consumed) / (produced + remaining)
+  implemented verbatim in wasm4pm.
+
+\bibitem{russell_workflow_patterns_2015}
+Russell, N., ter Hofstede, A.H.M., van~der Aalst, W.M.P., Mulyar, N.: Workflow
+  Patterns: The Definitive Guide. MIT Press (2015), canonical workflow pattern
+  classification and control flow semantics. Grounds the boundary predicate
+  state space in established workflow theory.
+
+\bibitem{sargolzaei_audit_cloud_2022}
+Sargolzaei~Javan, M.: A semantic model for audit of cloud engines based on
+  {ISO/IEC TR} 3445:2022. Preprint (2022), formal semantic audit model for
+  cloud infrastructure. Provides ISO-grounded vocabulary for cloud-resident
+  evidence chains.
+
+\bibitem{weijters_et_al_heuristics_miner_2006}
+Weijters, A.J.M.M., van~der Aalst, W.M.P., Alves~de Medeiros, A.K.: Process
+  mining with the {HeuristicsMiner} algorithm. Tech. Rep. WP 166, BETA Working
+  Paper Series, Eindhoven University of Technology (2006), 346+ citations per
+  Semantic Scholar. Canonical HeuristicsMiner technical report. Dependency
+  formula and noise-tolerance thresholds implemented directly in wasm4pm. Not a
+  conference/journal paper; classified tech report.
+
+\end{thebibliography}

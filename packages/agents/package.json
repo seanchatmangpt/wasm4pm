@@ -36,7 +36,7 @@
     "@wasm4pm/engine": "workspace:*"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "typescript": "^5.3.3",
     "vitest": "^1.6.0"
   }
 }

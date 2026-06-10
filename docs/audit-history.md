@@ -95,3 +95,25 @@ Four 1977-substrate domain modules (vision/semantics/neurosis/learning, 582 line
 | autoinstinct_learning | 1977 | goals: goal list; facts: initial state | candidates: plan steps; selected: step count |
 
 All breeds emit non-empty inference_trace (Rank-2 postcondition).
+
+---
+
+## "Check the Rest" Pass (2026-06-09)
+
+### Rust stubs cleaned
+- Deleted wasm4pm/src/receipt_prd_tests.rs (comment-only stub, non-standard location)
+- Deleted wasm4pm/tests/powl_macro_a9_tests.rs (extern crate wasm4pm_macros — crate never existed)
+- Fixed crates/miniml-core/src/automl.rs test_auto_fit_one_liner / test_result_summary / test_algorithm_score_lookup: update auto_fit calls to pass JSON strings (serde_json::to_string) matching the WASM-boundary-safe signature change from prior pass
+
+### pnpm build
+Was broken: wasm-pack 0.14 failed to download wasm-bindgen binary for resolved version 0.2.123 (GitHub Releases API JSON parse error: "invalid type: sequence, expected a string"). Fix: pinned wasm-bindgen to `=0.2.100` in wasm4pm/Cargo.toml and ran `cargo update -p wasm-bindgen` to align Cargo.lock. All 13 packages now build successfully; `pnpm build` exits 0.
+
+### Test triage
+Cluster 1 (apps/wasm4pm/src/__tests__/ — mcpp-route-conformance, trace-cli, prolog8-mcpp-replay, mcpp-admission-gate, trace-ingest-cli): all 196 tests GREEN. Failures cited in task brief were pre-existing and predate the enterprise/fortune5-readiness branch; fixed by prior observability log-routing commits (728474c8, f29079fd) before our changes.
+
+Cluster 2 (wasm4pm/__tests__/mcp_integration.test.ts): 15/15 GREEN. No failures; unrelated to our changes.
+
+Total: 211 tests pass across both clusters. No fixes needed.
+
+### DevDep alignment
+- packages/agents: typescript ^5.7.0 → ^5.3.3 (workspace-standard version)
