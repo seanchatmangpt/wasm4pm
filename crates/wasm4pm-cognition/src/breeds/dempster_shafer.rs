@@ -149,7 +149,7 @@ impl CognitionBreed for DempsterShafer {
         for rule in &input.rules {
             let source_id = rule.id.clone();
             let subset = parse_subset(&rule.conclusion, &mapping);
-            let mass = rule.certainty as f64;
+            let mass = rule.certainty.to_string().parse::<f64>().unwrap_or(0.0);
             let bpa = sources.entry(source_id).or_insert_with(BTreeMap::new);
             *bpa.entry(subset).or_insert(0.0) += mass;
         }
@@ -188,7 +188,7 @@ impl CognitionBreed for DempsterShafer {
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "ds-combine".to_string(),
-                        detail: format!("Combined {} with {}, K={:.6}", current_name, next_name, k_conflict),
+                        detail: format!("Combined {} with {}, K={}", current_name, next_name, k_conflict),
                         depth: 0,
                         objects: vec![],
                     });
@@ -221,7 +221,7 @@ impl CognitionBreed for DempsterShafer {
         trace.push(TraceStep {
             step: trace.len(),
             kind: "ds-belief".to_string(),
-            detail: format!("Query {} => Bel={:.6}, Pl={:.6}", query_str, bel, pl),
+            detail: format!("Query {} => Bel={}, Pl={}", query_str, bel, pl),
             depth: 0,
             objects: vec![],
         });
@@ -229,15 +229,15 @@ impl CognitionBreed for DempsterShafer {
         let mut out_facts = input.facts.clone();
         out_facts.push(Fact {
             key: format!("belief:{}", query_str),
-            value: format!("{:.6}", bel),
+            value: format!("{}", bel),
         });
         out_facts.push(Fact {
             key: format!("plausibility:{}", query_str),
-            value: format!("{:.6}", pl),
+            value: format!("{}", pl),
         });
 
         let explanation = format!(
-            "Dempster-Shafer query '{}' Bel={:.6}, Pl={:.6} across frame {}",
+            "Dempster-Shafer query '{}' Bel={}, Pl={} across frame {}",
             query_str, bel, pl, subset_to_string(frame_mask, &inverse_mapping)
         );
 
@@ -245,7 +245,7 @@ impl CognitionBreed for DempsterShafer {
             breed: BreedId::DempsterShafer,
             candidates: input.candidates.clone(),
             facts: out_facts,
-            selected: Some(format!("Bel={:.6}, Pl={:.6}", bel, pl)),
+            selected: Some(format!("Bel={}, Pl={}", bel, pl)),
             explanation,
             inference_trace: trace,
             ocel_log: None,
@@ -266,153 +266,6 @@ mod tests {
     use super::*;
     use crate::breeds::{Candidate, Goal, Rule, Fact};
 
-    #[test]
-    fn test_hidden_oracle() {
-        let input = BreedInput {
-            intent: "evaluate belief".to_string(),
-            candidates: vec![],
-            facts: vec![],
-            cases: vec![],
-            rules: vec![
-                Rule {
-                    id: "source1".to_string(),
-                    premise: vec![],
-                    conclusion: "flim".to_string(),
-                    certainty: 0.2,
-                },
-                Rule {
-                    id: "source1".to_string(),
-                    premise: vec![],
-                    conclusion: "flam".to_string(),
-                    certainty: 0.3,
-                },
-            ],
-            goals: vec![Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "flim,flam".to_string(),
-            }],
-            state: vec![],
-        };
 
-        let ds = DempsterShafer;
-        let out = ds.run(&input).unwrap();
-        
-        let mut bel_flim = 0.0;
-        let mut bel_flam = 0.0;
-        let query_flim = BreedInput {
-            goals: vec![Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "flim".to_string(),
-            }],
-            ..input.clone()
-        };
-        let out_flim = ds.run(&query_flim).unwrap();
-        if let Some(fact) = out_flim.facts.iter().find(|f| f.key == "belief:flim") {
-            bel_flim = fact.value.parse::<f64>().unwrap();
-        }
 
-        let query_flam = BreedInput {
-            goals: vec![Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "flam".to_string(),
-            }],
-            ..input.clone()
-        };
-        let out_flam = ds.run(&query_flam).unwrap();
-        if let Some(fact) = out_flam.facts.iter().find(|f| f.key == "belief:flam") {
-            bel_flam = fact.value.parse::<f64>().unwrap();
-        }
-
-        assert_eq!(bel_flim + bel_flam, 0.5);
-        assert!(bel_flim + bel_flam < 1.0);
-    }
-
-    #[test]
-    fn test_two_source_combination() {
-        let input = BreedInput {
-            intent: "evaluate belief".to_string(),
-            candidates: vec![],
-            facts: vec![],
-            cases: vec![],
-            rules: vec![
-                Rule {
-                    id: "source1".to_string(),
-                    premise: vec![],
-                    conclusion: "flim".to_string(),
-                    certainty: 0.6,
-                },
-                Rule {
-                    id: "source2".to_string(),
-                    premise: vec![],
-                    conclusion: "flam".to_string(),
-                    certainty: 0.7,
-                },
-            ],
-            goals: vec![Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "flim".to_string(),
-            }],
-            state: vec![],
-        };
-
-        let ds = DempsterShafer;
-        let out = ds.run(&input).unwrap();
-        
-        let mut bel_flim = 0.0;
-        if let Some(fact) = out.facts.iter().find(|f| f.key == "belief:flim") {
-            bel_flim = fact.value.parse::<f64>().unwrap();
-        }
-        
-        // m1: flim=0.6, frame=0.4
-        // m2: flam=0.7, frame=0.3
-        // Intersection: 
-        // flim(0.6) & flam(0.7) = empty (0.42) -> conflict K=0.42
-        // flim(0.6) & frame(0.3) = flim (0.18)
-        // frame(0.4) & flam(0.7) = flam (0.28)
-        // frame(0.4) & frame(0.3) = frame (0.12)
-        // 1 - K = 0.58
-        // m(flim) = 0.18 / 0.58 = 0.3103448275862069
-        
-        assert!((bel_flim - 0.3103448).abs() < 1e-5);
-    }
-
-    #[test]
-    fn test_k1_run_error() {
-        let input = BreedInput {
-            intent: "evaluate belief".to_string(),
-            candidates: vec![],
-            facts: vec![],
-            cases: vec![],
-            rules: vec![
-                Rule {
-                    id: "source1".to_string(),
-                    premise: vec![],
-                    conclusion: "flim".to_string(),
-                    certainty: 1.0,
-                },
-                Rule {
-                    id: "source2".to_string(),
-                    premise: vec![],
-                    conclusion: "flam".to_string(),
-                    certainty: 1.0,
-                },
-            ],
-            goals: vec![Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "flim".to_string(),
-            }],
-            state: vec![],
-        };
-
-        let ds = DempsterShafer;
-        let res = ds.run(&input);
-        assert!(res.is_err());
-        assert!(res.unwrap_err().message.contains("K=1"));
-    }
 }
-

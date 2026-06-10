@@ -1680,4 +1680,198 @@ fn abductive_ibe_hidden_coherence() {
     assert!(score_h1 > score_h2, "H1 score must be strictly greater than H2 score");
 }
 
+#[test]
+fn htn_planning_hidden_oracle_backtrack() {
+    let input = BreedInput {
+        intent: "travel".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        state: vec![
+            StateAtom { predicate: "at".into(), value: "zorp_location".into() },
+            StateAtom { predicate: "cash".into(), value: "zorp_credits".into() },
+        ],
+        goals: vec![
+            Goal { id: "g1".into(), predicate: "task".into(), value: "travel".into() },
+        ],
+        rules: vec![
+            Rule {
+                id: "method:travel:taxi".into(),
+                premise: vec!["at=zorp_location".into()], // Applicable!
+                conclusion: "op:hail_taxi;op:pay_taxi".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "method:travel:walk".into(),
+                premise: vec!["at=zorp_location".into()],
+                conclusion: "op:walk".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "op:hail_taxi".into(),
+                premise: vec![],
+                conclusion: "in=taxi".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "op:pay_taxi".into(),
+                premise: vec!["in=taxi".into(), "cash=high_credits".into()], // Will fail!
+                conclusion: "!in=taxi;at=blee_station".into(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "op:walk".into(),
+                premise: vec![],
+                conclusion: "!at=zorp_location;at=blee_station".into(),
+                certainty: 1.0,
+            },
+        ],
+    };
 
+    let output = dispatch_breed_test("htn_planning", &input)
+        .expect("HTN planning should find walk plan");
+    
+    assert_eq!(output.selected.as_deref(), Some("op:walk"));
+    
+    let backtrack_steps = output.inference_trace.iter().filter(|t| t.kind == "htn-backtrack").count();
+    assert!(backtrack_steps > 0, "Must contain htn-backtrack step");
+    
+    let plan_steps = output.inference_trace.iter().filter(|t| t.kind == "htn-plan").count();
+    assert_eq!(plan_steps, 1, "Must contain exactly one htn-plan step");
+}
+
+#[test]
+fn dempster_shafer_hidden_oracle() {
+    let input = BreedInput {
+        intent: "evaluate belief".to_string(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "source1".to_string(),
+                premise: vec![],
+                conclusion: "zorp".to_string(),
+                certainty: 0.2,
+            },
+            Rule {
+                id: "source1".to_string(),
+                premise: vec![],
+                conclusion: "blee".to_string(),
+                certainty: 0.3,
+            },
+        ],
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "zorp,blee".to_string(),
+        }],
+        state: vec![],
+    };
+
+    let out = dispatch_breed_test("dempster_shafer", &input).unwrap();
+    
+    let mut bel_zorp = 0.0;
+    let mut bel_blee = 0.0;
+    let query_zorp = BreedInput {
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "zorp".to_string(),
+        }],
+        ..input.clone()
+    };
+    let out_zorp = dispatch_breed_test("dempster_shafer", &query_zorp).unwrap();
+    if let Some(fact) = out_zorp.facts.iter().find(|f| f.key == "belief:zorp") {
+        bel_zorp = fact.value.parse::<f64>().unwrap();
+    }
+
+    let query_blee = BreedInput {
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "blee".to_string(),
+        }],
+        ..input.clone()
+    };
+    let out_blee = dispatch_breed_test("dempster_shafer", &query_blee).unwrap();
+    if let Some(fact) = out_blee.facts.iter().find(|f| f.key == "belief:blee") {
+        bel_blee = fact.value.parse::<f64>().unwrap();
+    }
+
+    assert_eq!(bel_zorp + bel_blee, 0.5);
+    assert!(bel_zorp + bel_blee < 1.0);
+}
+
+#[test]
+fn dempster_shafer_two_source_combination() {
+    let input = BreedInput {
+        intent: "evaluate belief".to_string(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "source1".to_string(),
+                premise: vec![],
+                conclusion: "zorp".to_string(),
+                certainty: 0.6,
+            },
+            Rule {
+                id: "source2".to_string(),
+                premise: vec![],
+                conclusion: "blee".to_string(),
+                certainty: 0.7,
+            },
+        ],
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "zorp".to_string(),
+        }],
+        state: vec![],
+    };
+
+    let out = dispatch_breed_test("dempster_shafer", &input).unwrap();
+    
+    let mut bel_zorp = 0.0;
+    if let Some(fact) = out.facts.iter().find(|f| f.key == "belief:zorp") {
+        bel_zorp = fact.value.parse::<f64>().unwrap();
+    }
+    
+    assert!((bel_zorp - 0.3103448275).abs() < 1e-9);
+}
+
+#[test]
+fn dempster_shafer_k1_run_error() {
+    let input = BreedInput {
+        intent: "evaluate belief".to_string(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![
+            Rule {
+                id: "source1".to_string(),
+                premise: vec![],
+                conclusion: "zorp".to_string(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "source2".to_string(),
+                premise: vec![],
+                conclusion: "blee".to_string(),
+                certainty: 1.0,
+            },
+        ],
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "zorp".to_string(),
+        }],
+        state: vec![],
+    };
+
+    let res = dispatch_breed_test("dempster_shafer", &input);
+    assert!(res.is_err());
+    assert!(res.unwrap_err().to_string().contains("K=1"));
+}

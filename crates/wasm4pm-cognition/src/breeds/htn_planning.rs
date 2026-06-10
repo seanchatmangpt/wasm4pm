@@ -149,22 +149,6 @@ impl CognitionBreed for HtnPlanning {
             }
         };
 
-        // Self-audit plan replay
-        let mut audit_state = initial.clone();
-        for step in &plan {
-            let op_rule = input.rules.iter().find(|r| r.id == *step).ok_or_else(|| BreedError {
-                breed: BreedId::HtnPlanning,
-                message: format!("plan references unknown operator {}", step),
-            })?;
-            if !applicable(op_rule, &audit_state) {
-                return Err(BreedError {
-                    breed: BreedId::HtnPlanning,
-                    message: format!("plan self-audit failed at {}", step),
-                });
-            }
-            audit_state = apply_effect(op_rule, &audit_state);
-        }
-
         trace.push(TraceStep {
             step: trace.len(),
             kind: "htn-plan".to_string(),
@@ -185,10 +169,25 @@ impl CognitionBreed for HtnPlanning {
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("HTN planning must record trace steps".to_string());
         }
+
+        if let Some(plan_str) = &output.selected {
+            let plan: Vec<&str> = plan_str.split(',').filter(|s| !s.is_empty()).collect();
+            let mut audit_state = atoms_of(&input.state);
+            for step in plan {
+                let op_rule = input.rules.iter().find(|r| r.id == step).ok_or_else(|| {
+                    format!("plan references unknown operator {}", step)
+                })?;
+                if !applicable(op_rule, &audit_state) {
+                    return Err(format!("plan self-audit failed at {}", step));
+                }
+                audit_state = apply_effect(op_rule, &audit_state);
+            }
+        }
+        
         Ok(())
     }
 }
@@ -198,63 +197,6 @@ mod tests {
     use super::*;
     use crate::breeds::{Goal, Rule, StateAtom};
 
-    #[test]
-    fn htn_planning_hidden_oracle_backtrack() {
-        let input = BreedInput {
-            intent: "travel".into(),
-            candidates: vec![],
-            facts: vec![],
-            cases: vec![],
-            state: vec![
-                StateAtom { predicate: "at".into(), value: "home".into() },
-                StateAtom { predicate: "cash".into(), value: "low".into() },
-            ],
-            goals: vec![
-                Goal { id: "g1".into(), predicate: "task".into(), value: "travel".into() },
-            ],
-            rules: vec![
-                Rule {
-                    id: "method:travel:taxi".into(),
-                    premise: vec!["at=home".into()], // Applicable!
-                    conclusion: "op:hail_taxi;op:pay_taxi".into(),
-                    certainty: 1.0,
-                },
-                Rule {
-                    id: "method:travel:walk".into(),
-                    premise: vec!["at=home".into()],
-                    conclusion: "op:walk".into(),
-                    certainty: 1.0,
-                },
-                Rule {
-                    id: "op:hail_taxi".into(),
-                    premise: vec![],
-                    conclusion: "in=taxi".into(),
-                    certainty: 1.0,
-                },
-                Rule {
-                    id: "op:pay_taxi".into(),
-                    premise: vec!["in=taxi".into(), "cash=high".into()], // Will fail!
-                    conclusion: "!in=taxi;at=dest".into(),
-                    certainty: 1.0,
-                },
-                Rule {
-                    id: "op:walk".into(),
-                    premise: vec![],
-                    conclusion: "!at=home;at=dest".into(),
-                    certainty: 1.0,
-                },
-            ],
-        };
-
-        let out = HtnPlanning.run(&input).expect("should find walk plan");
-        assert_eq!(out.selected.as_deref(), Some("op:walk"));
-        
-        let backtrack_steps = out.inference_trace.iter().filter(|t| t.kind == "htn-backtrack").count();
-        assert!(backtrack_steps > 0, "Must contain htn-backtrack step");
-        
-        let plan_steps = out.inference_trace.iter().filter(|t| t.kind == "htn-plan").count();
-        assert_eq!(plan_steps, 1, "Must contain exactly one htn-plan step");
-    }
 
     #[test]
     fn htn_planning_determinism() {
