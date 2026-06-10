@@ -24,6 +24,7 @@ function buildMinimalReceipt(): Receipt {
   const zeroHash = '0'.repeat(64); // valid 64-hex placeholder
   return {
     run_id: '00000000-0000-4000-8000-000000000000',
+    trace_id: '0'.repeat(32),
     schema_version: '1.0',
     config_hash: zeroHash,
     input_hash: zeroHash,

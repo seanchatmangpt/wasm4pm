@@ -1,0 +1,41 @@
+name: WASM Size Gate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "wasm4pm/src/**"
+      - "wasm4pm/Cargo.toml"
+      - "Cargo.toml"
+  pull_request:
+    paths:
+      - "wasm4pm/src/**"
+      - "wasm4pm/Cargo.toml"
+      - "Cargo.toml"
+
+jobs:
+  size-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check WASM binary size
+        run: |
+          BASELINE_FILE="wasm4pm/size-baseline.json"
+          WASM_FILE="wasm4pm/pkg/wasm4pm_bg.wasm"
+          if [ ! -f "$WASM_FILE" ]; then
+            echo "WASM binary not found - skipping size check"
+            exit 0
+          fi
+          CURRENT=$(wc -c < "$WASM_FILE")
+          if [ ! -f "$BASELINE_FILE" ]; then
+            echo "No baseline - recording $CURRENT bytes"
+            exit 0
+          fi
+          BASELINE=$(node -p "JSON.parse(require('fs').readFileSync('$BASELINE_FILE')).browser_bytes")
+          MAX=$(node -p "Math.ceil($BASELINE * 1.05)")
+          echo "Current: $CURRENT, Baseline: $BASELINE, Max allowed: $MAX"
+          if [ "$CURRENT" -gt "$MAX" ]; then
+            echo "ERROR: WASM grew >5% ($CURRENT > $MAX). Update size-baseline.json if intentional."
+            exit 1
+          fi
+          echo "Size check passed"

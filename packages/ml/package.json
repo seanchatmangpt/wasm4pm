@@ -1,10 +1,10 @@
 {
   "name": "@wasm4pm/ml",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "publishConfig": {
     "access": "public"
   },
-  "description": "Native ML-powered process mining analysis \u2014 classification, clustering, forecasting, anomaly detection, PCA",
+  "description": "Native ML-powered process mining analysis — classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,5 +45,14 @@
     "wasm4pm"
   ],
   "author": "Sean Chatman",
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "directory": "packages/ml"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  }
 }

@@ -14,7 +14,7 @@
  *   docs/explanation/concept-drift-detection.md
  */
 
-import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs';
 import { resolve } from 'node:path';
 import * as wasm4pm from 'wasm4pm';
 
@@ -25,32 +25,7 @@ interface DriftRecord {
 }
 
 async function main(logPath: string, windowSize: number, threshold: number): Promise<void> {
-  let xes = '';
-  try {
-    xes = readFileSync(resolve(logPath), 'utf8');
-  } catch (err) {
-    console.log(`Failed to read file at ${logPath}, falling back to dummy log.`);
-    xes = `<?xml version="1.0" encoding="UTF-8" ?>
-<log xes.version="1.0" xes.features="nested-attributes" openxes.version="1.0RC7" xmlns="http://www.xes-standard.org/">
-	<extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
-	<trace>
-		<string key="concept:name" value="a"/>
-	</trace>
-	<trace>
-		<string key="concept:name" value="b"/>
-	</trace>
-	<trace>
-		<string key="concept:name" value="a"/>
-	</trace>
-	<trace>
-		<string key="concept:name" value="c"/>
-	</trace>
-	<trace>
-		<string key="concept:name" value="d"/>
-	</trace>
-</log>`;
-  }
-
+  const xes = fs.readFileSync(resolve(logPath), 'utf8');
   const logHandle = wasm4pm.load_eventlog_from_xes(xes);
 
   // detect_concept_drift returns a JSON string containing drifts
@@ -81,7 +56,7 @@ async function main(logPath: string, windowSize: number, threshold: number): Pro
   }
 }
 
-const logPath = process.argv[2] ?? '../fixtures/sample-xes-small.xml';
+const logPath = process.argv[2] ?? 'data/small-example.xes';
 const windowSize = Number.parseInt(process.argv[3] ?? '2', 10);
 const threshold = Number.parseFloat(process.argv[4] ?? '0.25');
 main(logPath, windowSize, threshold).catch((err) => {

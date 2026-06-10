@@ -50,7 +50,7 @@ export interface StateAtom {
 // Breed catalogue (returned by cognition_show)
 // =============================================================================
 
-export type BreedId = 'eliza' | 'cbr' | 'dendral' | 'strips' | 'prolog' | 'mycin' | 'gps' | 'soar' | 'hearsay';
+export type BreedId = 'eliza' | 'cbr' | 'dendral' | 'strips' | 'prolog' | 'mycin' | 'gps' | 'soar' | 'hearsay' | 'autoinstinct_neurosis' | 'autoinstinct_semantics' | 'autoinstinct_vision' | 'autoinstinct_learning';
 
 export interface BreedDescriptor {
   id: BreedId;

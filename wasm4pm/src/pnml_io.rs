@@ -1,7 +1,7 @@
 //! PNML (Petri Net Markup Language) import/export for wasm4pm.
 //!
 //! Supports the PNML standard for exchanging Petri nets between tools.
-//! Uses `roxmltree` for XML parsing (consistent with the rest of wasm4pm).
+//! Uses `quick-xml` for XML parsing (two-pass algorithm ported from rust4pm).
 //!
 //! # Public API
 //!
@@ -13,6 +13,8 @@ use crate::error::{codes, wasm_err};
 use crate::models::{PetriNet, PetriNetArc, PetriNetPlace, PetriNetTransition};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
+use quick_xml::events::Event;
+use quick_xml::Reader;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
@@ -20,186 +22,514 @@ use wasm_bindgen::prelude::*;
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Extract the first text content from a `<text>` child of `node`.
-fn text_of(node: roxmltree::Node) -> Option<String> {
-    for child in node.children() {
-        if child.tag_name().name() == "text" {
-            return Some(child.text().unwrap_or("").trim().to_string());
-        }
-    }
-    None
-}
-
 /// Try to parse a string as `usize`.
 fn parse_usize(s: &str) -> Option<usize> {
     s.trim().parse::<usize>().ok()
 }
 
 // ---------------------------------------------------------------------------
-// from_pnml
+// from_pnml  (two-pass quick-xml parser, ported from rust4pm)
 // ---------------------------------------------------------------------------
+
+/// Parser state for the two-pass SAX-style parser.
+#[derive(Debug, Clone, PartialEq)]
+enum ParseState {
+    Root,
+    /// Inside a <place id="..."> element
+    Place,
+    /// Inside <place> > <name>
+    PlaceName,
+    /// Inside <place> > <name> > <text>  (ready to capture label)
+    PlaceNameText,
+    /// Inside <place> > <initialMarking>
+    PlaceInitialMarking,
+    /// Inside <place> > <initialMarking> > <text>
+    PlaceInitialMarkingText,
+    /// Inside a <transition id="..."> element
+    Transition,
+    /// Inside <transition> > <name>
+    TransitionName,
+    /// Inside <transition> > <name> > <text>
+    TransitionNameText,
+    /// Inside an <arc ...> element
+    Arc,
+    /// Inside <arc> > <inscription>
+    ArcInscription,
+    /// Inside <arc> > <inscription> > <text>
+    ArcInscriptionText,
+    /// Inside a top-level <initialMarking> (standalone, not inside a place)
+    InitialMarking,
+    /// Inside <initialMarking> > <place idref="...">
+    InitialMarkingPlace,
+    /// Inside <initialMarking> > <place> > <text>
+    InitialMarkingPlaceText,
+    /// Inside <finalmarkings>
+    FinalMarkings,
+    /// Inside <finalmarkings> > <marking>
+    FinalMarkingsMarking,
+    /// Inside <finalmarkings> > <marking> > <place idref="...">
+    FinalMarkingsMarkingPlace,
+    /// Inside <finalmarkings> > <marking> > <place> > <text>
+    FinalMarkingsMarkingPlaceText,
+}
+
+/// Intermediate place data collected in pass 1.
+struct PlaceData {
+    id: String,
+    label: Option<String>,
+    marking: Option<usize>,
+    /// Whether a <name> child was seen at all
+    has_name: bool,
+}
+
+/// Intermediate transition data collected in pass 1.
+struct TransitionData {
+    id: String,
+    label: Option<String>,
+    /// Label from `name` attribute (fallback)
+    name_attr: Option<String>,
+    /// Whether a <name> child was seen at all
+    has_name: bool,
+    is_silent: bool,
+}
+
+/// Intermediate arc data collected in pass 1.
+struct ArcData {
+    source: String,
+    target: String,
+    weight: Option<usize>,
+}
 
 /// Parse a PNML XML string into a [`PetriNet`].
 ///
-/// Handles `<place>`, `<transition>`, `<arc>`, `<initialMarking>`, and
-/// `<finalmarkings>` elements.  Labels are read from `<name><text>` children;
-/// initial markings from `<initialMarking><text>` children; arc weights from
-/// `<inscription><text>` children.
+/// Uses a two-pass algorithm (ported from rust4pm): pass 1 collects raw data
+/// via quick-xml SAX events; pass 2 builds the PetriNet from the collected data.
 ///
 /// # Errors
 ///
 /// Returns a `String` describing the parse failure (malformed XML or missing
-/// required attributes).
+/// required `<net>` element).
 pub fn from_pnml(pnml_string: &str) -> Result<PetriNet, String> {
-    let doc = roxmltree::Document::parse(pnml_string)
-        .map_err(|e| format!("Failed to parse PNML XML: {}", e))?;
+    // -----------------------------------------------------------------------
+    // Pass 1: collect raw data
+    // -----------------------------------------------------------------------
+    let mut reader = Reader::from_str(pnml_string);
+    reader.config_mut().trim_text(true);
 
+    let mut state = ParseState::Root;
+
+    let mut places: Vec<PlaceData> = Vec::new();
+    let mut transitions: Vec<TransitionData> = Vec::new();
+    let mut raw_arcs: Vec<ArcData> = Vec::new();
+    let mut initial_marking: HashMap<String, usize> = HashMap::new();
+    let mut final_markings: Vec<HashMap<String, usize>> = Vec::new();
+
+    // Scratch vars used while building the current element
+    let mut cur_place_id = String::new();
+    let mut cur_place_label: Option<String> = None;
+    let mut cur_place_marking: Option<usize> = None;
+    let mut cur_place_has_name = false;
+
+    let mut cur_trans_id = String::new();
+    let mut cur_trans_label: Option<String> = None;
+    let mut cur_trans_name_attr: Option<String> = None;
+    let mut cur_trans_has_name = false;
+    let mut cur_trans_is_silent = false;
+
+    let mut cur_arc_source = String::new();
+    let mut cur_arc_target = String::new();
+    let mut cur_arc_weight: Option<usize> = None;
+
+    // For marking contexts
+    let mut cur_marking_idref = String::new();
+    let mut cur_im_place_idref = String::new();
+    let mut cur_fm_marking: HashMap<String, usize> = HashMap::new();
+    let mut cur_fm_place_idref = String::new();
+
+    // Track whether we've seen a <net> element at all
+    let mut found_net = false;
+
+    let mut buf = Vec::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(Event::Start(ref e)) => {
+                let tag = std::str::from_utf8(e.name().as_ref())
+                    .unwrap_or("")
+                    .to_string();
+
+                match (state.clone(), tag.as_str()) {
+                    // net / page — just mark found and stay at Root
+                    (ParseState::Root, "net") => {
+                        found_net = true;
+                    }
+                    (ParseState::Root, "page") => {}
+
+                    // --- place ---
+                    (ParseState::Root, "place") => {
+                        cur_place_id = attr_value(e, b"id").unwrap_or_default();
+                        cur_place_label = None;
+                        cur_place_marking = None;
+                        cur_place_has_name = false;
+                        state = ParseState::Place;
+                    }
+                    (ParseState::Place, "name") => {
+                        cur_place_has_name = true;
+                        state = ParseState::PlaceName;
+                    }
+                    (ParseState::PlaceName, "text") => {
+                        state = ParseState::PlaceNameText;
+                    }
+                    (ParseState::Place, "initialMarking") => {
+                        state = ParseState::PlaceInitialMarking;
+                    }
+                    (ParseState::PlaceInitialMarking, "text") => {
+                        state = ParseState::PlaceInitialMarkingText;
+                    }
+
+                    // --- transition ---
+                    (ParseState::Root, "transition") => {
+                        cur_trans_id = attr_value(e, b"id").unwrap_or_default();
+                        cur_trans_label = None;
+                        cur_trans_name_attr = attr_value(e, b"name");
+                        cur_trans_has_name = false;
+                        cur_trans_is_silent = false;
+                        // Check toolspecific silent marker (not in Start — handled in Empty)
+                        state = ParseState::Transition;
+                    }
+                    (ParseState::Transition, "name") => {
+                        cur_trans_has_name = true;
+                        state = ParseState::TransitionName;
+                    }
+                    (ParseState::TransitionName, "text") => {
+                        state = ParseState::TransitionNameText;
+                    }
+                    (ParseState::Transition, "toolspecific") => {
+                        // Check activity="$invisible$"
+                        if attr_value(e, b"activity")
+                            .map(|v| v == "$invisible$")
+                            .unwrap_or(false)
+                        {
+                            cur_trans_is_silent = true;
+                        }
+                    }
+
+                    // --- arc ---
+                    (ParseState::Root, "arc") => {
+                        cur_arc_source = attr_value(e, b"source").unwrap_or_default();
+                        cur_arc_target = attr_value(e, b"target").unwrap_or_default();
+                        cur_arc_weight = None;
+                        state = ParseState::Arc;
+                    }
+                    (ParseState::Arc, "inscription") => {
+                        state = ParseState::ArcInscription;
+                    }
+                    (ParseState::ArcInscription, "text") => {
+                        state = ParseState::ArcInscriptionText;
+                    }
+
+                    // --- top-level initialMarking ---
+                    (ParseState::Root, "initialMarking") => {
+                        state = ParseState::InitialMarking;
+                    }
+                    (ParseState::InitialMarking, "place") => {
+                        cur_im_place_idref = attr_value(e, b"idref").unwrap_or_default();
+                        state = ParseState::InitialMarkingPlace;
+                    }
+                    (ParseState::InitialMarkingPlace, "text") => {
+                        state = ParseState::InitialMarkingPlaceText;
+                    }
+
+                    // --- finalmarkings ---
+                    (ParseState::Root, "finalmarkings") => {
+                        state = ParseState::FinalMarkings;
+                    }
+                    (ParseState::FinalMarkings, "marking") => {
+                        cur_fm_marking = HashMap::new();
+                        state = ParseState::FinalMarkingsMarking;
+                    }
+                    (ParseState::FinalMarkingsMarking, "place") => {
+                        cur_fm_place_idref = attr_value(e, b"idref").unwrap_or_default();
+                        state = ParseState::FinalMarkingsMarkingPlace;
+                    }
+                    (ParseState::FinalMarkingsMarkingPlace, "text") => {
+                        state = ParseState::FinalMarkingsMarkingPlaceText;
+                    }
+
+                    _ => {}
+                }
+            }
+
+            Ok(Event::Empty(ref e)) => {
+                // Self-closing tags like <place id="p1"/>  or <page id="page1"/>
+                let tag = std::str::from_utf8(e.name().as_ref())
+                    .unwrap_or("")
+                    .to_string();
+
+                match (state.clone(), tag.as_str()) {
+                    (ParseState::Root, "net") => {
+                        found_net = true;
+                    }
+                    (ParseState::Root, "place") => {
+                        let id = attr_value(e, b"id").unwrap_or_default();
+                        if !id.is_empty() {
+                            places.push(PlaceData {
+                                label: None,
+                                marking: None,
+                                has_name: false,
+                                id,
+                            });
+                        }
+                    }
+                    (ParseState::Root, "transition") => {
+                        let id = attr_value(e, b"id").unwrap_or_default();
+                        if !id.is_empty() {
+                            let name_attr = attr_value(e, b"name");
+                            transitions.push(TransitionData {
+                                id,
+                                label: None,
+                                name_attr,
+                                has_name: false,
+                                is_silent: false,
+                            });
+                        }
+                    }
+                    (ParseState::Root, "arc") => {
+                        let source = attr_value(e, b"source").unwrap_or_default();
+                        let target = attr_value(e, b"target").unwrap_or_default();
+                        if !source.is_empty() && !target.is_empty() {
+                            raw_arcs.push(ArcData { source, target, weight: None });
+                        }
+                    }
+                    (ParseState::Transition, "toolspecific") => {
+                        if attr_value(e, b"activity")
+                            .map(|v| v == "$invisible$")
+                            .unwrap_or(false)
+                        {
+                            cur_trans_is_silent = true;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            Ok(Event::Text(ref e)) => {
+                let text = e.unescape().unwrap_or_default().trim().to_string();
+                if text.is_empty() {
+                    buf.clear();
+                    continue;
+                }
+                match state {
+                    ParseState::PlaceNameText => {
+                        cur_place_label = Some(text);
+                    }
+                    ParseState::PlaceInitialMarkingText => {
+                        cur_place_marking = parse_usize(&text);
+                    }
+                    ParseState::TransitionNameText => {
+                        cur_trans_label = Some(text);
+                    }
+                    ParseState::ArcInscriptionText => {
+                        cur_arc_weight = parse_usize(&text);
+                    }
+                    ParseState::InitialMarkingPlaceText => {
+                        if let Some(tokens) = parse_usize(&text) {
+                            if tokens > 0 && !cur_im_place_idref.is_empty() {
+                                initial_marking.insert(cur_im_place_idref.clone(), tokens);
+                            }
+                        }
+                    }
+                    ParseState::FinalMarkingsMarkingPlaceText => {
+                        if let Some(tokens) = parse_usize(&text) {
+                            if tokens > 0 && !cur_fm_place_idref.is_empty() {
+                                cur_fm_marking.insert(cur_fm_place_idref.clone(), tokens);
+                            }
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            Ok(Event::End(ref e)) => {
+                let tag = std::str::from_utf8(e.name().as_ref())
+                    .unwrap_or("")
+                    .to_string();
+
+                match (state.clone(), tag.as_str()) {
+                    // --- place ---
+                    (ParseState::PlaceNameText, "text") => {
+                        state = ParseState::PlaceName;
+                    }
+                    (ParseState::PlaceName, "name") => {
+                        state = ParseState::Place;
+                    }
+                    (ParseState::PlaceInitialMarkingText, "text") => {
+                        state = ParseState::PlaceInitialMarking;
+                    }
+                    (ParseState::PlaceInitialMarking, "initialMarking") => {
+                        state = ParseState::Place;
+                    }
+                    (ParseState::Place, "place") => {
+                        if !cur_place_id.is_empty() {
+                            places.push(PlaceData {
+                                id: cur_place_id.clone(),
+                                label: cur_place_label.clone(),
+                                marking: cur_place_marking,
+                                has_name: cur_place_has_name,
+                            });
+                        }
+                        state = ParseState::Root;
+                    }
+
+                    // --- transition ---
+                    (ParseState::TransitionNameText, "text") => {
+                        state = ParseState::TransitionName;
+                    }
+                    (ParseState::TransitionName, "name") => {
+                        state = ParseState::Transition;
+                    }
+                    (ParseState::Transition, "toolspecific") => {}
+                    (ParseState::Transition, "transition") => {
+                        if !cur_trans_id.is_empty() {
+                            transitions.push(TransitionData {
+                                id: cur_trans_id.clone(),
+                                label: cur_trans_label.clone(),
+                                name_attr: cur_trans_name_attr.clone(),
+                                has_name: cur_trans_has_name,
+                                is_silent: cur_trans_is_silent,
+                            });
+                        }
+                        state = ParseState::Root;
+                    }
+
+                    // --- arc ---
+                    (ParseState::ArcInscriptionText, "text") => {
+                        state = ParseState::ArcInscription;
+                    }
+                    (ParseState::ArcInscription, "inscription") => {
+                        state = ParseState::Arc;
+                    }
+                    (ParseState::Arc, "arc") => {
+                        if !cur_arc_source.is_empty() && !cur_arc_target.is_empty() {
+                            raw_arcs.push(ArcData {
+                                source: cur_arc_source.clone(),
+                                target: cur_arc_target.clone(),
+                                weight: cur_arc_weight,
+                            });
+                        }
+                        state = ParseState::Root;
+                    }
+
+                    // --- initialMarking ---
+                    (ParseState::InitialMarkingPlaceText, "text") => {
+                        state = ParseState::InitialMarkingPlace;
+                    }
+                    (ParseState::InitialMarkingPlace, "place") => {
+                        state = ParseState::InitialMarking;
+                    }
+                    (ParseState::InitialMarking, "initialMarking") => {
+                        state = ParseState::Root;
+                    }
+
+                    // --- finalmarkings ---
+                    (ParseState::FinalMarkingsMarkingPlaceText, "text") => {
+                        state = ParseState::FinalMarkingsMarkingPlace;
+                    }
+                    (ParseState::FinalMarkingsMarkingPlace, "place") => {
+                        state = ParseState::FinalMarkingsMarking;
+                    }
+                    (ParseState::FinalMarkingsMarking, "marking") => {
+                        if !cur_fm_marking.is_empty() {
+                            final_markings.push(cur_fm_marking.clone());
+                        }
+                        state = ParseState::FinalMarkings;
+                    }
+                    (ParseState::FinalMarkings, "finalmarkings") => {
+                        state = ParseState::Root;
+                    }
+
+                    // net / page end — stay at Root
+                    (ParseState::Root, "net") | (ParseState::Root, "page") => {}
+
+                    _ => {}
+                }
+            }
+
+            Ok(Event::Eof) => break,
+            Err(e) => return Err(format!("Failed to parse PNML XML: {}", e)),
+            _ => {}
+        }
+        buf.clear();
+    }
+
+    if !found_net {
+        return Err("PNML: missing <net> element".to_string());
+    }
+
+    // -----------------------------------------------------------------------
+    // Pass 2: build PetriNet from collected data
+    // -----------------------------------------------------------------------
     let mut net = PetriNet::new();
 
-    // Walk the tree looking for <net>, <page>, <place>, <transition>, <arc>,
-    // <initialMarking>, <finalmarkings>.
-    let root = doc.root();
-
-    // Find the <net> element.  PNML structure is: document -> pnml -> net.
-    // Descend through the tree to find the first <net> at any depth.
-    let net_node = root
-        .descendants()
-        .find(|n| n.tag_name().name() == "net")
-        .ok_or_else(|| "PNML: missing <net> element".to_string())?;
-
-    // Collect places, transitions, arcs from all <page> children (and
-    // directly under <net> for flat PNML files).
-    let mut containers: Vec<roxmltree::Node> = Vec::new();
-    // The net itself may contain elements directly.
-    containers.push(net_node);
-
-    // Also collect <page> children.
-    for child in net_node.children() {
-        if child.tag_name().name() == "page" {
-            containers.push(child);
-        }
+    for p in places {
+        let label = p
+            .label
+            .unwrap_or_else(|| p.id.clone());
+        net.places.push(PetriNetPlace {
+            id: p.id,
+            label,
+            marking: p.marking,
+        });
     }
 
-    for container in &containers {
-        for node in container.children() {
-            match node.tag_name().name() {
-                "place" => {
-                    let id = node.attribute("id").unwrap_or("").to_string();
-                    if id.is_empty() {
-                        continue;
-                    }
+    for t in transitions {
+        // Determine label: <name><text> wins, then `name` attribute, else id
+        let label = t
+            .label
+            .or(t.name_attr.clone())
+            .unwrap_or_else(|| t.id.clone());
 
-                    // Label from <name><text>
-                    let label = node
-                        .children()
-                        .find(|n| n.tag_name().name() == "name")
-                        .and_then(|name_node| text_of(name_node))
-                        .unwrap_or_else(|| id.clone());
+        // Silent if explicitly marked, or no <name> child and no name attr, or label empty
+        let is_invisible = if t.is_silent
+            || (!t.has_name && t.name_attr.is_none())
+            || label.is_empty()
+        {
+            Some(true)
+        } else {
+            None
+        };
 
-                    // Initial marking from <initialMarking><text>
-                    let marking = node
-                        .children()
-                        .find(|n| n.tag_name().name() == "initialMarking")
-                        .and_then(|im| text_of(im))
-                        .and_then(|t| parse_usize(&t));
-
-                    net.places.push(PetriNetPlace { id, label, marking });
-                }
-                "transition" => {
-                    let id = node.attribute("id").unwrap_or("").to_string();
-                    if id.is_empty() {
-                        continue;
-                    }
-
-                    // Label from <name><text> or the `name` attribute.
-                    let label = node
-                        .children()
-                        .find(|n| n.tag_name().name() == "name")
-                        .and_then(|name_node| text_of(name_node))
-                        .or_else(|| node.attribute("name").map(|s| s.to_string()))
-                        .unwrap_or_else(|| id.clone());
-
-                    // A transition with no label (label == id and no <name>) is
-                    // considered invisible / silent.
-                    let has_name_child = node.children().any(|n| n.tag_name().name() == "name");
-                    let has_name_attr = node.attribute("name").is_some();
-                    let is_invisible = if (!has_name_child && !has_name_attr) || label.is_empty() {
-                        Some(true)
-                    } else {
-                        None
-                    };
-
-                    net.transitions.push(PetriNetTransition {
-                        id,
-                        label,
-                        is_invisible,
-                    });
-                }
-                "arc" => {
-                    let source = node.attribute("source").unwrap_or("").to_string();
-                    let target = node.attribute("target").unwrap_or("").to_string();
-                    if source.is_empty() || target.is_empty() {
-                        continue;
-                    }
-
-                    // Weight from <inscription><text>
-                    let weight = node
-                        .children()
-                        .find(|n| n.tag_name().name() == "inscription")
-                        .and_then(|inscr| text_of(inscr))
-                        .and_then(|t| parse_usize(&t));
-
-                    net.arcs.push(PetriNetArc {
-                        from: source,
-                        to: target,
-                        weight,
-                    });
-                }
-                _ => {}
-            }
-        }
+        net.transitions.push(PetriNetTransition {
+            id: t.id,
+            label,
+            is_invisible,
+        });
     }
 
-    // --- Initial marking (standalone <initialMarking> under <net>) ---
-    for node in net_node.children() {
-        if node.tag_name().name() == "initialMarking" {
-            extract_marking(node, &mut net.initial_marking);
-        }
+    for a in raw_arcs {
+        net.arcs.push(PetriNetArc {
+            from: a.source,
+            to: a.target,
+            weight: a.weight,
+        });
     }
 
-    // --- Final markings (<finalmarkings> under <net>) ---
-    for node in net_node.children() {
-        if node.tag_name().name() == "finalmarkings" {
-            for marking_node in node.children() {
-                if marking_node.tag_name().name() == "marking" {
-                    let mut m: HashMap<String, usize> = HashMap::new();
-                    extract_marking(marking_node, &mut m);
-                    if !m.is_empty() {
-                        net.final_markings.push(m);
-                    }
-                }
-            }
-        }
-    }
+    net.initial_marking = initial_marking;
+    net.final_markings = final_markings;
 
     Ok(net)
 }
 
-/// Extract place-marking pairs from a container that has `<place idref="..."><text>N</text></place>` children.
-fn extract_marking(container: roxmltree::Node, marking: &mut HashMap<String, usize>) {
-    for node in container.children() {
-        if node.tag_name().name() == "place" {
-            if let Some(idref) = node.attribute("idref") {
-                if let Some(text) = text_of(node) {
-                    if let Some(tokens) = parse_usize(&text) {
-                        if tokens > 0 {
-                            marking.insert(idref.to_string(), tokens);
-                        }
-                    }
-                }
-            }
-        }
-    }
+/// Extract an attribute value from a quick-xml BytesStart event.
+fn attr_value(e: &quick_xml::events::BytesStart, name: &[u8]) -> Option<String> {
+    e.attributes()
+        .filter_map(|a| a.ok())
+        .find(|a| a.key.as_ref() == name)
+        .and_then(|a| {
+            std::str::from_utf8(a.value.as_ref())
+                .ok()
+                .map(|s| s.to_string())
+        })
 }
 
 // ---------------------------------------------------------------------------

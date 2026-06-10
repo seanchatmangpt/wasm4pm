@@ -1,0 +1,16 @@
+# Default owner
+* @seanchatmangpt
+
+# Rust/WASM core
+/wasm4pm/src/ @seanchatmangpt
+/crates/ @seanchatmangpt
+Cargo.toml @seanchatmangpt
+
+# Security-sensitive
+SECURITY.md @seanchatmangpt
+LICENSE @seanchatmangpt
+COMMERCIAL_LICENSE.md @seanchatmangpt
+deny.toml @seanchatmangpt
+
+# CI/CD
+/.github/workflows/ @seanchatmangpt

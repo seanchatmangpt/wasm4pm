@@ -57,4 +57,13 @@ else
   echo "✗ Session ended: DEGRADED ($DEFECTS defects) @ $GIT_BRANCH:$GIT_HEAD"
 fi
 
+# Rotate evidence log — keep last 50000 lines
+EVENTS_LOG="$CLAUDE_PROJECT_DIR/.claude/evidence/events.jsonl"
+if [ -f "$EVENTS_LOG" ]; then
+  line_count=$(wc -l < "$EVENTS_LOG")
+  if [ "$line_count" -gt 50000 ]; then
+    tail -n 50000 "$EVENTS_LOG" > "$EVENTS_LOG.tmp" && mv "$EVENTS_LOG.tmp" "$EVENTS_LOG"
+  fi
+fi
+
 exit 0

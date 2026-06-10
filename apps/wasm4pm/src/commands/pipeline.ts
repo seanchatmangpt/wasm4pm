@@ -96,6 +96,15 @@ const BUILTIN_PIPELINES: Record<string, PipelineDefinition> = {
       { step: 'quality', args: {}, description: 'Assess model quality' },
     ],
   },
+  analyze: {
+    name: 'analyze',
+    description: 'Guided 3-step analysis: validate + auto-select discovery + quality',
+    steps: [
+      { step: 'validate', args: {}, description: 'Validate event log structure' },
+      { step: 'run', args: { algorithm: 'inductive_miner' }, description: 'Discover process model (auto-selected)' },
+      { step: 'quality', args: {}, description: 'Assess model quality (4 dimensions)' },
+    ],
+  },
 };
 
 // ─── Known valid pipeline steps ───────────────────────────────────────────────

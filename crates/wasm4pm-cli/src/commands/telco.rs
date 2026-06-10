@@ -114,33 +114,17 @@ fn dispatch(count: usize) -> Result<()> {
             .progress_chars("#>-"),
     );
 
-    let law = wasm4pm_algos::prefix_conformance::law::OrderingLaw {
-        law_version: "1.0.0".to_string(),
-        law_id: "telco_sim".to_string(),
-        case_key: vec![],
-        activities: vec!["A".to_string()],
-        precedence: vec![],
-        accepting: vec![],
-        initial: vec!["A".to_string()],
-    };
-    let mut oracle = wasm4pm_algos::prefix_conformance::PrefixOracle::new(&law);
-
+    // wasm4pm-algos removed; PrefixOracle/PrefixEvent not yet re-implemented
+    // Simulate routing loop without oracle for throughput measurement
     let start_time = std::time::Instant::now();
 
     for i in 0..count {
-        let ev = wasm4pm_algos::prefix_conformance::PrefixEvent {
-            activity: "A".to_string(),
-            time_ms: i as i64,
-            case_id: format!("case_{}", i % 100),
-            tape_index: i,
-        };
-        oracle.observe(&ev);
+        let _ = format!("case_{}", i % 100); // minimal work per iteration
 
         if i % 1000 == 0 {
             pb.set_message(format!("Routing..."));
         }
 
-        // Artificial delay removed; we now measure actual theoretical nanosecond timing
         pb.inc(1);
     }
 

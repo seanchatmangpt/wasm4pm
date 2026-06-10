@@ -7,6 +7,7 @@ import { withSpan } from './_otel.js';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
+import { withLogSession } from '../with-log-session.js';
 
 export interface PrefixConformancePayload {
   schema: string;
@@ -81,9 +82,28 @@ export const prefixConformance = defineCommand({
         if (prefixArg) {
           prefix = prefixArg.split(',').map((s) => s.trim()).filter(Boolean);
         } else if (inputPath) {
-          // Placeholder for actual file parsing logic depending on the engine
-          // e.g. parse OCEL or XES and extract the first trace as a prefix
-          prefix = ['DiagnosticRaised', 'RouteSelected']; // stub
+          // Use withLogSession to load the log and get the first trace
+          await withLogSession(
+            { inputPath, commandName: 'prefix-conformance', emitOptions: { format } },
+            async (wasm, logHandle) => {
+              const traces = (wasm as Record<string, (...args: string[]) => unknown>).get_traces?.(logHandle, 'concept:name');
+              const parsedTraces = typeof traces === 'string' ? JSON.parse(traces) : traces;
+              if (Array.isArray(parsedTraces) && parsedTraces.length > 0) {
+                prefix = parsedTraces[0];
+              }
+            }
+          );
+          
+          if (prefix.length === 0) {
+            const result = makeErrorResult(
+              'prefix-conformance',
+              new Error(`No traces found in event log: ${inputPath}`),
+              EXIT_CODES.source_error,
+              'EMPTY_LOG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
         } else {
           const result = makeErrorResult(
             'prefix-conformance',
@@ -129,10 +149,40 @@ export const prefixConformance = defineCommand({
             const loadRes = JSON.parse(loadResJson);
             if (loadRes.handle) {
               resolvedModelHandle = loadRes.handle;
+            } else {
+              throw new Error(`Failed to load Petri Net from ${modelHandle}: ${loadResJson}`);
+            }
+          } else {
+            // Try DFG JSON
+            try {
+              const dfg = JSON.parse(content);
+              if (dfg.nodes || dfg.edges) {
+                const handle = wasm.store_dfg_from_json(content);
+                if (handle) {
+                  resolvedModelHandle = handle;
+                } else {
+                  throw new Error(`Failed to store DFG from ${modelHandle}`);
+                }
+              }
+            } catch (e: any) {
+              throw new Error(`Failed to parse model file ${modelHandle} as DFG JSON: ${e.message}`);
             }
           }
-        } catch {
-          // Not a file, keep as is
+        } catch (e: any) {
+          // If it's not a file, check if it's already a valid handle in WASM memory.
+          const exists = wasm.object_exists?.(modelHandle);
+          
+          // If wasm explicitly says it doesn't exist, or if we can't verify it (and file read failed)
+          if (exists === false || exists === undefined) {
+             const result = makeErrorResult(
+              'prefix-conformance',
+              new Error(`Invalid model handle or file path: ${modelHandle}. (File error: ${e.message})`),
+              EXIT_CODES.source_error,
+              'MODEL_NOT_FOUND'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
         }
 
         try {

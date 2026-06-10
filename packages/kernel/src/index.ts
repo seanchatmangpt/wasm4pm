@@ -169,7 +169,6 @@ export { DefaultBackendRegistry } from './backend-registry.js';
 // Concrete backend implementations
 export { WasmBackend } from './backends/wasm-backend.js';
 export { MlBackend } from './backends/ml-backend.js';
-export { Pm4wasmBackend } from './backends/pm4wasm-backend.js';
 
 // Data model converters for pm4wasm integration
 export {

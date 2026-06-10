@@ -57,9 +57,6 @@ importers:
       '@wasm4pm/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase
-      '@wasm4pm/swarm':
-        specifier: workspace:*
-        version: link:../../packages/swarm
       ajv:
         specifier: ^8.12.0
         version: 8.20.0
@@ -88,6 +85,9 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vite-plugin-wasm:
+        specifier: ^3.3.0
+        version: 3.6.0(vite@5.4.21(@types/node@20.19.42))
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
@@ -97,9 +97,15 @@ importers:
       '@wasm4pm/cli':
         specifier: workspace:*
         version: link:../apps/wasm4pm
+      '@wasm4pm/cognition':
+        specifier: workspace:*
+        version: link:../packages/cognition
       '@wasm4pm/config':
         specifier: workspace:*
         version: link:../packages/config
+      '@wasm4pm/core':
+        specifier: workspace:*
+        version: link:../wasm4pm
       '@wasm4pm/engine':
         specifier: workspace:*
         version: link:../packages/engine
@@ -112,9 +118,6 @@ importers:
       '@wasm4pm/planner':
         specifier: workspace:*
         version: link:../packages/planner
-      '@wasm4pm/swarm':
-        specifier: workspace:*
-        version: link:../packages/swarm
       '@wasm4pm/testing':
         specifier: workspace:*
         version: link:../packages/testing
@@ -125,9 +128,15 @@ importers:
       '@types/node':
         specifier: ^18.0.0
         version: 18.19.130
+      blake3:
+        specifier: ^2.1.4
+        version: 2.1.7
       eslint:
         specifier: ^8.0.0
         version: 8.57.1
+      pathe:
+        specifier: ^2.0.3
+        version: 2.0.3
       ts-node:
         specifier: ^10.9.0
         version: 10.9.2(@types/node@18.19.130)(typescript@5.9.3)
@@ -170,7 +179,7 @@ importers:
         version: link:../kernel
     devDependencies:
       typescript:
-        specifier: ^5.7.0
+        specifier: ^5.3.3
         version: 5.9.3
       vitest:
         specifier: ^1.6.0
@@ -287,31 +296,15 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vite-plugin-wasm:
+        specifier: ^3.3.0
+        version: 3.6.0(vite@5.4.21(@types/node@20.19.42))
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
       wasm4pm:
         specifier: workspace:*
         version: link:../kernel
-
-  packages/examples-zoe-la:
-    dependencies:
-      '@wasm4pm/cognition':
-        specifier: workspace:*
-        version: link:../cognition
-      wasm4pm:
-        specifier: workspace:*
-        version: link:../kernel
-    devDependencies:
-      '@types/node':
-        specifier: ^25.9.1
-        version: 25.9.2
-      tsx:
-        specifier: ^4.22.3
-        version: 4.22.4
-      typescript:
-        specifier: ^6.0.3
-        version: 6.0.3
 
   packages/kernel:
     dependencies:
@@ -428,60 +421,11 @@ importers:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
 
-  packages/swarm:
-    dependencies:
-      '@ai-sdk/groq':
-        specifier: ^3.0.35
-        version: 3.0.39(zod@3.25.76)
-      '@modelcontextprotocol/sdk':
-        specifier: ^1.10.2
-        version: 1.29.0(zod@3.25.76)
-      '@wasm4pm/contracts':
-        specifier: workspace:*
-        version: link:../contracts
-      '@wasm4pm/observability':
-        specifier: workspace:*
-        version: link:../observability
-      ai:
-        specifier: ^6.0.168
-        version: 6.0.198(zod@3.25.76)
-      smol-toml:
-        specifier: ^1.3.4
-        version: 1.6.1
-      uuid:
-        specifier: ^11.1.1
-        version: 11.1.1
-      wasm4pm:
-        specifier: workspace:*
-        version: link:../kernel
-      zod:
-        specifier: ^3.25.0
-        version: 3.25.76
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.42
-      '@types/uuid':
-        specifier: ^10.0.0
-        version: 10.0.0
-      '@vitest/coverage-v8':
-        specifier: ^1.6.0
-        version: 1.6.1(vitest@1.6.1)
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-      vitest:
-        specifier: ^1.1.0
-        version: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
-
   packages/testing:
     dependencies:
       '@wasm4pm/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@wasm4pm/swarm':
-        specifier: workspace:*
-        version: link:../swarm
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -492,6 +436,9 @@ importers:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
+      vite-plugin-wasm:
+        specifier: ^3.3.0
+        version: 3.6.0(vite@5.4.21(@types/node@20.19.42))
       vitest:
         specifier: ^1.1.0
         version: 1.6.1(@types/node@20.19.42)(@vitest/browser@1.6.1)
@@ -499,26 +446,26 @@ importers:
   playground:
     dependencies:
       '@wasm4pm/config':
-        specifier: file:../packages/config
-        version: file:packages/config
+        specifier: workspace:*
+        version: link:../packages/config
       '@wasm4pm/contracts':
-        specifier: file:../packages/contracts
+        specifier: workspace:*
         version: link:../packages/contracts
       '@wasm4pm/engine':
-        specifier: file:../packages/engine
-        version: file:packages/engine
+        specifier: workspace:*
+        version: link:../packages/engine
       '@wasm4pm/observability':
-        specifier: file:../packages/observability
+        specifier: workspace:*
         version: link:../packages/observability
       '@wasm4pm/planner':
-        specifier: file:../packages/planner
-        version: file:packages/planner
+        specifier: workspace:*
+        version: link:../packages/planner
       '@wasm4pm/testing':
-        specifier: file:../packages/testing
-        version: file:packages/testing
+        specifier: workspace:*
+        version: link:../packages/testing
       wasm4pm:
-        specifier: file:../packages/kernel
-        version: file:packages/kernel
+        specifier: workspace:*
+        version: link:../packages/kernel
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -572,6 +519,9 @@ importers:
         specifier: workspace:*
         version: link:../packages/ml
     devDependencies:
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.0.0
+        version: 1.29.0(zod@3.25.76)
       '@testing-library/dom':
         specifier: ^9.3.3
         version: 9.3.4
@@ -610,28 +560,6 @@ packages:
 
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
-
-  '@ai-sdk/gateway@3.0.126':
-    resolution: {integrity: sha512-OHwcwdVkzLo7Rx4eeFyyH3e/vlsYg11HIgKPf5yH6jkptI1Kzq8BX9xZPIBq4BrLBTF2p6pgvWqRfy6AvARGkQ==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/groq@3.0.39':
-    resolution: {integrity: sha512-BZAr6DjCbzWQ0Qn1/TSsHo/bmCt4JaAMb4A7HCSUZBQCAcOjne/03D0sVjHnQhUC3TpwcmYiv7tHAviK7BluRw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider-utils@4.0.27':
-    resolution: {integrity: sha512-ubkAJ+xODouwtmN1tYlvTPphH1hPOBfZaEQe8U7skGvFAnIRs9PPpsq57bC2+Ky/MB4yzhd6YOsxTAx9sGpazw==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
-
-  '@ai-sdk/provider@3.0.10':
-    resolution: {integrity: sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw==}
-    engines: {node: '>=18'}
 
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
@@ -1260,9 +1188,6 @@ packages:
   '@sinclair/typebox@0.27.10':
     resolution: {integrity: sha512-MTBk/3jGLNB2tVxv6uLlFh1iu64iYOQ2PbdOSK3NW8JZsmlaOh2q6sdtKowBhfw8QFLmYNzTW4/oK4uATIi6ZA==}
 
-  '@standard-schema/spec@1.1.0':
-    resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
-
   '@supabase/auth-js@2.108.0':
     resolution: {integrity: sha512-0CzVGVqHfNOhRQVEcAmu58Mex2Ce0zL3aGfyV+iFQjTK6OntLK/hLCLr/VDRX0E8/2CdsiY99L7fZ/8ys/op4w==}
     engines: {node: '>=20.0.0'}
@@ -1346,10 +1271,6 @@ packages:
   '@ungap/structured-clone@1.3.1':
     resolution: {integrity: sha512-mUFwbeTqrVgDQxFveS+df2yfap6iuP20NAKAsBt5jDEoOTDew+zwLAOilHCeQJOVSvmgCX4ogqIrA0mnyr08yQ==}
 
-  '@vercel/oidc@3.2.0':
-    resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
-    engines: {node: '>= 20'}
-
   '@vitest/browser@1.6.1':
     resolution: {integrity: sha512-9ZYW6KQ30hJ+rIfJoGH4wAub/KAb4YrFzX0kVLASvTm7nJWVC5EAv5SlzlXVl3h3DaUq5aqHlZl77nmOPnALUQ==}
     peerDependencies:
@@ -1385,18 +1306,6 @@ packages:
   '@vitest/utils@1.6.1':
     resolution: {integrity: sha512-jOrrUvXM4Av9ZWiG1EajNto0u96kWAhJ1LmPmJhXXQx/32MecEKd10pOLYgS2BQx1TgkGhloPU1ArDW2vvaY6g==}
 
-  '@wasm4pm/config@file:packages/config':
-    resolution: {directory: packages/config, type: directory}
-
-  '@wasm4pm/engine@file:packages/engine':
-    resolution: {directory: packages/engine, type: directory}
-
-  '@wasm4pm/planner@file:packages/planner':
-    resolution: {directory: packages/planner, type: directory}
-
-  '@wasm4pm/testing@file:packages/testing':
-    resolution: {directory: packages/testing, type: directory}
-
   abort-controller@3.0.0:
     resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
     engines: {node: '>=6.5'}
@@ -1418,12 +1327,6 @@ packages:
     resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-
-  ai@6.0.198:
-    resolution: {integrity: sha512-NEXlYGu3n7VTG6cn3SAeimfy60FLH/R5uRpl7zqDu0BLtIuoY1lALBGoJzltoVqd/iFQH1asIy/VqZqLPDWv0w==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.25.76 || ^4.1.8
 
   ajv-formats@3.0.1:
     resolution: {integrity: sha512-8iUql50EUR+uUcdRQ3HDqa6EVyo3docL8g5WJ3FNcWmu62IbkGUue/pEyLBW8VGKKucTPgqeks4fIU1DA4yowQ==}
@@ -2259,9 +2162,6 @@ packages:
   json-schema-typed@8.0.2:
     resolution: {integrity: sha512-fQhoXdcvc3V28x7C7BMs4P5+kNlgUURe2jmUT1T//oBRMDrqy1QPelJimwZGo7Hg9VPV3EQV5Bnq4hbFy2vetA==}
 
-  json-schema@0.4.0:
-    resolution: {integrity: sha512-es94M3nTIfsEPisRafak+HDLfHXnKBhV3vU5eqPcS3flIWqcxJWgXHXiey3YrpaNsanY5ei1VoYEbOzijuq9BA==}
-
   json-stable-stringify-without-jsonify@1.0.1:
     resolution: {integrity: sha512-Bdboy+l7tA3OGW6FjyFHWkP5LuByj1Tk33Ljyq0axyzdk9//JSi2u3fP1QSmd1KNwq6VOKYGlAu87CisVir6Pw==}
 
@@ -2743,10 +2643,6 @@ packages:
     resolution: {integrity: sha512-94Bdh3cC2PKrbgSOUqTiGPWVZeSiXfKOVZNJniWoqrWrRkB1CJzBU3NEbiTsPcYy1lDsANA/THzS+9WBiy5nfQ==}
     engines: {node: '>= 10'}
 
-  smol-toml@1.6.1:
-    resolution: {integrity: sha512-dWUG8F5sIIARXih1DTaQAX4SsiTXhInKf1buxdY9DIg4ZYPZK5nGM1VRIYmEbDbsHt7USo99xSLFu5Q1IqTmsg==}
-    engines: {node: '>= 18'}
-
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -2927,11 +2823,6 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@6.0.3:
-    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
   ufo@1.6.4:
     resolution: {integrity: sha512-JFNbkD1Svwe0KvGi8GOeLcP4kAWQ609twvCdcHxq1oSL8svv39ZuSvajcD8B+5D0eL4+s1Is2D/O6KN3qcTeRA==}
 
@@ -3046,9 +2937,6 @@ packages:
   vscode-textmate@8.0.0:
     resolution: {integrity: sha512-AFbieoL7a5LMqcnOF04ji+rpXadgOXnZsxQr//r83kLPr7biP7am3g9zbaZIaBGwBRWeSvoMD4mgPdX3e4NWBg==}
 
-  wasm4pm@file:packages/kernel:
-    resolution: {directory: packages/kernel, type: directory}
-
   which-boxed-primitive@1.1.1:
     resolution: {integrity: sha512-TbX3mj8n0odCBFVlY8AxkqcHASw3L60jIuF8jFP78az3C2YhmGvqbHBpAjTRH2/xqYunrJ9g1jSyjCjpoWzIAA==}
     engines: {node: '>= 0.4'}
@@ -3130,30 +3018,6 @@ packages:
 snapshots:
 
   '@adobe/css-tools@4.5.0': {}
-
-  '@ai-sdk/gateway@3.0.126(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      '@vercel/oidc': 3.2.0
-      zod: 3.25.76
-
-  '@ai-sdk/groq@3.0.39(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      zod: 3.25.76
-
-  '@ai-sdk/provider-utils@4.0.27(zod@3.25.76)':
-    dependencies:
-      '@ai-sdk/provider': 3.0.10
-      '@standard-schema/spec': 1.1.0
-      eventsource-parser: 3.1.0
-      zod: 3.25.76
-
-  '@ai-sdk/provider@3.0.10':
-    dependencies:
-      json-schema: 0.4.0
 
   '@ampproject/remapping@2.3.0':
     dependencies:
@@ -3574,8 +3438,6 @@ snapshots:
 
   '@sinclair/typebox@0.27.10': {}
 
-  '@standard-schema/spec@1.1.0': {}
-
   '@supabase/auth-js@2.108.0':
     dependencies:
       tslib: 2.8.1
@@ -3662,6 +3524,7 @@ snapshots:
   '@types/node@25.9.2':
     dependencies:
       undici-types: 7.24.6
+    optional: true
 
   '@types/ssh2-streams@0.1.13':
     dependencies:
@@ -3679,8 +3542,6 @@ snapshots:
   '@types/uuid@10.0.0': {}
 
   '@ungap/structured-clone@1.3.1': {}
-
-  '@vercel/oidc@3.2.0': {}
 
   '@vitest/browser@1.6.1(playwright@1.60.0)(vitest@1.6.1)':
     dependencies:
@@ -3739,32 +3600,6 @@ snapshots:
       loupe: 2.3.7
       pretty-format: 29.7.0
 
-  '@wasm4pm/config@file:packages/config':
-    dependencies:
-      '@wasm4pm/contracts': link:packages/contracts
-      blake3: 2.1.7
-      toml: 3.0.0
-      zod: 3.25.76
-
-  '@wasm4pm/engine@file:packages/engine':
-    dependencies:
-      '@wasm4pm/config': link:packages/config
-      '@wasm4pm/contracts': link:packages/contracts
-      '@wasm4pm/observability': link:packages/observability
-      blake3: 2.1.7
-      uuid: 10.0.0
-
-  '@wasm4pm/planner@file:packages/planner':
-    dependencies:
-      '@wasm4pm/contracts': link:packages/contracts
-      blake3: 2.1.7
-      uuid: 11.1.1
-
-  '@wasm4pm/testing@file:packages/testing':
-    dependencies:
-      '@wasm4pm/contracts': link:packages/contracts
-      '@wasm4pm/swarm': link:packages/swarm
-
   abort-controller@3.0.0:
     dependencies:
       event-target-shim: 5.0.1
@@ -3783,14 +3618,6 @@ snapshots:
       acorn: 8.16.0
 
   acorn@8.16.0: {}
-
-  ai@6.0.198(zod@3.25.76):
-    dependencies:
-      '@ai-sdk/gateway': 3.0.126(zod@3.25.76)
-      '@ai-sdk/provider': 3.0.10
-      '@ai-sdk/provider-utils': 4.0.27(zod@3.25.76)
-      '@opentelemetry/api': 1.9.1
-      zod: 3.25.76
 
   ajv-formats@3.0.1(ajv@8.20.0):
     optionalDependencies:
@@ -4735,8 +4562,6 @@ snapshots:
 
   json-schema-typed@8.0.2: {}
 
-  json-schema@0.4.0: {}
-
   json-stable-stringify-without-jsonify@1.0.1: {}
 
   jsonc-parser@3.3.1: {}
@@ -5258,8 +5083,6 @@ snapshots:
       mrmime: 2.0.1
       totalist: 3.0.1
 
-  smol-toml@1.6.1: {}
-
   source-map-js@1.2.1: {}
 
   split-ca@1.0.1: {}
@@ -5489,15 +5312,14 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  typescript@6.0.3: {}
-
   ufo@1.6.4: {}
 
   undici-types@5.26.5: {}
 
   undici-types@6.21.0: {}
 
-  undici-types@7.24.6: {}
+  undici-types@7.24.6:
+    optional: true
 
   undici@5.29.0:
     dependencies:
@@ -5654,14 +5476,6 @@ snapshots:
   vscode-oniguruma@1.7.0: {}
 
   vscode-textmate@8.0.0: {}
-
-  wasm4pm@file:packages/kernel:
-    dependencies:
-      '@wasm4pm/contracts': link:packages/contracts
-      '@wasm4pm/core': link:wasm4pm
-      '@wasm4pm/ml': link:packages/ml
-      '@wasm4pm/planner': link:packages/planner
-      zod: 3.25.76
 
   which-boxed-primitive@1.1.1:
     dependencies:

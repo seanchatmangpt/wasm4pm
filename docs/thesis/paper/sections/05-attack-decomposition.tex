@@ -1,0 +1,161 @@
+The propositions of Section~\ref{sec:inaccessibility} hold \emph{conditionally}
+on the assumption ledger of the threat model. This section makes the ledger
+quantitative: we bound the adversary's success probability by a union over
+seven named channels, characterise each channel's type and mitigation, and
+discuss the residual risk that no formal framework removes.
+
+\begin{theorem}[Attack-Surface Decomposition]
+\label{thm:decomp}
+The probability that any invalid change is accepted satisfies
+\begin{align*}
+  \Pr[\exists\, x \notin \Aent : \accept(x) = 1] \;\leq\;\;
+  &\Pr[\textnormal{signature forgery}] \\
+  +\;&\Pr[\textnormal{receipt forgery}] \\
+  +\;&\Pr[\textnormal{boundary-map gap}] \\
+  +\;&\Pr[\textnormal{policy-content gap}] \\
+  +\;&\Pr[\textnormal{validator compromise}] \\
+  +\;&\Pr[\textnormal{object-model gap}] \\
+  +\;&\Pr[\textnormal{gate implementation defect}].
+\end{align*}
+\end{theorem}
+\begin{proof}
+An accepted invalid change requires at least one conjunct C1--C7 of
+Definition~\ref{def:accept} to evaluate incorrectly --- either the predicate's
+mathematical content is broken (its underlying hardness assumption fails) or
+its evaluation is wrong (the component computing it is compromised or
+defective). Enumerating the conjuncts: C1 fails only under signature forgery;
+C2 under receipt forgery (hash preimage/collision or substance-check bypass);
+C6 under an incomplete boundary map; C3 under incorrect policy content; C4's
+guarantee is void under validator compromise; C7 under an imprecise object
+model; and any conjunct's evaluation under a gate implementation defect. The
+union bound over these events gives the inequality.
+\end{proof}
+
+\subsection{Channel Characterisation}
+\label{sec:channels}
+
+Table~\ref{tab:channels} classifies the channels; we discuss each.
+
+\begin{table}[t]
+\centering
+\caption{The seven break channels: type, bounding factor, and primary mitigation.}
+\label{tab:channels}
+\begin{tabularx}{\textwidth}{lllX}
+\toprule
+\textbf{Channel} & \textbf{Type} & \textbf{Bounded by} & \textbf{Primary mitigation}\\
+\midrule
+Signature forgery     & cryptographic   & EUF-CMA of ML-DSA      & FIPS 204/205 primitives; crypto-agility\\
+Receipt forgery       & cryptographic   & BLAKE3 (2nd-)preimage  & substance axiom; canonical hashing\\
+Boundary-map gap      & modelling       & process-model fitness   & mining residuals; reachability analysis\\
+Policy-content gap    & operational     & policy review quality   & policy changes are admitted changes\\
+Validator compromise  & operational     & key custody             & HSM keys; version revocation (C4)\\
+Object-model gap      & modelling       & object-model precision  & OCEL typing; lifecycle checks (C7)\\
+Implementation defect & engineering     & verification depth      & proof-gate tests; determinism; refusal taxonomy\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\paragraph{Signature forgery (cryptographic).}
+The adversary produces a valid signature without the authority key. Under
+EUF-CMA security of ML-DSA (Module-LWE hardness) this probability is negligible
+in the security parameter~\cite{nist_fips_204_2024,bernstein_lange_pqc_2017};
+SLH-DSA provides the hash-based fallback should lattice cryptanalysis
+advance~\cite{nist_fips_205_2024}. Because the channel's assumptions can change
+over decades-long receipt lifetimes, algorithm identifiers are versioned receipt
+fields and the deployment posture follows the crypto-agility maturity
+model~\cite{crypto_agility_maturity_2022}: migration re-signs the chain head,
+never rewrites history.
+
+\paragraph{Receipt forgery (cryptographic).}
+The adversary constructs $R$ with $\verifyreceipt(R) = 1$ for a transition that
+did not occur. The hash route costs a BLAKE3 second preimage ($\geq 2^{128}$
+work). The cheaper historical route --- submitting hashes without substance, or
+a time-shifted clone of a golden fixture --- is closed by
+Definition~\ref{def:valid-receipt}: the refusal states
+\texttt{PathHashOnlyReceipt}, \texttt{FixtureMutationDetected},
+\texttt{SelfCertifiedAlignment}, and the challenge-nonce family
+(Section~\ref{sec:impl-refusals}) are precisely the engineering instantiations
+of this channel's defence.
+
+\paragraph{Boundary-map gap (modelling).}
+A transition that \emph{should} be inadmissible is absent from the declared
+model, so $B(s,e) = 1$ vacuously. This is the channel through which
+``lawful-but-wrong'' changes pass, and it is not cryptographic --- it is bounded
+by the fitness and precision of the declared process model in exactly the sense
+of the conformance literature~\cite{buijs_et_al_quality_dimensions_2012}. The
+mitigation is the residual feedback loop of Corollary~\ref{cor:refuse} combined
+with periodic discovery over the admitted chain
+(Lemma~\ref{lem:chain}); formal reachability analysis of the boundary map
+against the declared workflow net~\cite{van_der_aalst_wfnet_soundness_1997} is
+future work (Section~\ref{sec:conclusion}).
+
+\paragraph{Policy-content gap (operational).}
+The policy version is current, correctly bound, and wrong: it grants an
+authority it should not. Version binding (C3, with $p$ inside $\sigma$)
+eliminates downgrade and substitution attacks, but no mechanism inside the
+framework validates policy \emph{intent}. The structural mitigation is
+reflexivity --- a policy change is itself an admitted change, with its own
+actor, receipt, and chain position --- which makes policy drift minable and
+attributable, in line with change-management traceability
+requirements~\cite{change_mgmt_traceability_2016}.
+
+\paragraph{Validator compromise (operational).}
+The component that evaluates $B$ and seals alignments is subverted; it can then
+admit anything until detected. Containment, not prevention, is the realistic
+posture: validator keys live in HSMs, the validator version $v$ is bound into
+every signature (C4), and revoking a compromised $v$ retroactively identifies
+every change it admitted --- the blast radius is enumerable from the chain
+itself. Maturity frameworks for ML-bearing validators apply
+here~\cite{mlsmm_2023}.
+
+\paragraph{Object-model gap (modelling).}
+The OCEL typing is too coarse to distinguish semantically different objects ---
+e.g., the model checks that \emph{an} invoice is referenced but not that it is
+\emph{the} invoice whose lifecycle the chain records. C7's lifecycle
+consistency check closes the common cases; the channel is bounded by the
+precision of the object model, and richer semantic typing of the kind explored
+in knowledge-graph representations of process
+traces~\cite{process_trace_kg_2024,ocel_xes_sparql_2024} narrows it further.
+
+\paragraph{Gate implementation defect (engineering).}
+The gate code returns $\accept(x) = 1$ erroneously. This channel is bounded by
+verification depth: the reference implementation addresses it with proof-gate
+tests executed on every commit, bit-exact determinism (which makes gate
+behaviour reproducible and therefore testable), and the closed refusal
+taxonomy, which turns ``did we handle this case?'' into an enumerable question
+(Section~\ref{sec:impl}).
+
+\subsection{What the Decomposition Buys}
+\label{sec:decomp-value}
+
+Three properties distinguish this claim structure from conventional security
+assertions.
+
+\emph{Falsifiability.} Each channel names the experiment that would break it.
+A purported counterexample --- an accepted invalid change --- must exhibit
+which conjunct evaluated incorrectly and why, which converts security disputes
+into attributable engineering claims.
+
+\emph{Heterogeneous assurance.} The channels have different epistemic
+statuses: two rest on cryptographic hardness (decades of public cryptanalysis),
+two on modelling fidelity (measurable via conformance metrics), two on
+operational custody (auditable via maturity models~\cite{sok_ccmm_2024}), one
+on software correctness (testable). An assessor can price each independently
+--- which is precisely what enterprise risk frameworks
+require~\cite{ea_security_togaf_2017}.
+
+\emph{Honest residue.} The decomposition states what is \emph{not} guaranteed.
+The boundary-map and policy-content gaps are irreducibly human: the framework
+guarantees that the declared law is enforced exactly, not that the declared law
+is right. We regard this as a feature --- it locates the unavoidable judgement
+where it belongs, in the reviewed, receipted, attributable evolution of the
+declared model, rather than diffusing it through ten thousand unaudited write
+paths.
+
+The resulting claim, stated in full: \emph{unauthorized change cannot be
+accepted as valid enterprise state unless the adversary breaks a named
+cryptographic assumption, exploits a gap in the declared process or object
+model, compromises validator custody, or finds a defect in the gate --- and
+each of these events is independently detectable, attributable, and bounded.}
+That is a weaker sentence than ``unhackable,'' and a much stronger one than
+the industry baseline.

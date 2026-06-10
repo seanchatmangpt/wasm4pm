@@ -1,0 +1,60 @@
+groups:
+  - id: pm.ml
+    type: attribute_group
+    prefix: pm.ml
+    brief: Machine learning operations for process mining
+    attributes:
+      - id: ml_task
+        type: string
+        brief: ML task type (classification, regression, clustering, dimensionality_reduction)
+        requirement_level: required
+      - id: algorithm
+        type: string
+        brief: ML algorithm (knn, logistic_regression, kmeans, pca)
+        requirement_level: opt_in
+      - id: feature_count
+        type: int
+        brief: Number of features used
+        requirement_level: opt_in
+      - id: model_accuracy
+        type: double
+        brief: Model accuracy or quality metric (0-1)
+        requirement_level: opt_in
+      - id: prediction_count
+        type: int
+        brief: Number of predictions made
+        requirement_level: opt_in
+
+  - id: pm.ml.classify_traces
+    type: span
+    prefix: pm.ml.classify_traces
+    name: pm.ml.classify_traces
+    span_kind: internal
+    brief: Classify traces using machine learning
+    attributes:
+      - ref: pm.ml.ml_task
+        requirement_level: required
+      - ref: pm.ml.algorithm
+        requirement_level: opt_in
+      - ref: pm.ml.feature_count
+        requirement_level: opt_in
+      - ref: pm.ml.model_accuracy
+        requirement_level: opt_in
+      - ref: pm.ml.prediction_count
+        requirement_level: opt_in
+
+  - id: pm.ml.cluster_traces
+    type: span
+    prefix: pm.ml.cluster_traces
+    name: pm.ml.cluster_traces
+    span_kind: internal
+    brief: Cluster traces using machine learning
+    attributes:
+      - ref: pm.ml.ml_task
+        requirement_level: opt_in
+      - ref: pm.ml.algorithm
+        requirement_level: opt_in
+      - id: cluster_count
+        type: int
+        brief: Number of clusters identified
+        requirement_level: opt_in

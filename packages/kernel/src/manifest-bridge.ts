@@ -406,23 +406,11 @@ export async function computeManifestHash(manifest: PartManifest): Promise<strin
   const canonical = canonicalJson(manifest);
   const bytes = new TextEncoder().encode(canonical);
 
-  // Prefer the WASM blake3 package if available; fall back to SHA-256 only
-  // in environments that cannot load BLAKE3 (flag clearly in the hash prefix
-  // so consumers detect the mismatch before admitting the manifest).
-  try {
-    const { createHash } = await import('blake3');
-    const hash = createHash();
-    hash.update(bytes);
-    return `blake3:${hash.digest('hex')}`;
-  } catch {
-    // Fallback: SHA-256 with a distinct prefix so the manifest is never
-    // accidentally treated as a valid BLAKE3 manifest hash.
-    const digest = await crypto.subtle.digest('SHA-256', bytes);
-    const hex = Array.from(new Uint8Array(digest))
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-    return `sha256-fallback:${hex}`;
-  }
+  // Mandate BLAKE3 for all manifest hashing. No SHA-256 fallback allowed.
+  const { createHash } = await import('blake3');
+  const hash = createHash();
+  hash.update(bytes);
+  return `blake3:${hash.digest('hex')}`;
 }
 
 /**

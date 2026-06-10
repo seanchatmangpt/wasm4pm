@@ -302,6 +302,57 @@ pub fn measure_flattening_loss(ocel: &OCEL, object_type: &str) -> FlatteningLoss
     }
 }
 
+/// Measure information loss when flattening an OCEL to a case-centric event log.
+///
+/// Returns a JSON object with a `flattening_loss` array — one entry per object type —
+/// each containing the `FlatteningLossReport` fields plus a derived
+/// `duplicate_event_ratio` (event_duplication_count / unique_ocel_events_referenced).
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn measure_ocel_flattening_loss(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(ocel_handle, |obj| match obj {
+        Some(StoredObject::OCEL(ocel)) => {
+            // Collect unique object types
+            let mut seen = HashSet::new();
+            let object_types: Vec<String> = ocel
+                .objects
+                .iter()
+                .map(|o| o.object_type.clone())
+                .filter(|t| seen.insert(t.clone()))
+                .collect();
+
+            let reports: Vec<serde_json::Value> = object_types
+                .iter()
+                .map(|ot| {
+                    let r = measure_flattening_loss(ocel, ot);
+                    let duplicate_ratio = if r.unique_ocel_events_referenced > 0 {
+                        r.event_duplication_count as f64 / r.unique_ocel_events_referenced as f64
+                    } else {
+                        0.0
+                    };
+                    json!({
+                        "object_type": ot,
+                        "event_duplication_count": r.event_duplication_count,
+                        "original_ocel_variant_count": r.original_ocel_variant_count,
+                        "flattened_variant_count": r.flattened_variant_count,
+                        "new_variants_introduced": r.new_variants_introduced,
+                        "total_events_in_flattened_log": r.total_events_in_flattened_log,
+                        "unique_ocel_events_referenced": r.unique_ocel_events_referenced,
+                        "duplicate_event_ratio": duplicate_ratio,
+                    })
+                })
+                .collect();
+
+            to_js(&json!({ "flattening_loss": reports }))
+        }
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an OCEL")),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("OCEL '{}' not found", ocel_handle),
+        )),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

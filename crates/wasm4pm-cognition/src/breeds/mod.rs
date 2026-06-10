@@ -7,6 +7,10 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+pub mod autoinstinct_learning;
+pub mod autoinstinct_neurosis;
+pub mod autoinstinct_semantics;
+pub mod autoinstinct_vision;
 pub mod cbr;
 pub mod dendral;
 pub mod frame;
@@ -38,6 +42,14 @@ pub enum BreedId {
     Soar,
     /// Hearsay-II: blackboard consensus fusion (Erman & Lesser 1980)
     Hearsay,
+    /// AutoinstinctLearning: STRIPS/HACKER bitwise heuristic planning (Winston 1975)
+    AutoinstinctLearning,
+    /// AutoinstinctSemantics: NLU via Schank CD primitives (ELIZA/SHRDLU lineage)
+    AutoinstinctSemantics,
+    /// AutoinstinctNeurosis: neural-pattern anxiety/conflict detection (Boden 1977)
+    AutoinstinctNeurosis,
+    /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
+    AutoinstinctVision,
 }
 
 impl fmt::Display for BreedId {
@@ -52,6 +64,10 @@ impl fmt::Display for BreedId {
             BreedId::Gps => write!(f, "gps"),
             BreedId::Soar => write!(f, "soar"),
             BreedId::Hearsay => write!(f, "hearsay"),
+            BreedId::AutoinstinctLearning => write!(f, "autoinstinct_learning"),
+            BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
+            BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
+            BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
         }
     }
 }
@@ -280,6 +296,10 @@ pub trait CognitionBreed: Send + Sync {
 /// // Validation successful
 /// ```
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    use crate::breeds::autoinstinct_learning::AutoinstinctLearning;
+    use crate::breeds::autoinstinct_neurosis::AutoinstinctNeurosis;
+    use crate::breeds::autoinstinct_semantics::AutoinstinctSemantics;
+    use crate::breeds::autoinstinct_vision::AutoinstinctVision;
     use crate::breeds::cbr::Cbr;
     use crate::breeds::dendral::Dendral;
     use crate::breeds::frame::Eliza;
@@ -316,6 +336,18 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         "hearsay" => Hearsay
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "autoinstinct_neurosis" => AutoinstinctNeurosis
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "autoinstinct_semantics" => AutoinstinctSemantics
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "autoinstinct_vision" => AutoinstinctVision
+            .run(input)
+            .map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "autoinstinct_learning" => AutoinstinctLearning
             .run(input)
             .map_err(|e| format!("{}: {}", e.breed, e.message)),
         other => Err(format!("unknown breed: {}", other)),

@@ -224,16 +224,13 @@ pub fn discover_choice_graph_v2(
         return Err(NoCutFound::InsufficientPartitions);
     }
 
-    // Build CG nodes: Start, End, then one Activity-node per part.
-    // We label each Activity-node by the lex-smallest activity in the part.
+    // Build CG nodes: Start first, Activity nodes, End last.
+    // ChoiceGraph::new() sets end_idx = nodes.len()-1, so End MUST be the last node.
     let mut nodes: Vec<ChoiceGraphNode> = Vec::new();
     let mut partition_for_node: Vec<Option<usize>> = Vec::new();
     nodes.push(ChoiceGraphNode::Start);
     partition_for_node.push(None);
-    nodes.push(ChoiceGraphNode::End);
-    partition_for_node.push(None);
     let start_idx_node = 0usize;
-    let end_idx_node = 1usize;
 
     let mut part_node_idx: Vec<usize> = Vec::with_capacity(partition.len());
     for (p_idx, part) in partition.iter().enumerate() {
@@ -246,6 +243,11 @@ pub fn discover_choice_graph_v2(
         nodes.push(ChoiceGraphNode::Activity(repr));
         partition_for_node.push(Some(p_idx));
     }
+
+    // End node pushed last so ChoiceGraph::new() assigns end_idx = nodes.len()-1.
+    let end_idx_node = nodes.len();
+    nodes.push(ChoiceGraphNode::End);
+    partition_for_node.push(None);
 
     // Definition 5 conditions:
     let mut edges: Vec<(usize, usize)> = Vec::new();

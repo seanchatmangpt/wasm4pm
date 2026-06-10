@@ -112,6 +112,8 @@ The repo root ships `wasm4pm.toml` with `algorithm.name = "simd_streaming_dfg"`.
 | `ocel_ocla` | — | analytics | 10 | 40 | ✓ | ✓ |
 | `ocel_petri_net` | — | petrinet | 35 | 65 | ✓ | ✗ |
 
+Note: `ocel_petri_net` produces one Petri net per object type via per-type flattening; cross-type synchronization is not modelled.
+
 ## Prediction
 
 | ID | Alias | Output | Speed | Quality | Robust | Scales |

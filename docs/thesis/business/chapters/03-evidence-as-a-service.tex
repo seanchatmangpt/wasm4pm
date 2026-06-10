@@ -1,0 +1,66 @@
+\chapter{Evidence-as-a-Service}
+\label{ch:eaas}
+
+\section{The category}
+
+Process mining vendors sell \emph{insight}: dashboards showing where a
+process deviates. wasm4pm can sell something categorically different:
+\emph{evidence} --- a cryptographically verifiable record that a process
+conformed (or did not) to its declared model at a point in time. The
+difference matters because insight is consumed by operations teams with
+discretionary budgets, while evidence is consumed by compliance, legal, and
+audit functions with \emph{mandatory} budgets.
+
+\section{The mechanism}
+
+Three platform components compose into the evidence pipeline:
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{Receipts.} Every run emits a BLAKE3 receipt binding input
+        hashes to output hashes. Tampering with either side is detectable
+        by anyone holding the receipt.
+  \item \textbf{TrueX envelopes.} Conformance admission records carrying an
+        OCEL~2.0 batch hash, an equivalence class, and an expected path
+        hash --- a machine-checkable assertion that observed behavior
+        matched a declared process model.
+  \item \textbf{The Supabase sync layer.} Receipts and envelopes flow to a
+        central store with an offline queue and a dead-letter table, so
+        evidence survives air-gapped and intermittently connected
+        environments. The \texttt{live\_verified} doctor status is itself a
+        receipt: proof that the evidence pipeline was operational.
+\end{enumerate}
+
+\section{Who pays, and under which mandate}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXX}
+\toprule
+\textbf{Sector} & \textbf{Mandate} & \textbf{What they buy} \\
+\midrule
+Pharma / medical devices & FDA 21 CFR Part 11, GxP & Proof that manufacturing and quality workflows followed validated procedures \\
+Banking / payments & SOX, PSD2, model risk (SR 11-7) & Conformance evidence for transaction-processing and approval workflows \\
+Healthcare providers & HIPAA audit controls & Verifiable access- and treatment-process logs \\
+Public sector / defense & FedRAMP, supply-chain integrity & Receipts over procurement and deployment pipelines, generated on-premises \\
+SaaS vendors & SOC\,2 Type II & Continuous control-execution evidence instead of annual sampling \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Why incumbents cannot trivially follow}
+
+Celonis, UiPath Process Mining, and SAP Signavio are cloud-resident: the
+customer ships event data to the vendor. That architecture is the wrong
+trust topology for evidence --- the party generating the proof also custodies
+the data, which auditors discount. wasm4pm inverts it: the WASM core runs
+\emph{inside the customer's boundary} (browser, on-prem Node, edge), data
+never leaves, and only hashes travel. The vendor never sees the event log
+yet the evidence remains independently verifiable. Retrofitting this onto a
+cloud-native incumbent is a re-architecture, not a feature.
+
+\section{Revenue shape}
+
+Evidence-as-a-Service is a subscription with compounding lock-in: the value
+of the receipt chain grows with its length, and migrating away means
+abandoning (or expensively re-anchoring) the accumulated history. Pricing
+per retained-and-verifiable receipt aligns revenue with exactly that
+accumulation.

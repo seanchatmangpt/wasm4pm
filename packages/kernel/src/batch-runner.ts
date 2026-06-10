@@ -6,9 +6,8 @@
 
 import { EventEmitter } from 'events';
 import * as os from 'os';
-
-// Note: batch-runner uses OTEL spans but cannot import from apps/ due to
-// rootDir constraints. OTEL span emission is deferred to the consumer.
+import * as fs from 'fs/promises';
+import { Kernel } from './api.js';
 
 /**
  * Result from processing a single log through batch runner
@@ -26,6 +25,7 @@ export interface BatchLogResult {
  */
 export interface BatchConfig {
   algorithm: string;
+  kernel: Kernel; // Mandate a Kernel instance for "correct" implementation
   workers?: number;
   timeout?: number;
   activityKey?: string;
@@ -78,10 +78,12 @@ export class BatchRunner extends EventEmitter {
   private algorithm: string;
   private activityKey: string;
   private verbose: boolean;
+  private kernel: Kernel;
 
   constructor(config: BatchConfig) {
     super();
     this.algorithm = config.algorithm;
+    this.kernel = config.kernel;
     this.workers = config.workers ?? os.cpus().length;
     this.timeout = config.timeout ?? 300000; // 5 minutes default
     this.activityKey = config.activityKey ?? 'concept:name';
@@ -106,15 +108,16 @@ export class BatchRunner extends EventEmitter {
     }
 
     // Wait for all items to complete
-    const results = await Promise.allSettled(promises);
+    const settledResults = await Promise.allSettled(promises);
 
     // Flatten results from PromiseSettledResult
-    for (const result of results) {
+    for (let i = 0; i < settledResults.length; i++) {
+      const result = settledResults[i];
       if (result.status === 'fulfilled') {
         this.results.push(result.value);
       } else {
         // Handle promise rejection
-        const logPath = logPaths[this.results.length] || 'unknown';
+        const logPath = logPaths[i] || 'unknown';
         this.results.push({
           logPath,
           status: 'failed',
@@ -159,26 +162,41 @@ export class BatchRunner extends EventEmitter {
   }
 
   /**
-   * Process a single log file with timeout protection.
-   * Emits a `progress` event after each log completes:
-   *   { logPath, status, elapsedMs, completed: number, total: number }
-   * OTEL span emission is deferred to the consumer.
+   * Process a single log file with full lifecycle management:
+   * 1. Read file from disk
+   * 2. Load log into WASM via loadEventLog
+   * 3. Run algorithm via kernel.run
+   * 4. Free WASM handle via kernel.freeHandle
    */
   private async processLog(item: WorkItem): Promise<BatchLogResult> {
     const t0 = performance.now();
+    let logHandle: string | undefined;
 
     try {
-      // Placeholder: actual WASM discovery call would happen here
-      // This would integrate with the existing discovery infrastructure
-      // For now, return a mock result that demonstrates the structure
-      const result = await this.simulateDiscovery(item.logPath);
-      const elapsedMs = performance.now() - t0;
+      // 1. Read file from disk
+      // Note: We use utf-8 for XES XML files.
+      const content = await fs.readFile(item.logPath, 'utf-8');
 
+      // 2. Load log into WASM
+      logHandle = await this.kernel.loadEventLog(content);
+
+      // 3. Run algorithm
+      const res = await this.kernel.run(this.algorithm, logHandle, {
+        activity_key: this.activityKey
+      });
+
+      const elapsedMs = performance.now() - t0;
       const logResult: BatchLogResult = {
         logPath: item.logPath,
         status: 'success',
         elapsedMs,
-        result,
+        result: {
+          handle: res.handle,
+          hash: res.hash,
+          duration_ms: res.durationMs,
+          algorithm: res.algorithm,
+          outputType: res.outputType
+        },
       };
 
       this.emit('progress', {
@@ -207,25 +225,16 @@ export class BatchRunner extends EventEmitter {
       });
 
       return logResult;
+    } finally {
+      // 4. Guaranteed cleanup
+      if (logHandle) {
+        try {
+          this.kernel.freeHandle(logHandle);
+        } catch {
+          // Best-effort cleanup
+        }
+      }
     }
-  }
-
-  /**
-   * Placeholder for actual WASM discovery
-   * In production, this would call the real discovery function
-   */
-  private async simulateDiscovery(logPath: string): Promise<Record<string, unknown>> {
-    // This is a placeholder. Real implementation would:
-    // 1. Load log via loadEventlogFromXes/loadEventlogFromJson
-    // 2. Call appropriate discovery function via wasm
-    // 3. Return the result
-
-    return {
-      algorithm: this.algorithm,
-      logPath,
-      nodes: [],
-      edges: [],
-    };
   }
 
   /**

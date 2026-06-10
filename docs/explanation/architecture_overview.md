@@ -26,6 +26,38 @@ graph TB
 
 **Rule:** CLI logic must not import Rust directly. All algorithm dispatch goes through `packages/kernel/src/api.ts` so validation, OTEL, and error taxonomies apply uniformly.
 
+## Engine State Machine
+
+The `@wasm4pm/engine` lifecycle is governed by a state machine that handles bootstrapping, execution, and self-healing.
+
+```mermaid
+graph LR
+  uninitialized --> bootstrapping
+  bootstrapping --> ready
+  ready --> planning
+  planning --> running
+  running --> watching
+  watching --> ready
+  
+  bootstrapping --> failed
+  planning --> failed
+  running --> failed
+  
+  ready --> degraded
+  running --> degraded
+  watching --> degraded
+  degraded --> ready
+  failed --> bootstrapping
+```
+
+**Key Transitions:**
+- **bootstrap()**: `uninitialized` → `ready`. Loads WASM, initializes registry.
+- **plan(config)**: `ready` → `planning` → `ready`. Validates config, selects algorithm.
+- **run(plan)**: `ready` → `running` → `ready`. Dispatches to WASM.
+- **watch(plan)**: `ready` → `watching`. Continuous execution on source change.
+- **degrade(error)**: Transitions to `degraded` state for soft recovery.
+- **recover()**: Attempts to return to `ready` from `failed` or `degraded`.
+
 ## Verified Integrity
 
 wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with a **Release Certificate** that binds to the current commit and recomputes all evidence hashes.
@@ -39,17 +71,17 @@ Evidence discipline: [AGENTS.md](../../AGENTS.md).
 
 ## Deployment Profiles
 
-Optimized WASM bundles for every environment:
+wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
 
-| Profile | Size | Use case |
-|---------|------|----------|
-| `mobile` | ~500KB | Mobile / low bandwidth |
-| `iot` | ~1.0MB | Embedded |
-| `edge` | ~1.5MB | CDN / edge workers |
-| `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~2.7MB | Web + Node.js (default) |
+| Profile | Target | Size Target | Use case |
+|---------|--------|-------------|----------|
+| `mobile` | Mobile devices | ~500KB | Mobile / low bandwidth |
+| `iot` | IoT devices, embedded | ~1.0MB | Embedded |
+| `edge` | CDN workers, edge servers | ~1.5MB | CDN / edge workers |
+| `fog` | Fog computing, gateways | ~2.0MB | IoT gateways |
+| `browser` | Web browsers (DEFAULT) | **3.4MB** | Web + Node.js (default) |
 
-Build: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](../how-to/edge_deployment.md).
+See [Deployment Profiles Reference](../reference/deployment_profiles.md) for feature flags and build commands.
 
 ## Core Capabilities
 
@@ -85,4 +117,4 @@ Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](../../LICENSE-APACHE) and [LICENSE-MIT](../../LICENSE-MIT).
+BUSL-1.1. See [LICENSE](../../LICENSE).

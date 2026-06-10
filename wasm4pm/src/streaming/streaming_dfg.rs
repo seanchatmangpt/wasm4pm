@@ -7,6 +7,7 @@
 use crate::models::DFG;
 use crate::streaming::{ActivityInterner, Interner, StreamStats, StreamingAlgorithm};
 use rustc_hash::FxHashMap;
+use std::collections::BTreeMap;
 
 /// Streaming DFG builder for IoT / chunked event ingestion.
 ///
@@ -58,7 +59,7 @@ pub struct StreamingDfgBuilder {
     pub event_count: usize,
     /// open (in-progress) traces: case_id → encoded activity sequence
     /// freed when the trace is closed via `close_trace`
-    pub open_traces: FxHashMap<String, Vec<u32>>,
+    pub open_traces: BTreeMap<String, Vec<u32>>,
 }
 
 // Implement ActivityInterner trait
@@ -117,7 +118,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
             end_counts: FxHashMap::default(),
             trace_count: 0,
             event_count: 0,
-            open_traces: FxHashMap::default(),
+            open_traces: BTreeMap::new(),
         }
     }
 
@@ -214,16 +215,16 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
     fn stats(&self) -> StreamStats {
         let open_trace_events: usize = self.open_traces.values().map(|v| v.len()).sum();
         let memory_bytes =
-            // open_traces HashMap
-            self.open_traces.capacity() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
+            // open_traces BTreeMap
+            self.open_traces.len() * (std::mem::size_of::<String>() + std::mem::size_of::<Vec<u32>>()) +
             // open trace event buffers
             open_trace_events * std::mem::size_of::<u32>() +
             // node_counts
             self.node_counts.capacity() * std::mem::size_of::<usize>() +
             // edge_counts (rough estimate)
-            self.edge_counts.capacity() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
+            self.edge_counts.len() * (std::mem::size_of::<(u32,u32)>() + std::mem::size_of::<usize>()) +
             // start/end counts
-            (self.start_counts.capacity() + self.end_counts.capacity()) * (std::mem::size_of::<u32>() + std::mem::size_of::<usize>());
+            (self.start_counts.len() + self.end_counts.len()) * (std::mem::size_of::<u32>() + std::mem::size_of::<usize>());
 
         StreamStats {
             event_count: self.event_count,

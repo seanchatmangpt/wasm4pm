@@ -132,51 +132,47 @@ export function buildFeatureMatrix(
   for (let rowIdx = 0; rowIdx < validRows.length; rowIdx++) {
     const row = validRows[rowIdx];
 
-    // Extract case_id with fallback to row index
+    // Extract case_id: mandatory, no fallback to row index allowed.
     const caseIdVal = row.case_id;
     if (caseIdVal == null) {
-      caseIds.push(`row_${rowIdx}`);
-    } else {
-      caseIds.push(String(caseIdVal));
+      throw new Error(`Data defect: missing case_id at row ${rowIdx}. Every trace must have an explicit identifier.`);
     }
+    caseIds.push(String(caseIdVal));
 
     const numericRow: number[] = [];
 
-    // Numeric columns: coerce safely, guard against NaN, Infinity, and missing values
-    // CRITICAL: Handle missing properties (undefined), NaN, Infinity all as 0
-    // GAP 1 FIX: Explicitly check Number.isFinite() which rejects NaN, Infinity, -Infinity
-    // GAP 3 FIX: Use sorted numeric columns to match feature name order
+    // Numeric columns: mandatory finite check. No silent coercion to 0.
     for (const col of sortedNumericCols) {
       const val = row[col];
       if (typeof val === 'number' && Number.isFinite(val)) {
         numericRow.push(val);
       } else {
-        // Coerce to 0: missing, null, NaN, Infinity, -Infinity, non-numeric
-        numericRow.push(0);
+        throw new Error(`Data defect: non-finite numeric value '${val}' in column '${col}' at row ${rowIdx}.`);
       }
     }
 
     // One-hot encoded string columns (in sorted order for determinism)
-    // GAP 3 FIX: Use sortedCategoricalCols to ensure consistent column ordering
     for (const col of sortedCategoricalCols) {
       const values = oneHotMap.get(col)!;
-      const rowVal = row[col] == null ? '' : String(row[col]);
+      const rowVal = row[col];
+      if (rowVal == null) {
+         throw new Error(`Data defect: missing categorical value in column '${col}' at row ${rowIdx}.`);
+      }
+      const rowValStr = String(rowVal);
       for (const v of values) {
-        numericRow.push(rowVal === v ? 1 : 0);
+        numericRow.push(rowValStr === v ? 1 : 0);
       }
     }
 
     data.push(numericRow);
 
-    // Extract numeric target with NaN/Infinity guard
-    // CRITICAL: Must handle NaN explicitly since typeof NaN === 'number'
-    // GAP 4 FIX: Use Number.isFinite() which rejects NaN, Infinity, -Infinity
+    // Extract numeric target with mandatory finite check.
     if (numericTargetKey) {
       const val = row[numericTargetKey];
       if (typeof val === 'number' && Number.isFinite(val)) {
         targets.push(val);
       } else {
-        targets.push(0);
+        throw new Error(`Data defect: non-finite numeric target '${val}' at row ${rowIdx}.`);
       }
     }
 

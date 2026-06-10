@@ -613,10 +613,7 @@ export const driftWatch = defineCommand({
       try {
         xesContent = await fs.readFile(inputPath, 'utf-8');
       } catch (err) {
-        console.error(
-          `[drift-watch] Could not read file: ${err instanceof Error ? err.message : String(err)}`
-        );
-        return;
+        throw new Error(`[drift-watch] Could not read file: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       let logHandle: string;
@@ -624,10 +621,7 @@ export const driftWatch = defineCommand({
         // INSTRUMENTED: load_eventlog_from_xes — top 1 most-called WASM export (70 calls)
         logHandle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
       } catch (err) {
-        console.error(
-          `[drift-watch] XES parse error: ${err instanceof Error ? err.message : String(err)}`
-        );
-        return;
+        throw new Error(`[drift-watch] XES parse error: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       // ── detect_drift ────────────────────────────────────────────────────────
@@ -638,12 +632,9 @@ export const driftWatch = defineCommand({
         driftResult = JSON.parse(raw) as DriftResult;
         lastDriftResult = driftResult;
       } catch (err) {
-        console.error(
-          `[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`
-        );
         // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
         WasmInstrumentation.delete_object(wasm, logHandle);
-        return;
+        throw new Error(`[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`);
       }
 
       // ── Accumulate Jaccard distances from drift points ───────────────────
@@ -1199,31 +1190,25 @@ export const driftWatch = defineCommand({
 
         // Session receipt on graceful exit only
         if (ctx.args['no-save'] !== true) {
-          try {
-            saveCommandReceipt({
-              ...newReceipt('drift-watch'),
-              command: 'drift-watch',
-              input_hash: await fs
-                .readFile(inputPath)
-                .then((b) => blake3Hex(b))
-                .catch(() => blake3Hex(inputPath)),
-              output_hash: blake3Hex(
-                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints, refitAttempts, refitSuccesses })
-              ),
-              status: 'success',
-              summary: {
-                windows_processed: windowsProcessed,
-                alerts_fired: alertsFired,
-                total_drift_points: totalDriftPoints,
-                duration_ms: Date.now() - startedAtMs,
-                auto_refit_enabled: autoRefitMode,
-                refit_attempts: refitAttempts,
-                refit_successes: refitSuccesses,
-              },
-            });
-          } catch {
-            /* never break command on receipt failure */
-          }
+          const inputBytes = await fs.readFile(inputPath);
+          saveCommandReceipt({
+            ...newReceipt('drift-watch'),
+            command: 'drift-watch',
+            input_hash: blake3Hex(inputBytes),
+            output_hash: blake3Hex(
+              JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints, refitAttempts, refitSuccesses })
+            ),
+            status: 'success',
+            summary: {
+              windows_processed: windowsProcessed,
+              alerts_fired: alertsFired,
+              total_drift_points: totalDriftPoints,
+              duration_ms: Date.now() - startedAtMs,
+              auto_refit_enabled: autoRefitMode,
+              refit_attempts: refitAttempts,
+              refit_successes: refitSuccesses,
+            },
+          });
         }
       },
       () => ({

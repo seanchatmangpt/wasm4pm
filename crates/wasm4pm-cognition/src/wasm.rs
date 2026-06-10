@@ -17,6 +17,8 @@ use crate::autosystems::dominance::{reject_dominated, DomainProfile};
 use crate::autosystems::findings::FindingRegistry;
 use crate::autosystems::receipt::ReceiptChain;
 use crate::breeds::{
+    autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
+    autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
     cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
     prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
     CognitionBreed,
@@ -73,6 +75,10 @@ fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String
         "gps" => run_breed(&Gps, input),
         "soar" => run_breed(&Soar, input),
         "hearsay" => run_breed(&Hearsay, input),
+        "autoinstinct_neurosis" => run_breed(&AutoinstinctNeurosis, input),
+        "autoinstinct_semantics" => run_breed(&AutoinstinctSemantics, input),
+        "autoinstinct_vision" => run_breed(&AutoinstinctVision, input),
+        "autoinstinct_learning" => run_breed(&AutoinstinctLearning, input),
         other => Err(format!("unknown breed: {}", other)),
     }
 }
@@ -156,6 +162,10 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
             { "id": "gps", "name": "GPS", "year": 1963 },
             { "id": "soar", "name": "SOAR", "year": 1987 },
             { "id": "hearsay", "name": "Hearsay-II", "year": 1980 },
+            { "id": "autoinstinct_neurosis", "name": "Autoinstinct Neurosis", "year": 1977, "lineage": "Boden 1977 Old-AI Substrate" },
+            { "id": "autoinstinct_semantics", "name": "Autoinstinct Semantics", "year": 1972, "lineage": "Schank 1972 CD Primitives" },
+            { "id": "autoinstinct_vision", "name": "Autoinstinct Vision", "year": 1982, "lineage": "Marr 1982 Perceptual Recognition" },
+            { "id": "autoinstinct_learning", "name": "Autoinstinct Learning", "year": 1975, "lineage": "Winston 1975 STRIPS/HACKER" },
         ],
     });
     to_js_str(&report)

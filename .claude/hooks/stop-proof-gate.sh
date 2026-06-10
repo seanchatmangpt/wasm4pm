@@ -20,6 +20,23 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR" 2>/dev/null || exit 0
 
+# Self-conformance gate: if spans have accumulated, verify the process is healthy
+SPANS_FILE=".wasm4pm/spans.jsonl"
+if [ -f "$SPANS_FILE" ]; then
+  SPAN_COUNT=$(wc -l < "$SPANS_FILE" 2>/dev/null || echo 0)
+  if [ "$SPAN_COUNT" -ge 10 ]; then
+    echo "[stop-gate] Running self-conformance check ($SPAN_COUNT spans)..."
+    if command -v wpm &>/dev/null; then
+      SC_EXIT=0
+      wpm self-conformance --quiet 2>/dev/null || SC_EXIT=$?
+      if [ "$SC_EXIT" -ne 0 ]; then
+        echo "[stop-gate] WARN: self-conformance check returned exit $SC_EXIT — process fitness may be low"
+        # Non-fatal: warn but don't block the session stop
+      fi
+    fi
+  fi
+fi
+
 # Critical files: any modification to these files requires proof audit before stop.
 CRITICAL_FILES=(
   "wasm4pm/src/testing/conformance.rs"

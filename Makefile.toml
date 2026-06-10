@@ -55,6 +55,11 @@ args = ["doc", "--no-deps", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM
 # CI flow
 # ─────────────────────────────────────────────────────────────────────────────
 
+[tasks.check-workspace]
+description = "Verify all workspace members compile (poka-yoke: prevents member breakage from escaping)"
+command = "cargo"
+args = ["check", "--workspace"]
+
 [tasks.ci]
 description = "Full CI gate: check + lib tests + doctests + docs (browser feature)"
 dependencies = ["check", "test", "test-doc", "docs"]

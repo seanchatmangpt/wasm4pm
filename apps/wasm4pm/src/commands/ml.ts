@@ -353,34 +353,29 @@ export const ml = defineCommand({
               });
 
               if (!ctx.args['no-save']) {
-                try {
-                  const inputBytes = await fs
-                    .readFile(inputPath)
-                    .catch(() => Buffer.from(inputPath));
-                  const sampleSize = Array.isArray(
-                    (mlResult as Record<string, unknown>).predictions
-                  )
-                    ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
-                    : Array.isArray((mlResult as Record<string, unknown>).assignments)
-                      ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
-                      : 0;
-                  const receipt: CommandReceipt = {
-                    ...newReceipt('ml'),
-                    command: 'ml',
-                    input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
-                    status: 'success',
-                    summary: {
-                      task,
-                      method: String(ctx.args.method ?? ''),
-                      activity_key: activityKey,
-                      sample_size: sampleSize,
-                    },
-                  };
-                  saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
-                }
+                const inputBytes = await fs.readFile(inputPath);
+                const sampleSize = Array.isArray(
+                  (mlResult as Record<string, unknown>).predictions
+                )
+                  ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
+                  : Array.isArray((mlResult as Record<string, unknown>).assignments)
+                    ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
+                    : 0;
+                const receipt: CommandReceipt = {
+                  ...newReceipt('ml'),
+                  command: 'ml',
+                  input_hash: blake3Hex(inputBytes),
+                  output_hash: blake3Hex(JSON.stringify(payload)),
+                  status: 'success',
+                  summary: {
+                    task,
+                    method: String(ctx.args.method ?? ''),
+                    activity_key: activityKey,
+                    sample_size: sampleSize,
+                    input_file: inputPath,
+                  },
+                };
+                saveCommandReceipt(receipt);
               }
 
               return await exitWithFlush(result.exit_code);

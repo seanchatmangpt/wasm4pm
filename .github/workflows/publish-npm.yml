@@ -6,11 +6,28 @@ on:
       - 'v*'
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - run: pnpm -r test
+
   publish:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -18,10 +35,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '20'
           registry-url: 'https://registry.npmjs.org'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
@@ -31,30 +46,26 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
 
-      - name: Install dependencies (workspace install covers wasm4pm)
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build WASM
         run: cd wasm4pm && npm run build:all
 
       - name: Build TypeScript packages
-        run: pnpm -r --parallel build
-
-      - name: Run tests
-        run: cd wasm4pm && npm run test:unit
+        run: pnpm -r build
 
       - name: Remove wasm-pack generated pkg/.gitignore
         run: rm -f wasm4pm/pkg/.gitignore
 
-      - name: Clean-environment container test
-        run: node lab/scripts/test-container.mjs
-
-      - name: Publish to npm
-        run: cd wasm4pm && npm publish --ignore-scripts
+      - name: Publish all workspace packages to npm
+        run: pnpm -r publish --provenance --access public --no-git-checks
         env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create Release

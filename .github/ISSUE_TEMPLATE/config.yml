@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/seanchatmangpt/wasm4pm/security/advisories/new
+    about: Report a security vulnerability privately (see SECURITY.md)
+  - name: Commercial License Inquiry
+    url: mailto:xpointsh@gmail.com
+    about: Inquire about commercial licensing

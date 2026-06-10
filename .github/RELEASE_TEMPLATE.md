@@ -159,7 +159,7 @@ Need help? Check out:
 
 ## License
 
-MIT OR Apache-2.0
+BUSL-1.1
 
 ---
 

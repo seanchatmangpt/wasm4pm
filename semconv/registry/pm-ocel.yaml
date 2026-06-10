@@ -1,0 +1,56 @@
+groups:
+  - id: pm.ocel
+    type: attribute_group
+    prefix: pm.ocel
+    brief: Object-Centric Event Log operations
+    attributes:
+      - id: ocel_version
+        type: string
+        brief: OCEL format version (1.0, 2.0)
+        requirement_level: required
+      - id: object_type_count
+        type: int
+        brief: Number of unique object types in log
+        requirement_level: opt_in
+      - id: event_type_count
+        type: int
+        brief: Number of unique event types in log
+        requirement_level: opt_in
+      - id: object_count
+        type: int
+        brief: Total number of objects
+        requirement_level: opt_in
+      - id: projected_object_type
+        type: string
+        brief: Object type used for projection
+        requirement_level: opt_in
+
+  - id: pm.ocel.load
+    type: span
+    prefix: pm.ocel.load
+    name: pm.ocel.load
+    span_kind: internal
+    brief: Load Object-Centric Event Log
+    attributes:
+      - ref: pm.ocel.ocel_version
+        requirement_level: required
+      - ref: pm.ocel.object_type_count
+        requirement_level: opt_in
+      - ref: pm.ocel.event_type_count
+        requirement_level: opt_in
+      - ref: pm.ocel.object_count
+        requirement_level: opt_in
+
+  - id: pm.ocel.project
+    type: span
+    prefix: pm.ocel.project
+    name: pm.ocel.project
+    span_kind: internal
+    brief: Project OCEL onto object type
+    attributes:
+      - ref: pm.ocel.projected_object_type
+        requirement_level: required
+      - id: projected_trace_count
+        type: int
+        brief: Number of traces in projected log
+        requirement_level: opt_in

@@ -1,0 +1,42 @@
+groups:
+  - id: pm.metric.discovery.execution.time
+    type: metric
+    metric_name: pm.discovery.execution.time
+    instrument: histogram
+    unit: ms
+    brief: Time to execute process discovery algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+        requirement_level: opt_in
+
+  - id: pm.metric.conformance.fitness
+    type: metric
+    metric_name: pm.conformance.fitness
+    instrument: gauge
+    unit: '1'
+    brief: Model fitness score over time
+    attributes:
+      - ref: pm.conformance.fitness
+        requirement_level: required
+
+  - id: pm.metric.drift.distance
+    type: metric
+    metric_name: pm.drift.distance
+    instrument: histogram
+    unit: '1'
+    brief: Distribution of drift distances
+    attributes:
+      - ref: pm.drift.drift_detected
+        requirement_level: opt_in
+
+  - id: pm.metric.prediction.confidence
+    type: metric
+    metric_name: pm.prediction.confidence
+    instrument: gauge
+    unit: '1'
+    brief: Prediction confidence scores
+    attributes:
+      - ref: pm.prediction.prediction_confidence
+        requirement_level: opt_in

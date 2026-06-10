@@ -47,7 +47,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ],
@@ -70,7 +70,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ],
@@ -87,7 +87,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ],
@@ -104,7 +104,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ],
@@ -121,7 +121,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ],
@@ -138,7 +138,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ]
@@ -152,7 +152,7 @@ cat > "$SBOM_DIR/sbom-$VERSION.json" << EOF
       "licenses": [
         {
           "license": {
-            "name": "MIT OR Apache-2.0"
+            "name": "BUSL-1.1"
           }
         }
       ]
@@ -260,7 +260,7 @@ This SBOM describes the software components, dependencies, and licenses used in 
 ## License Summary
 
 All primary dependencies are licensed under:
-- MIT OR Apache-2.0 (most Rust crates)
+- BUSL-1.1 (wasm4pm); MIT OR Apache-2.0 (most third-party Rust crates)
 - Apache-2.0 (TypeScript compiler)
 - MIT (test frameworks)
 

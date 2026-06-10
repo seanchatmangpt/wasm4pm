@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/supabase",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "publishConfig": {
     "access": "public"
   },
@@ -41,5 +41,5 @@
     "truex",
     "process-mining"
   ],
-  "license": "MIT"
+  "license": "SEE LICENSE IN LICENSE"
 }

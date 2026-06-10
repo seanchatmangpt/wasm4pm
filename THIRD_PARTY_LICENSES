@@ -1,0 +1,30 @@
+# Third-Party Licenses
+
+Generated: 2026-06-09
+
+To regenerate:
+  npm: npx license-checker --production --summary
+  rust: cargo metadata --no-deps --format-version 1 | python3 -c "import json,sys; d=json.load(sys.stdin); [print(p['name']+' '+p['version']+': '+p.get('license','UNKNOWN')) for p in d['packages']]"
+
+## NPM Dependencies
+
+Summary (production):
+  MIT: 1
+  UNLICENSED: 1
+
+All npm production dependencies use MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, or ISC licenses unless noted above.
+No GPL/AGPL dependencies included.
+
+## Rust Dependencies
+
+wasm4pm 26.6.9: BUSL-1.1
+miniml 26.6.9: BUSL-1.1
+wasm4pm-cognition 26.6.9: BUSL-1.1
+prolog8 26.6.9: BUSL-1.1
+tps-metrics 26.6.9: BUSL-1.1
+wasm4pm-cli 26.6.9: BUSL-1.1
+ocpq 26.6.9: BUSL-1.1
+
+All first-party crates are licensed under BUSL-1.1.
+All third-party Rust dependencies use Apache-2.0 or MIT (verified via cargo-deny).
+No GPL/AGPL dependencies included.

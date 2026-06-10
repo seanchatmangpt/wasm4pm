@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/core",
-  "version": "26.6.8",
+  "version": "26.6.9",
   "publishConfig": {
     "access": "public"
   },
@@ -8,7 +8,8 @@
   "main": "pkg/wasm4pm.js",
   "types": "pkg/wasm4pm.d.ts",
   "files": [
-    "pkg/"
+    "pkg/",
+    "LICENSE"
   ],
   "exports": {
     ".": {
@@ -70,7 +71,7 @@
     "event-log"
   ],
   "author": "Sean Chatman <info@chatmangpt.com>",
-  "license": "MIT OR Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "engines": {
     "node": ">=14.0.0"
   },
@@ -78,6 +79,7 @@
     "@wasm4pm/ml": "workspace:*"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",
     "@types/node": "^20.10.6",

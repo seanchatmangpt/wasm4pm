@@ -29,11 +29,12 @@ describe('ReceiptBuilder', () => {
         })
         .setAlgorithm({ name: 'test-algo', version: '1.0' })
         .setModel({ nodes: 5, edges: 8 })
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt).toBeDefined();
       expect(receipt.run_id).toBeDefined();
-      expect(receipt.schema_version).toBe('1.0');
+      expect(receipt.schema_version).toBe('1.1');
     });
 
     it('should generate UUID if not provided', () => {
@@ -47,6 +48,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.run_id).toMatch(
@@ -67,6 +69,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.run_id).toBe(customId);
@@ -86,6 +89,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.config_hash).toMatch(/^[0-9a-f]{64}$/i);
@@ -103,6 +107,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.input_hash).toMatch(/^[0-9a-f]{64}$/i);
@@ -120,6 +125,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.plan_hash).toMatch(/^[0-9a-f]{64}$/i);
@@ -140,6 +146,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       const receipt2 = new ReceiptBuilder()
@@ -152,6 +159,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt1.config_hash).toBe(receipt2.config_hash);
@@ -172,6 +180,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.duration_ms).toBe(60000); // 1 minute
@@ -189,6 +198,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.duration_ms).toBe(5000);
@@ -206,6 +216,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.duration_ms).toBe(3000);
@@ -223,6 +234,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.duration_ms).toBe(0);
@@ -241,6 +253,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.status).toBe('success');
@@ -265,6 +278,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.status).toBe('failed');
@@ -282,6 +296,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.status).toBe('partial');
@@ -305,10 +320,11 @@ describe('ReceiptBuilder', () => {
         })
         .setAlgorithm({ name: 'test-algo', version: '1.0' })
         .setModel({ nodes: 5, edges: 8 })
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.run_id).toBe('550e8400-e29b-41d4-a716-446655440000');
-      expect(receipt.schema_version).toBe('1.0');
+      expect(receipt.schema_version).toBe('1.1');
     });
   });
 
@@ -361,6 +377,7 @@ describe('ReceiptBuilder', () => {
         .setSummary({ variants_discovered: 10 })
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.summary.traces_processed).toBe(100);
@@ -379,6 +396,7 @@ describe('ReceiptBuilder', () => {
         .setAlgorithm({ name: 'alpha' })
         .setAlgorithm({ version: '2.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receipt.algorithm.name).toBe('alpha');

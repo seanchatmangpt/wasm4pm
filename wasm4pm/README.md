@@ -169,4 +169,4 @@ See [`docs/`](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs) for full
 
 ## License
 
-MIT OR Apache-2.0
+BUSL-1.1

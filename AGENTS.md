@@ -1,8 +1,44 @@
 # AGENTS.md — Release and Proof Discipline
 
+## Rationalizing the Law
+
+This project is an **Autonomic Process Mining System**. To achieve self-healing, self-optimization, and verified trust, we require that every action produce a cryptographic trace. The "Laws" below ensure that our system's claims are not just prose, but mathematically verifiable artifacts. We prioritize **High Engineering Standards** to enable **High Autonomy**.
+
 ## One-Line Law
 
-No receipt, no claim. No real boundary, no proof. No correct refusal, no closure.
+No receipt, no claim. No real boundary, no proof. No correct refusal, no closure. No invariant, no trust. No trace, no truth.
+
+## Sovereign Execution Authority
+
+The WASM runtime is the final arbiter of truth. Execution is a sovereign act.
+
+1. **Law of the Kernel**: If the WASM kernel refuses an input (e.g., `Refused`), that verdict is absolute and binding. No TypeScript wrapper or CLI flag shall override the Kernel's refusal.
+2. **Authority of the Receipt**: The cryptographic receipt emitted by the WASM boundary is the ONLY acceptable proof of execution.
+3. **Immutability of Outcome**: Once a receipt is generated and hashed, the truth it represents is immutable. Any change to the logic requires a new WASM binary, a new hash, and a new proof.
+
+## The Contributor's Lifecycle (DX Workflow)
+
+To navigate these requirements effectively, follow this three-stage lifecycle:
+
+| Stage | Goal | Tooling | Outcome |
+|-------|------|---------|---------|
+| **1. Design** | Chicago TDD | `pnpm test` | Failing test (Red) |
+| **2. Implement** | Surgical Change | `cargo check` / `tsc` | Passing test (Green) |
+| **3. Evidence** | Generate Proof | `pnpm run release:full` | Artifacts on disk |
+| **4. Validate** | Self-Audit | `wpm doctor` | Ready for Closure |
+
+## Observability and Telemetry Discipline
+
+Every lawful execution MUST be observable through high-fidelity telemetry.
+
+1. **Trace Binding**: Every receipt (e.g., `.receipt.json`) MUST include a `trace_id` field that binds the cryptographic proof to the distributed trace that generated it.
+2. **Span Content**: Every significant algorithm transition MUST emit an OpenTelemetry span. Spans MUST include:
+   - `algorithm.name`
+   - `run.id`
+   - `execution.profile`
+   - `input.hash` and `output.hash`
+3. **Correct Refusal Telemetry**: A "Correct Refusal" MUST NOT be swallowed or treated as a generic error. It MUST emit a span with `status.code = ERROR` and the specific refusal code (e.g., `MALFORMED_EVENT_LOG`) in the `error.code` attribute.
+4. **No Silent Drops**: If the OTel exporter drops spans (backpressure), the task state is `EvidenceIncomplete`. Closure requires 100% span delivery for the critical path.
 
 ## Prime Directive
 
@@ -10,8 +46,29 @@ Do not optimize for the smallest passing change.
 
 This repository uses Combinatorial Maximalism: every meaningful feature, release, algorithm, route, and test must prove both successful behavior and correct refusal behavior through real boundaries and receipts.
 
+## Deterministic Calculus & Linear Memory Sanctuary
+
+Truth is manufactured within the sanctuary of isolated linear memory.
+
+1. **The Sanctuary Rule**: WASM linear memory is an isolated domain. All state transitions within this domain MUST be provably free from side effects of the host environment (no direct syscalls, no unmanaged entropy, no global clocks).
+2. **The Execution Calculus**: Every execution must be a pure function: `f(Binary_Hash, Input_Hash, Seed, Params) -> (Output, Receipt_Hash)`.
+3. **Rank-1 Determinism**: All algorithms (except those explicitly marked as stochastic) MUST satisfy bit-exact identity across runs. Stochastic algorithms MUST satisfy bit-exact identity given the same seed.
+4. **No Hidden State**: No execution shall rely on hidden or unreceipted state. If a transition depends on previous outcomes, those outcomes MUST be provided as cryptographically bound inputs.
+
 A task is not complete because code was changed.
 A task is complete only when the relevant evidence artifacts exist, verify, and bind to the current commit.
+
+## State Classification Table
+
+Before claiming completion, classify your work:
+
+| State | Meaning | Action |
+|-------|---------|--------|
+| **Closed** | All boundaries pass, receipts verify, artifacts committed. | Submit PR. |
+| **PrePublishOnly** | Local work complete, blocked by publish step. | Prepare for release. |
+| **EvidenceIncomplete** | Code works but artifacts/proofs are missing. | Run evidence commands. |
+| **InfrastructureBlocked**| Blocked by external services (Supabase, npm). | Document blocker. |
+| **ReceiptTheaterDetected**| Artifacts exist but fail verification or are fake. | Fix verification logic. |
 
 ## Forbidden Completion Patterns
 
@@ -88,9 +145,11 @@ Do not count an algorithm as verified unless all of the following are true:
 - TypeScript dispatch exists
 - CLI surface exists where claimed
 - WASM export exists where required, or absence has a structured reason
-- at least one positive case passes
-- at least one negative case fails correctly
-- at least one invariant case passes
+- **Totality:** The algorithm handles the entire valid input space; all edge cases result in either a valid output or a typed refusal.
+- **Positive Evidence:** At least one positive case passes with a recomputable receipt.
+- **Negative Evidence:** At least one negative case fails correctly with a typed refusal code.
+- **Algebraic Invariant:** At least one mathematical property (e.g., Symmetry, Identity, Monotonicity, or Idempotency) is verified via property-based sampling.
+- **Witness Generation:** For claims of formal properties (e.g., Soundness, Deadlock-freedom), the receipt includes a recomputable witness (e.g., a reachability graph hash or firing sequence).
 - failure uses a typed failure code
 - no panic, unhandled exception, silent fallback, or false success occurs
 - behavior evidence receipt exists
@@ -117,6 +176,8 @@ Examples:
 - invalid model handle refuses with INVALID_MODEL_HANDLE
 - unsupported profile refuses with UNSUPPORTED_PROFILE
 - receipt mismatch refuses with RECEIPT_HASH_MISMATCH
+
+**The Refusal Coverage Rule:** A refusal path is not considered "proven" until a receipt exists for that specific typed failure code. Do not treat a generic 400/500 as a correct refusal.
 
 Do not convert refusals into generic errors.
 Do not treat thrown panics as correct failure.
@@ -187,20 +248,22 @@ Do not use recursive publish unless every workspace package is intended to publi
 
 When claiming release readiness, show actual output for:
 
-- git status --short
-- git rev-parse HEAD
-- node -p "require('./package.json').version"
-- pnpm run release:full
-- pnpm run release:algorithm-behavior
-- pnpm run release:verify-algorithm-behavior
-- pnpm run examples:gate
-- pnpm run examples:verify-receipts
-- pnpm run cli:parity
-- pnpm run prepublish:pack-smoke
-- pnpm run release:pack-contents
-- pnpm run release:certificate
-- npm pack --dry-run
-- npm publish --dry-run
+- `git status --short`
+- `git rev-parse HEAD`
+- `node -p "require('./package.json').version"`
+- `pnpm run release:full`
+- `pnpm run release:algorithm-behavior`
+- `pnpm run release:verify-algorithm-behavior`
+- `pnpm run examples:gate`
+- `pnpm run examples:verify-receipts`
+- `pnpm run cli:parity`
+- `pnpm run prepublish:pack-smoke`
+- `pnpm run release:pack-contents`
+- `pnpm run release:certificate`
+- `npm pack --dry-run`
+- `npm publish --dry-run`
+- `cargo check && cargo test --lib --workspace`
+- `cargo publish --dry-run --allow-dirty --workspace`
 
 Also show actual files from disk:
 
@@ -211,6 +274,10 @@ Also show actual files from disk:
 - representative positive behavior receipt
 - representative structured-failure receipt
 - representative invariant receipt
+
+## Boundary Proof Verification (Ostar Doctor & Auditor)
+
+Before claiming release readiness, you MUST prove that the verifiers actually work by intentionally corrupting an artifact (e.g. modifying a receipt hash) and verifying that the `release:verify-algorithm-behavior` and/or `verify-receipt-authenticity.ts` scripts correctly reject the corrupted state. This prevents "Receipt Theater".
 
 ## Blocker Handling
 
@@ -226,6 +293,21 @@ Examples:
 - hidden command output means EvidenceIncomplete
 
 A blocker is not an excuse to continue. It is the current lawful outcome.
+
+## Sovereign Execution & Security Discipline
+
+### One-Line Law of Sovereignty
+Execution is only sovereign if it is isolated, immutable, and verified.
+
+### Credential & PII Protection
+- **Zero-Credential Commits:** Never stage or commit `.env`, `*.key`, or private configuration.
+- **Sanitized Artifacts:** Receipts and observability logs MUST NOT contain credentials, PII, or sensitive host-specific metadata.
+- **Redaction-by-Default:** Algorithms processing sensitive fields must redact data in output artifacts unless explicitly configured for "High-Fidelity Debugging" (which blocks release).
+
+### Zero-Trust Boundary Rules
+- **Untrusted Host:** The host environment (Node.js/OS) is untrusted. All data crossing the host-to-WASM boundary MUST be validated by the "Court of Admissibility" (Schema + Typestate) before reaching the Execution Authority.
+- **Adversarial Input Refusal:** Malformed inputs (e.g., recursive XES, payload bombs) MUST be refused with specific failure codes (e.g., `RESOURCE_EXHAUSTED`, `MALFORMED_INPUT`).
+- **Sovereign Bypass:** Any attempt to execute an algorithm outside of the `VALID_TRANSITIONS` or with an unvalidated handle MUST trigger a `SECURITY_HALT`.
 
 ## Package Identity Gate
 
@@ -244,13 +326,15 @@ workspace package aliases
 
 Before claiming release readiness, show:
 
-node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version"
+`node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version"`
 
 Expected:
 
-wasm4pm@<version>
+`wasm4pm@<version>`
 
 The release certificate, reachability evidence, behavior evidence, example receipts, npm pack output, and post-publish receipt must all use the same package identity.
+
+For Cargo (Rust), all workspace members MUST use the exact same version string as the root `Cargo.toml` (which must match `package.json`) to ensure dependency consistency during `cargo publish`. Any mismatch in path dependency versions is a state of `PackageIdentityMismatch`.
 
 If any artifact uses a different package identity, state is PackageIdentityMismatch.
 
@@ -396,12 +480,13 @@ For algorithm behavior evidence, closure requires all four domains:
 
 2. Behavior
    - 60/60 positive cases pass
-   - 60/60 negative cases fail correctly
-   - 60/60 invariant cases pass or have structured nondeterministic invariant
+   - 60/60 negative cases fail correctly with specific refusal receipts
+   - 60/60 algebraic invariants pass or have structured nondeterministic invariant
+   - 60/60 witness objects verify against output (for formal property claims)
    - no panic, unhandled exception, silent fallback, or false success
 
 3. Receipts
-   - every algorithm row has receipt evidence
+   - every algorithm row has receipt evidence for success, refusal, and invariant
    - every evidence hash recomputes
    - behavior_evidence_hash recomputes
 

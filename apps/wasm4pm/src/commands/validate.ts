@@ -462,24 +462,20 @@ export const validate = defineCommand({
 
           // Persist BLAKE3 receipt for proof-of-validation (unless --no-save)
           if (!ctx.args['no-save']) {
-            try {
-              const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
-              const receipt: CommandReceipt = {
-                ...newReceipt('validate'),
-                input_hash: blake3Hex(inputBytes),
-                output_hash: blake3Hex(JSON.stringify(payload)),
-                status: hasErrors ? 'failed' : 'success',
-                summary: {
-                  checks_passed: checks.filter((c) => c.status === 'pass').length,
-                  checks_warned: checks.filter((c) => c.status === 'warn').length,
-                  checks_failed: checks.filter((c) => c.status === 'fail').length,
-                  overall_status: overallStatus,
-                },
-              };
-              saveCommandReceipt(receipt);
-            } catch {
-              /* receipt write must never break the command */
-            }
+            const inputBytes = await fs.readFile(inputPath);
+            const receipt: CommandReceipt = {
+              ...newReceipt('validate'),
+              input_hash: blake3Hex(inputBytes),
+              output_hash: blake3Hex(JSON.stringify(payload)),
+              status: hasErrors ? 'failed' : 'success',
+              summary: {
+                checks_passed: checks.filter((c) => c.status === 'pass').length,
+                checks_warned: checks.filter((c) => c.status === 'warn').length,
+                checks_failed: checks.filter((c) => c.status === 'fail').length,
+                overall_status: overallStatus,
+              },
+            };
+            saveCommandReceipt(receipt);
           }
 
           // When schema/attribute errors are present the command exits source_error (2).

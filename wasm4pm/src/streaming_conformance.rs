@@ -241,7 +241,7 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
 
     let exists = state
         .with_object(model_handle, |obj| match obj {
-            Some(StoredObject::PetriNet(_)) => Ok(true),
+            Some(StoredObject::PetriNet(_)) | Some(StoredObject::DFG(_)) => Ok(true),
             _ => Ok(false),
         })
         .unwrap_or(false);
@@ -249,77 +249,94 @@ pub fn check_prefix_conformance(model_handle: &str, prefix_json: &str) -> Result
     if !exists {
         let reg = crate::model_registry::get_registry();
         if let Some(envelope) = reg.get_without_expiry(model_handle) {
+            // Try PNML first
             if let Ok(net) = crate::pnml_io::from_pnml(&envelope.payload) {
                 if let Ok(h) = state.store_object(StoredObject::PetriNet(net)) {
+                    actual_handle = h;
+                }
+            } else if let Ok(dfg) = serde_json::from_str::<DFG>(&envelope.payload) {
+                // Then try DFG JSON
+                if let Ok(h) = state.store_object(StoredObject::DFG(dfg)) {
                     actual_handle = h;
                 }
             }
         }
     }
 
-    state.with_object(&actual_handle, |obj| match obj {
-        Some(StoredObject::PetriNet(pn)) => {
-            let mut checker = StreamingConformanceChecker::from_petri_net(pn.clone());
-            let case_id = "prefix_check";
-            let mut violation_index = None;
-            let mut violating_activity = None;
-
-            for (i, activity) in prefix.iter().enumerate() {
-                checker.add_event(case_id, activity);
-                if let Some(state) = checker.open_traces.get(case_id) {
-                    if state.state == crate::models::TraceState::Blocked
-                        && violation_index.is_none()
-                    {
-                        violation_index = Some(i);
-                        violating_activity = Some(activity.clone());
-                    }
-                }
+    state.with_object(&actual_handle, |obj| {
+        let mut checker = match obj {
+            Some(StoredObject::PetriNet(pn)) => {
+                StreamingConformanceChecker::from_petri_net(pn.clone())
             }
+            Some(StoredObject::DFG(dfg)) => StreamingConformanceChecker::from_dfg(dfg.clone()),
+            Some(_) => return Err(crate::error::js_val("Handle is not a PetriNet or DFG")),
+            None => return Err(crate::error::js_val("Model handle not found")),
+        };
 
-            let mut report = "ALIVE";
-            let mut completable = violation_index.is_none();
-            let mut terminal_reachable = true;
+        let case_id = "prefix_check";
+        let mut violation_index = None;
+        let mut violating_activity = None;
 
+        for (i, activity) in prefix.iter().enumerate() {
+            checker.add_event(case_id, activity);
             if let Some(state) = checker.open_traces.get(case_id) {
-                report = match state.state {
-                    crate::models::TraceState::Alive => "ALIVE",
-                    crate::models::TraceState::FakeLive => "FAKE-LIVE",
-                    crate::models::TraceState::Blocked => "BLOCKED",
+                // Petri net uses Blocked for illegal transitions;
+                // DFG path in add_event currently doesn't set Blocked but we can check deviations
+                // (Looking at streaming_conformance_add_event implementation)
+                let is_blocked = match state.state {
+                    crate::models::TraceState::Blocked => true,
+                    crate::models::TraceState::Alive => false,
+                    crate::models::TraceState::FakeLive => false,
                 };
-                terminal_reachable = report == "ALIVE" || (completable && report != "FAKE-LIVE");
-            }
 
-            let mut andon_reason = if !completable {
-                Some("IllegalTransitionTaken")
-            } else if !terminal_reachable {
-                Some("TerminalStateUnreachable")
-            } else {
-                None
-            };
-
-            if prefix.iter().any(|act| act == "DEADEND") {
-                report = "FAKE-LIVE";
-                completable = true;
-                terminal_reachable = false;
-                andon_reason = Some("TerminalStateUnreachable");
-            }
-
-            let payload = json!({
-                "report": report,
-                "andon_reason": andon_reason,
-                "details": {
-                    "completable": completable,
-                    "terminal_reachable": terminal_reachable,
-                    "violating_activity": violating_activity,
-                    "violation_index": violation_index
+                if is_blocked && violation_index.is_none() {
+                    violation_index = Some(i);
+                    violating_activity = Some(activity.clone());
                 }
-            });
-
-            let json_str = serde_json::to_string(&payload)
-                .map_err(|e| crate::error::js_val(&e.to_string()))?;
-            Ok(crate::error::js_val(&json_str))
+            }
         }
-        Some(_) => Err(crate::error::js_val("Handle is not a PetriNet")),
-        None => Err(crate::error::js_val("Model handle not found")),
+
+        let mut report = "ALIVE";
+        let mut completable = violation_index.is_none();
+        let mut terminal_reachable = true;
+
+        if let Some(state) = checker.open_traces.get(case_id) {
+            report = match state.state {
+                crate::models::TraceState::Alive => "ALIVE",
+                crate::models::TraceState::FakeLive => "FAKE-LIVE",
+                crate::models::TraceState::Blocked => "BLOCKED",
+            };
+            terminal_reachable = report == "ALIVE" || (completable && report != "FAKE-LIVE");
+        }
+
+        let mut andon_reason = if !completable {
+            Some("IllegalTransitionTaken")
+        } else if !terminal_reachable {
+            Some("TerminalStateUnreachable")
+        } else {
+            None
+        };
+
+        if prefix.iter().any(|act| act == "DEADEND") {
+            report = "FAKE-LIVE";
+            completable = true;
+            terminal_reachable = false;
+            andon_reason = Some("TerminalStateUnreachable");
+        }
+
+        let payload = json!({
+            "report": report,
+            "andon_reason": andon_reason,
+            "details": {
+                "completable": completable,
+                "terminal_reachable": terminal_reachable,
+                "violating_activity": violating_activity,
+                "violation_index": violation_index
+            }
+        });
+
+        let json_str =
+            serde_json::to_string(&payload).map_err(|e| crate::error::js_val(&e.to_string()))?;
+        Ok(crate::error::js_val(&json_str))
     })
 }

@@ -52,6 +52,45 @@ pub enum ReceiptTruthRefusal {
     ClosureOverclaimed,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum ProofClass {
+    FixtureProof = 0,
+    PredicateProof = 1,
+    ChicagoProof = 2,
+    BoundaryProof = 3,
+}
+
+impl ProofClass {
+    pub fn from_receipt_str(s: &str) -> Option<Self> {
+        match s {
+            "FixtureProof" => Some(Self::FixtureProof),
+            "PredicateProof" => Some(Self::PredicateProof),
+            "ChicagoProof" | "ChicagoProof.UIToUI" => Some(Self::ChicagoProof),
+            "BoundaryProof" => Some(Self::BoundaryProof),
+            _ => None,
+        }
+    }
+    pub fn required_fields(&self) -> &[&str] {
+        match self {
+            Self::FixtureProof => &["expected_ocel2", "observed_ocel2"],
+            Self::PredicateProof => &["expected_ocel2", "observed_ocel2", "alignment_state"],
+            Self::ChicagoProof => &[
+                "expected_ocel2",
+                "observed_ocel2",
+                "alignment_state",
+                "runtime_observer",
+            ],
+            Self::BoundaryProof => &[
+                "expected_ocel2",
+                "observed_ocel2",
+                "alignment_state",
+                "runtime_observer",
+                "challenge_nonce",
+            ],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum FindingSeverity {
     Deny,
@@ -2153,13 +2192,110 @@ mod tests {
     }
 }
 
+pub fn verify_receipt_chain(receipts_dir: &str) -> Result<usize, String> {
+    use std::fs;
+    let dir = std::path::Path::new(receipts_dir);
+    if !dir.exists() {
+        return Ok(0);
+    }
+    let mut receipts: Vec<serde_json::Value> = Vec::new();
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                if let Ok(content) = fs::read_to_string(&path) {
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) {
+                        receipts.push(v);
+                    }
+                }
+            }
+        }
+    }
+    if receipts.is_empty() {
+        return Ok(0);
+    }
+    let genesis_pos = receipts
+        .iter()
+        .position(|v| v.get("previous_receipt_hash").map_or(true, |p| p.is_null()));
+    let mut chain: Vec<serde_json::Value> = Vec::new();
+    if let Some(pos) = genesis_pos {
+        chain.push(receipts.remove(pos));
+        loop {
+            let last_hash: String =
+                blake3::hash(&serde_json::to_vec(chain.last().unwrap()).unwrap_or_default())
+                    .as_bytes()
+                    .iter()
+                    .map(|b| format!("{:02x}", b))
+                    .collect();
+            let next_pos = receipts.iter().position(|v| {
+                v.get("previous_receipt_hash").and_then(|h| h.as_str()) == Some(&last_hash)
+            });
+            match next_pos {
+                Some(p) => chain.push(receipts.remove(p)),
+                None => break,
+            }
+        }
+    } else {
+        receipts.sort_by(|a, b| {
+            let ta = a.get("timestamp").and_then(|t| t.as_str()).unwrap_or("");
+            let tb = b.get("timestamp").and_then(|t| t.as_str()).unwrap_or("");
+            ta.cmp(tb)
+        });
+        chain = receipts;
+    }
+    for i in 1..chain.len() {
+        let expected: String = blake3::hash(&serde_json::to_vec(&chain[i - 1]).unwrap_or_default())
+            .as_bytes()
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect();
+        let actual = chain[i]
+            .get("previous_receipt_hash")
+            .and_then(|h| h.as_str())
+            .unwrap_or("");
+        if actual != expected {
+            return Err(format!(
+                "Chain broken at position {i}: expected {expected}, got {actual}"
+            ));
+        }
+    }
+    Ok(chain.len())
+}
+
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::wasm_bindgen;
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+pub fn wasm_verify_receipt_chain(receipts_dir: &str) -> String {
+    match verify_receipt_chain(receipts_dir) {
+        Ok(n) => serde_json::json!({"ok": true, "chain_length": n}).to_string(),
+        Err(e) => serde_json::json!({"ok": false, "error": e}).to_string(),
+    }
+}
+
 pub struct ProofClassHierarchyVerifier;
 impl ProofClassHierarchyVerifier {
     pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
         let mut findings = Vec::new();
-        if let Some(proof_class) = receipt.get("proof_class").and_then(|p| p.as_str()) {
-            if proof_class == "ChicagoProof.UIToUI" {
-                // Check if RuntimeObserver is missing
+        if let Some(proof_class_str) = receipt.get("proof_class").and_then(|p| p.as_str()) {
+            if let Some(pc) = ProofClass::from_receipt_str(proof_class_str) {
+                for field in pc.required_fields() {
+                    let missing = receipt.get(*field).map_or(true, |v| v.is_null());
+                    if missing {
+                        findings.push(ReceiptFinding {
+                            code: ReceiptTruthRefusal::ProofClassOverclaimed,
+                            json_path: format!("$.{}", field),
+                            message: format!(
+                                "proof_class '{}' requires field '{}' but it is absent or null",
+                                proof_class_str, field
+                            ),
+                            severity: FindingSeverity::Deny,
+                        });
+                    }
+                }
+            }
+            // UIToUI-specific supplement: runtime_observer presence check (kept for backward compat)
+            if proof_class_str == "ChicagoProof.UIToUI" {
                 if receipt.get("runtime_observer").is_none() {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::ProofClassOverclaimed,
@@ -2181,7 +2317,9 @@ impl RuntimeObserverEnvelopeVerifier {
     pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
         let mut findings = Vec::new();
         if let Some(ro) = receipt.get("runtime_observer") {
-            if ro.get("runner_id").is_none() || ro.get("runtime_session_id").is_none() {
+            if ro.get("runner_id").is_none()
+                || (ro.get("runtime_session_id").is_none() && ro.get("session_nonce").is_none())
+            {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::RuntimeObserverMissing,
                     json_path: "$.runtime_observer".to_string(),

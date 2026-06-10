@@ -1,0 +1,21 @@
+name: Version Sync Check
+on:
+  pull_request:
+    paths:
+      - 'package.json'
+      - 'Cargo.toml'
+      - 'packages/*/package.json'
+      - 'apps/*/package.json'
+      - 'wasm4pm/package.json'
+  push:
+    branches: [main]
+jobs:
+  version-check:
+    name: Version sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/check-version-sync.mjs

@@ -20,6 +20,9 @@
 
 use crate::RlAction;
 
+/// Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+const DETERMINISTIC_SEED: u64 = 0xdead_beef;
+
 // ---------------------------------------------------------------------------
 // Execution Context — information available to action handlers
 // ---------------------------------------------------------------------------
@@ -355,7 +358,8 @@ fn action_retry(context: &ExecutionContext) -> DispatchResult {
     let exponential_delay = context.base_backoff_ms.saturating_mul(shift_factor);
 
     // Add jitter: up to 100% of base backoff using fastrand for robust retry distribution
-    let jitter = fastrand::u32(0..=context.base_backoff_ms);
+    // Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+    let jitter = fastrand::Rng::with_seed(DETERMINISTIC_SEED).u32(0..=context.base_backoff_ms);
 
     let total_delay_ms = exponential_delay.saturating_add(jitter);
 

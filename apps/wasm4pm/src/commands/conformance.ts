@@ -20,7 +20,8 @@ function computeConfidenceInterval(
   }
 
   const p_hat = successes / trials;
-  const z = 1.96; // 95% CI critical value
+  // z-score for the requested confidence level (1.96 for 95%, 2.576 for 99%)
+  const z = confidence >= 0.99 ? 2.576 : confidence >= 0.95 ? 1.96 : 1.645;
 
   // Agresti-Coull adjustment (adds pseudo-observations)
   const z_squared = z * z;
@@ -232,6 +233,11 @@ export const conformance = defineCommand({
     'no-emoji': {
       type: 'boolean',
       description: 'Disable emoji in output',
+    },
+    'assert-conformance': {
+      type: 'boolean',
+      description:
+        'Exit with code 3 if root-cause diagnosis severity is critical (implies diagnosis always runs)',
     },
   },
   async run(ctx) {
@@ -634,32 +640,28 @@ export const conformance = defineCommand({
                 generalizationScore = estimateGeneralization(uniqueVariants, totalCases);
               }
 
-              // Perform root-cause diagnosis if fitness is below threshold
-              let diagnosis;
-              if (!isFit) {
-                // Build log statistics for diagnosis
-                const logStats: LogStats = {
-                  event_count: 0, // Could be extracted from WASM
-                  trace_count: totalCases,
-                  unique_activities: 0, // Could be extracted from log metadata
-                  unique_variants: 0, // Could be extracted from log analysis
-                  min_trace_length: 0,
-                  max_trace_length: 0,
-                  avg_trace_length: totalCases > 0 ? deviatingTraces.length / totalCases : 0,
-                  rework_ratio: undefined,
-                  activity_coverage: undefined,
-                };
+              // Perform root-cause diagnosis — always run (Gap 4 fix)
+              const logStats: LogStats = {
+                event_count: 0, // Could be extracted from WASM
+                trace_count: totalCases,
+                unique_activities: 0, // Could be extracted from log metadata
+                unique_variants: 0, // Could be extracted from log analysis
+                min_trace_length: 0,
+                max_trace_length: 0,
+                avg_trace_length: totalCases > 0 ? deviatingTraces.length / totalCases : 0,
+                rework_ratio: undefined,
+                activity_coverage: undefined,
+              };
 
-                const conformanceResult = {
-                  fitness: fitnessValue,
-                  precision,
-                  conformance_rate: conformanceRate,
-                  deviating_cases: deviatingCases,
-                  deviating_traces: deviatingTraces,
-                };
+              const conformanceResultForDiagnosis = {
+                fitness: fitnessValue,
+                precision,
+                conformance_rate: conformanceRate,
+                deviating_cases: deviatingCases,
+                deviating_traces: deviatingTraces,
+              };
 
-                diagnosis = diagnose(conformanceResult, logStats);
-              }
+              const diagnosis = diagnose(conformanceResultForDiagnosis, logStats);
 
               const payload: ConformancePayload = {
                 schema: 'chatmangpt.wasm4pm.conformance.v1',
@@ -779,6 +781,26 @@ export const conformance = defineCommand({
               emitResult(result, { format, verbose, quiet }, (res, projection) => {
                 printHumanConformance(res.payload, projection);
               });
+
+              // Gap 4 fix: emit diagnosis warning to stderr when severity warrants action
+              if (
+                diagnosis.category !== 'healthy' &&
+                (diagnosis.severity === 'high' || diagnosis.severity === 'critical')
+              ) {
+                const recs = diagnosis.recommendations.slice(0, 2);
+                process.stderr.write(
+                  `\n[wpm WARNING] Conformance diagnosis: ${diagnosis.category} (${diagnosis.severity})\n` +
+                    `  ${diagnosis.explanation}\n` +
+                    (recs.length > 0
+                      ? `  Recommendations:\n${recs.map((r) => `    - ${r}`).join('\n')}\n`
+                      : '')
+                );
+              }
+
+              // --assert-conformance: exit 3 on critical diagnosis
+              if (ctx.args['assert-conformance'] && diagnosis.severity === 'critical') {
+                return await exitWithFlush(EXIT_CODES.execution_error);
+              }
 
               // Persist BLAKE3 receipt for proof-of-execution
               if (!ctx.args['no-save']) {

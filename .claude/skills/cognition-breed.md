@@ -53,13 +53,13 @@ Every breed execution must emit a receipt:
   "breed": "symbolic",
   "input_hash": "blake3 hash of input",
   "output_hash": "blake3 hash of output",
+  "combined_hash": "blake3 of input_hash + output_hash",
   "previous_hash": "blake3 of previous breed's receipt",
-  "timestamp": "2026-05-07T14:23:45Z",
-  "signature": "ed25519 signature"
+  "timestamp": "2026-05-07T14:23:45Z"
 }
 ```
 
-**CRITICAL**: Empty signature field means the receipt is invalid. The chain is unverified.
+**CRITICAL**: Receipt validity is confirmed by non-empty `output_hash` and `combined_hash`. A receipt missing or having an empty `output_hash`/`combined_hash` is invalid. There is no `signature` field on the Receipt type.
 
 ## Receipt Verification Workflow
 
@@ -73,9 +73,9 @@ jq -r '.previous_hash' receipt_N.json | \
   awk '{print $1}' | \
   grep -q "$(jq -r '.hash' receipt_N_minus_1.json)"
 
-# 3. Verify all signatures non-empty
-jq -e '.[] | select(.signature == "" or .signature == null)' receipts/*.json
-# Must return nothing (no empty signatures)
+# 3. Verify output_hash and combined_hash are non-empty
+jq -e '.[] | select(.output_hash == "" or .output_hash == null or .combined_hash == "" or .combined_hash == null)' receipts/*.json
+# Must return nothing (no empty output_hash or combined_hash)
 
 # 4. Verify execution order matches timestamps
 jq -s 'sort_by(.timestamp) | .[].breed' receipts/*.json
@@ -88,14 +88,14 @@ The adversarial gate validates breed output against declared invariants:
 ```bash
 # Run full validation
 make cognition-build
-# Checks: all 9 breeds present, all receipts valid, signatures match, chain unbroken, timestamps ordered
+# Checks: all 9 breeds present, all receipts valid (non-empty output_hash/combined_hash), chain unbroken, timestamps ordered
 ```
 
 Exit 0 = all breeds passed. Exit 1 = breach detected.
 
 ## Forbidden Patterns
 
-❌ Breed that emits a receipt with empty `signature` field
+❌ Breed that emits a receipt with empty `output_hash` or `combined_hash`
 ❌ Breed that doesn't verify `previous_hash` linkage
 ❌ Breed execution without emitting a receipt
 ❌ Multiple breeds writing the same receipt file (race condition)
@@ -103,7 +103,7 @@ Exit 0 = all breeds passed. Exit 1 = breach detected.
 ## Required Patterns
 
 ✅ Every breed derives `input_hash` from actual input (not fabricated)
-✅ Every breed signs receipt with private key
+✅ Every breed emits non-empty `output_hash` and `combined_hash`
 ✅ Receipt chain linkage verifiable via BLAKE3
 ✅ Adversarial gate catches broken chains immediately (fail-fast)
 

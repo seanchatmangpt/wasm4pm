@@ -123,6 +123,41 @@ function renderAlgorithmRec(
   return lines;
 }
 
+/**
+ * Compute the Pareto front for a set of algorithm recommendations.
+ * Dominance: S1 dominates S2 if S1.quality >= S2.quality AND S1.speed >= S2.speed
+ * with at least one strict inequality.
+ * Tiebreak: sort by algorithm name (deterministic).
+ */
+export function computeParetoFront(suggestions: AlgorithmRecommendation[]): {
+  front: AlgorithmRecommendation[];
+  dominated: AlgorithmRecommendation[];
+} {
+  const front: AlgorithmRecommendation[] = [];
+  const dominated: AlgorithmRecommendation[] = [];
+
+  for (const candidate of suggestions) {
+    const isDominated = suggestions.some(
+      (other) =>
+        other !== candidate &&
+        other.quality >= candidate.quality &&
+        other.speed >= candidate.speed &&
+        (other.quality > candidate.quality || other.speed > candidate.speed),
+    );
+    if (isDominated) {
+      dominated.push(candidate);
+    } else {
+      front.push(candidate);
+    }
+  }
+
+  // Deterministic tiebreak: sort by algorithm name
+  front.sort((a, b) => a.algorithm.localeCompare(b.algorithm));
+  dominated.sort((a, b) => a.algorithm.localeCompare(b.algorithm));
+
+  return { front, dominated };
+}
+
 /** Render analysis recommendations block for human output. */
 function renderAnalysisRecs(
   recs: AnalysisRecommendation[],
@@ -266,6 +301,8 @@ export const suggest = defineCommand({
                 ? ((stats.variantCount / stats.traceCount) * 100).toFixed(1)
                 : '0.0';
 
+            const { front: paretoFront, dominated: paretoDominated } = computeParetoFront(recommendations);
+
             const payload = {
               goal,
               raw_goal: rawGoal,
@@ -280,6 +317,8 @@ export const suggest = defineCommand({
                 logFile: logBasename,
               },
               recommendations,
+              paretoFront,
+              dominated: paretoDominated,
               analysisRecommendations,
               topPick: recommendations[0]?.algorithm ?? null,
               runCommand: recommendations[0]
@@ -319,6 +358,15 @@ export const suggest = defineCommand({
                 }
                 if (idx < recommendations.length - 1) p.log('');
               });
+
+              // Pareto front section
+              if (paretoFront.length > 0) {
+                p.log('');
+                p.log('PARETO FRONT (non-dominated)');
+                for (const rec of paretoFront) {
+                  p.log(`  • ${rec.algorithm} (quality=${rec.quality}, speed=${rec.speed}, score=${(rec.score * 100).toFixed(0)})`);
+                }
+              }
 
               // Analysis recommendations
               const analysisLines = renderAnalysisRecs(analysisRecommendations, logBasename);

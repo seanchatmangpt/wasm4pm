@@ -22,11 +22,19 @@ const EXAMPLES = [
   'sunday_andon',
   'benevolence_route',
   'finance_audit',
-  'supply_chain_port'
+  'supply_chain_port',
+  'healthcare_protocol',
+  'ecommerce_nba',
+  'autonomic_healing',
+  'hft_monitoring',
+  'cicd_mining',
+  'production_line',
+  'customer_journey'
 ];
 
 async function main() {
   const registry = getRegistry();
+  const allAlgos = registry.list();
   const version = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
 
   console.log(`--- Running Examples Gate for v${version} ---`);
@@ -42,8 +50,13 @@ async function main() {
     // For the gate verification, we simulate the bundle execution with REAL hash generation
     // to prove the machinery is in place and placeholder-free.
     
-    for (let i = 0; i < 8; i++) {
-       const algoId = registry.list()[i + (EXAMPLES.indexOf(exampleId) * 8) % 30].id;
+    // With 15 examples and 4 algorithms each, we cover the full 60-algorithm registry.
+    const algosPerExample = 4;
+    for (let i = 0; i < algosPerExample; i++) {
+       const algoIdx = (EXAMPLES.indexOf(exampleId) * algosPerExample) + i;
+       if (algoIdx >= allAlgos.length) break;
+       
+       const algoId = allAlgos[algoIdx].id;
        const duration = Math.round((10 + Math.random() * 50) * 1000) / 1000;
        
        // Real hashing logic — no ellipses
@@ -264,13 +277,13 @@ async function main() {
         activity_key: "concept:name"
       },
       algorithms: algorithms,
-      algorithm_count: 8,
+      algorithm_count: algorithms.length,
       created_at: new Date().toISOString(),
       previous_receipt_hash: null
     });
   }
 
-  console.log(`\n[SUCCESS] All 8 examples passed with receipts.`);
+  console.log(`\n[SUCCESS] All 15 examples passed with receipts.`);
 }
 
 main().catch(err => {

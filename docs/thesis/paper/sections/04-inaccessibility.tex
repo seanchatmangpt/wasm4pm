@@ -1,0 +1,219 @@
+We now prove that eight classes of adversarial mutation are inaccessible to
+acceptance. The phrasing is deliberate: \emph{inaccessible to acceptance} does
+not mean the attempt cannot be made --- the threat model
+(Section~\ref{sec:threat-model}) grants the adversary arbitrary submissions and
+even raw infrastructure access. It means the attempt cannot become
+\emph{accepted enterprise state} without violating one of the named assumptions.
+For each class we give the attack as it occurs in practice, the proof, and its
+instantiation in the running P2P example.
+
+\begin{proposition}[Unreceipted Raw Mutation]
+\label{prop:raw}
+A direct state mutation that does not produce a valid receipt is inaccessible
+to acceptance.
+\end{proposition}
+\begin{proof}
+Consider a raw write --- a SQL \texttt{UPDATE}, a direct object-store \texttt{PUT},
+an edited configuration file. Submitted as a candidate $x$, it carries no
+receipt satisfying Definition~\ref{def:valid-receipt}: no canonical OCEL logs
+are embedded (substance fails), no challenge nonce was minted before execution
+(challenge binding fails), so $\verifyreceipt(R) = 0$ and conjunct C2 fails.
+By Definition~\ref{def:accept}, $\accept(x) = 0$; by
+Corollary~\ref{cor:refuse}, $x$ is refused or residualized. The mutated row may
+physically exist in storage, but by Lemma~\ref{lem:chain} authoritative state
+is the receipt-chain derivation, against which the row is detectable
+corruption, not state.
+\end{proof}
+
+\emph{P2P instance.} The payments employee runs the raw statement
+\texttt{UPDATE invoice SET status='paid'} on row 4711. The row changes; the
+chain does not. Any consumer that derives state per Lemma~\ref{lem:chain} ---
+the payment execution service, the auditor, the reconciliation job --- sees
+invoice \#4711 as \textsf{submitted}, flags the divergent row, and the write
+itself becomes forensic evidence against its author.
+
+\begin{proposition}[Process-State Skip]
+\label{prop:skip}
+A change attempting a transition not admitted from the current process state is
+inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+Let the declared law admit \textsf{Pay} only from \textsf{approved}, and let
+the current state be $s = \textsf{submitted}$. For the candidate carrying
+$e = \textsf{Pay}$, conjunct C6 evaluates $B(\textsf{submitted}, \textsf{Pay})
+= 0$, so $\accept(x) = 0$ and, by Definition~\ref{def:mu},
+$\mu(s, e) = s$. No combination of valid credentials, valid signature, and
+fresh nonce compensates: the conjuncts are independent, and C6 fails regardless
+of the others.
+\end{proof}
+
+\emph{P2P instance.} The classic fraud --- pay an invoice that was never
+approved --- requires the \textsf{submitted} $\to$ \textsf{paid} jump. Under
+the framework the jump is not a policy violation to be detected later; it is an
+inadmissible transition that never acquires state authority, the direct analogue
+of an unenabled transition in a workflow
+net~\cite{van_der_aalst_wfnet_soundness_1997}.
+
+\begin{proposition}[Object Substitution]
+\label{prop:objsub}
+A change that binds an event to different objects than those the authority
+signed over is inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+The signature is computed over
+$h(a \| e \| O \| s \| R_{\mathrm{prior}} \| p \| v \| t \| n)$, where $O$ is
+the canonical OCEL~2.0 event-to-object relation. Substituting $O' \neq O$
+changes the message, so $\verifysig(\sigma, h(\cdots O' \cdots)) = 0$ (C1
+fails). Re-signing over $O'$ requires the authority's secret key, i.e., an
+EUF-CMA forgery against ML-DSA --- a named channel, not a free move.
+Independently, C7 checks $O'$ against the object lifecycles in the chain: an
+approval relating an invoice whose chain shows no submission fails
+$\operatorname{ObjectsValid}$.
+\end{proof}
+
+\emph{P2P instance.} The approver reviews and approves invoice \#4711; the
+attacker redirects the approval to invoice \#4712 (their own). In a
+foreign-key world this is a one-column edit. Here the relation
+$\{\textsf{Inv\#4711}, \textsf{PO\#982}\}$ is inside the signed message, so the
+redirect invalidates the approval it tries to steal.
+
+\begin{proposition}[Backdated Change]
+\label{prop:backdate}
+A change claiming an earlier effective time than its true chain position is
+inaccessible to acceptance as valid history.
+\end{proposition}
+\begin{proof}
+Time in the framework is process evidence, not a data field: the position of
+$R_t$ in the chain is fixed by $h(R_{t-1})$ (Definition~\ref{def:valid-receipt},
+ii). Inserting a change at past position $k < t$ requires either a second
+preimage of $h(R_{k-1})$ (BLAKE3 assumption) or re-signing every downstream
+receipt $R_k, \ldots, R_t$ (signature assumption, for every affected
+authority). Merely editing the timestamp field $t'$ of an existing change
+alters the signed message and fails C1.
+\end{proof}
+
+\emph{P2P instance.} ``This approval happened before the auditor's cutoff
+date.'' The claim requires the approval receipt to sit before the cutoff
+receipt in the chain. It does not, and no field edit can move it.
+
+\begin{proposition}[Replay]
+\label{prop:replay}
+A previously accepted change cannot be accepted a second time.
+\end{proposition}
+\begin{proof}
+The replayed candidate carries its original nonce $n$, already consumed, so
+$\operatorname{Fresh}(n) = 0$ (C5 fails). Minting a fresh nonce does not help:
+$n$ is inside the signed message, so the re-nonced candidate fails C1 without
+the authority key. Moreover $\sigma$ binds $R_{\mathrm{prior}}$; once the chain
+has advanced, the cited prior receipt no longer matches the chain head and C2's
+chaining condition fails as well. Replay is thus triply blocked --- by
+freshness, by signature binding, and by process position.
+\end{proof}
+
+\emph{P2P instance.} A captured, perfectly valid \textsf{Pay} message for
+invoice \#4711 is resubmitted to pay it twice. The duplicate-payment fraud
+that reconciliation teams chase quarterly is structurally inadmissible.
+
+\begin{proposition}[Schema-Valid Fraud]
+\label{prop:schema}
+A change that is syntactically and schema-valid but process-invalid is
+inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+Schema validity establishes only that the candidate parses into
+$\Omega_{\mathrm{change}}$ --- it is the precondition for evaluation, not a
+conjunct of $\accept$. A well-formed payload still independently requires C1
+(authority), C5 (freshness), C6 (process position), and C7 (object
+consistency). The genre of attack in which correctly shaped data is injected
+through a permissive write path is exactly the conjunction
+``parses $\wedge$ $B(s,e)=0$,'' and fails C6.
+\end{proof}
+
+\emph{P2P instance.} \texttt{\{"status": "approved"\}} is a perfectly valid
+JSON document, accepted by every schema validator. The question the framework
+asks is not whether the document is well-formed but whether an
+\textsf{Approve} event is admissible from the invoice's current state, emitted
+by an actor whose policy grant covers it, with a verifier-sealed receipt. Shape
+was never the issue.
+
+\begin{proposition}[Rogue Administrator Mutation]
+\label{prop:admin}
+An administrator cannot alter enterprise state except by emitting admitted
+changes.
+\end{proposition}
+\begin{proof}
+Administrative privilege is represented in exactly one place: the policy
+component C3, where $\operatorname{PolicyAllowed}(a, e, p)$ may grant actor $a$
+privileged event types. Privilege therefore enlarges the set of events an
+admin may \emph{propose}; it does not waive C1, C2, C5, C6, or C7. A direct
+infrastructure write by an admin is Proposition~\ref{prop:raw}; an in-band
+admin change skipping process states is Proposition~\ref{prop:skip}. The
+admin's emergency-override path, if the enterprise wants one, must be a
+declared event type with its own boundary entries --- making the override
+itself receipted, attributed, and minable.
+\end{proof}
+
+\emph{P2P instance.} The administrator ``unblocks'' a stalled invoice by
+forcing it to \textsf{approved}. Under the framework the only lawful version
+of this act is an explicit \textsf{AdminOverride} event --- admitted from
+defined states, four-eyes if policy says so, and permanently visible in the
+chain. The governance shift is from \emph{admin as superuser} to \emph{admin
+as privileged process participant}.
+
+\begin{proposition}[AI-Agent Hallucinated Action]
+\label{prop:agent}
+An AI-agent action that does not carry the admitted-change witness is
+inaccessible to acceptance.
+\end{proposition}
+\begin{proof}
+An agent action is a candidate change $x_{\mathrm{agent}}$ with the agent (or
+its mandating principal) as actor $a$. Nothing in
+Definition~\ref{def:accept} is relaxed for automation: the action requires a
+signature under a key whose policy grant covers $e$ (C1, C3), a verifier-sealed
+receipt (C2), freshness (C5), and process admissibility (C6, C7). A
+hallucinated action --- one outside the agent's mandate or the process law ---
+fails at least one conjunct and is residualized. The residual stream is itself
+valuable: it is a labelled log of what the agent \emph{attempted}, which is
+precisely the observability that agent-governance frameworks
+call for~\cite{ethos_ai_agents_2024,saura_llm_security_policies}.
+\end{proof}
+
+\emph{P2P instance.} An agent tasked with ``cleaning up stale invoices''
+attempts to cancel forty active ones. Each cancellation is a candidate
+\textsf{Cancel} event; for the active invoices, $B(\textsf{approved},
+\textsf{Cancel}) = 0$ under the declared law, so the batch residualizes
+rather than executes. The agent's operator receives forty receipts of refusal
+--- a far better failure mode than forty restored backups. This converts
+agentic systems from open-ended mutation engines into receipt-bearing process
+participants, the governance posture argued for
+in~\cite{van_der_aalst_no_ai_without_pi_2024,nist_ai_rmf_maturity_2024}.
+
+\medskip
+
+Table~\ref{tab:inaccessibility} summarises the failing conjunct for each
+class. Two structural observations follow from the table. First, no class
+depends on detecting \emph{intent}: every block is a mechanical predicate
+failure, which is why the guarantees survive insiders and automation. Second,
+the classes fail on \emph{different} conjuncts --- the predicate is not one
+wall but seven, and the attack-surface analysis of the next section is the
+study of what it costs to breach each one.
+
+\begin{table}[t]
+\centering
+\caption{Attack classes and the acceptance conjunct that blocks each.}
+\label{tab:inaccessibility}
+\begin{tabularx}{\textwidth}{lXl}
+\toprule
+\textbf{Attack class} & \textbf{Blocking conjunct} & \textbf{Prop.}\\
+\midrule
+Raw database/API write       & C2: $\verifyreceipt(R) = 0$                       & \ref{prop:raw}\\
+Process-state skip           & C6: $B(s,e) = 0$                                  & \ref{prop:skip}\\
+Object substitution          & C1 ($\sigma$ binds $O$); C7 lifecycle check        & \ref{prop:objsub}\\
+Backdating                   & C2 chain position; C1 ($\sigma$ binds $t$)         & \ref{prop:backdate}\\
+Replay                       & C5: $\operatorname{Fresh}(n)=0$; C1; C2            & \ref{prop:replay}\\
+Schema-valid fraud           & C6: $B(s,e) = 0$                                  & \ref{prop:schema}\\
+Rogue admin direct edit      & C2 or C6 (privilege only widens C3)                & \ref{prop:admin}\\
+AI-agent hallucinated action & C3, C6, or C2 (no relaxation for automation)       & \ref{prop:agent}\\
+\bottomrule
+\end{tabularx}
+\end{table}

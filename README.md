@@ -24,6 +24,8 @@ cd wasm4pm && npm run build:nodejs && cd ..
 npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
 ```
 
+> **Dual-binary caveat:** Installing the Rust crate (`cargo install wasm4pm-cli`) places a second `wpm` binary on your `PATH` that only exposes ~10 commands. It may shadow the TypeScript CLI (`@wasm4pm/cli`, 50+ commands), which is the published source of truth. Run `wpm doctor` to detect binary shadowing and confirm which binary is active.
+
 ## Quick Start
 
 Sample log: [`data/small-example.xes`](data/small-example.xes).
@@ -53,19 +55,18 @@ The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, 
 
 ## Algorithms
 
-wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics. Domains include:
+wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics.
 
 | Domain | Examples |
 |--------|----------|
 | Core discovery | `dfg`, `heuristic_miner`, `inductive_miner`, `genetic_algorithm`, `ilp` |
 | Conformance & quality | `alignments`, `generalization`, `etconformance_precision` |
 | OCEL / object-centric | `ocel_dfg`, `ocel_petri_net`, `ocel_oc_declare` |
-| Prediction | `predict_next_activity`, `detect_drift` (via `wpm predict`) |
-| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` (via `wpm ml` or `wpm run`) |
+| Prediction | `predict_next_activity`, `detect_drift` |
+| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` |
+| Social Network | `handover_network`, `working_together_network` |
 
-List live metadata: `wpm algorithms` or `wpm algorithms --format json`.
-
-Full catalog: [Algorithms Reference](docs/reference/algorithms.md). See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
+Full catalog: [Algorithms Reference](docs/reference/algorithms.md).
 
 ## Programmatic API
 
@@ -131,15 +132,17 @@ wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 
 ## Deployment Profiles
 
+Optimized WASM bundles for every environment:
+
 | Profile | Size | Use case |
 |---------|------|----------|
 | `mobile` | ~500KB | Mobile / low bandwidth |
 | `iot` | ~1.0MB | Embedded |
 | `edge` | ~1.5MB | CDN / edge workers |
 | `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~2.7MB | Web + Node.js (default) |
+| `browser` | ~3.4MB | Web + Node.js (default) |
 
-Build a profile: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](docs/how-to/edge_deployment.md).
+Detailed feature mapping and build instructions: [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
 
 ## Documentation
 
@@ -152,6 +155,35 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 
 Release and evidence discipline: [AGENTS.md](AGENTS.md) · [Contributing](CONTRIBUTING.md)
 
+## Versioning
+
+wasm4pm uses **CalVer**: `vYEAR.MONTH.DAY` (e.g. `v26.6.9` = June 9, 2026). PATCH is the day of month (1–31); multiple releases on the same day use letter suffixes (`v26.6.9a`, `v26.6.9b`).
+
+> **Warning:** Pin exact versions. Semver `^` and `~` ranges are unsafe with CalVer — a routine date rollover is not a compatible patch.
+
+## Telemetry
+
+Telemetry is **off by default**. No data leaves your environment without explicit configuration.
+
+Opt in:
+
+```bash
+export WASM4PM_OTEL_ENABLED=1
+export WASM4PM_OTEL_ENDPOINT=https://your-collector:4318
+```
+
+See [OTEL Configuration](docs/how-to/configure_observability.md) for span schema and filtering options.
+
+## Security & Enterprise
+
+- **Security disclosures:** [SECURITY.md](SECURITY.md)
+- **Enterprise deployment guide:** [docs/ENTERPRISE.md](docs/ENTERPRISE.md)
+- **Commercial licensing:** [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) — contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com)
+
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+**BUSL-1.1.** See [LICENSE](LICENSE).
+
+Production use requires a commercial license. Contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com) or see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+
+The license converts to **AGPL-3.0** after the Change Date specified in [LICENSE](LICENSE).
