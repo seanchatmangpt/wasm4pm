@@ -21,7 +21,9 @@ This dissertation closes that gap through three contributions. First, we constru
 architectures — \textsc{Mycin}, \textsc{Strips}, \textsc{Soar}, \textsc{Hearsay},
 \textsc{Prolog}, CBR, GPS, \textsc{Dendral}, \textsc{Eliza}, and four
 autoinstinct breeds (Vision, Semantics, Neurosis, Learning) — producing 483 tests with
-zero failures and OCEL fitness $= 1.0$ for all thirteen breeds. Second, we define the
+zero failures and L0 wrapper conformance fitness $= 1.0$ for all thirteen breeds (L1
+breed-inference step coverage $= 1.0$ for three flagship breeds; token-replay alignment
+fitness deferred to proof-pack v2). Second, we define the
 \emph{Epistemological Space} $\Ei = \mathbb{R}^8$ in which each breed occupies a unique
 coordinate vector, prove that the thirteen breeds constitute thirteen basis objects in a typed admissibility category
 over $\Ei$, and show that together they span the symbolic
@@ -39,7 +41,7 @@ ensemble Bayesian analysis across all thirteen breeds becomes feasible in intera
 Pareto-frontier planning over uncertainty--depth trade-offs becomes a real-time operation;
 and adversarial robustness auditing — systematic injection of malformed inputs to verify
 rejection — becomes a continuous background process rather than an offline batch procedure.
-The implementation is complete: 483 tests, 0 failures, OCEL fitness $= 1.0$ for all thirteen
-breeds, and a BLAKE3 receipt chain covering \texttt{input\_hash} (emitted at the WASM
+The implementation is \textsc{partial-alive}: 483 tests, 0 failures, L0 wrapper fitness
+$= 1.0$ for all thirteen breeds, L1 step coverage $= 1.0$ for three flagship breeds, and a BLAKE3 receipt chain covering \texttt{input\_hash} (emitted at the WASM
 boundary in \texttt{cognition\_run()}) through \texttt{output\_hash} and
 \texttt{ocel\_log} for every breed invocation in the validated corpus.

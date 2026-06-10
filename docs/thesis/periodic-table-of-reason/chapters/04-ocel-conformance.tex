@@ -17,8 +17,12 @@ constructing a measure-theoretic framework around the Object-Centric Event
 Log (OCEL) \cite{ocel2standard,kusters2025ocpq} emitted by every \textsc{wasm4pm} execution, proving a
 conformance certificate theorem that links static correctness to dynamic
 fitness, and establishing that the Breed Validation Certificate (BVC)
-machinery enforces fitness $\varphi = 1.0$ as an admission gate for every
-production execution.
+machinery enforces \textbf{L0 wrapper fitness} $\varphi_{\mathrm{L0}} = 1.0$ as an
+admission gate for every production execution. L1 breed-inference alignment fitness
+(token replay against the declared breed OCPN) has been measured as step-coverage
+$= 1.0$ for MYCIN, Prolog, and STRIPS; full alignment fitness via pm4py replay
+is scheduled for proof-pack v2 and currently carries \textsc{partial-alive} standing
+(see \texttt{ocel/reports/\{mycin,prolog,strips\}.json}).
 
 % ─────────────────────────────────────────────────────────────────────────────
 \section{The Breed Lifecycle Object-Centric Petri Net}

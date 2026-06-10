@@ -137,7 +137,7 @@ of breed invocations operating under the wasm4pm kernel:
 
 \begin{enumerate}[label=(\roman*)]
   \item \emph{Non-forgeability.}
-  \item \emph{Tamper-evident content binding (partial non-repudiation).}
+  \item \emph{Tamper-evident content binding (content integrity only, not authority binding).}
   \item \emph{Third-party auditability.}
   \item \emph{Causal completeness.}
 \end{enumerate}
@@ -161,7 +161,7 @@ is committed.  The chain structure amplifies this: forging any receipt in the mi
 chain would require forging all subsequent receipts simultaneously, multiplying the
 computational difficulty by the chain length.
 
-\paragraph{(ii) Tamper-evident content binding (partial non-repudiation).}
+\paragraph{(ii) Tamper-evident content binding (content integrity only, not authority binding).}
 BLAKE3 provides tamper-evident content binding: given the hash, any modification to
 content produces a different hash with overwhelming probability.  This is a property of
 the hash function, not of the authority that computed it.  Non-repudiation requires

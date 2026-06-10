@@ -61,9 +61,12 @@ its OTel execution traces satisfies:
         transition in $\Breed_i$'s execution;
   \item \textbf{Completeness:} every observable transition in $\Breed_i$'s execution
         produces at least one event in $\mathcal{L}_i$;
-  \item \textbf{Fitness universality:} the conformance fitness
-        $\phi(\mathcal{L}_i, M_i) = 1.0$ for all 13 breeds under pm4py token-based
-        replay against the declared process model $M_i$.
+  \item \textbf{Fitness universality (L0):} the L0 wrapper conformance fitness
+        $\phi(\mathcal{L}_i, M_{\mathrm{L0}}) = 1.0$ for all 13 breeds — the admission
+        gate enforces this structurally. L1 breed-inference alignment fitness
+        (Adriansyah~\cite{adriansyah2014aligning}) has been measured as step-coverage
+        $= 1.0$ for MYCIN, Prolog, and STRIPS; token-replay alignment fitness is
+        scheduled for proof-pack v2 and currently carries \textsc{partial-alive} standing.
 \end{enumerate}
 \end{theorem}
 
@@ -94,8 +97,11 @@ $\mathcal{E} \colon \mathbf{Breed} \to \mathbf{Set}$.
 each breed $\Breed_i$, an input $x_i$ on which $\Breed_i$ produces evidence
 $\mathcal{E}_i(x_i)$ that is orthogonal to the evidence space of any combination of
 the remaining breeds. The argument proceeds by showing that the evidence morphisms
-span linearly independent directions in the epistemological space $\mathcal{V}$. The
-categorical argument excludes not only exact substitution but also approximation up to
+form a non-collapsing basis in the typed admissibility category $\mathcal{B}$: no two
+certified breeds share the same triple of specification relation, oracle suite, and OCEL
+model, which establishes their categorical distinctness in
+$E_{\mathrm{total}} = E_{\mathrm{cont}} \times E_{\mathrm{kind}}$.
+The categorical argument excludes not only exact substitution but also approximation up to
 any fixed tolerance. $\square$
 
 %%--------------------------------------------------------------------
