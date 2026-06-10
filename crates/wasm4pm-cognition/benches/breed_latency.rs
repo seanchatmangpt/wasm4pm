@@ -11,7 +11,7 @@ use wasm4pm_cognition::breeds::{
     cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
     prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    bayesian_network::BayesianNetwork, situation_calculus::SituationCalculus, circumscription::Circumscription, BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -232,6 +232,8 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "allen_temporal", AllenTemporal);
     bench_breed!(group, "fuzzy_logic", FuzzyLogic);
     bench_breed!(group, "bayesian_network", BayesianNetwork);
+    bench_breed!(group, "situation_calculus", SituationCalculus);
+    bench_breed!(group, "circumscription", Circumscription);
 
     group.finish();
 }

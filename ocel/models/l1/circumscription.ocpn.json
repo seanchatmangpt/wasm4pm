@@ -1,0 +1,20 @@
+{
+  "name": "circumscription_l1",
+  "places": ["p_start", "p_load", "p_enum", "p_entail", "p_end"],
+  "transitions": ["load-defaults", "enumerate-model", "minimize", "entail", "decision"],
+  "arcs": [
+    {"source": "p_start", "target": "load-defaults"},
+    {"source": "load-defaults", "target": "p_load"},
+    {"source": "p_load", "target": "enumerate-model"},
+    {"source": "enumerate-model", "target": "p_enum"},
+    {"source": "p_enum", "target": "enumerate-model"},
+    {"source": "p_enum", "target": "minimize"},
+    {"source": "minimize", "target": "p_enum"},
+    {"source": "p_enum", "target": "entail"},
+    {"source": "entail", "target": "p_entail"},
+    {"source": "p_entail", "target": "decision"},
+    {"source": "decision", "target": "p_end"}
+  ],
+  "initial_marking": ["p_start"],
+  "final_marking": ["p_end"]
+}

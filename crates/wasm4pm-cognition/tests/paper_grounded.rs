@@ -1658,3 +1658,97 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+// ============================================================================
+// Tier P3 Breeds Paper Grounded
+// ============================================================================
+
+#[test]
+fn situation_calculus_paper_grounded() {
+    let path = "tests/fixtures/papers/situation_calculus.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut state = Vec::new();
+            if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
+                for s in arr {
+                    if let (Some(pred), Some(val)) = (s.get("predicate").and_then(|v| v.as_str()), s.get("value").and_then(|v| v.as_str())) {
+                        state.push(StateAtom { predicate: pred.to_string(), value: val.to_string() });
+                    }
+                }
+            }
+
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    if let (Some(id), Some(pred), Some(val)) = (g.get("id").and_then(|v| v.as_str()), g.get("predicate").and_then(|v| v.as_str()), g.get("value").and_then(|v| v.as_str())) {
+                        goals.push(Goal { id: id.to_string(), predicate: pred.to_string(), value: val.to_string() });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (r.get("id").and_then(|v| v.as_str()), r.get("conclusion").and_then(|v| v.as_str()), r.get("certainty").and_then(|v| v.as_f64())) {
+                        let premises = r.get("premise").and_then(|v| v.as_array()).unwrap_or(&vec![]).iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect();
+                        rules.push(Rule { id: id.to_string(), premise: premises, conclusion: conclusion.to_string(), certainty: certainty as f32 });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("project").to_string(),
+                candidates: vec![], facts: vec![], cases: vec![],
+                rules, goals, state,
+            };
+
+            let breed = situation_calculus::SituationCalculus;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("SituationCalculus run must succeed");
+            assert_eq!(output.breed, BreedId::SituationCalculus);
+            assert!(output.selected.is_some());
+        }
+    }
+}
+
+#[test]
+fn circumscription_paper_grounded() {
+    let path = "tests/fixtures/papers/circumscription.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    if let (Some(k), Some(v)) = (f.get("key").and_then(|v| v.as_str()), f.get("value").and_then(|v| v.as_str())) {
+                        facts.push(Fact { key: k.to_string(), value: v.to_string() });
+                    }
+                }
+            }
+
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    if let (Some(id), Some(conclusion), Some(certainty)) = (r.get("id").and_then(|v| v.as_str()), r.get("conclusion").and_then(|v| v.as_str()), r.get("certainty").and_then(|v| v.as_f64())) {
+                        let premises = r.get("premise").and_then(|v| v.as_array()).unwrap_or(&vec![]).iter().filter_map(|v| v.as_str()).map(|s| s.to_string()).collect();
+                        rules.push(Rule { id: id.to_string(), premise: premises, conclusion: conclusion.to_string(), certainty: certainty as f32 });
+                    }
+                }
+            }
+
+            let input = BreedInput {
+                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("entail").to_string(),
+                candidates: vec![], facts, cases: vec![],
+                rules, goals: vec![], state: vec![],
+            };
+
+            let breed = circumscription::Circumscription;
+            assert!(breed.preconditions(&input).is_ok());
+
+            let output = breed.run(&input).expect("Circumscription run must succeed");
+            assert_eq!(output.breed, BreedId::Circumscription);
+            assert!(output.selected.is_some());
+        }
+    }
+}

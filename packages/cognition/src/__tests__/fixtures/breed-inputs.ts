@@ -429,6 +429,48 @@ export function minimalHtnPlanningInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// SITUATION CALCULUS — situation_calculus.rs
+// ---------------------------------------------------------------------------
+export function minimalSituationCalculusInput(): BreedInput {
+  return {
+    intent: 'project',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'grab', premise: ['at_gold=true'], conclusion: 'has_gold=true', certainty: 1.0 },
+      { id: 'drop', premise: [], conclusion: 'has_gold=false', certainty: 1.0 }
+    ],
+    state: [
+      { predicate: 'has_gold', value: 'false' },
+      { predicate: 'at_gold', value: 'true' }
+    ],
+    goals: [
+      { id: 'g1', predicate: 'action', value: 'grab' }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CIRCUMSCRIPTION — circumscription.rs
+// ---------------------------------------------------------------------------
+export function minimalCircumscriptionInput(): BreedInput {
+  return {
+    intent: 'entail',
+    candidates: [],
+    facts: [
+      { key: 'bird', value: 'tweety' }
+    ],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['bird'], conclusion: 'flies', certainty: 1.0 }
+    ],
+    state: [],
+    goals: []
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

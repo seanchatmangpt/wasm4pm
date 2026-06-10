@@ -4,7 +4,7 @@ use crate::breeds::{
     cbr::Cbr, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
     production_rules::Mycin, prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, default_logic::DefaultLogic, BreedInput, BreedOutput, CognitionBreed,
+    bayesian_network::BayesianNetwork, default_logic::DefaultLogic, situation_calculus::SituationCalculus, circumscription::Circumscription, BreedInput, BreedOutput, CognitionBreed,
 };
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
@@ -88,8 +88,8 @@ pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, St
         "qualitative_reason" => Err("unsupported breed: qualitative_reason".to_string()),
         "script_sam" => Err("unsupported breed: script_sam".to_string()),
         "clp" => Err("unsupported breed: clp".to_string()),
-        "situation_calculus" => Err("unsupported breed: situation_calculus".to_string()),
-        "circumscription" => Err("unsupported breed: circumscription".to_string()),
+        "situation_calculus" => run_breed(&SituationCalculus, input),
+        "circumscription" => run_breed(&Circumscription, input),
         "act_r" => Err("unsupported breed: act_r".to_string()),
         "problog" => Err("unsupported breed: problog".to_string()),
         "sat_cdcl" => Err("unsupported breed: sat_cdcl".to_string()),
@@ -151,8 +151,8 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
         "qualitative_reason" => Err("unsupported breed: qualitative_reason".to_string()),
         "script_sam" => Err("unsupported breed: script_sam".to_string()),
         "clp" => Err("unsupported breed: clp".to_string()),
-        "situation_calculus" => Err("unsupported breed: situation_calculus".to_string()),
-        "circumscription" => Err("unsupported breed: circumscription".to_string()),
+        "situation_calculus" => crate::breeds::situation_calculus::SituationCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "circumscription" => crate::breeds::circumscription::Circumscription.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         "act_r" => Err("unsupported breed: act_r".to_string()),
         "problog" => Err("unsupported breed: problog".to_string()),
         "sat_cdcl" => Err("unsupported breed: sat_cdcl".to_string()),

@@ -1,0 +1,18 @@
+{
+  "name": "situation_calculus_l1",
+  "places": ["p_start", "p_load", "p_regress", "p_end"],
+  "transitions": ["load-axioms", "regress-step", "frame-persist", "decision"],
+  "arcs": [
+    {"source": "p_start", "target": "load-axioms"},
+    {"source": "load-axioms", "target": "p_load"},
+    {"source": "p_load", "target": "regress-step"},
+    {"source": "regress-step", "target": "p_regress"},
+    {"source": "p_regress", "target": "frame-persist"},
+    {"source": "frame-persist", "target": "p_regress"},
+    {"source": "p_regress", "target": "regress-step"},
+    {"source": "p_regress", "target": "decision"},
+    {"source": "decision", "target": "p_end"}
+  ],
+  "initial_marking": ["p_start"],
+  "final_marking": ["p_end"]
+}

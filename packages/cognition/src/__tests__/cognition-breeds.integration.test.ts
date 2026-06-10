@@ -229,6 +229,26 @@ describe('htn_planning breed integration', () => {
   });
 });
 
+describe('situation_calculus breed integration', () => {
+  it('solves projection problem using successor state axioms', async () => {
+    const result = (await fixtures.runBreed('situation_calculus', fixtures.minimalSituationCalculusInput())) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('SituationCalculus');
+    expect(result.output.selected).toBe('has_gold:true');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
+describe('circumscription breed integration', () => {
+  it('entails conclusion cautiously across minimal models', async () => {
+    const result = (await fixtures.runBreed('circumscription', fixtures.minimalCircumscriptionInput())) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Circumscription');
+    expect(result.output.selected).toBe('flies:tweety');
+    expect(result.output.inference_trace.length).toBeGreaterThan(0);
+  });
+});
+
 // =============================================================================
 // cognition_verify integration (positive + negative oracle)
 // =============================================================================

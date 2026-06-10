@@ -1475,3 +1475,49 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+// ===========================================================================
+// Tier P3 Breeds Hidden Challenge Tests
+// ===========================================================================
+
+#[test]
+fn situation_calculus_hidden_frame_problem() {
+    let mut input = base("project hidden");
+    input.state = vec![
+        state_atom("alive", "true"),
+        state_atom("loaded", "true"),
+    ];
+    input.goals = vec![goal("g1", "action", "shoot")];
+    input.rules = vec![
+        rule("shoot", vec!["loaded=true"], "alive=false;loaded=false", 1.0),
+        rule("wait", vec![], "", 1.0),
+    ];
+
+    let output = dispatch_breed_test("situation_calculus", &input)
+        .expect("SituationCalculus run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let state_alive = output.selected.as_deref().unwrap_or("");
+    assert!(state_alive.contains("alive:false"), "Target is dead");
+}
+
+#[test]
+fn circumscription_hidden_nixon_diamond() {
+    let mut input = base("entail hidden");
+    input.facts = vec![
+        fact("quaker", "nixon"),
+        fact("republican", "nixon"),
+    ];
+    input.rules = vec![
+        rule("r1", vec!["quaker"], "pacifist", 1.0),
+        rule("r2", vec!["republican"], "!pacifist", 1.0),
+    ];
+
+    let output = dispatch_breed_test("circumscription", &input)
+        .expect("Circumscription run must succeed");
+    
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let entailment = output.selected.as_deref().unwrap_or("");
+    // Cautious entailment of contradictory defaults should yield neither or empty
+    assert!(!entailment.contains("pacifist:nixon") || entailment.is_empty());
+}
+

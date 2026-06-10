@@ -511,3 +511,7 @@ pub trait CognitionBreed: Send + Sync {
         compute_receipt(self.id(), input, output)
     }
 }
+/// Circumscription (Tier P3): cautious entailment through prioritized predicate minimization.
+pub mod circumscription;
+/// Situation Calculus (Tier P3): projection and plan extraction via Reiter successor-state axioms.
+pub mod situation_calculus;
