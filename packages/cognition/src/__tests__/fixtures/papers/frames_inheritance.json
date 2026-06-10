@@ -1,0 +1,23 @@
+{
+  "breed": "frames_inheritance",
+  "provenance": {
+    "paper": "Minsky 1974",
+    "citation": "Minsky, M. (1974). A Framework for Representing Knowledge. MIT AI Laboratory Memo 306. Reprinted in Winston (Ed.), The Psychology of Computer Vision, 1975.",
+    "locus": "Sections on frame systems and default assignments: 'a frame's terminals are normally already filled with default assignments' inherited through more general frames unless overridden by specific evidence.",
+    "extraction": "method (default inheritance with override)",
+    "notes": "my_chair isa chair isa furniture. chair carries the default legs=4; my_chair has no own legs slot, so resolution walks 2 frames (my_chair, chair) and returns the inherited default 4."
+  },
+  "input": {
+    "intent": "resolve my_chair legs",
+    "facts": [
+      { "key": "frame:my_chair:isa", "value": "chair" },
+      { "key": "frame:chair:isa", "value": "furniture" },
+      { "key": "frame:chair:slot:legs:default", "value": "4" },
+      { "key": "frame:furniture:slot:movable:default", "value": "yes" }
+    ]
+  },
+  "expected": {
+    "selected": "4",
+    "walk_steps": 2
+  }
+}

@@ -1362,3 +1362,598 @@ fn autoinstinct_learning_hidden_surgical_curriculum() {
         "Learning surgical: must emit a curriculum plan"
     );
 }
+
+// ===========================================================================
+// P1 TIER — hidden oracles (fresh names, hand-derived values)
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// ltl_monitor
+// ---------------------------------------------------------------------------
+
+/// A1/A2: `G zorp` over a trace where zorp fails exactly at step 3 must be
+/// violated with exactly 4 progression steps. Hand derivation: progression of
+/// G zorp stays `G zorp` while zorp holds (steps 0..2) and collapses to False
+/// at the first event without zorp (step 3).
+#[test]
+fn ltl_monitor_hidden_g_zorp_violated_at_step_3() {
+    let mut input = base("monitor");
+    input.facts = vec![
+        fact("ltl:formula", "G zorp"),
+        fact("trace:0", "zorp"),
+        fact("trace:1", "zorp,frob"),
+        fact("trace:2", "zorp"),
+        fact("trace:3", "frob"),
+        fact("trace:4", "zorp"),
+    ];
+    let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
+    assert_eq!(out.selected.as_deref(), Some("false"), "G zorp must be violated");
+    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress, 4, "violation detected exactly at step 3 (4 progressions)");
+    let init = out.inference_trace.iter().filter(|t| t.kind == "ltl-init").count();
+    assert_eq!(init, 1, "exactly 1 ltl-init");
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// Finite-trace G semantics (Havelund–Roşu): a FULLY conforming trace must
+/// satisfy `G zorp` — end-of-trace valuation of the residual `G zorp` is true.
+#[test]
+fn ltl_monitor_hidden_g_zorp_fully_conforming_is_satisfied() {
+    let mut input = base("monitor");
+    input.facts = vec![
+        fact("ltl:formula", "G zorp"),
+        fact("trace:0", "zorp"),
+        fact("trace:1", "zorp"),
+        fact("trace:2", "zorp"),
+        fact("trace:3", "zorp"),
+    ];
+    let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("true"),
+        "G p over a conforming finite trace is a good prefix and must be satisfied"
+    );
+    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress, 4, "all 4 events progressed (no early verdict)");
+}
+
+/// A1/A2: `quux U blee` satisfied exactly at step 2 (blee first appears at
+/// index 2; quux holds before). Hand derivation: progression returns True the
+/// moment the right operand fires, so exactly 3 progressions occur.
+#[test]
+fn ltl_monitor_hidden_until_satisfied_at_step_2() {
+    let mut input = base("monitor");
+    input.facts = vec![
+        fact("ltl:formula", "quux U blee"),
+        fact("trace:0", "quux"),
+        fact("trace:1", "quux"),
+        fact("trace:2", "blee"),
+        fact("trace:3", "quux"),
+    ];
+    let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
+    assert_eq!(out.selected.as_deref(), Some("true"));
+    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress, 3, "satisfied exactly at step 2 (3 progressions)");
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+// ---------------------------------------------------------------------------
+// allen_temporal
+// ---------------------------------------------------------------------------
+
+/// A1/A2: composition before∘meets = before on fresh names gamma/delta/eps.
+/// gamma p delta and delta m eps imply (end_gamma < start_delta < end_delta =
+/// start_eps) so gamma strictly precedes eps: derived relation is exactly {p},
+/// and the inverse entry eps,gamma is exactly {pi} (after).
+#[test]
+fn allen_temporal_hidden_before_compose_meets() {
+    let mut input = base("temporal");
+    input.facts = vec![
+        fact("relation", "gamma,delta,p"),
+        fact("relation", "delta,eps,m"),
+    ];
+    let out = dispatch_breed_test("allen_temporal", &input).expect("allen run");
+    let derived = |k: &str| {
+        out.facts
+            .iter()
+            .find(|f| f.key == k)
+            .unwrap_or_else(|| panic!("missing {}", k))
+            .value
+            .clone()
+    };
+    assert_eq!(derived("derived:gamma,eps"), "p", "before∘meets must be exactly before");
+    assert_eq!(derived("derived:eps,gamma"), "pi", "inverse must be exactly after");
+    assert!(out.inference_trace.iter().any(|t| t.kind == "allen-compose"));
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// Concrete-endpoint mode: intervals with explicit endpoints get exact basic
+/// relations. wibblet=[1,3], snork=[3,5]: meets (e1 == s2).
+#[test]
+fn allen_temporal_hidden_concrete_endpoints() {
+    let mut input = base("temporal");
+    input.state = vec![
+        state_atom("interval", "wibblet,1,3"),
+        state_atom("interval", "snork,3,5"),
+    ];
+    let out = dispatch_breed_test("allen_temporal", &input).expect("allen run");
+    let m = out
+        .facts
+        .iter()
+        .find(|f| f.key == "derived:wibblet,snork")
+        .expect("derived fact");
+    assert_eq!(m.value, "m", "[1,3] meets [3,5]");
+}
+
+/// Inconsistent network must be refused: A before B, B before C, C before A.
+#[test]
+fn allen_temporal_hidden_cyclic_before_inconsistent() {
+    let mut input = base("temporal");
+    input.facts = vec![
+        fact("relation", "flim,flam,p"),
+        fact("relation", "flam,florp,p"),
+        fact("relation", "florp,flim,p"),
+    ];
+    let res = dispatch_breed_test("allen_temporal", &input);
+    assert!(res.is_err(), "cyclic strict precedence must be inconsistent");
+}
+
+// ---------------------------------------------------------------------------
+// fuzzy_logic
+// ---------------------------------------------------------------------------
+
+/// A1/A2: fresh interpolation point — Tri(2,5,8) at 3.7 fires its rule with
+/// strength (3.7-2)/(5-2) = 0.566666… ≈ 0.56667 (rounded to 1e-5).
+#[test]
+fn fuzzy_logic_hidden_tri_interpolation() {
+    let mut input = base("fuzzy");
+    input.facts = vec![
+        fact("fuzzy:zlorp:mid", "tri:2,5,8"),
+        fact("fuzzy:gwib:out", "tri:0,50,100"),
+        fact("fuzzy:input:zlorp", "3.7"),
+    ];
+    input.rules = vec![rule("rz", vec!["fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0)];
+    let out = dispatch_breed_test("fuzzy_logic", &input).expect("fuzzy run");
+    let fire = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "fuzzy-fire" && t.detail.starts_with("rule rz"))
+        .expect("rz fire step");
+    let strength: f32 = fire
+        .detail
+        .rsplit(' ')
+        .next()
+        .unwrap()
+        .parse()
+        .expect("numeric strength");
+    assert!(
+        (strength - 0.56667).abs() < 1e-5,
+        "Tri(2,5,8) at 3.7 must fire with mu=0.56667, got {}",
+        strength
+    );
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// t-norm boundary axioms: min(1, mu) = mu and min(0, mu) = 0 — a premise at
+/// full membership leaves the strength unchanged; a premise at zero
+/// membership zeroes the rule.
+#[test]
+fn fuzzy_logic_hidden_t_norm_boundaries() {
+    let mut input = base("fuzzy");
+    input.facts = vec![
+        fact("fuzzy:zlorp:mid", "tri:2,5,8"),
+        fact("fuzzy:zlorp:peak", "tri:0,3.7,8"),  // mu(3.7)=1.0
+        fact("fuzzy:zlorp:far", "tri:10,12,14"), // mu(3.7)=0.0
+        fact("fuzzy:gwib:out", "tri:0,50,100"),
+        fact("fuzzy:input:zlorp", "3.7"),
+    ];
+    input.rules = vec![
+        rule("r_one", vec!["fuzzy:zlorp:peak", "fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0),
+        rule("r_zero", vec!["fuzzy:zlorp:far", "fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0),
+    ];
+    let out = dispatch_breed_test("fuzzy_logic", &input).expect("fuzzy run");
+    let strength_of = |id: &str| -> f32 {
+        out.inference_trace
+            .iter()
+            .find(|t| t.kind == "fuzzy-fire" && t.detail.starts_with(&format!("rule {}", id)))
+            .unwrap_or_else(|| panic!("missing fire step for {}", id))
+            .detail
+            .rsplit(' ')
+            .next()
+            .unwrap()
+            .parse()
+            .unwrap()
+    };
+    assert!((strength_of("r_one") - 0.56667).abs() < 1e-5, "min(1,mu)=mu");
+    assert_eq!(strength_of("r_zero"), 0.0, "min(0,mu)=0");
+}
+
+// ---------------------------------------------------------------------------
+// bayesian_network
+// ---------------------------------------------------------------------------
+
+/// A1/A2: fresh chain Q→R→S. P(Q)=0.3, P(R|Q)=0.8 / P(R|¬Q)=0.2,
+/// P(S|R)=0.7 / P(S|¬R)=0.1. Hand arithmetic: P(R) = .3·.8 + .7·.2 = 0.38;
+/// P(S) = .38·.7 + .62·.1 = 0.328 exactly.
+#[test]
+fn bayesian_network_hidden_chain_prior() {
+    let mut input = base("infer");
+    input.facts = vec![
+        fact("cpt:Q", "0.3"),
+        fact("cpt:R|Q", "0.2,0.8"),
+        fact("cpt:S|R", "0.1,0.7"),
+    ];
+    input.goals = vec![goal("g1", "query", "prob:S")];
+    let out = dispatch_breed_test("bayesian_network", &input).expect("bn run");
+    let verdict = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "bn-verdict")
+        .expect("verdict");
+    let p: f64 = verdict.detail.split('=').nth(1).unwrap().parse().unwrap();
+    assert!((p - 0.328).abs() < 1e-9, "P(S)=0.328 exact, got {}", p);
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// Markov-blanket screen: with evidence R=true, P(S|R=t) = 0.7 exactly —
+/// Q is screened off by the chain's middle node.
+#[test]
+fn bayesian_network_hidden_markov_blanket() {
+    let mut input = base("infer");
+    input.facts = vec![
+        fact("cpt:Q", "0.3"),
+        fact("cpt:R|Q", "0.2,0.8"),
+        fact("cpt:S|R", "0.1,0.7"),
+        fact("evidence:R", "true"),
+    ];
+    input.goals = vec![goal("g1", "query", "prob:S")];
+    let out = dispatch_breed_test("bayesian_network", &input).expect("bn run");
+    let verdict = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "bn-verdict")
+        .expect("verdict");
+    let p: f64 = verdict.detail.split('=').nth(1).unwrap().parse().unwrap();
+    assert!((p - 0.7).abs() < 1e-9, "P(S|R=t)=0.7 exact, got {}", p);
+}
+
+/// Collider d-separation flip (Bayes-ball): in Q→S←R, Q ⫫ R unconditionally
+/// but conditioning on the collider S OPENS the path.
+#[test]
+fn bayesian_network_hidden_collider_dsep_flip() {
+    let mk = |query: &str| {
+        let mut input = base("infer");
+        input.facts = vec![
+            fact("cpt:Q", "0.5"),
+            fact("cpt:R", "0.5"),
+            fact("cpt:S|Q,R", "0.1,0.6,0.7,0.9"),
+        ];
+        input.goals = vec![goal("g1", "query", query)];
+        input
+    };
+    let out1 = dispatch_breed_test("bayesian_network", &mk("dsep:Q,R|")).expect("bn run");
+    assert!(
+        out1.explanation.ends_with("=true"),
+        "Q and R d-separated with no evidence: {}",
+        out1.explanation
+    );
+    let out2 = dispatch_breed_test("bayesian_network", &mk("dsep:Q,R|S")).expect("bn run");
+    assert!(
+        out2.explanation.ends_with("=false"),
+        "conditioning on collider S must OPEN the path: {}",
+        out2.explanation
+    );
+}
+
+// ---------------------------------------------------------------------------
+// csp_ac3
+// ---------------------------------------------------------------------------
+
+/// A1/A2: 3-coloring of K4 minus the (V3,V4) edge over lex domain {B,G,R}.
+/// Hand derivation (MRV + lex value order + MAC): V1=B; MAC removes B from
+/// V2,V3,V4; V2=G; MAC removes G from V3,V4 leaving {R}; V3=R, V4=R (no edge
+/// between them). Exact lex-least assignment asserted.
+#[test]
+fn csp_ac3_hidden_k4_minus_edge_lex_least() {
+    let mut input = base("solve");
+    input.facts = vec![
+        fact("csp-var", "V1:B,G,R"),
+        fact("csp-var", "V2:B,G,R"),
+        fact("csp-var", "V3:B,G,R"),
+        fact("csp-var", "V4:B,G,R"),
+        fact("csp-constraint", "V1!=V2"),
+        fact("csp-constraint", "V1!=V3"),
+        fact("csp-constraint", "V1!=V4"),
+        fact("csp-constraint", "V2!=V3"),
+        fact("csp-constraint", "V2!=V4"),
+    ];
+    let out = dispatch_breed_test("csp_ac3", &input).expect("csp run");
+    assert_eq!(out.explanation, "SAT: V1=B, V2=G, V3=R, V4=R");
+    assert!(out.inference_trace.iter().any(|t| t.kind == "csp-assign"));
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// K3 with 2 colors is UNSAT and the search must exhibit a domain-wipeout
+/// revise step (MAC propagation after the first assignment empties a domain).
+#[test]
+fn csp_ac3_hidden_k3_two_colors_unsat_wipeout() {
+    let mut input = base("solve");
+    input.facts = vec![
+        fact("csp-var", "W1:A,B"),
+        fact("csp-var", "W2:A,B"),
+        fact("csp-var", "W3:A,B"),
+        fact("csp-constraint", "W1!=W2"),
+        fact("csp-constraint", "W1!=W3"),
+        fact("csp-constraint", "W2!=W3"),
+    ];
+    let out = dispatch_breed_test("csp_ac3", &input).expect("csp run");
+    assert_eq!(out.explanation, "UNSAT");
+    assert_eq!(out.selected.as_deref(), Some("unsat"));
+    assert!(
+        out.inference_trace.iter().any(|t| t.kind == "csp-revise"),
+        "MAC must record domain-pruning revise steps before wipeout"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// default_logic
+// ---------------------------------------------------------------------------
+
+/// A1/A2: gronk/wibble/dark_wibble taxonomy. The specific dark_wibble rule
+/// derives not_glows BEFORE the default can fire, so the default
+/// (wibble ∧ unless:dark_wibble ⊢ glows) is BLOCKED: extension contains
+/// not_glows, not glows, and the trace carries a default-block step.
+#[test]
+fn default_logic_hidden_specificity_block() {
+    let mut input = base("defaults");
+    input.facts = vec![fact("obs:gronk", "gronk")];
+    input.rules = vec![
+        rule("r_isa", vec!["gronk"], "wibble", 1.0),
+        rule("r_dark", vec!["gronk"], "dark_wibble", 1.0),
+        rule("r_default", vec!["wibble", "unless:dark_wibble"], "glows", 0.9),
+        rule("r_specific", vec!["dark_wibble"], "not_glows", 1.0),
+    ];
+    let out = dispatch_breed_test("default_logic", &input).expect("dl run");
+    let ext = out.selected.expect("extension");
+    assert!(ext.contains("not_glows"), "extension must contain not_glows: {}", ext);
+    assert!(
+        !ext.split(", ").any(|a| a == "glows"),
+        "blocked default must NOT add glows: {}",
+        ext
+    );
+    let block = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "default-block")
+        .expect("default-block step required");
+    assert!(block.detail.contains("dark_wibble"));
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// Without the dark fact chain the default fires: extension contains glows.
+#[test]
+fn default_logic_hidden_default_fires_without_dark() {
+    let mut input = base("defaults");
+    input.facts = vec![fact("obs:gronk", "gronk")];
+    input.rules = vec![
+        rule("r_isa", vec!["gronk"], "wibble", 1.0),
+        rule("r_default", vec!["wibble", "unless:dark_wibble"], "glows", 0.9),
+        rule("r_specific", vec!["dark_wibble"], "not_glows", 1.0),
+    ];
+    let out = dispatch_breed_test("default_logic", &input).expect("dl run");
+    let ext = out.selected.expect("extension");
+    assert!(ext.split(", ").any(|a| a == "glows"), "default must fire: {}", ext);
+    assert!(!ext.contains("not_glows"));
+}
+
+// ---------------------------------------------------------------------------
+// htn_planning
+// ---------------------------------------------------------------------------
+
+/// A1/A2: method A (taxi) decomposes first but its second operator's
+/// precondition fails (cash=low), forcing chronological backtracking to
+/// method B (walk). Exact plan asserted plus the mandatory htn-backtrack step.
+#[test]
+fn htn_planning_hidden_forced_backtrack() {
+    let mut input = base("travel");
+    input.state = vec![
+        state_atom("at", "shire"),
+        state_atom("cash", "low"),
+    ];
+    input.goals = vec![goal("g1", "task", "journey")];
+    input.rules = vec![
+        rule("method:journey:coach", vec!["at=shire"], "op:hail_coach;op:pay_coach", 1.0),
+        rule("method:journey:walk", vec!["at=shire"], "op:walk_road", 1.0),
+        rule("op:hail_coach", vec![], "in=coach", 1.0),
+        rule("op:pay_coach", vec!["in=coach", "cash=high"], "!in=coach;at=bree", 1.0),
+        rule("op:walk_road", vec![], "!at=shire;at=bree", 1.0),
+    ];
+    let out = dispatch_breed_test("htn_planning", &input).expect("htn run");
+    assert_eq!(out.selected.as_deref(), Some("op:walk_road"), "must backtrack to walk");
+    assert!(
+        out.inference_trace.iter().any(|t| t.kind == "htn-backtrack"),
+        "htn-backtrack step required"
+    );
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "htn-plan").count(),
+        1
+    );
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+// ---------------------------------------------------------------------------
+// dempster_shafer
+// ---------------------------------------------------------------------------
+
+/// Signature D-S property no Bayesian stub reproduces: a single source with
+/// m(flim)=0.25, m(flam)=0.25 (ignorance 0.5 on the frame) yields
+/// Bel(flim)+Bel(flam) = 0.5 < 1. (Masses chosen exactly representable in
+/// f32 so the 1e-9 assertion is meaningful.)
+#[test]
+fn dempster_shafer_hidden_subadditive_belief() {
+    let mk = |q: &str| {
+        let mut input = base("belief");
+        input.rules = vec![
+            rule("src1", vec![], "flim", 0.25),
+            rule("src1", vec![], "flam", 0.25),
+        ];
+        input.goals = vec![goal("query", "query", q)];
+        input
+    };
+    let bel = |q: &str| -> f64 {
+        let out = dispatch_breed_test("dempster_shafer", &mk(q)).expect("ds run");
+        assert!(!out.inference_trace.is_empty()); // A3
+        out.facts
+            .iter()
+            .find(|f| f.key == format!("belief:{}", q))
+            .expect("belief fact")
+            .value
+            .parse()
+            .unwrap()
+    };
+    let sum = bel("flim") + bel("flam");
+    assert!((sum - 0.5).abs() < 1e-9, "Bel(flim)+Bel(flam) must be exactly 0.5");
+    assert!(sum < 1.0, "belief is subadditive (not a probability measure)");
+}
+
+/// Two-source Dempster combination to 1e-9. Hand arithmetic with exactly
+/// f32-representable masses: m1(flim)=0.5 (frame 0.5), m2(flam)=0.75
+/// (frame 0.25): K = 0.5·0.75 = 0.375;
+/// m(flim) = 0.5·0.25 / 0.625 = 0.125/0.625 = 0.2 exactly.
+#[test]
+fn dempster_shafer_hidden_two_source_combination() {
+    let mut input = base("belief");
+    input.rules = vec![
+        rule("witnessA", vec![], "flim", 0.5),
+        rule("witnessB", vec![], "flam", 0.75),
+    ];
+    input.goals = vec![goal("query", "query", "flim")];
+    let out = dispatch_breed_test("dempster_shafer", &input).expect("ds run");
+    let bel: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "belief:flim")
+        .expect("belief fact")
+        .value
+        .parse()
+        .unwrap();
+    let expected = 0.125_f64 / 0.625_f64; // = 0.2 exactly
+    assert!(
+        (bel - expected).abs() < 1e-9,
+        "m(flim) = 0.125/0.625 = 0.2, got {}",
+        bel
+    );
+    assert!(out.inference_trace.iter().any(|t| t.kind == "ds-combine"));
+}
+
+/// Total conflict K=1 must be a run error (Dempster's rule undefined).
+#[test]
+fn dempster_shafer_hidden_total_conflict_is_error() {
+    let mut input = base("belief");
+    input.rules = vec![
+        rule("witnessA", vec![], "flim", 1.0),
+        rule("witnessB", vec![], "flam", 1.0),
+    ];
+    input.goals = vec![goal("query", "query", "flim")];
+    let res = dispatch_breed_test("dempster_shafer", &input);
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("K=1"));
+}
+
+// ---------------------------------------------------------------------------
+// frames_inheritance
+// ---------------------------------------------------------------------------
+
+/// A1/A2: zilk→welp→snorf chain. welp's OWN slot (red) overrides snorf's root
+/// default (blue) by inferential distance, and the frame-walk step count must
+/// equal the path length (2: zilk, welp) — defeating any flat-lookup stub.
+#[test]
+fn frames_inheritance_hidden_override_and_walk_length() {
+    let mut input = base("resolve zilk color");
+    input.facts = vec![
+        fact("frame:zilk:isa", "welp"),
+        fact("frame:welp:isa", "snorf"),
+        fact("frame:snorf:slot:color:default", "blue"),
+        fact("frame:welp:slot:color", "red"),
+    ];
+    let out = dispatch_breed_test("frames_inheritance", &input).expect("frames run");
+    assert_eq!(out.selected.as_deref(), Some("red"), "welp override beats snorf default");
+    let walks = out.inference_trace.iter().filter(|t| t.kind == "frame-walk").count();
+    assert_eq!(walks, 2, "walk step count == path length (zilk, welp)");
+    assert!(!out.inference_trace.is_empty()); // A3
+}
+
+/// isa cycle must be a run error.
+#[test]
+fn frames_inheritance_hidden_cycle_detected() {
+    let mut input = base("resolve zilk color");
+    input.facts = vec![
+        fact("frame:zilk:isa", "welp"),
+        fact("frame:welp:isa", "zilk"),
+    ];
+    let res = dispatch_breed_test("frames_inheritance", &input);
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("cycle"));
+}
+
+// ---------------------------------------------------------------------------
+// ebl
+// ---------------------------------------------------------------------------
+
+/// A1/A2 + the plan's unfakeable check: the learned rule, EXECUTED as a
+/// domain rule through a second EBL inference run, must derive the conclusion
+/// for a fresh object (obj2/obj9) never seen in training. Postcondition: the
+/// learned rule contains >= 1 variable.
+#[test]
+fn ebl_hidden_learned_rule_transfers_to_fresh_objects() {
+    let mut input = base("learn");
+    input.facts = vec![
+        fact("weight(krate1,light)", "true"),
+        fact("weight(bench1,heavy)", "true"),
+    ];
+    input.rules = vec![
+        rule("r1", vec!["lighter(?x,?y)"], "safe_to_stack(?x,?y)", 1.0),
+        rule(
+            "r2",
+            vec!["weight(?x,light)", "weight(?y,heavy)"],
+            "lighter(?x,?y)",
+            1.0,
+        ),
+    ];
+    input.goals = vec![goal("g1", "safe_to_stack(krate1,bench1)", "true")];
+    let out = dispatch_breed_test("ebl", &input).expect("ebl run");
+    let learned = out
+        .facts
+        .iter()
+        .find(|f| f.key == "ebl:rule")
+        .expect("ebl:rule fact")
+        .value
+        .clone();
+    assert!(learned.contains('?'), "learned rule must contain a variable: {}", learned);
+    assert!(!out.inference_trace.is_empty()); // A3
+    assert!(out.inference_trace.iter().any(|t| t.kind == "ebl-generalize"));
+
+    // Parse "p1, p2 => head" and EXECUTE it via a second inference run on
+    // fresh objects (no string-replacement simulation).
+    let (body, head) = learned.split_once(" => ").expect("rule shape");
+    let premises: Vec<&str> = body.split(", ").collect();
+    let learned_rule = Rule {
+        id: "learned".into(),
+        premise: premises.iter().map(|s| s.to_string()).collect(),
+        conclusion: head.to_string(),
+        certainty: 1.0,
+    };
+    let mut apply_input = base("apply");
+    apply_input.facts = vec![
+        fact("weight(obj2,light)", "true"),
+        fact("weight(obj9,heavy)", "true"),
+    ];
+    apply_input.rules = vec![learned_rule];
+    apply_input.goals = vec![goal("g2", "safe_to_stack(obj2,obj9)", "true")];
+    let applied = dispatch_breed_test("ebl", &apply_input)
+        .expect("learned rule must derive the conclusion for fresh obj2/obj9");
+    assert!(applied
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "ebl-explain" && t.detail.contains("learned")));
+}

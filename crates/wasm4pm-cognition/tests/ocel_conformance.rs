@@ -316,3 +316,198 @@ fn all_13_breeds_ocel_conforming() {
     // CBR needs cases
     assert_breed_conforming("cbr", &cbr_input);
 }
+
+// ===========================================================================
+// P1 TIER — measured OCEL fitness 1.0 per breed (van der Aalst doctrine)
+// ===========================================================================
+
+/// Run a P1 breed end-to-end, derive its OCEL log, replay it against the
+/// declared lifecycle model, and assert MEASURED fitness == 1.0. These tests
+/// are the evidence backing `ocel/reports/<breed>.json`.
+fn assert_p1_fitness_one(breed: &str, input: &BreedInput) {
+    let out = dispatch_breed_test(breed, input)
+        .unwrap_or_else(|e| panic!("{} dispatch failed: {}", breed, e));
+    let log = derive_ocel(breed, "fitness-run", &out.inference_trace);
+    let model = wasm4pm_cognition::ocel::lifecycle_model_for(breed)
+        .unwrap_or_else(|| panic!("{} has no lifecycle model", breed));
+    let result = validate_ocel_alignment(&log, model);
+    assert!(
+        result.is_conforming && (result.fitness - 1.0).abs() < f32::EPSILON,
+        "{} measured fitness must be 1.0, got {} (refusals: {:?})",
+        breed,
+        result.fitness,
+        result.refusals
+    );
+}
+
+fn p1_fact(key: &str, value: &str) -> Fact {
+    Fact { key: key.into(), value: value.into() }
+}
+
+fn p1_rule(id: &str, premise: Vec<&str>, conclusion: &str, certainty: f32) -> Rule {
+    Rule {
+        id: id.into(),
+        premise: premise.into_iter().map(String::from).collect(),
+        conclusion: conclusion.into(),
+        certainty,
+    }
+}
+
+#[test]
+fn ltl_monitor_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("ltl:formula", "G (red -> !green)"),
+        p1_fact("trace:0", "red"),
+        p1_fact("trace:1", "green"),
+    ];
+    assert_p1_fitness_one("ltl_monitor", &input);
+}
+
+#[test]
+fn allen_temporal_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("relation", "gamma,delta,p"),
+        p1_fact("relation", "delta,eps,m"),
+    ];
+    assert_p1_fitness_one("allen_temporal", &input);
+}
+
+#[test]
+fn fuzzy_logic_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("fuzzy:zlorp:mid", "tri:2,5,8"),
+        p1_fact("fuzzy:gwib:out", "tri:0,50,100"),
+        p1_fact("fuzzy:input:zlorp", "3.7"),
+    ];
+    input.rules = vec![p1_rule("r1", vec!["fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0)];
+    assert_p1_fitness_one("fuzzy_logic", &input);
+}
+
+#[test]
+fn bayesian_network_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("cpt:Q", "0.3"),
+        p1_fact("cpt:R|Q", "0.2,0.8"),
+        p1_fact("cpt:S|R", "0.1,0.7"),
+        p1_fact("evidence:Q", "true"),
+    ];
+    input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "prob:S".into() }];
+    assert_p1_fitness_one("bayesian_network", &input);
+}
+
+#[test]
+fn csp_ac3_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("csp-var", "V1:B,G,R"),
+        p1_fact("csp-var", "V2:B,G,R"),
+        p1_fact("csp-var", "V3:B,G,R"),
+        p1_fact("csp-constraint", "V1!=V2"),
+        p1_fact("csp-constraint", "V2!=V3"),
+        p1_fact("csp-constraint", "V1!=V3"),
+    ];
+    assert_p1_fitness_one("csp_ac3", &input);
+}
+
+#[test]
+fn default_logic_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![p1_fact("obs:tweety", "penguin")];
+    input.rules = vec![
+        p1_rule("r_isa", vec!["penguin"], "bird", 1.0),
+        p1_rule("r_penguin", vec!["penguin"], "not_flies", 1.0),
+        p1_rule("r_birds_fly", vec!["bird", "unless:not_flies"], "flies", 0.9),
+    ];
+    assert_p1_fitness_one("default_logic", &input);
+}
+
+#[test]
+fn htn_planning_fitness_one() {
+    let mut input = minimal_input();
+    input.state = vec![
+        StateAtom { predicate: "pkg".into(), value: "at_depot".into() },
+        StateAtom { predicate: "truck".into(), value: "at_depot".into() },
+    ];
+    input.goals = vec![Goal { id: "g1".into(), predicate: "task".into(), value: "deliver".into() }];
+    input.rules = vec![
+        p1_rule("method:deliver:by_truck", vec!["pkg=at_depot"], "op:load;op:drive;op:unload", 1.0),
+        p1_rule("op:load", vec!["pkg=at_depot", "truck=at_depot"], "!pkg=at_depot;pkg=in_truck", 1.0),
+        p1_rule("op:drive", vec!["truck=at_depot"], "!truck=at_depot;truck=at_dest", 1.0),
+        p1_rule("op:unload", vec!["pkg=in_truck", "truck=at_dest"], "!pkg=in_truck;pkg=at_dest", 1.0),
+    ];
+    assert_p1_fitness_one("htn_planning", &input);
+}
+
+#[test]
+fn dempster_shafer_fitness_one() {
+    let mut input = minimal_input();
+    input.rules = vec![
+        p1_rule("witnessA", vec![], "flim", 0.5),
+        p1_rule("witnessB", vec![], "flam", 0.75),
+    ];
+    input.goals = vec![Goal { id: "query".into(), predicate: "query".into(), value: "flim".into() }];
+    assert_p1_fitness_one("dempster_shafer", &input);
+}
+
+#[test]
+fn frames_inheritance_fitness_one() {
+    let mut input = minimal_input();
+    input.intent = "resolve zilk color".into();
+    input.facts = vec![
+        p1_fact("frame:zilk:isa", "welp"),
+        p1_fact("frame:welp:slot:color", "red"),
+    ];
+    assert_p1_fitness_one("frames_inheritance", &input);
+}
+
+#[test]
+fn ebl_fitness_one() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        p1_fact("weight(krate1,light)", "true"),
+        p1_fact("weight(bench1,heavy)", "true"),
+    ];
+    input.rules = vec![
+        p1_rule("r1", vec!["lighter(?x,?y)"], "safe_to_stack(?x,?y)", 1.0),
+        p1_rule("r2", vec!["weight(?x,light)", "weight(?y,heavy)"], "lighter(?x,?y)", 1.0),
+    ];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "safe_to_stack(krate1,bench1)".into(),
+        value: "true".into(),
+    }];
+    assert_p1_fitness_one("ebl", &input);
+}
+
+/// Negative injection (van der Aalst constitution): a trace with its init
+/// step removed must NOT achieve fitness 1.0.
+#[test]
+fn ltl_monitor_shuffled_trace_not_conforming() {
+    let steps = vec![
+        make_trace_step(0, "ltl-progress", "trace:0"),
+        make_trace_step(1, "ltl-verdict", "true"),
+    ];
+    let log = derive_ocel("ltl_monitor", "neg-run", &steps);
+    let model = wasm4pm_cognition::ocel::lifecycle_model_for("ltl_monitor").unwrap();
+    let result = validate_ocel_alignment(&log, model);
+    assert!(!result.is_conforming, "missing ltl-init must break conformance");
+    assert!(result.fitness < 1.0);
+}
+
+/// Negative injection: an out-of-order trace (verdict before progress) must
+/// be rejected by the lifecycle DFA.
+#[test]
+fn csp_verdict_before_init_not_conforming() {
+    let steps = vec![
+        make_trace_step(0, "csp-verdict", "satisfiable=true"),
+        make_trace_step(1, "csp-init", "vars=2"),
+    ];
+    let log = derive_ocel("csp_ac3", "neg-run", &steps);
+    let model = wasm4pm_cognition::ocel::lifecycle_model_for("csp_ac3").unwrap();
+    let result = validate_ocel_alignment(&log, model);
+    assert!(!result.is_conforming, "verdict-before-init must break conformance");
+}

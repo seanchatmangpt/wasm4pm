@@ -1,0 +1,181 @@
+//! Constraint satisfaction via AC-3 + MAC backtracking — Mackworth 1977.
+//!
+//! Delegates to the proven `support::csp` solver: AC-3 to fixpoint, then
+//! backtracking with MRV variable selection (lexicographic tie-break),
+//! lexicographic value ordering, and MAC (arc consistency maintained after
+//! each assignment).
+//!
+//! Input contract (facts):
+//! - `csp-var` = `"Name:v1,v2,..."` (≤24 vars, domains ≤16),
+//! - `csp-constraint` = `"X!=Y"` or `"X==Y"`.
+//!
+//! Trace kinds: `csp-init`(1,1) → {`csp-revise`,`csp-assign`,
+//! `csp-backtrack`}(0,*) → `csp-verdict`(1,1).
+
+use crate::breeds::support::csp::{CspSolver, TraceEvent};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+
+/// AC-3 + MAC constraint satisfaction breed.
+pub struct CspAc3;
+
+impl CognitionBreed for CspAc3 {
+    fn id(&self) -> BreedId {
+        BreedId::CspAc3
+    }
+
+    fn capabilities(&self) -> Vec<String> {
+        vec![
+            "ac3_fixpoint".to_string(),
+            "mac_backtracking".to_string(),
+            "mrv_heuristic".to_string(),
+            "lexicographic_tiebreak".to_string(),
+        ]
+    }
+
+    fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        let vars: Vec<&Fact> = input.facts.iter().filter(|f| f.key == "csp-var").collect();
+        if vars.is_empty() {
+            return Err("csp_ac3 requires at least one csp-var fact".to_string());
+        }
+        if vars.len() > 24 {
+            return Err(format!("CSP vars exceeded limit: {} > 24", vars.len()));
+        }
+        for v in vars {
+            let parts: Vec<&str> = v.value.split(':').collect();
+            if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+                return Err(format!("malformed csp-var: {}", v.value));
+            }
+            let domain: Vec<&str> = parts[1].split(',').collect();
+            if domain.len() > 16 {
+                return Err(format!(
+                    "CSP domain size exceeded limit: {} > 16 for var {}",
+                    domain.len(),
+                    parts[0]
+                ));
+            }
+        }
+        for c in input.facts.iter().filter(|f| f.key == "csp-constraint") {
+            if !c.value.contains("!=") && !c.value.contains("==") {
+                return Err(format!("malformed csp-constraint: {}", c.value));
+            }
+        }
+        Ok(())
+    }
+
+    fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
+        let err = |message: String| BreedError {
+            breed: BreedId::CspAc3,
+            message,
+        };
+        let mut solver = CspSolver::new();
+
+        for fact in &input.facts {
+            if fact.key == "csp-var" {
+                let parts: Vec<&str> = fact.value.split(':').collect();
+                if parts.len() != 2 {
+                    return Err(err(format!("malformed csp-var: {}", fact.value)));
+                }
+                let domain = parts[1].split(',').map(|s| s.trim().to_string()).collect();
+                solver.add_var(parts[0].trim(), domain);
+            } else if fact.key == "csp-constraint" {
+                if fact.value.contains("!=") {
+                    let parts: Vec<&str> = fact.value.split("!=").collect();
+                    if parts.len() == 2 {
+                        solver.add_constraint(parts[0].trim(), parts[1].trim(), "!=");
+                    } else {
+                        return Err(err(format!("malformed csp-constraint: {}", fact.value)));
+                    }
+                } else if fact.value.contains("==") {
+                    let parts: Vec<&str> = fact.value.split("==").collect();
+                    if parts.len() == 2 {
+                        solver.add_constraint(parts[0].trim(), parts[1].trim(), "==");
+                    } else {
+                        return Err(err(format!("malformed csp-constraint: {}", fact.value)));
+                    }
+                } else {
+                    return Err(err(format!("malformed csp-constraint: {}", fact.value)));
+                }
+            }
+        }
+
+        let solution = solver.solve();
+
+        let mut trace = Vec::new();
+        for (i, event) in solver.trace.iter().enumerate() {
+            let (kind, detail) = match event {
+                TraceEvent::Init { vars, constraints } => (
+                    "csp-init".to_string(),
+                    format!("vars={} constraints={}", vars, constraints),
+                ),
+                TraceEvent::Revise { x, y, pruned } => (
+                    "csp-revise".to_string(),
+                    format!("x={} y={} pruned={}", x, y, pruned),
+                ),
+                TraceEvent::Assign { var, val } => {
+                    ("csp-assign".to_string(), format!("var={} val={}", var, val))
+                }
+                TraceEvent::Backtrack { var } => {
+                    ("csp-backtrack".to_string(), format!("var={}", var))
+                }
+                TraceEvent::Verdict { satisfiable } => (
+                    "csp-verdict".to_string(),
+                    format!("satisfiable={}", satisfiable),
+                ),
+            };
+            trace.push(TraceStep {
+                step: i,
+                kind,
+                detail,
+                depth: 0,
+                objects: vec![],
+            });
+        }
+
+        let (explanation, out_facts) = if let Some(ref sol) = solution {
+            let mut parts: Vec<_> = sol.iter().map(|(k, v)| format!("{}={}", k, v)).collect();
+            parts.sort();
+            let facts = parts
+                .iter()
+                .map(|p| {
+                    let (k, v) = p.split_once('=').unwrap_or((p.as_str(), ""));
+                    Fact {
+                        key: format!("csp:assignment:{}", k),
+                        value: v.to_string(),
+                    }
+                })
+                .collect();
+            (format!("SAT: {}", parts.join(", ")), facts)
+        } else {
+            ("UNSAT".to_string(), vec![])
+        };
+
+        Ok(BreedOutput {
+            breed: BreedId::CspAc3,
+            candidates: input.candidates.clone(),
+            facts: {
+                let mut f = input.facts.clone();
+                f.extend(out_facts);
+                f
+            },
+            selected: Some(if solution.is_some() { "sat" } else { "unsat" }.to_string()),
+            explanation,
+            inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
+        })
+    }
+
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+        if output.inference_trace.is_empty() {
+            return Err("empty inference trace (fraud signal)".to_string());
+        }
+        let has_init = output.inference_trace.iter().any(|t| t.kind == "csp-init");
+        let has_verdict = output.inference_trace.iter().any(|t| t.kind == "csp-verdict");
+        if !has_init || !has_verdict {
+            return Err("trace must include csp-init and csp-verdict".to_string());
+        }
+        Ok(())
+    }
+}

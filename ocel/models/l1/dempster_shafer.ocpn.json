@@ -1,0 +1,30 @@
+{
+  "model_id": "dempster_shafer-l1-v1",
+  "model_level": "L1",
+  "breed_id": "dempster_shafer",
+  "object_types": ["source", "bpa", "decision"],
+  "places": [
+    {"id": "p1", "name": "sources_posed",  "object_type": "source"},
+    {"id": "p2", "name": "bpas_loaded",    "object_type": "bpa"},
+    {"id": "p3", "name": "combining",      "object_type": "bpa"},
+    {"id": "p4", "name": "belief_emitted", "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ds-load-bpa", "label": "ds-load-bpa"},
+    {"id": "t2", "name": "ds-combine",  "label": "ds-combine"},
+    {"id": "t3", "name": "ds-belief",   "label": "ds-belief"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}]
+}
