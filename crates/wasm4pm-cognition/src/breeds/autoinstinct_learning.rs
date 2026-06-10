@@ -44,7 +44,11 @@ impl CognitionBreed for AutoinstinctLearning {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        tracing::debug!(breed.step = "goal_assessed", breed = "autoinstinct_learning", "L1 inference step");
+        tracing::debug!(
+            breed.step = "goal_assessed",
+            breed = "autoinstinct_learning",
+            "L1 inference step"
+        );
         // Encode goals as bitmask: bit i = goal i must be satisfied.
         let goal_mask: u32 = input
             .goals
@@ -61,7 +65,11 @@ impl CognitionBreed for AutoinstinctLearning {
             .map(|(i, _)| 1u32 << (i.min(31)))
             .fold(0u32, |acc, b| acc | b);
 
-        tracing::debug!(breed.step = "prerequisite_checked", breed = "autoinstinct_learning", "L1 inference step");
+        tracing::debug!(
+            breed.step = "prerequisite_checked",
+            breed = "autoinstinct_learning",
+            "L1 inference step"
+        );
         let planner = HeuristicPlanner::new(goal_mask);
         let initial_state = ProblemState {
             features: initial_features,
@@ -110,7 +118,11 @@ impl CognitionBreed for AutoinstinctLearning {
                 depth: 0,
                 objects: vec![],
             });
-            tracing::debug!(breed.step = "plan_step_added", breed = "autoinstinct_learning", "L1 inference step");
+            tracing::debug!(
+                breed.step = "plan_step_added",
+                breed = "autoinstinct_learning",
+                "L1 inference step"
+            );
             plan_candidates.push(Candidate {
                 id: format!("plan-step-{}", n),
                 score: if goal_mask == 0 {
@@ -123,7 +135,11 @@ impl CognitionBreed for AutoinstinctLearning {
             });
         }
 
-        tracing::debug!(breed.step = "curriculum_emitted", breed = "autoinstinct_learning", "L1 inference step");
+        tracing::debug!(
+            breed.step = "curriculum_emitted",
+            breed = "autoinstinct_learning",
+            "L1 inference step"
+        );
         let final_state = plan.last().unwrap();
         let final_distance = planner.heuristic_distance(final_state);
         let goal_reached = final_distance == 0;

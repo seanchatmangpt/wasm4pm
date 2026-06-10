@@ -82,7 +82,11 @@ impl CognitionBreed for AutoinstinctNeurosis {
         let beliefs = parse_beliefs(&input.facts);
         for (concept, strength) in &beliefs {
             state.beliefs.insert(concept.clone(), *strength);
-            tracing::debug!(breed.step = "belief_evaluated", breed = "autoinstinct_neurosis", "L1 inference step");
+            tracing::debug!(
+                breed.step = "belief_evaluated",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
         }
         trace.push(TraceStep {
             step: trace.len(),
@@ -110,12 +114,20 @@ impl CognitionBreed for AutoinstinctNeurosis {
             let snap_mistrust = state.mistrust;
 
             let response = state.process_input(stimulus, *strength);
-            tracing::debug!(breed.step = "conflict_detected", breed = "autoinstinct_neurosis", "L1 inference step");
+            tracing::debug!(
+                breed.step = "conflict_detected",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
 
             let delta_fear = state.fear - snap_fear;
             let delta_anger = state.anger - snap_anger;
             let delta_mistrust = state.mistrust - snap_mistrust;
-            tracing::debug!(breed.step = "anxiety_computed", breed = "autoinstinct_neurosis", "L1 inference step");
+            tracing::debug!(
+                breed.step = "anxiety_computed",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
 
             trace.push(TraceStep {
                 step: trace.len(),
@@ -128,7 +140,11 @@ impl CognitionBreed for AutoinstinctNeurosis {
                 objects: vec![],
             });
 
-            tracing::debug!(breed.step = "resolution_proposed", breed = "autoinstinct_neurosis", "L1 inference step");
+            tracing::debug!(
+                breed.step = "resolution_proposed",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
             // Emit a candidate describing the affect change for this stimulus.
             output_candidates.push(Candidate {
                 id: stimulus.clone(),

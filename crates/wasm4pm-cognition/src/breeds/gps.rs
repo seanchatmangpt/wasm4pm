@@ -176,7 +176,12 @@ impl CognitionBreed for Gps {
         while let Some(gap) = first_gap(&goals, &state) {
             tracing::debug!(breed.step = "goal_selected", breed = "gps", goal = %gap, "L1 inference step");
             let gap_count = goals.iter().filter(|g| !state.contains(*g)).count();
-            tracing::debug!(breed.step = "difference_computed", breed = "gps", gap_count = gap_count, "L1 inference step");
+            tracing::debug!(
+                breed.step = "difference_computed",
+                breed = "gps",
+                gap_count = gap_count,
+                "L1 inference step"
+            );
             if gap_count >= last_gap_count {
                 return Err(BreedError {
                     breed: BreedId::Gps,
@@ -200,7 +205,12 @@ impl CognitionBreed for Gps {
                 });
             }
         }
-        tracing::debug!(breed.step = "goal_achieved", breed = "gps", plan_ops = plan.len(), "L1 inference step");
+        tracing::debug!(
+            breed.step = "goal_achieved",
+            breed = "gps",
+            plan_ops = plan.len(),
+            "L1 inference step"
+        );
 
         let explanation = format!("GPS plan ({} ops): {}", plan.len(), plan.join(" → "));
         // Semantic contract for `selected`:

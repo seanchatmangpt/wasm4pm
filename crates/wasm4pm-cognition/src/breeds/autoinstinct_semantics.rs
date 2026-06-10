@@ -53,7 +53,11 @@ impl CognitionBreed for AutoinstinctSemantics {
         });
 
         let frame_opt = parser.parse(&input.intent);
-        tracing::debug!(breed.step = "token_parsed", breed = "autoinstinct_semantics", "L1 inference step");
+        tracing::debug!(
+            breed.step = "token_parsed",
+            breed = "autoinstinct_semantics",
+            "L1 inference step"
+        );
 
         let (selected, candidates, explanation, facts) = match &frame_opt {
             None => {
@@ -76,7 +80,11 @@ impl CognitionBreed for AutoinstinctSemantics {
             }
             Some(frame) => {
                 let act_name = format!("{:?}", frame.act);
-                tracing::debug!(breed.step = "cd_primitive_identified", breed = "autoinstinct_semantics", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "cd_primitive_identified",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 let act_description = match &frame.act {
                     PrimitiveAct::Atrans => "transfer of abstract relationship (e.g. give)",
                     PrimitiveAct::Ptrans => "transfer of physical location (e.g. go)",
@@ -89,7 +97,11 @@ impl CognitionBreed for AutoinstinctSemantics {
 
                 let rule_id = format!("sem-{}", act_name.to_uppercase());
 
-                tracing::debug!(breed.step = "actor_bound", breed = "autoinstinct_semantics", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "actor_bound",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "extract-act".to_string(),
@@ -120,7 +132,11 @@ impl CognitionBreed for AutoinstinctSemantics {
                     });
                 }
 
-                tracing::debug!(breed.step = "relation_extracted", breed = "autoinstinct_semantics", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "relation_extracted",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 let selected_json = serde_json::json!({
                     "act": act_name,
                     "actor": frame.actor,

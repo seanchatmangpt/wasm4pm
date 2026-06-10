@@ -205,10 +205,22 @@ impl CognitionBreed for Eliza {
                 objects: vec![],
             });
             if let Some(slots) = try_match(&frame.pattern, &text) {
-                tracing::debug!(breed.step = "pattern_matched", breed = "eliza", "ELIZA L1 step");
-                tracing::debug!(breed.step = "script_selected", breed = "eliza", "ELIZA L1 step");
+                tracing::debug!(
+                    breed.step = "pattern_matched",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
+                tracing::debug!(
+                    breed.step = "script_selected",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 let response = render(&frame.template, &slots);
-                tracing::debug!(breed.step = "template_applied", breed = "eliza", "ELIZA L1 step");
+                tracing::debug!(
+                    breed.step = "template_applied",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "match-pattern".to_string(),
@@ -225,7 +237,11 @@ impl CognitionBreed for Eliza {
                         objects: vec![],
                     });
                 }
-                tracing::debug!(breed.step = "response_emitted", breed = "eliza", "ELIZA L1 step");
+                tracing::debug!(
+                    breed.step = "response_emitted",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 return Ok(BreedOutput {
                     breed: BreedId::Eliza,
                     candidates: input.candidates.clone(),

@@ -240,11 +240,27 @@ impl CognitionBreed for Prolog {
             }
 
             let rule_refs: Vec<&crate::breeds::Rule> = input.rules.iter().collect();
-            tracing::debug!(breed.step = "clause_selected", breed = "prolog", "Prolog L1 step");
-            tracing::debug!(breed.step = "unification_attempted", breed = "prolog", "Prolog L1 step");
+            tracing::debug!(
+                breed.step = "clause_selected",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
+            tracing::debug!(
+                breed.step = "unification_attempted",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
             let all_facts = forward_chain(&base_facts, &rule_refs);
-            tracing::debug!(breed.step = "substitution_bound", breed = "prolog", "Prolog L1 step");
-            tracing::debug!(breed.step = "resolution_step", breed = "prolog", "Prolog L1 step");
+            tracing::debug!(
+                breed.step = "substitution_bound",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
+            tracing::debug!(
+                breed.step = "resolution_step",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
 
             // Check each goal against derived facts
             let (selected, explanation) = if let Some(goal) = input.goals.first() {
@@ -314,7 +330,11 @@ impl CognitionBreed for Prolog {
                 (None, format!("Derived {} facts", all_facts.len()))
             };
 
-            tracing::debug!(breed.step = "query_succeeded_or_refused", breed = "prolog", "Prolog L1 step");
+            tracing::debug!(
+                breed.step = "query_succeeded_or_refused",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
             return Ok(BreedOutput {
                 breed: BreedId::Prolog,
                 candidates: input.candidates.clone(),
@@ -474,7 +494,11 @@ impl CognitionBreed for Prolog {
                 depth: 0,
                 objects: vec![],
             });
-            tracing::debug!(breed.step = "clause_selected", breed = "prolog", "Prolog L1 step");
+            tracing::debug!(
+                breed.step = "clause_selected",
+                breed = "prolog",
+                "Prolog L1 step"
+            );
             step_no += 1;
         }
 
@@ -518,7 +542,11 @@ impl CognitionBreed for Prolog {
             epoch: EpochId(0),
         };
 
-        tracing::debug!(breed.step = "unification_attempted", breed = "prolog", "Prolog L1 step");
+        tracing::debug!(
+            breed.step = "unification_attempted",
+            breed = "prolog",
+            "Prolog L1 step"
+        );
         trace.push(TraceStep {
             step: step_no,
             kind: "kernel-query".into(),
@@ -532,12 +560,20 @@ impl CognitionBreed for Prolog {
         step_no += 1;
 
         // 5. Run the kernel.
-        tracing::debug!(breed.step = "resolution_step", breed = "prolog", "Prolog L1 step");
+        tracing::debug!(
+            breed.step = "resolution_step",
+            breed = "prolog",
+            "Prolog L1 step"
+        );
         let result = kernel.query(&q);
 
         let (selected, explanation) = match result {
             QueryResult::Answered(answers) => {
-                tracing::debug!(breed.step = "substitution_bound", breed = "prolog", "Prolog L1 step");
+                tracing::debug!(
+                    breed.step = "substitution_bound",
+                    breed = "prolog",
+                    "Prolog L1 step"
+                );
                 let first = &answers[0];
                 trace.push(TraceStep {
                     step: step_no,
@@ -600,7 +636,11 @@ impl CognitionBreed for Prolog {
             }
         };
 
-        tracing::debug!(breed.step = "query_succeeded_or_refused", breed = "prolog", "Prolog L1 step");
+        tracing::debug!(
+            breed.step = "query_succeeded_or_refused",
+            breed = "prolog",
+            "Prolog L1 step"
+        );
         Ok(BreedOutput {
             breed: BreedId::Prolog,
             candidates: input.candidates.clone(),

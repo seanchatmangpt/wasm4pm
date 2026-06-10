@@ -1,0 +1,246 @@
+{
+  "breed": "eliza",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Weizenbaum-1966-ELIZA-CACM.pdf",
+    "citation": "Weizenbaum, J. (1966). ELIZA—A computer program for the study of natural language communication between man and machine. Communications of the ACM, 9(1), 36–45. https://doi.org/10.1145/365153.365168",
+    "locus": "Opening dialogue (p. 36), decomposition/reassembly mechanics (pp. 37–40), and Appendix \"An ELIZA Script\" (pp. 44–45) — DOCTOR script rules: ALIKE/DIT (rank 10), ALWAYS (rank 1), MY=YOUR (rank 2) with /FAMILY tag, I keyword (sad/unhappy/depressed pattern), REMEMBER (rank 5), DREAMT (rank 4), IF, MEMORY MY",
+    "extraction": "verbatim",
+    "notes": "The existing realElizaInput() is a stub — intent-only with no rules, facts, goals, or state. The improved fixture encodes: (1) the six opening utterances from the verbatim dialogue on p. 36, as facts keyed by utterance index; (2) all keyword/decomposition/reassembly rules directly from the Appendix script (pp. 44–45) covering ALIKE→DIT, ALWAYS, MY/FAMILY, I+depressed, I+want/need, REMEMBER, DREAMT, IF, MEMORY MY, NONE, YOU patterns; (3) goals capturing the two core ELIZA objectives: detect dominant theme and reflect back via keyword decomposition; (4) state atoms encoding the DOCTOR script name, the unconditional pronoun swap rule (I↔YOU, MY↔YOUR, ME↔YOU cited explicitly on p. 37), and the left-to-right highest-rank-wins scan rule. The decomposition notation (0 K 0) and reassembly slot numbering (component 3/4/5) are verbatim from the paper. The opening 3-turn dialogue exchange is the canonical worked example Weizenbaum presents on p. 36 to introduce the system."
+  },
+  "input": {
+    "intent": "Men are all alike.",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "utterance:1",
+        "value": "Men are all alike."
+      },
+      {
+        "key": "utterance:2",
+        "value": "They're always bugging us about something or other."
+      },
+      {
+        "key": "utterance:3",
+        "value": "Well, my boyfriend made me come here."
+      },
+      {
+        "key": "utterance:4",
+        "value": "He says I'm depressed much of the time."
+      },
+      {
+        "key": "utterance:5",
+        "value": "It's true, I am unhappy."
+      },
+      {
+        "key": "utterance:6",
+        "value": "I need some help, that much seems certain."
+      }
+    ],
+    "cases": [],
+    "rules": [
+      {
+        "id": "alike-rank10",
+        "premise": ["ALIKE"],
+        "conclusion": "=DIT",
+        "certainty": 1
+      },
+      {
+        "id": "same-rank10",
+        "premise": ["SAME"],
+        "conclusion": "=DIT",
+        "certainty": 1
+      },
+      {
+        "id": "dit-in-what-way",
+        "premise": ["DIT", "(0)"],
+        "conclusion": "IN WHAT WAY",
+        "certainty": 1
+      },
+      {
+        "id": "dit-resemblance",
+        "premise": ["DIT", "(0)"],
+        "conclusion": "WHAT RESEMBLANCE DO YOU SEE",
+        "certainty": 1
+      },
+      {
+        "id": "always-rank1",
+        "premise": ["ALWAYS", "(0)"],
+        "conclusion": "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+        "certainty": 1
+      },
+      {
+        "id": "always-when",
+        "premise": ["ALWAYS", "(0)"],
+        "conclusion": "WHEN",
+        "certainty": 1
+      },
+      {
+        "id": "my-subst-your-rank2",
+        "premise": ["MY", "(0 YOUR 0 (/FAMILY) 0)"],
+        "conclusion": "TELL ME MORE ABOUT YOUR FAMILY",
+        "certainty": 1
+      },
+      {
+        "id": "my-family-who-else",
+        "premise": ["MY", "(0 YOUR 0 (/FAMILY) 0)"],
+        "conclusion": "WHO ELSE IN YOUR FAMILY 5",
+        "certainty": 1
+      },
+      {
+        "id": "my-general",
+        "premise": ["MY", "(0 YOUR 0)"],
+        "conclusion": "YOUR 3",
+        "certainty": 1
+      },
+      {
+        "id": "i-you-are-sad",
+        "premise": ["I", "(0 YOU ARE 0 (*SAD UNHAPPY DEPRESSED SICK) 0)"],
+        "conclusion": "I AM SORRY TO HEAR YOU ARE 5",
+        "certainty": 1
+      },
+      {
+        "id": "i-you-are-sad-help",
+        "premise": ["I", "(0 YOU ARE 0 (*SAD UNHAPPY DEPRESSED SICK) 0)"],
+        "conclusion": "DO YOU THINK COMING HERE WILL HELP YOU NOT TO BE 5",
+        "certainty": 1
+      },
+      {
+        "id": "i-want-need",
+        "premise": ["I", "(0 YOU (*WANT NEED) 0)"],
+        "conclusion": "WHAT WOULD IT MEAN TO YOU IF YOU GOT 4",
+        "certainty": 1
+      },
+      {
+        "id": "i-want-need-2",
+        "premise": ["I", "(0 YOU (*WANT NEED) 0)"],
+        "conclusion": "WHY DO YOU WANT 4",
+        "certainty": 1
+      },
+      {
+        "id": "remember-rank5-you",
+        "premise": ["REMEMBER", "(0 YOU REMEMBER 0)"],
+        "conclusion": "DO YOU OFTEN THINK OF 4",
+        "certainty": 1
+      },
+      {
+        "id": "remember-rank5-i",
+        "premise": ["REMEMBER", "(0 DO I REMEMBER 0)"],
+        "conclusion": "DID YOU THINK I WOULD FORGET 5",
+        "certainty": 1
+      },
+      {
+        "id": "dreamt-rank4",
+        "premise": ["DREAMT", "(0 YOU DREAMT 0)"],
+        "conclusion": "REALLY, 4",
+        "certainty": 1
+      },
+      {
+        "id": "dreamt-before",
+        "premise": ["DREAMT", "(0 YOU DREAMT 0)"],
+        "conclusion": "HAVE YOU DREAMT 4 BEFORE",
+        "certainty": 1
+      },
+      {
+        "id": "if-rule",
+        "premise": ["IF", "(0 IF 0)"],
+        "conclusion": "DO YOU THINK ITS LIKELY THAT 3",
+        "certainty": 1
+      },
+      {
+        "id": "memory-my-1",
+        "premise": ["MEMORY", "MY", "(0 YOUR 0)"],
+        "conclusion": "LETS DISCUSS FURTHER WHY YOUR 3",
+        "certainty": 1
+      },
+      {
+        "id": "memory-my-2",
+        "premise": ["MEMORY", "MY", "(0 YOUR 0)"],
+        "conclusion": "EARLIER YOU SAID YOUR 3",
+        "certainty": 1
+      },
+      {
+        "id": "none-go-on",
+        "premise": ["NONE", "(0)"],
+        "conclusion": "PLEASE GO ON",
+        "certainty": 1
+      },
+      {
+        "id": "you-i-remind",
+        "premise": ["YOU", "(0 I REMIND YOU OF 0)"],
+        "conclusion": "=DIT",
+        "certainty": 1
+      },
+      {
+        "id": "you-i-are",
+        "premise": ["YOU", "(0 I ARE 0)"],
+        "conclusion": "WHAT MAKES YOU THINK I AM 4",
+        "certainty": 1
+      },
+      {
+        "id": "you-i-verb-you",
+        "premise": ["YOU", "(0 I 0 YOU)"],
+        "conclusion": "WHY DO YOU THINK I 3 YOU",
+        "certainty": 1
+      }
+    ],
+    "goals": [
+      {
+        "id": "g-theme",
+        "predicate": "detect_theme",
+        "value": "dominant_emotional_concern"
+      },
+      {
+        "id": "g-reflect",
+        "predicate": "reflect_back",
+        "value": "patient_statement_using_keyword_decomposition"
+      }
+    ],
+    "state": [
+      {
+        "predicate": "script",
+        "value": "DOCTOR"
+      },
+      {
+        "predicate": "pronoun_swap",
+        "value": "I<->YOU;MY<->YOUR;ME<->YOU"
+      },
+      {
+        "predicate": "keyword_scan",
+        "value": "left_to_right_highest_rank_wins"
+      }
+    ]
+  },
+  "expected": {
+    "turn_1": {
+      "user": "Men are all alike.",
+      "keyword_triggered": "ALIKE (rank 10, equivalenced to DIT)",
+      "decomposition": "(0)",
+      "reassembly": "IN WHAT WAY",
+      "eliza_response": "IN WHAT WAY"
+    },
+    "turn_2": {
+      "user": "They're always bugging us about something or other.",
+      "keyword_triggered": "ALWAYS (rank 1)",
+      "decomposition": "(0)",
+      "reassembly": "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+      "eliza_response": "CAN YOU THINK OF A SPECIFIC EXAMPLE"
+    },
+    "turn_3": {
+      "user": "Well, my boyfriend made me come here.",
+      "keyword_triggered": "MY (rank 2, MY substituted to YOUR during scan)",
+      "decomposition": "(0 YOUR 0) — no /FAMILY tag match, falls to general MY rule",
+      "reassembly": "YOUR 3 → YOUR BOYFRIEND MADE YOU COME HERE",
+      "eliza_response": "YOUR BOYFRIEND MADE YOU COME HERE",
+      "note": "ME substituted to YOU during scan per unconditional substitution rule (ME = YOU)"
+    },
+    "detected_theme": "family_relationships_and_emotional_distress",
+    "dominant_keywords_by_rank": [
+      "ALIKE:10",
+      "MY:2 (FAMILY context)",
+      "ALWAYS:1",
+      "I (depressed pattern)",
+      "REMEMBER:5",
+      "DREAMT:4"
+    ]
+  }
+}

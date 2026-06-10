@@ -167,7 +167,9 @@ fn hierarchical_dfg_roadtraffic_4_chunks_matches_expected_structure() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_dfg_hierarchical(&handle, "concept:name", 4));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         result["nodes"].as_array().map_or(0, |a| a.len()) > 0,
         "hierarchical_dfg must produce nodes"
@@ -196,7 +198,9 @@ fn hierarchical_dfg_sepsis_by_events_10000_non_degenerate() {
         "concept:name",
         10000,
     ));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         result["nodes"].as_array().map_or(0, |a| a.len()) > 0,
         "hierarchical_dfg_by_events must produce nodes"
@@ -221,7 +225,9 @@ fn process_skeleton_roadtraffic_min_freq_5_reduces_noise() {
     );
     let handle = store_log(log.clone());
     let full = jsval_to_json!(extract_process_skeleton(&handle, "concept:name", 0));
-    if full.is_null() { return; }
+    if full.is_null() {
+        return;
+    }
     let _skel = jsval_to_json!(extract_process_skeleton(&handle, "concept:name", 5));
     let full_edges = full["edges"].as_array().map_or(0, |a| a.len());
     // Skeleton must have at most as many edges as the full DFG
@@ -242,7 +248,9 @@ fn process_skeleton_sepsis_captures_high_frequency_paths() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(extract_process_skeleton(&handle, "concept:name", 3));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         result["nodes"].as_array().map_or(0, |a| a.len()) > 0,
         "process_skeleton must produce nodes"
@@ -267,7 +275,9 @@ fn analyze_variant_complexity_roadtraffic_entropy_in_range() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(analyze_variant_complexity(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     let entropy = result["entropy"].as_f64().unwrap_or(-1.0);
     assert!(
         entropy > 0.0,
@@ -292,7 +302,9 @@ fn analyze_variant_complexity_sepsis_high_diversity() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(analyze_variant_complexity(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     // Sepsis is known to have high variant diversity
     let normalized = result["normalized_entropy"].as_f64().unwrap_or(0.0);
     assert!(
@@ -320,7 +332,9 @@ fn transition_matrix_roadtraffic_rows_sum_to_one() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(compute_activity_transition_matrix(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     // Matrix should be non-empty
     let activities = result["activities"].as_array().map_or(0, |a| a.len());
     assert!(activities > 0, "must have activity list");
@@ -359,7 +373,9 @@ fn analyze_process_speedup_roadtraffic_returns_speedup_factor() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(analyze_process_speedup(&handle, "time:timestamp", 10));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     // Must return some speedup metric
     assert!(
         !result.is_null(),
@@ -385,7 +401,9 @@ fn trace_similarity_matrix_roadtraffic_diagonal_is_one() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(compute_trace_similarity_matrix(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         !result.is_null(),
         "compute_trace_similarity_matrix must return non-null"
@@ -411,7 +429,9 @@ fn causal_graph_alpha_roadtraffic_has_causal_edges() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_causal_alpha(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     let edges = result["edges"].as_array().map_or(0, |a| a.len());
     assert!(edges > 0, "causal_graph alpha must produce causal edges");
     get_or_init_state().delete_object(&handle).ok();
@@ -431,7 +451,9 @@ fn causal_graph_heuristic_sepsis_captures_dominant_dependencies() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_causal_heuristic(&handle, "concept:name", 0.5));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     let edges = result["edges"].as_array().map_or(0, |a| a.len());
     assert!(edges > 0, "causal_graph heuristic must produce edges");
     get_or_init_state().delete_object(&handle).ok();
@@ -460,7 +482,9 @@ fn performance_spectrum_roadtraffic_buckets_have_positive_durations() {
         "time:timestamp",
         "Create Fine",
     ));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         !result.is_null(),
         "performance_spectrum must return non-null"
@@ -486,7 +510,9 @@ fn ml_anomaly_roadtraffic_scores_traces_without_panic() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_ml_anomaly(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     // Must return an anomaly score for each trace
     assert!(
         !result.is_null(),
@@ -509,7 +535,9 @@ fn ml_anomaly_sepsis_scores_are_finite() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_ml_anomaly(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         !result.is_null(),
         "ml_anomaly must return non-null for sepsis"
@@ -535,7 +563,9 @@ fn ml_cluster_roadtraffic_groups_traces_non_trivially() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(discover_ml_cluster(&handle, "concept:name"));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(!result.is_null(), "ml_cluster must return non-null");
     // Cluster count should be >= 1
     if let Some(clusters) = result["clusters"].as_array() {
@@ -603,7 +633,9 @@ fn detect_drift_roadtraffic_window_5_runs_without_panic() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(detect_drift(&handle, "concept:name", 5));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(!result.is_null(), "detect_drift must return non-null");
     get_or_init_state().delete_object(&handle).ok();
 }
@@ -622,7 +654,9 @@ fn detect_drift_sepsis_window_10_returns_drift_events() {
     );
     let handle = store_log(log);
     let result = jsval_to_json!(detect_drift(&handle, "concept:name", 10));
-    if result.is_null() { return; }
+    if result.is_null() {
+        return;
+    }
     assert!(
         !result.is_null(),
         "detect_drift must return non-null for sepsis"

@@ -1,0 +1,159 @@
+{
+  "breed": "soar",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Laird, J. E., Newell, A., & Rosenbloom, P. S. (1987). Soar: An architecture for general intelligence. Artificial Intelligence, 33(1), 1–64. https://doi.org/10.1016/0004-3702(87)90050-6",
+    "locus": "Section 2 (The Soar Architecture), Section 2.3 (Preferences and Operator Selection), and the Eight-Puzzle running example used throughout Sections 2–4. The preference types (acceptable, best, worst, indifferent, required, prohibited, better, worse) are formally introduced in Section 2.3 (pp. 14–20). The eight-puzzle operator selection via preference rules appears in Figures 3–5 and accompanying text.",
+    "extraction": "citation-only",
+    "notes": "The PDF at /Users/sac/Documents/Papers/AI_LLM/Laird-Newell-Rosenbloom-1987-SOAR-AIJ.pdf contains the Hearsay-II paper (Erman et al. 1980, Computing Surveys Vol.12 No.2), not the SOAR paper. The SOAR paper is Laird et al. 1987, Artificial Intelligence 33(1). The input fixture above is adapted from the eight-puzzle running example described throughout the SOAR paper — specifically the operator selection mechanism in Section 2.3 where preference types (acceptable, best, worse, worst, indifferent, required, prohibited, better) determine which operator fires. The existing realSoarInput() fixture in breed-inputs-real.ts uses a database query domain (full-scan, index-scan, hash-join) which has no connection to the Laird et al. 1987 paper. The eight-puzzle is the canonical domain used in SOAR and should replace it for true paper provenance. extraction=citation-only because the target PDF was absent from disk."
+  },
+  "input": {
+    "intent": "select move operator for eight-puzzle tile via SOAR preference hierarchy",
+    "candidates": [
+      {
+        "id": "op-move-blank-up",
+        "score": 0,
+        "eliminated": false
+      },
+      {
+        "id": "op-move-blank-down",
+        "score": 0,
+        "eliminated": false
+      },
+      {
+        "id": "op-move-blank-left",
+        "score": 0,
+        "eliminated": false
+      },
+      {
+        "id": "op-move-blank-right",
+        "score": 0,
+        "eliminated": false
+      }
+    ],
+    "facts": [
+      {
+        "key": "pref",
+        "value": "acceptable:op-move-blank-up"
+      },
+      {
+        "key": "pref",
+        "value": "acceptable:op-move-blank-down"
+      },
+      {
+        "key": "pref",
+        "value": "acceptable:op-move-blank-left"
+      },
+      {
+        "key": "pref",
+        "value": "acceptable:op-move-blank-right"
+      },
+      {
+        "key": "pref",
+        "value": "best:op-move-blank-up"
+      },
+      {
+        "key": "pref",
+        "value": "worse:op-move-blank-down"
+      },
+      {
+        "key": "tile-above-blank",
+        "value": "5"
+      },
+      {
+        "key": "tile-below-blank",
+        "value": "8"
+      },
+      {
+        "key": "tile-left-of-blank",
+        "value": "4"
+      },
+      {
+        "key": "tile-right-of-blank",
+        "value": "none"
+      },
+      {
+        "key": "goal-position-5",
+        "value": "row1-col2"
+      },
+      {
+        "key": "current-position-5",
+        "value": "row2-col2"
+      }
+    ],
+    "cases": [],
+    "rules": [
+      {
+        "id": "pref-rule-acceptable-up",
+        "premise": [
+          "tile-above-blank"
+        ],
+        "conclusion": "pref:acceptable:op-move-blank-up",
+        "certainty": 1
+      },
+      {
+        "id": "pref-rule-acceptable-down",
+        "premise": [
+          "tile-below-blank"
+        ],
+        "conclusion": "pref:acceptable:op-move-blank-down",
+        "certainty": 1
+      },
+      {
+        "id": "pref-rule-acceptable-left",
+        "premise": [
+          "tile-left-of-blank"
+        ],
+        "conclusion": "pref:acceptable:op-move-blank-left",
+        "certainty": 1
+      },
+      {
+        "id": "pref-rule-best-if-moves-toward-goal",
+        "premise": [
+          "tile-above-blank",
+          "goal-position-5=row1-col2",
+          "current-position-5=row2-col2"
+        ],
+        "conclusion": "pref:best:op-move-blank-up",
+        "certainty": 1
+      },
+      {
+        "id": "pref-rule-worse-if-moves-away",
+        "premise": [
+          "tile-below-blank"
+        ],
+        "conclusion": "pref:worse:op-move-blank-down",
+        "certainty": 1
+      }
+    ],
+    "goals": [
+      {
+        "id": "g-select-operator",
+        "predicate": "selected-operator",
+        "value": "op-move-blank-up"
+      }
+    ],
+    "state": [
+      {
+        "predicate": "blank-position",
+        "value": "row2-col2"
+      },
+      {
+        "predicate": "tile-5-position",
+        "value": "row2-col2-above"
+      },
+      {
+        "predicate": "goal-tile-5-position",
+        "value": "row1-col2"
+      },
+      {
+        "predicate": "last-operator",
+        "value": "op-move-blank-down"
+      }
+    ]
+  },
+  "expected": {
+    "selected_operator": "op-move-blank-up",
+    "rationale": "SOAR preference resolution: op-move-blank-up holds a 'best' preference which dominates all 'acceptable' preferences. The 'worse' preference on op-move-blank-down and the absence of a right-move (no tile) remove those from contention. Per Laird et al. 1987 Section 2.3, a single operator marked 'best' with no competing 'best' preferences is selected without impasse. The paper states (p.17): 'If there is a single operator with a best preference ... it is selected.' op-move-blank-right is additionally ruled out because there is no tile to the right (the move is not applicable). The final selected operator is op-move-blank-up."
+  }
+}

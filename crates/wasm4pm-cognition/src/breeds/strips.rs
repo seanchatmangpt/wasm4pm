@@ -156,7 +156,11 @@ fn idfs(
         if !applicable(action, state) {
             continue;
         }
-        tracing::debug!(breed.step = "operator_selected", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "operator_selected",
+            breed = "strips",
+            "L1 inference step"
+        );
         trace.push(TraceStep {
             step: trace.len(),
             kind: "try-action".to_string(),
@@ -164,9 +168,17 @@ fn idfs(
             depth: (MAX_PLAN_DEPTH - depth) as u32,
             objects: vec![],
         });
-        tracing::debug!(breed.step = "precondition_checked", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "precondition_checked",
+            breed = "strips",
+            "L1 inference step"
+        );
         let next = apply_with_frames(action, state, frame_axioms);
-        tracing::debug!(breed.step = "effect_applied", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "effect_applied",
+            breed = "strips",
+            "L1 inference step"
+        );
         if let Some(rest) = idfs(&next, goals, actions, depth - 1, trace, frame_axioms) {
             let mut plan = vec![action.id.clone()];
             plan.extend(rest);
@@ -197,7 +209,11 @@ impl CognitionBreed for Strips {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let initial = atoms_of(&input.state);
-        tracing::debug!(breed.step = "state_loaded", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "state_loaded",
+            breed = "strips",
+            "L1 inference step"
+        );
         let goals = goal_strings(&input.goals);
         let frame_axioms = parse_frame_axioms(&input.facts);
         let mut trace: Vec<TraceStep> = Vec::new();
@@ -273,7 +289,11 @@ impl CognitionBreed for Strips {
                 objects: vec![],
             });
         }
-        tracing::debug!(breed.step = "goal_tested", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "goal_tested",
+            breed = "strips",
+            "L1 inference step"
+        );
         if !goals_satisfied(&goals, &s) {
             return Err(BreedError {
                 breed: BreedId::Strips,
@@ -299,7 +319,11 @@ impl CognitionBreed for Strips {
             None
         };
 
-        tracing::debug!(breed.step = "plan_emitted", breed = "strips", "L1 inference step");
+        tracing::debug!(
+            breed.step = "plan_emitted",
+            breed = "strips",
+            "L1 inference step"
+        );
         Ok(BreedOutput {
             breed: BreedId::Strips,
             candidates: input.candidates.clone(),

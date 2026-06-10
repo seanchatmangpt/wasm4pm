@@ -309,9 +309,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     #[cfg(feature = "actor-ed25519")]
     let (signature_hex, public_key_id) = {
         use crate::autosystems::receipt::ActorSigner;
-        let signer = ActorSigner::from_seed(
-            *blake3::hash(b"wasm4pm.cognition.v1.default-actor").as_bytes()
-        );
+        let signer =
+            ActorSigner::from_seed(*blake3::hash(b"wasm4pm.cognition.v1.default-actor").as_bytes());
         let receipt_msg = format!("{}|{}|{}", run_id, input_hash, output_hash);
         let sig_bytes = signer.sign(receipt_msg.as_bytes());
         (hex::encode(&sig_bytes), hex::encode(signer.id.as_bytes()))

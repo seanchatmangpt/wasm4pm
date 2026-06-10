@@ -122,16 +122,28 @@ impl CognitionBreed for Dendral {
         }
 
         for c in candidates.iter_mut() {
-            tracing::debug!(breed.step = "candidate_enumerated", breed = "dendral", "L1 inference step");
+            tracing::debug!(
+                breed.step = "candidate_enumerated",
+                breed = "dendral",
+                "L1 inference step"
+            );
             if c.eliminated {
                 continue;
             }
             for constraint in &constraints {
-                tracing::debug!(breed.step = "constraint_checked", breed = "dendral", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "constraint_checked",
+                    breed = "dendral",
+                    "L1 inference step"
+                );
                 if let Some(reason) = violates(c, constraint) {
                     c.eliminated = true;
                     c.elimination_reason = Some(reason.clone());
-                    tracing::debug!(breed.step = "candidate_eliminated", breed = "dendral", "L1 inference step");
+                    tracing::debug!(
+                        breed.step = "candidate_eliminated",
+                        breed = "dendral",
+                        "L1 inference step"
+                    );
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "eliminate".to_string(),
@@ -143,7 +155,11 @@ impl CognitionBreed for Dendral {
                 }
             }
             if !c.eliminated {
-                tracing::debug!(breed.step = "hypothesis_retained", breed = "dendral", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "hypothesis_retained",
+                    breed = "dendral",
+                    "L1 inference step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "survive".to_string(),

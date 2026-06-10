@@ -6,20 +6,11 @@
 
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use wasm4pm_cognition::breeds::{
-    autoinstinct_learning::AutoinstinctLearning,
-    autoinstinct_neurosis::AutoinstinctNeurosis,
-    autoinstinct_semantics::AutoinstinctSemantics,
-    autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr,
-    dendral::Dendral,
-    frame::Eliza,
-    gps::Gps,
-    hearsay::Hearsay,
-    production_rules::Mycin,
-    prolog::Prolog,
-    soar::Soar,
-    strips::Strips,
-    BreedInput, Candidate, Case, CognitionBreed, Fact, Goal, Rule, StateAtom,
+    autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
+    autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
+    cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
+    prolog::Prolog, soar::Soar, strips::Strips, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    Goal, Rule, StateAtom,
 };
 
 fn make_input() -> BreedInput {
@@ -46,10 +37,22 @@ fn make_input() -> BreedInput {
             },
         ],
         facts: vec![
-            Fact { key: "requirement:offline".into(), value: "false".into() },
-            Fact { key: "scale:billion".into(), value: "true".into() },
-            Fact { key: "latency:critical".into(), value: "true".into() },
-            Fact { key: "budget:high".into(), value: "true".into() },
+            Fact {
+                key: "requirement:offline".into(),
+                value: "false".into(),
+            },
+            Fact {
+                key: "scale:billion".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "latency:critical".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "budget:high".into(),
+                value: "true".into(),
+            },
         ],
         cases: vec![
             Case {
@@ -58,8 +61,14 @@ fn make_input() -> BreedInput {
                 architecture: "centralized-cloud".into(),
                 outcome_score: 0.88,
                 facts: vec![
-                    Fact { key: "scale:billion".into(), value: "true".into() },
-                    Fact { key: "latency:critical".into(), value: "true".into() },
+                    Fact {
+                        key: "scale:billion".into(),
+                        value: "true".into(),
+                    },
+                    Fact {
+                        key: "latency:critical".into(),
+                        value: "true".into(),
+                    },
                 ],
             },
             Case {
@@ -67,9 +76,10 @@ fn make_input() -> BreedInput {
                 intent: "offline-first edge deployment".into(),
                 architecture: "edge-mesh".into(),
                 outcome_score: 0.75,
-                facts: vec![
-                    Fact { key: "requirement:offline".into(), value: "true".into() },
-                ],
+                facts: vec![Fact {
+                    key: "requirement:offline".into(),
+                    value: "true".into(),
+                }],
             },
         ],
         rules: vec![
@@ -93,12 +103,26 @@ fn make_input() -> BreedInput {
             },
         ],
         goals: vec![
-            Goal { id: "g1".into(), predicate: "performance".into(), value: "high".into() },
-            Goal { id: "g2".into(), predicate: "cost".into(), value: "controlled".into() },
+            Goal {
+                id: "g1".into(),
+                predicate: "performance".into(),
+                value: "high".into(),
+            },
+            Goal {
+                id: "g2".into(),
+                predicate: "cost".into(),
+                value: "controlled".into(),
+            },
         ],
         state: vec![
-            StateAtom { predicate: "service:online".into(), value: "true".into() },
-            StateAtom { predicate: "infra:provisioned".into(), value: "false".into() },
+            StateAtom {
+                predicate: "service:online".into(),
+                value: "true".into(),
+            },
+            StateAtom {
+                predicate: "infra:provisioned".into(),
+                value: "false".into(),
+            },
         ],
     }
 }
@@ -108,9 +132,7 @@ fn bench_breeds(c: &mut Criterion) {
 
     macro_rules! bench_breed {
         ($group:expr, $name:expr, $breed:expr) => {
-            $group.bench_function($name, |b| {
-                b.iter(|| $breed.run(black_box(&input)))
-            });
+            $group.bench_function($name, |b| b.iter(|| $breed.run(black_box(&input))));
         };
     }
 

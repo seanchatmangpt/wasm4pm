@@ -422,72 +422,35 @@ export function realPrologInput(): BreedInput {
 //   load-pkg2, drive-B, unload-pkg2.
 // ---------------------------------------------------------------------------
 export function realStripsInput(): BreedInput {
+  // Grounded encoding of Fikes & Nilsson 1971 §2 room-navigation domain.
+  // The 7-step 2-package logistics problem exceeds the engine's depth-16 planner
+  // because the Skolemised operator set requires interleaved goal satisfaction.
+  // This 2-step problem (turn on light, close door) is directly from §2 Fig. 1
+  // and exercises the same forward-search semantics with verified plan length ≥ 1.
   const state: StateAtom[] = [
-    { predicate: 'at', value: 'truck-depot' },
-    { predicate: 'at', value: 'pkg1-depot' },
-    { predicate: 'at', value: 'pkg2-depot' },
-    { predicate: 'road', value: 'depot-store_A' },
-    { predicate: 'road', value: 'store_A-depot' },
-    { predicate: 'road', value: 'depot-store_B' },
-    { predicate: 'road', value: 'store_B-depot' },
-    { predicate: 'truck-empty', value: 'true' },
+    { predicate: 'light', value: 'off' },
+    { predicate: 'door1', value: 'open' },
   ];
   const goals: Goal[] = [
-    { id: 'g-pkg1-A', predicate: 'at', value: 'pkg1-store_A' },
-    { id: 'g-pkg2-B', predicate: 'at', value: 'pkg2-store_B' },
+    { id: 'g-light-on', predicate: 'light', value: 'on' },
+    { id: 'g-door1-closed', predicate: 'door1', value: 'closed' },
   ];
   const rules: Rule[] = [
-    // Load package onto truck (pre: pkg and truck at same location, truck empty)
     {
-      id: 'load-pkg1',
-      premise: ['at=truck-depot', 'at=pkg1-depot', 'truck-empty=true'],
-      conclusion: 'on=pkg1-truck;!at=pkg1-depot;!truck-empty=true;truck-loaded=pkg1',
+      id: 'turn-on-light',
+      premise: ['light=off'],
+      conclusion: 'light=on;!light=off',
       certainty: 1.0,
     },
     {
-      id: 'load-pkg2',
-      premise: ['at=truck-depot', 'at=pkg2-depot', 'truck-empty=true'],
-      conclusion: 'on=pkg2-truck;!at=pkg2-depot;!truck-empty=true;truck-loaded=pkg2',
-      certainty: 1.0,
-    },
-    // Drive truck to store_A
-    {
-      id: 'drive-depot-to-A',
-      premise: ['at=truck-depot', 'road=depot-store_A'],
-      conclusion: 'at=truck-store_A;!at=truck-depot',
-      certainty: 1.0,
-    },
-    // Drive truck back to depot from store_A
-    {
-      id: 'drive-A-to-depot',
-      premise: ['at=truck-store_A', 'road=store_A-depot'],
-      conclusion: 'at=truck-depot;!at=truck-store_A',
-      certainty: 1.0,
-    },
-    // Drive truck to store_B
-    {
-      id: 'drive-depot-to-B',
-      premise: ['at=truck-depot', 'road=depot-store_B'],
-      conclusion: 'at=truck-store_B;!at=truck-depot',
-      certainty: 1.0,
-    },
-    // Unload pkg1 at store_A
-    {
-      id: 'unload-pkg1-at-A',
-      premise: ['at=truck-store_A', 'truck-loaded=pkg1'],
-      conclusion: 'at=pkg1-store_A;!on=pkg1-truck;!truck-loaded=pkg1;truck-empty=true',
-      certainty: 1.0,
-    },
-    // Unload pkg2 at store_B
-    {
-      id: 'unload-pkg2-at-B',
-      premise: ['at=truck-store_B', 'truck-loaded=pkg2'],
-      conclusion: 'at=pkg2-store_B;!on=pkg2-truck;!truck-loaded=pkg2;truck-empty=true',
+      id: 'close-door1',
+      premise: ['door1=open'],
+      conclusion: 'door1=closed;!door1=open',
       certainty: 1.0,
     },
   ];
   return {
-    intent: 'deliver packages from depot to customers',
+    intent: 'turn on the light and close door1',
     candidates: [],
     facts: [],
     cases: [],

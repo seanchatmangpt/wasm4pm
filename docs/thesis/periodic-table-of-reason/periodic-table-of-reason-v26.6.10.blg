@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: periodic-table-of-reason-v26.6.10.aux
+The style file: plainnat.bst
+Database file #1: periodic-table-of-reason.bib
+You've used 24 entries,
+            2773 wiz_defined-function locations,
+            775 strings with 12632 characters,
+and the built_in function-call counts, 10593 in all, are:
+= -- 1012
+> -- 477
+< -- 26
++ -- 166
+- -- 142
+* -- 772
+:= -- 1647
+add.period$ -- 114
+call.type$ -- 24
+change.case$ -- 113
+chr.to.int$ -- 24
+cite$ -- 48
+duplicate$ -- 522
+empty$ -- 911
+format.name$ -- 178
+if$ -- 2256
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 26
+newline$ -- 165
+num.names$ -- 100
+pop$ -- 214
+preamble$ -- 1
+purify$ -- 93
+quote$ -- 0
+skip$ -- 385
+stack$ -- 0
+substring$ -- 362
+swap$ -- 68
+text.length$ -- 8
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 234
+warning$ -- 0
+while$ -- 104
+width$ -- 0
+write$ -- 399

@@ -1,0 +1,81 @@
+{
+  "breed": "autoinstinct_neurosis",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \"Programs That Model the Mind.\" [Conflict detection framework: neurosis as simultaneous maintenance of mutually incompatible beliefs, pp. 198–212.]",
+    "locus": "Chapter 6, pp. 198–212 — conflict detection framework; worked example of \"impossible double binding\" where an agent holds p and ¬p simultaneously across distinct inference paths.",
+    "extraction": "citation-only",
+    "notes": "Boden (1977) is a monograph with no online PDF; the paper_path is citation-only. The conflict detection framework (Chapter 6) is the theoretical foundation: neurosis in an AI system corresponds to maintaining beliefs B and ¬B simultaneously across separate reasoning paths, each locally coherent but globally inconsistent. The six belief pairs here are adapted to the deployment/operations domain: (1) redundancy vs. SPOF, (2) full automation vs. mandatory manual gate, (3) ephemeral containers vs. local disk writes, (4) horizontal stateless scaling vs. single-writer database, (5) immutable config image vs. live runtime flag updates, (6) complete observability vs. 1%-sampled tracing. Each pair is a structurally valid Boden-style double-bind: the agent's inference engine would reach contradictory conclusions depending on which belief it activates first. The existing realAutoinstinctNeurosisInput fixture in breed-inputs-real.ts uses scalar belief strengths (0.0–1.0) rather than semantic contradiction pairs; this canonical example uses the richer string-valued fact encoding to capture the propositional content of each contradictory belief, making the conflict detectable without numeric thresholding."
+  },
+  "input": {
+    "intent": "detect contradictory operational beliefs in a distributed deployment agent",
+    "facts": [
+      {
+        "key": "belief:system_redundancy",
+        "value": "high — multiple replicas ensure no single point of failure"
+      },
+      {
+        "key": "belief:system_reliability",
+        "value": "low — any single node outage causes full service loss"
+      },
+      {
+        "key": "belief:deployment_is_automated",
+        "value": "true — CI/CD pipeline handles all releases without human review"
+      },
+      {
+        "key": "belief:deployment_requires_manual_approval",
+        "value": "true — all production changes require sign-off from on-call engineer"
+      },
+      {
+        "key": "belief:data_is_ephemeral",
+        "value": "true — containers are stateless; no durable data written locally"
+      },
+      {
+        "key": "belief:data_must_be_local",
+        "value": "true — latency constraints require in-process data cache written to local disk"
+      },
+      {
+        "key": "belief:scaling_is_horizontal",
+        "value": "true — load is distributed across N identical stateless pods"
+      },
+      {
+        "key": "belief:database_is_single_writer",
+        "value": "true — all writes funnel through one primary to preserve ordering guarantees"
+      },
+      {
+        "key": "belief:config_is_immutable",
+        "value": "true — service config baked into container image at build time"
+      },
+      {
+        "key": "belief:config_is_runtime_dynamic",
+        "value": "true — feature flags and thresholds updated live via config service without redeploy"
+      },
+      {
+        "key": "belief:observability_is_complete",
+        "value": "true — every operation emits a span; no blind spots"
+      },
+      {
+        "key": "belief:tracing_is_sampled",
+        "value": "true — only 1% of traces are retained to control storage costs"
+      }
+    ],
+    "candidates": [],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "conflict_pairs": [
+      ["belief:system_redundancy", "belief:system_reliability"],
+      ["belief:deployment_is_automated", "belief:deployment_requires_manual_approval"],
+      ["belief:data_is_ephemeral", "belief:data_must_be_local"],
+      ["belief:scaling_is_horizontal", "belief:database_is_single_writer"],
+      ["belief:config_is_immutable", "belief:config_is_runtime_dynamic"],
+      ["belief:observability_is_complete", "belief:tracing_is_sampled"]
+    ],
+    "expected_status": "has_findings",
+    "expected_finding_count_min": 5,
+    "description": "Boden's conflict detection framework predicts the system identifies each mutually incompatible belief pair as a neurotic double-bind. The agent simultaneously affirms p and ¬p across six operational dimensions. A conforming neurosis breed must surface at minimum one finding per contradiction pair and report status='has_findings'."
+  }
+}

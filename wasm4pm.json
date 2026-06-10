@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "version": "26.4.5",
+  "source": {
+    "kind": "file"
+  },
+  "sink": {
+    "kind": "stdout"
+  },
+  "algorithm": {
+    "name": "dfg",
+    "parameters": {}
+  },
+  "execution": {
+    "profile": "fast",
+    "timeout": 60000,
+    "maxMemory": 536870912
+  },
+  "observability": {
+    "logLevel": "info",
+    "metricsEnabled": false
+  },
+  "watch": {
+    "enabled": false,
+    "poll_interval": 1000
+  },
+  "output": {
+    "format": "human",
+    "destination": "stdout",
+    "pretty": true,
+    "colorize": true
+  },
+  "prediction": {
+    "enabled": false,
+    "activityKey": "concept:name",
+    "ngramOrder": 2,
+    "driftWindowSize": 10,
+    "tasks": [],
+    "drift": {
+      "ewma_alpha": 0.2,
+      "threshold": 0.3
+    }
+  }
+}

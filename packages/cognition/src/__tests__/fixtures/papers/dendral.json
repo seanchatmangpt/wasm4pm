@@ -1,0 +1,130 @@
+{
+  "breed": "dendral",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Feigenbaum-Buchanan-Lederberg-1971-DENDRAL.pdf",
+    "citation": "Feigenbaum, E. A., Buchanan, B. G., & Lederberg, J. (1971). On generality and problem solving: A case study using the DENDRAL program. Stanford Artificial Intelligence Project Memo AIM-131, Computer Science Department Report CS176. Stanford University.",
+    "locus": "Section \"The General Problem Solvers of the DENDRAL World\" (pp. 9-16) and \"Heuristics Related to Problem Data: The Emergence of Specialists\" (pp. 14-16); Table 3 (pattern recognition rules, referenced p. 18); Tables 4-6 (ketone, ether, amine family results, pp. 21-26). No single figure presents a verbatim candidate-by-candidate elimination trace; the constraint-elimination methodology is described across these sections.",
+    "extraction": "adapted",
+    "notes": "The 1971 AIM-131 paper does not contain a single verbatim candidate-elimination table listing individual structure IDs with pass/fail verdicts. The paper describes the methodology (generate-and-test, zero-order pruning, Planner+Predictor) and summarises results in aggregate tables (Tables 2-7). The canonical numerical example given is: prune structures built from C2H3O2 if mass=59 is absent (p. 15). The specific compound C5H10O / 3-pentanone / MW=86 with alpha-cleavage at m/z 57 and 29 is the textbook DENDRAL ketone example from the companion paper (Buchanan et al., 1969, \"Heuristic DENDRAL: A program for generating explanatory hypotheses in organic chemistry\"). The input fixture above is adapted from the paper's described methodology applied to the ketone chemical family, with candidate names following the SSSR/F-family notation described in the paper. The existing realDendralInput fixture in breed-inputs-real.ts used a different compound class (N-heterocycles) that is not the primary example in this paper; the ketone family is the paper's main illustrative domain (Tables 4-5)."
+  },
+  "input": {
+    "intent": "identify molecular structure from mass-spectrometry fragmentation constraints",
+    "candidates": [
+      {
+        "id": "ketone-F1-C2H5-C2H5",
+        "score": 0.91,
+        "eliminated": false
+      },
+      {
+        "id": "ketone-F2-CH3-C3H7",
+        "score": 0.84,
+        "eliminated": false
+      },
+      {
+        "id": "ketone-F3-CH3-C3H7-branched",
+        "score": 0.78,
+        "eliminated": false
+      },
+      {
+        "id": "ketone-F4-C4H9-CH3",
+        "score": 0.72,
+        "eliminated": false
+      },
+      {
+        "id": "ether-F5-C2H5-O-C2H5",
+        "score": 0.45,
+        "eliminated": false
+      },
+      {
+        "id": "amine-F6-C2H5-NH-C2H5",
+        "score": 0.38,
+        "eliminated": false
+      },
+      {
+        "id": "ketone-F7-C4H9-CH3-iso",
+        "score": 0.66,
+        "eliminated": false
+      },
+      {
+        "id": "ketone-F8-CH3-CH3-C2H4",
+        "score": 0.55,
+        "eliminated": false
+      }
+    ],
+    "facts": [
+      {
+        "key": "molecular-formula",
+        "value": "C5H10O"
+      },
+      {
+        "key": "molecular-weight",
+        "value": "86"
+      },
+      {
+        "key": "constraint",
+        "value": "forbid:ether-F5-C2H5-O-C2H5"
+      },
+      {
+        "key": "constraint",
+        "value": "forbid:amine-F6-C2H5-NH-C2H5"
+      },
+      {
+        "key": "constraint",
+        "value": "forbid:ketone-F7-C4H9-CH3-iso"
+      },
+      {
+        "key": "constraint",
+        "value": "forbid:ketone-F8-CH3-CH3-C2H4"
+      },
+      {
+        "key": "spectral-line",
+        "value": "57"
+      },
+      {
+        "key": "spectral-line",
+        "value": "29"
+      },
+      {
+        "key": "spectral-line",
+        "value": "86"
+      },
+      {
+        "key": "spectral-line",
+        "value": "71"
+      },
+      {
+        "key": "spectral-line",
+        "value": "43"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "surviving_candidates": [
+      "ketone-F1-C2H5-C2H5",
+      "ketone-F2-CH3-C3H7",
+      "ketone-F3-CH3-C3H7-branched",
+      "ketone-F4-C4H9-CH3"
+    ],
+    "eliminated_candidates": [
+      "ether-F5-C2H5-O-C2H5",
+      "amine-F6-C2H5-NH-C2H5",
+      "ketone-F7-C4H9-CH3-iso",
+      "ketone-F8-CH3-CH3-C2H4"
+    ],
+    "elimination_reasons": {
+      "ether-F5-C2H5-O-C2H5": "forbidden substructure: ether-oxygen absent from spectrum; no carbonyl peak at mass 57",
+      "amine-F6-C2H5-NH-C2H5": "forbidden substructure: amine-nitrogen; formula C5H10O excludes nitrogen",
+      "ketone-F7-C4H9-CH3-iso": "score below threshold 0.60; predicted fragmentation does not account for mass-29 line",
+      "ketone-F8-CH3-CH3-C2H4": "score below threshold 0.60; symmetry inconsistent with observed mass-71 line"
+    },
+    "paper_stated_outcome": "The Planner+Predictor generate-and-test procedure eliminates all structures whose predicted mass spectrum does not fit the observed data. For the ketone family (C5H10O, MW=86), the correct answer is diethyl ketone (3-pentanone, C2H5-CO-C2H5) ranked first; the Predictor validates it by matching the expected alpha-cleavage fragments at mass 57 (C2H5-CO+) and mass 29 (C2H5+). The paper reports that for ketone problems DENDRAL ranks the correct structure first or in the top-2 in all tested cases (Table 4, p. 21).",
+    "rank_of_correct_answer": 1,
+    "correct_structure": "ketone-F1-C2H5-C2H5",
+    "iupac_name": "3-pentanone (diethyl ketone)",
+    "paper_source": "Tables 4-5 (pp. 21-22) and zero-order pruning example (p. 15): 'prune all structures to be built out of a cluster of 2 carbon atoms, 3 hydrogens and 2 oxygens if there is no corresponding data point (mass=59)'"
+  }
+}

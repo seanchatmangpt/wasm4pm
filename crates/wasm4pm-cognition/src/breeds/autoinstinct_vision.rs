@@ -107,9 +107,17 @@ impl CognitionBreed for AutoinstinctVision {
                 depth: 0,
                 objects: vec![],
             });
-            tracing::debug!(breed.step = "object_detected", breed = "autoinstinct_vision", "L1 inference step");
+            tracing::debug!(
+                breed.step = "object_detected",
+                breed = "autoinstinct_vision",
+                "L1 inference step"
+            );
             if poly.supported_by.is_some() {
-                tracing::debug!(breed.step = "relation_inferred", breed = "autoinstinct_vision", "L1 inference step");
+                tracing::debug!(
+                    breed.step = "relation_inferred",
+                    breed = "autoinstinct_vision",
+                    "L1 inference step"
+                );
             }
             sys.observe(poly.clone());
         }
@@ -125,7 +133,11 @@ impl CognitionBreed for AutoinstinctVision {
             });
         }
 
-        tracing::debug!(breed.step = "support_structure_built", breed = "autoinstinct_vision", "L1 inference step");
+        tracing::debug!(
+            breed.step = "support_structure_built",
+            breed = "autoinstinct_vision",
+            "L1 inference step"
+        );
         let clear_object = sys.find_clear_object();
 
         let selected = clear_object.map(|obj| obj.id.clone());
@@ -163,7 +175,11 @@ impl CognitionBreed for AutoinstinctVision {
             ),
         };
 
-        tracing::debug!(breed.step = "scene_description_emitted", breed = "autoinstinct_vision", "L1 inference step");
+        tracing::debug!(
+            breed.step = "scene_description_emitted",
+            breed = "autoinstinct_vision",
+            "L1 inference step"
+        );
         Ok(BreedOutput {
             breed: BreedId::AutoinstinctVision,
             candidates,

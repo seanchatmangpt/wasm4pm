@@ -126,10 +126,10 @@ fn mycin_hidden_gram_negative_sepsis() {
     );
 
     // Ground-truth oracle: gentamicin must appear in derived facts.
-    let has_gentamicin = output.facts.iter().any(|f| {
-        (f.key == "therapy" && f.value == "gentamicin")
-            || f.value.contains("gentamicin")
-    });
+    let has_gentamicin = output
+        .facts
+        .iter()
+        .any(|f| (f.key == "therapy" && f.value == "gentamicin") || f.value.contains("gentamicin"));
     assert!(
         has_gentamicin,
         "MYCIN gram-negative sepsis: gentamicin must be a derived fact; facts={:?}",
@@ -167,8 +167,8 @@ fn mycin_hidden_fungal_infection() {
         ),
     ];
 
-    let output = dispatch_breed_test("mycin", &input)
-        .expect("MYCIN fungal infection must not return Err");
+    let output =
+        dispatch_breed_test("mycin", &input).expect("MYCIN fungal infection must not return Err");
 
     // A3 adversary check.
     assert!(
@@ -189,8 +189,7 @@ fn mycin_hidden_fungal_infection() {
 
     // Ground-truth oracle: amphotericin is the terminal therapy recommendation.
     let has_amphotericin = output.facts.iter().any(|f| {
-        (f.key == "therapy" && f.value == "amphotericin")
-            || f.value.contains("amphotericin")
+        (f.key == "therapy" && f.value == "amphotericin") || f.value.contains("amphotericin")
     });
     assert!(
         has_amphotericin,
@@ -214,12 +213,7 @@ fn mycin_hidden_cf_chain_depth_4() {
     let mut input = base("depth-4 CF chain challenge");
     input.facts = vec![fact("signal", "A")];
     input.rules = vec![
-        rule(
-            "R-depth1-A-to-B",
-            vec!["signal=A"],
-            "intermediate=B",
-            0.7,
-        ),
+        rule("R-depth1-A-to-B", vec!["signal=A"], "intermediate=B", 0.7),
         rule(
             "R-depth2-B-to-C",
             vec!["intermediate=B"],
@@ -240,8 +234,8 @@ fn mycin_hidden_cf_chain_depth_4() {
         ),
     ];
 
-    let output = dispatch_breed_test("mycin", &input)
-        .expect("MYCIN depth-4 chain must not return Err");
+    let output =
+        dispatch_breed_test("mycin", &input).expect("MYCIN depth-4 chain must not return Err");
 
     // A3 adversary check.
     assert!(
@@ -261,10 +255,10 @@ fn mycin_hidden_cf_chain_depth_4() {
     );
 
     // Ground-truth oracle: the depth-4 conclusion "therapy=target" must exist.
-    let has_target_therapy = output.facts.iter().any(|f| {
-        (f.key == "therapy" && f.value == "target")
-            || f.value.contains("target")
-    });
+    let has_target_therapy = output
+        .facts
+        .iter()
+        .any(|f| (f.key == "therapy" && f.value == "target") || f.value.contains("target"));
     assert!(
         has_target_therapy,
         "MYCIN depth-4 chain: therapy=target must be derived; facts={:?}",
@@ -322,10 +316,7 @@ fn prolog_hidden_sibling_derivation() {
     );
 
     // load-rule steps must exist (the rule was loaded).
-    let has_load_rule = output
-        .inference_trace
-        .iter()
-        .any(|t| t.kind == "load-rule");
+    let has_load_rule = output.inference_trace.iter().any(|t| t.kind == "load-rule");
     assert!(
         has_load_rule,
         "Prolog sibling derivation: trace must contain load-rule steps"
@@ -384,10 +375,7 @@ fn prolog_hidden_grandparent_chain() {
     );
 
     // load-rule step must exist.
-    let has_load_rule = output
-        .inference_trace
-        .iter()
-        .any(|t| t.kind == "load-rule");
+    let has_load_rule = output.inference_trace.iter().any(|t| t.kind == "load-rule");
     assert!(
         has_load_rule,
         "Prolog grandparent chain: trace must contain load-rule step"
@@ -437,8 +425,8 @@ fn prolog_hidden_list_membership() {
     // Goal: member:delta,list1 → parse_key = ("member", ["delta","list1"])
     input.goals = vec![goal("g1", "member:delta,list1", "true")];
 
-    let output = dispatch_breed_test("prolog", &input)
-        .expect("Prolog list membership must not return Err");
+    let output =
+        dispatch_breed_test("prolog", &input).expect("Prolog list membership must not return Err");
 
     // A3 adversary check.
     assert!(
@@ -447,10 +435,7 @@ fn prolog_hidden_list_membership() {
     );
 
     // load-rule must appear (the rule was processed).
-    let has_load_rule = output
-        .inference_trace
-        .iter()
-        .any(|t| t.kind == "load-rule");
+    let has_load_rule = output.inference_trace.iter().any(|t| t.kind == "load-rule");
     assert!(
         has_load_rule,
         "Prolog list membership: trace must contain load-rule step"
@@ -645,34 +630,14 @@ fn strips_hidden_four_step_plan() {
         goal("g4", "report", "uploaded"),
     ];
     input.rules = vec![
-        rule(
-            "activate-sensor",
-            vec!["power=off"],
-            "power=on",
-            1.0,
-        ),
-        rule(
-            "calibrate-sensor",
-            vec!["power=on"],
-            "calibrated=true",
-            1.0,
-        ),
-        rule(
-            "scan-area",
-            vec!["calibrated=true"],
-            "scan=done",
-            1.0,
-        ),
-        rule(
-            "upload-report",
-            vec!["scan=done"],
-            "report=uploaded",
-            1.0,
-        ),
+        rule("activate-sensor", vec!["power=off"], "power=on", 1.0),
+        rule("calibrate-sensor", vec!["power=on"], "calibrated=true", 1.0),
+        rule("scan-area", vec!["calibrated=true"], "scan=done", 1.0),
+        rule("upload-report", vec!["scan=done"], "report=uploaded", 1.0),
     ];
 
-    let output = dispatch_breed_test("strips", &input)
-        .expect("STRIPS four-step plan must not return Err");
+    let output =
+        dispatch_breed_test("strips", &input).expect("STRIPS four-step plan must not return Err");
 
     // A3 adversary check.
     assert!(
@@ -717,14 +682,38 @@ fn soar_hidden_robotic_assembly_operator_selection() {
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "robotic assembly line operator selection".into(),
         candidates: vec![
-            Candidate { id: "weld".into(),    score: 0.5, eliminated: false, elimination_reason: None },
-            Candidate { id: "paint".into(),   score: 0.6, eliminated: false, elimination_reason: None },
-            Candidate { id: "inspect".into(), score: 0.9, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "weld".into(),
+                score: 0.5,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "paint".into(),
+                score: 0.6,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "inspect".into(),
+                score: 0.9,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "better:paint,weld".into(),     value: "structural-safety".into() },
-            Fact { key: "best:inspect".into(),          value: "quality-gate".into() },
-            Fact { key: "context".into(),               value: "post-weld-stage".into() },
+            Fact {
+                key: "better:paint,weld".into(),
+                value: "structural-safety".into(),
+            },
+            Fact {
+                key: "best:inspect".into(),
+                value: "quality-gate".into(),
+            },
+            Fact {
+                key: "context".into(),
+                value: "post-weld-stage".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -732,8 +721,8 @@ fn soar_hidden_robotic_assembly_operator_selection() {
         state: vec![],
     };
 
-    let output = dispatch_breed_test("soar", &input)
-        .expect("SOAR robotic assembly must not return Err");
+    let output =
+        dispatch_breed_test("soar", &input).expect("SOAR robotic assembly must not return Err");
 
     assert!(
         !output.inference_trace.is_empty(),
@@ -762,10 +751,22 @@ fn cbr_hidden_pharmaceutical_formulation() {
         intent: "controlled-release oral tablet".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "compound".into(),       value: "metformin-XR".into() },
-            Fact { key: "release-type".into(),   value: "controlled".into() },
-            Fact { key: "dosage-form".into(),    value: "tablet".into() },
-            Fact { key: "target-organ".into(),   value: "gastrointestinal".into() },
+            Fact {
+                key: "compound".into(),
+                value: "metformin-XR".into(),
+            },
+            Fact {
+                key: "release-type".into(),
+                value: "controlled".into(),
+            },
+            Fact {
+                key: "dosage-form".into(),
+                value: "tablet".into(),
+            },
+            Fact {
+                key: "target-organ".into(),
+                value: "gastrointestinal".into(),
+            },
         ],
         cases: vec![
             Case {
@@ -774,8 +775,14 @@ fn cbr_hidden_pharmaceutical_formulation() {
                 architecture: "hydroxypropyl-methylcellulose-matrix".into(),
                 outcome_score: 0.87,
                 facts: vec![
-                    Fact { key: "release-type".into(), value: "controlled".into() },
-                    Fact { key: "dosage-form".into(),  value: "tablet".into() },
+                    Fact {
+                        key: "release-type".into(),
+                        value: "controlled".into(),
+                    },
+                    Fact {
+                        key: "dosage-form".into(),
+                        value: "tablet".into(),
+                    },
                 ],
             },
             Case {
@@ -784,8 +791,14 @@ fn cbr_hidden_pharmaceutical_formulation() {
                 architecture: "gelatine-capsule".into(),
                 outcome_score: 0.72,
                 facts: vec![
-                    Fact { key: "release-type".into(), value: "immediate".into() },
-                    Fact { key: "dosage-form".into(),  value: "capsule".into() },
+                    Fact {
+                        key: "release-type".into(),
+                        value: "immediate".into(),
+                    },
+                    Fact {
+                        key: "dosage-form".into(),
+                        value: "capsule".into(),
+                    },
                 ],
             },
             Case {
@@ -794,9 +807,18 @@ fn cbr_hidden_pharmaceutical_formulation() {
                 architecture: "eudragit-L100-coating".into(),
                 outcome_score: 0.81,
                 facts: vec![
-                    Fact { key: "release-type".into(),   value: "delayed".into() },
-                    Fact { key: "dosage-form".into(),    value: "tablet".into() },
-                    Fact { key: "target-organ".into(),   value: "gastrointestinal".into() },
+                    Fact {
+                        key: "release-type".into(),
+                        value: "delayed".into(),
+                    },
+                    Fact {
+                        key: "dosage-form".into(),
+                        value: "tablet".into(),
+                    },
+                    Fact {
+                        key: "target-organ".into(),
+                        value: "gastrointestinal".into(),
+                    },
                 ],
             },
         ],
@@ -835,15 +857,42 @@ fn hearsay_hidden_dna_sequence_recognition() {
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "recognize regulatory operon in sequence".into(),
         candidates: vec![
-            Candidate { id: "codon-ATG".into(),       score: 0.7,  eliminated: false, elimination_reason: None },
-            Candidate { id: "promoter-TATA".into(),   score: 0.65, eliminated: false, elimination_reason: None },
-            Candidate { id: "operon-lac".into(),      score: 0.55, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "codon-ATG".into(),
+                score: 0.7,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "promoter-TATA".into(),
+                score: 0.65,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "operon-lac".into(),
+                score: 0.55,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "sequence-segment".into(),  value: "ATGAAACCC".into() },
-            Fact { key: "upstream-motif".into(),    value: "TATAAA".into() },
-            Fact { key: "gc-content".into(),        value: "0.52".into() },
-            Fact { key: "context:domain".into(),    value: "regulatory-region".into() },
+            Fact {
+                key: "sequence-segment".into(),
+                value: "ATGAAACCC".into(),
+            },
+            Fact {
+                key: "upstream-motif".into(),
+                value: "TATAAA".into(),
+            },
+            Fact {
+                key: "gc-content".into(),
+                value: "0.52".into(),
+            },
+            Fact {
+                key: "context:domain".into(),
+                value: "regulatory-region".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -884,7 +933,10 @@ fn gps_hidden_chemical_synthesis_planning() {
         rules: vec![
             Rule {
                 id: "reduce-A-to-C".into(),
-                premise: vec!["precursor-A=available".into(), "catalyst-B=available".into()],
+                premise: vec![
+                    "precursor-A=available".into(),
+                    "catalyst-B=available".into(),
+                ],
                 conclusion: "compound-C=synthesized".into(),
                 certainty: 1.0,
             },
@@ -896,17 +948,31 @@ fn gps_hidden_chemical_synthesis_planning() {
             },
         ],
         goals: vec![
-            Goal { id: "g1".into(), predicate: "compound-C".into(), value: "synthesized".into() },
-            Goal { id: "g2".into(), predicate: "compound-D".into(), value: "synthesized".into() },
+            Goal {
+                id: "g1".into(),
+                predicate: "compound-C".into(),
+                value: "synthesized".into(),
+            },
+            Goal {
+                id: "g2".into(),
+                predicate: "compound-D".into(),
+                value: "synthesized".into(),
+            },
         ],
         state: vec![
-            StateAtom { predicate: "precursor-A".into(), value: "available".into() },
-            StateAtom { predicate: "catalyst-B".into(),  value: "available".into() },
+            StateAtom {
+                predicate: "precursor-A".into(),
+                value: "available".into(),
+            },
+            StateAtom {
+                predicate: "catalyst-B".into(),
+                value: "available".into(),
+            },
         ],
     };
 
-    let output = dispatch_breed_test("gps", &input)
-        .expect("GPS chemical synthesis must not return Err");
+    let output =
+        dispatch_breed_test("gps", &input).expect("GPS chemical synthesis must not return Err");
 
     assert!(
         !output.inference_trace.is_empty(),
@@ -915,7 +981,8 @@ fn gps_hidden_chemical_synthesis_planning() {
     let plan = output.selected.as_deref().unwrap_or("");
     assert!(
         !plan.is_empty(),
-        "GPS chemical synthesis: plan must not be empty; selected={:?}", output.selected
+        "GPS chemical synthesis: plan must not be empty; selected={:?}",
+        output.selected
     );
     assert!(
         plan.contains("reduce-A-to-C"),
@@ -938,15 +1005,42 @@ fn dendral_hidden_peptide_hypothesis_filtering() {
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "identify tetrapeptide from mass spectrum".into(),
         candidates: vec![
-            Candidate { id: "ACGT".into(), score: 0.7,  eliminated: false, elimination_reason: None },
-            Candidate { id: "WLKA".into(), score: 0.65, eliminated: false, elimination_reason: None },
-            Candidate { id: "MFVP".into(), score: 0.8,  eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "ACGT".into(),
+                score: 0.7,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "WLKA".into(),
+                score: 0.65,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "MFVP".into(),
+                score: 0.8,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "mass-peak".into(),       value: "447.2".into() },
-            Fact { key: "fragment-ion".into(),    value: "b2=201.1".into() },
-            Fact { key: "eliminate:ACGT".into(),  value: "mass-mismatch-447".into() },
-            Fact { key: "eliminate:WLKA".into(),  value: "b2-ion-mismatch".into() },
+            Fact {
+                key: "mass-peak".into(),
+                value: "447.2".into(),
+            },
+            Fact {
+                key: "fragment-ion".into(),
+                value: "b2=201.1".into(),
+            },
+            Fact {
+                key: "eliminate:ACGT".into(),
+                value: "mass-mismatch-447".into(),
+            },
+            Fact {
+                key: "eliminate:WLKA".into(),
+                value: "b2-ion-mismatch".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -954,8 +1048,8 @@ fn dendral_hidden_peptide_hypothesis_filtering() {
         state: vec![],
     };
 
-    let output = dispatch_breed_test("dendral", &input)
-        .expect("DENDRAL peptide must not return Err");
+    let output =
+        dispatch_breed_test("dendral", &input).expect("DENDRAL peptide must not return Err");
 
     assert!(
         !output.inference_trace.is_empty(),
@@ -963,7 +1057,10 @@ fn dendral_hidden_peptide_hypothesis_filtering() {
     );
     // At least one candidate must be retained or eliminated — the breed must run.
     let has_candidate_step = output.inference_trace.iter().any(|t| {
-        t.kind.contains("candidate") || t.kind.contains("hypothesis") || t.kind.contains("retain") || t.kind.contains("elim")
+        t.kind.contains("candidate")
+            || t.kind.contains("hypothesis")
+            || t.kind.contains("retain")
+            || t.kind.contains("elim")
     });
     assert!(
         has_candidate_step || output.selected.is_some(),
@@ -998,8 +1095,8 @@ fn eliza_hidden_custom_frame_work_stress() {
         state: vec![],
     };
 
-    let output = dispatch_breed_test("eliza", &input)
-        .expect("ELIZA custom frame must not return Err");
+    let output =
+        dispatch_breed_test("eliza", &input).expect("ELIZA custom frame must not return Err");
 
     assert!(
         !output.inference_trace.is_empty(),
@@ -1011,7 +1108,8 @@ fn eliza_hidden_custom_frame_work_stress() {
         "ELIZA custom frame: selected must be Some — custom pattern must match"
     );
     assert!(
-        output.explanation.to_lowercase().contains("seventy") || output.explanation.contains("health"),
+        output.explanation.to_lowercase().contains("seventy")
+            || output.explanation.contains("health"),
         "ELIZA custom frame: response must reference slot capture; got: {}",
         output.explanation
     );
@@ -1033,12 +1131,30 @@ fn autoinstinct_vision_hidden_chest_xray_scene() {
         intent: "chest radiograph scene analysis".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "object:right-lung".into(),  value: "detected".into() },
-            Fact { key: "object:left-lung".into(),   value: "detected".into() },
-            Fact { key: "object:heart".into(),       value: "detected".into() },
-            Fact { key: "object:trachea".into(),     value: "detected".into() },
-            Fact { key: "relation:trachea-above-carina".into(), value: "true".into() },
-            Fact { key: "relation:heart-overlaps-left-lung".into(), value: "partial".into() },
+            Fact {
+                key: "object:right-lung".into(),
+                value: "detected".into(),
+            },
+            Fact {
+                key: "object:left-lung".into(),
+                value: "detected".into(),
+            },
+            Fact {
+                key: "object:heart".into(),
+                value: "detected".into(),
+            },
+            Fact {
+                key: "object:trachea".into(),
+                value: "detected".into(),
+            },
+            Fact {
+                key: "relation:trachea-above-carina".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "relation:heart-overlaps-left-lung".into(),
+                value: "partial".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -1089,7 +1205,10 @@ fn autoinstinct_semantics_hidden_legal_contract_parsing() {
     );
     // The breed must parse tokens and extract at least one CD primitive.
     let has_parse_step = output.inference_trace.iter().any(|t| {
-        t.kind.contains("token") || t.kind.contains("parse") || t.kind.contains("cd") || t.kind.contains("actor")
+        t.kind.contains("token")
+            || t.kind.contains("parse")
+            || t.kind.contains("cd")
+            || t.kind.contains("actor")
     });
     assert!(
         has_parse_step || output.selected.is_some(),
@@ -1112,15 +1231,42 @@ fn autoinstinct_neurosis_hidden_financial_belief_conflict() {
     let input = wasm4pm_cognition::breeds::BreedInput {
         intent: "financial planning under uncertainty".into(),
         candidates: vec![
-            Candidate { id: "invest-now".into(),  score: 0.8, eliminated: false, elimination_reason: None },
-            Candidate { id: "save-cash".into(),   score: 0.8, eliminated: false, elimination_reason: None },
-            Candidate { id: "diversify".into(),   score: 0.6, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "invest-now".into(),
+                score: 0.8,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "save-cash".into(),
+                score: 0.8,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "diversify".into(),
+                score: 0.6,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "belief:invest-now".into(),   value: "urgent".into() },
-            Fact { key: "belief:save-cash".into(),    value: "urgent".into() },
-            Fact { key: "conflict:invest-now,save-cash".into(), value: "true".into() },
-            Fact { key: "market-volatility".into(),   value: "high".into() },
+            Fact {
+                key: "belief:invest-now".into(),
+                value: "urgent".into(),
+            },
+            Fact {
+                key: "belief:save-cash".into(),
+                value: "urgent".into(),
+            },
+            Fact {
+                key: "conflict:invest-now,save-cash".into(),
+                value: "true".into(),
+            },
+            Fact {
+                key: "market-volatility".into(),
+                value: "high".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -1137,7 +1283,10 @@ fn autoinstinct_neurosis_hidden_financial_belief_conflict() {
     );
     // Conflict must be detected and a resolution proposed.
     let has_conflict_step = output.inference_trace.iter().any(|t| {
-        t.kind.contains("conflict") || t.kind.contains("anxiety") || t.kind.contains("resolution") || t.kind.contains("belief")
+        t.kind.contains("conflict")
+            || t.kind.contains("anxiety")
+            || t.kind.contains("resolution")
+            || t.kind.contains("belief")
     });
     assert!(
         has_conflict_step || output.selected.is_some(),
@@ -1161,17 +1310,41 @@ fn autoinstinct_learning_hidden_surgical_curriculum() {
         intent: "laparoscopic cholecystectomy skill acquisition".into(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "current-skill:trocar-insertion".into(),    value: "beginner".into() },
-            Fact { key: "current-skill:tissue-dissection".into(),   value: "not-started".into() },
-            Fact { key: "current-skill:clip-application".into(),    value: "not-started".into() },
-            Fact { key: "prereq:tissue-dissection,trocar-insertion".into(), value: "true".into() },
+            Fact {
+                key: "current-skill:trocar-insertion".into(),
+                value: "beginner".into(),
+            },
+            Fact {
+                key: "current-skill:tissue-dissection".into(),
+                value: "not-started".into(),
+            },
+            Fact {
+                key: "current-skill:clip-application".into(),
+                value: "not-started".into(),
+            },
+            Fact {
+                key: "prereq:tissue-dissection,trocar-insertion".into(),
+                value: "true".into(),
+            },
         ],
         cases: vec![],
         rules: vec![],
         goals: vec![
-            Goal { id: "g1".into(), predicate: "master-trocar-insertion".into(),  value: "true".into() },
-            Goal { id: "g2".into(), predicate: "master-tissue-dissection".into(), value: "true".into() },
-            Goal { id: "g3".into(), predicate: "master-clip-application".into(),  value: "true".into() },
+            Goal {
+                id: "g1".into(),
+                predicate: "master-trocar-insertion".into(),
+                value: "true".into(),
+            },
+            Goal {
+                id: "g2".into(),
+                predicate: "master-tissue-dissection".into(),
+                value: "true".into(),
+            },
+            Goal {
+                id: "g3".into(),
+                predicate: "master-clip-application".into(),
+                value: "true".into(),
+            },
         ],
         state: vec![],
     };
