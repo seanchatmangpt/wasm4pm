@@ -13,37 +13,12 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+use crate::breeds::support::certainty::combine_cf;
 use std::collections::{HashMap, HashSet};
 use tracing;
 
 /// MYCIN production-rule engine.
 pub struct Mycin;
-
-/// Shortliffe-Buchanan certainty-factor combination.
-///
-/// Properties (Rank-1, mathematical):
-/// - Commutativity for same-sign: `combine(a,b) == combine(b,a)`.
-/// - Identity: `combine(x, 0) == x`.
-/// - Bounds: result is in `[-1.0, 1.0]` for inputs in `[-1.0, 1.0]`.
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
-pub fn combine_cf(a: f32, b: f32) -> f32 {
-    let r = if a >= 0.0 && b >= 0.0 {
-        a + b - a * b
-    } else if a < 0.0 && b < 0.0 {
-        a + b + a * b
-    } else {
-        let denom = 1.0 - a.abs().min(b.abs());
-        if denom.abs() < 1e-9 {
-            0.0
-        } else {
-            (a + b) / denom
-        }
-    };
-    r.clamp(-1.0, 1.0)
-}
 
 fn premise_satisfied(premise: &str, working_memory: &HashMap<String, f32>) -> Option<f32> {
     working_memory.get(premise).copied().filter(|cf| *cf > 0.2)
@@ -219,56 +194,6 @@ mod tests {
             goals: vec![],
             state: vec![],
         }
-    }
-
-    #[test]
-    fn test_combine_cf_both_positive() {
-        let result = combine_cf(0.6, 0.4);
-        let expected = 0.6_f32 + 0.4 - 0.6 * 0.4; // 0.76
-        assert!(
-            (result - expected).abs() < 1e-5,
-            "expected {}, got {}",
-            expected,
-            result
-        );
-    }
-
-    #[test]
-    fn test_combine_cf_both_negative() {
-        let result = combine_cf(-0.3, -0.4);
-        let expected = -0.3_f32 + -0.4 + (-0.3 * -0.4); // -0.58
-        assert!(
-            (result - expected).abs() < 1e-5,
-            "expected {}, got {}",
-            expected,
-            result
-        );
-    }
-
-    #[test]
-    fn test_combine_cf_mixed_positive_wins() {
-        let result = combine_cf(0.5, -0.2);
-        let expected = (0.5_f32 + -0.2) / (1.0 - 0.2_f32); // 0.375
-        assert!(
-            (result - expected).abs() < 1e-5,
-            "expected {}, got {}",
-            expected,
-            result
-        );
-    }
-
-    #[test]
-    fn test_combine_cf_mixed_negative_wins() {
-        // combine_cf(a, b) with a<0, b>0: denom = 1 - min(|a|, |b|) = 1 - min(0.5, 0.2) = 0.8
-        // result = (a + b) / denom = (-0.5 + 0.2) / 0.8 = -0.375
-        let result = combine_cf(-0.5, 0.2);
-        let expected = (-0.5_f32 + 0.2) / (1.0 - 0.2_f32); // -0.375
-        assert!(
-            (result - expected).abs() < 1e-5,
-            "expected {}, got {}",
-            expected,
-            result
-        );
     }
 
     // CF exactly 0.2 should NOT propagate (premise_satisfied requires CF > 0.2)

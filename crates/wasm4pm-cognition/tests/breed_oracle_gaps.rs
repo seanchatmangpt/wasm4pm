@@ -12,7 +12,7 @@
 //! specification or documented domain contract, not from the implementation.
 
 use wasm4pm_cognition::breeds::hearsay::noisy_or;
-use wasm4pm_cognition::breeds::production_rules::combine_cf;
+use wasm4pm_cognition::breeds::support::certainty::combine_cf;
 use wasm4pm_cognition::breeds::{
     dispatch_breed_test, BreedId, BreedInput, Candidate, Fact, Goal, Rule, StateAtom,
 };

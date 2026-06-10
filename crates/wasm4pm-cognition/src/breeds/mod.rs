@@ -16,6 +16,8 @@ pub mod dendral;
 pub mod frame;
 pub mod gps;
 pub mod hearsay;
+/// Support combinators for reasoning breeds.
+pub mod support;
 pub mod production_rules;
 pub mod prolog;
 pub mod soar;
