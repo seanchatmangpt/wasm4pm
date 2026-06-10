@@ -1658,3 +1658,19 @@ fn bayesian_network_paper_grounded() {
     }
 }
 
+
+#[test]
+fn test_analogy_sme_paper_grounded() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/analogy_sme.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch::dispatch_breed("analogy_sme", &input).unwrap();
+    assert!(output.selected.unwrap().contains("score:17"));
+}
+
+#[test]
+fn test_act_r_paper_grounded() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/act_r.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch::dispatch_breed("act_r", &input).unwrap();
+    assert!(output.selected.unwrap().contains("add"));
+}

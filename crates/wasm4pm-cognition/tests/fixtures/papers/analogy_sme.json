@@ -1,0 +1,37 @@
+{
+  "rules": [],
+  "facts": [
+    {
+      "key": "base:1",
+      "value": "(color A red)"
+    },
+    {
+      "key": "base:2",
+      "value": "(size A big)"
+    },
+    {
+      "key": "base:3",
+      "value": "(shape A square)"
+    },
+    {
+      "key": "base:4",
+      "value": "(cause (push A B) (move B))"
+    },
+    {
+      "key": "target:1",
+      "value": "(color X red)"
+    },
+    {
+      "key": "target:2",
+      "value": "(size X big)"
+    },
+    {
+      "key": "target:3",
+      "value": "(shape X square)"
+    },
+    {
+      "key": "target:4",
+      "value": "(cause (push Y Z) (move Z))"
+    }
+  ]
+}

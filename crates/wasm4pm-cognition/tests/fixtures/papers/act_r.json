@@ -1,0 +1,26 @@
+{
+  "rules": [
+    {
+      "id": "r1",
+      "certainty": 1.0,
+      "premise": [
+        "goal:add"
+      ],
+      "conclusion": "retrieve:isa addition|stop"
+    }
+  ],
+  "facts": [
+    {
+      "key": "goal",
+      "value": "add"
+    },
+    {
+      "key": "chunk:c1",
+      "value": "B:1.0|isa addition arg1 3 arg2 4 ans 7"
+    },
+    {
+      "key": "chunk:c2",
+      "value": "B:2.5|isa addition arg1 3 arg2 4 ans error"
+    }
+  ]
+}

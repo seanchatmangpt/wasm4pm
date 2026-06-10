@@ -1475,3 +1475,23 @@ fn bayesian_network_hidden_burglar_alarm() {
     assert!(prob_val > 0.0 && prob_val < 1.0);
 }
 
+
+#[test]
+fn test_analogy_sme_oracle_hidden() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/analogy_sme.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch::dispatch_breed("analogy_sme", &input).unwrap();
+    
+    let score = output.selected.unwrap();
+    assert!(score.contains("17.0") || score.contains("17"));
+}
+
+#[test]
+fn test_act_r_oracle_hidden() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/act_r.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    let output = wasm4pm_cognition::breeds::dispatch::dispatch_breed("act_r", &input).unwrap();
+    
+    let retrieved = output.facts.iter().find(|f| f.key == "retrieval").unwrap();
+    assert!(retrieved.value.contains("ans error"));
+}

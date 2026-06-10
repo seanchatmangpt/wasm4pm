@@ -466,3 +466,19 @@ fn bayesian_network_empty_goals_refused() {
     assert!(result.unwrap_err().contains("query"));
 }
 
+
+#[test]
+fn test_analogy_sme_refusal_empty() {
+    let input = wasm4pm_cognition::breeds::BreedInput { rules: vec![], facts: vec![], candidates: vec![], cases: vec![], goals: vec![], intent: String::new(), state: vec![] };
+    let res = wasm4pm_cognition::breeds::dispatch::dispatch_breed("analogy_sme", &input);
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("at least one base expression"));
+}
+
+#[test]
+fn test_act_r_refusal_empty() {
+    let input = wasm4pm_cognition::breeds::BreedInput { rules: vec![], facts: vec![], candidates: vec![], cases: vec![], goals: vec![], intent: String::new(), state: vec![] };
+    let res = wasm4pm_cognition::breeds::dispatch::dispatch_breed("act_r", &input);
+    assert!(res.is_err());
+    assert!(res.unwrap_err().contains("at least one production rule"));
+}

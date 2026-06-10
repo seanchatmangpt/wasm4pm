@@ -1,0 +1,87 @@
+{
+  "places": [
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+  ],
+  "transitions": [
+    "load-chunk",
+    "match-production",
+    "fire-production",
+    "retrieval-request",
+    "retrieve-chunk",
+    "retrieval-failure",
+    "decision"
+  ],
+  "arcs": [
+    {
+      "source": "p0",
+      "target": "load-chunk"
+    },
+    {
+      "source": "load-chunk",
+      "target": "p0"
+    },
+    {
+      "source": "p0",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "match-production"
+    },
+    {
+      "source": "match-production",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "fire-production"
+    },
+    {
+      "source": "fire-production",
+      "target": "p3"
+    },
+    {
+      "source": "p3",
+      "target": "retrieval-request"
+    },
+    {
+      "source": "retrieval-request",
+      "target": "p4"
+    },
+    {
+      "source": "p4",
+      "target": "retrieve-chunk"
+    },
+    {
+      "source": "retrieve-chunk",
+      "target": "p1"
+    },
+    {
+      "source": "p4",
+      "target": "retrieval-failure"
+    },
+    {
+      "source": "retrieval-failure",
+      "target": "p1"
+    },
+    {
+      "source": "p3",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "decision"
+    },
+    {
+      "source": "decision",
+      "target": "p4"
+    }
+  ],
+  "markings": {
+    "p0": 1
+  }
+}

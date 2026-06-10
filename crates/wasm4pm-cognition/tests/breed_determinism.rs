@@ -565,3 +565,17 @@ fn exactly_17_breed_pairs_covered() {
     ];
     assert_eq!(covered.len(), 17, "must cover exactly 17 breeds");
 }
+
+#[test]
+fn test_analogy_sme_determinism() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/analogy_sme.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    assert_deterministic("analogy_sme", &input);
+}
+
+#[test]
+fn test_act_r_determinism() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/act_r.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    assert_deterministic("act_r", &input);
+}

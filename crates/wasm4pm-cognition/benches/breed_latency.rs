@@ -11,7 +11,7 @@ use wasm4pm_cognition::breeds::{
     cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
     prolog::Prolog, soar::Soar, strips::Strips,
     ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, BreedInput, Candidate, Case, CognitionBreed, Fact,
+    bayesian_network::BayesianNetwork, analogy_sme::AnalogySme, act_r::ActR, BreedInput, Candidate, Case, CognitionBreed, Fact,
     Goal, Rule, StateAtom,
 };
 
@@ -78,6 +78,10 @@ fn make_input() -> BreedInput {
             Fact {
                 key: "Alarm".into(),
                 value: "true".into(),
+            },
+            Fact {
+                key: "base:1".into(),
+                value: "(foo bar)".into(),
             },
         ],
         cases: vec![
@@ -226,12 +230,13 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_semantics", AutoinstinctSemantics);
     bench_breed!(group, "autoinstinct_neurosis", AutoinstinctNeurosis);
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
-    bench_breed!(group, "htn_planning", HtnPlanning);
-    bench_breed!(group, "htn_planning", wasm4pm_cognition::breeds::htn_planning::HtnPlanning);
+        bench_breed!(group, "htn_planning", wasm4pm_cognition::breeds::htn_planning::HtnPlanning);
     bench_breed!(group, "ltl_monitor", LtlMonitor);
     bench_breed!(group, "allen_temporal", AllenTemporal);
     bench_breed!(group, "fuzzy_logic", FuzzyLogic);
     bench_breed!(group, "bayesian_network", BayesianNetwork);
+    bench_breed!(group, "analogy_sme", AnalogySme);
+    bench_breed!(group, "act_r", ActR);
 
     group.finish();
 }

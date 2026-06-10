@@ -23,6 +23,10 @@ pub mod ebl;
 pub mod default_logic;
 /// Module for csp_ac3
 pub mod csp_ac3;
+/// Analogy SME breed
+pub mod analogy_sme;
+/// ACT-R breed
+pub mod act_r;
 /// Module for dendral
 pub mod dendral;
 /// Module for frame

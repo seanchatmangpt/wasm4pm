@@ -20,6 +20,8 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "fuzzy_logic" => Some(include_str!("../../../../ocel/models/l1/fuzzy_logic.ocpn.json")),
         "bayesian_network" => Some(include_str!("../../../../ocel/models/l1/bayesian_network.ocpn.json")),
         "dempster_shafer" => Some(include_str!("../../../../ocel/models/l1/dempster_shafer.ocpn.json")),
+        "analogy_sme" => Some(include_str!("../../../../ocel/models/l1/analogy_sme.ocpn.json")),
+        "act_r" => Some(include_str!("../../../../ocel/models/l1/act_r.ocpn.json")),
         _ => None,
     }
 }

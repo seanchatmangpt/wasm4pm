@@ -1,0 +1,65 @@
+{
+  "places": [
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+    "p4"
+  ],
+  "transitions": [
+    "parse-expr",
+    "local-match",
+    "merge-gmap",
+    "candidate-inference",
+    "decision"
+  ],
+  "arcs": [
+    {
+      "source": "p0",
+      "target": "parse-expr"
+    },
+    {
+      "source": "parse-expr",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "local-match"
+    },
+    {
+      "source": "local-match",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "merge-gmap"
+    },
+    {
+      "source": "merge-gmap",
+      "target": "p1"
+    },
+    {
+      "source": "p1",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "candidate-inference"
+    },
+    {
+      "source": "candidate-inference",
+      "target": "p2"
+    },
+    {
+      "source": "p2",
+      "target": "decision"
+    },
+    {
+      "source": "decision",
+      "target": "p3"
+    }
+  ],
+  "markings": {
+    "p0": 1
+  }
+}
