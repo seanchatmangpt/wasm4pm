@@ -181,3 +181,30 @@ All 60 algorithms pass three test case categories:
 - **Invariant** — determinism: same input produces bit-exact output across runs (seeded RNG, sorted HashMap iteration)
 
 BLAKE3 receipt chain is mandatory for every `wpm run` invocation. Exit codes: 0 ok, 1 config, 2 source, 3 execution, 4 partial, 5 system.
+
+---
+
+## Examples
+
+Runnable TypeScript examples for key algorithm domains:
+
+| Example | Domain | Quick run |
+|---------|--------|-----------|
+| `examples/01-discovery/01-basic-dfg.ts` | Process Discovery | `tsx examples/01-discovery/01-basic-dfg.ts` |
+| `examples/02-conformance/01-basic-fitness.ts` | Conformance | `tsx examples/02-conformance/01-basic-fitness.ts` |
+| `examples/06-scaling/01-streaming-dfg.ts` | Streaming / SIMD | `tsx examples/06-scaling/01-streaming-dfg.ts` |
+| `examples/08-advanced-discovery.ts` | Advanced Discovery | `tsx examples/08-advanced-discovery.ts data/small-example.xes` |
+| `examples/10-conformance-and-metrics.ts` | Conformance Metrics | `tsx examples/10-conformance-and-metrics.ts data/small-example.xes` |
+| `examples/11-matrix-and-networks.ts` | Social Network / Matrix | `tsx examples/11-matrix-and-networks.ts data/small-example.xes` |
+| `examples/14-ocel-process-mining.ts` | OCEL 2.0 | `tsx examples/14-ocel-process-mining.ts` |
+| `examples/15-powl-import-export.ts` | POWL | `tsx examples/15-powl-import-export.ts` |
+| `examples/ml-classify.ts` | ML: Classification | `tsx examples/ml-classify.ts data/small-example.xes` |
+| `examples/ml-cluster.ts` | ML: Clustering | `tsx examples/ml-cluster.ts data/small-example.xes 5` |
+| `examples/ml-forecast.ts` | ML: Time-series | `tsx examples/ml-forecast.ts data/small-example.xes` |
+| `examples/ml-anomaly.ts` | ML: Anomaly Detection | `tsx examples/ml-anomaly.ts data/small-example.xes 0.5` |
+| `examples/ml-regress.ts` | ML: Regression | `tsx examples/ml-regress.ts data/small-example.xes linear` |
+| `examples/ml-pca.ts` | ML: PCA | `tsx examples/ml-pca.ts data/small-example.xes 3` |
+| `examples/12-ml-automl-predict.ts` | AutoML + Predict | `tsx examples/12-ml-automl-predict.ts data/small-example.xes` |
+| `examples/13-streaming-and-agentic.ts` | Streaming + Agentic | `tsx examples/13-streaming-and-agentic.ts data/small-example.xes` |
+
+Full example catalog: [examples/README.md](../../examples/README.md)

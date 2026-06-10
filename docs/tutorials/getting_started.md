@@ -63,7 +63,27 @@ wpm doctor check
 wpm status --format json
 ```
 
-## 4. Programmatic Usage
+## 4. End-to-End Workflow Example
+
+`examples/full-workflow.ts` chains discovery → quality → prediction → ML in a single script:
+
+```bash
+tsx examples/full-workflow.ts data/small-example.xes
+```
+
+RL autonomic monitoring (5 agents, convergence analysis):
+
+```bash
+tsx examples/rl-monitoring.ts 100
+```
+
+Watch mode — re-run on file change:
+
+```bash
+bash examples/watch-mode.sh data/small-example.xes
+```
+
+## 5. Programmatic Usage
 
 ```typescript
 import { readFileSync } from 'fs';

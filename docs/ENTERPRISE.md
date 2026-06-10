@@ -116,3 +116,22 @@ The browser-profile WASM binary is approximately 7.6 MB. All profiles (mobile/io
 - Bugs: GitHub Issues
 - Security: See SECURITY.md
 - Commercial: xpointsh@gmail.com
+
+## Domain Use Case Examples
+
+`examples/zoe-la/` demonstrates wasm4pm applied to a real-world service operations domain (community care coordination). Five end-to-end scripts show how the platform's process mining, autonomic monitoring, and cognition layers compose:
+
+| Example | Job-to-be-Done |
+|---------|---------------|
+| `01-prayer-request-pipeline.ts` | Process discovery over care request flow |
+| `02-connect-group-belonging.ts` | Conformance checking on community engagement |
+| `03-sunday-threshold-andon.ts` | ANDON gate: detect threshold violations in service log |
+| `04-autonomic-care-coordinator.ts` | Autonomic RL monitoring with convergence analysis |
+| `05-red-team-adversary.ts` | Adversarial probe: inject invalid logs, verify rejection |
+
+```bash
+tsx examples/zoe-la/01-prayer-request-pipeline.ts
+tsx examples/zoe-la/05-red-team-adversary.ts
+```
+
+These examples are instrumented with OTEL spans and emit BLAKE3 receipts — the same discipline as production deployments.

@@ -92,4 +92,22 @@ wpm predict remaining-time -i log.xes --prefix "A"
 wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 ```
 
+## Watch Mode
+
+Continuously re-run discovery on log file change — `examples/watch-mode.sh` shows the full pattern:
+
+```bash
+bash examples/watch-mode.sh data/small-example.xes
+# or directly:
+wpm watch data/small-example.xes -a simd_streaming_dfg
+```
+
+## CLI + Integration Workflow
+
+`examples/07-integration/01-cli-workflow.ts` demonstrates chaining multiple CLI commands programmatically (discovery → conformance → results → receipts):
+
+```bash
+tsx examples/07-integration/01-cli-workflow.ts
+```
+
 For full documentation and all subcommands, run `wpm --help` or `wpm <command> --help`.

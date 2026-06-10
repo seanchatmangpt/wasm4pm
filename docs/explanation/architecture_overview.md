@@ -120,3 +120,11 @@ Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 ## License
 
 BUSL-1.1. See [LICENSE](../../LICENSE).
+
+## Graph and Variant Analysis Example
+
+`examples/09-graph-and-variants.ts` demonstrates DFG graph construction, variant extraction, and footprint comparison — a good starting point for understanding how the WASM core transforms raw event logs into structured process models:
+
+```bash
+tsx examples/09-graph-and-variants.ts data/small-example.xes
+```
