@@ -1,108 +1,171 @@
-We instantiate the formal framework in \emph{wasm4pm}, an open-source process
-mining platform~\cite{chatman_wasm4pm_2026} with 60 deterministic algorithms
-compiled from Rust to WebAssembly.
+We instantiate the framework in \emph{wasm4pm}~\cite{chatman_wasm4pm_2026}, an
+open-source process mining platform. This section maps each formal component to
+its concrete realisation and reports the evaluation evidence: determinism
+guarantees, the proof-gate suite, binary footprints, and the operational
+verification protocol.
 
 \subsection{Architecture}
 
-wasm4pm has two layers with complementary roles:
+wasm4pm comprises two layers. The \textbf{core} is a Rust workspace compiled to
+WebAssembly via \texttt{wasm-bindgen}, registering 60 process mining algorithms
+in a kernel registry: discovery (directly-follows graphs, Heuristic
+Miner~\cite{weijters_et_al_heuristics_miner_2006}, Inductive
+Miner~\cite{leemans_fahland_van_der_aalst_2013_constructive}, POWL
+2.0~\cite{kourani_van_der_aalst_powl2_2024}), conformance checking (token
+replay~\cite{rozinat_van_der_aalst_2008}, alignments), object-centric analysis
+(OCEL~2.0 ingestion, OC-DFG~\cite{berti_van_der_aalst_oc_dfg_2023}, OCPQ
+querying~\cite{kuesters_van_der_aalst_ocpq_2025}), and supporting ML primitives.
+The \textbf{orchestration layer} is a TypeScript monorepo of eleven packages
+providing the \texttt{wpm} CLI, Zod-validated configuration, an execution
+planner with four deployment profiles, OpenTelemetry observability, and a
+Supabase-backed receipt store with an offline sync queue (five-attempt cap,
+dead-letter table) for intermittently connected environments.
 
-\begin{enumerate}[label=(\arabic*)]
-  \item A \textbf{Rust/WASM core} providing 60 process mining algorithms ---
-        discovery (DFG, Heuristic Miner, Inductive Miner), conformance
-        checking (token replay, alignments), object-centric querying (OCPQ), and
-        machine learning primitives. Algorithms are deterministic by construction:
-        all RNG is seeded, all hash-map iteration is sorted. Same input implies
-        bit-exact output, verified as a CI merge gate.
-
-  \item A \textbf{TypeScript monorepo} of eleven packages wrapping the WASM core
-        with a CLI (\texttt{wpm}), Zod-validated configuration, an execution
-        planner, OpenTelemetry spans, and a Supabase persistence layer for receipts
-        and TrueX envelopes.
-\end{enumerate}
-
-\subsection{TrueX Envelopes as Concrete Admitted Changes}
-
-The \emph{TrueX envelope} is the concrete realisation of a member
-$x \in \Aent$ in wasm4pm. Its fields map directly to the components of
-Definition~\ref{def:omega}:
-
-\begin{center}
-\begin{tabularx}{\textwidth}{ll>{\itshape}X}
-\toprule
-\textbf{Envelope field} & \textbf{Formal component} & Type \\
-\midrule
-\texttt{session\_id}          & $a$ (actor/session)       & UUID \\
-\texttt{ocel2\_batch\_hash}   & $h(O)$ (object log hash)  & BLAKE3 hex \\
-\texttt{receipt\_hash}        & $h(R)$ (receipt hash)     & BLAKE3 hex \\
-\texttt{admission\_status}    & $B(s,e)$ outcome          & \texttt{ReceiptAdmitted} \\
-\texttt{equivalence\_class}   & $s$ (process state class) & string \\
-\texttt{expected\_path\_hash} & $h(\text{model path})$    & BLAKE3 hex \\
-\texttt{truex\_profile}       & $v$ (validator version)   & string \\
-\texttt{trace\_id}            & OTel span correlation     & string \\
-\bottomrule
-\end{tabularx}
-\end{center}
-
-The \texttt{admission\_status} field carries the string \texttt{ReceiptAdmitted}
-only when the verifier has checked all conjuncts of $\accept$. Self-certified
-alignment (\texttt{SelfCertifiedAlignment} refusal state) is architecturally
-prevented: the field is computed by the verifier and sealed into the envelope hash,
-never written by the producer.
-
-\subsection{Boundary Predicate as 13-State Refusal Taxonomy}
-
-The boundary predicate $B(s,e)$ is implemented as a taxonomy of thirteen
-non-overlapping refusal states, each a \textsc{deny}-level gate:
-
-\begin{itemize}[leftmargin=2em,noitemsep]
-  \item \textbf{Ingress validation:} \texttt{ObservedOCELMissing},
-        \texttt{ExpectedOCELMissing}, \texttt{PathHashOnlyReceipt}
-  \item \textbf{Adversarial detection:} \texttt{ObservedTraceMutationWithoutBoundary},
-        \texttt{FixtureMutationDetected}
-  \item \textbf{Envelope verification:} \texttt{RuntimeObserverMissing}
-  \item \textbf{Cryptographic:} \texttt{ChallengeNonceMissing},
-        \texttt{ChallengeNonceMismatch}, \texttt{ObservedTraceNotChallengeBound}
-  \item \textbf{Evidence:} \texttt{BoundaryEvidenceMissing},
-        \texttt{SummaryOnlyReceipt}
-  \item \textbf{Authority:} \texttt{SelfCertifiedAlignment}
-  \item \textbf{Hierarchy:} \texttt{ProofClassOverclaimed}
-\end{itemize}
-
-Each state corresponds to a distinct failure mode in Theorem~\ref{thm:decomp}
-(receipt forge or boundary bypass channels).
-
-\subsection{Receipt Chain}
-
-Every \texttt{wpm run} writes a BLAKE3 receipt to
-\texttt{.wasm4pm/receipts/<run-id>.json}. The receipt carries:
-\texttt{run\_id}, \texttt{command}, \texttt{input\_hash}, \texttt{output\_hash},
-\texttt{status}, \texttt{payload} (full OCEL~2.0 log reference), and
-\texttt{git\_commit}. Receipts are chained by including the prior receipt's hash
-and can be synchronised to a central Supabase store via the \texttt{@wasm4pm/supabase}
-package, which implements the offline queue with a 5-attempt dead-letter cap.
+The WASM compilation target is itself a security decision: the admission gate
+runs in a sandboxed, capability-free module with no ambient filesystem or
+network authority, embeddable in browsers, server runtimes, and edge platforms
+--- so the verifier executes \emph{inside the data owner's boundary}, and only
+hashes and receipts leave it.
 
 \subsection{Determinism as a Receipt Precondition}
+\label{sec:impl-determinism}
 
-The WASM determinism guarantee --- same input, bit-exact output across all
-platforms --- is a necessary condition for receipt reproducibility. A non-deterministic
-analysis would produce different \texttt{output\_hash} values on different machines,
-making receipts unverifiable. wasm4pm enforces determinism at the CI merge gate;
-stochastic algorithms use a fixed seed (42), configurable seed support is future work.
+Lemma~\ref{lem:chain} requires that any holder of a receipt can recompute its
+hashes. This is only possible if the underlying computation is reproducible:
+a non-deterministic analysis yields different \texttt{output\_hash} values on
+different machines, making every receipt unverifiable. wasm4pm therefore
+enforces bit-exact determinism as a CI merge gate --- identical input must
+produce identical output bytes across platforms. Concretely: all randomness is
+seeded (stochastic algorithms currently use a fixed seed), all hash-map
+iteration is order-sorted before serialisation, and floating-point operations
+avoid platform-dependent intrinsics. Canonicalisation of OCEL~2.0 documents
+follows a JCS-style profile (UTF-16 lexicographic key ordering, deterministic
+array ordering) so that hash computation is byte-stable regardless of producer
+formatting --- the implementation of Definition~\ref{def:valid-receipt}(i).
 
-\subsection{Operational Verification: Doctor Status}
+\subsection{TrueX Envelopes as Concrete Admitted Changes}
+\label{sec:impl-truex}
 
-The \texttt{wpm doctor --supabase} command instantiates the $\accept$ predicate
-verification as an operational status progression:
+The \emph{TrueX envelope} realises a candidate change
+$x \in \Omega_{\mathrm{change}}$ on the wire.
+Table~\ref{tab:envelope} maps envelope fields to the formal components of
+Definition~\ref{def:omega}.
 
-\begin{description}[leftmargin=2em]
-  \item[\texttt{prepublish\_only}] Credentials absent, Supabase unreachable,
-        migrations not applied, or service role key missing.
-  \item[\texttt{configured}] All credentials present, reachable, migrations applied.
-  \item[\texttt{live\_verified}] Full smoke test passed: probe receipt upserted,
-        read back, dead-letter written, TrueX envelope ingested via Edge Function.
-        A BLAKE3-hashed runtime receipt is emitted to
-        \texttt{.wasm4pm/receipts/supabase\_runtime.receipt.json}.
+\begin{table}[t]
+\centering
+\caption{TrueX envelope fields and their formal counterparts.}
+\label{tab:envelope}
+\begin{tabularx}{\textwidth}{llX}
+\toprule
+\textbf{Envelope field} & \textbf{Formal component} & \textbf{Content}\\
+\midrule
+\texttt{session\_id}          & $a$ (actor/session)     & originating session identity\\
+\texttt{ocel2\_batch\_hash}   & $h(O)$                  & BLAKE3 over canonical OCEL~2.0 batch\\
+\texttt{receipt\_hash}        & $h(R)$                  & BLAKE3 over the receipt body\\
+\texttt{admission\_status}    & $\accept(x)$ outcome    & \texttt{ReceiptAdmitted} iff all conjuncts hold\\
+\texttt{equivalence\_class}   & $s$ (state class)       & process-state equivalence class\\
+\texttt{expected\_path\_hash} & declared model path     & hash of the admissible path in the model\\
+\texttt{truex\_profile}       & $v$ (validator version) & canonicalisation/verifier profile\\
+\texttt{trace\_id}, \texttt{span\_id} & observability   & OpenTelemetry correlation\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Two architectural rules protect the envelope's integrity. First,
+\texttt{admission\_status} is \emph{verifier-written}: the producer cannot set
+it, and a producer-supplied alignment claim triggers the
+\texttt{SelfCertifiedAlignment} refusal --- the implementation of
+Definition~\ref{def:valid-receipt}(iii). Second, ingestion is idempotent on
+\texttt{receipt\_hash}: replayed envelopes are detected at the persistence
+boundary, complementing the nonce check of C5.
+
+\subsection{The Boundary Predicate as a Refusal Taxonomy}
+\label{sec:impl-refusals}
+
+The admission-time checks of Definitions~\ref{def:valid-receipt}
+and~\ref{def:accept} are implemented as thirteen non-overlapping refusal
+states, each a \textsc{deny}-level verdict with a structured payload (code,
+severity, JSON path, message):
+
+\begin{description}[leftmargin=1.6em,itemsep=1pt]
+  \item[Ingress validation:] \texttt{Observed\-OCEL\-Missing},
+        \texttt{Expected\-OCEL\-Missing}, \texttt{Path\-Hash\-Only\-Receipt}
+        --- the substance axiom; a receipt without recomputable logs is
+        refused at the door.
+  \item[Adversarial detection:]
+        \texttt{Observed\-Trace\-Mutation\-Without\-Boundary},
+        \texttt{Fixture\-Mutation\-Detected} --- structural-isomorphism and
+        temporal-offset analysis catches near-clones of golden fixtures whose
+        timestamps and identifiers were shifted.
+  \item[Envelope verification:] \texttt{RuntimeObserverMissing} --- receipts
+        claiming live execution must carry the runner envelope (runner ID,
+        device, build, session nonces, timestamps).
+  \item[Cryptographic binding:] \texttt{Challenge\-Nonce\-Missing},
+        \texttt{Challenge\-Nonce\-Mismatch},
+        \texttt{Observed\-Trace\-Not\-Challenge\-Bound}
+        --- the pre-minted 128-bit nonce must appear in the challenge manifest,
+        the raw runner output, \emph{and} the observed OCEL events
+        (Definition~\ref{def:valid-receipt}(iv)).
+  \item[Evidence binding:] \texttt{BoundaryEvidenceMissing},
+        \texttt{SummaryOnlyReceipt} --- raw executor evidence (exit codes,
+        stdout/stderr hashes) must be bound, and observed logs must contain
+        granular provenance events, not domain-level summaries.
+  \item[Authority \& hierarchy:] \texttt{SelfCertifiedAlignment},
+        \texttt{ProofClassOverclaimed} --- alignment is verifier-sealed, and no
+        receipt may claim a proof class whose conditions it does not meet.
 \end{description}
 
-The \texttt{live\_verified} status is itself a receipt --- a proof that the
-admission pipeline was operational at a given point in time.
+The taxonomy's closure property matters for the implementation-defect channel
+of Theorem~\ref{thm:decomp}: because refusals are enumerable, ``is every
+failure mode handled?'' becomes a finite checklist, each entry with dedicated
+negative tests that inject the corresponding forged receipt and assert
+refusal.
+
+\subsection{Evaluation}
+\label{sec:impl-eval}
+
+\paragraph{Proof gates.} Every commit to the repository runs a proof-gate
+suite of 16 receipt-backed tests across seven proof files (receipt
+construction and hashing, release admissibility, WASM module surface, OCEL
+end-to-end validation, ML primitives, statistical process control, and
+reinforcement-learning components). The gate is enforced in the pre-push hook
+and CI with a hard time budget (the current suite completes in under 1.5\,s),
+so admission-relevant regressions cannot land silently. In the terminology of
+Section~\ref{sec:bg-receipts}, the suite maintains \textsc{ChicagoProof}
+status for the core pipeline: at least one test exercises the real WASM
+boundary end-to-end, and mocking that boundary is prohibited by policy and
+enforced by review tooling.
+
+\paragraph{Determinism.} The merge gate re-executes representative analyses
+and compares output bytes; a single differing byte fails the build. This has
+held across the browser and Node.js targets of the WASM artifact.
+
+\paragraph{Footprint.} The full browser-profile WASM binary is
+$\approx 3.5$\,MB (with a CI size-regression gate at $+5\%$); size-reduced
+profiles ($\approx 0.5$--$2$\,MB) target mobile, IoT, edge, and fog
+deployments. The practical consequence for the framework is deployment
+locality: the admission gate is small enough to run at the point of change ---
+in the browser form, at the API gateway, on the shop-floor gateway --- rather
+than as a remote service the data must travel to.
+
+\paragraph{Operational verification.} The \texttt{wpm doctor} protocol
+verifies the admission pipeline itself and reports a three-state progression:
+\texttt{prepublish\_only} (credentials absent or store unreachable),
+\texttt{configured} (reachable, migrations applied, service role present), and
+\texttt{live\_verified}. The last is earned by a live probe that exercises
+every leg of the evidence path --- upsert a probe receipt, read it back, write
+a dead-letter entry, ingest a TrueX envelope through the edge function --- and
+then emits a BLAKE3-hashed \emph{runtime receipt} recording the probe results.
+The status is thus itself an instance of the framework: the claim ``the
+admission pipeline works'' is only accepted when accompanied by a verifiable
+receipt, closing the self-reference loop.
+
+\paragraph{Limitations of the current implementation.} Three gaps between the
+formal model and the shipped system are tracked openly: ML-DSA signing is
+specified but the deployed chain currently relies on BLAKE3 integrity plus
+transport authentication, with signature integration staged behind the
+crypto-agility interface of Section~\ref{sec:channels}; CLI-side and WASM-side
+OpenTelemetry traces are not yet correlated into a single distributed trace;
+and stochastic algorithm seeds are fixed rather than configurable-and-audited.
+None of these affect the validity of the propositions --- they delimit which
+proof classes the current artifacts can claim.

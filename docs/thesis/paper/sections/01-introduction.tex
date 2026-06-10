@@ -1,57 +1,132 @@
-Enterprise systems face a structural problem: the surfaces through which change enters
-the system are too many, too permeable, and too decoupled from the processes that
-are supposed to govern them. An attacker who gains database access can issue
-\texttt{UPDATE invoice SET status = 'paid'} without any approval event having occurred.
-A privileged administrator can promote a user to admin directly, bypassing the
-workflow that was designed to require a second approval. An AI agent, given a tool
-that calls a write API, can modify enterprise state as a side-effect of any prompt
-it is given --- with no cryptographic binding to its declared mandate.
+Enterprise systems face a structural problem: the surfaces through which change
+enters the system are too many, too permeable, and too decoupled from the
+processes that are supposed to govern them. Consider three incidents, each drawn
+from a pattern that recurs across industries:
 
-Current defences respond after the fact: logs are written, anomaly detectors flag
-deviations, and audit trails attempt to reconstruct what happened. Process mining,
-in van der Aalst's canonical formulation, discovers and verifies process models
-against event logs recorded after execution~\cite{van_der_aalst_2016_process_mining}.
-The insight of this paper is to \emph{invert the temporal position} of that
-discipline: instead of mining a log to check whether a completed process conformed,
-we require that a process-valid event be produced and admitted \emph{before} the
-change is allowed to alter enterprise state.
+\begin{description}[leftmargin=1.5em]
+  \item[Schema-valid fraud.] A payment-operations employee with database access
+        issues \texttt{UPDATE invoice SET status = 'paid' WHERE id = 4711}. The
+        row passes every schema constraint --- the column accepts the value, the
+        foreign keys resolve, the audit trigger fires and dutifully records the
+        write. Yet no approval event ever occurred. The fraud is invisible to
+        schema validation because the \emph{shape} of the data is correct; only
+        its \emph{process position} is wrong.
+  \item[Rogue administrator.] A platform administrator, asked to ``unblock'' a
+        stalled onboarding case, sets a user's role to \texttt{admin} directly in
+        the identity store. The four-eyes approval workflow that exists precisely
+        for this operation is bypassed, not by exploiting a vulnerability, but by
+        using a privilege the architecture grants: the power to mutate state
+        without emitting the events the process model requires.
+  \item[AI-agent mutation.] An autonomous agent equipped with a write-capable
+        API tool misinterprets an instruction and cancels forty active
+        subscriptions. Every API call is authenticated and authorized; the agent
+        holds a valid service token. What is missing is any binding between the
+        agent's actions and a process law that says \emph{from this state, with
+        this mandate, that transition is admissible}.
+\end{description}
 
-\subsection*{Contributions}
+In all three cases the failure is the same: \textbf{the system accepted a change
+because it could be parsed and authorized, not because it could be proven to be
+a lawful step of a declared process.} Current defences respond after the fact:
+logs are written, anomaly detectors flag deviations~\cite{ko_comuzzi_anomaly_2021},
+and audit teams attempt to reconstruct what happened, often months later.
+Process mining, in van der Aalst's canonical formulation, discovers and verifies
+process models against event logs recorded after
+execution~\cite{van_der_aalst_2016_process_mining}. The discipline is analytic
+and retrospective by construction.
+
+The thesis of this paper is that the temporal position of that discipline should
+be inverted. Instead of mining a log to determine whether a completed process
+conformed, we require that a \emph{process-valid, cryptographically witnessed
+event} be produced and admitted \emph{before} the change is permitted to alter
+enterprise state. Under this regime the unit of enterprise change is no longer
+the database write or the API call; it is the \emph{admitted change}: a tuple
+binding actor, event type, object relations, current process state, prior
+receipt, policy version, validator version, freshness nonce, and a post-quantum
+signature over all of them. Anything that cannot produce this witness is not
+interpreted as valid change. It is refused, or it is \emph{residualized} ---
+quarantined as evidence without state authority.
+
+We do not claim such a system is unhackable. We claim something narrower and,
+we argue, more useful: that under explicitly named cryptographic and
+implementation assumptions, entire \emph{classes} of adversarial mutation become
+\emph{mathematically inaccessible to acceptance}. The adversary may still submit
+anything; what they cannot do --- without breaking a named assumption --- is make
+it count.
+
+\subsection{Contributions}
 
 This paper makes four contributions:
 
-\begin{enumerate}[label=(\arabic*)]
-  \item \textbf{The Enterprise Change Admissibility Framework.}
-        We define the admitted change universe $\Aent$ as a Cartesian product of
-        actor, event type, object relation, process state, prior receipt, policy
-        version, validator version, nonce, output receipt, and signature. We state
-        and prove the main theorem: $\accept(x) \Rightarrow x \in \Aent$.
-
-  \item \textbf{Eight inaccessibility propositions.}
-        We prove that eight classes of adversarial mutation --- raw database writes,
-        process-state skips, object substitution, backdating, replay, schema-valid
-        fraud, rogue admin edits, and AI-agent hallucinated actions --- are
-        inaccessible to acceptance under the framework. Each proposition identifies
-        the specific predicate component that fails.
-
-  \item \textbf{A named attack decomposition.}
-        We bound the probability of accepting an invalid change as a disjunction of
-        seven named assumptions, each with a distinct security category. This
-        replaces vague security claims with a falsifiable structure.
-
-  \item \textbf{A reference implementation.}
-        We instantiate the framework in \emph{wasm4pm}~\cite{chatman_wasm4pm_2026},
-        a deterministic WebAssembly process mining platform, using BLAKE3 receipt
-        chains, OCEL~2.0 object-centric event logs~\cite{berti_et_al_ocel2_spec_2024},
-        and a boundary predicate expressed as thirteen non-overlapping refusal states.
+\begin{enumerate}[label=(\arabic*),leftmargin=2em]
+  \item \textbf{The Enterprise Change Admissibility Framework}
+        (Section~\ref{sec:model}). We define the enterprise change universe
+        $\Omega_{\mathrm{change}}$ and the admitted change set $\Aent$ as the
+        subset satisfying a seven-conjunct acceptance predicate. We give the
+        state transition law under which non-admitted changes are identity
+        transitions, prove the membership theorem, and formalise
+        \emph{residualization} as the lossless refusal mode. The framework
+        extends boundary predicates and admitted symbolic events from process
+        mining theory~\cite{van_der_aalst_2016_process_mining,van_der_aalst_berti_2020}
+        into a governance law for all enterprise state change.
+  \item \textbf{Eight inaccessibility propositions}
+        (Section~\ref{sec:inaccessibility}). We prove that raw database writes,
+        process-state skips, object substitution, backdating, replay,
+        schema-valid fraud, rogue administrator edits, and AI-agent hallucinated
+        actions are each inaccessible to acceptance, identifying for every class
+        the specific predicate conjunct that blocks it. A running
+        procure-to-pay example grounds each proposition in a concrete enterprise
+        scenario.
+  \item \textbf{A named attack-surface decomposition}
+        (Section~\ref{sec:attacks}). We bound the probability of accepting an
+        invalid change by a union over seven named failure channels ---
+        cryptographic, algorithmic, modelling, operational, and
+        implementation --- each with a characterised mitigation. This replaces
+        unfalsifiable security claims (``zero trust,'' ``secure by design'')
+        with an auditable assumption ledger, and connects each channel to the
+        maturity-model literature for
+        operationalisation~\cite{sok_ccmm_2024,crypto_agility_maturity_2022}.
+  \item \textbf{A reference implementation and evaluation}
+        (Section~\ref{sec:impl}). We instantiate the framework in
+        \emph{wasm4pm}~\cite{chatman_wasm4pm_2026}, a process mining platform
+        whose 60 algorithms compile from Rust to deterministic WebAssembly.
+        Admitted changes are realised as \emph{TrueX envelopes} over canonical
+        OCEL~2.0 logs~\cite{berti_et_al_ocel2_spec_2024}; receipts chain under
+        BLAKE3; the boundary predicate is enforced as thirteen non-overlapping
+        refusal states; and signing is post-quantum
+        (ML-DSA~\cite{nist_fips_204_2024}). We report on the proof-gate test
+        suite, determinism guarantees, and the operational verification
+        protocol.
 \end{enumerate}
 
-\subsection*{Structure}
+\subsection{Running Example}
+\label{sec:running-example}
 
-Section~\ref{sec:background} covers process mining, OCEL~2.0, receipt chains, and
-post-quantum cryptographic signing. Section~\ref{sec:model} develops the formal
-model and proves the main theorem. Section~\ref{sec:inaccessibility} proves the
-eight inaccessibility propositions. Section~\ref{sec:attacks} gives the attack
-decomposition. Section~\ref{sec:impl} describes the wasm4pm implementation.
-Section~\ref{sec:related} surveys related work. Section~\ref{sec:conclusion}
-concludes.
+Throughout the paper we use a procure-to-pay (P2P) process as the running
+example. An \textsf{Invoice} object progresses through states
+\[
+  \textsf{draft} \;\to\; \textsf{submitted} \;\to\; \textsf{approved}
+  \;\to\; \textsf{paid} \;\to\; \textsf{archived},
+\]
+driven by event types \textsf{Submit}, \textsf{Approve}, \textsf{Pay}, and
+\textsf{Archive}. Each event relates the invoice to other objects: the
+\textsf{Employee} who acts, the \textsf{PurchaseOrder} it references, and the
+\textsf{BankTransaction} that settles it. The declared process law requires
+that \textsf{Approve} be performed by an actor distinct from the submitter
+(four-eyes), that \textsf{Pay} reference an approved invoice and a matching
+purchase order (three-way match), and that no state be skipped. P2P is chosen
+because it is the canonical target of enterprise fraud: every attack class in
+Section~\ref{sec:inaccessibility} has a documented real-world instance in this
+process.
+
+\subsection{Structure}
+
+Section~\ref{sec:background} reviews process mining, OCEL~2.0, receipt chains,
+and post-quantum signing. Section~\ref{sec:model} develops the formal model,
+including the threat model, and proves the membership theorem.
+Section~\ref{sec:inaccessibility} proves the eight inaccessibility propositions.
+Section~\ref{sec:attacks} gives the attack-surface decomposition and discusses
+residual risk. Section~\ref{sec:impl} describes and evaluates the wasm4pm
+implementation. Section~\ref{sec:related} positions the work against eight
+adjacent research threads. Section~\ref{sec:conclusion} concludes with
+limitations and the category claim.

@@ -1,78 +1,150 @@
-\subsection{Process Mining and OCEL~2.0}
+\subsection{Process Mining and Object-Centric Event Logs}
 \label{sec:bg-pm}
 
 Process mining operates on event logs to discover process models, check
-conformance, and enhance existing models~\cite{van_der_aalst_2016_process_mining}.
-The canonical event log $L$ is a multiset of traces, each trace being a sequence
-of events over a set of activities. An event $e$ carries at minimum an activity
-label $a(e)$, a timestamp $t(e)$, and a case identifier $c(e)$.
+conformance, and enhance existing
+models~\cite{van_der_aalst_process_mining_2011,van_der_aalst_2016_process_mining}.
+The classical event log $L$ is a multiset of traces, each trace a sequence of
+events over an activity alphabet; an event carries at minimum an activity label,
+a timestamp, and a case identifier. Conformance checking relates a log to a
+model either by token replay~\cite{rozinat_van_der_aalst_2008} or by computing
+optimal alignments~\cite{adriansyah_et_al_alignments_2011,adriansyah_2014_phd},
+yielding fitness and precision measures over the four quality
+dimensions~\cite{buijs_et_al_quality_dimensions_2012}. The control-flow
+semantics available to a declared model are systematised in the workflow
+patterns literature~\cite{russell_workflow_patterns_2015}, and reference
+implementations of the standard algorithm catalogue are provided by
+PM4Py~\cite{berti_pm4py_2023}.
 
-\emph{Object-Centric Event Logs} (OCEL~2.0)~\cite{ghahfarokhi_et_al_ocel_2021,berti_et_al_ocel2_spec_2024}
-generalise this model: an event $e$ is associated with a \emph{set} of typed
-objects $O(e) \subseteq \mathcal{O}$, removing the single-case assumption that
-forces artificial case notions on multi-entity processes. Formally, an OCEL is a
-tuple $(\mathcal{E}, \mathcal{O}, \mathcal{A}, \mathcal{T}, \textit{evAttr},
-\textit{objAttr})$ where $\mathcal{E}$ is a set of events, $\mathcal{O}$ a set
-of objects, $\mathcal{A}$ a set of activities, and $\mathcal{T}$ a set of object
-types~\cite{berti_et_al_ocel2_spec_2024}.
+The single-case assumption of classical logs breaks down in enterprise settings
+where one event touches many entities --- a payment references an invoice, a
+purchase order, and a bank transaction simultaneously. \emph{Object-Centric
+Event Logs} (OCEL)~\cite{ghahfarokhi_et_al_ocel_2021}, standardised as
+OCEL~2.0~\cite{berti_et_al_ocel2_spec_2024,ocel_2_standard_2023}, resolve this:
+an event is associated with a \emph{set} of typed objects, and the log is
+formally a structure
+$(\mathcal{E}, \mathcal{O}, \mathcal{A}, \mathcal{T},
+\textit{evAttr}, \textit{objAttr}, \textit{E2O}, \textit{O2O})$
+comprising events, objects, activities, object types, attribute maps, and the
+event-to-object and object-to-object relations. Object-centric Petri
+nets~\cite{van_der_aalst_berti_2020} and object-centric directly-follows
+multigraphs~\cite{berti_van_der_aalst_oc_dfg_2023} give the discovery-side
+semantics; OCPQ~\cite{kuesters_van_der_aalst_ocpq_2025} provides constraint
+querying over these structures, and declarative object-centric constraints are
+treated in~\cite{kuesters_van_der_aalst_oc_declare_2025}. Van der Aalst argues
+that object-centric process intelligence is the prerequisite for trustworthy
+enterprise AI~\cite{van_der_aalst_no_ai_without_pi_2024} --- a position this
+paper operationalises by making the object-event relation a signed, first-class
+component of every admitted change.
 
-The \emph{boundary predicate} $B : S \times E \to \{0,1\}$, where $S$ is the set
-of process states and $E$ the set of event types, encodes whether an event is
-admissible from a given state. If $B(s,e) = 0$, the state transition function is
-required to satisfy $\mu(s,e) = s$ --- the event produces no change. Boundary
-predicates appear implicitly throughout conformance checking literature
-(e.g., as guard conditions on Petri net transitions~\cite{van_der_aalst_2016_process_mining});
-we make them an explicit first-class component of the admissibility model.
+In our running P2P example, the \textsf{Pay} event is related to three objects
+--- \textsf{Invoice\,\#4711}, \textsf{PO\,\#982}, \textsf{BankTx\,\#5530} ---
+and the three-way-match rule is expressible only because the log model carries
+all three relations on a single event. A classical single-case log would force
+a choice of case notion and lose exactly the cross-object structure that the
+fraud checks need.
 
-\subsection{Receipt Chains}
+\paragraph{Boundary predicates.}
+The \emph{boundary predicate} $B : S \times E \to \{0,1\}$, where $S$ is the
+set of process states and $E$ the set of event types, encodes whether an event
+type is admissible from a given state. If $B(s,e) = 0$, the state transition
+function must satisfy $\mu(s,e) = s$: the event produces no state change.
+Boundary predicates appear implicitly throughout the conformance literature as
+guard conditions on Petri net transitions and as the enabledness relation of
+workflow nets~\cite{van_der_aalst_wfnet_soundness_1997}; recent work on
+compliance-aware predictive monitoring uses them
+prospectively~\cite{de_santis_compliance_predictive_2024}. We make the
+predicate an explicit, versioned, first-class component of the admissibility
+model: it is evaluated \emph{before} state mutation, its version is bound into
+the change signature, and its refusals are enumerable
+(Section~\ref{sec:impl-refusals}).
+
+\subsection{Receipt Chains and the Axiom of Receipt Substance}
 \label{sec:bg-receipts}
 
-A \emph{receipt} $R_t$ is a cryptographic record that the state transition
-$s_t \xrightarrow{e_t} s_{t+1}$ occurred with specific inputs and outputs.
-We write $R_t \vdash s_{t+1} = \mu(s_t, e_t)$ to mean that receipt $R_t$
-witnesses the transition. Receipts compose into a chain:
+A \emph{receipt} $R_t$ is a cryptographic record witnessing that the state
+transition $s_t \xrightarrow{e_t} s_{t+1}$ occurred with specific inputs and
+outputs. We write $R_t \vdash s_{t+1} = \mu(s_t, e_t)$. Receipts compose into
+a chain
 \[
-  R_0 \to R_1 \to \cdots \to R_n
+  R_0 \to R_1 \to \cdots \to R_n,
 \]
-where $R_t$ includes the hash $h(R_{t-1})$ of its predecessor, the input hash
-$h(\textit{in}_t)$, the output hash $h(\textit{out}_t)$, and the run identifier
-$\textit{rid}_t$. The chain is BLAKE3-hashed throughout; BLAKE3 offers 256-bit
-security with verified resistance to length-extension attacks and is suitable for
-streaming computation over large event logs.
+where each $R_t$ includes the hash $h(R_{t-1})$ of its predecessor, the input
+hash $h(\textit{in}_t)$, the output hash $h(\textit{out}_t)$, and the run
+identifier. The chain hash function is BLAKE3, which offers 256-bit collision
+resistance, structural immunity to length-extension attacks, and tree-hash
+parallelism suitable for streaming over large event logs. Because hash-based
+constructions rely only on preimage and collision resistance, the chain itself
+is conservatively post-quantum even before signatures are considered; related
+type-safe treatments of process evidence appear
+in~\cite{type_safe_process_evidence_2024}, and provenance-chain constructions
+over semantic-web data in~\cite{provenance_semantic_web_2025}.
 
 A receipt is \emph{not} a receipt if it carries only hash values without the
-backing event data. The \emph{axiom of receipt substance} states:
+backing event data. We adopt this as an axiom:
 
 \begin{quote}
-\itshape A receipt containing only expected hash, observed hash, alignment state,
-and receipt hash is an unverifiable claim, not evidence.
+\itshape A receipt containing only expected hash, observed hash, alignment
+state, and receipt hash is an unverifiable claim, not evidence.
 \end{quote}
 
-Accordingly, a valid receipt in our framework must embed or content-addressably
-reference the full OCEL~2.0 logs it witnesses. We formalise the consequence in
-Definition~\ref{def:valid-receipt} (Section~\ref{sec:model}).
+The axiom has teeth: it rules out an entire genre of audit theatre in which a
+producer asserts ``hashes matched'' without the verifier being able to recompute
+anything. A valid receipt in our framework must therefore embed, or
+content-addressably reference, the full OCEL~2.0 logs it witnesses, so that any
+holder of the receipt can re-canonicalise, re-hash, and re-align. The
+consequence is formalised as Definition~\ref{def:valid-receipt}.
 
-The proof class hierarchy orders receipts by evidential strength:
-$\textsc{FixtureProof} \prec \textsc{PredicateProof} \prec \textsc{ChicagoProof}
-\prec \textsc{BoundaryProof}$. A receipt may not claim a higher class unless all
-conditions of that class are satisfied (refusal state \texttt{ProofClassOverclaimed}).
+\paragraph{Proof classes.}
+Receipts are ordered by evidential strength into a proof class hierarchy:
+\[
+  \textsc{FixtureProof} \prec \textsc{PredicateProof} \prec
+  \textsc{ChicagoProof} \prec \textsc{BoundaryProof}.
+\]
+A \textsc{FixtureProof} witnesses only that a computation reproduced a stored
+fixture; a \textsc{PredicateProof} adds machine-checked structural predicates;
+a \textsc{ChicagoProof} requires end-to-end execution through a real runtime
+boundary (no mocks at the verified interface); a \textsc{BoundaryProof} adds
+runtime-observer envelopes and challenge nonces binding the evidence to a
+specific physical execution. A receipt may not claim a class unless all
+conditions of that class hold --- the refusal state
+\texttt{ProofClassOverclaimed} (Section~\ref{sec:impl-refusals}) enforces the
+hierarchy. The hierarchy matters for governance because it gives auditors a
+vocabulary for \emph{how much} a given receipt proves, in the spirit of
+capability maturity levels~\cite{sok_ccmm_2024}.
 
 \subsection{Post-Quantum Cryptographic Signing}
 \label{sec:bg-pqc}
 
-Classic ECDSA and RSA signatures are vulnerable to Shor's algorithm on a
-sufficiently large quantum computer~\cite{bernstein_lange_pqc_2017}. Enterprise
-receipt chains must be verifiable for years or decades; a receipt signed today may
-need to be re-verified after quantum computing becomes practical. NIST's
-2024 post-quantum standards address this: FIPS~204 specifies
-\emph{ML-DSA} (Module-Lattice-Based Digital Signature Algorithm, based on
-CRYSTALS-Dilithium)~\cite{nist_fips_204_2024} and FIPS~205 specifies
-\emph{SLH-DSA} (Stateless Hash-Based Digital Signature Algorithm, based on
-SPHINCS+)~\cite{nist_fips_205_2024}.
+Classical ECDSA and RSA signatures fall to Shor's algorithm on a
+cryptographically relevant quantum computer~\cite{bernstein_lange_pqc_2017}.
+This matters more for enterprise change receipts than for session
+cryptography: a TLS session key protects data for minutes, but a receipt
+signed today may need to carry evidential weight in a regulatory proceeding
+fifteen years from now --- squarely inside the harvest-now--decrypt-later
+window that has driven government migration
+mandates~\cite{presman_govt_pqc_2024}. NIST's 2024 standards provide the
+replacement primitives: FIPS~204 specifies \emph{ML-DSA}
+(Module-Lattice-Based Digital Signature Algorithm, derived from
+CRYSTALS-Dilithium)~\cite{nist_fips_204_2024}, and FIPS~205 specifies
+\emph{SLH-DSA} (Stateless Hash-Based Digital Signature Algorithm, derived from
+SPHINCS+)~\cite{nist_fips_205_2024}, whose security rests only on hash-function
+assumptions and therefore serves as the conservative fallback should lattice
+assumptions erode.
 
-We model the signing operation abstractly as
-$\sigma = \operatorname{Sign}(sk, h(e \| O \| P \| R \| V))$
-where $sk$ is the signer's secret key, $e$ the event, $O$ the object set,
-$P$ the policy version, $R$ the prior receipt, and $V$ the validator version.
-Verification is $\verifysig(\sigma, pk, m) \in \{0,1\}$.
-The concrete algorithm is ML-DSA-44 or higher; the abstraction is algorithm-agnostic.
+We model signing abstractly. The authority over a change computes
+\[
+  \sigma \;=\; \operatorname{Sign}\bigl(sk,\;
+  h(a \,\|\, e \,\|\, O \,\|\, s \,\|\, R_{\mathrm{prior}} \,\|\, p \,\|\, v
+  \,\|\, t \,\|\, n)\bigr),
+\]
+binding the actor $a$, event type $e$, object relations $O$, process state $s$,
+prior receipt $R_{\mathrm{prior}}$, policy version $p$, validator version $v$,
+timestamp $t$, and nonce $n$ under one signature. Verification is
+$\verifysig(\sigma, pk, m) \in \{0,1\}$. The framework is algorithm-agnostic
+--- any EUF-CMA-secure scheme suffices for the proofs of
+Section~\ref{sec:inaccessibility} --- but the implementation default is
+ML-DSA-65, and the deployment guidance assumes the crypto-agility posture of
+\cite{crypto_agility_maturity_2022}: algorithm identifiers are versioned fields
+of the receipt, so that a future migration re-signs the chain head rather than
+rewriting history.
