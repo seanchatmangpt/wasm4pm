@@ -76,7 +76,7 @@ const logHandle = wasm.load_eventlog_from_xes(
 const kernel = new Kernel(wasm);
 await kernel.init();
 
-const { output } = await kernel.discover('dfg', logHandle, {
+const { handle, metadata } = await kernel.discover('dfg', logHandle, {
   activity_key: 'concept:name',
 });
 console.log(output);

@@ -9,7 +9,15 @@
 ## Installation
 
 ### Standard
-npm install -g @wasm4pm/cli
+
+> **Note:** Global npm publish is not yet available. Install from the monorepo:
+
+```bash
+git clone https://github.com/seanchatmangpt/wasm4pm
+cd wasm4pm && pnpm install
+cd wasm4pm && npm run build:nodejs && cd ..
+node apps/wasm4pm/dist/bin/wpm.js --version
+```
 
 ### Air-Gapped
 
@@ -100,7 +108,7 @@ Algorithms using randomness (genetic, ACO, PSO, simulated annealing, A*) use a f
 
 ### WASM Binary Size (Browser Profile)
 
-The browser-profile WASM binary is approximately 3.5 MB. Use the mobile (~500KB), IoT (~1MB), edge (~1.5MB), or fog (~2MB) profiles for size-constrained deployments.
+The browser-profile WASM binary is approximately 7.6 MB. All profiles (mobile/iot/edge/fog) currently build to ~5.4 MB; they differ by feature-gated algorithm subsets. Bundle size optimization is planned for a future release.
 
 ## Support
 

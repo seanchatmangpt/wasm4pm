@@ -58,7 +58,7 @@ Check `status === 'ok'` before consuming `output`. Use `run_id` to locate the re
 
 ## 3. Old AI Breeds
 
-Nine breeds implement canonical symbolic AI architectures. All have verified working examples under `examples/cognition/<breed>/intent.json`.
+Thirteen breeds implement canonical AI architectures: 9 Old AI symbolic reasoning systems and 4 Autoinstinct breeds. All 9 Old AI breeds have verified working examples under `examples/cognition/<breed>/intent.json`.
 
 | Breed Name | CLI ID (in JSON) | Rust file | Approx. Year | Technique | Example intent |
 |---|---|---|---|---|---|

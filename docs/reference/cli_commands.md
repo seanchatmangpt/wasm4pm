@@ -19,7 +19,7 @@ Run `wpm --help` for the full command tree (40+ top-level commands).
 ## Process Discovery
 
 ```bash
-# Discover a model — default: config algorithm.name, else profile default, else heuristic_miner
+# Discover a model — default: config algorithm.name, else profile default, else simd_streaming_dfg
 wpm run log.xes
 
 # Specific algorithm (alias or registry ID)

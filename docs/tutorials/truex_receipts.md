@@ -10,11 +10,9 @@ The CLI requires the Node.js WASM target (once per clone):
 cd wasm4pm && npm run build:nodejs && cd ..
 ```
 
-Install globally or run from the monorepo:
+Run from the monorepo (global npm publish is not yet available):
 
 ```bash
-npm install -g @wasm4pm/cli
-# or
 npm exec --workspace @wasm4pm/cli -- wpm truex verify examples/out/truex_ocel2_valid.json
 ```
 

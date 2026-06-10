@@ -73,13 +73,15 @@ Evidence discipline: [AGENTS.md](../../AGENTS.md).
 
 wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
 
-| Profile | Target | Size Target | Use case |
+| Profile | Target | Actual Size | Use case |
 |---------|--------|-------------|----------|
-| `mobile` | Mobile devices | ~500KB | Mobile / low bandwidth |
-| `iot` | IoT devices, embedded | ~1.0MB | Embedded |
-| `edge` | CDN workers, edge servers | ~1.5MB | CDN / edge workers |
-| `fog` | Fog computing, gateways | ~2.0MB | IoT gateways |
-| `browser` | Web browsers (DEFAULT) | **3.4MB** | Web + Node.js (default) |
+| `mobile` | Mobile devices | ~5.4MB | Mobile / low bandwidth |
+| `iot` | IoT devices, embedded | ~5.4MB | Embedded |
+| `edge` | CDN workers, edge servers | ~5.4MB | CDN / edge workers |
+| `fog` | Fog computing, gateways | ~5.4MB | IoT gateways |
+| `browser` | Web browsers (DEFAULT) | ~7.6MB | Web + Node.js (default) |
+
+> Profiles differ by feature-gated algorithm subsets, not bundle size. Size optimization is planned for a future release.
 
 See [Deployment Profiles Reference](../reference/deployment_profiles.md) for feature flags and build commands.
 
