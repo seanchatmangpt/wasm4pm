@@ -48,9 +48,9 @@ impl CognitionBreed for DefaultLogic {
 
         // Sort rules by specificity order: positive premise count (descending), certainty (descending), lex id (descending)
         rules.sort_by(|a, b| {
-            let a_pos = a.premise.iter().filter(|p| !p.starts_with("unless:")).count();
-            let b_pos = b.premise.iter().filter(|p| !p.starts_with("unless:")).count();
-            b_pos.cmp(&a_pos)
+            let a_unless = a.premise.iter().filter(|p| p.starts_with("unless:")).count();
+            let b_unless = b.premise.iter().filter(|p| p.starts_with("unless:")).count();
+            a_unless.cmp(&b_unless)
                 .then_with(|| b.certainty.partial_cmp(&a.certainty).unwrap_or(std::cmp::Ordering::Equal))
                 .then_with(|| b.id.cmp(&a.id))
         });
@@ -84,7 +84,34 @@ impl CognitionBreed for DefaultLogic {
                 }
 
                 if prereqs_met {
-                    if let Some(violator) = justification_violator {
+                    let mut future_violator = justification_violator.clone();
+                    if future_violator.is_none() {
+                        let mut lookahead = extension.clone();
+                        lookahead.insert(rule.conclusion.clone());
+                        let mut la_changed = true;
+                        while la_changed {
+                            la_changed = false;
+                            for sr in &rules {
+                                if !sr.premise.iter().any(|p| p.starts_with("unless:")) {
+                                    if sr.premise.iter().all(|p| lookahead.contains(p)) {
+                                        if lookahead.insert(sr.conclusion.clone()) {
+                                            la_changed = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        for p in &rule.premise {
+                            if p.starts_with("unless:") {
+                                let violator = p.trim_start_matches("unless:");
+                                if lookahead.contains(violator) {
+                                    future_violator = Some(violator.to_string());
+                                }
+                            }
+                        }
+                    }
+
+                    if let Some(violator) = future_violator {
                         trace.push(TraceStep {
                             step: step_idx,
                             kind: "default-block".to_string(),
@@ -255,5 +282,51 @@ mod tests {
         let out2 = breed.run(&input).unwrap();
         assert_eq!(out1.selected, out2.selected);
         assert_eq!(out1.inference_trace, out2.inference_trace);
+    }
+    #[test]
+    fn hidden_oracle_defeated_mid_derivation() {
+        let breed = DefaultLogic;
+        let rules = vec![
+            Rule {
+                id: "r1".to_string(),
+                premise: vec!["a".to_string(), "unless:b".to_string()],
+                conclusion: "c".to_string(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".to_string(),
+                premise: vec!["c".to_string()],
+                conclusion: "b".to_string(),
+                certainty: 1.0,
+            },
+        ];
+        let input = make_input(vec!["a"], rules);
+        let output = breed.run(&input).unwrap();
+        assert!(!output.selected.as_ref().unwrap().contains("c"), "extension must EXCLUDE the default conclusion");
+        
+        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
+        assert!(trace_kinds.contains(&"default-block".to_string()), "trace must contain a default-block step");
+        
+        let block_step = output.inference_trace.iter().find(|t| t.kind == "default-block").unwrap();
+        assert!(block_step.detail.contains("b"), "naming the blocking fact");
+        
+        // Negative control without the blocker derives it
+        let rules2 = vec![
+            Rule {
+                id: "r1".to_string(),
+                premise: vec!["a".to_string(), "unless:z".to_string()], // changed blocker to z
+                conclusion: "c".to_string(),
+                certainty: 1.0,
+            },
+            Rule {
+                id: "r2".to_string(),
+                premise: vec!["c".to_string()],
+                conclusion: "b".to_string(), // derives b, which is no longer the blocker
+                certainty: 1.0,
+            },
+        ];
+        let input2 = make_input(vec!["a"], rules2);
+        let output2 = breed.run(&input2).unwrap();
+        assert!(output2.selected.as_ref().unwrap().contains("c"));
     }
 }

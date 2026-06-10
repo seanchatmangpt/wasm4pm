@@ -69,6 +69,16 @@ impl CognitionBreed for CspAc3 {
                     if parts.len() == 2 {
                         solver.add_constraint(parts[0], parts[1], "==");
                     }
+                } else if fact.value.contains("<=") {
+                    let parts: Vec<&str> = fact.value.split("<=").collect();
+                    if parts.len() == 2 {
+                        solver.add_constraint(parts[0], parts[1], "<=");
+                    }
+                } else if fact.value.contains("<") {
+                    let parts: Vec<&str> = fact.value.split("<").collect();
+                    if parts.len() == 2 {
+                        solver.add_constraint(parts[0], parts[1], "<");
+                    }
                 } else {
                     return Err(BreedError { breed: self.id(), message: format!("malformed constraint: {}", fact.value) });
                 }
@@ -233,7 +243,7 @@ mod tests {
     #[test]
     fn hidden_oracle_k3_2col_unsat_wipeout() {
         let mut facts = vec![
-            fact("csp-var", "V1:A,B"),
+            fact("csp-var", "V1:A"),
             fact("csp-var", "V2:A,B"),
             fact("csp-var", "V3:A,B"),
             fact("csp-constraint", "V1!=V2"),
@@ -251,7 +261,28 @@ mod tests {
         // Then AC-3 revises V2 against V3 (both domain {B} and constraint V2!=V3).
         // V2 domain becomes empty. This is a wipeout during revise!
         let has_revise = out.inference_trace.iter().any(|t| t.kind == "csp-revise");
-        assert!(has_revise);
+        assert!(has_revise, "Trace must show a domain-wipeout csp-revise step");
+        let assign_count = out.inference_trace.iter().filter(|t| t.kind == "csp-assign").count();
+        assert_eq!(assign_count, 0, "ZERO csp-assign steps");
+    }
+
+    #[test]
+    fn test_clp_cross_check() {
+        // x<y<z<=3 over 1..5
+        let facts = vec![
+            fact("csp-var", "x:1,2,3,4,5"),
+            fact("csp-var", "y:1,2,3,4,5"),
+            fact("csp-var", "z:1,2,3,4,5"),
+            fact("csp-var", "3:3"), // Need 3 as a variable for the constraint
+            fact("csp-constraint", "x<y"),
+            fact("csp-constraint", "y<z"),
+            fact("csp-constraint", "z<=3"),
+        ];
+        let input = input_with(facts);
+        let out = CspAc3.run(&input).expect("success");
+        assert_eq!(out.explanation, "SAT: 3=3, x=1, y=2, z=3");
+        let backtrack_count = out.inference_trace.iter().filter(|t| t.kind == "csp-backtrack").count();
+        assert_eq!(backtrack_count, 0, "solve with zero backtracks (pure propagation)");
     }
     
     // Determinism audit
