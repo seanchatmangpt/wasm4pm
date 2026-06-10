@@ -97,6 +97,17 @@ export const BreedIdSchema = z.enum([
   'qualitative_reason',
   'script_sam',
   'clp',
+  'situation_calculus',
+  'circumscription',
+  'analogy_sme',
+  'act_r',
+  'problog',
+  'sat_cdcl',
+  'episodic_memory',
+  'rl_symbolic',
+  'ctl_check',
+  'ilp',
+  'naive_physics',
 ]);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 

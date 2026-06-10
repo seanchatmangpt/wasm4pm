@@ -14,6 +14,8 @@ pub mod abductive_ibe;
 pub mod abductive_lp;
 /// Answer set programming (Gelfond & Lifschitz 1988).
 pub mod asp;
+pub mod act_r;
+pub mod analogy_sme;
 pub mod autoinstinct_learning;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
@@ -35,6 +37,9 @@ pub mod clp;
 pub mod description_logic;
 /// Discrete event calculus (Kowalski & Sergot 1986).
 pub mod event_calculus;
+pub mod circumscription;
+pub mod ctl_check;
+pub mod episodic_memory;
 pub mod frame;
 pub mod frames_inheritance;
 pub mod fuzzy_logic;
@@ -58,6 +63,14 @@ pub mod strips;
 pub mod support;
 /// Version-space candidate elimination (Mitchell 1982).
 pub mod version_space;
+pub mod ilp;
+pub mod naive_physics;
+pub mod problog;
+pub mod rl_symbolic;
+pub mod sat_cdcl;
+pub mod situation_calculus;
+
+pub use dispatch::{dispatch_breed, run_breed};
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -132,6 +145,28 @@ pub enum BreedId {
     ScriptSam,
     /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
     Clp,
+    /// Situation calculus with successor-state axioms (Reiter 1991)
+    SituationCalculus,
+    /// Circumscription: minimal-model nonmonotonic entailment (McCarthy 1980)
+    Circumscription,
+    /// SME: structure-mapping analogy engine (Falkenhainer, Forbus & Gentner 1989)
+    AnalogySme,
+    /// ACT-R production cycle with activation-based retrieval (Anderson & Lebiere 1998)
+    ActR,
+    /// ProbLog: exact possible-worlds probabilistic Horn logic (De Raedt et al. 2007)
+    Problog,
+    /// CDCL SAT with 1-UIP clause learning (Marques-Silva & Sakallah 1999)
+    SatCdcl,
+    /// Episodic memory with temporal-proximity recall (Tulving 1983; Nuxoll & Laird 2007)
+    EpisodicMemory,
+    /// Tabular Q-learning over a symbolic MDP (Watkins & Dayan 1992)
+    RlSymbolic,
+    /// CTL model checking by fixed-point labeling (Clarke, Emerson & Sistla 1986)
+    CtlCheck,
+    /// FOIL inductive logic programming (Quinlan 1990)
+    Ilp,
+    /// Naive physics axiom saturation (Hayes 1979/1985)
+    NaivePhysics,
 }
 
 impl fmt::Display for BreedId {
@@ -172,6 +207,17 @@ impl fmt::Display for BreedId {
             BreedId::QualitativeReason => write!(f, "qualitative_reason"),
             BreedId::ScriptSam => write!(f, "script_sam"),
             BreedId::Clp => write!(f, "clp"),
+            BreedId::SituationCalculus => write!(f, "situation_calculus"),
+            BreedId::Circumscription => write!(f, "circumscription"),
+            BreedId::AnalogySme => write!(f, "analogy_sme"),
+            BreedId::ActR => write!(f, "act_r"),
+            BreedId::Problog => write!(f, "problog"),
+            BreedId::SatCdcl => write!(f, "sat_cdcl"),
+            BreedId::EpisodicMemory => write!(f, "episodic_memory"),
+            BreedId::RlSymbolic => write!(f, "rl_symbolic"),
+            BreedId::CtlCheck => write!(f, "ctl_check"),
+            BreedId::Ilp => write!(f, "ilp"),
+            BreedId::NaivePhysics => write!(f, "naive_physics"),
         }
     }
 }
@@ -414,7 +460,7 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
 
 impl BreedId {
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
-    pub const ALL: [BreedId; 35] = [
+    pub const ALL: [BreedId; 46] = [
         BreedId::Eliza,
         BreedId::Cbr,
         BreedId::Dendral,
@@ -450,5 +496,16 @@ impl BreedId {
         BreedId::QualitativeReason,
         BreedId::ScriptSam,
         BreedId::Clp,
+        BreedId::SituationCalculus,
+        BreedId::Circumscription,
+        BreedId::AnalogySme,
+        BreedId::ActR,
+        BreedId::Problog,
+        BreedId::SatCdcl,
+        BreedId::EpisodicMemory,
+        BreedId::RlSymbolic,
+        BreedId::CtlCheck,
+        BreedId::Ilp,
+        BreedId::NaivePhysics,
     ];
 }

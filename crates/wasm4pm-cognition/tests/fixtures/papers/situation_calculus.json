@@ -1,0 +1,47 @@
+{
+  "breed": "situation_calculus",
+  "provenance": {
+    "paper": "Reiter, R. (1991). The frame problem in the situation calculus: a simple solution (sometimes) and a completeness result for goal regression.",
+    "citation": "Reiter, R. (1991). In V. Lifschitz (Ed.), Artificial Intelligence and Mathematical Theory of Computation: Papers in Honor of John McCarthy (pp. 359-380). Academic Press.",
+    "locus": "Sections 2-3: successor-state axioms F(do(a,s)) ≡ γ+_F(a,s) ∨ (F(s) ∧ ¬γ-_F(a,s)); blocks-world pickup/putdown running example.",
+    "extraction": "instantiated",
+    "notes": "Blocks-world pickup/putdown instance of Reiter's successor-state axiomatization. The frame problem's solution is exhibited by fluents (on_b_table, color_b_red) untouched by the action sequence persisting purely by inertia — no frame axioms enumerated per fluent/action pair."
+  },
+  "input": {
+    "intent": "progress blocks world through pickup(a); putdown(a, table)",
+    "candidates": [],
+    "facts": [
+      {"key": "fluent:on_a_b", "value": "true"},
+      {"key": "fluent:on_b_table", "value": "true"},
+      {"key": "fluent:clear_a", "value": "true"},
+      {"key": "fluent:handempty", "value": "true"},
+      {"key": "fluent:color_b_red", "value": "true"},
+      {"key": "action:pickup_a:pre", "value": "clear_a"},
+      {"key": "action:pickup_a:pre", "value": "handempty"},
+      {"key": "action:pickup_a:pre", "value": "on_a_b"},
+      {"key": "action:pickup_a:add", "value": "holding_a"},
+      {"key": "action:pickup_a:add", "value": "clear_b"},
+      {"key": "action:pickup_a:del", "value": "on_a_b"},
+      {"key": "action:pickup_a:del", "value": "handempty"},
+      {"key": "action:pickup_a:del", "value": "clear_a"},
+      {"key": "action:putdown_a:pre", "value": "holding_a"},
+      {"key": "action:putdown_a:add", "value": "on_a_table"},
+      {"key": "action:putdown_a:add", "value": "handempty"},
+      {"key": "action:putdown_a:add", "value": "clear_a"},
+      {"key": "action:putdown_a:del", "value": "holding_a"},
+      {"key": "do:0", "value": "pickup_a"},
+      {"key": "do:1", "value": "putdown_a"}
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "holds_final": ["on_a_table", "on_b_table", "clear_a", "clear_b", "handempty", "color_b_red"],
+    "not_holds_final": ["on_a_b", "holding_a"],
+    "frame_persist_fluents": ["on_b_table", "color_b_red"],
+    "regress_steps": 2,
+    "notes": "on_b_table and color_b_red are never mentioned by any executed action's add/del list, so they persist by Reiter inertia and must each be named in a frame-persist trace step."
+  }
+}

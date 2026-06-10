@@ -76,6 +76,8 @@ pub mod models_p0;
 pub mod models_p1;
 /// Static per-breed lifecycle models (P2 tier).
 pub mod models_p2;
+/// Static per-breed lifecycle models (P3 tier).
+pub mod models_p3;
 /// `include_str!` sources for hand-authored OCPN model JSON files.
 pub mod model_sources;
 
@@ -117,6 +119,17 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "qualitative_reason" => Some(&models_p2::QUALITATIVE_REASON_MODEL),
         "script_sam" => Some(&models_p2::SCRIPT_SAM_MODEL),
         "clp" => Some(&models_p2::CLP_MODEL),
+        "situation_calculus" => Some(&models_p3::SITUATION_CALCULUS_MODEL),
+        "circumscription" => Some(&models_p3::CIRCUMSCRIPTION_MODEL),
+        "analogy_sme" => Some(&models_p3::ANALOGY_SME_MODEL),
+        "act_r" => Some(&models_p3::ACT_R_MODEL),
+        "problog" => Some(&models_p3::PROBLOG_MODEL),
+        "sat_cdcl" => Some(&models_p3::SAT_CDCL_MODEL),
+        "episodic_memory" => Some(&models_p3::EPISODIC_MEMORY_MODEL),
+        "rl_symbolic" => Some(&models_p3::RL_SYMBOLIC_MODEL),
+        "ctl_check" => Some(&models_p3::CTL_CHECK_MODEL),
+        "ilp" => Some(&models_p3::ILP_MODEL),
+        "naive_physics" => Some(&models_p3::NAIVE_PHYSICS_MODEL),
         _ => None,
     }
 }

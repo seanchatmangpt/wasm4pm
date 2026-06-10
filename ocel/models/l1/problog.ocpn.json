@@ -1,0 +1,36 @@
+{
+  "model_id": "problog-l1-v1",
+  "model_level": "L1",
+  "breed_id": "problog",
+  "object_types": ["pfact", "world", "decision"],
+  "places": [
+    {"id": "p1", "name": "program_pending",  "object_type": "pfact"},
+    {"id": "p2", "name": "program_loaded",   "object_type": "pfact"},
+    {"id": "p3", "name": "worlds_open",      "object_type": "world"},
+    {"id": "p4", "name": "weight_summed",    "object_type": "world"},
+    {"id": "p5", "name": "decision_emitted", "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-pfact",      "label": "load-pfact"},
+    {"id": "t2", "name": "enumerate-world", "label": "enumerate-world"},
+    {"id": "t3", "name": "sum-weight",      "label": "sum-weight"},
+    {"id": "t4", "name": "decision",        "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

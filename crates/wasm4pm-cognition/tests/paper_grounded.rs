@@ -2003,3 +2003,265 @@ fn clp_paper_grounded() {
         json["expected"]["backtracks"].as_str().unwrap()
     );
 }
+
+// ============================================================================
+// P3 tier — paper-grounded tests. Fixtures carry full provenance; "input" is
+// a complete serialized BreedInput, parsed directly via serde.
+// ============================================================================
+
+fn p3_load(breed: &str) -> Option<(BreedInput, serde_json::Value)> {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let input: BreedInput =
+        serde_json::from_value(json["input"].clone()).expect("fixture input must parse as BreedInput");
+    let expected = json["expected"].clone();
+    Some((input, expected))
+}
+
+/// Reiter 1991 — blocks-world successor-state axioms with frame inertia.
+#[test]
+fn situation_calculus_paper_grounded() {
+    let Some((input, expected)) = p3_load("situation_calculus") else { return };
+    let out = dispatch_breed_test("situation_calculus", &input).expect("run ok");
+    for f in expected["holds_final"].as_array().unwrap() {
+        let key = format!("holds:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["not_holds_final"].as_array().unwrap() {
+        let key = format!("holds:{}", f.as_str().unwrap());
+        assert!(!out.facts.iter().any(|x| x.key == key), "stale {}", key);
+    }
+    for f in expected["frame_persist_fluents"].as_array().unwrap() {
+        let name = f.as_str().unwrap();
+        assert!(
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "frame-persist" && t.detail.contains(name)),
+            "frame-persist must name {}",
+            name
+        );
+    }
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "regress-step").count() as u64,
+        expected["regress_steps"].as_u64().unwrap()
+    );
+}
+
+/// McCarthy 1980 — bird/penguin abnormality minimization.
+#[test]
+fn circumscription_paper_grounded() {
+    let Some((input, expected)) = p3_load("circumscription") else { return };
+    let out = dispatch_breed_test("circumscription", &input).expect("run ok");
+    for (atom, val) in expected["entailed"].as_object().unwrap() {
+        let want = val.as_bool().unwrap().to_string();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == format!("entailed:{}", atom) && f.value == want),
+            "entailed:{} must be {}",
+            atom,
+            want
+        );
+    }
+    assert!(!out.inference_trace.is_empty());
+}
+
+/// Falkenhainer, Forbus & Gentner 1989 — solar-system/atom mapping.
+#[test]
+fn analogy_sme_paper_grounded() {
+    let Some((input, expected)) = p3_load("analogy_sme") else { return };
+    let out = dispatch_breed_test("analogy_sme", &input).expect("run ok");
+    for (b, t) in expected["mapping"].as_object().unwrap() {
+        let want = t.as_str().unwrap();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == format!("map:{}", b) && f.value == want),
+            "{} must map to {}",
+            b,
+            want
+        );
+    }
+    let inference = expected["candidate_inference_contains"].as_str().unwrap();
+    assert!(
+        out.facts
+            .iter()
+            .any(|f| f.key.starts_with("inference:") && f.value == inference),
+        "candidate inference must carry over the causal structure"
+    );
+}
+
+/// Anderson & Lebiere 1998 — addition-fact retrieval by activation.
+#[test]
+fn act_r_paper_grounded() {
+    let Some((input, expected)) = p3_load("act_r") else { return };
+    let out = dispatch_breed_test("act_r", &input).expect("run ok");
+    assert_eq!(
+        out.selected.as_deref(),
+        expected["retrieved"].as_str(),
+        "fact34 must be retrieved"
+    );
+    let sum = &expected["sum_fact"];
+    assert!(
+        out.facts.iter().any(|f| f.key == sum["key"].as_str().unwrap()
+            && f.value == sum["value"].as_str().unwrap()),
+        "the retrieved chunk's sum slot must reach working memory"
+    );
+    // Activation A = B + ΣW·S asserted from the trace detail.
+    let a_expect = expected["activation_fact34"].as_f64().unwrap();
+    let tol = expected["activation_tolerance"].as_f64().unwrap();
+    let retrieve = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "retrieve-chunk")
+        .expect("retrieve-chunk step");
+    let i = retrieve.detail.find("A=").unwrap() + 2;
+    let j = retrieve.detail[i..].find(' ').unwrap() + i;
+    let a: f64 = retrieve.detail[i..j].parse().unwrap();
+    assert!((a - a_expect).abs() < tol, "activation {} vs {}", a, a_expect);
+}
+
+/// De Raedt, Kimmig & Toivonen 2007 — P(wet) = 0.552 exact to 1e-6.
+#[test]
+fn problog_paper_grounded() {
+    let Some((input, expected)) = p3_load("problog") else { return };
+    let out = dispatch_breed_test("problog", &input).expect("run ok");
+    let p: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "prob:wet")
+        .expect("prob:wet fact")
+        .value
+        .parse()
+        .unwrap();
+    let want = expected["probability"].as_f64().unwrap();
+    let tol = expected["tolerance"].as_f64().unwrap();
+    assert!((p - want).abs() < tol, "P(wet) = {} must equal {}", p, want);
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "enumerate-world").count() as u64,
+        expected["worlds"].as_u64().unwrap()
+    );
+}
+
+/// Marques-Silva & Sakallah 1999 — GRASP conflict learning on PHP(3,2).
+#[test]
+fn sat_cdcl_paper_grounded() {
+    let Some((input, expected)) = p3_load("sat_cdcl") else { return };
+    let out = dispatch_breed_test("sat_cdcl", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
+    let learned = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "learn-clause")
+        .count() as u64;
+    assert!(
+        learned >= expected["min_learned_clauses"].as_u64().unwrap(),
+        "GRASP-style learning must fire"
+    );
+}
+
+/// Tulving 1983 / Nuxoll & Laird 2007 — temporal organisation of recall.
+#[test]
+fn episodic_memory_paper_grounded() {
+    let Some((input, expected)) = p3_load("episodic_memory") else { return };
+    let out = dispatch_breed_test("episodic_memory", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["recalled"].as_str());
+    let tol = expected["tolerance"].as_f64().unwrap();
+    for (id, key) in [("ep-breakfast", "score_breakfast"), ("ep-dinner", "score_dinner")] {
+        let got: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == format!("score:{}", id))
+            .unwrap()
+            .value
+            .parse()
+            .unwrap();
+        let want = expected[key].as_f64().unwrap();
+        assert!((got - want).abs() < tol, "{}: {} vs {}", id, got, want);
+    }
+}
+
+/// Watkins & Dayan 1992 — Q-learning convergence to the Bellman fixed point.
+#[test]
+fn rl_symbolic_paper_grounded() {
+    let Some((input, expected)) = p3_load("rl_symbolic") else { return };
+    let out = dispatch_breed_test("rl_symbolic", &input).expect("run ok");
+    assert_eq!(
+        out.facts
+            .iter()
+            .find(|f| f.key == "policy:s0")
+            .unwrap()
+            .value,
+        expected["policy_s0"].as_str().unwrap()
+    );
+    let tol = expected["tolerance"].as_f64().unwrap();
+    for (key, ekey) in [("q:s0:go", "q_s0_go"), ("q:s0:stay", "q_s0_stay")] {
+        let got: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == key)
+            .unwrap_or_else(|| panic!("missing {}", key))
+            .value
+            .parse()
+            .unwrap();
+        let want = expected[ekey].as_f64().unwrap();
+        assert!((got - want).abs() < tol, "{}: {} vs {}", key, got, want);
+    }
+}
+
+/// Clarke, Emerson & Sistla 1986 — mutual exclusion safety AG !(c1 & c2).
+#[test]
+fn ctl_check_paper_grounded() {
+    let Some((input, expected)) = p3_load("ctl_check") else { return };
+    let out = dispatch_breed_test("ctl_check", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
+    assert!(
+        !out.inference_trace.iter().any(|t| t.kind == "counterexample-step"),
+        "a holding safety property must have no counterexample"
+    );
+}
+
+/// Quinlan 1990 — FOIL daughter/parent: body == {parent(V1,V0), female(V0)}.
+#[test]
+fn ilp_paper_grounded() {
+    let Some((input, expected)) = p3_load("ilp") else { return };
+    let out = dispatch_breed_test("ilp", &input).expect("run ok");
+    let rules: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("ilp:rule:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    assert_eq!(rules.len() as u64, expected["clause_count"].as_u64().unwrap());
+    let rule = rules[0];
+    let (head, body) = rule.split_once(" :- ").expect("clause shape");
+    assert_eq!(head, expected["head"].as_str().unwrap());
+    let body_set: std::collections::BTreeSet<&str> = body.split(", ").collect();
+    let want_set: std::collections::BTreeSet<&str> = expected["body_set"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(body_set, want_set, "learned body must equal the paper's definition as a set");
+}
+
+/// Hayes 1979/1985 — the cup of water: cup falls, water spills, floor stays.
+#[test]
+fn naive_physics_paper_grounded() {
+    let Some((input, expected)) = p3_load("naive_physics") else { return };
+    let out = dispatch_breed_test("naive_physics", &input).expect("run ok");
+    for f in expected["falls"].as_array().unwrap() {
+        let key = format!("falls:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["spills"].as_array().unwrap() {
+        let key = format!("spills:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["not_falls"].as_array().unwrap() {
+        let key = format!("falls:{}", f.as_str().unwrap());
+        assert!(!out.facts.iter().any(|x| x.key == key), "over-derivation: {}", key);
+    }
+}

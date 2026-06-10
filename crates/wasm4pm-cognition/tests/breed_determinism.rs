@@ -753,3 +753,145 @@ fn clp_deterministic() {
     ];
     p2_assert_bit_exact("clp", &input);
 }
+
+// ===========================================================================
+// P3 tier determinism: bit-exact double runs for all 11 breeds.
+// ===========================================================================
+
+use wasm4pm_cognition::breeds::BreedInput as P3BreedInput;
+
+fn p3f(key: &str, value: &str) -> Fact {
+    Fact { key: key.into(), value: value.into() }
+}
+
+/// Valid representative input per P3 breed.
+fn p3_input(breed: &str) -> P3BreedInput {
+    let mut input = P3BreedInput {
+        intent: format!("p3 {} exercise", breed),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    match breed {
+        "situation_calculus" => {
+            input.facts = vec![
+                p3f("fluent:door_open", "true"),
+                p3f("fluent:mark_set", "true"),
+                p3f("action:shut:pre", "door_open"),
+                p3f("action:shut:del", "door_open"),
+                p3f("action:shut:add", "door_shut"),
+                p3f("do:0", "shut"),
+            ];
+        }
+        "circumscription" => {
+            input.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+        }
+        "analogy_sme" => {
+            input.facts = vec![
+                p3f("base:0", "(cause (heat stove pot) (boil pot))"),
+                p3f("target:0", "(cause (heat sun lake) (boil lake))"),
+            ];
+        }
+        "act_r" => {
+            input.facts = vec![p3f("goal", "lookup")];
+            input.cases = vec![Case {
+                id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(),
+                outcome_score: 0.7, facts: vec![p3f("slot", "val")],
+            }];
+            input.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+        }
+        "problog" => {
+            input.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+        }
+        "sat_cdcl" => {
+            input.facts = vec![
+                p3f("clause:00", "1 2"),
+                p3f("clause:01", "-1 2"),
+                p3f("clause:02", "1 -2"),
+                p3f("clause:03", "-1 -2"),
+            ];
+        }
+        "episodic_memory" => {
+            input.facts = vec![
+                p3f("scene", "garden"),
+                p3f("cue:t", "7"),
+                p3f("episode:ep-a:t", "6"),
+                p3f("episode:ep-b:t", "1"),
+            ];
+            input.cases = vec![
+                Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+                Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+            ];
+        }
+        "rl_symbolic" => {
+            input.facts = vec![
+                p3f("mdp:gamma", "0.9"),
+                p3f("mdp:start", "s0"),
+                p3f("mdp:terminal:goal", "true"),
+                p3f("mdp:t:s0:go", "goal"),
+                p3f("mdp:t:s0:stay", "s0"),
+                p3f("mdp:r:s0:go", "1.0"),
+                p3f("rl:episodes", "50"),
+            ];
+        }
+        "ctl_check" => {
+            input.facts = vec![
+                p3f("ts:init", "a"),
+                p3f("ts:edge:a", "b"),
+                p3f("ts:edge:b", "a"),
+                p3f("ts:label:b", "p"),
+                p3f("ctl:formula", "A F p"),
+            ];
+        }
+        "ilp" => {
+            input.facts = vec![
+                p3f("bg:parent(ann,mary)", "true"),
+                p3f("bg:parent(ann,tom)", "true"),
+                p3f("bg:female(mary)", "true"),
+                p3f("pos:daughter(mary,ann)", "true"),
+                p3f("neg:daughter(tom,ann)", "true"),
+            ];
+        }
+        "naive_physics" => {
+            input.facts = vec![
+                p3f("np:ground:floor", "true"),
+                p3f("np:on:box", "floor"),
+                p3f("np:on:vase", "box"),
+                p3f("np:remove:box", "true"),
+            ];
+        }
+        other => panic!("unknown p3 breed {}", other),
+    }
+    input
+}
+
+const P3_BREEDS: [&str; 11] = [
+    "situation_calculus", "circumscription", "analogy_sme", "act_r", "problog",
+    "sat_cdcl", "episodic_memory", "rl_symbolic", "ctl_check", "ilp", "naive_physics",
+];
+
+#[test]
+fn p3_breeds_bit_exact_determinism() {
+    for breed in P3_BREEDS {
+        let input = p3_input(breed);
+        let a = dispatch_breed_test(breed, &input).unwrap_or_else(|e| panic!("{}: {}", breed, e));
+        let b = dispatch_breed_test(breed, &input).unwrap_or_else(|e| panic!("{}: {}", breed, e));
+        let sa = serde_json::to_string(&a).unwrap();
+        let sb = serde_json::to_string(&b).unwrap();
+        assert_eq!(sa, sb, "{} must be bit-exact deterministic", breed);
+        assert!(!a.inference_trace.is_empty(), "{} empty trace", breed);
+    }
+}

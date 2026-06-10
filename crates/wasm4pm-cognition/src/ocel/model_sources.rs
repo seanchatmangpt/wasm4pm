@@ -36,6 +36,17 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "qualitative_reason" => Some(include_str!("../../../../ocel/models/l1/qualitative_reason.ocpn.json")),
         "script_sam" => Some(include_str!("../../../../ocel/models/l1/script_sam.ocpn.json")),
         "clp" => Some(include_str!("../../../../ocel/models/l1/clp.ocpn.json")),
+        "situation_calculus" => Some(include_str!("../../../../ocel/models/l1/situation_calculus.ocpn.json")),
+        "circumscription" => Some(include_str!("../../../../ocel/models/l1/circumscription.ocpn.json")),
+        "analogy_sme" => Some(include_str!("../../../../ocel/models/l1/analogy_sme.ocpn.json")),
+        "act_r" => Some(include_str!("../../../../ocel/models/l1/act_r.ocpn.json")),
+        "problog" => Some(include_str!("../../../../ocel/models/l1/problog.ocpn.json")),
+        "sat_cdcl" => Some(include_str!("../../../../ocel/models/l1/sat_cdcl.ocpn.json")),
+        "episodic_memory" => Some(include_str!("../../../../ocel/models/l1/episodic_memory.ocpn.json")),
+        "rl_symbolic" => Some(include_str!("../../../../ocel/models/l1/rl_symbolic.ocpn.json")),
+        "ctl_check" => Some(include_str!("../../../../ocel/models/l1/ctl_check.ocpn.json")),
+        "ilp" => Some(include_str!("../../../../ocel/models/l1/ilp.ocpn.json")),
+        "naive_physics" => Some(include_str!("../../../../ocel/models/l1/naive_physics.ocpn.json")),
         _ => None,
     }
 }
