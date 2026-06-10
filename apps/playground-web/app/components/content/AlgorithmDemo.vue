@@ -22,11 +22,28 @@ const receipt = ref<import('../../../app/composables/useReceipt').Receipt | null
 const running = ref(false)
 const runError = ref<string | null>(null)
 const activeTab = ref('result')
+const aboutOpen = ref(false)
 
 const presetMap: Record<string, string> = {
   'small-example': '/samples/small-example.xes',
   'road-traffic': '/samples/road-traffic.xes'
 }
+
+const algorithmBlurbs: Record<string, string> = {
+  simd_streaming_dfg: 'The DFG captures which activities directly follow each other. Edge weights show frequency. It is the fastest algorithm but the least precise model.',
+  heuristic_miner: 'Uses a dependency threshold (default 0.5) to filter noise. More robust than Alpha to infrequent behavior. Good for real-world noisy logs.',
+  inductive_miner: 'Recursively splits the log using cut operators (sequence, parallel, choice, loop). Guarantees a sound WF-net. The quality-tier default in wasm4pm.',
+  alpha_miner: 'The classic alpha-algorithm. Constructs a Petri net from footprint relations. Fast but cannot handle length-one and length-two loops.',
+  token_replay_conformance: 'Fires tokens through a Petri net trace by trace. Counts missing and remaining tokens. Fitness = 1 - (missing/consumed). Threshold > 0.85 required.',
+  alignment_conformance: 'Optimal alignment via A* search over the synchronous product net. Exact but O(n^2) in model size. Use for high-stakes conformance checks.',
+}
+
+const currentBlurb = computed(() => algorithmBlurbs[props.algorithm] ?? null)
+
+const xesLineCount = computed(() => {
+  if (!xesInput.value) return 0
+  return xesInput.value.split('\n').length
+})
 
 onMounted(async () => {
   await init()
@@ -45,11 +62,12 @@ async function run() {
   receipt.value = null
   try {
     const handle = loadXes(xesInput.value)
-    result.value = runAlgorithm(props.algorithm, handle, { activity_key: props.activityKey })
+    result.value = runAlgorithm(props.algorithm, handle, props.activityKey)
     if (props.showReceipt) {
       receipt.value = await saveReceipt(xesInput.value, result.value, props.algorithm)
     }
     activeTab.value = 'result'
+    if (currentBlurb.value) aboutOpen.value = true
   }
   catch (e: unknown) {
     runError.value = e instanceof Error ? e.message : String(e)
@@ -120,6 +138,9 @@ const tabs = computed(() => {
         placeholder="Paste XES event log here, or click a preset above…"
         class="font-mono text-xs"
       />
+      <div v-if="xesLineCount > 0" class="mt-1 text-xs text-muted">
+        {{ xesLineCount }} lines loaded
+      </div>
     </div>
 
     <!-- WASM loading notice -->
@@ -146,6 +167,26 @@ const tabs = computed(() => {
           <ReceiptViewer v-if="receipt" :receipt="receipt" />
         </div>
       </template>
+
+      <!-- About this algorithm (collapsible) -->
+      <div v-if="currentBlurb" class="mt-3 border border-default rounded">
+        <button
+          class="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted hover:text-default transition-colors"
+          @click="aboutOpen = !aboutOpen"
+        >
+          <span class="flex items-center gap-1.5">
+            <UIcon name="i-lucide-info" class="w-3.5 h-3.5" />
+            About this algorithm
+          </span>
+          <UIcon
+            :name="aboutOpen ? 'i-lucide-chevron-up' : 'i-lucide-chevron-down'"
+            class="w-3.5 h-3.5"
+          />
+        </button>
+        <div v-show="aboutOpen" class="px-3 pb-3 text-xs text-muted leading-relaxed border-t border-default pt-2">
+          {{ currentBlurb }}
+        </div>
+      </div>
     </div>
   </div>
 </template>

@@ -18,7 +18,7 @@ useHead({
 })
 
 const title = 'wasm4pm Playground'
-const description = 'Interactive process mining playground — 60 algorithms, live WASM, BLAKE3 receipts. No install required.'
+const description = 'Interactive process mining in your browser — 60 algorithms, live WASM, BLAKE3 receipts'
 
 useSeoMeta({
   title,

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useDropZone } from '@vueuse/core'
+
 useHead({ title: 'Sandbox — wasm4pm Playground' })
 
 const ALGORITHM_GROUPS = [
@@ -51,15 +53,25 @@ const ALGORITHM_GROUPS = [
   }
 ]
 
-const SAMPLE_LOGS = [
-  { id: 'small-example', label: 'Small Example', path: '/samples/small-example.xes' },
-  { id: 'road-traffic', label: 'Road Traffic (218KB)', path: '/samples/road-traffic.xes' }
+const COGNITION_BREEDS = [
+  { id: 'ELIZA', label: 'ELIZA' },
+  { id: 'MYCIN', label: 'MYCIN' },
+  { id: 'CBR', label: 'CBR' },
+  { id: 'STRIPS', label: 'STRIPS' },
+  { id: 'PROLOG', label: 'PROLOG' }
 ]
 
-const { init, loadXes, runAlgorithm, ready, error: wasmError } = useWasm()
+const SAMPLE_LOGS = [
+  { id: 'small-example', label: 'Small Example', path: '/samples/small-example.xes' },
+  { id: 'road-traffic', label: 'Road Traffic (218KB)', path: '/samples/road-traffic.xes' },
+  { id: 'ocel-example', label: 'OCEL 2.0 Example', path: '/samples/ocel-example.json' }
+]
+
+const { init, loadXes, loadOcel, runAlgorithm, ready, error: wasmError } = useWasm()
 const { saveReceipt } = useReceipt()
 
 const selectedAlgo = ref('simd_streaming_dfg')
+const selectedBreed = ref<string | null>(null)
 const xesInput = ref('')
 const result = ref<unknown>(null)
 const receipt = ref<import('../../composables/useReceipt').Receipt | null>(null)
@@ -67,16 +79,54 @@ const running = ref(false)
 const runError = ref<string | null>(null)
 const activeTab = ref('json')
 const sidebarSearch = ref('')
+const shareCopied = ref(false)
+
+// Determine if current input is OCEL (JSON) vs XES
+const isOcelInput = computed(() => {
+  const trimmed = xesInput.value.trimStart()
+  return trimmed.startsWith('{') || trimmed.startsWith('[')
+})
+
+// Whether a cognition breed is active (drives right-panel swap)
+const isCognitionMode = computed(() => selectedBreed.value !== null)
 
 // Shareable URL
 const route = useRoute()
 const router = useRouter()
 onMounted(async () => {
   await init()
-  if (route.query.algo) selectedAlgo.value = String(route.query.algo)
+  if (route.query.algo) {
+    selectedAlgo.value = String(route.query.algo)
+    selectedBreed.value = null
+  }
+  if (route.query.breed) {
+    selectedBreed.value = String(route.query.breed)
+  }
   const preset = String(route.query.preset ?? 'small-example')
   const sample = SAMPLE_LOGS.find(s => s.id === preset) ?? SAMPLE_LOGS[0]
   xesInput.value = await $fetch<string>(sample!.path, { responseType: 'text' })
+})
+
+// Keyboard shortcut: Cmd+Enter / Ctrl+Enter to run
+useEventListener('keydown', (e: KeyboardEvent) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if (!isCognitionMode.value) run()
+  }
+})
+
+// Drag-and-drop file upload
+const dropZoneRef = ref<HTMLElement | null>(null)
+const { isOverDropZone } = useDropZone(dropZoneRef, {
+  onDrop(files) {
+    if (!files || files.length === 0) return
+    const file = files[0]!
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      xesInput.value = (e.target?.result as string) ?? ''
+    }
+    reader.readAsText(file)
+  },
+  dataTypes: ['text/xml', 'application/xml', 'application/json', 'text/plain']
 })
 
 async function run() {
@@ -87,8 +137,10 @@ async function run() {
   receipt.value = null
   try {
     router.replace({ query: { algo: selectedAlgo.value } })
-    const handle = loadXes(xesInput.value)
-    result.value = runAlgorithm(selectedAlgo.value, handle, { activity_key: 'concept:name' })
+    const handle = isOcelInput.value
+      ? loadOcel(xesInput.value)
+      : loadXes(xesInput.value)
+    result.value = runAlgorithm(selectedAlgo.value, handle, 'concept:name')
     receipt.value = await saveReceipt(xesInput.value, result.value, selectedAlgo.value)
     activeTab.value = 'json'
   }
@@ -112,12 +164,37 @@ async function downloadResult() {
   a.click()
 }
 
+async function shareUrl() {
+  const query: Record<string, string> = { algo: selectedAlgo.value }
+  if (selectedBreed.value) query['breed'] = selectedBreed.value
+  const url = new URL(window.location.href)
+  url.search = new URLSearchParams(query).toString()
+  await navigator.clipboard.writeText(url.toString())
+  shareCopied.value = true
+  setTimeout(() => { shareCopied.value = false }, 2000)
+}
+
+function selectAlgo(id: string) {
+  selectedAlgo.value = id
+  selectedBreed.value = null
+}
+
+function selectBreed(id: string) {
+  selectedBreed.value = id
+}
+
 const filteredGroups = computed(() => {
   const q = sidebarSearch.value.toLowerCase()
   if (!q) return ALGORITHM_GROUPS
   return ALGORITHM_GROUPS
     .map(g => ({ ...g, algorithms: g.algorithms.filter(a => a.id.includes(q) || a.label.toLowerCase().includes(q)) }))
     .filter(g => g.algorithms.length > 0)
+})
+
+const filteredBreeds = computed(() => {
+  const q = sidebarSearch.value.toLowerCase()
+  if (!q) return COGNITION_BREEDS
+  return COGNITION_BREEDS.filter(b => b.id.toLowerCase().includes(q) || b.label.toLowerCase().includes(q))
 })
 
 const hasDfg = computed(() => {
@@ -145,16 +222,31 @@ const outputTabs = computed(() => {
         <UInput v-model="sidebarSearch" placeholder="Filter algorithms…" size="sm" icon="i-lucide-search" />
       </div>
       <div class="flex-1 overflow-y-auto p-2">
+        <!-- Algorithm groups -->
         <div v-for="group in filteredGroups" :key="group.label" class="mb-3">
           <p class="text-xs text-muted uppercase tracking-wider px-2 py-1">{{ group.label }}</p>
           <button
             v-for="algo in group.algorithms"
             :key="algo.id"
             class="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accented transition-colors"
-            :class="{ 'bg-primary/10 text-primary font-medium': selectedAlgo === algo.id }"
-            @click="selectedAlgo = algo.id"
+            :class="{ 'bg-primary/10 text-primary font-medium': !isCognitionMode && selectedAlgo === algo.id }"
+            @click="selectAlgo(algo.id)"
           >
             {{ algo.label }}
+          </button>
+        </div>
+
+        <!-- Cognition Breeds section -->
+        <div v-if="filteredBreeds.length > 0" class="mb-3">
+          <p class="text-xs text-muted uppercase tracking-wider px-2 py-1">Cognition Breeds</p>
+          <button
+            v-for="breed in filteredBreeds"
+            :key="breed.id"
+            class="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-accented transition-colors"
+            :class="{ 'bg-primary/10 text-primary font-medium': isCognitionMode && selectedBreed === breed.id }"
+            @click="selectBreed(breed.id)"
+          >
+            {{ breed.label }}
           </button>
         </div>
       </div>
@@ -164,7 +256,9 @@ const outputTabs = computed(() => {
     <div class="flex-1 flex flex-col overflow-hidden">
       <!-- Top bar -->
       <header class="flex items-center gap-3 px-4 py-2 border-b border-default bg-elevated">
-        <code class="text-sm font-semibold text-primary">{{ selectedAlgo }}</code>
+        <code class="text-sm font-semibold text-primary">
+          {{ isCognitionMode ? `cognition:${selectedBreed}` : selectedAlgo }}
+        </code>
         <div class="flex gap-1 ml-auto">
           <UButton
             v-for="s in SAMPLE_LOGS" :key="s.id"
@@ -173,6 +267,16 @@ const outputTabs = computed(() => {
           >{{ s.label }}</UButton>
         </div>
         <UButton
+          size="xs"
+          variant="ghost"
+          :icon="shareCopied ? 'i-lucide-check' : 'i-lucide-share-2'"
+          :color="shareCopied ? 'success' : undefined"
+          @click="shareUrl"
+        >
+          {{ shareCopied ? 'Copied!' : 'Share' }}
+        </UButton>
+        <UButton
+          v-if="!isCognitionMode"
           :loading="running"
           :disabled="!ready"
           icon="i-lucide-play"
@@ -180,20 +284,33 @@ const outputTabs = computed(() => {
           @click="run"
         >
           Run
+          <span class="text-xs text-muted ml-1 hidden sm:inline">⌘↵</span>
         </UButton>
       </header>
 
-      <!-- Split: input + output -->
-      <div class="flex-1 flex overflow-hidden">
-        <!-- Input -->
-        <div class="w-1/2 flex flex-col border-r border-default">
-          <div class="px-3 py-1.5 border-b border-default text-xs text-muted uppercase tracking-wider">
-            Input (XES / OCEL)
+      <!-- Cognition mode: full-panel CognitionDemo -->
+      <div v-if="isCognitionMode" class="flex-1 overflow-auto p-4">
+        <ContentCognitionDemo :breed="selectedBreed!" />
+      </div>
+
+      <!-- Algorithm mode: split input + output -->
+      <div v-else class="flex-1 flex overflow-hidden">
+        <!-- Input with drag-and-drop -->
+        <div
+          ref="dropZoneRef"
+          class="w-1/2 flex flex-col border-r border-default transition-colors"
+          :class="{ 'bg-primary/5 border-primary': isOverDropZone }"
+        >
+          <div class="px-3 py-1.5 border-b border-default text-xs text-muted uppercase tracking-wider flex items-center gap-2">
+            <span>Input (XES / OCEL)</span>
+            <span v-if="isOcelInput" class="text-primary font-medium normal-case">OCEL</span>
+            <UIcon v-if="isOverDropZone" name="i-lucide-upload" class="ml-auto text-primary" />
+            <span v-else class="ml-auto text-muted/60 normal-case">drop file to load</span>
           </div>
           <textarea
             v-model="xesInput"
             class="flex-1 resize-none font-mono text-xs p-3 bg-default text-foreground focus:outline-none"
-            placeholder="Paste XES event log here, or load a preset from the top bar…"
+            placeholder="Paste XES event log or OCEL JSON here, drop a file, or load a preset from the top bar…"
           />
         </div>
 
@@ -215,11 +332,11 @@ const outputTabs = computed(() => {
             <UAlert v-else-if="runError" color="error" :description="runError" />
             <template v-else-if="result">
               <pre v-show="activeTab === 'json'" class="text-xs font-mono">{{ JSON.stringify(result, null, 2) }}</pre>
-              <ProcessGraph v-show="activeTab === 'graph'" :data="result as Record<string, unknown>" />
-              <ReceiptViewer v-show="activeTab === 'receipt' && receipt" :receipt="receipt!" />
+              <ContentProcessGraph v-show="activeTab === 'graph'" :data="result as Record<string, unknown>" />
+              <ContentReceiptViewer v-show="activeTab === 'receipt' && receipt" :receipt="receipt!" />
             </template>
             <div v-else class="text-sm text-muted text-center mt-16">
-              Select an algorithm, load a log, and click Run.
+              Select an algorithm, load a log, and click Run (or press ⌘↵).
             </div>
           </div>
         </div>
