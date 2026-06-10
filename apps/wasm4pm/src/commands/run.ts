@@ -227,6 +227,11 @@ export const run = defineCommand({
       type: 'boolean',
       description: 'Disable emoji in output',
     },
+    'noise-threshold': {
+      type: 'string',
+      description:
+        'Noise filter threshold (0.0–1.0, default 0.0). Removes DFG edges whose frequency < (threshold * max_edge_frequency) and nodes whose frequency < (threshold * max_node_frequency). Van der Aalst tau-miner style post-hoc filtering.',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human' | 'csv') ?? 'human';
@@ -1302,6 +1307,66 @@ export const run = defineCommand({
                 }
               }
 
+              // Noise filtering: post-hoc DFG edge/node pruning (van der Aalst tau-miner style)
+              const noiseThresholdRaw = ctx.args['noise-threshold'] as string | undefined;
+              if (noiseThresholdRaw !== undefined) {
+                const noiseThreshold = parseFloat(noiseThresholdRaw);
+                if (Number.isNaN(noiseThreshold) || noiseThreshold < 0 || noiseThreshold > 1) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(`--noise-threshold must be a number between 0.0 and 1.0 (got "${noiseThresholdRaw}")`),
+                    EXIT_CODES.config_error,
+                    'NOISE_THRESHOLD_INVALID'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+
+                if (noiseThreshold > 0 && resultData && typeof resultData === 'object') {
+                  const dfgData = resultData as {
+                    edges?: Array<Record<string, unknown>>;
+                    nodes?: Array<Record<string, unknown>>;
+                  };
+
+                  // Filter edges
+                  if (Array.isArray(dfgData.edges) && dfgData.edges.length > 0) {
+                    const edgeFreqs = dfgData.edges.map(e =>
+                      typeof e.frequency === 'number' ? e.frequency : (typeof e.count === 'number' ? e.count : 0)
+                    );
+                    const maxEdgeFreq = Math.max(...edgeFreqs);
+                    const edgeCutoff = noiseThreshold * maxEdgeFreq;
+                    const beforeEdgeCount = dfgData.edges.length;
+                    dfgData.edges = dfgData.edges.filter(e => {
+                      const freq = typeof e.frequency === 'number' ? e.frequency : (typeof e.count === 'number' ? e.count : 0);
+                      return freq >= edgeCutoff;
+                    });
+                    const removedEdges = beforeEdgeCount - dfgData.edges.length;
+
+                    // Filter nodes
+                    let removedNodes = 0;
+                    if (Array.isArray(dfgData.nodes) && dfgData.nodes.length > 0) {
+                      const nodeFreqs = dfgData.nodes.map(n =>
+                        typeof n.frequency === 'number' ? n.frequency : (typeof n.count === 'number' ? n.count : 0)
+                      );
+                      const maxNodeFreq = Math.max(...nodeFreqs);
+                      const nodeCutoff = noiseThreshold * maxNodeFreq;
+                      const beforeNodeCount = dfgData.nodes.length;
+                      dfgData.nodes = dfgData.nodes.filter(n => {
+                        const freq = typeof n.frequency === 'number' ? n.frequency : (typeof n.count === 'number' ? n.count : 0);
+                        return freq >= nodeCutoff;
+                      });
+                      removedNodes = beforeNodeCount - dfgData.nodes.length;
+                    }
+
+                    if (!quiet && format === 'human') {
+                      process.stderr.write(
+                        `Noise filter (threshold=${noiseThreshold}): removed ${removedEdges} edges, ${removedNodes} nodes\n`
+                      );
+                    }
+                  }
+                }
+              }
+
               // Step 8b: Collect log statistics for the model summary (trace count, event count, variant count)
               let logStats: {
                 total_cases?: number;
@@ -1824,7 +1889,7 @@ interface OcelDiscoveryOptions {
  * Exit codes follow the same contract as wpm run for XES files.
  */
 async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
-  const { inputPath, emitOptions, ctx } = opts;
+  const { inputPath, emitOptions, ctx, format } = opts;
 
   const { WasmLoader } = await import('@wasm4pm/engine');
   const { exitWithFlush: exitFlush } = await import('../otel/exit.js');

@@ -5,8 +5,9 @@ describe('queryCommand structure', () => {
   it('is a valid citty command with required meta fields', () => {
     expect(queryCommand).toBeDefined();
     expect(queryCommand.meta).toBeDefined();
-    expect(queryCommand.meta?.name).toBe('query');
-    expect(typeof queryCommand.meta?.description).toBe('string');
+    const meta = queryCommand.meta as { name?: string; description?: string } | undefined;
+    expect(meta?.name).toBe('query');
+    expect(typeof meta?.description).toBe('string');
   });
 
   it('declares required ocel and query args', () => {

@@ -15,6 +15,7 @@ import { mintNonce } from './receipt/mint-nonce.js';
 import { admit } from './receipt/admit.js';
 import { verifyChain } from './receipt/verify-chain.js';
 import { residuals } from './receipt/residuals.js';
+import { mineChain } from './receipt/mine-chain.js';
 
 export const receipt = defineCommand({
   meta: {
@@ -38,5 +39,6 @@ export const receipt = defineCommand({
     admit,
     'verify-chain': verifyChain,
     residuals,
+    'mine-chain': mineChain,
   },
 });

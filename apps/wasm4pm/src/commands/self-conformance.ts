@@ -8,6 +8,17 @@ import { withSpan } from './_otel.js';
 import { toOcelJsonl, type OcelEvent } from '@wasm4pm/contracts';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
+// ── declared lifecycle (reference model) ─────────────────────────────────────
+
+const DECLARED_LIFECYCLE = {
+  nodes: ['wasm4pm.init', 'wasm4pm.run', 'wasm4pm.complete', 'wasm4pm.error'],
+  edges: [
+    { from: 'wasm4pm.init', to: 'wasm4pm.run' },
+    { from: 'wasm4pm.run', to: 'wasm4pm.complete' },
+    { from: 'wasm4pm.run', to: 'wasm4pm.error' },
+  ],
+} as const;
+
 // ── types ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -35,6 +46,12 @@ interface DfgPerTypeEntry {
   edges: Array<{ source: string; target: string; count: number }>;
 }
 
+interface LifecycleDiff {
+  shadow_edges: Array<{ from: string; to: string }>;
+  missing_edges: Array<{ from: string; to: string }>;
+  coverage: number;
+}
+
 interface SelfConformancePayload {
   spans_file: string;
   span_count: number;
@@ -44,6 +61,7 @@ interface SelfConformancePayload {
   threshold: number;
   fitness: number;
   passed: boolean;
+  lifecycle_diff?: LifecycleDiff;
 }
 
 // ── span → OCEL conversion ────────────────────────────────────────────────────
@@ -133,6 +151,11 @@ export const selfConformance = defineCommand({
     json: {
       type: 'boolean',
       description: 'Output JSON',
+      default: false,
+    },
+    'assert-lifecycle': {
+      type: 'boolean',
+      description: 'Exit 3 if shadow edges are present or declared lifecycle coverage < 50%',
       default: false,
     },
     quiet: {
@@ -335,6 +358,70 @@ export const selfConformance = defineCommand({
         const passed = fitness >= threshold;
         const durationMs = performance.now() - t0;
 
+        // ── lifecycle diff (Gap 3: model-vs-log structural comparison) ─────────
+        // Collect all discovered edges across all object types into a flat set
+        const discoveredEdgeSet = new Set<string>();
+        for (const entry of dfgPerType) {
+          for (const e of entry.edges) {
+            discoveredEdgeSet.add(`${e.source}→${e.target}`);
+          }
+        }
+
+        const declaredEdges = DECLARED_LIFECYCLE.edges as ReadonlyArray<{ from: string; to: string }>;
+
+        const shadow_edges = Array.from(discoveredEdgeSet)
+          .map((key) => {
+            const [from, to] = key.split('→');
+            return { from, to };
+          })
+          .filter(
+            ({ from, to }) =>
+              !declaredEdges.some((d) => d.from === from && d.to === to),
+          );
+
+        const missing_edges = declaredEdges.filter(
+          ({ from, to }) => !discoveredEdgeSet.has(`${from}→${to}`),
+        ).map(({ from, to }) => ({ from, to }));
+
+        const coverage =
+          declaredEdges.length > 0
+            ? (declaredEdges.length - missing_edges.length) / declaredEdges.length
+            : 1;
+
+        const lifecycleDiff: LifecycleDiff = { shadow_edges, missing_edges, coverage };
+
+        // Print lifecycle diff (human-readable; always shown unless --json)
+        if (!args.json && !args.quiet) {
+          if (shadow_edges.length > 0) {
+            const list = shadow_edges.map((e) => `${e.from} → ${e.to}`).join(', ');
+            console.warn(`[WARN] Shadow paths detected: ${list}`);
+          }
+          if (missing_edges.length > 0) {
+            const list = missing_edges.map((e) => `${e.from} → ${e.to}`).join(', ');
+            console.info(`[INFO] Never-exercised paths: ${list}`);
+          }
+          console.info(`[INFO] Lifecycle coverage: ${(coverage * 100).toFixed(1)}% of declared edges observed`);
+        }
+
+        // --assert-lifecycle: fail with exit 3 if shadow edges present or coverage < 50%
+        const assertLifecycle = (args as Record<string, unknown>)['assert-lifecycle'] as boolean | undefined;
+        if (assertLifecycle && (shadow_edges.length > 0 || coverage < 0.5)) {
+          if (!args.quiet) {
+            emitResult(
+              makeErrorResult(
+                'self-conformance',
+                `Lifecycle assertion failed — shadow_edges=${shadow_edges.length}, coverage=${(coverage * 100).toFixed(1)}%`,
+                EXIT_CODES.execution_error,
+                'CONF_LIFECYCLE_ASSERTION_FAILED',
+                'Inspect shadow_edges and missing_edges in the output. Ensure wasm4pm.init→run→complete/error paths are exercised.',
+              ),
+              outputOptions,
+            );
+          }
+          await exitWithFlush(EXIT_CODES.execution_error);
+          return;
+        }
+
         const payload: SelfConformancePayload = {
           spans_file: spansFile,
           span_count: spans.length,
@@ -344,6 +431,7 @@ export const selfConformance = defineCommand({
           threshold,
           fitness,
           passed,
+          lifecycle_diff: lifecycleDiff,
         };
 
         // In quiet mode: exit 0 if fitness >= 0.5, non-zero otherwise (regardless of --threshold)
