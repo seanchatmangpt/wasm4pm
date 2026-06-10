@@ -209,7 +209,7 @@ impl CognitionBreed for AutoinstinctSemantics {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctSemantics must produce at least one inference trace step".to_string(),
@@ -342,7 +342,7 @@ mod tests {
             ocel_log: None,
             retained_cases: vec![],
         };
-        let result = breed.postconditions(&output);
+        let result = breed.postconditions(&base_input(""), &output);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

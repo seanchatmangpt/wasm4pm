@@ -407,9 +407,9 @@ mod tests {
         assert!(rule_fact.value.contains("concave"));
         assert!(rule_fact.value.contains("drinkable"));
 
-        // Hidden oracle test: apply learned rule to obj2
-        // We do a simple string replacement since we don't expose apply() publicly
-        let applied = rule_fact.value.replace("?y_g1", "obj2");
-        assert_eq!(applied, "has_handle(obj2), concave(obj2) => drinkable(obj2)");
+        // Hidden oracle test: apply learned rule to obj_x
+        let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
+        let applied = rule_fact.value.replace("?y_g1", "obj_x");
+        assert_eq!(applied, "has_handle(obj_x), concave(obj_x) => drinkable(obj_x)");
     }
 }

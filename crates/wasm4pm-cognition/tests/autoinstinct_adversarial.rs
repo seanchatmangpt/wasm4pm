@@ -788,32 +788,36 @@ fn autoinstinct_all_breeds_postconditions_pass_on_valid_output() {
     use wasm4pm_cognition::breeds::autoinstinct_vision::AutoinstinctVision;
 
     // Learning
+    let learning_in = learning_input(make_goals(2), vec![]);
     let learning_out = AutoinstinctLearning
-        .run(&learning_input(make_goals(2), vec![]))
+        .run(&learning_in)
         .expect("learning run ok");
-    assert!(AutoinstinctLearning.postconditions(&learning_out).is_ok());
+    assert!(AutoinstinctLearning.postconditions(&learning_in, &learning_out).is_ok());
 
     // Neurosis
+    let neurosis_in = neurosis_input(
+        vec![Fact {
+            key: "belief:x".into(),
+            value: "0.5".into(),
+        }],
+        vec![],
+    );
     let neurosis_out = AutoinstinctNeurosis
-        .run(&neurosis_input(
-            vec![Fact {
-                key: "belief:x".into(),
-                value: "0.5".into(),
-            }],
-            vec![],
-        ))
+        .run(&neurosis_in)
         .expect("neurosis run ok");
-    assert!(AutoinstinctNeurosis.postconditions(&neurosis_out).is_ok());
+    assert!(AutoinstinctNeurosis.postconditions(&neurosis_in, &neurosis_out).is_ok());
 
     // Vision
+    let vision_in = vision_input(vec![make_fact("cube", "Z")]);
     let vision_out = AutoinstinctVision
-        .run(&vision_input(vec![make_fact("cube", "Z")]))
+        .run(&vision_in)
         .expect("vision run ok");
-    assert!(AutoinstinctVision.postconditions(&vision_out).is_ok());
+    assert!(AutoinstinctVision.postconditions(&vision_in, &vision_out).is_ok());
 
     // Semantics
+    let semantics_in = semantics_input("John give book");
     let semantics_out = AutoinstinctSemantics
-        .run(&semantics_input("John give book"))
+        .run(&semantics_in)
         .expect("semantics run ok");
-    assert!(AutoinstinctSemantics.postconditions(&semantics_out).is_ok());
+    assert!(AutoinstinctSemantics.postconditions(&semantics_in, &semantics_out).is_ok());
 }

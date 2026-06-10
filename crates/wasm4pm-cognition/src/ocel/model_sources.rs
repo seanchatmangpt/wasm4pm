@@ -24,6 +24,10 @@ pub fn model_source(breed_id: &str) -> Option<&'static str> {
         "default_logic" => Some(include_str!("../../../../ocel/models/l1/default_logic.ocpn.json")),
         "frames_inheritance" => Some(include_str!("../../../../ocel/models/l1/frames_inheritance.ocpn.json")),
         "ebl" => Some(include_str!("../../../../ocel/models/l1/ebl.ocpn.json")),
+        "asp" => Some(include_str!("../../../../ocel/models/l1/asp.ocpn.json")),
+        "description_logic" => Some(include_str!("../../../../ocel/models/l1/description_logic.ocpn.json")),
+        "abductive_lp" => Some(include_str!("../../../../ocel/models/l1/abductive_lp.ocpn.json")),
+        "abductive_ibe" => Some(include_str!("../../../../ocel/models/l1/abductive_ibe.ocpn.json")),
         _ => None,
     }
 }

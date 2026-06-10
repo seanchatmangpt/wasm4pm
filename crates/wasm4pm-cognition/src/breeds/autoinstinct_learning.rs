@@ -174,7 +174,7 @@ impl CognitionBreed for AutoinstinctLearning {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctLearning must emit at least one inference trace step".to_string(),
@@ -260,7 +260,7 @@ mod tests {
             ocel_log: None,
             retained_cases: vec![],
         };
-        assert!(breed.postconditions(&bad_output).is_err());
+        assert!(breed.postconditions(&empty_input(vec![], vec![]), &bad_output).is_err());
     }
 
     #[test]
@@ -324,7 +324,7 @@ mod tests {
         let breed = AutoinstinctLearning;
         let input = empty_input(make_goals(3), make_facts(1));
         let output = breed.run(&input).expect("run ok");
-        assert!(breed.postconditions(&output).is_ok());
+        assert!(breed.postconditions(&empty_input(vec![], vec![]), &output).is_ok());
     }
 
     /// B4-1: goal is reachable — run succeeds and final plan step has distance == 0

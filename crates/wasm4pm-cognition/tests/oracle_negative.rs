@@ -545,5 +545,50 @@ fn ebl_empty_goals_refused() {
     assert!(result.unwrap_err().contains("goal"));
 }
 
+#[test]
+fn asp_empty_rules_and_facts_refused() {
+    use wasm4pm_cognition::breeds::asp::Asp;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // both rules and facts are empty
+    let result = Asp.preconditions(&input);
+    assert!(result.is_err(), "ASP must refuse empty rules and facts");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn description_logic_empty_facts_refused() {
+    use wasm4pm_cognition::breeds::description_logic::DescriptionLogic;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no facts
+    let result = DescriptionLogic.preconditions(&input);
+    assert!(result.is_err(), "DescriptionLogic must refuse empty facts");
+    assert!(result.unwrap_err().contains("fact"));
+}
+
+#[test]
+fn abductive_lp_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::abductive_lp::AbductiveLp;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "g", "g")]; // has goal but no rules
+    let result = AbductiveLp.preconditions(&input);
+    assert!(result.is_err(), "AbductiveLp must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn abductive_ibe_empty_facts_refused() {
+    use wasm4pm_cognition::breeds::abductive_ibe::AbductiveIbe;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let input = empty_base(); // no facts
+    let result = AbductiveIbe.preconditions(&input);
+    assert!(result.is_err(), "AbductiveIbe must refuse empty facts");
+    assert!(result.unwrap_err().contains("fact"));
+}
+
 
 

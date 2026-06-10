@@ -552,6 +552,10 @@ fn test_all_55_breeds_exhaustiveness() {
         BreedId::Ebl,
         BreedId::DempsterShafer,
         BreedId::FramesInheritance,
+        BreedId::Asp,
+        BreedId::DescriptionLogic,
+        BreedId::AbductiveLp,
+        BreedId::AbductiveIbe,
     ];
 
     for &breed_id in BreedId::ALL {

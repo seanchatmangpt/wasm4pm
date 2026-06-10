@@ -1976,5 +1976,224 @@ fn ebl_paper_grounded() {
     }
 }
 
+#[test]
+fn asp_paper_grounded() {
+    let path = "tests/fixtures/papers/asp.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    rules.push(Rule {
+                        id: r["id"].as_str().unwrap().to_string(),
+                        premise: premises,
+                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
+                        certainty: r["certainty"].as_f64().unwrap() as f32,
+                    });
+                }
+            }
+            let mut candidates = Vec::new();
+            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
+                for c in arr {
+                    candidates.push(Candidate {
+                        id: c["id"].as_str().unwrap().to_string(),
+                        score: c["score"].as_f64().unwrap() as f32,
+                        eliminated: c["eliminated"].as_bool().unwrap(),
+                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap_or("solve").to_string(),
+                candidates,
+                facts: vec![],
+                cases: vec![],
+                rules,
+                goals: vec![],
+                state: vec![],
+            };
+            let breed = asp::Asp;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("ASP run must succeed");
+            assert_eq!(output.breed, BreedId::Asp);
+            let count_fact = output.facts.iter().find(|f| f.key == "stable_models_count").unwrap();
+            assert_eq!(count_fact.value, json["expected"]["stable_models_count"].as_str().unwrap());
+        }
+    }
+}
+
+#[test]
+fn description_logic_paper_grounded() {
+    let path = "tests/fixtures/papers/description_logic.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    facts.push(Fact {
+                        key: f["key"].as_str().unwrap().to_string(),
+                        value: f["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let mut candidates = Vec::new();
+            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
+                for c in arr {
+                    candidates.push(Candidate {
+                        id: c["id"].as_str().unwrap().to_string(),
+                        score: c["score"].as_f64().unwrap() as f32,
+                        eliminated: c["eliminated"].as_bool().unwrap(),
+                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap_or("classify").to_string(),
+                candidates,
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            };
+            let breed = description_logic::DescriptionLogic;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("DescriptionLogic run must succeed");
+            assert_eq!(output.breed, BreedId::DescriptionLogic);
+            let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").unwrap();
+            assert_eq!(consistent_fact.value, json["expected"]["consistent"].as_str().unwrap());
+            let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
+            assert!(member_xc.is_some());
+        }
+    }
+}
+
+#[test]
+fn abductive_lp_paper_grounded() {
+    let path = "tests/fixtures/papers/abductive_lp.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    facts.push(Fact {
+                        key: f["key"].as_str().unwrap().to_string(),
+                        value: f["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    rules.push(Rule {
+                        id: r["id"].as_str().unwrap().to_string(),
+                        premise: premises,
+                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
+                        certainty: r["certainty"].as_f64().unwrap() as f32,
+                    });
+                }
+            }
+            let mut goals = Vec::new();
+            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+                for g in arr {
+                    goals.push(Goal {
+                        id: g["id"].as_str().unwrap().to_string(),
+                        predicate: g["predicate"].as_str().unwrap().to_string(),
+                        value: g["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let mut candidates = Vec::new();
+            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
+                for c in arr {
+                    candidates.push(Candidate {
+                        id: c["id"].as_str().unwrap().to_string(),
+                        score: c["score"].as_f64().unwrap() as f32,
+                        eliminated: c["eliminated"].as_bool().unwrap(),
+                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap_or("abduce").to_string(),
+                candidates,
+                facts,
+                cases: vec![],
+                rules,
+                goals,
+                state: vec![],
+            };
+            let breed = abductive_lp::AbductiveLp;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("AbductiveLp run must succeed");
+            assert_eq!(output.breed, BreedId::AbductiveLp);
+            let count_fact = output.facts.iter().find(|f| f.key == "explanations_count").unwrap();
+            assert_eq!(count_fact.value, json["expected"]["explanations_count"].as_str().unwrap());
+            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
+        }
+    }
+}
+
+#[test]
+fn abductive_ibe_paper_grounded() {
+    let path = "tests/fixtures/papers/abductive_ibe.json";
+    if let Ok(content) = fs::read_to_string(path) {
+        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+            let inp = &json["input"];
+            let mut facts = Vec::new();
+            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+                for f in arr {
+                    facts.push(Fact {
+                        key: f["key"].as_str().unwrap().to_string(),
+                        value: f["value"].as_str().unwrap().to_string(),
+                    });
+                }
+            }
+            let mut rules = Vec::new();
+            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+                for r in arr {
+                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
+                    rules.push(Rule {
+                        id: r["id"].as_str().unwrap().to_string(),
+                        premise: premises,
+                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
+                        certainty: r["certainty"].as_f64().unwrap() as f32,
+                    });
+                }
+            }
+            let mut candidates = Vec::new();
+            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
+                for c in arr {
+                    candidates.push(Candidate {
+                        id: c["id"].as_str().unwrap().to_string(),
+                        score: c["score"].as_f64().unwrap() as f32,
+                        eliminated: c["eliminated"].as_bool().unwrap(),
+                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
+                    });
+                }
+            }
+            let input = BreedInput {
+                intent: inp["intent"].as_str().unwrap_or("coherence").to_string(),
+                candidates,
+                facts,
+                cases: vec![],
+                rules,
+                goals: vec![],
+                state: vec![],
+            };
+            let breed = abductive_ibe::AbductiveIbe;
+            assert!(breed.preconditions(&input).is_ok());
+            let output = breed.run(&input).expect("AbductiveIbe run must succeed");
+            assert_eq!(output.breed, BreedId::AbductiveIbe);
+            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
+        }
+    }
+}
+
 
 

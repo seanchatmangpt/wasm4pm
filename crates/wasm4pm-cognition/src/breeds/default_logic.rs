@@ -46,9 +46,11 @@ impl CognitionBreed for DefaultLogic {
         let mut step_idx = 1;
         let mut rules = input.rules.clone();
 
-        // Sort rules by specificity order: premise count (descending), certainty (descending), lex id (descending)
+        // Sort rules by specificity order: positive premise count (descending), certainty (descending), lex id (descending)
         rules.sort_by(|a, b| {
-            b.premise.len().cmp(&a.premise.len())
+            let a_pos = a.premise.iter().filter(|p| !p.starts_with("unless:")).count();
+            let b_pos = b.premise.iter().filter(|p| !p.starts_with("unless:")).count();
+            b_pos.cmp(&a_pos)
                 .then_with(|| b.certainty.partial_cmp(&a.certainty).unwrap_or(std::cmp::Ordering::Equal))
                 .then_with(|| b.id.cmp(&a.id))
         });

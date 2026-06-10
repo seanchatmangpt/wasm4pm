@@ -162,6 +162,23 @@ impl CognitionBreed for AbductiveLp {
             a.len().cmp(&b.len()).then_with(|| a.cmp(b))
         });
 
+        // Filter for minimality: keep an explanation only if no subset of it is also a valid explanation.
+        let mut minimal_explanations: Vec<Vec<String>> = Vec::new();
+        for exp in valid_explanations {
+            let exp_set: HashSet<&String> = exp.iter().collect();
+            let mut is_minimal = true;
+            for min_exp in &minimal_explanations {
+                if min_exp.iter().all(|item| exp_set.contains(item)) {
+                    is_minimal = false;
+                    break;
+                }
+            }
+            if is_minimal {
+                minimal_explanations.push(exp);
+            }
+        }
+        let valid_explanations = minimal_explanations;
+
         // Trace the top explanations found
         for (idx, explanation) in valid_explanations.iter().enumerate() {
             trace.push(TraceStep {

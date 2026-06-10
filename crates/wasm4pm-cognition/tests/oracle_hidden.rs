@@ -1554,4 +1554,130 @@ fn htn_planning_hidden_travel() {
     assert_eq!(output.selected.as_deref(), Some("op:start_car,op:drive_to_dest"));
 }
 
+#[test]
+fn asp_hidden_stable_models() {
+    let mut input = base("ASP test: a :- not b. b :- not a.");
+    input.rules = vec![
+        rule("r1", vec!["not b"], "a", 1.0),
+        rule("r2", vec!["not a"], "b", 1.0),
+    ];
+    input.candidates = vec![
+        Candidate { id: "a".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        Candidate { id: "b".into(), score: 0.5, eliminated: false, elimination_reason: None },
+    ];
+
+    let output = dispatch_breed_test("asp", &input)
+        .expect("ASP run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let count_fact = output.facts.iter().find(|f| f.key == "stable_models_count").expect("stable_models_count exists");
+    assert_eq!(count_fact.value, "2");
+    
+    // One of a or b must be selected
+    let selected = output.selected.as_ref().expect("Should have selected a candidate");
+    assert!(selected == "a" || selected == "b");
+}
+
+#[test]
+fn description_logic_hidden_subsumption_and_consistency() {
+    let mut input = base("Description Logic: subclass chain and consistency");
+    input.facts = vec![
+        fact("subclass", "A,B"),
+        fact("subclass", "B,C"),
+        fact("class", "x,A"),
+        fact("disjoint", "C,D"),
+    ];
+    input.candidates = vec![
+        Candidate { id: "x".into(), score: 0.5, eliminated: false, elimination_reason: None },
+    ];
+
+    let output = dispatch_breed_test("description_logic", &input)
+        .expect("DescriptionLogic run must succeed");
+
+    let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").expect("consistent fact exists");
+    assert_eq!(consistent_fact.value, "true");
+    assert_eq!(output.selected.as_deref(), Some("consistent"));
+
+    // Check that x is member of C by propagation
+    let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
+    assert!(member_xc.is_some(), "x must be derived as a member of C");
+
+    // Negative case: add class assertion to trigger inconsistency
+    let mut input_inc = input.clone();
+    input_inc.facts.push(fact("class", "x,D"));
+
+    let output_inc = dispatch_breed_test("description_logic", &input_inc)
+        .expect("DescriptionLogic run must succeed");
+
+    let consistent_inc = output_inc.facts.iter().find(|f| f.key == "consistent").expect("consistent fact exists");
+    assert_eq!(consistent_inc.value, "false");
+    assert_eq!(output_inc.selected.as_deref(), Some("inconsistent"));
+    assert!(output_inc.candidates[0].eliminated, "Candidate x must be eliminated due to inconsistency");
+}
+
+#[test]
+fn abductive_lp_hidden_explanation() {
+    let mut input = base("ALP test: g :- a, b. g :- c. false :- a, d.");
+    input.rules = vec![
+        rule("r1", vec!["a", "b"], "g", 1.0),
+        rule("r2", vec!["c"], "g", 1.0),
+        rule("r_ic", vec!["a", "d"], "false", 1.0),
+    ];
+    input.facts = vec![
+        fact("abducible", "a"),
+        fact("abducible", "b"),
+        fact("abducible", "c"),
+        fact("abducible", "d"),
+        fact("context", "d"), // d is true in the context
+    ];
+    input.goals = vec![
+        goal("g1", "goal", "g"),
+    ];
+    input.candidates = vec![
+        Candidate { id: "c".into(), score: 0.5, eliminated: false, elimination_reason: None },
+    ];
+
+    let output = dispatch_breed_test("abductive_lp", &input)
+        .expect("AbductiveLP run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    let count_fact = output.facts.iter().find(|f| f.key == "explanations_count").expect("explanations_count exists");
+    // [a, b] is blocked because d is true, so only [c] is a valid explanation.
+    assert_eq!(count_fact.value, "1");
+    assert_eq!(output.selected.as_deref(), Some("c"));
+}
+
+#[test]
+fn abductive_ibe_hidden_coherence() {
+    let mut input = base("IBE test: Thagard ECHO model selection");
+    input.facts = vec![
+        fact("evidence", "E1"),
+        fact("evidence", "E2"),
+        fact("hypothesis", "H1"),
+        fact("hypothesis", "H2"),
+        fact("contradicts", "H1,H2"),
+    ];
+    input.rules = vec![
+        rule("expl1", vec!["H1"], "E1", 1.0),
+        rule("expl2", vec!["H1"], "E2", 1.0),
+        rule("expl3", vec!["H2"], "E1", 1.0),
+    ];
+    input.candidates = vec![
+        Candidate { id: "H1".into(), score: 0.5, eliminated: false, elimination_reason: None },
+        Candidate { id: "H2".into(), score: 0.5, eliminated: false, elimination_reason: None },
+    ];
+
+    let output = dispatch_breed_test("abductive_ibe", &input)
+        .expect("AbductiveIBE run must succeed");
+
+    assert!(!output.inference_trace.is_empty(), "Trace must not be empty");
+    
+    // H1 must be selected over H2 because H1 explains E1 and E2, while H2 only explains E1.
+    assert_eq!(output.selected.as_deref(), Some("H1"));
+    
+    let score_h1 = output.candidates.iter().find(|c| c.id == "H1").unwrap().score;
+    let score_h2 = output.candidates.iter().find(|c| c.id == "H2").unwrap().score;
+    assert!(score_h1 > score_h2, "H1 score must be strictly greater than H2 score");
+}
+
 

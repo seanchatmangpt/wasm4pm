@@ -82,6 +82,44 @@ fn parse_rel(s: &str) -> Option<usize> {
     }
 }
 
+fn parse_rel_name(s: &str) -> &str {
+    match s {
+        "precedes" | "before" | "p" => "p",
+        "preceded-by" | "after" | "pi" => "pi",
+        "meets" | "m" => "m",
+        "met-by" | "mi" => "mi",
+        "overlaps" | "o" => "o",
+        "overlapped-by" | "oi" => "oi",
+        "during" | "d" => "d",
+        "contains" | "di" => "di",
+        "starts" | "s" => "s",
+        "started-by" | "si" => "si",
+        "finishes" | "f" => "f",
+        "finished-by" | "fi" => "fi",
+        "equals" | "eq" => "eq",
+        other => other,
+    }
+}
+
+fn rel_to_str(idx: usize) -> &'static str {
+    match idx {
+        0 => "p", 1 => "pi", 2 => "m", 3 => "mi",
+        4 => "o", 5 => "oi", 6 => "d", 7 => "di",
+        8 => "s", 9 => "si", 10 => "f", 11 => "fi",
+        12 => "eq", _ => "?",
+    }
+}
+
+fn mask_to_str(mask: u16) -> String {
+    let mut parts = Vec::new();
+    for i in 0..13 {
+        if (mask & (1 << i)) != 0 {
+            parts.push(rel_to_str(i));
+        }
+    }
+    parts.join("|")
+}
+
 impl CognitionBreed for AllenTemporal {
     fn id(&self) -> BreedId {
         BreedId::AllenTemporal
@@ -91,7 +129,10 @@ impl CognitionBreed for AllenTemporal {
         vec!["allen_temporal".into(), "interval_algebra".into()]
     }
 
-    fn preconditions(&self, _input: &BreedInput) -> Result<(), String> {
+    fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        if input.facts.is_empty() {
+            return Err("EMPTY_EVENT_LOG: AllenTemporal requires at least one fact (temporal constraint)".to_string());
+        }
         Ok(())
     }
 
@@ -119,6 +160,26 @@ impl CognitionBreed for AllenTemporal {
                 let parts: Vec<&str> = state.value.split(',').collect();
                 if parts.len() >= 1 {
                     get_id!(parts[0]);
+                }
+            }
+        }
+
+        // Load nodes from relation facts
+        for fact in &input.facts {
+            if fact.key == "relation" {
+                let mut parsed = None;
+                let parts_comma: Vec<&str> = fact.value.split(',').collect();
+                if parts_comma.len() == 3 {
+                    parsed = Some((parts_comma[0].trim(), parts_comma[1].trim()));
+                } else {
+                    let parts_space: Vec<&str> = fact.value.split_whitespace().collect();
+                    if parts_space.len() == 3 {
+                        parsed = Some((parts_space[0], parts_space[2]));
+                    }
+                }
+                if let Some((node1, node2)) = parsed {
+                    get_id!(node1);
+                    get_id!(node2);
                 }
             }
         }
@@ -182,14 +243,24 @@ impl CognitionBreed for AllenTemporal {
         // Load explicit relations
         for fact in &input.facts {
             if fact.key == "relation" {
-                let parts: Vec<&str> = fact.value.split(',').collect();
-                if parts.len() == 3 {
-                    let id1 = get_id!(parts[0]);
-                    let id2 = get_id!(parts[1]);
-                    let rels: Vec<&str> = parts[2].split('|').collect();
+                let mut parsed = None;
+                let parts_comma: Vec<&str> = fact.value.split(',').collect();
+                if parts_comma.len() == 3 {
+                    parsed = Some((parts_comma[0].trim(), parts_comma[1].trim(), parts_comma[2].trim()));
+                } else {
+                    let parts_space: Vec<&str> = fact.value.split_whitespace().collect();
+                    if parts_space.len() == 3 {
+                        parsed = Some((parts_space[0], parts_space[2], parts_space[1]));
+                    }
+                }
+                if let Some((node1, node2, rel_str)) = parsed {
+                    let id1 = get_id!(node1);
+                    let id2 = get_id!(node2);
+                    let rels: Vec<&str> = rel_str.split('|').collect();
                     let mut mask = 0;
                     for r in rels {
-                        if let Some(r_idx) = parse_rel(r) {
+                        let normalized = parse_rel_name(r);
+                        if let Some(r_idx) = parse_rel(normalized) {
                             mask |= 1 << r_idx;
                         }
                     }
@@ -199,9 +270,9 @@ impl CognitionBreed for AllenTemporal {
                         trace.push(TraceStep {
                             step: step_count,
                             kind: "allen-load".into(),
-                            detail: format!("rel {},{},{}", parts[0], parts[1], parts[2]),
+                            detail: format!("rel {},{},{}", node1, node2, rel_str),
                             depth: 0,
-                            objects: vec![("interval".into(), parts[0].to_string()), ("interval".into(), parts[1].to_string())],
+                            objects: vec![("interval".into(), node1.to_string()), ("interval".into(), node2.to_string())],
                         });
                         step_count += 1;
                     }
@@ -274,10 +345,24 @@ impl CognitionBreed for AllenTemporal {
             }
         }
 
+        let mut out_facts = Vec::new();
+        for i in 0..n {
+            for j in 0..n {
+                if i != j {
+                    let mask = matrix[i][j];
+                    let val = mask_to_str(mask);
+                    out_facts.push(crate::breeds::Fact {
+                        key: format!("relation:{}:{}", node_names[i], node_names[j]),
+                        value: val,
+                    });
+                }
+            }
+        }
+
         Ok(BreedOutput {
             breed: self.id(),
             candidates,
-            facts: vec![],
+            facts: out_facts,
             selected: Some("temporal-consistent".into()),
             explanation: "Allen temporal logic constraint network reached fixpoint.".into(),
             inference_trace: trace,

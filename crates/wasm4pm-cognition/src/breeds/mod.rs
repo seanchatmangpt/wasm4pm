@@ -53,6 +53,14 @@ pub mod bayesian_network;
 pub mod dempster_shafer;
 /// Module for frames_inheritance
 pub mod frames_inheritance;
+/// Module for asp
+pub mod asp;
+/// Module for description_logic
+pub mod description_logic;
+/// Module for abductive_lp
+pub mod abductive_lp;
+/// Module for abductive_ibe
+pub mod abductive_ibe;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).
@@ -369,7 +377,7 @@ pub struct StateAtom {
 }
 
 /// Input to a breed's `run()` method: all available knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,
@@ -508,7 +516,7 @@ pub trait CognitionBreed: Send + Sync {
 
     /// Postcondition checks: verify the output is valid.
     /// Returns Ok(()) if all pass; Err(message) if violation.
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String>;
+    fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String>;
 
     /// Generate a BLAKE3 receipt for this execution.
     fn receipt(&self, input: &BreedInput, output: &BreedOutput) -> Receipt {

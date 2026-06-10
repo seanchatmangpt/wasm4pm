@@ -74,6 +74,8 @@ pub struct LifecyclePhase {
 pub mod models_p0;
 /// Static per-breed lifecycle models (P1 tier).
 pub mod models_p1;
+/// Static per-breed lifecycle models (P2 tier).
+pub mod models_p2;
 /// `include_str!` sources for hand-authored OCPN model JSON files.
 pub mod model_sources;
 
@@ -103,6 +105,10 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "default_logic" => Some(&models_p1::DEFAULT_LOGIC_MODEL),
         "frames_inheritance" => Some(&models_p1::FRAMES_INHERITANCE_MODEL),
         "ebl" => Some(&models_p1::EBL_MODEL),
+        "asp" => Some(&models_p2::ASP_MODEL),
+        "description_logic" => Some(&models_p2::DESCRIPTION_LOGIC_MODEL),
+        "abductive_lp" => Some(&models_p2::ABDUCTIVE_LP_MODEL),
+        "abductive_ibe" => Some(&models_p2::ABDUCTIVE_IBE_MODEL),
         _ => None,
     }
 }

@@ -192,7 +192,7 @@ impl CognitionBreed for AutoinstinctVision {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctVision must produce at least one inference trace step".to_string(),
@@ -301,6 +301,6 @@ mod tests {
             ocel_log: None,
             retained_cases: vec![],
         };
-        assert!(breed.postconditions(&output).is_err());
+        assert!(breed.postconditions(&base_input(vec![]), &output).is_err());
     }
 }

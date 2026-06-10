@@ -84,7 +84,7 @@ fn mycin_known_input_known_output() {
                 output.inference_trace.iter().any(|t| t.kind == "fire-rule"),
                 "MYCIN should have fired at least one rule"
             );
-            assert!(breed.postconditions(&output).is_ok());
+            assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
         }
     }
 }
@@ -199,7 +199,7 @@ fn soar_known_input_known_output() {
             .any(|t| t.kind == "evaluate-single" || t.kind == "impasse"),
         "SOAR should have evaluation or impasse step"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -453,7 +453,7 @@ fn soar_preference_cascade() {
     );
 
     // Verify postconditions still pass
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 // =============================================================================
@@ -508,7 +508,7 @@ fn gps_known_input_known_output() {
                 || t.kind == "apply-operator"),
         "GPS should have gap reduction or operator application step"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -631,7 +631,7 @@ fn cbr_known_input_known_output() {
             .any(|t| t.kind == "score-case"),
         "CBR should have scored at least one case"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -742,7 +742,7 @@ fn dendral_known_input_known_output() {
             .any(|t| t.kind == "eliminate" || t.kind == "survive"),
         "DENDRAL should have eliminate or survive steps"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -826,7 +826,7 @@ fn eliza_known_input_known_output() {
             .any(|t| t.kind == "try-pattern"),
         "ELIZA should have tried at least one pattern"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -912,7 +912,7 @@ fn strips_known_input_known_output() {
         !output.inference_trace.is_empty(),
         "STRIPS should have non-empty trace"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -1034,7 +1034,7 @@ fn hearsay_known_input_known_output() {
             .any(|t| t.kind == "seed" || t.kind == "post-hypothesis"),
         "Hearsay should have seeded or posted hypotheses"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -1287,7 +1287,7 @@ fn prolog_known_input_known_output() {
             .any(|t| t.kind == "intern-fact" || t.kind == "kernel-query" || t.kind == "decision"),
         "Prolog should have fact internment, query, and decision steps"
     );
-    assert!(breed.postconditions(&output).is_ok());
+    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
 }
 
 #[test]
@@ -1405,7 +1405,7 @@ fn all_breeds_postconditions_valid_output() {
     for (name, breed) in breeds {
         if breed.preconditions(&input).is_ok() {
             if let Ok(output) = breed.run(&input) {
-                let post_result = breed.postconditions(&output);
+                let post_result = breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output);
                 assert!(
                     post_result.is_ok(),
                     "Postconditions failed for {}: {:?}",
