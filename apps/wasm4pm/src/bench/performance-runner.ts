@@ -799,20 +799,30 @@ export async function runBenchmark(options: RunBenchmarkOptions = {}): Promise<P
 // CLI argument parser
 // ─────────────────────────────────────────────────────────────────────────────
 
+const VALID_BENCH_FORMATS = new Set<string>(['human', 'json']);
+
 function parseArgs(argv: string[]): RunBenchmarkOptions {
   const opts: RunBenchmarkOptions = {};
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if ((arg === '--samples' || arg === '-s') && argv[i + 1]) {
-      opts.samples = parseInt(argv[++i], 10);
+      const n = parseInt(argv[++i], 10);
+      if (isNaN(n) || n < 1) throw new Error(`--samples requires a positive integer, got: ${argv[i]}`);
+      opts.samples = n;
     } else if (arg === '--warmup' && argv[i + 1]) {
-      opts.warmup = parseInt(argv[++i], 10);
+      const n = parseInt(argv[++i], 10);
+      if (isNaN(n) || n < 0) throw new Error(`--warmup requires a non-negative integer, got: ${argv[i]}`);
+      opts.warmup = n;
     } else if (arg === '--cases' && argv[i + 1]) {
-      opts.numCases = parseInt(argv[++i], 10);
+      const n = parseInt(argv[++i], 10);
+      if (isNaN(n) || n < 1) throw new Error(`--cases requires a positive integer, got: ${argv[i]}`);
+      opts.numCases = n;
     } else if ((arg === '--out' || arg === '-o') && argv[i + 1]) {
       opts.outputPath = argv[++i];
     } else if (arg === '--format' && argv[i + 1]) {
-      opts.format = argv[++i] as 'human' | 'json';
+      const fmt = argv[++i];
+      if (!VALID_BENCH_FORMATS.has(fmt)) throw new Error(`--format must be one of: ${[...VALID_BENCH_FORMATS].join(', ')}, got: ${fmt}`);
+      opts.format = fmt as 'human' | 'json';
     } else if (arg === '--no-save') {
       opts.save = false;
     } else if (arg === '--algorithms' && argv[i + 1]) {

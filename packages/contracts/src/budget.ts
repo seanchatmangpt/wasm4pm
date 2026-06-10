@@ -6,17 +6,23 @@
  * Immutable interface for budget-first dispatch policy.
  */
 
+import { z } from 'zod';
+
 /**
  * Latency class tier ordering (ascending):
  * sub_ms < low_ms < high_ms < seconds < minutes
  */
 export type LatencyClass = 'sub_ms' | 'low_ms' | 'high_ms' | 'seconds' | 'minutes';
 
+export const LatencyClassSchema = z.enum(['sub_ms', 'low_ms', 'high_ms', 'seconds', 'minutes']);
+
 /**
  * Quality tier ordering (ascending):
  * fast < balanced < quality < research
  */
 export type QualityTier = 'fast' | 'balanced' | 'quality' | 'research';
+
+export const QualityTierSchema = z.enum(['fast', 'balanced', 'quality', 'research']);
 
 /**
  * Execution mode determines dispatch pattern and async behavior.
@@ -27,6 +33,8 @@ export type QualityTier = 'fast' | 'balanced' | 'quality' | 'research';
  * - research: unbounded latency, async job queue, pm4py first
  */
 export type ExecutionMode = 'online' | 'near-online' | 'batch' | 'research';
+
+export const ExecutionModeSchema = z.enum(['online', 'near-online', 'batch', 'research']);
 
 /**
  * BudgetEnvelope defines all execution constraints for algorithm dispatch.
@@ -41,19 +49,19 @@ export type ExecutionMode = 'online' | 'near-online' | 'batch' | 'research';
  * - memoryBudget=0 means unlimited
  * - mode is deterministic (same config → same mode via profile mapping)
  */
-export interface BudgetEnvelope {
+export const BudgetEnvelopeSchema = z.object({
   /**
    * Maximum acceptable latency tier.
    * Used by rule 3 (budget latency gate) in backend selection algorithm.
    * Excludes any backend where latencyClass > latencyBudget.
    */
-  readonly latencyBudget: LatencyClass;
+  latencyBudget: LatencyClassSchema,
 
   /**
    * Maximum memory in bytes. 0 means no limit.
    * Used by degradation rule 1: if prior run exceeded this, demote to cheaper algorithm.
    */
-  readonly memoryBudget: number;
+  memoryBudget: z.number(),
 
   /**
    * Minimum quality tier expected from the result.
@@ -61,25 +69,25 @@ export interface BudgetEnvelope {
    * Excludes any backend where maxQualityTier < qualityFloor.
    * Also used by promotion rule 2: if conformance score < qualityFloor, promote job.
    */
-  readonly qualityFloor: QualityTier;
+  qualityFloor: QualityTierSchema,
 
   /**
    * Environment capabilities and constraints.
    * Used by rules 1 (environment gate) and 3 (browser-safe enforcement).
    */
-  readonly environment: {
+  environment: z.object({
     /**
      * True if running in a browser or edge context.
      * browserSafe=true forces WASM only (rule 3).
      */
-    readonly browserSafe: boolean;
+    browserSafe: z.boolean(),
 
     /**
      * True if Python is available for pm4py invocation.
      * Used by rule 1 (environment gate).
      */
-    readonly pythonAvailable: boolean;
-  };
+    pythonAvailable: z.boolean(),
+  }),
 
   /**
    * Execution mode determines dispatch pattern.
@@ -91,8 +99,10 @@ export interface BudgetEnvelope {
    *
    * Used by rules 1 and 2 in the engine selection algorithm (Section 4.2).
    */
-  readonly mode: ExecutionMode;
-}
+  mode: ExecutionModeSchema,
+});
+
+export type BudgetEnvelope = z.infer<typeof BudgetEnvelopeSchema>;
 
 /**
  * LatencyClass tier ordering function.

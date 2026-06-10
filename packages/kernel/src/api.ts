@@ -14,6 +14,34 @@ import { hashOutput, hashAlgorithmResult } from './hashing.js';
 import { KernelError, wrapKernelCall } from './errors.js';
 import { validateKernelResult } from './validation.js';
 import { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
+import {
+  DFGSchema,
+  ProcessTreeSchema,
+} from '@wasm4pm/contracts';
+import { z } from 'zod';
+
+/**
+ * Validate a parsed WASM output against a Zod schema.
+ * On failure, throws KernelError with exit code SOURCE_ERROR (2) and a
+ * descriptive message listing the failing fields.
+ */
+function validateWasmBoundary<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+  algorithmName: string
+): T {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join('.')}: ${i.message}`)
+      .join('; ');
+    throw new KernelError(
+      `WASM output validation failed for ${algorithmName}: ${issues}`,
+      'SOURCE_ERROR' as any
+    );
+  }
+  return result.data;
+}
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
 export { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
@@ -502,7 +530,30 @@ export class Kernel {
       );
     }
     const resultStr = this.wasm.query_provenance_traversal(ocelHandle, JSON.stringify(query));
-    return JSON.parse(resultStr);
+    const parsed = JSON.parse(resultStr);
+    const provenanceQuerySchema = z.object({
+      paths: z.array(
+        z.array(
+          z.object({
+            type: z.enum(['object', 'event']),
+            id: z.string(),
+            object_type: z.string().optional(),
+            event_type: z.string().optional(),
+          })
+        )
+      ),
+    });
+    const validation = provenanceQuerySchema.safeParse(parsed);
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join('; ');
+      throw new KernelError(
+        `WASM query_provenance_traversal output validation failed: ${issues}`,
+        'SOURCE_ERROR' as any
+      );
+    }
+    return validation.data;
   }
 
   /**
@@ -1049,12 +1100,24 @@ export class Kernel {
           const tracesRaw: unknown = this.wasm.get_traces
             ? this.wasm.get_traces(eventLogHandle, activityKey)
             : null;
-          const traces: string[][] =
+          const tracesSchema = z.array(z.array(z.string()));
+          const rawTracesValue =
             tracesRaw != null
               ? typeof tracesRaw === 'string'
-                ? (JSON.parse(tracesRaw) as string[][])
-                : (tracesRaw as string[][])
+                ? JSON.parse(tracesRaw)
+                : tracesRaw
               : [];
+          const tracesValidation = tracesSchema.safeParse(rawTracesValue);
+          if (!tracesValidation.success) {
+            const issues = tracesValidation.error.issues
+              .map((i) => `${i.path.join('.')}: ${i.message}`)
+              .join('; ');
+            throw new KernelError(
+              `WASM get_traces output validation failed: ${issues}`,
+              'SOURCE_ERROR' as any
+            );
+          }
+          const traces: string[][] = tracesValidation.data;
 
           const streamHandle: number = this.wasm.create_streaming_log();
           try {
@@ -1139,6 +1202,9 @@ export class Kernel {
         );
         const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
         const tree = parseWasmOutput<Record<string, unknown>>(json);
+        if (tree !== null && typeof tree === 'object' && !(tree instanceof Promise)) {
+          validateWasmBoundary(ProcessTreeSchema, tree, 'inductive_miner');
+        }
         return {
           ...(tree && typeof tree === 'object' ? tree : {}),
           handle: virtualHandle,
@@ -1464,9 +1530,33 @@ export class Kernel {
         }
         const queryJson = (params.query_json as string) ?? JSON.stringify(params.query ?? {});
         const res = this.wasm.query_provenance_traversal(eventLogHandle, queryJson);
+        const provenanceRaw = JSON.parse(res);
+        // Validate provenance traversal result — must have a paths array.
+        const provenanceSchema = z.object({
+          paths: z.array(
+            z.array(
+              z.object({
+                type: z.enum(['object', 'event']),
+                id: z.string(),
+                object_type: z.string().optional(),
+                event_type: z.string().optional(),
+              })
+            )
+          ),
+        });
+        const provenanceValidation = provenanceSchema.safeParse(provenanceRaw);
+        if (!provenanceValidation.success) {
+          const issues = provenanceValidation.error.issues
+            .map((i) => `${i.path.join('.')}: ${i.message}`)
+            .join('; ');
+          throw new KernelError(
+            `WASM provenance_traversal output validation failed: ${issues}`,
+            'SOURCE_ERROR' as any
+          );
+        }
         return {
           handle: `provenance_${Date.now()}`,
-          metadata: { result: JSON.parse(res) }
+          metadata: { result: provenanceValidation.data }
         } as any;
       }
 
@@ -1768,6 +1858,17 @@ function storeDfgDiscoveryResult(wasm: KernelWasmModule, dfgJson: unknown): Reco
 
   if (parsed && typeof parsed === 'object') {
     if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+      // Validate DFG structure at the WASM output boundary.
+      const dfgValidation = DFGSchema.safeParse(parsed);
+      if (!dfgValidation.success) {
+        const issues = dfgValidation.error.issues
+          .map((i) => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
+        throw new KernelError(
+          `WASM DFG output validation failed: ${issues}`,
+          'SOURCE_ERROR' as any
+        );
+      }
       return { ...parsed, handle };
     }
     const nodes =

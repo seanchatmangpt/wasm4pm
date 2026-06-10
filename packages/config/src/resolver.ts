@@ -2,7 +2,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
 import * as toml from 'toml';
-import { validate, SCHEMA_VERSION } from './schema.js';
+import { validate, validatePartial, SCHEMA_VERSION } from './schema.js';
 import { trackProvenance, mergeProvenance, type ProvenanceMap } from './provenance.js';
 import { hashConfig } from './hash.js';
 import {
@@ -45,7 +45,10 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
     if (existsSync(tomlPath)) {
       try {
         const content = await fs.readFile(tomlPath, 'utf-8');
-        fileLayer = toml.parse(content);
+        const raw = toml.parse(content);
+        // Validate file layer at the boundary before it enters deepMerge.
+        // Unknown keys and type mismatches are caught here, not silently merged.
+        fileLayer = validatePartial(raw) as Record<string, unknown>;
         filePath = tomlPath;
         fileProvenance = trackProvenance(fileLayer, 'toml', tomlPath);
         break;
@@ -59,7 +62,10 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
     if (existsSync(jsonPath)) {
       try {
         const content = await fs.readFile(jsonPath, 'utf-8');
-        fileLayer = JSON.parse(content);
+        const raw: unknown = JSON.parse(content);
+        // Validate file layer at the boundary before it enters deepMerge.
+        // Unknown keys and type mismatches are caught here, not silently merged.
+        fileLayer = validatePartial(raw) as Record<string, unknown>;
         filePath = jsonPath;
         fileProvenance = trackProvenance(fileLayer, 'json', jsonPath);
         break;

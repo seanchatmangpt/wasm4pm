@@ -20,6 +20,7 @@
  * ```
  */
 
+import { z } from 'zod';
 import { type ErrorCode, type TypedError, TYPED_ERROR_CODES } from './errors.js';
 
 // ---------------------------------------------------------------------------
@@ -34,12 +35,13 @@ import { type ErrorCode, type TypedError, TYPED_ERROR_CODES } from './errors.js'
  *   - `"onto"` — opt-in server namespace, opaque codes
  *   - `"extension/<vendor>"` — open vendor-defined codes
  */
-export type McppAndonReason = {
-  namespace: string;
-  code: string;
-  detail?: string;
-  evidence_ref?: string;
-};
+export const McppAndonReasonSchema = z.object({
+  namespace: z.string(),
+  code: z.string(),
+  detail: z.string().optional(),
+  evidence_ref: z.string().optional(),
+});
+export type McppAndonReason = z.infer<typeof McppAndonReasonSchema>;
 
 // ---------------------------------------------------------------------------
 // All 19 closed mcpp: codes (from AndonReasonCode::ALL in andon.rs)

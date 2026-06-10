@@ -3,17 +3,20 @@
  * Verifies cryptographic integrity of receipts
  */
 
+import { z } from 'zod';
 import { Receipt, isReceipt } from './receipt.js';
 import { verifyHash } from './hash.js';
+
+export const ValidationResultSchema = z.object({
+  valid: z.boolean(),
+  errors: z.array(z.string()),
+  warnings: z.array(z.string()),
+});
 
 /**
  * Validation result with detailed error information
  */
-export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-}
+export type ValidationResult = z.infer<typeof ValidationResultSchema>;
 
 /**
  * Validate receipt structure and all required fields

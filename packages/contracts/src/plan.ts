@@ -7,74 +7,84 @@
  * Deterministic serialization ensures identical plans produce identical hashes.
  */
 
+import { z } from 'zod';
+
 /**
  * Node types in the execution DAG
  */
 export type PlanNodeKind = 'source' | 'algorithm' | 'sink';
 
+export const PlanNodeKindSchema = z.enum(['source', 'algorithm', 'sink']);
+
 /**
  * A single node in the execution plan DAG
  */
-export interface PlanNode {
+export const PlanNodeSchema = z.object({
   /** Unique node identifier within this plan */
-  id: string;
+  id: z.string(),
 
   /** Node type */
-  kind: PlanNodeKind;
+  kind: PlanNodeKindSchema,
 
   /** Human-readable label */
-  label: string;
+  label: z.string(),
 
   /** Configuration specific to this node */
-  config: Record<string, unknown>;
+  config: z.record(z.string(), z.unknown()),
 
   /** Semantic version of the node's implementation */
-  version: string;
-}
+  version: z.string(),
+});
+
+export type PlanNode = z.infer<typeof PlanNodeSchema>;
 
 /**
  * A directed edge in the execution plan DAG
  */
-export interface PlanEdge {
+export const PlanEdgeSchema = z.object({
   /** Source node ID */
-  from: string;
+  from: z.string(),
 
   /** Target node ID */
-  to: string;
+  to: z.string(),
 
   /** Optional label describing the data flowing on this edge */
-  label?: string;
-}
+  label: z.string().optional(),
+});
+
+export type PlanEdge = z.infer<typeof PlanEdgeSchema>;
 
 /**
  * Execution plan — a DAG of processing steps
  */
-export interface Plan {
+export const PlanSchema = z.object({
   /** Schema version for forward compatibility */
-  schema_version: '1.0';
+  schema_version: z.literal('1.0'),
 
   /** Unique plan identifier */
-  plan_id: string;
+  plan_id: z.string(),
 
   /** ISO 8601 timestamp of plan creation */
-  created_at: string;
+  created_at: z.string(),
 
   /** Nodes in the DAG, sorted by id for determinism */
-  nodes: PlanNode[];
+  nodes: z.array(PlanNodeSchema),
 
   /** Edges in the DAG, sorted by (from, to) for determinism */
-  edges: PlanEdge[];
+  edges: z.array(PlanEdgeSchema),
 
   /** Plan metadata */
-  metadata: {
+  metadata: z.object({
     /** Name of the planner that generated this plan */
-    planner: string;
+    planner: z.string(),
     /** Planner version */
-    planner_version: string;
+    planner_version: z.string(),
     /** Estimated execution time in ms (if available) */
-    estimated_duration_ms?: number;
-  };
-}
+    estimated_duration_ms: z.number().optional(),
+  }),
+});
+
+export type Plan = z.infer<typeof PlanSchema>;
 
 /**
  * Sort nodes by id for deterministic serialization
@@ -105,7 +115,7 @@ export function normalizePlan(plan: Plan): Plan {
       config: sortObjectKeys(node.config),
     })),
     edges: sortEdges(plan.edges),
-    metadata: sortObjectKeys(plan.metadata) as Plan['metadata'],
+    metadata: sortObjectKeys(plan.metadata as Record<string, unknown>) as Plan['metadata'],
   };
 }
 

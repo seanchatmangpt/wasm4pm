@@ -1,3 +1,46 @@
+import { z } from 'zod';
+
+// ── Zod schemas (source of truth for runtime validation) ──────────────────────
+
+export const ModelCapabilitiesSchema = z.object({
+  online_safe: z.boolean(),
+  offline_only: z.boolean(),
+  replay_ready: z.boolean(),
+  alignment_ready: z.boolean(),
+  streaming_compatible: z.boolean(),
+  exportable_to_pnml: z.boolean(),
+  exportable_to_bpmn: z.boolean(),
+});
+
+export const QualityMetricsSchema = z.object({
+  fitness: z.number().min(0).max(1).optional(),
+  precision: z.number().min(0).max(1).optional(),
+  generalization: z.number().min(0).max(1).optional(),
+  simplicity: z.number().min(0).max(1).optional(),
+});
+
+export const ModelNodeSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  type: z.string(),
+});
+
+export const ModelEdgeSchema = z.object({
+  from: z.string(),
+  to: z.string(),
+  weight: z.number().optional(),
+});
+
+export const ModelIRSchema = z.object({
+  format_version: z.literal('1.0'),
+  model_type: z.enum(['dfg', 'petri_net', 'process_tree', 'declare', 'powl']),
+  algorithm_id: z.string(),
+  capabilities: ModelCapabilitiesSchema,
+  nodes: z.array(ModelNodeSchema),
+  edges: z.array(ModelEdgeSchema),
+  quality: QualityMetricsSchema.optional(),
+});
+
 /**
  * ModelIR - Canonical Intermediate Representation of Process Models
  *
@@ -48,15 +91,7 @@
  * - `exportable_to_pnml`: Can be serialized to PNML (Petri Net Markup Language).
  * - `exportable_to_bpmn`: Can be serialized to BPMN (Business Process Model Notation).
  */
-export interface ModelCapabilities {
-  online_safe: boolean;
-  offline_only: boolean;
-  replay_ready: boolean;
-  alignment_ready: boolean;
-  streaming_compatible: boolean;
-  exportable_to_pnml: boolean;
-  exportable_to_bpmn: boolean;
-}
+export type ModelCapabilities = z.infer<typeof ModelCapabilitiesSchema>;
 
 /**
  * Quality metrics of a discovered or conformance-checked model.
@@ -73,32 +108,19 @@ export interface ModelCapabilities {
  * - `simplicity`: Inverse of element count (places + transitions).
  *   Fewer elements = higher simplicity.
  */
-export interface QualityMetrics {
-  fitness?: number; // [0, 1]
-  precision?: number; // [0, 1]
-  generalization?: number; // [0, 1]
-  simplicity?: number; // [0, 1]
-}
+export type QualityMetrics = z.infer<typeof QualityMetricsSchema>;
 
 /**
  * Node in the process model graph (place, transition, activity, etc.).
  */
-export interface ModelNode {
-  id: string;
-  label: string;
-  type: string; // "place", "transition", "activity", "gateway", etc.
-}
+export type ModelNode = z.infer<typeof ModelNodeSchema>;
 
 /**
  * Edge in the process model graph (flow, arc, directly-follows, etc.).
  *
  * - `weight` is optional and represents frequency or strength.
  */
-export interface ModelEdge {
-  from: string;
-  to: string;
-  weight?: number;
-}
+export type ModelEdge = z.infer<typeof ModelEdgeSchema>;
 
 /**
  * Canonical Intermediate Representation of a process model.
@@ -125,15 +147,7 @@ export interface ModelEdge {
  * 3. `model_type` must match the algorithm that produced it.
  * 4. Nodes and edges form a DAG or cyclic graph; no isolated nodes.
  */
-export interface ModelIR {
-  readonly format_version: '1.0';
-  readonly model_type: 'dfg' | 'petri_net' | 'process_tree' | 'declare' | 'powl';
-  readonly algorithm_id: string;
-  readonly capabilities: ModelCapabilities;
-  readonly nodes: ReadonlyArray<ModelNode>;
-  readonly edges: ReadonlyArray<ModelEdge>;
-  readonly quality?: QualityMetrics;
-}
+export type ModelIR = z.infer<typeof ModelIRSchema>;
 
 /**
  * Guard function to check if a value is a valid ModelIR.

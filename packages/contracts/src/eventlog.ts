@@ -34,18 +34,29 @@
  * ```
  */
 
+import { z } from 'zod';
+
+// ── Zod schemas (source of truth for runtime validation) ──────────────────────
+
+export const LogEventSchema = z.object({
+  activity: z.string(),
+  timestamp: z.string(),
+  resource: z.string().optional(),
+  attributes: z.record(z.string(), z.unknown()),
+});
+
 /**
  * Single event within a trace.
  *
  * - `timestamp` is ISO-8601 and required; no `null` or placeholder values allowed.
  * - `attributes` captures domain-specific data; use empty object if none.
  */
-export interface LogEvent {
-  activity: string;
-  timestamp: string; // ISO-8601, required
-  resource?: string;
-  attributes: Readonly<Record<string, unknown>>;
-}
+export type LogEvent = z.infer<typeof LogEventSchema>;
+
+export const LogTraceSchema = z.object({
+  case_id: z.string(),
+  events: z.array(LogEventSchema),
+});
 
 /**
  * Single trace (process instance) containing an ordered sequence of events.
@@ -53,10 +64,16 @@ export interface LogEvent {
  * - `case_id` is unique per trace within the log.
  * - `events` is ordered by timestamp (control plane validates this).
  */
-export interface LogTrace {
-  case_id: string;
-  events: ReadonlyArray<LogEvent>;
-}
+export type LogTrace = z.infer<typeof LogTraceSchema>;
+
+export const LogMetadataSchema = z.object({
+  trace_count: z.number(),
+  event_count: z.number(),
+  activity_count: z.number(),
+  start_time: z.string(),
+  end_time: z.string(),
+  source_hash: z.string(),
+});
 
 /**
  * Metadata about the event log.
@@ -65,14 +82,14 @@ export interface LogTrace {
  * - `start_time` and `end_time` are ISO-8601 and derived from event timestamps.
  * - `source_hash` is BLAKE3(raw_input_bytes) in hex-64 format (128 characters).
  */
-export interface LogMetadata {
-  trace_count: number;
-  event_count: number;
-  activity_count: number;
-  start_time: string; // ISO-8601
-  end_time: string; // ISO-8601
-  source_hash: string; // BLAKE3 hex-64
-}
+export type LogMetadata = z.infer<typeof LogMetadataSchema>;
+
+export const EventLogIRSchema = z.object({
+  format_version: z.literal('1.0'),
+  source_format: z.enum(['xes', 'ocel', 'json', 'csv']),
+  traces: z.array(LogTraceSchema),
+  metadata: LogMetadataSchema,
+});
 
 /**
  * Canonical Intermediate Representation of an event log.
@@ -92,12 +109,7 @@ export interface LogMetadata {
  * 3. `source_hash` is required and non-empty (gap closure: TS-1).
  * 4. `source_format` matches the original input type for provenance.
  */
-export interface EventLogIR {
-  readonly format_version: '1.0';
-  readonly source_format: 'xes' | 'ocel' | 'json' | 'csv';
-  readonly traces: ReadonlyArray<LogTrace>;
-  readonly metadata: LogMetadata;
-}
+export type EventLogIR = z.infer<typeof EventLogIRSchema>;
 
 /**
  * Guard function to check if a value is a valid EventLogIR.

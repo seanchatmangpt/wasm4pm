@@ -5,6 +5,7 @@
  * event log data to wasm4pm from various sources (files, HTTP, streams, etc.)
  */
 
+import { z } from 'zod';
 import { Result } from './result.js';
 
 /**
@@ -22,36 +23,66 @@ export type RetryBackoffStrategy = 'exponential' | 'linear' | 'fixed';
  */
 export type AuthType = 'none' | 'basic' | 'bearer' | 'oauth2';
 
+// ============================================================================
+// Zod Schemas
+// ============================================================================
+
+export const AuthConfigSchema = z.object({
+  type: z.enum(['none', 'basic', 'bearer', 'oauth2']),
+});
+
+export const CapabilitiesSchema = z.object({
+  streaming: z.boolean(),
+  checkpoint: z.boolean(),
+  filtering: z.boolean(),
+});
+
+export const RetryStrategySchema = z.object({
+  maxAttempts: z.number().int().nonnegative(),
+  backoff: z.enum(['exponential', 'linear', 'fixed']),
+  initialDelayMs: z.number().nonnegative(),
+});
+
+export const EventStreamSchema = z.object({});
+
+export const SourceAdapterSchema = z.object({
+  kind: z.enum(['file', 'http', 'stream', 'mcp', 'database', 'custom']),
+  version: z.string(),
+  auth: AuthConfigSchema.optional(),
+  retry: RetryStrategySchema.optional(),
+});
+
+// ============================================================================
+// Types derived from schemas (data fields only)
+// Note: method signatures are declared separately via interface augmentation below
+// ============================================================================
+
+export type AuthConfigData = z.infer<typeof AuthConfigSchema>;
+export type CapabilitiesData = z.infer<typeof CapabilitiesSchema>;
+export type RetryStrategyData = z.infer<typeof RetryStrategySchema>;
+export type SourceAdapterData = z.infer<typeof SourceAdapterSchema>;
+
 /**
  * Authentication configuration for source adapters
  */
-export interface AuthConfig {
-  type: AuthType;
+export type AuthConfig = AuthConfigData & {
   validate(): Promise<Result<void>>;
-}
+};
 
 /**
  * Capability declaration for a source adapter
  */
-export interface Capabilities {
-  streaming: boolean; // Can stream events incrementally
-  checkpoint: boolean; // Can save/restore position in stream
-  filtering: boolean; // Supports pre-filtering events
-}
+export type Capabilities = z.infer<typeof CapabilitiesSchema>;
 
 /**
  * Retry strategy configuration
  */
-export interface RetryStrategy {
-  maxAttempts: number;
-  backoff: RetryBackoffStrategy;
-  initialDelayMs: number;
-}
+export type RetryStrategy = z.infer<typeof RetryStrategySchema>;
 
 /**
  * Event stream interface returned by connector.open()
  */
-export interface EventStream {
+export type EventStream = {
   // Read next batch of events
   next(): Promise<Result<{ events: unknown[]; hasMore: boolean }>>;
 
@@ -63,7 +94,7 @@ export interface EventStream {
 
   // Close stream and cleanup resources
   close(): Promise<void>;
-}
+};
 
 /**
  * Source Adapter Contract
@@ -71,33 +102,7 @@ export interface EventStream {
  * All source adapters MUST implement this interface to be registered
  * with the source registry.
  */
-export interface SourceAdapter {
-  // ============================================================================
-  // Identity
-  // ============================================================================
-
-  /**
-   * Unique kind identifier for this adapter
-   * Examples: "file", "http", "stream", "mcp", "database"
-   */
-  readonly kind: SourceAdapterKind;
-
-  /**
-   * Semantic version of this adapter
-   * Used to track compatibility and migrations
-   */
-  readonly version: string;
-
-  // ============================================================================
-  // Authentication (optional)
-  // ============================================================================
-
-  /**
-   * Optional authentication configuration
-   * If not provided, assumes "none" (unauthenticated access)
-   */
-  readonly auth?: AuthConfig;
-
+export type SourceAdapter = SourceAdapterData & {
   // ============================================================================
   // Capability Declaration
   // ============================================================================
@@ -128,16 +133,6 @@ export interface SourceAdapter {
    * @returns Promise<string> 64-character BLAKE3 hash in hex format
    */
   fingerprint(source: unknown): Promise<string>;
-
-  // ============================================================================
-  // Retry Strategy
-  // ============================================================================
-
-  /**
-   * Optional retry strategy for connection failures
-   * If not provided, assumes no retries (single attempt)
-   */
-  readonly retry?: RetryStrategy;
 
   // ============================================================================
   // Lifecycle & Validation
@@ -182,7 +177,7 @@ export interface SourceAdapter {
    * @returns Promise that resolves when cleanup is complete
    */
   close(): Promise<void>;
-}
+};
 
 /**
  * Source Registry

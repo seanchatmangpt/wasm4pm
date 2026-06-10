@@ -4,34 +4,46 @@
  * Mirrors the Rust structs in wasm4pm/src/admission.rs.
  */
 
-export interface PolicyGrant {
-  actor_pattern: string;
-  event_types: string[];
-}
+import { z } from 'zod';
 
-export interface AdmissionPolicy {
-  version: string;
-  policy_hash: string;
-  grants: PolicyGrant[];
-}
+export const PolicyGrantSchema = z.object({
+  actor_pattern: z.string(),
+  event_types: z.array(z.string()),
+});
 
-export interface BoundaryMap {
-  transitions: Record<string, string[]>;
-}
+export type PolicyGrant = z.infer<typeof PolicyGrantSchema>;
 
-export interface AdmissionConfig {
-  ledger_path: string;
-  policy_path: string;
-  boundary_map_path: string;
-  revocation_path: string;
-}
+export const AdmissionPolicySchema = z.object({
+  version: z.string(),
+  policy_hash: z.string(),
+  grants: z.array(PolicyGrantSchema),
+});
 
-export interface AdmissionResult {
-  admitted: boolean;
-  failing_conjunct?: string;
-  refusal_code?: string;
-  receipt_hash?: string;
-}
+export type AdmissionPolicy = z.infer<typeof AdmissionPolicySchema>;
+
+export const BoundaryMapSchema = z.object({
+  transitions: z.record(z.string(), z.array(z.string())),
+});
+
+export type BoundaryMap = z.infer<typeof BoundaryMapSchema>;
+
+export const AdmissionConfigSchema = z.object({
+  ledger_path: z.string(),
+  policy_path: z.string(),
+  boundary_map_path: z.string(),
+  revocation_path: z.string(),
+});
+
+export type AdmissionConfig = z.infer<typeof AdmissionConfigSchema>;
+
+export const AdmissionResultSchema = z.object({
+  admitted: z.boolean(),
+  failing_conjunct: z.string().optional(),
+  refusal_code: z.string().optional(),
+  receipt_hash: z.string().optional(),
+});
+
+export type AdmissionResult = z.infer<typeof AdmissionResultSchema>;
 
 // Default file paths for admission framework
 export const DEFAULT_NONCE_LEDGER_PATH = '.wasm4pm/nonce-ledger.jsonl';

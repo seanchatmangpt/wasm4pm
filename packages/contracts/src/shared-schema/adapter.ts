@@ -7,6 +7,7 @@
  *   Risk 3: Hash scheme prefix (bare hex vs blake3: prefix in transport refs)
  */
 
+import { z } from 'zod';
 import SCHEMA_JSON from './v1.json' with { type: 'json' };
 import type { Receipt } from '../receipt.js';
 
@@ -20,60 +21,38 @@ export const SHARED_RECEIPT_SCHEMA_V1: object = SCHEMA_JSON;
 
 // ── Shared type ──────────────────────────────────────────────────────────────
 
+export const SharedReceiptV1Schema = z.object({
+  run_id: z.string(),
+  schema_version: z.literal('shared/v1'),
+  start_time: z.string(),
+  end_time: z.string(),
+  duration_ms: z.number().nonnegative(),
+  status: z.enum(['success', 'partial', 'failed', 'accepted', 'refused']),
+  hash_format: z.literal('blake3-hex-64'),
+  hashes: z.object({
+    config: z.string(),
+    input: z.string(),
+    plan: z.string(),
+    output: z.string(),
+    proof_pack: z.string(),
+  }),
+  chain_predecessor: z.string().optional(),
+  otel_run_id_attribute: z.enum(['run.id', 'mcpp.run_id']),
+  conformance: z.object({
+    fitness: z.number().optional(),
+    precision: z.number().optional(),
+    lifecycle: z.number().optional(),
+    cardinality: z.number().optional(),
+    receipt: z.number().optional(),
+  }).optional(),
+  source: z.enum(['wasm4pm', 'mcpp']).optional(),
+});
+
 /**
  * Canonical shared receipt — a normalised view of either a wasm4pm Receipt
  * or an mcpp AcceptedResponse.  Matches the JSON Schema in v1.json exactly.
  */
-export interface SharedReceiptV1 {
-  /** Canonical run identifier (UUID v4). */
-  run_id: string;
-  /** Fixed schema-version sentinel. */
-  schema_version: 'shared/v1';
-  /** ISO-8601 execution start. */
-  start_time: string;
-  /** ISO-8601 execution end (derived for mcpp if absent). */
-  end_time: string;
-  /** Wall-clock duration in milliseconds. */
-  duration_ms: number;
-  /**
-   * Execution outcome.
-   * wasm4pm: 'success' | 'partial' | 'failed'
-   * mcpp:    'accepted' | 'refused'
-   */
-  status: 'success' | 'partial' | 'failed' | 'accepted' | 'refused';
-  /** Sentinel declaring all hashes in this document are bare 64-char hex. */
-  hash_format: 'blake3-hex-64';
-  /** BLAKE3 artifact hashes — bare 64-char lowercase hex, no 'blake3:' prefix. */
-  hashes: {
-    config: string;
-    input: string;
-    plan: string;
-    output: string;
-    proof_pack: string;
-  };
-  /**
-   * Chain linkage.
-   * Literal 'genesis' for the first receipt; bare 64-char hex otherwise.
-   * (Risk 3: 'blake3:' prefix stripped on ingestion from mcpp transport refs.)
-   */
-  chain_predecessor?: string;
-  /**
-   * Risk 1: records which OTel attribute name the origin system used.
-   * 'run.id'      — wasm4pm
-   * 'mcpp.run_id' — mcpp
-   */
-  otel_run_id_attribute: 'run.id' | 'mcpp.run_id';
-  /** Conformance dimension scores (0.0–1.0). Present only when mcpp supplies them. */
-  conformance?: {
-    fitness?: number;
-    precision?: number;
-    lifecycle?: number;
-    cardinality?: number;
-    receipt?: number;
-  };
-  /** Which system produced this shared receipt. */
-  source?: 'wasm4pm' | 'mcpp';
-}
+export type SharedReceiptV1 = z.infer<typeof SharedReceiptV1Schema>;
 
 // ── Internal helpers ─────────────────────────────────────────────────────────
 

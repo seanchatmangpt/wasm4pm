@@ -6,98 +6,96 @@
  * Deterministic: sorted keys ensure same input → same hash.
  */
 
+import { z } from 'zod';
+
+// ── Zod schemas (source of truth for runtime validation) ──────────────────────
+
+export const ErrorInfoSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  stack: z.string().optional(),
+  context: z.record(z.string(), z.unknown()).optional(),
+});
+
 /**
  * Error information included in receipts for failed executions
  */
-export interface ErrorInfo {
-  code: string;
-  message: string;
-  stack?: string;
-  context?: Record<string, unknown>;
-}
+export type ErrorInfo = z.infer<typeof ErrorInfoSchema>;
+
+export const ExecutionSummarySchema = z.object({
+  traces_processed: z.number().int().nonnegative(),
+  objects_processed: z.number().int().nonnegative(),
+  variants_discovered: z.number().int().nonnegative(),
+});
 
 /**
  * Summary of processing results
  */
-export interface ExecutionSummary {
-  traces_processed: number;
-  objects_processed: number;
-  variants_discovered: number;
-}
+export type ExecutionSummary = z.infer<typeof ExecutionSummarySchema>;
+
+export const AlgorithmInfoSchema = z.object({
+  name: z.string(),
+  version: z.string(),
+  parameters: z.record(z.string(), z.unknown()),
+});
 
 /**
  * Algorithm details captured at execution time
  */
-export interface AlgorithmInfo {
-  name: string;
-  version: string;
-  parameters: Record<string, unknown>;
-}
+export type AlgorithmInfo = z.infer<typeof AlgorithmInfoSchema>;
+
+export const ModelInfoSchema = z.object({
+  nodes: z.number().int().nonnegative(),
+  edges: z.number().int().nonnegative(),
+  artifacts: z.record(z.string(), z.string()).optional(),
+});
 
 /**
  * Generated model information
  */
-export interface ModelInfo {
-  nodes: number;
-  edges: number;
-  artifacts?: Record<string, string>; // kind -> file path
-}
+export type ModelInfo = z.infer<typeof ModelInfoSchema>;
+
+export const ExecutionProfileSchema = z.object({
+  peak_memory_bytes: z.number().int().nonnegative(),
+  phase_timings: z.array(z.object({
+    phase: z.string(),
+    duration_ms: z.number().nonnegative(),
+  })),
+  cpu_time_ms: z.number().nonnegative().optional(),
+});
 
 /**
  * Execution profile — performance and resource usage breakdown
  */
-export interface ExecutionProfile {
-  /** Peak memory usage in bytes */
-  peak_memory_bytes: number;
+export type ExecutionProfile = z.infer<typeof ExecutionProfileSchema>;
 
-  /** Per-phase timing breakdown */
-  phase_timings: {
-    phase: string;
-    duration_ms: number;
-  }[];
-
-  /** Total CPU time in ms (if measurable) */
-  cpu_time_ms?: number;
-}
+export const ReceiptSchema = z.object({
+  run_id: z.string(),
+  trace_id: z.string(),
+  schema_version: z.string(),
+  config_hash: z.string(),
+  input_hash: z.string(),
+  plan_hash: z.string(),
+  output_hash: z.string(),
+  start_time: z.string(),
+  end_time: z.string(),
+  duration_ms: z.number().nonnegative(),
+  status: z.enum(['success', 'partial', 'failed']),
+  error: ErrorInfoSchema.optional(),
+  summary: ExecutionSummarySchema,
+  algorithm: AlgorithmInfoSchema,
+  model: ModelInfoSchema,
+  profile: ExecutionProfileSchema.optional(),
+  signature: z.string().optional(),
+  signer_pubkey: z.string().optional(),
+  sig_algorithm: z.string().optional(),
+});
 
 /**
  * Runtime receipt - BLAKE3-hashed proof of execution (unsigned)
  * Schema version 1.1
  */
-export interface Receipt {
-  // Identifiers
-  run_id: string; // UUID v4
-  trace_id: string; // W3C trace ID (32 hex chars)
-  schema_version: string; // "1.1"
-
-  // Cryptographic hashes (BLAKE3, hex-encoded)
-  config_hash: string;
-  input_hash: string;
-  plan_hash: string;
-  output_hash: string;
-
-  // Execution timeline (ISO 8601)
-  start_time: string;
-  end_time: string;
-  duration_ms: number;
-
-  // Execution outcome
-  status: 'success' | 'partial' | 'failed';
-  error?: ErrorInfo;
-
-  // Execution details
-  summary: ExecutionSummary;
-  algorithm: AlgorithmInfo;
-  model: ModelInfo;
-
-  // Performance profile
-  profile?: ExecutionProfile;
-
-  // Ed25519 signature fields (C1 admissibility)
-  signature?: string;
-  signer_pubkey?: string;
-  sig_algorithm?: string;
-}
+export type Receipt = z.infer<typeof ReceiptSchema>;
 
 /**
  * Format a Receipt as a human-readable one-liner for practitioner QoL.
@@ -158,32 +156,32 @@ export function isReceipt(value: unknown): value is Receipt {
   );
 }
 
+const ReceiptStatusSchema = z.enum(['success', 'partial', 'failed']);
+
+const StringPairSchema = z.object({ a: z.string(), b: z.string() });
+const NumberPairSchema = z.object({ a: z.number(), b: z.number() });
+const FieldStringPairSchema = z.object({ field: z.string(), a: z.string(), b: z.string() });
+const FieldNumberPairSchema = z.object({ field: z.string(), a: z.number(), b: z.number() });
+
+export const ReceiptDiffSchema = z.object({
+  same: z.boolean(),
+  run_id: StringPairSchema.optional(),
+  trace_id: StringPairSchema.optional(),
+  status: z.object({ a: ReceiptStatusSchema, b: ReceiptStatusSchema }).optional(),
+  algorithm: StringPairSchema.optional(),
+  duration_ms: NumberPairSchema.optional(),
+  hashes: z.array(FieldStringPairSchema).optional(),
+  summary: z.array(FieldNumberPairSchema).optional(),
+  model: z.array(FieldNumberPairSchema).optional(),
+});
+
 /**
  * Diff between two receipts — describes fields that diverge.
  *
  * All fields except `same` are optional; they are only present when the
  * corresponding property differs between `a` and `b`.
  */
-export interface ReceiptDiff {
-  /** true if the receipts are semantically identical (no differing fields) */
-  same: boolean;
-  /** run_id differs (always true when comparing two distinct runs) */
-  run_id?: { a: string; b: string };
-  /** trace_id differs */
-  trace_id?: { a: string; b: string };
-  /** execution status differs */
-  status?: { a: Receipt['status']; b: Receipt['status'] };
-  /** algorithm name or version differs */
-  algorithm?: { a: string; b: string };
-  /** duration_ms differs by more than 1ms */
-  duration_ms?: { a: number; b: number };
-  /** Any hash field (input, config, plan, output) that differs */
-  hashes?: { field: string; a: string; b: string }[];
-  /** Summary fields that differ */
-  summary?: { field: string; a: number; b: number }[];
-  /** Model field (nodes or edges) that differs */
-  model?: { field: string; a: number; b: number }[];
-}
+export type ReceiptDiff = z.infer<typeof ReceiptDiffSchema>;
 
 /**
  * Validate that an unknown value satisfies the full Receipt schema contract.

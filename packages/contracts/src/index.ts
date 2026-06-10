@@ -22,11 +22,11 @@ export type { TypedError } from './errors.js';
 
 // Section 2.1: EventLogIR - Canonical event log representation
 export type { EventLogIR, LogEvent, LogTrace, LogMetadata } from './eventlog.js';
-export { isEventLogIR } from './eventlog.js';
+export { EventLogIRSchema, LogEventSchema, LogTraceSchema, LogMetadataSchema, isEventLogIR } from './eventlog.js';
 
 // Section 2.2: ModelIR - Canonical process model representation
 export type { ModelIR, ModelCapabilities, QualityMetrics, ModelNode, ModelEdge } from './model.js';
-export { isModelIR } from './model.js';
+export { ModelIRSchema, ModelCapabilitiesSchema, QualityMetricsSchema, ModelNodeSchema, ModelEdgeSchema, isModelIR } from './model.js';
 
 // Section 2.3 & 2.4: Result envelope and provenance (Canonical IR)
 export type { ResultEnvelope, ProvenanceChain, LatencyClass } from './result.js';
@@ -52,6 +52,12 @@ export type {
   ReceiptDiff,
 } from './receipt.js';
 export {
+  ReceiptSchema,
+  ErrorInfoSchema,
+  ExecutionSummarySchema,
+  AlgorithmInfoSchema,
+  ModelInfoSchema,
+  ExecutionProfileSchema,
   isReceipt,
   RECEIPT_JSON_SCHEMA,
   validateReceiptSchema,
@@ -122,7 +128,7 @@ export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRE
 export type { QualityThresholdProfile } from './quality-thresholds.js';
 
 // Algorithm registry utilities
-export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+export { levenshteinDistance, findClosestMatch, WASM_FUNCTION_NAMES } from './algorithm-registry.js';
 export { resolveAlgorithmId } from './templates/algorithm-registry.js';
 
 // Truex OCEL 2.0 canonical serialization (JCS-OCEL)
@@ -143,6 +149,12 @@ export {
   evaluateConformance,
   isRefused,
   toSharedConformance,
+  ConformanceDimensionSchema,
+  ConformanceThresholdsSchema,
+  FitnessResultSchema,
+  DimensionResultSchema,
+  ConformanceEvaluationSchema,
+  ConformanceExtrasSchema,
   type ConformanceDimension,
   type ConformanceThresholds,
   type FitnessResult,
@@ -152,6 +164,7 @@ export {
 } from './conformance-bridge.js';
 
 export {
+  OcelEventSchema,
   receiptToOcelEvents,
   toOcelJsonl,
   fromMcppJsonl,

@@ -5,27 +5,49 @@
  */
 
 import { randomBytes } from 'node:crypto';
+import { z } from 'zod';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
 import { KernelError, classifyRustError } from './errors.js';
 
-/**
- * Drift window entry returned by WASM detect_drift.
- */
-interface WasmDriftWindow {
-  window_start?: number;
-  window_end?: number;
-  distance?: number;
-  detected?: boolean;
-}
+// ─── WASM boundary Zod schemas ────────────────────────────────────────────────
+
+/** Feature records: WASM extract_case_features returns an array of feature record objects. */
+const FeatureVectorSchema = z.array(z.record(z.unknown()));
+
+const DriftWindowSchema = z.object({
+  window_start: z.number().optional(),
+  window_end: z.number().optional(),
+  distance: z.number().optional(),
+  detected: z.boolean().optional(),
+});
+
+const DriftResultSchema = z.object({
+  drifts: z.array(DriftWindowSchema).optional(),
+  ewma: z.number().optional(),
+  threshold: z.number().optional(),
+});
 
 /**
- * Top-level result returned by WASM detect_drift.
+ * Validate WASM output against a Zod schema at the handler boundary.
+ * Throws KernelError (SOURCE_ERROR) on failure.
  */
-interface WasmDriftResult {
-  drifts?: WasmDriftWindow[];
-  ewma?: number;
-  threshold?: number;
+function validateHandlerBoundary<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+  boundaryName: string
+): T {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `${i.path.join('.')}: ${i.message}`)
+      .join('; ');
+    throw new KernelError(
+      `WASM output validation failed at ${boundaryName}: ${issues}`,
+      'SOURCE_ERROR' as any
+    );
+  }
+  return result.data;
 }
 
 /**
@@ -945,7 +967,11 @@ export async function implementAlgorithmStep(
           'time:timestamp',
           configJson
         );
-        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const features = validateHandlerBoundary(
+          FeatureVectorSchema,
+          typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures,
+          'ml_classify:extract_case_features'
+        );
         const result = await classifyTraces(features, {
           method: params.method as import('@wasm4pm/ml').ClassificationMethod | undefined,
           k: params.k as number,
@@ -971,7 +997,11 @@ export async function implementAlgorithmStep(
           'time:timestamp',
           configJson
         );
-        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const features = validateHandlerBoundary(
+          FeatureVectorSchema,
+          typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures,
+          'ml_cluster:extract_case_features'
+        );
         const result = await clusterTraces(features, {
           method: params.method as import('@wasm4pm/ml').ClusteringMethod | undefined,
           k: (params.k as number) ?? 3,
@@ -984,9 +1014,13 @@ export async function implementAlgorithmStep(
       case 'ml_forecast': {
         const { forecastSeries } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift!(eventLogHandle, activityKey, 5);
-        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
-          (d: WasmDriftWindow) => d.distance ?? 0
+        const driftResult = validateHandlerBoundary(
+          DriftResultSchema,
+          typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw,
+          'ml_forecast:detect_drift'
+        );
+        const distances = (driftResult.drifts ?? []).map(
+          (d) => d.distance ?? 0
         );
         const result = await forecastSeries(distances, {
           forecastPeriods: (params.forecast_periods as number) ?? 5,
@@ -999,9 +1033,13 @@ export async function implementAlgorithmStep(
       case 'ml_anomaly': {
         const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift!(eventLogHandle, activityKey, 10);
-        const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
-          (d: WasmDriftWindow) => d.distance ?? 0
+        const driftResult = validateHandlerBoundary(
+          DriftResultSchema,
+          typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw,
+          'ml_anomaly:detect_drift'
+        );
+        const distances = (driftResult.drifts ?? []).map(
+          (d) => d.distance ?? 0
         );
         const result = await detectEnhancedAnomalies(distances, {
           smoothingMethod: params.smoothing_method as 'sma' | 'ema',
@@ -1028,7 +1066,11 @@ export async function implementAlgorithmStep(
           'time:timestamp',
           configJson
         );
-        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const features = validateHandlerBoundary(
+          FeatureVectorSchema,
+          typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures,
+          'ml_regress:extract_case_features'
+        );
         const result = await regressRemainingTime(features, {
           method: params.method as any,
         });
@@ -1054,7 +1096,11 @@ export async function implementAlgorithmStep(
           'time:timestamp',
           configJson
         );
-        const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+        const features = validateHandlerBoundary(
+          FeatureVectorSchema,
+          typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures,
+          'ml_pca:extract_case_features'
+        );
         const result = await reduceFeaturesPCA(features, {
           nComponents: (params.n_components as number) ?? 2,
         });

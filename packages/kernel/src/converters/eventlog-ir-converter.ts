@@ -264,14 +264,14 @@ export function wasmJsonToEventLogIr(json: string): EventLogIR {
     throw new Error('Invalid traces: must be an array');
   }
 
-  const logTraces: ReadonlyArray<LogTrace> = traces.map((traceObj: unknown) => {
+  const logTraces: LogTrace[] = traces.map((traceObj: unknown) => {
     const trace = traceObj as Record<string, unknown>;
     const events = trace.events as unknown[];
     if (!Array.isArray(events)) {
       throw new Error(`Invalid events for trace ${trace.case_id}: must be an array`);
     }
 
-    const logEvents: ReadonlyArray<LogEvent> = events.map((eventObj: unknown) => {
+    const logEvents: LogEvent[] = events.map((eventObj: unknown) => {
       const event = eventObj as Record<string, unknown>;
       return {
         activity: event.activity as string,
