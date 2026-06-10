@@ -1,0 +1,115 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "gps",
+    "breed": "gps",
+    "status": "ok",
+    "output": {
+      "breed": "gps",
+      "candidates": [
+        {
+          "id": "administer_antiviral",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "prescribe_rest",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "prescribe_fluids",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "prescribe_antipyretic",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "hospitalize",
+          "score": 0,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "influenza"
+        },
+        {
+          "key": "certainty_factor",
+          "value": "0.5"
+        },
+        {
+          "key": "symptom_fever",
+          "value": "confirmed"
+        },
+        {
+          "key": "symptom_cough",
+          "value": "confirmed"
+        },
+        {
+          "key": "urgency_level",
+          "value": "high"
+        }
+      ],
+      "selected": "r_select_antiviral,r_select_antipyretic,r_treatment_plan_ready",
+      "explanation": "GPS plan (3 ops): r_select_antiviral → r_select_antipyretic → r_treatment_plan_ready",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "reduce-gap",
+          "detail": "treatment_plan=ready",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "reduce-gap",
+          "detail": "antiviral=selected",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-operator",
+          "detail": "r_select_antiviral",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "reduce-gap",
+          "detail": "antipyretic=selected",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "apply-operator",
+          "detail": "r_select_antipyretic",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "apply-operator",
+          "detail": "r_treatment_plan_ready",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "87318bae4aaf7111ca3c2bdddfdd7dc651e1dd89a1e9e9a4ca3d13184693953e",
+    "output_hash": "5d7346713a4a4baac5f285bae1fb81f072fae86c2870be6caad7dd2e420a2263",
+    "replay_pointer": "5d7346713a4a4baa",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/87318bae4aaf7111ca3c2bdddfdd7dc651e1dd89a1e9e9a4ca3d13184693953e.json"
+  },
+  "meta": {
+    "run_id": "acc9f262-c678-4a60-b0c4-f8df4d079e21",
+    "timestamp": "2026-06-10T08:09:52.878Z",
+    "duration_ms": 19,
+    "version": "26.6.9"
+  }
+}

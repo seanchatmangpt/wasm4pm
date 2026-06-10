@@ -1,0 +1,154 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "dendral",
+      "candidates": [
+        {
+          "id": "d",
+          "score": 0.5,
+          "eliminated": false
+        },
+        {
+          "id": "e",
+          "score": 0.5,
+          "eliminated": false
+        },
+        {
+          "id": "g",
+          "score": 0.5,
+          "eliminated": false
+        },
+        {
+          "id": "r",
+          "score": 0.5,
+          "eliminated": false
+        },
+        {
+          "id": "cyclohexanol",
+          "score": 0.550000011920929,
+          "eliminated": false
+        },
+        {
+          "id": "1_methylcyclopentanol",
+          "score": 0.550000011920929,
+          "eliminated": false
+        },
+        {
+          "id": "cis_2_methylcyclopentanol",
+          "score": 0.550000011920929,
+          "eliminated": false
+        },
+        {
+          "id": "trans_2_methylcyclopentanol",
+          "score": 0.550000011920929,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "formula",
+          "value": "C6H12O"
+        },
+        {
+          "key": "functional_group",
+          "value": "alcohol"
+        },
+        {
+          "key": "ring_present",
+          "value": "true"
+        },
+        {
+          "key": "degree_of_unsaturation",
+          "value": "1"
+        },
+        {
+          "key": "carbonyl_absent",
+          "value": "true"
+        },
+        {
+          "key": "hearsay_top_candidate",
+          "value": "d"
+        },
+        {
+          "key": "hearsay_confidence",
+          "value": "0.72"
+        },
+        {
+          "key": "enumeration_method",
+          "value": "DENDRAL_graph_generator"
+        }
+      ],
+      "selected": "1_methylcyclopentanol",
+      "explanation": "DENDRAL applied 0 constraints; 8/8 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "survive",
+          "detail": "d",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "survive",
+          "detail": "e",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "survive",
+          "detail": "g",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "survive",
+          "detail": "r",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "survive",
+          "detail": "cyclohexanol",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "survive",
+          "detail": "1_methylcyclopentanol",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "survive",
+          "detail": "cis_2_methylcyclopentanol",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "survive",
+          "detail": "trans_2_methylcyclopentanol",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9fae0117a8c12aac7a8ce006b3d490c0b748de43eb2c715f8fcb5086fe8cf0cf",
+    "output_hash": "f277d6ba38f24a59411730a1906dc8f0461fa2232ae62d19dfe782aa711b6d89",
+    "replay_pointer": "f277d6ba38f24a59",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9fae0117a8c12aac7a8ce006b3d490c0b748de43eb2c715f8fcb5086fe8cf0cf.json"
+  },
+  "meta": {
+    "run_id": "4c6ae22a-650e-4174-b4ba-6fe141c90a2e",
+    "timestamp": "2026-06-10T08:09:55.890Z",
+    "duration_ms": 23,
+    "version": "26.6.9"
+  }
+}

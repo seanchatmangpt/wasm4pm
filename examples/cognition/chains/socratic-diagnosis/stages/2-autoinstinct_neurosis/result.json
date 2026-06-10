@@ -1,0 +1,125 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_neurosis",
+    "breed": "autoinstinct_neurosis",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctneurosis",
+      "candidates": [
+        {
+          "id": "urgency_low",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "urgency_moderate",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "urgency_high",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "affect_anxious",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "affect_calm",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "symptom_count",
+          "value": "2"
+        },
+        {
+          "key": "duration_days",
+          "value": "3"
+        },
+        {
+          "key": "severity",
+          "value": "moderate"
+        },
+        {
+          "key": "cd_primitive_ATRANS",
+          "value": "heat_dysregulation"
+        },
+        {
+          "key": "cd_primitive_EXPEL",
+          "value": "respiratory_event"
+        },
+        {
+          "key": "cd_primitive_PTRANS",
+          "value": "pathogen_entry_hypothesis"
+        }
+      ],
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.250,\"belief_count\":11}",
+      "explanation": "AutoinstinctNeurosis: processed 5 stimuli over 6 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.250",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed-beliefs",
+          "detail": "seeded 6 beliefs from facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "curious",
+          "detail": "stimulus=\"urgency_low\" strength=0.100 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "curious",
+          "detail": "stimulus=\"urgency_moderate\" strength=0.500 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "curious",
+          "detail": "stimulus=\"urgency_high\" strength=0.000 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "curious",
+          "detail": "stimulus=\"affect_anxious\" strength=0.000 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "curious",
+          "detail": "stimulus=\"affect_calm\" strength=0.800 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "affect-snapshot",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.250 beliefs=11",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "efb22c9d2fc5da7a7f2693dc19d8b639867e64a2d461ad26d254c8d689bf315b",
+    "output_hash": "968a908acaa0a0b687bc2679d78f6f4414ad4a73847cce51f275d223fa4adb97",
+    "replay_pointer": "968a908acaa0a0b6",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/efb22c9d2fc5da7a7f2693dc19d8b639867e64a2d461ad26d254c8d689bf315b.json"
+  },
+  "meta": {
+    "run_id": "7991807b-2db9-479e-beb2-f496a749612d",
+    "timestamp": "2026-06-10T08:09:51.234Z",
+    "duration_ms": 15,
+    "version": "26.6.9"
+  }
+}

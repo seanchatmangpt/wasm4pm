@@ -1,0 +1,179 @@
+{
+  "intent": "Retain the complete diagnosis-and-treatment case for future Jaccard similarity retrieval",
+  "candidates": [
+    {
+      "id": "retain_as_new_case",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "merge_with_existing_flu_case",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "flag_for_expert_review",
+      "score": 0.0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "diagnosis",
+      "value": "influenza"
+    },
+    {
+      "key": "certainty_factor",
+      "value": "0.5"
+    },
+    {
+      "key": "urgency_level",
+      "value": "high"
+    },
+    {
+      "key": "paranoia_score",
+      "value": "0.5"
+    },
+    {
+      "key": "plan_sequence",
+      "value": "antiviral,antipyretic,fluids,rest,followup"
+    },
+    {
+      "key": "plan_steps_count",
+      "value": "5"
+    },
+    {
+      "key": "symptom_fever",
+      "value": "confirmed"
+    },
+    {
+      "key": "symptom_cough",
+      "value": "confirmed"
+    },
+    {
+      "key": "duration_days",
+      "value": "3"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_jaccard_similarity",
+      "premise": [
+        "query_features",
+        "case_features"
+      ],
+      "conclusion": "similarity = |intersection| / |union| of symptom feature sets",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_retain_threshold",
+      "premise": [
+        "case_novelty_score > 0.3"
+      ],
+      "conclusion": "retain as new case",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_merge_threshold",
+      "premise": [
+        "jaccard_similarity > 0.8",
+        "diagnosis_matches"
+      ],
+      "conclusion": "merge with existing case",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_expert_flag",
+      "premise": [
+        "cf < 0.5 AND urgency=high"
+      ],
+      "conclusion": "flag for expert review before retention",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_outcome_encode",
+      "premise": [
+        "plan_sequence confirmed"
+      ],
+      "conclusion": "encode outcome = diagnosis + plan_sequence + cf",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_case_retained",
+      "predicate": "case_indexed",
+      "value": "true"
+    },
+    {
+      "id": "g_retrieval_ready",
+      "predicate": "jaccard_index_updated",
+      "value": "true"
+    },
+    {
+      "id": "g_outcome_encoded",
+      "predicate": "outcome_stored",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_influenza_2026_new",
+      "intent": "new case: influenza",
+      "architecture": "cbr",
+      "outcome_score": 0.5,
+      "facts": [
+        {
+          "key": "duration",
+          "value": "3"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        }
+      ]
+    },
+    {
+      "id": "case_flu_2026_001",
+      "intent": "flu case 2026 #1",
+      "architecture": "cbr",
+      "outcome_score": 0.72,
+      "facts": [
+        {
+          "key": "fever",
+          "value": "confirmed"
+        },
+        {
+          "key": "cough",
+          "value": "confirmed"
+        }
+      ]
+    },
+    {
+      "id": "case_cold_2026_001",
+      "intent": "cold case 2026 #1",
+      "architecture": "cbr",
+      "outcome_score": 0.75,
+      "facts": [
+        {
+          "key": "cough",
+          "value": "confirmed"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "case_library_size",
+      "value": "3"
+    },
+    {
+      "predicate": "retrieval_mode",
+      "value": "jaccard"
+    },
+    {
+      "predicate": "retention_policy",
+      "value": "novelty_threshold_0.3"
+    }
+  ]
+}

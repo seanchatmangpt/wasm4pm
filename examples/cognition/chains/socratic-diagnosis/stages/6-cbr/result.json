@@ -1,0 +1,96 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "cbr",
+    "breed": "cbr",
+    "status": "ok",
+    "output": {
+      "breed": "cbr",
+      "candidates": [
+        {
+          "id": "retain_as_new_case",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "merge_with_existing_flu_case",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "flag_for_expert_review",
+          "score": 0,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "influenza"
+        },
+        {
+          "key": "certainty_factor",
+          "value": "0.5"
+        },
+        {
+          "key": "urgency_level",
+          "value": "high"
+        },
+        {
+          "key": "paranoia_score",
+          "value": "0.5"
+        },
+        {
+          "key": "plan_sequence",
+          "value": "antiviral,antipyretic,fluids,rest,followup"
+        },
+        {
+          "key": "plan_steps_count",
+          "value": "5"
+        },
+        {
+          "key": "symptom_fever",
+          "value": "confirmed"
+        },
+        {
+          "key": "symptom_cough",
+          "value": "confirmed"
+        },
+        {
+          "key": "duration_days",
+          "value": "3"
+        }
+      ],
+      "explanation": "CBR found no cases",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "build-index",
+          "detail": "index built for 3 cases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "retrieve-candidates",
+          "detail": "retrieved 0 candidates from 3 total cases",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c2ad18ec7695e8c01f9ad4b5fa03232de297efbd5eb8cb6eacd0964d523b884f",
+    "output_hash": "8fe00bdc69a372a7c75a3f293de2425a35a7e942ee67308e910a8a1e6453aed6",
+    "replay_pointer": "8fe00bdc69a372a7",
+    "inference_step_count": 2,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/c2ad18ec7695e8c01f9ad4b5fa03232de297efbd5eb8cb6eacd0964d523b884f.json"
+  },
+  "meta": {
+    "run_id": "889ac38c-4e75-4db7-8476-a1d411c96b2b",
+    "timestamp": "2026-06-10T08:09:54.430Z",
+    "duration_ms": 29,
+    "version": "26.6.9"
+  }
+}

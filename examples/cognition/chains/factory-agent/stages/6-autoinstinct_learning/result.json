@@ -1,0 +1,125 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_learning",
+    "breed": "autoinstinct_learning",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctlearning",
+      "candidates": [
+        {
+          "id": "plan-step-0",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "0.6",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "0.9",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "43units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "45",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "60units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "8.2bar",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "92C",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "combined_cf ",
+          "value": " cf1 + cf2*(1-cf1)"
+        },
+        {
+          "key": "dx_coolant_failure CF",
+          "value": "0.85"
+        },
+        {
+          "key": "current_temp",
+          "value": "92C"
+        },
+        {
+          "key": "target_temp",
+          "value": "75C"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "current_throughput",
+          "value": "43units/hr"
+        },
+        {
+          "key": "target_throughput",
+          "value": "60units/hr"
+        },
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "coolant_system_state",
+          "value": "failed"
+        },
+        {
+          "key": "feed_rate",
+          "value": "100pct"
+        },
+        {
+          "key": "goal_bitmask",
+          "value": "0b1111"
+        },
+        {
+          "key": "achieved_bitmask",
+          "value": "0b0000"
+        },
+        {
+          "key": "safety_constraint_met",
+          "value": "true"
+        }
+      ],
+      "selected": "1 steps to goal",
+      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00000011, final_state=0b11111111111111111111, goal_reached=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "plan-step",
+          "detail": "state=0b11111111111111111111 distance=0 action toward goal: flip next missing bit",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "043d3f0324b1ae27c4291e6e5e0dae3710022f76c4fd39bbadb6413568b3b794",
+    "output_hash": "20b371406b2cfae2fec788a3055e5fe55d53370120006c7934348e6e2ea36942",
+    "replay_pointer": "20b371406b2cfae2",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/043d3f0324b1ae27c4291e6e5e0dae3710022f76c4fd39bbadb6413568b3b794.json"
+  },
+  "meta": {
+    "run_id": "087fbdaa-7787-4c76-87d0-f909d51d3421",
+    "timestamp": "2026-06-10T08:10:04.078Z",
+    "duration_ms": 34,
+    "version": "26.6.9"
+  }
+}

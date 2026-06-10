@@ -1,0 +1,113 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "strips",
+    "breed": "strips",
+    "status": "ok",
+    "output": {
+      "breed": "strips",
+      "candidates": [
+        {
+          "id": "step1_administer_antiviral",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "step2_prescribe_antipyretic",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "step3_prescribe_fluids",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "step4_prescribe_rest",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "step5_followup_in_48h",
+          "score": 0,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "influenza"
+        },
+        {
+          "key": "urgency_level",
+          "value": "high"
+        },
+        {
+          "key": "antipyretic",
+          "value": "selected"
+        },
+        {
+          "key": "antiviral",
+          "value": "selected"
+        },
+        {
+          "key": "fluids",
+          "value": "selected"
+        },
+        {
+          "key": "rest",
+          "value": "selected"
+        }
+      ],
+      "selected": "r_execute_treatment_plan",
+      "explanation": "STRIPS plan (1 steps): r_execute_treatment_plan",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "iterate-depth",
+          "detail": "d=0",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "iterate-depth",
+          "detail": "d=1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "subgoal",
+          "detail": "treatment_plan=executed",
+          "depth": 15
+        },
+        {
+          "step": 3,
+          "kind": "try-action",
+          "detail": "r_execute_treatment_plan",
+          "depth": 15
+        },
+        {
+          "step": 4,
+          "kind": "execute",
+          "detail": "r_execute_treatment_plan",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7c5c50954aa4a153d213db27bd082d29f50059ae9834b8fb9f2a13133c625c5b",
+    "output_hash": "15a593e8ce3310e73dbebfbae4ae95408eaa4c1b3b2a2ff6b1a17be16a8606cc",
+    "replay_pointer": "15a593e8ce3310e7",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/7c5c50954aa4a153d213db27bd082d29f50059ae9834b8fb9f2a13133c625c5b.json"
+  },
+  "meta": {
+    "run_id": "ecc1afc5-bace-4e95-9620-ff96d2c156c0",
+    "timestamp": "2026-06-10T08:09:53.676Z",
+    "duration_ms": 62,
+    "version": "26.6.9"
+  }
+}

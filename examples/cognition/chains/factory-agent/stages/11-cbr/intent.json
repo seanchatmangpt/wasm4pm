@@ -1,0 +1,287 @@
+{
+  "intent": "Retain the full incident-resolution case and retrieve similar past incidents for future reference",
+  "candidates": [
+    {
+      "id": "past_case_incident_2025_11_coolant",
+      "score": 0.91,
+      "eliminated": false
+    },
+    {
+      "id": "past_case_incident_2026_01_heat",
+      "score": 0.78,
+      "eliminated": false
+    },
+    {
+      "id": "past_case_incident_2025_08_bearing",
+      "score": 0.65,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "0.6",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "0.9",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "43units/hr",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "45",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "60units/hr",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "8.2bar",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "92C",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "combined_cf ",
+      "value": " cf1 + cf2*(1-cf1)"
+    },
+    {
+      "key": "dx_coolant_failure CF",
+      "value": "0.85"
+    },
+    {
+      "key": "current_temp",
+      "value": "92C"
+    },
+    {
+      "key": "target_temp",
+      "value": "75C"
+    },
+    {
+      "key": "diagnosis",
+      "value": "dx_coolant_failure"
+    },
+    {
+      "key": "current_throughput",
+      "value": "43units/hr"
+    },
+    {
+      "key": "target_throughput",
+      "value": "60units/hr"
+    },
+    {
+      "key": "machine_1_state",
+      "value": "running"
+    },
+    {
+      "key": "coolant_system_state",
+      "value": "failed"
+    },
+    {
+      "key": "feed_rate",
+      "value": "100pct"
+    },
+    {
+      "key": "goal_bitmask",
+      "value": "0b1111"
+    },
+    {
+      "key": "achieved_bitmask",
+      "value": "0b0000"
+    },
+    {
+      "key": "safety_constraint_met",
+      "value": "true"
+    },
+    {
+      "key": "best_plan",
+      "value": "plan_B_partial_stop_flush"
+    },
+    {
+      "key": "operator_preference",
+      "value": "minimize_downtime"
+    },
+    {
+      "key": "batch_A_in_progress",
+      "value": "true"
+    },
+    {
+      "key": "chunk.pref",
+      "value": "winner:strategy_parallel_coolant_repair:reason:impasse-unresolved-fallback"
+    },
+    {
+      "key": "selected_strategy",
+      "value": "strategy_parallel_coolant_repair"
+    },
+    {
+      "key": "constraint_coolant_flow_zero",
+      "value": "true"
+    },
+    {
+      "key": "constraint_pressure_upstream_high",
+      "value": "true"
+    },
+    {
+      "key": "constraint_vibration_pump_area",
+      "value": "true"
+    },
+    {
+      "key": "top_explanation",
+      "value": "explanation_coolant_pump_seized"
+    },
+    {
+      "key": "plan_step_1",
+      "value": "stop_machine_1"
+    },
+    {
+      "key": "plan_step_2",
+      "value": "flush_coolant_system"
+    },
+    {
+      "key": "safety_rule_lockout_tagout",
+      "value": "must_stop_before_maintenance"
+    },
+    {
+      "key": "plan_validated",
+      "value": "true"
+    },
+    {
+      "key": "active_alarms_count",
+      "value": "7"
+    },
+    {
+      "key": "operator_response_latency_sec",
+      "value": "12"
+    },
+    {
+      "key": "operator_error_rate_last_5min",
+      "value": "0.3"
+    },
+    {
+      "key": "operator_shift_hours",
+      "value": "6.5"
+    },
+    {
+      "key": "current_incident_id",
+      "value": "incident_2026_06_10_machine1"
+    },
+    {
+      "key": "diagnosis",
+      "value": "dx_coolant_failure"
+    },
+    {
+      "key": "resolution",
+      "value": "plan_B_partial_stop_flush"
+    },
+    {
+      "key": "escalation_triggered",
+      "value": "true"
+    },
+    {
+      "key": "operator_overload",
+      "value": "overload"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_cbr_retrieve",
+      "premise": [
+        "current_incident_id=incident_2026_06_10_machine1"
+      ],
+      "conclusion": "retrieve_case(past)",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_cbr_adapt",
+      "premise": [
+        "diagnosis=dx_coolant_failure",
+        "resolution=plan_B_partial_stop_flush"
+      ],
+      "conclusion": "adapt_resolution",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_cbr_retain",
+      "premise": [
+        "resolution_outcome=successful",
+        "escalation_triggered=true"
+      ],
+      "conclusion": "retain_new_case",
+      "certainty": 0.8
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "similar_cases_retrieved",
+      "value": "true"
+    },
+    {
+      "id": "g2",
+      "predicate": "current_case_retained",
+      "value": "true"
+    },
+    {
+      "id": "g3",
+      "predicate": "case_base_updated",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "past_case_incident_2025_11_coolant",
+      "intent": "coolant flush successful 120min",
+      "architecture": "rule-based",
+      "outcome_score": 0.8,
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "coolant_failure"
+        },
+        {
+          "key": "machine_age_months",
+          "value": "16"
+        },
+        {
+          "key": "temp_C",
+          "value": "89"
+        }
+      ]
+    },
+    {
+      "id": "past_case_incident_2026_01_heat",
+      "intent": "partial stop flush 90min",
+      "architecture": "rule-based",
+      "outcome_score": 0.8,
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "overheating"
+        },
+        {
+          "key": "escalated",
+          "value": "true"
+        },
+        {
+          "key": "downtime",
+          "value": "95"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "case_base_size",
+      "value": "47"
+    },
+    {
+      "predicate": "retrieval_threshold",
+      "value": "0.7"
+    }
+  ]
+}

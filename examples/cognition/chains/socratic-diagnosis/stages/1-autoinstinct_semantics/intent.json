@@ -1,0 +1,138 @@
+{
+  "intent": "Parse symptom narrative into Conceptual Dependency primitives (ATRANS/PTRANS/INGEST/EXPEL)",
+  "candidates": [
+    {
+      "id": "ATRANS_heat_transfer",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "PTRANS_pathogen_entry",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "EXPEL_cough_reflex",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "INGEST_infection",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "MBUILD_symptom_model",
+      "score": 0.0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "symptom_narrative",
+      "value": "patient reports fever and cough"
+    },
+    {
+      "key": "symptom_fever",
+      "value": "confirmed"
+    },
+    {
+      "key": "symptom_cough",
+      "value": "confirmed"
+    },
+    {
+      "key": "duration",
+      "value": "3 days"
+    },
+    {
+      "key": "severity",
+      "value": "moderate"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_fever_cd",
+      "premise": [
+        "symptom=fever"
+      ],
+      "conclusion": "ATRANS(heat, body, environment)",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_cough_cd",
+      "premise": [
+        "symptom=cough"
+      ],
+      "conclusion": "EXPEL(air, lungs, mouth)",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_infection_cd",
+      "premise": [
+        "fever AND cough"
+      ],
+      "conclusion": "PTRANS(pathogen, external, respiratory_tract)",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_duration_cd",
+      "premise": [
+        "duration > 2 days"
+      ],
+      "conclusion": "MBUILD(immune_response, active)",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_cd_parse",
+      "predicate": "cd_primitives_extracted",
+      "value": "true"
+    },
+    {
+      "id": "g_semantic_structure",
+      "predicate": "semantic_roles_assigned",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_fever_semantics",
+      "intent": "fever CD primitive",
+      "architecture": "autoinstinct_semantics",
+      "outcome_score": 0.9,
+      "facts": [
+        {
+          "key": "symptom",
+          "value": "fever"
+        }
+      ]
+    },
+    {
+      "id": "case_cough_semantics",
+      "intent": "cough CD primitive",
+      "architecture": "autoinstinct_semantics",
+      "outcome_score": 0.88,
+      "facts": [
+        {
+          "key": "symptom",
+          "value": "cough"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "parsing_mode",
+      "value": "cd_primitives"
+    },
+    {
+      "predicate": "narrative_processed",
+      "value": "false"
+    },
+    {
+      "predicate": "primitives_found",
+      "value": "0"
+    }
+  ]
+}

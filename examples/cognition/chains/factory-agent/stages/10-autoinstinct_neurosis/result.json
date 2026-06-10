@@ -1,0 +1,227 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_neurosis",
+    "breed": "autoinstinct_neurosis",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctneurosis",
+      "candidates": [
+        {
+          "id": "operator_load_normal",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "operator_load_elevated",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "operator_load_overload_escalate",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "0.6",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "0.9",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "43units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "45",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "60units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "8.2bar",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "92C",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "combined_cf ",
+          "value": " cf1 + cf2*(1-cf1)"
+        },
+        {
+          "key": "dx_coolant_failure CF",
+          "value": "0.85"
+        },
+        {
+          "key": "current_temp",
+          "value": "92C"
+        },
+        {
+          "key": "target_temp",
+          "value": "75C"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "current_throughput",
+          "value": "43units/hr"
+        },
+        {
+          "key": "target_throughput",
+          "value": "60units/hr"
+        },
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "coolant_system_state",
+          "value": "failed"
+        },
+        {
+          "key": "feed_rate",
+          "value": "100pct"
+        },
+        {
+          "key": "goal_bitmask",
+          "value": "0b1111"
+        },
+        {
+          "key": "achieved_bitmask",
+          "value": "0b0000"
+        },
+        {
+          "key": "safety_constraint_met",
+          "value": "true"
+        },
+        {
+          "key": "best_plan",
+          "value": "plan_B_partial_stop_flush"
+        },
+        {
+          "key": "operator_preference",
+          "value": "minimize_downtime"
+        },
+        {
+          "key": "batch_A_in_progress",
+          "value": "true"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:strategy_parallel_coolant_repair:reason:impasse-unresolved-fallback"
+        },
+        {
+          "key": "selected_strategy",
+          "value": "strategy_parallel_coolant_repair"
+        },
+        {
+          "key": "constraint_coolant_flow_zero",
+          "value": "true"
+        },
+        {
+          "key": "constraint_pressure_upstream_high",
+          "value": "true"
+        },
+        {
+          "key": "constraint_vibration_pump_area",
+          "value": "true"
+        },
+        {
+          "key": "top_explanation",
+          "value": "explanation_coolant_pump_seized"
+        },
+        {
+          "key": "plan_step_1",
+          "value": "stop_machine_1"
+        },
+        {
+          "key": "plan_step_2",
+          "value": "flush_coolant_system"
+        },
+        {
+          "key": "safety_rule_lockout_tagout",
+          "value": "must_stop_before_maintenance"
+        },
+        {
+          "key": "plan_validated",
+          "value": "true"
+        },
+        {
+          "key": "active_alarms_count",
+          "value": "7"
+        },
+        {
+          "key": "operator_response_latency_sec",
+          "value": "12"
+        },
+        {
+          "key": "operator_error_rate_last_5min",
+          "value": "0.3"
+        },
+        {
+          "key": "operator_shift_hours",
+          "value": "6.5"
+        }
+      ],
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.150,\"belief_count\":40}",
+      "explanation": "AutoinstinctNeurosis: processed 3 stimuli over 37 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.150",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed-beliefs",
+          "detail": "seeded 37 beliefs from facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "curious",
+          "detail": "stimulus=\"operator_load_normal\" strength=0.200 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "curious",
+          "detail": "stimulus=\"operator_load_elevated\" strength=0.700 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "curious",
+          "detail": "stimulus=\"operator_load_overload_escalate\" strength=0.850 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "affect-snapshot",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.150 beliefs=40",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "347b27b3b275947659634ba2d45212cd41a136d4b5418d0d5ec1619a6f921adf",
+    "output_hash": "0888ccd9a1f68d574f3b3692fa238a4340763aaddfae262768da7e816d9bba2b",
+    "replay_pointer": "0888ccd9a1f68d57",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/347b27b3b275947659634ba2d45212cd41a136d4b5418d0d5ec1619a6f921adf.json"
+  },
+  "meta": {
+    "run_id": "3242727f-b78a-4d86-86dc-ca4a7436098f",
+    "timestamp": "2026-06-10T08:10:06.966Z",
+    "duration_ms": 32,
+    "version": "26.6.9"
+  }
+}

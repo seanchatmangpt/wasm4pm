@@ -1,0 +1,121 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "eliza",
+      "candidates": [
+        {
+          "id": "fever",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "cough",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "fatigue",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "headache",
+          "score": 0,
+          "eliminated": false
+        },
+        {
+          "id": "shortness_of_breath",
+          "score": 0,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "patient_utterance",
+          "value": "I have been feeling hot and I keep coughing a lot"
+        },
+        {
+          "key": "chief_complaint",
+          "value": "fever and cough"
+        },
+        {
+          "key": "duration",
+          "value": "3 days"
+        },
+        {
+          "key": "severity",
+          "value": "moderate"
+        },
+        {
+          "key": "context",
+          "value": "clinical intake interview"
+        }
+      ],
+      "selected": "*",
+      "explanation": "Please go on.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "try-pattern",
+          "detail": "i need *",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "try-pattern",
+          "detail": "i am *",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "try-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "match-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "bind-slot",
+          "detail": "${1}=interview patient and extract symptom keywords via keystack pattern matching",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7a7e232ae2fe34950607f85b1c7639e3c05cece89940782926769b40af6c555f",
+    "output_hash": "51df217b81a820f6e15966e0a15dede81bcc8a7763b441d5416b72bea4d9b879",
+    "replay_pointer": "51df217b81a820f6",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/7a7e232ae2fe34950607f85b1c7639e3c05cece89940782926769b40af6c555f.json"
+  },
+  "meta": {
+    "run_id": "ae6d63b6-5de2-4a26-a8af-7ab276d3f0dc",
+    "timestamp": "2026-06-10T08:09:49.781Z",
+    "duration_ms": 38,
+    "version": "26.6.9"
+  }
+}

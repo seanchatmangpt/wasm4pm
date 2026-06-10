@@ -1,0 +1,43 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_semantics",
+    "breed": "autoinstinct_semantics",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctsemantics",
+      "candidates": [],
+      "facts": [],
+      "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"Parse symptom narrative into Conceptual Dependency primitives (ATRANS/PTRANS/INGEST/EXPEL)\"",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-parser",
+          "detail": "SemanticParser created; parsing intent: \"Parse symptom narrative into Conceptual Dependency primitives (ATRANS/PTRANS/INGEST/EXPEL)\"",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "no-act-found",
+          "detail": "no CD primitive matched for intent: \"Parse symptom narrative into Conceptual Dependency primitives (ATRANS/PTRANS/INGEST/EXPEL)\"",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "5c6500261a5d3931123c9360c75bd93e7dbe35ee4d51be09bba2833e182e0948",
+    "output_hash": "806f2bcc489db46fccbaff613254fbfe064bfee9f5b9b03f710e202d07de64f3",
+    "replay_pointer": "806f2bcc489db46f",
+    "inference_step_count": 2,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/5c6500261a5d3931123c9360c75bd93e7dbe35ee4d51be09bba2833e182e0948.json"
+  },
+  "meta": {
+    "run_id": "3cb4cb62-5f10-4861-8e53-a061d6f77a89",
+    "timestamp": "2026-06-10T08:09:50.532Z",
+    "duration_ms": 15,
+    "version": "26.6.9"
+  }
+}

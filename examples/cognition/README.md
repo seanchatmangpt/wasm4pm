@@ -37,6 +37,25 @@ All 9 Old AI breeds have verified working examples. Every run exits 0, produces 
 | AutoinstinctSemantics | `autoinstinct_semantics` | Conceptual Dependency ATRANS/PTRANS/MTRANS parsing | `autoinstinct_semantics/` |
 | AutoinstinctVision | `autoinstinct_vision` | Blocks-world scene parsing: support-graph, clear-set, stack detection | `autoinstinct_vision/` |
 
+## Breed Chains
+
+Chains wire multiple breeds end-to-end — each breed's output becomes the next breed's input. Three case studies are provided:
+
+| Chain | Breeds | Description |
+|-------|--------|-------------|
+| [socratic-diagnosis](chains/socratic-diagnosis/) | 7 | `eliza → semantics → neurosis → mycin → gps → strips → cbr` — clinical diagnosis from free-text complaint to retained case |
+| [scientific-discovery](chains/scientific-discovery/) | 6 | `hearsay → dendral → prolog → vision → learning → soar` — acoustic signal to validated hypothesis |
+| [factory-agent](chains/factory-agent/) | 13 (all) | All 13 breeds in sequence — the full cognitive stack as an existence proof |
+
+```bash
+# Run all three chains
+bash examples/cognition/chains/run-all-chains.sh
+```
+
+See [chains/README.md](chains/README.md) for chain diagrams, data flow, and theoretical grounding in the OLDIA thesis.
+
+---
+
 ## Doctrine
 
 Every example produces:

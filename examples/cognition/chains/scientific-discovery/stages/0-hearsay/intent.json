@@ -1,0 +1,217 @@
+{
+  "intent": "Fuse multi-source spectrometry signals (MS, NMR, IR) via KSAR blackboard to form a coherent compound hypothesis for an unknown organic molecule with molecular formula C6H12O",
+  "candidates": [
+    {
+      "id": "cyclohexanol",
+      "score": 0.72,
+      "eliminated": false
+    },
+    {
+      "id": "hexanal",
+      "score": 0.65,
+      "eliminated": false
+    },
+    {
+      "id": "2-hexanone",
+      "score": 0.61,
+      "eliminated": false
+    },
+    {
+      "id": "methyl_cyclopentanol",
+      "score": 0.48,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "ms_molecular_ion",
+      "value": "100"
+    },
+    {
+      "key": "ms_base_peak",
+      "value": "57"
+    },
+    {
+      "key": "ms_fragment_82",
+      "value": "loss_of_18_water"
+    },
+    {
+      "key": "ms_fragment_71",
+      "value": "loss_of_29_CHO"
+    },
+    {
+      "key": "nmr_1h_shift_broad_3.6ppm",
+      "value": "OH_proton_present"
+    },
+    {
+      "key": "nmr_1h_shift_1.2_to_1.8ppm",
+      "value": "aliphatic_CH2_CH_ring"
+    },
+    {
+      "key": "nmr_13c_shift_70ppm",
+      "value": "carbon_bearing_OH"
+    },
+    {
+      "key": "ir_absorption_3350cm",
+      "value": "broad_OH_stretch"
+    },
+    {
+      "key": "ir_absorption_1000_1200cm",
+      "value": "CO_stretch_secondary_alcohol"
+    },
+    {
+      "key": "formula",
+      "value": "C6H12O"
+    },
+    {
+      "key": "degree_of_unsaturation",
+      "value": "1"
+    },
+    {
+      "key": "source_fusion_method",
+      "value": "KSAR_blackboard"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_ms_water_loss",
+      "premise": [
+        "ms_fragment shows -18"
+      ],
+      "conclusion": "alcohol functional group likely present",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_nmr_oh_broad",
+      "premise": [
+        "1H NMR broad peak at 3.5-3.8 ppm"
+      ],
+      "conclusion": "hydroxyl proton confirmed",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_ir_oh_stretch",
+      "premise": [
+        "IR 3200-3500 cm-1 broad absorption"
+      ],
+      "conclusion": "alcohol O-H stretch confirmed",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_dbu_ring_or_double",
+      "premise": [
+        "degree_of_unsaturation == 1",
+        "no_carbonyl_in_IR"
+      ],
+      "conclusion": "ring structure preferred over double bond",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_blackboard_consensus",
+      "premise": [
+        "ms_evidence_alcohol",
+        "nmr_evidence_alcohol",
+        "ir_evidence_alcohol"
+      ],
+      "conclusion": "alcohol compound consensus reached",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_identify_functional_group",
+      "predicate": "functional_group_identified",
+      "value": "alcohol"
+    },
+    {
+      "id": "g_rank_candidates",
+      "predicate": "candidates_ranked_by_spectral_fit",
+      "value": "true"
+    },
+    {
+      "id": "g_blackboard_consensus",
+      "predicate": "ksar_sources_in_agreement",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_cyclohexanone_ms",
+      "intent": "case cyclohexanone ms",
+      "architecture": "cyclohexanone_confirmed",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "ms_base_peak",
+          "value": "55"
+        },
+        {
+          "key": "ir_carbonyl",
+          "value": "1715"
+        },
+        {
+          "key": "formula",
+          "value": "C6H10O"
+        }
+      ]
+    },
+    {
+      "id": "case_hexanol_ms",
+      "intent": "case hexanol ms",
+      "architecture": "1_hexanol_confirmed",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "ms_base_peak",
+          "value": "56"
+        },
+        {
+          "key": "ms_water_loss",
+          "value": "true"
+        },
+        {
+          "key": "ir_oh",
+          "value": "3350"
+        }
+      ]
+    },
+    {
+      "id": "case_cyclopentanol_ms",
+      "intent": "case cyclopentanol ms",
+      "architecture": "cyclopentanol_ring_alcohol",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "ms_base_peak",
+          "value": "57"
+        },
+        {
+          "key": "ms_water_loss",
+          "value": "true"
+        },
+        {
+          "key": "nmr_ring",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "pipeline_stage",
+      "value": "1_hearsay_signal_fusion"
+    },
+    {
+      "predicate": "blackboard_status",
+      "value": "sources_loaded"
+    },
+    {
+      "predicate": "hypothesis_confidence",
+      "value": "0.72"
+    },
+    {
+      "predicate": "pending_stages",
+      "value": "dendral,prolog,vision,learning,soar"
+    }
+  ]
+}

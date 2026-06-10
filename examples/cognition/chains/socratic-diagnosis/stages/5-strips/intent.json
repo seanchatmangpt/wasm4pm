@@ -1,0 +1,114 @@
+{
+  "intent": "Execute STRIPS treatment plan for influenza",
+  "candidates": [
+    {
+      "id": "step1_administer_antiviral",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "step2_prescribe_antipyretic",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "step3_prescribe_fluids",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "step4_prescribe_rest",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "step5_followup_in_48h",
+      "score": 0.0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "diagnosis",
+      "value": "influenza"
+    },
+    {
+      "key": "urgency_level",
+      "value": "high"
+    },
+    {
+      "key": "antipyretic",
+      "value": "selected"
+    },
+    {
+      "key": "antiviral",
+      "value": "selected"
+    },
+    {
+      "key": "fluids",
+      "value": "selected"
+    },
+    {
+      "key": "rest",
+      "value": "selected"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_execute_treatment_plan",
+      "premise": [
+        "antiviral_needed=true",
+        "fever_present=true"
+      ],
+      "conclusion": "treatment_plan=executed;!antiviral_needed=true;!fever_present=true",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_plan_executed",
+      "predicate": "treatment_plan",
+      "value": "executed"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_flu_strips",
+      "intent": "influenza STRIPS plan",
+      "architecture": "strips",
+      "outcome_score": 0.9,
+      "facts": [
+        {
+          "key": "operators",
+          "value": "antipyretic,antiviral,fluids,rest"
+        }
+      ]
+    },
+    {
+      "id": "case_cold_strips",
+      "intent": "cold STRIPS plan",
+      "architecture": "strips",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "operators",
+          "value": "fluids,rest"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "antiviral_needed",
+      "value": "true"
+    },
+    {
+      "predicate": "fever_present",
+      "value": "true"
+    },
+    {
+      "predicate": "diagnosis",
+      "value": "influenza"
+    }
+  ]
+}

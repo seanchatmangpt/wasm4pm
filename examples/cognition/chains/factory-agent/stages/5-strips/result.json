@@ -1,0 +1,152 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "strips",
+    "breed": "strips",
+    "status": "ok",
+    "output": {
+      "breed": "strips",
+      "candidates": [
+        {
+          "id": "action_stop_machine_1",
+          "score": 0.949999988079071,
+          "eliminated": false
+        },
+        {
+          "id": "action_flush_coolant_system",
+          "score": 0.8999999761581421,
+          "eliminated": false
+        },
+        {
+          "id": "action_adjust_feed_rate_70pct",
+          "score": 0.800000011920929,
+          "eliminated": false
+        },
+        {
+          "id": "action_restart_machine_1",
+          "score": 0.8500000238418579,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "0.6",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "0.9",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "43units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "45",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "60units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "8.2bar",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "92C",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "combined_cf ",
+          "value": " cf1 + cf2*(1-cf1)"
+        },
+        {
+          "key": "dx_coolant_failure CF",
+          "value": "0.85"
+        },
+        {
+          "key": "current_temp",
+          "value": "92C"
+        },
+        {
+          "key": "target_temp",
+          "value": "75C"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "current_throughput",
+          "value": "43units/hr"
+        },
+        {
+          "key": "target_throughput",
+          "value": "60units/hr"
+        },
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "coolant_system_state",
+          "value": "failed"
+        },
+        {
+          "key": "feed_rate",
+          "value": "100pct"
+        }
+      ],
+      "selected": "r_stop_machine",
+      "explanation": "STRIPS plan (1 steps): r_stop_machine",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "iterate-depth",
+          "detail": "d=0",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "iterate-depth",
+          "detail": "d=1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "subgoal",
+          "detail": "machine_1_state=stopped",
+          "depth": 15
+        },
+        {
+          "step": 3,
+          "kind": "try-action",
+          "detail": "r_stop_machine",
+          "depth": 15
+        },
+        {
+          "step": 4,
+          "kind": "execute",
+          "detail": "r_stop_machine",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "8ae75c1ea01c54197b86a75b5cfac4c900b6609ec2bc3ebdbcbc97d4082c3a25",
+    "output_hash": "a836f5c37f5f53c3f29d3b0758fa49882bc782e4d8f3350095075acdcaa33b41",
+    "replay_pointer": "a836f5c37f5f53c3",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/8ae75c1ea01c54197b86a75b5cfac4c900b6609ec2bc3ebdbcbc97d4082c3a25.json"
+  },
+  "meta": {
+    "run_id": "2402d285-5a5a-4655-9c26-76540722705a",
+    "timestamp": "2026-06-10T08:10:03.300Z",
+    "duration_ms": 23,
+    "version": "26.6.9"
+  }
+}
