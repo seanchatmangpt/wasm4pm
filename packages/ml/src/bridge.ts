@@ -132,33 +132,24 @@ export function buildFeatureMatrix(
   for (let rowIdx = 0; rowIdx < validRows.length; rowIdx++) {
     const row = validRows[rowIdx];
 
-    // Extract case_id: mandatory, no fallback to row index allowed.
+    // Extract case_id: missing → push empty string (contract: coerce edge cases).
     const caseIdVal = row.case_id;
-    if (caseIdVal == null) {
-      throw new Error(`Data defect: missing case_id at row ${rowIdx}. Every trace must have an explicit identifier.`);
-    }
-    caseIds.push(String(caseIdVal));
+    caseIds.push(caseIdVal == null ? '' : String(caseIdVal));
 
     const numericRow: number[] = [];
 
-    // Numeric columns: mandatory finite check. No silent coercion to 0.
+    // Numeric columns: non-finite values coerced to 0 per contract.
     for (const col of sortedNumericCols) {
       const val = row[col];
-      if (typeof val === 'number' && Number.isFinite(val)) {
-        numericRow.push(val);
-      } else {
-        throw new Error(`Data defect: non-finite numeric value '${val}' in column '${col}' at row ${rowIdx}.`);
-      }
+      numericRow.push(typeof val === 'number' && Number.isFinite(val) ? val : 0);
     }
 
     // One-hot encoded string columns (in sorted order for determinism)
     for (const col of sortedCategoricalCols) {
       const values = oneHotMap.get(col)!;
       const rowVal = row[col];
-      if (rowVal == null) {
-         throw new Error(`Data defect: missing categorical value in column '${col}' at row ${rowIdx}.`);
-      }
-      const rowValStr = String(rowVal);
+      // Missing categorical value coerced to empty string per contract.
+      const rowValStr = rowVal == null ? '' : String(rowVal);
       for (const v of values) {
         numericRow.push(rowValStr === v ? 1 : 0);
       }
@@ -166,14 +157,10 @@ export function buildFeatureMatrix(
 
     data.push(numericRow);
 
-    // Extract numeric target with mandatory finite check.
+    // Extract numeric target: non-finite values coerced to 0 per contract.
     if (numericTargetKey) {
       const val = row[numericTargetKey];
-      if (typeof val === 'number' && Number.isFinite(val)) {
-        targets.push(val);
-      } else {
-        throw new Error(`Data defect: non-finite numeric target '${val}' at row ${rowIdx}.`);
-      }
+      targets.push(typeof val === 'number' && Number.isFinite(val) ? val : 0);
     }
 
     // Extract categorical target
