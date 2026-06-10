@@ -35,9 +35,9 @@ timestamp.  The \emph{reasoning receipt} is
 \[
   \rho \;=\; \blake(\mathtt{breed\_id}(\Breed_i) \;\|\; A \;\|\; L \;\|\; t),
 \]
-where $\blake$ denotes the BLAKE3 hash function, $\|$ denotes concatenation after
-canonical serialisation (JSON with lexicographically sorted keys), and
-$\mathtt{breed\_id}(\Breed_i)$ is the stable identifier registered in the kernel registry.
+where $\blake$ denotes the BLAKE3 hash function \cite{blake3_2020}, $\|$ denotes
+concatenation after canonical serialisation (JSON with lexicographically sorted keys),
+and $\mathtt{breed\_id}(\Breed_i)$ is the stable identifier registered in the kernel registry.
 \end{definition}
 
 The receipt $\rho$ is a 256-bit digest.  Three properties make it suitable as a
@@ -126,9 +126,9 @@ $\mathbf{Receipt}$ be the category whose objects are 256-bit digests and whose m
 are hash-linking maps.  Then $R_{\Breed}$ maps a sequential pipeline of breed invocations
 $\Breed_1 \to \Breed_2 \to \cdots \to \Breed_n$ to a receipt chain
 $\rho_1 \to \rho_2 \to \cdots \to \rho_n$ in which each receipt is a committed function
-of all predecessors.  This is precisely the Kleisli composition in the writer monad over
-the free monoid of BLAKE3 digests: composing two breed invocations appends their receipts,
-and the identity morphism maps to the empty receipt chain.
+of all predecessors.  This is precisely the Kleisli composition \cite{maclane1971,moggi1991monads} in the
+writer monad over the free monoid of BLAKE3 digests: composing two breed invocations
+appends their receipts, and the identity morphism maps to the empty receipt chain.
 
 \begin{theorem}[Civilizational Trust Properties]
 \label{thm:civilizational-trust}
@@ -191,7 +191,7 @@ Prior to v26.6.10, a receipt committed to the breed identifier, the rule-firing 
 and the timestamp, but the input assertion set $A$ was hashed only in the TypeScript
 consumer layer.  This created a causal gap: a receipt could in principle be replayed
 against a modified input if the TypeScript layer were compromised, without changing the
-receipt value.  The causal completeness gap is now closed by the addition of
+receipt value.  The causal completeness gap is now closed \cite{chatman2025proofbound} by the addition of
 \texttt{input\_hash} $= \blake(\mathtt{input\_json})$ computed in
 \texttt{crates/wasm4pm-cognition/src/wasm.rs} before deserialisation.  With this
 addition, the receipt is a committed function of the complete causal closure of the

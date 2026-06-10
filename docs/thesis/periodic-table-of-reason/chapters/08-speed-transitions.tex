@@ -130,9 +130,9 @@ $P(\text{conclusion} \mid \theta_j, \text{evidence})$ vary?
 When $\tau(\Breed_i) > T_D / k^*_\varepsilon$, fewer than $k^*_\varepsilon$ evaluations
 can be completed within $T_D$; the analyst receives a sparse, non-representative sample
 of $\Theta$ and cannot form a reliable estimate of sensitivity.  Formally, the
-Berry--Esseen theorem bounds the Kolmogorov--Smirnov distance between the empirical
-distribution over $k$ samples and the true posterior by $C / \sqrt{k}$ for a universal
-constant $C > 0$.  This bound falls below $\varepsilon$ if and only if $k \geq C^2 / \varepsilon^2$,
+Berry--Esseen theorem \cite{berry1941,feller1968} bounds the Kolmogorov--Smirnov
+distance between the empirical distribution over $k$ samples and the true posterior by
+$C / \sqrt{k}$ for a universal constant $C > 0$.  This bound falls below $\varepsilon$ if and only if $k \geq C^2 / \varepsilon^2$,
 which requires $\tau(\Breed_i) \leq T_D \varepsilon^2 / C^2 = \tau^*_\varepsilon$.
 Thus, reliable Bayesian sensitivity analysis --- one whose error is below $\varepsilon$
 with high probability --- is a \emph{threshold phenomenon}: it appears discontinuously as

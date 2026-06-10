@@ -72,7 +72,8 @@ implementation because they inspect only structural receipt topology and event l
 conformance, not the epistemic content of the conclusion. The No-Free-Lunch theorem
 for supervised learning (Wolpert 1996) generalises this: no finite set of structural
 checks over the pipeline wrapper can certify the correctness of an arbitrary inner
-function without a breed-specific oracle that constrains the inner function directly.
+function without a breed-specific oracle that constrains the inner function directly
+\cite{wolpert1997nfl}.
 Therefore, a fourth constraint operating at the breed level is both necessary and
 non-redundant with respect to $C_0$--$C_2$.
 \end{proof}
@@ -138,7 +139,7 @@ pipeline claiming to produce a certified artefact $A_U$.
 The four-constraint equation has a natural categorical reading that clarifies how local
 breed certificates compose into a global pipeline certificate.
 
-\begin{proposition}[BVC as a Sheaf Condition]
+\begin{proposition}[BVC as a Sheaf Condition \cite{maclane1992sheaves}]
 \label{prop:sheaf-condition}
 Let the pipeline $\mu_U$ be modelled as a directed graph $G = (V, E)$ where each
 node $v \in V$ corresponds to a manufacturing stage and each edge $e \in E$ carries a

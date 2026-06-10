@@ -6,7 +6,7 @@
 \epigraph{%
   ``The criterion of the scientific status of a theory is its falsifiability,
   or refutability, or testability.''
-}{--- Karl Popper, \textit{The Logic of Scientific Discovery}, 1959}
+}{--- Karl Popper, \textit{The Logic of Scientific Discovery}, 1959 \cite{popper1959}}
 
 The preceding chapter established that each of the thirteen breeds is a
 well-typed morphism in $\Breed$, and that the $\MYCIN$ certainty factor,
@@ -100,7 +100,7 @@ interpolation'' means any function in the class of piecewise-polynomial
 maps over a finite partition of the input domain.
 
 \medskip\noindent
-\textbf{(i) $\MYCIN$ Certainty-Factor Boundary.}
+\textbf{(i) $\MYCIN$ Certainty-Factor Boundary \cite{shortliffe1976}.}
 The $\MYCIN$ breed evaluates the certainty factor formula
 \[
   \CF(H, E) \;=\;
@@ -139,7 +139,7 @@ $\CF$ formula, because the formula's domain is uncountable and the table's
 domain is finite.  \qquad $\square_{(i)}$
 
 \medskip\noindent
-\textbf{(ii) $\PROLOG$ Grandparent Derivation.}
+\textbf{(ii) $\PROLOG$ Grandparent Derivation \cite{robinson1965,kowalski1974prolog}.}
 The $\PROLOG$ breed implements SLD resolution with occurs-check.  The
 three tests in \texttt{strips\_soar\_cbr\_invariants.rs}---\allowbreak
 \texttt{prolog\_grandparent\_derives\_correctly},
@@ -172,7 +172,7 @@ mechanism is not expressible as a finite enumeration of ground facts.
 \qquad $\square_{(ii)}$
 
 \medskip\noindent
-\textbf{(iii) $\STRIPS$ Plan Soundness.}
+\textbf{(iii) $\STRIPS$ Plan Soundness \cite{fikes1971strips}.}
 A $\STRIPS$ plan is a sequence of operators $\langle o_1, \ldots, o_k
 \rangle$ such that the preconditions of each $o_j$ are satisfied by the
 state obtained after applying $o_1, \ldots, o_{j-1}$ to the initial state.
@@ -184,7 +184,7 @@ domain requires $O(2^n)$ state-pairs for $n$ propositions, ruling out
 any polynomial-size table.  \qquad $\square_{(iii)}$
 
 \medskip\noindent
-\textbf{(iv) $\SOAR$ Antisymmetry.}
+\textbf{(iv) $\SOAR$ Antisymmetry \cite{laird1987soar}.}
 The $\SOAR$ breed encodes preference semantics: if operator $o_1$ is
 preferred to $o_2$, then $o_2$ must \emph{not} be preferred to $o_1$.
 The antisymmetry tests at lines 479--534 of
@@ -196,7 +196,7 @@ antisymmetry requires relational closure, which cannot be expressed as a
 finite stored relation without re-deriving closures.  \qquad $\square_{(iv)}$
 
 \medskip\noindent
-\textbf{(v) CBR Jaccard Identity.}
+\textbf{(v) CBR Jaccard Identity \cite{aamodt1994cbr}.}
 The $\CBR$ breed computes case-based similarity using the Jaccard index
 $J(A,B) = |A \cap B| / |A \cup B|$.  The identity tests at lines 755--767
 of \texttt{strips\_soar\_cbr\_invariants.rs} assert $J(A, A) = 1$ for
@@ -207,7 +207,7 @@ $J(A, B)$ for $B \neq A$ without computing set intersection and union.
 \qquad $\square_{(v)}$
 
 \medskip\noindent
-\textbf{(vi) $\HEARSAY$ KSAR Opportunistic Scheduling.}
+\textbf{(vi) $\HEARSAY$ KSAR Opportunistic Scheduling \cite{erman1980hearsay}.}
 The $\HEARSAY$ breed implements a blackboard architecture in which
 Knowledge Source Activation Records (KSARs) are scheduled opportunistically
 by a scheduler that ranks them on a priority score.  The KSAR tests verify
@@ -219,7 +219,7 @@ on priority scores, which is algebraically defined and not enumerable.
 \qquad $\square_{(vi)}$
 
 \medskip\noindent
-\textbf{(vii) $\DENDRAL$ Forbid Absoluteness.}
+\textbf{(vii) $\DENDRAL$ Forbid Absoluteness \cite{feigenbaum1971dendral}.}
 The $\DENDRAL$ breed applies a spectral interpretation filter that must
 reject hypotheses whose predicted spectrum contains a peak forbidden by
 the evidence.  The absoluteness falsification test at lines 348--376 of
@@ -231,7 +231,7 @@ list is extensible and the test introduces a substructure outside the
 training corpus.  \qquad $\square_{(vii)}$
 
 \medskip\noindent
-\textbf{(viii) $\GPS$ Difference-Table Coverage.}
+\textbf{(viii) $\GPS$ Difference-Table Coverage \cite{newell1963gps}.}
 The $\GPS$ breed reduces goals by matching differences between current
 state and goal state against a difference table that specifies which
 operators reduce each type of difference.  The coverage tests verify that
@@ -243,7 +243,7 @@ coverage of the difference-table schema, not just the training instances.
 \qquad $\square_{(viii)}$
 
 \medskip\noindent
-\textbf{(ix) $\ELIZA$ Keystack Priority.}
+\textbf{(ix) $\ELIZA$ Keystack Priority \cite{weizenbaum1966eliza}.}
 The $\ELIZA$ breed implements a pattern-matching dialogue system in which
 patterns are assigned priority scores and matched in priority order against
 the input.  The keystack-priority tests in
