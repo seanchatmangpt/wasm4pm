@@ -14,11 +14,13 @@ license     = "MIT"
 
 [ontology]
 source = "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl"
-additional = [
+imports = [
   "../wasm4pm-compat/ggen/ontology/papers.ttl",
   "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl",
   "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl",
   "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl",
+  "ggen/ontology/breeds.ttl",
+  "ocel/reports/evidence.ttl",
 ]
 standard_only = false
 
@@ -28,7 +30,7 @@ output_dir = "."
 [inference]
 enabled = true
 rules = [
-  { name = "alive-gate", construct = "CONSTRUCT { ?s a ?class } WHERE { ?s a ?class }" }
+  { name = "alive-gate", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#breedStatus> \"PARTIAL_ALIVE\" } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> ; <https://wasm4pm.dev/ns#measuredFitness> ?f ; <https://wasm4pm.dev/ns#ocelAdmitted> true . FILTER(?f = 1.0) }" }
 ]
 
 [[packs]]
@@ -47,4 +49,78 @@ name        = "witness-markers"
 query       = { file = "ggen/queries/extract-witnesses-full.rq" }
 template    = { file = "../wasm4pm-compat/ggen/templates/witness-marker.tera" }
 output_file = "../wasm4pm-compat/src/witnesses.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-registration
+# Generates the breeds!{} macro invocation (registration.rs included from mod.rs)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "breed-registration"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-registration.rs.tera" }
+output_file = "crates/wasm4pm-cognition/src/breeds/registration.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-stubs (per-row fan-out via {{ breed_id }} in output_file)
+# Creates skeleton .rs files for breeds that have no implementation yet.
+# mode=Create means existing implemented files are preserved.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "breed-stubs"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-stub.rs.tera" }
+output_file = "crates/wasm4pm-cognition/src/breeds/{{ breed_id }}.rs"
+mode        = "Create"
+
+# ---------------------------------------------------------------------------
+# Rule: paper-pointers (Overwrite — anti-cheat test suite, ggen is authority)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "paper-pointers"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "paper-pointers-test.tera" }
+output_file = "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: breed-fixtures (per-row skeleton, Create = preserves hand-filled ones)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "breed-fixtures"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-fixture.json.tera" }
+output_file = "crates/wasm4pm-cognition/tests/fixtures/papers/{{ breed_id }}.json"
+mode        = "Create"
+
+# ---------------------------------------------------------------------------
+# Rule: universal-anticheat (Overwrite — ggen is authority for anti-cheat tests)
+# Uses paper-pointers query so only breeds WITH pointers get a test
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "universal-anticheat"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-paper-pointers.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "universal-anticheat.tera" }
+output_file = "crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: registry-json (Overwrite — admission derived from alive-gate CONSTRUCT)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "registry-json"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "registry.json.tera" }
+output_file = "crates/wasm4pm-cognition/breeds/registry.json"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: ts-breed-ids (Overwrite — packages/cognition/src/breed-ids.ts)
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "ts-breed-ids"
+query       = { pack = "wasm4pm-compat", output = "queries-breeds", file = "extract-breeds.rq" }
+template    = { pack = "wasm4pm-compat", output = "templates-breeds", file = "breed-ids.ts.tera" }
+output_file = "packages/cognition/src/breed-ids.ts"
 mode        = "Overwrite"

@@ -1,0 +1,340 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix compat: <https://wasm4pm.dev/ns#> .
+
+# Consumer breed instances for wasm4pm cognition layer.
+# breedStatus is NEVER set here — it is CONSTRUCT-derived from evidence.ttl via alive-gate.
+# modulePath is only set when the Rust module name differs from breedId.
+
+compat:Breed_abductive_ibe a compat:CognitionBreed ;
+  compat:breedId    "abductive_ibe" ;
+  compat:breedLabel "AbductiveIbe" ;
+  compat:breedDoc   "Cognition breed: abductive_ibe" ;
+  compat:citation   "See src/breeds/abductive_ibe.rs" .
+
+compat:Breed_abductive_lp a compat:CognitionBreed ;
+  compat:breedId    "abductive_lp" ;
+  compat:breedLabel "AbductiveLp" ;
+  compat:breedDoc   "Cognition breed: abductive_lp" ;
+  compat:citation   "See src/breeds/abductive_lp.rs" .
+
+compat:Breed_act_r a compat:CognitionBreed ;
+  compat:breedId    "act_r" ;
+  compat:breedLabel "ActR" ;
+  compat:breedDoc   "Cognition breed: act_r" ;
+  compat:citation   "See src/breeds/act_r.rs" .
+
+compat:Breed_allen_temporal a compat:CognitionBreed ;
+  compat:breedId    "allen_temporal" ;
+  compat:breedLabel "AllenTemporal" ;
+  compat:breedDoc   "Cognition breed: allen_temporal" ;
+  compat:citation   "See src/breeds/allen_temporal.rs" .
+
+compat:Breed_analogy_sme a compat:CognitionBreed ;
+  compat:breedId    "analogy_sme" ;
+  compat:breedLabel "AnalogySme" ;
+  compat:breedDoc   "Cognition breed: analogy_sme" ;
+  compat:citation   "See src/breeds/analogy_sme.rs" .
+
+compat:Breed_asp a compat:CognitionBreed ;
+  compat:breedId    "asp" ;
+  compat:breedLabel "Asp" ;
+  compat:breedDoc   "Cognition breed: asp" ;
+  compat:citation   "See src/breeds/asp.rs" .
+
+compat:Breed_autoinstinct_learning a compat:CognitionBreed ;
+  compat:breedId    "autoinstinct_learning" ;
+  compat:breedLabel "AutoinstinctLearning" ;
+  compat:breedDoc   "Cognition breed: autoinstinct_learning" ;
+  compat:citation   "See src/breeds/autoinstinct_learning.rs" .
+
+compat:Breed_autoinstinct_neurosis a compat:CognitionBreed ;
+  compat:breedId    "autoinstinct_neurosis" ;
+  compat:breedLabel "AutoinstinctNeurosis" ;
+  compat:breedDoc   "Cognition breed: autoinstinct_neurosis" ;
+  compat:citation   "See src/breeds/autoinstinct_neurosis.rs" .
+
+compat:Breed_autoinstinct_semantics a compat:CognitionBreed ;
+  compat:breedId    "autoinstinct_semantics" ;
+  compat:breedLabel "AutoinstinctSemantics" ;
+  compat:breedDoc   "Cognition breed: autoinstinct_semantics" ;
+  compat:citation   "See src/breeds/autoinstinct_semantics.rs" .
+
+compat:Breed_autoinstinct_vision a compat:CognitionBreed ;
+  compat:breedId    "autoinstinct_vision" ;
+  compat:breedLabel "AutoinstinctVision" ;
+  compat:breedDoc   "Cognition breed: autoinstinct_vision" ;
+  compat:citation   "See src/breeds/autoinstinct_vision.rs" .
+
+compat:Breed_bayesian_network a compat:CognitionBreed ;
+  compat:breedId    "bayesian_network" ;
+  compat:breedLabel "BayesianNetwork" ;
+  compat:breedDoc   "Cognition breed: bayesian_network" ;
+  compat:citation   "See src/breeds/bayesian_network.rs" .
+
+compat:Breed_belief_merging a compat:CognitionBreed ;
+  compat:breedId    "belief_merging" ;
+  compat:breedLabel "BeliefMerging" ;
+  compat:breedDoc   "Cognition breed: belief_merging" ;
+  compat:citation   "See src/breeds/belief_merging.rs" .
+
+compat:Breed_cbr a compat:CognitionBreed ;
+  compat:breedId    "cbr" ;
+  compat:breedLabel "Cbr" ;
+  compat:breedDoc   "Cognition breed: cbr" ;
+  compat:citation   "See src/breeds/cbr.rs" .
+
+compat:Breed_circumscription a compat:CognitionBreed ;
+  compat:breedId    "circumscription" ;
+  compat:breedLabel "Circumscription" ;
+  compat:breedDoc   "Cognition breed: circumscription" ;
+  compat:citation   "See src/breeds/circumscription.rs" .
+
+compat:Breed_clp a compat:CognitionBreed ;
+  compat:breedId    "clp" ;
+  compat:breedLabel "Clp" ;
+  compat:breedDoc   "Cognition breed: clp" ;
+  compat:citation   "See src/breeds/clp.rs" .
+
+compat:Breed_construction_grammar a compat:CognitionBreed ;
+  compat:breedId    "construction_grammar" ;
+  compat:breedLabel "ConstructionGrammar" ;
+  compat:breedDoc   "Cognition breed: construction_grammar" ;
+  compat:citation   "See src/breeds/construction_grammar.rs" .
+
+compat:Breed_contingent_plan a compat:CognitionBreed ;
+  compat:breedId    "contingent_plan" ;
+  compat:breedLabel "ContingentPlan" ;
+  compat:breedDoc   "Cognition breed: contingent_plan" ;
+  compat:citation   "See src/breeds/contingent_plan.rs" .
+
+compat:Breed_csp_ac3 a compat:CognitionBreed ;
+  compat:breedId    "csp_ac3" ;
+  compat:breedLabel "CspAc3" ;
+  compat:breedDoc   "Cognition breed: csp_ac3" ;
+  compat:citation   "See src/breeds/csp_ac3.rs" .
+
+compat:Breed_ctl_check a compat:CognitionBreed ;
+  compat:breedId    "ctl_check" ;
+  compat:breedLabel "CtlCheck" ;
+  compat:breedDoc   "Cognition breed: ctl_check" ;
+  compat:citation   "See src/breeds/ctl_check.rs" .
+
+compat:Breed_default_logic a compat:CognitionBreed ;
+  compat:breedId    "default_logic" ;
+  compat:breedLabel "DefaultLogic" ;
+  compat:breedDoc   "Cognition breed: default_logic" ;
+  compat:citation   "See src/breeds/default_logic.rs" .
+
+compat:Breed_dempster_shafer a compat:CognitionBreed ;
+  compat:breedId    "dempster_shafer" ;
+  compat:breedLabel "DempsterShafer" ;
+  compat:breedDoc   "Cognition breed: dempster_shafer" ;
+  compat:citation   "See src/breeds/dempster_shafer.rs" .
+
+compat:Breed_dendral a compat:CognitionBreed ;
+  compat:breedId    "dendral" ;
+  compat:breedLabel "Dendral" ;
+  compat:breedDoc   "Cognition breed: dendral" ;
+  compat:citation   "See src/breeds/dendral.rs" .
+
+compat:Breed_description_logic a compat:CognitionBreed ;
+  compat:breedId    "description_logic" ;
+  compat:breedLabel "DescriptionLogic" ;
+  compat:breedDoc   "Cognition breed: description_logic" ;
+  compat:citation   "See src/breeds/description_logic.rs" .
+
+compat:Breed_ebl a compat:CognitionBreed ;
+  compat:breedId    "ebl" ;
+  compat:breedLabel "Ebl" ;
+  compat:breedDoc   "Cognition breed: ebl" ;
+  compat:citation   "See src/breeds/ebl.rs" .
+
+compat:Breed_eliza a compat:CognitionBreed ;
+  compat:breedId    "eliza" ;
+  compat:breedLabel "Eliza" ;
+  compat:breedDoc   "Cognition breed: eliza" ;
+  compat:modulePath "frame" ;
+  compat:citation   "See src/breeds/frame.rs" .
+
+compat:Breed_episodic_memory a compat:CognitionBreed ;
+  compat:breedId    "episodic_memory" ;
+  compat:breedLabel "EpisodicMemory" ;
+  compat:breedDoc   "Cognition breed: episodic_memory" ;
+  compat:citation   "See src/breeds/episodic_memory.rs" .
+
+compat:Breed_event_calculus a compat:CognitionBreed ;
+  compat:breedId    "event_calculus" ;
+  compat:breedLabel "EventCalculus" ;
+  compat:breedDoc   "Cognition breed: event_calculus" ;
+  compat:citation   "See src/breeds/event_calculus.rs" .
+
+compat:Breed_frames_inheritance a compat:CognitionBreed ;
+  compat:breedId    "frames_inheritance" ;
+  compat:breedLabel "FramesInheritance" ;
+  compat:breedDoc   "Cognition breed: frames_inheritance" ;
+  compat:citation   "See src/breeds/frames_inheritance.rs" .
+
+compat:Breed_fuzzy_logic a compat:CognitionBreed ;
+  compat:breedId    "fuzzy_logic" ;
+  compat:breedLabel "FuzzyLogic" ;
+  compat:breedDoc   "Cognition breed: fuzzy_logic" ;
+  compat:citation   "See src/breeds/fuzzy_logic.rs" .
+
+compat:Breed_gps a compat:CognitionBreed ;
+  compat:breedId    "gps" ;
+  compat:breedLabel "Gps" ;
+  compat:breedDoc   "Cognition breed: gps" ;
+  compat:citation   "See src/breeds/gps.rs" .
+
+compat:Breed_hearsay a compat:CognitionBreed ;
+  compat:breedId    "hearsay" ;
+  compat:breedLabel "Hearsay" ;
+  compat:breedDoc   "Cognition breed: hearsay" ;
+  compat:citation   "See src/breeds/hearsay.rs" .
+
+compat:Breed_htn_planning a compat:CognitionBreed ;
+  compat:breedId    "htn_planning" ;
+  compat:breedLabel "HtnPlanning" ;
+  compat:breedDoc   "Cognition breed: htn_planning" ;
+  compat:citation   "See src/breeds/htn_planning.rs" .
+
+compat:Breed_ilp a compat:CognitionBreed ;
+  compat:breedId    "ilp" ;
+  compat:breedLabel "Ilp" ;
+  compat:breedDoc   "Cognition breed: ilp" ;
+  compat:citation   "See src/breeds/ilp.rs" .
+
+compat:Breed_ltl_monitor a compat:CognitionBreed ;
+  compat:breedId    "ltl_monitor" ;
+  compat:breedLabel "LtlMonitor" ;
+  compat:breedDoc   "Cognition breed: ltl_monitor" ;
+  compat:citation   "See src/breeds/ltl_monitor.rs" .
+
+compat:Breed_markov_logic a compat:CognitionBreed ;
+  compat:breedId    "markov_logic" ;
+  compat:breedLabel "MarkovLogic" ;
+  compat:breedDoc   "Cognition breed: markov_logic" ;
+  compat:citation   "See src/breeds/markov_logic.rs" .
+
+compat:Breed_mdp a compat:CognitionBreed ;
+  compat:breedId    "mdp" ;
+  compat:breedLabel "Mdp" ;
+  compat:breedDoc   "Cognition breed: mdp" ;
+  compat:citation   "See src/breeds/mdp.rs" .
+
+compat:Breed_meta_reasoning a compat:CognitionBreed ;
+  compat:breedId    "meta_reasoning" ;
+  compat:breedLabel "MetaReasoning" ;
+  compat:breedDoc   "Cognition breed: meta_reasoning" ;
+  compat:citation   "See src/breeds/meta_reasoning.rs" .
+
+compat:Breed_morphological a compat:CognitionBreed ;
+  compat:breedId    "morphological" ;
+  compat:breedLabel "Morphological" ;
+  compat:breedDoc   "Cognition breed: morphological" ;
+  compat:citation   "See src/breeds/morphological.rs" .
+
+compat:Breed_mycin a compat:CognitionBreed ;
+  compat:breedId    "mycin" ;
+  compat:breedLabel "Mycin" ;
+  compat:breedDoc   "Cognition breed: mycin" ;
+  compat:modulePath "production_rules" ;
+  compat:citation   "See src/breeds/production_rules.rs" .
+
+compat:Breed_naive_physics a compat:CognitionBreed ;
+  compat:breedId    "naive_physics" ;
+  compat:breedLabel "NaivePhysics" ;
+  compat:breedDoc   "Cognition breed: naive_physics" ;
+  compat:citation   "See src/breeds/naive_physics.rs" .
+
+compat:Breed_ocpm_route_discoverer a compat:CognitionBreed ;
+  compat:breedId    "ocpm_route_discoverer" ;
+  compat:breedLabel "OcpmRouteDiscoverer" ;
+  compat:breedDoc   "Cognition breed: ocpm_route_discoverer" ;
+  compat:citation   "See src/breeds/ocpm_route_discoverer.rs" .
+
+compat:Breed_partial_order_plan a compat:CognitionBreed ;
+  compat:breedId    "partial_order_plan" ;
+  compat:breedLabel "PartialOrderPlan" ;
+  compat:breedDoc   "Cognition breed: partial_order_plan" ;
+  compat:citation   "See src/breeds/partial_order_plan.rs" .
+
+compat:Breed_pomdp a compat:CognitionBreed ;
+  compat:breedId    "pomdp" ;
+  compat:breedLabel "Pomdp" ;
+  compat:breedDoc   "Cognition breed: pomdp" ;
+  compat:citation   "See src/breeds/pomdp.rs" .
+
+compat:Breed_problog a compat:CognitionBreed ;
+  compat:breedId    "problog" ;
+  compat:breedLabel "Problog" ;
+  compat:breedDoc   "Cognition breed: problog" ;
+  compat:citation   "See src/breeds/problog.rs" .
+
+compat:Breed_prolog a compat:CognitionBreed ;
+  compat:breedId    "prolog" ;
+  compat:breedLabel "Prolog" ;
+  compat:breedDoc   "Cognition breed: prolog" ;
+  compat:citation   "See src/breeds/prolog.rs" .
+
+compat:Breed_qualitative_reason a compat:CognitionBreed ;
+  compat:breedId    "qualitative_reason" ;
+  compat:breedLabel "QualitativeReason" ;
+  compat:breedDoc   "Cognition breed: qualitative_reason" ;
+  compat:citation   "See src/breeds/qualitative_reason.rs" .
+
+compat:Breed_rl_symbolic a compat:CognitionBreed ;
+  compat:breedId    "rl_symbolic" ;
+  compat:breedLabel "RlSymbolic" ;
+  compat:breedDoc   "Cognition breed: rl_symbolic" ;
+  compat:citation   "See src/breeds/rl_symbolic.rs" .
+
+compat:Breed_sat_cdcl a compat:CognitionBreed ;
+  compat:breedId    "sat_cdcl" ;
+  compat:breedLabel "SatCdcl" ;
+  compat:breedDoc   "Cognition breed: sat_cdcl" ;
+  compat:citation   "See src/breeds/sat_cdcl.rs" .
+
+compat:Breed_script_sam a compat:CognitionBreed ;
+  compat:breedId    "script_sam" ;
+  compat:breedLabel "ScriptSam" ;
+  compat:breedDoc   "Cognition breed: script_sam" ;
+  compat:citation   "See src/breeds/script_sam.rs" .
+
+compat:Breed_situation_calculus a compat:CognitionBreed ;
+  compat:breedId    "situation_calculus" ;
+  compat:breedLabel "SituationCalculus" ;
+  compat:breedDoc   "Cognition breed: situation_calculus" ;
+  compat:citation   "See src/breeds/situation_calculus.rs" .
+
+compat:Breed_soar a compat:CognitionBreed ;
+  compat:breedId    "soar" ;
+  compat:breedLabel "Soar" ;
+  compat:breedDoc   "Cognition breed: soar" ;
+  compat:citation   "See src/breeds/soar.rs" .
+
+compat:Breed_strips a compat:CognitionBreed ;
+  compat:breedId    "strips" ;
+  compat:breedLabel "Strips" ;
+  compat:breedDoc   "Cognition breed: strips" ;
+  compat:citation   "See src/breeds/strips.rs" .
+
+compat:Breed_tableaux a compat:CognitionBreed ;
+  compat:breedId    "tableaux" ;
+  compat:breedLabel "Tableaux" ;
+  compat:breedDoc   "Cognition breed: tableaux" ;
+  compat:citation   "See src/breeds/tableaux.rs" .
+
+compat:Breed_triz a compat:CognitionBreed ;
+  compat:breedId    "triz" ;
+  compat:breedLabel "Triz" ;
+  compat:breedDoc   "Cognition breed: triz" ;
+  compat:citation   "See src/breeds/triz.rs" .
+
+compat:Breed_version_space a compat:CognitionBreed ;
+  compat:breedId    "version_space" ;
+  compat:breedLabel "VersionSpace" ;
+  compat:breedDoc   "Cognition breed: version_space" ;
+  compat:citation   "See src/breeds/version_space.rs" .
+
