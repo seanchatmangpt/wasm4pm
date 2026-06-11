@@ -82,172 +82,169 @@ pub mod standing;
 /// Phantom-typed receipt chain for the oracle/audit layer.
 pub mod oracle_chain;
 
-/// Unique identifier for each old-AI breed system.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum BreedId {
-    /// ELIZA-style pattern matching with slot filling (Weizenbaum 1966)
-    Eliza,
-    /// Case-Based Reasoning via Jaccard similarity (Schank 1983)
-    Cbr,
-    /// DENDRAL: enumerate 9 architecture families by constraints (Feigenbaum 1971)
-    Dendral,
-    /// STRIPS: precondition-based planner (Fikes & Nilsson 1971)
-    Strips,
-    /// Prolog: Horn-clause backward chaining (Robinson 1965)
-    Prolog,
-    /// MYCIN: forward-chaining rule engine with certainty factors (Shortliffe 1976)
-    Mycin,
-    /// GPS: General Problem Solver, means-ends gap reduction (Newell & Shaw 1963)
-    Gps,
-    /// SOAR: preference-based operator selection (Laird 1987)
-    Soar,
-    /// Hearsay-II: blackboard consensus fusion (Erman & Lesser 1980)
-    Hearsay,
-    /// AutoinstinctLearning: STRIPS/HACKER bitwise heuristic planning (Winston 1975)
-    AutoinstinctLearning,
-    /// AutoinstinctSemantics: NLU via Schank CD primitives (ELIZA/SHRDLU lineage)
-    AutoinstinctSemantics,
-    /// AutoinstinctNeurosis: neural-pattern anxiety/conflict detection (Boden 1977)
-    AutoinstinctNeurosis,
-    /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
-    AutoinstinctVision,
-    /// LTL runtime monitor via Havelund–Roşu progression (2001)
-    LtlMonitor,
-    /// Allen interval algebra path consistency (Allen 1983)
-    AllenTemporal,
-    /// Mamdani fuzzy inference (Mamdani & Assilian 1975)
-    FuzzyLogic,
-    /// Bayesian network: exact VE + d-separation (Pearl 1988)
-    BayesianNetwork,
-    /// CSP: AC-3 + MAC backtracking (Mackworth 1977)
-    CspAc3,
-    /// Reiter default logic (Reiter 1980)
-    DefaultLogic,
-    /// SHOP2-style HTN planning (Nau et al. 2003)
-    HtnPlanning,
-    /// Dempster–Shafer evidence combination (Shafer 1976)
-    DempsterShafer,
-    /// Minsky frame inheritance (Minsky 1974)
-    FramesInheritance,
-    /// Explanation-based learning (Mitchell et al. 1986)
-    Ebl,
-    /// ASP: Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz 1988)
-    Asp,
-    /// Description Logic: EL completion-rule classification (Baader, Brandt & Lutz 2005)
-    DescriptionLogic,
-    /// Abductive Logic Programming (Kakas, Kowalski & Toni 1992)
-    AbductiveLp,
-    /// Abduction as Inference to the Best Explanation (Harman 1965; Thagard 1978)
-    AbductiveIbe,
-    /// SNLP partial-order planning (McAllester & Rosenblitt 1991)
-    PartialOrderPlan,
-    /// Event Calculus (Kowalski & Sergot 1986)
-    EventCalculus,
-    /// MDP value iteration (Bellman 1957)
-    Mdp,
-    /// Version-space candidate elimination (Mitchell 1982)
-    VersionSpace,
-    /// Belief merging — Σ / GMax distance-based operators (Konieczny & Pino Pérez 2002)
-    BeliefMerging,
-    /// Qualitative reasoning — confluences (de Kleer & Brown 1984)
-    QualitativeReason,
-    /// SAM script application (Schank & Abelson 1977)
-    ScriptSam,
-    /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
-    Clp,
-    /// Situation calculus with successor-state axioms (Reiter 1991)
-    SituationCalculus,
-    /// Circumscription: minimal-model nonmonotonic entailment (McCarthy 1980)
-    Circumscription,
-    /// SME: structure-mapping analogy engine (Falkenhainer, Forbus & Gentner 1989)
-    AnalogySme,
-    /// ACT-R production cycle with activation-based retrieval (Anderson & Lebiere 1998)
-    ActR,
-    /// ProbLog: exact possible-worlds probabilistic Horn logic (De Raedt et al. 2007)
-    Problog,
-    /// CDCL SAT with 1-UIP clause learning (Marques-Silva & Sakallah 1999)
-    SatCdcl,
-    /// Episodic memory with temporal-proximity recall (Tulving 1983; Nuxoll & Laird 2007)
-    EpisodicMemory,
-    /// Tabular Q-learning over a symbolic MDP (Watkins & Dayan 1992)
-    RlSymbolic,
-    /// CTL model checking by fixed-point labeling (Clarke, Emerson & Sistla 1986)
-    CtlCheck,
-    /// FOIL inductive logic programming (Quinlan 1990)
-    Ilp,
-    /// Naive physics axiom saturation (Hayes 1979/1985)
-    NaivePhysics,
-    /// Tableaux: Smullyan signed analytic tableaux for propositional validity (Smullyan 1968)
-    Tableaux,
-    /// Construction Grammar: Goldberg argument-structure constructions (Goldberg 1995)
-    ConstructionGrammar,
-    /// Markov Logic: propositional MLN MAP inference via MaxWalkSAT (Richardson & Domingos 2006)
-    MarkovLogic,
-    /// POMDP: exact Bayes belief update + bounded PBVI (Kaelbling, Littman & Cassandra 1998)
-    Pomdp,
-    /// Contingent Planning: AND-OR search over belief states with sensing (Russell & Norvig, AIMA §4.3.2)
-    ContingentPlan,
-    /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
-    MetaReasoning,
+/// Declarative breed registration: one entry per line, string id literal
+/// verbatim (greppable; integrator unions entries alphabetically per tier,
+/// same merge profile as the former hand-written enum + match arms).
+///
+/// Generates four surfaces from a single declaration:
+/// `BreedId` (with per-variant docs), `Display`, `from_str_id`, and the
+/// `breed_instance` static routing table consumed by both dispatch fns.
+///
+/// Surfaces deliberately NOT generated here:
+/// - `BreedId::ALL` — the legally-admitted PARTIAL_ALIVE subset (two-key
+///   ceremony, policed by tests/registry_admission.rs).
+/// - `ocel::lifecycle_model_for` — model absence is meaningful (gates OCEL
+///   conformance); remains the one hand-edited Rust routing surface.
+/// - `breeds/registry.json` and the TS `BreedIdSchema` — cross-language,
+///   policed by registry_admission + fixture_parity.
+macro_rules! breeds {
+    ( $( $(#[$doc:meta])* $variant:ident = $id:literal => $path:path ; )+ ) => {
+        /// Unique identifier for each old-AI breed system.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+        pub enum BreedId {
+            $( $(#[$doc])* $variant, )+
+        }
+
+        impl fmt::Display for BreedId {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $( BreedId::$variant => f.write_str($id), )+
+                }
+            }
+        }
+
+        impl BreedId {
+            /// Parse a breed id string into its enum variant. Returns None for
+            /// unknown or not-yet-implemented ids (e.g. "ocpm_route_discoverer"
+            /// is registered but unimplemented).
+            pub fn from_str_id(s: &str) -> Option<Self> {
+                match s {
+                    $( $id => Some(Self::$variant), )+
+                    _ => None,
+                }
+            }
+
+            /// Number of registered (dispatchable) breeds — may exceed
+            /// `ALL.len()` while a breed awaits registry admission.
+            pub const REGISTERED_COUNT: usize = [$( $id ),+].len();
+        }
+
+        /// Static instance table: the single routing surface both
+        /// `dispatch_breed_id` and `dispatch_breed_test_id` consume.
+        /// Exhaustiveness is compiler-enforced by the match over `BreedId`.
+        pub fn breed_instance(id: BreedId) -> &'static dyn CognitionBreed {
+            match id {
+                $( BreedId::$variant => &$path, )+
+            }
+        }
+    };
 }
 
-impl fmt::Display for BreedId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            BreedId::Eliza => write!(f, "eliza"),
-            BreedId::Cbr => write!(f, "cbr"),
-            BreedId::Dendral => write!(f, "dendral"),
-            BreedId::Strips => write!(f, "strips"),
-            BreedId::Prolog => write!(f, "prolog"),
-            BreedId::Mycin => write!(f, "mycin"),
-            BreedId::Gps => write!(f, "gps"),
-            BreedId::Soar => write!(f, "soar"),
-            BreedId::Hearsay => write!(f, "hearsay"),
-            BreedId::AutoinstinctLearning => write!(f, "autoinstinct_learning"),
-            BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
-            BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
-            BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
-            BreedId::LtlMonitor => write!(f, "ltl_monitor"),
-            BreedId::AllenTemporal => write!(f, "allen_temporal"),
-            BreedId::FuzzyLogic => write!(f, "fuzzy_logic"),
-            BreedId::BayesianNetwork => write!(f, "bayesian_network"),
-            BreedId::CspAc3 => write!(f, "csp_ac3"),
-            BreedId::DefaultLogic => write!(f, "default_logic"),
-            BreedId::HtnPlanning => write!(f, "htn_planning"),
-            BreedId::DempsterShafer => write!(f, "dempster_shafer"),
-            BreedId::FramesInheritance => write!(f, "frames_inheritance"),
-            BreedId::Ebl => write!(f, "ebl"),
-            BreedId::Asp => write!(f, "asp"),
-            BreedId::DescriptionLogic => write!(f, "description_logic"),
-            BreedId::AbductiveLp => write!(f, "abductive_lp"),
-            BreedId::AbductiveIbe => write!(f, "abductive_ibe"),
-            BreedId::PartialOrderPlan => write!(f, "partial_order_plan"),
-            BreedId::EventCalculus => write!(f, "event_calculus"),
-            BreedId::Mdp => write!(f, "mdp"),
-            BreedId::VersionSpace => write!(f, "version_space"),
-            BreedId::BeliefMerging => write!(f, "belief_merging"),
-            BreedId::QualitativeReason => write!(f, "qualitative_reason"),
-            BreedId::ScriptSam => write!(f, "script_sam"),
-            BreedId::Clp => write!(f, "clp"),
-            BreedId::SituationCalculus => write!(f, "situation_calculus"),
-            BreedId::Circumscription => write!(f, "circumscription"),
-            BreedId::AnalogySme => write!(f, "analogy_sme"),
-            BreedId::ActR => write!(f, "act_r"),
-            BreedId::Problog => write!(f, "problog"),
-            BreedId::SatCdcl => write!(f, "sat_cdcl"),
-            BreedId::EpisodicMemory => write!(f, "episodic_memory"),
-            BreedId::RlSymbolic => write!(f, "rl_symbolic"),
-            BreedId::CtlCheck => write!(f, "ctl_check"),
-            BreedId::Ilp => write!(f, "ilp"),
-            BreedId::NaivePhysics => write!(f, "naive_physics"),
-            BreedId::Tableaux => write!(f, "tableaux"),
-            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
-            BreedId::MarkovLogic => write!(f, "markov_logic"),
-            BreedId::Pomdp => write!(f, "pomdp"),
-            BreedId::ContingentPlan => write!(f, "contingent_plan"),
-            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
-        }
-    }
+breeds! {
+    /// ELIZA-style pattern matching with slot filling (Weizenbaum 1966)
+    Eliza = "eliza" => crate::breeds::frame::Eliza;
+    /// Case-Based Reasoning via Jaccard similarity (Schank 1983)
+    Cbr = "cbr" => crate::breeds::cbr::Cbr;
+    /// DENDRAL: enumerate 9 architecture families by constraints (Feigenbaum 1971)
+    Dendral = "dendral" => crate::breeds::dendral::Dendral;
+    /// STRIPS: precondition-based planner (Fikes & Nilsson 1971)
+    Strips = "strips" => crate::breeds::strips::Strips;
+    /// Prolog: Horn-clause backward chaining (Robinson 1965)
+    Prolog = "prolog" => crate::breeds::prolog::Prolog;
+    /// MYCIN: forward-chaining rule engine with certainty factors (Shortliffe 1976)
+    Mycin = "mycin" => crate::breeds::production_rules::Mycin;
+    /// GPS: General Problem Solver, means-ends gap reduction (Newell & Shaw 1963)
+    Gps = "gps" => crate::breeds::gps::Gps;
+    /// SOAR: preference-based operator selection (Laird 1987)
+    Soar = "soar" => crate::breeds::soar::Soar;
+    /// Hearsay-II: blackboard consensus fusion (Erman & Lesser 1980)
+    Hearsay = "hearsay" => crate::breeds::hearsay::Hearsay;
+    /// AutoinstinctLearning: STRIPS/HACKER bitwise heuristic planning (Winston 1975)
+    AutoinstinctLearning = "autoinstinct_learning" => crate::breeds::autoinstinct_learning::AutoinstinctLearning;
+    /// AutoinstinctSemantics: NLU via Schank CD primitives (ELIZA/SHRDLU lineage)
+    AutoinstinctSemantics = "autoinstinct_semantics" => crate::breeds::autoinstinct_semantics::AutoinstinctSemantics;
+    /// AutoinstinctNeurosis: neural-pattern anxiety/conflict detection (Boden 1977)
+    AutoinstinctNeurosis = "autoinstinct_neurosis" => crate::breeds::autoinstinct_neurosis::AutoinstinctNeurosis;
+    /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
+    AutoinstinctVision = "autoinstinct_vision" => crate::breeds::autoinstinct_vision::AutoinstinctVision;
+    /// LTL runtime monitor via Havelund–Roşu progression (2001)
+    LtlMonitor = "ltl_monitor" => crate::breeds::ltl_monitor::LtlMonitor;
+    /// Allen interval algebra path consistency (Allen 1983)
+    AllenTemporal = "allen_temporal" => crate::breeds::allen_temporal::AllenTemporal;
+    /// Mamdani fuzzy inference (Mamdani & Assilian 1975)
+    FuzzyLogic = "fuzzy_logic" => crate::breeds::fuzzy_logic::FuzzyLogic;
+    /// Bayesian network: exact VE + d-separation (Pearl 1988)
+    BayesianNetwork = "bayesian_network" => crate::breeds::bayesian_network::BayesianNetwork;
+    /// CSP: AC-3 + MAC backtracking (Mackworth 1977)
+    CspAc3 = "csp_ac3" => crate::breeds::csp_ac3::CspAc3;
+    /// Reiter default logic (Reiter 1980)
+    DefaultLogic = "default_logic" => crate::breeds::default_logic::DefaultLogic;
+    /// SHOP2-style HTN planning (Nau et al. 2003)
+    HtnPlanning = "htn_planning" => crate::breeds::htn_planning::HtnPlanning;
+    /// Dempster–Shafer evidence combination (Shafer 1976)
+    DempsterShafer = "dempster_shafer" => crate::breeds::dempster_shafer::DempsterShafer;
+    /// Minsky frame inheritance (Minsky 1974)
+    FramesInheritance = "frames_inheritance" => crate::breeds::frames_inheritance::FramesInheritance;
+    /// Explanation-based learning (Mitchell et al. 1986)
+    Ebl = "ebl" => crate::breeds::ebl::Ebl;
+    /// ASP: Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz 1988)
+    Asp = "asp" => crate::breeds::asp::Asp;
+    /// Description Logic: EL completion-rule classification (Baader, Brandt & Lutz 2005)
+    DescriptionLogic = "description_logic" => crate::breeds::description_logic::DescriptionLogic;
+    /// Abductive Logic Programming (Kakas, Kowalski & Toni 1992)
+    AbductiveLp = "abductive_lp" => crate::breeds::abductive_lp::AbductiveLp;
+    /// Abduction as Inference to the Best Explanation (Harman 1965; Thagard 1978)
+    AbductiveIbe = "abductive_ibe" => crate::breeds::abductive_ibe::AbductiveIbe;
+    /// SNLP partial-order planning (McAllester & Rosenblitt 1991)
+    PartialOrderPlan = "partial_order_plan" => crate::breeds::partial_order_plan::PartialOrderPlan;
+    /// Event Calculus (Kowalski & Sergot 1986)
+    EventCalculus = "event_calculus" => crate::breeds::event_calculus::EventCalculus;
+    /// MDP value iteration (Bellman 1957)
+    Mdp = "mdp" => crate::breeds::mdp::Mdp;
+    /// Version-space candidate elimination (Mitchell 1982)
+    VersionSpace = "version_space" => crate::breeds::version_space::VersionSpace;
+    /// Belief merging — Σ / GMax distance-based operators (Konieczny & Pino Pérez 2002)
+    BeliefMerging = "belief_merging" => crate::breeds::belief_merging::BeliefMerging;
+    /// Qualitative reasoning — confluences (de Kleer & Brown 1984)
+    QualitativeReason = "qualitative_reason" => crate::breeds::qualitative_reason::QualitativeReason;
+    /// SAM script application (Schank & Abelson 1977)
+    ScriptSam = "script_sam" => crate::breeds::script_sam::ScriptSam;
+    /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
+    Clp = "clp" => crate::breeds::clp::Clp;
+    /// Situation calculus with successor-state axioms (Reiter 1991)
+    SituationCalculus = "situation_calculus" => crate::breeds::situation_calculus::SituationCalculus;
+    /// Circumscription: minimal-model nonmonotonic entailment (McCarthy 1980)
+    Circumscription = "circumscription" => crate::breeds::circumscription::Circumscription;
+    /// SME: structure-mapping analogy engine (Falkenhainer, Forbus & Gentner 1989)
+    AnalogySme = "analogy_sme" => crate::breeds::analogy_sme::AnalogySme;
+    /// ACT-R production cycle with activation-based retrieval (Anderson & Lebiere 1998)
+    ActR = "act_r" => crate::breeds::act_r::ActR;
+    /// ProbLog: exact possible-worlds probabilistic Horn logic (De Raedt et al. 2007)
+    Problog = "problog" => crate::breeds::problog::Problog;
+    /// CDCL SAT with 1-UIP clause learning (Marques-Silva & Sakallah 1999)
+    SatCdcl = "sat_cdcl" => crate::breeds::sat_cdcl::SatCdcl;
+    /// Episodic memory with temporal-proximity recall (Tulving 1983; Nuxoll & Laird 2007)
+    EpisodicMemory = "episodic_memory" => crate::breeds::episodic_memory::EpisodicMemory;
+    /// Tabular Q-learning over a symbolic MDP (Watkins & Dayan 1992)
+    RlSymbolic = "rl_symbolic" => crate::breeds::rl_symbolic::RlSymbolic;
+    /// CTL model checking by fixed-point labeling (Clarke, Emerson & Sistla 1986)
+    CtlCheck = "ctl_check" => crate::breeds::ctl_check::CtlCheck;
+    /// FOIL inductive logic programming (Quinlan 1990)
+    Ilp = "ilp" => crate::breeds::ilp::Ilp;
+    /// Naive physics axiom saturation (Hayes 1979/1985)
+    NaivePhysics = "naive_physics" => crate::breeds::naive_physics::NaivePhysics;
+    /// Tableaux: Smullyan signed analytic tableaux for propositional validity (Smullyan 1968)
+    Tableaux = "tableaux" => crate::breeds::tableaux::Tableaux;
+    /// Construction Grammar: Goldberg argument-structure constructions (Goldberg 1995)
+    ConstructionGrammar = "construction_grammar" => crate::breeds::construction_grammar::ConstructionGrammar;
+    /// Markov Logic: propositional MLN MAP inference via MaxWalkSAT (Richardson & Domingos 2006)
+    MarkovLogic = "markov_logic" => crate::breeds::markov_logic::MarkovLogic;
+    /// POMDP: exact Bayes belief update + bounded PBVI (Kaelbling, Littman & Cassandra 1998)
+    Pomdp = "pomdp" => crate::breeds::pomdp::Pomdp;
+    /// Contingent Planning: AND-OR search over belief states with sensing (Russell & Norvig, AIMA §4.3.2)
+    ContingentPlan = "contingent_plan" => crate::breeds::contingent_plan::ContingentPlan;
+    /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
+    MetaReasoning = "meta_reasoning" => crate::breeds::meta_reasoning::MetaReasoning;
 }
 
 /// A logical fact: key-value pair in the knowledge representation.
@@ -569,67 +566,6 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
 }
 
 impl BreedId {
-    /// Parse a breed id string into a `BreedId`, if it is a known PARTIAL_ALIVE breed.
-    /// Returns `None` for unsupported (morphological, triz, ocpm_route_discoverer) or unknown strings.
-    pub fn from_str_id(s: &str) -> Option<Self> {
-        match s {
-            "eliza" => Some(Self::Eliza),
-            "cbr" => Some(Self::Cbr),
-            "dendral" => Some(Self::Dendral),
-            "strips" => Some(Self::Strips),
-            "prolog" => Some(Self::Prolog),
-            "mycin" => Some(Self::Mycin),
-            "gps" => Some(Self::Gps),
-            "soar" => Some(Self::Soar),
-            "hearsay" => Some(Self::Hearsay),
-            "autoinstinct_learning" => Some(Self::AutoinstinctLearning),
-            "autoinstinct_semantics" => Some(Self::AutoinstinctSemantics),
-            "autoinstinct_neurosis" => Some(Self::AutoinstinctNeurosis),
-            "autoinstinct_vision" => Some(Self::AutoinstinctVision),
-            "ltl_monitor" => Some(Self::LtlMonitor),
-            "allen_temporal" => Some(Self::AllenTemporal),
-            "fuzzy_logic" => Some(Self::FuzzyLogic),
-            "bayesian_network" => Some(Self::BayesianNetwork),
-            "csp_ac3" => Some(Self::CspAc3),
-            "default_logic" => Some(Self::DefaultLogic),
-            "htn_planning" => Some(Self::HtnPlanning),
-            "dempster_shafer" => Some(Self::DempsterShafer),
-            "frames_inheritance" => Some(Self::FramesInheritance),
-            "ebl" => Some(Self::Ebl),
-            "asp" => Some(Self::Asp),
-            "description_logic" => Some(Self::DescriptionLogic),
-            "abductive_lp" => Some(Self::AbductiveLp),
-            "abductive_ibe" => Some(Self::AbductiveIbe),
-            "partial_order_plan" => Some(Self::PartialOrderPlan),
-            "event_calculus" => Some(Self::EventCalculus),
-            "mdp" => Some(Self::Mdp),
-            "version_space" => Some(Self::VersionSpace),
-            "belief_merging" => Some(Self::BeliefMerging),
-            "qualitative_reason" => Some(Self::QualitativeReason),
-            "script_sam" => Some(Self::ScriptSam),
-            "clp" => Some(Self::Clp),
-            "situation_calculus" => Some(Self::SituationCalculus),
-            "circumscription" => Some(Self::Circumscription),
-            "analogy_sme" => Some(Self::AnalogySme),
-            "act_r" => Some(Self::ActR),
-            "problog" => Some(Self::Problog),
-            "sat_cdcl" => Some(Self::SatCdcl),
-            "episodic_memory" => Some(Self::EpisodicMemory),
-            "rl_symbolic" => Some(Self::RlSymbolic),
-            "ctl_check" => Some(Self::CtlCheck),
-            "ilp" => Some(Self::Ilp),
-            "naive_physics" => Some(Self::NaivePhysics),
-            "tableaux" => Some(Self::Tableaux),
-            "construction_grammar" => Some(Self::ConstructionGrammar),
-            "markov_logic" => Some(Self::MarkovLogic),
-            "pomdp" => Some(Self::Pomdp),
-            "contingent_plan" => Some(Self::ContingentPlan),
-            "meta_reasoning" => Some(Self::MetaReasoning),
-            // Registered but not yet implemented:
-            "morphological" | "triz" | "ocpm_route_discoverer" => None,
-            _ => None,
-        }
-    }
 
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
     pub const ALL: [BreedId; 52] = [
@@ -688,3 +624,44 @@ impl BreedId {
     ];
 }
 
+
+#[cfg(test)]
+mod registration_tests {
+    use super::*;
+
+    /// Every admitted breed must be a registered macro entry; the macro may
+    /// temporarily register more breeds than are admitted (pre-admission
+    /// window), never fewer.
+    #[test]
+    fn all_is_subset_of_macro_registration() {
+        assert!(
+            BreedId::ALL.len() <= BreedId::REGISTERED_COUNT,
+            "ALL has {} entries but the breeds! macro registers only {} — \
+             an admitted breed is missing its macro entry",
+            BreedId::ALL.len(),
+            BreedId::REGISTERED_COUNT
+        );
+    }
+
+    /// Display ↔ from_str_id round-trip, and the breed_instance table routes
+    /// each id to an instance reporting the same id (catches a mis-paired
+    /// `Variant = "id" => path` macro entry).
+    #[test]
+    fn macro_surfaces_are_mutually_consistent() {
+        for id in BreedId::ALL {
+            let s = id.to_string();
+            assert_eq!(
+                BreedId::from_str_id(&s),
+                Some(id),
+                "from_str_id does not round-trip Display for {}",
+                s
+            );
+            assert_eq!(
+                breed_instance(id).id(),
+                id,
+                "breed_instance table routes {} to a breed reporting a different id",
+                s
+            );
+        }
+    }
+}
