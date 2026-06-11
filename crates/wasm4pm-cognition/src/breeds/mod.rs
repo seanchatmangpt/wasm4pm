@@ -57,6 +57,7 @@ pub mod mdp;
 pub mod partial_order_plan;
 pub mod markov_logic;
 pub mod meta_reasoning;
+pub mod morphological;
 pub mod pomdp;
 pub mod production_rules;
 pub mod prolog;
@@ -245,6 +246,8 @@ breeds! {
     ContingentPlan = "contingent_plan" => crate::breeds::contingent_plan::ContingentPlan;
     /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
     MetaReasoning = "meta_reasoning" => crate::breeds::meta_reasoning::MetaReasoning;
+    /// Morphological: Zwicky field construction + cross-consistency assessment (Zwicky 1947/1969; Ritchey 2011)
+    Morphological = "morphological" => crate::breeds::morphological::Morphological;
 }
 
 /// A logical fact: key-value pair in the knowledge representation.

@@ -60,7 +60,7 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
 /// exhaustiveness. Unknown/unsupported strings are caught before the match.
 pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     let id = BreedId::from_str_id(breed).ok_or_else(|| {
-        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
+        if matches!(breed, "triz" | "ocpm_route_discoverer") {
             format!("unsupported breed: {}", breed)
         } else {
             format!("unknown breed: {}", breed)
@@ -78,7 +78,7 @@ pub fn dispatch_breed_id(id: BreedId, input: &BreedInput) -> Result<BreedOutput,
 /// Test harness: dispatch without OCEL or pre/post checks. Used for raw breed unit tests.
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     let id = BreedId::from_str_id(breed).ok_or_else(|| {
-        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
+        if matches!(breed, "triz" | "ocpm_route_discoverer") {
             format!("unsupported breed: {}", breed)
         } else {
             format!("unknown breed: {}", breed)
