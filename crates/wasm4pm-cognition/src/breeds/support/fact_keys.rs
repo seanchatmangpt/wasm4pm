@@ -78,6 +78,95 @@ impl FactKey {
     }
 }
 
+/// Collect facts whose key starts with `prefix` into a sorted map of
+/// `suffix -> value`. Deterministic by construction (BTreeMap).
+///
+/// For breed-local prefixes (e.g. `morph:param:`) that the closed [`FactKey`]
+/// enum cannot express. Later duplicate keys overwrite earlier ones.
+pub fn parse_prefixed(
+    facts: &[crate::breeds::Fact],
+    prefix: &str,
+) -> std::collections::BTreeMap<String, String> {
+    let mut out = std::collections::BTreeMap::new();
+    for f in facts {
+        if let Some(suffix) = f.key.strip_prefix(prefix) {
+            out.insert(suffix.to_string(), f.value.clone());
+        }
+    }
+    out
+}
+
+/// Like [`parse_prefixed`], but splits each value on `sep` into a list,
+/// trimming whitespace and dropping empty segments. This is the shape used
+/// by field-style inputs (e.g. `morph:param:<name>` -> `v1|v2|v3`).
+pub fn collect_prefixed_split(
+    facts: &[crate::breeds::Fact],
+    prefix: &str,
+    sep: char,
+) -> std::collections::BTreeMap<String, Vec<String>> {
+    let mut out = std::collections::BTreeMap::new();
+    for f in facts {
+        if let Some(suffix) = f.key.strip_prefix(prefix) {
+            let values: Vec<String> = f
+                .value
+                .split(sep)
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+                .collect();
+            out.insert(suffix.to_string(), values);
+        }
+    }
+    out
+}
+
+/// First fact value with an exact key match.
+pub fn fact_value<'a>(facts: &'a [crate::breeds::Fact], key: &str) -> Option<&'a str> {
+    facts.iter().find(|f| f.key == key).map(|f| f.value.as_str())
+}
+
+#[cfg(test)]
+mod prefix_helper_tests {
+    use super::*;
+    use crate::breeds::Fact;
+
+    fn f(key: &str, value: &str) -> Fact {
+        Fact {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
+    }
+
+    #[test]
+    fn parse_prefixed_collects_sorted_suffixes() {
+        let facts = vec![
+            f("morph:param:zeta", "1"),
+            f("other:key", "x"),
+            f("morph:param:alpha", "2"),
+        ];
+        let m = parse_prefixed(&facts, "morph:param:");
+        assert_eq!(
+            m.keys().collect::<Vec<_>>(),
+            vec!["alpha", "zeta"],
+            "BTreeMap must sort suffixes"
+        );
+        assert_eq!(m["alpha"], "2");
+    }
+
+    #[test]
+    fn collect_prefixed_split_trims_and_drops_empty() {
+        let facts = vec![f("morph:param:p", " a | b ||c ")];
+        let m = collect_prefixed_split(&facts, "morph:param:", '|');
+        assert_eq!(m["p"], vec!["a", "b", "c"]);
+    }
+
+    #[test]
+    fn fact_value_finds_first_exact_match() {
+        let facts = vec![f("k", "v1"), f("k", "v2")];
+        assert_eq!(fact_value(&facts, "k"), Some("v1"));
+        assert_eq!(fact_value(&facts, "missing"), None);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

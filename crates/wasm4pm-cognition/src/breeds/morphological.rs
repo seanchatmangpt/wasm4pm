@@ -31,7 +31,9 @@
 //! Caps: ≤ 16 parameters, ≤ 16 values per parameter, field size ≤ 1,000,000
 //! configurations (refusal, not silent truncation).
 
+use crate::breeds::support::fact_keys::collect_prefixed_split;
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::support::tracer::Tracer;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -59,19 +61,7 @@ struct Exclusion {
 /// Parse `morph:param:<name>` facts into a sorted field. Duplicate values
 /// within one parameter are an input defect (reported by preconditions).
 fn parse_field(input: &BreedInput) -> BTreeMap<String, Vec<String>> {
-    let mut field: BTreeMap<String, Vec<String>> = BTreeMap::new();
-    for fact in &input.facts {
-        if let Some(name) = fact.key.strip_prefix(PARAM_PREFIX) {
-            let values: Vec<String> = fact
-                .value
-                .split('|')
-                .map(|v| v.trim().to_string())
-                .filter(|v| !v.is_empty())
-                .collect();
-            field.insert(name.to_string(), values);
-        }
-    }
-    field
+    collect_prefixed_split(&input.facts, PARAM_PREFIX, '|')
 }
 
 /// Parse `morph:exclude` facts of the form `pA=vA|pB=vB`.
@@ -204,36 +194,21 @@ impl CognitionBreed for Morphological {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let err = |m: String| BreedError {
-            breed: BreedId::Morphological,
-            message: m,
-        };
+        let err = |m: String| self.error(m);
         self.preconditions(input).map_err(err)?;
 
         let field = parse_field(input);
         let exclusions = parse_exclusions(input).map_err(err)?;
         let total = field_size(&field).ok_or_else(|| err("field overflow".to_string()))?;
 
-        let mut trace: Vec<TraceStep> = Vec::new();
-        let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
-            trace.push(TraceStep {
-                step: trace.len(),
-                kind: kind.to_string(),
-                detail,
-                depth: 0,
-                objects: vec![],
-            });
-        };
+        let mut trace = Tracer::new();
 
         for (name, values) in &field {
-            push(
-                "define-parameter",
+            trace.push("define-parameter",
                 format!("{}: {} values [{}]", name, values.len(), values.join("|")),
-                &mut trace,
             );
         }
-        push(
-            "compute-field-size",
+        trace.push("compute-field-size",
             format!(
                 "{} = {}",
                 field
@@ -243,7 +218,6 @@ impl CognitionBreed for Morphological {
                     .join(" x "),
                 total
             ),
-            &mut trace,
         );
 
         // Cross-Consistency Assessment: enumerate configurations in odometer
@@ -291,13 +265,11 @@ impl CognitionBreed for Morphological {
         }
 
         for (i, ex) in exclusions.iter().enumerate() {
-            push(
-                "cca-assess",
+            trace.push("cca-assess",
                 format!(
                     "{}={} x {}={} -> excluded in {} configurations",
                     ex.param_a, ex.value_a, ex.param_b, ex.value_b, excluded_per[i]
                 ),
-                &mut trace,
             );
         }
 
@@ -307,13 +279,11 @@ impl CognitionBreed for Morphological {
         } else {
             0
         };
-        push(
-            "synthesize-solution-space",
+        trace.push("synthesize-solution-space",
             format!(
                 "{} of {} configurations internally consistent ({} bp reduced)",
                 consistent, total, reduction_bp
             ),
-            &mut trace,
         );
 
         let selected = first_consistent.map(|cfg| {
@@ -356,16 +326,14 @@ impl CognitionBreed for Morphological {
             reduction_bp
         );
 
-        Ok(BreedOutput {
-            breed: BreedId::Morphological,
-            candidates: input.candidates.clone(),
+        Ok(BreedOutput::from_parts(
+            BreedId::Morphological,
+            input,
             facts,
             selected,
             explanation,
-            inference_trace: trace,
-            ocel_log: None,
-            retained_cases: vec![],
-        })
+            trace.into_vec(),
+        ))
     }
 
     fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
@@ -414,6 +382,7 @@ impl CognitionBreed for Morphological {
 #[cfg(test)]
 mod tests {
     use super::*;
+
 
     fn fact(key: &str, value: &str) -> Fact {
         Fact {
@@ -712,3 +681,4 @@ mod tests {
         assert_eq!(bp.value, "625");
     }
 }
+
