@@ -281,15 +281,27 @@ export function formatErrorForJson(e: unknown): Record<string, unknown> {
 }
 
 /**
- * Generate random trace ID (32 hex chars)
+ * Generate random trace ID (32 hex chars) using Web Crypto API.
  */
 function generateTraceId(): string {
-  return Math.random().toString(16).substring(2) + Math.random().toString(16).substring(2);
+  const buf = new Uint8Array(16);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buf);
+  } else {
+    throw new Error('Cryptographic randomness not available in this environment. Deterministic seeding required.');
+  }
+  return Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 /**
- * Generate random span ID (16 hex chars)
+ * Generate random span ID (16 hex chars) using Web Crypto API.
  */
 function generateSpanId(): string {
-  return Math.random().toString(16).substring(2);
+  const buf = new Uint8Array(8);
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(buf);
+  } else {
+    throw new Error('Cryptographic randomness not available in this environment. Deterministic seeding required.');
+  }
+  return Array.from(buf).map(b => b.toString(16).padStart(2, '0')).join('');
 }

@@ -345,7 +345,7 @@ export function configToConformanceThresholds(config: Config): ConformanceThresh
  *
  * const config = await resolveConfig({ cliOverrides: { profile: 'quality' } });
  * const request = buildMcppRequest(config, 'part-abc-123', [
- *   { id: 'log-1', type: 'EventLog', hash: 'blake3:abc...' },
+ *   { id: 'log-1', type: 'EventLog', hash: 'blake3:abc...' }, // @lint-allow-fakery
  * ]);
  * ```
  */
