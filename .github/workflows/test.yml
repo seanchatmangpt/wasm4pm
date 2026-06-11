@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        node-version: [18, 20]
+        node-version: [22, 24]
         rust-version: [stable, nightly]
         exclude:
           # Run nightly only on Linux to save CI time
