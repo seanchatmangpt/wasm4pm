@@ -33,6 +33,7 @@ jobs:
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust builds
