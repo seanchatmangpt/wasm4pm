@@ -1908,4 +1908,3 @@ fn anticheat_version_space_true_111_not_hardcoded() {
         "version_space"
     );
 }
-

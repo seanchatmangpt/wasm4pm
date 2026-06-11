@@ -30,7 +30,6 @@ standard_only = false
 output_dir = "."
 
 [inference]
-enabled = true
 rules = [
   { name = "alive-gate", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#breedStatus> \"PARTIAL_ALIVE\" } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> ; <https://wasm4pm.dev/ns#measuredFitness> ?f ; <https://wasm4pm.dev/ns#ocelAdmitted> true . FILTER(?f = 1.0) }" }
 ]
@@ -67,16 +66,17 @@ output_file = "crates/wasm4pm-cognition/src/breeds/registration.rs"
 mode        = "Overwrite"
 
 # ---------------------------------------------------------------------------
-# Rule: breed-stubs (per-row fan-out via {{ breed_id }} in output_file)
-# Creates skeleton .rs files for breeds that have no implementation yet.
-# mode=Create means existing implemented files are preserved.
+# Rule: breed-stubs — RETIRED 2026-06-11.
+# ggen >= 26.6.9 Create mode errors (not skips) on existing files; all 55
+# breed modules now exist, so the scaffolding job is done. To scaffold a NEW
+# breed: add it to ggen/ontology/breeds.ttl, uncomment, sync once, re-comment.
 # ---------------------------------------------------------------------------
-[[generation.rules]]
-name        = "breed-stubs"
-query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
-template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-stub.rs.tera" }
-output_file = "crates/wasm4pm-cognition/src/breeds/{{ module_file }}.rs"
-mode        = "Create"
+# [[generation.rules]]
+# name        = "breed-stubs"
+# query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
+# template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-stub.rs.tera" }
+# output_file = "crates/wasm4pm-cognition/src/breeds/{{ module_file }}.rs"
+# mode        = "Create"
 
 # ---------------------------------------------------------------------------
 # Rule: paper-pointers (Overwrite — anti-cheat test suite, ggen is authority)
@@ -89,14 +89,16 @@ output_file = "crates/wasm4pm-cognition/tests/paper_pointers_generated.rs"
 mode        = "Overwrite"
 
 # ---------------------------------------------------------------------------
-# Rule: breed-fixtures (per-row skeleton, Create = preserves hand-filled ones)
+# Rule: breed-fixtures — RETIRED 2026-06-11 (same reason as breed-stubs):
+# ggen >= 26.6.9 Create mode errors on existing files; all 55 fixtures exist
+# and carry real paper values. Re-enable transiently for a NEW breed only.
 # ---------------------------------------------------------------------------
-[[generation.rules]]
-name        = "breed-fixtures"
-query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
-template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-fixture.json.tera" }
-output_file = "crates/wasm4pm-cognition/tests/fixtures/papers/{{ breed_id }}.json"
-mode        = "Create"
+# [[generation.rules]]
+# name        = "breed-fixtures"
+# query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
+# template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-fixture.json.tera" }
+# output_file = "crates/wasm4pm-cognition/tests/fixtures/papers/{{ breed_id }}.json"
+# mode        = "Create"
 
 # ---------------------------------------------------------------------------
 # Rule: universal-anticheat (Overwrite — ggen is authority for anti-cheat tests)
