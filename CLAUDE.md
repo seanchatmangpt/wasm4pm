@@ -27,6 +27,9 @@ cargo check --target wasm32-unknown-unknown --features wasm        # wasm32 gate
 ```
 
 ## Cognition breed rules (binding)
+- **ggen-rendered surfaces (NEVER hand-edit; sync reverts you):** `src/breeds/registration.rs` (breeds! invocation + evidence-derived `BreedId::ALL`), `breeds/registry.json`, `packages/cognition/src/breed-ids.ts`, `tests/paper_pointers_generated.rs`, `tests/universal_anticheat_generated.rs`. To change a breed: edit `ggen/ontology/breeds.ttl`, run `ggen sync`. Gate: `just ggen-gate`.
+- **Admission is evidence-derived:** PARTIAL_ALIVE exists only where `ocel/reports/<breed>.json` has `admitted=true, fitness=1.0` → `just project-evidence` → alive-gate CONSTRUCT. There is no hand-flip path; editing registry.json by hand is reverted by sync.
+- **Paper pointers** (true published value + decoy miscitation per breed) live in `wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl` — weakening an assertion requires a wasm4pm-compat commit. Decoy AND quoted-true literals must not appear in breed production source.
 - **Anti-cheat ARD:** `docs/breeds/anti-cheat-threat-model.md` — per-breed counter-test must exist and pass.
 - **Write ALL code first** (module → OCPN → lifecycle const → tests → fixtures), then build/test gates.
 - `registry.json` flips UNSUPPORTED→PARTIAL_ALIVE only after gates green + OCEL report has measured-fitness provenance.
@@ -51,3 +54,11 @@ Multiple AI fleets may edit this repo simultaneously. If `cargo check` errors ch
 - ENV prefix `WASM4PM_*`. Exit codes: 0 ok · 1 config · 2 source · 3 exec · 4 partial · 5 system.
 - Audit records decay both ways — verify on disk before citing `docs/audit-history.md` or any memory note.
 - **Andon:** stop on `error[E` · `test.*FAILED` · `FM-5 violation` · `panicked at` · `<new-diagnostics>`.
+- `rm` is blocked in this environment — use `trash`. Cargo output is prefixed with AutoDX banners; grep past them.
+
+## Test trustworthiness (cognition breeds)
+- **A breed test passing ≠ algorithm correct.** `tests/paper_grounded.rs` historically assert structure (`output.breed`, `.contains(str)`) not the paper's number; they run in ~0.00s. A real test asserts the published value (e.g. MYCIN CF=0.7) with tolerance.
+- **No silent skips:** `if let Ok(_) = fs::read_to_string(fixture)` makes a missing fixture pass green. Paper-grounded tests must `panic!` if the fixture is absent.
+- **Fixtures already carry real provenance** (`expected.organism_cf` + citation in `tests/fixtures/papers/<breed>.json`) — assert those numbers, don't just check strings.
+- **Prove a test has teeth:** temporarily tamper the computation, confirm the test FAILS, then restore. A test that can't fail proves nothing.
+- MYCIN CF chains propagate uncertainty: conclusion CF = `rule.certainty × min(premise CFs)`; the paper's rule "0.9" is rule certainty, not final CF.

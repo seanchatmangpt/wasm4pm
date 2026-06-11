@@ -2,9 +2,8 @@
 @prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
 @prefix compat: <https://wasm4pm.dev/ns#> .
 
-# Evidence bridge: projected from ocel/reports/*.json
-# Generated 2026-06-11 by breed scaffold workflow.
-# Re-generate with: just project-evidence
+# Evidence bridge: projected from ocel/reports/*.json by scripts/project_evidence.py.
+# Regenerate with: just project-evidence
 
 compat:Breed_abductive_ibe a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;
