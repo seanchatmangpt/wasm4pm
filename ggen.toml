@@ -73,7 +73,7 @@ mode        = "Overwrite"
 name        = "breed-stubs"
 query       = { file = "../wasm4pm-compat/ggen/queries-breeds/extract-breeds.rq" }
 template    = { file = "../wasm4pm-compat/ggen/templates-breeds/breed-stub.rs.tera" }
-output_file = "crates/wasm4pm-cognition/src/breeds/{{ breed_id }}.rs"
+output_file = "crates/wasm4pm-cognition/src/breeds/{{ module_file }}.rs"
 mode        = "Create"
 
 # ---------------------------------------------------------------------------
