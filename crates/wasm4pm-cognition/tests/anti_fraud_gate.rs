@@ -11,16 +11,15 @@ fn assert_no_fraud(file_path: &str, names: &[&str]) {
              fs::read_to_string(p)
         });
 
-    if let Ok(src) = content {
-        for &name in names {
-            let pattern = format!(r"\b{}\b", name);
-            let re = Regex::new(&pattern).unwrap();
-            if re.is_match(&src) {
-                panic!("FRAUD DETECTED: {} contains fresh oracle identifier {}", file_path, name);
-            }
+    let src = content.unwrap_or_else(|_| {
+        panic!("MISSING SOURCE: {} — anti-fraud gate cannot silently skip", file_path)
+    });
+    for &name in names {
+        let pattern = format!(r"\b{}\b", name);
+        let re = Regex::new(&pattern).unwrap();
+        if re.is_match(&src) {
+            panic!("FRAUD DETECTED: {} contains fresh oracle identifier {}", file_path, name);
         }
-    } else {
-        // If file doesn't exist yet, we skip (it will be caught by registry_admission if status is PARTIAL_ALIVE)
     }
 }
 
@@ -187,4 +186,60 @@ fn anti_fraud_gate_ilp() {
 #[test]
 fn anti_fraud_gate_naive_physics() {
     assert_no_fraud("src/breeds/naive_physics.rs", &["oracle_secret_scene", "oracle_secret_axiom"]);
+}
+
+/// A8 universal sweep: every breed module file is checked against the UNION of
+/// all fresh-oracle identifiers used anywhere in this gate. Per-breed tests
+/// above give precise attribution; this sweep guarantees 55/55 coverage so a
+/// new breed cannot ship un-gated.
+#[test]
+fn anti_fraud_universal_sweep_all_breed_modules() {
+    // Union of every fresh name in this file (self-referential: parse own source).
+    let own = fs::read_to_string("tests/anti_fraud_gate.rs")
+        .or_else(|_| fs::read_to_string("crates/wasm4pm-cognition/tests/anti_fraud_gate.rs"))
+        .expect("anti_fraud_gate.rs readable");
+    let name_re = Regex::new(r#""(oracle_secret_[A-Za-z_]+)""#).unwrap();
+    let mut names: Vec<String> = name_re
+        .captures_iter(&own)
+        .map(|c| c[1].to_string())
+        .collect();
+    names.sort();
+    names.dedup();
+    assert!(names.len() >= 30, "fresh-name extraction broken: {} names", names.len());
+
+    let breeds_dir = std::path::Path::new("src/breeds");
+    let breeds_dir = if breeds_dir.exists() {
+        breeds_dir.to_path_buf()
+    } else {
+        std::path::Path::new("crates/wasm4pm-cognition/src/breeds").to_path_buf()
+    };
+    let mut checked = 0usize;
+    for entry in fs::read_dir(&breeds_dir).expect("breeds dir readable") {
+        let path = entry.expect("dir entry").path();
+        if path.extension().and_then(|e| e.to_str()) != Some("rs") {
+            continue;
+        }
+        let fname = path.file_name().unwrap().to_string_lossy().to_string();
+        // Infrastructure modules are not breed implementations.
+        if matches!(fname.as_str(), "mod.rs" | "dispatch.rs" | "registration.rs" | "standing.rs" | "oracle_chain.rs") {
+            continue;
+        }
+        let src = fs::read_to_string(&path).expect("breed source readable");
+        // Only production half: inline #[cfg(test)] modules may cite fresh names legally.
+        let prod = match src.find("#[cfg(test)]") {
+            Some(i) => &src[..i],
+            None => src.as_str(),
+        };
+        for name in &names {
+            let re = Regex::new(&format!(r"\b{}\b", name)).unwrap();
+            assert!(
+                !re.is_match(prod),
+                "FRAUD DETECTED (universal sweep): {} contains fresh oracle identifier {}",
+                fname,
+                name
+            );
+        }
+        checked += 1;
+    }
+    assert!(checked >= 55, "universal sweep covered only {} breed modules", checked);
 }

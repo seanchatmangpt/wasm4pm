@@ -18,8 +18,10 @@ use wasm4pm_cognition::breeds::*;
 #[test]
 fn mycin_paper_grounded() {
     let path = "tests/fixtures/papers/mycin.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -140,11 +142,7 @@ fn mycin_paper_grounded() {
                 Some(top),
                 "MYCIN selected must be the terminal conclusion {top}"
             );
-        } else {
-            panic!("tests/fixtures/papers/mycin.json must be valid JSON");
         }
-    } else {
-        panic!("tests/fixtures/papers/mycin.json must exist (paper-grounded test cannot silently skip)");
     }
 }
 
@@ -164,8 +162,10 @@ fn parse_cf(detail: &str) -> f32 {
 #[test]
 fn cbr_paper_grounded() {
     let path = "tests/fixtures/papers/cbr.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -287,8 +287,10 @@ fn cbr_paper_grounded() {
 #[test]
 fn gps_paper_grounded() {
     let path = "tests/fixtures/papers/gps.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -399,8 +401,10 @@ fn gps_paper_grounded() {
 #[test]
 fn soar_paper_grounded() {
     let path = "tests/fixtures/papers/soar.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -489,8 +493,10 @@ fn soar_paper_grounded() {
 #[test]
 fn strips_paper_grounded() {
     let path = "tests/fixtures/papers/strips.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -617,8 +623,10 @@ fn strips_paper_grounded() {
 #[test]
 fn hearsay_paper_grounded() {
     let path = "tests/fixtures/papers/hearsay.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -740,8 +748,10 @@ fn hearsay_paper_grounded() {
 #[test]
 fn prolog_paper_grounded() {
     let path = "tests/fixtures/papers/prolog.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -881,8 +891,10 @@ fn prolog_paper_grounded() {
 #[test]
 fn dendral_paper_grounded() {
     let path = "tests/fixtures/papers/dendral.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -997,8 +1009,10 @@ fn dendral_paper_grounded() {
 #[test]
 fn eliza_paper_grounded() {
     let path = "tests/fixtures/papers/eliza.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let intent = inp
@@ -1068,8 +1082,10 @@ fn eliza_paper_grounded() {
 #[test]
 fn autoinstinct_learning_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_learning.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1172,8 +1188,10 @@ fn autoinstinct_learning_paper_grounded() {
 #[test]
 fn autoinstinct_neurosis_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_neurosis.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1273,8 +1291,10 @@ fn autoinstinct_neurosis_paper_grounded() {
 #[test]
 fn autoinstinct_vision_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_vision.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1356,8 +1376,10 @@ fn autoinstinct_vision_paper_grounded() {
 #[test]
 fn autoinstinct_semantics_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_semantics.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path)
+        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
             let inp = &json["input"];
 
             let intent = inp
