@@ -675,7 +675,7 @@ impl Backend {
             }
 
             // LLM Cheat Detectors for Rust
-            let cheat_markers = ["todo!(", "unimplemented!(", "pub struct Stub", "fake_impl", "TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX"];
+            let cheat_markers = ["todo!(", "unimplemented!(", "pub struct Stub", "fake_impl", "TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not yet implemented"];
             for marker in cheat_markers.iter() {
                 if text.contains(marker) {
                     diags.push(Diagnostic {
