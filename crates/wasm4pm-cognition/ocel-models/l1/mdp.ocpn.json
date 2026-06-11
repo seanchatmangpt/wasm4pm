@@ -1,0 +1,26 @@
+{
+  "model_id": "mdp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "mdp",
+  "object_types": ["model", "value_function", "policy"],
+  "places": [
+    {"id": "p1", "name": "model_raw",       "object_type": "model"},
+    {"id": "p2", "name": "model_valid",     "object_type": "model"},
+    {"id": "p3", "name": "policy_emitted",  "object_type": "policy"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "mdp_init",    "label": "mdp-init"},
+    {"id": "t2", "name": "mdp_iterate", "label": "mdp-iterate"},
+    {"id": "t3", "name": "mdp_policy",  "label": "mdp-policy"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p3": 1}]
+}

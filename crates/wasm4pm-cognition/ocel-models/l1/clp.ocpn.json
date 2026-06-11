@@ -1,0 +1,43 @@
+{
+  "model_id": "clp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "clp",
+  "object_types": ["constraint", "domain", "assignment"],
+  "places": [
+    {"id": "p1", "name": "store_empty",     "object_type": "constraint"},
+    {"id": "p2", "name": "constraint_posted","object_type": "constraint"},
+    {"id": "p3", "name": "domains_reduced", "object_type": "domain"},
+    {"id": "p4", "name": "labeling",        "object_type": "assignment"},
+    {"id": "p5", "name": "solved",          "object_type": "assignment"},
+    {"id": "p6", "name": "refuted",         "object_type": "assignment"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "post_constraint", "label": "post-constraint"},
+    {"id": "t2", "name": "propagate",       "label": "propagate"},
+    {"id": "t3", "name": "label",           "label": "label"},
+    {"id": "t4", "name": "backtrack",       "label": "backtrack"},
+    {"id": "t5", "name": "solution",        "label": "solution"},
+    {"id": "t6", "name": "inconsistent",    "label": "inconsistent"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t2", "type": "consume"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t5", "type": "consume"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "p3", "to": "t6", "type": "consume"},
+    {"from": "p4", "to": "t6", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "t6", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}, {"p6": 1}]
+}

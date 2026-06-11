@@ -243,3 +243,27 @@ fn uo_oracle_names_absent_from_breed_sources() {
         "oracle_impls must remain gated behind the breed-oracles feature"
     );
 }
+
+/// The crate vendors OCPN models (ocel-models/l1/) so include_str! works in
+/// the published package. They must stay byte-identical to the canonical
+/// repo-root copies in ocel/models/l1/ (skipped when building outside the
+/// monorepo, e.g. from a crates.io tarball).
+#[test]
+fn vendored_ocpn_models_match_canonical() {
+    let canonical = Path::new("../../ocel/models/l1");
+    if !canonical.exists() {
+        return;
+    }
+    for entry in std::fs::read_dir("ocel-models/l1").expect("vendored models dir") {
+        let entry = entry.unwrap();
+        let name = entry.file_name();
+        let canon = canonical.join(&name);
+        assert!(canon.exists(), "{:?} vendored but missing canonically", name);
+        assert_eq!(
+            std::fs::read(entry.path()).unwrap(),
+            std::fs::read(&canon).unwrap(),
+            "{:?} drifted from canonical ocel/models/l1 copy",
+            name
+        );
+    }
+}

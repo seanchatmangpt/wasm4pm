@@ -1,0 +1,38 @@
+{
+  "model_id": "meta_reasoning-l1-v1",
+  "model_level": "L1",
+  "breed_id": "meta_reasoning",
+  "object_types": ["report", "conflict", "decision"],
+  "places": [
+    {"id": "p1", "name": "reports_pending",    "object_type": "report"},
+    {"id": "p2", "name": "reports_ingested",   "object_type": "report"},
+    {"id": "p3", "name": "conflicts_detected", "object_type": "conflict"},
+    {"id": "p4", "name": "votes_cast",         "object_type": "decision"},
+    {"id": "p5", "name": "decision_resolved",  "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ingest-report",     "label": "ingest-report"},
+    {"id": "t2", "name": "conflict-detected", "label": "conflict-detected"},
+    {"id": "t3", "name": "vote",              "label": "vote"},
+    {"id": "t4", "name": "resolve",           "label": "resolve"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

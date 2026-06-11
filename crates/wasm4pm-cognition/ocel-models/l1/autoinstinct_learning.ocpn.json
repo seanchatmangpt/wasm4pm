@@ -1,0 +1,32 @@
+{
+  "model_id": "autoinstinct_learning-l1-v1",
+  "model_level": "L1",
+  "breed_id": "autoinstinct_learning",
+  "object_types": ["goal", "prerequisite", "curriculum"],
+  "places": [
+    {"id": "p1", "name": "goal_assessed",       "object_type": "goal"},
+    {"id": "p2", "name": "prerequisite_checked","object_type": "prerequisite"},
+    {"id": "p3", "name": "plan_step_added",     "object_type": "curriculum"},
+    {"id": "p4", "name": "curriculum_emitted",  "object_type": "curriculum"},
+    {"id": "p5", "name": "curriculum_refused",  "object_type": "curriculum"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "goal_assessed",       "label": "goal_assessed"},
+    {"id": "t2", "name": "prerequisite_checked","label": "prerequisite_checked"},
+    {"id": "t3", "name": "plan_step_added",     "label": "plan_step_added"},
+    {"id": "t4", "name": "curriculum_emitted",  "label": "curriculum_emitted"},
+    {"id": "t5", "name": "curriculum_refused",  "label": "curriculum_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}, {"p5": 1}]
+}
