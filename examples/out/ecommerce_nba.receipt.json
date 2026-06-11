@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.6.10",
-  "commit": "1af152f0378d5a3163bb2e15b1ec8be7b8b18edc",
+  "commit": "eceacfcb43d58b230f109ecc553be55a186d2784",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "powl_to_process_tree",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e",
-      "duration_ms": 12.689,
+      "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6",
+      "duration_ms": 27.022,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.powl_to_process_tree.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e",
-                "duration_ms": 12.689
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6",
+                "duration_ms": 27.022
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e"
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e"
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "379268b77bf454a22772a3362de559fa2976b5b2203f85cae672e6f14ae7a17c"
+        "expected_ocel2_hash": "0ce2173cb07e58632fc9241ddf47b04199b8659fa7983b759182ea5da2a22a43"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:12:44.780Z",
+              "time": "2026-06-11T05:24:19.253Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -412,7 +412,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:12:49.741Z",
+              "time": "2026-06-11T05:24:22.478Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -426,7 +426,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:12:48.841Z",
+              "time": "2026-06-11T05:24:21.737Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -440,7 +440,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:12:48.548Z",
+              "time": "2026-06-11T05:24:20.422Z",
               "relationships": [
                 {
                   "objectId": "algorithm_powl_to_process_tree",
@@ -463,7 +463,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:12:50.593Z",
+              "time": "2026-06-11T05:24:22.008Z",
               "relationships": [
                 {
                   "objectId": "algorithm_powl_to_process_tree",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e",
-                "duration_ms": 12.689
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6",
+                "duration_ms": 27.022
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:12:48.347Z",
+              "time": "2026-06-11T05:24:24.113Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e"
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6"
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:12:48.061Z",
+              "time": "2026-06-11T05:24:26.561Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e"
+                "result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6"
               }
             },
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:12:52.527Z",
+              "time": "2026-06-11T05:24:27.305Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -540,7 +540,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:12:49.926Z",
+              "time": "2026-06-11T05:24:23.618Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -558,7 +558,7 @@
             {
               "id": "evt_ecommerce_nba_powl_to_process_tree_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:12:48.925Z",
+              "time": "2026-06-11T05:24:24.693Z",
               "relationships": [
                 {
                   "objectId": "result_powl_to_process_tree_ecommerce_nba",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "41aaee5a354232482748ea80ce1f1807aec07ebd44eb31b8128d995ce21a9cdb",
-        "observed_result_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e"
+        "observed_ocel2_hash": "a135a06e266042f44b5b48d24b47d8b882fbd77777067f6b82b4ef7105e73d9f",
+        "observed_result_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "636f55860710ddd68569f0ece1e2785b7b4f245048a70cedcd77f5323d5db85e",
+        "output_artifact_hash": "4f17007a4ef09a8f39679262aed5cab51025d13b79815e13df0a7748275416b6",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "yawl_export",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7",
-      "duration_ms": 30.82,
+      "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813",
+      "duration_ms": 40.879,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.yawl_export.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7",
-                "duration_ms": 30.82
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813",
+                "duration_ms": 40.879
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7"
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7"
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "2cf57133bf6132822937e225137b5d79072d333520d7e68ddfa0c2b053b62b99"
+        "expected_ocel2_hash": "40a35369f5a91b78ce5f6104d83af9f05cf6ad66a7a446b073681e3976876ba9"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:12:45.256Z",
+              "time": "2026-06-11T05:24:19.887Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:12:49.623Z",
+              "time": "2026-06-11T05:24:22.394Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:12:47.172Z",
+              "time": "2026-06-11T05:24:22.854Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:12:48.180Z",
+              "time": "2026-06-11T05:24:23.539Z",
               "relationships": [
                 {
                   "objectId": "algorithm_yawl_export",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:12:48.988Z",
+              "time": "2026-06-11T05:24:20.978Z",
               "relationships": [
                 {
                   "objectId": "algorithm_yawl_export",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7",
-                "duration_ms": 30.82
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813",
+                "duration_ms": 40.879
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:12:50.730Z",
+              "time": "2026-06-11T05:24:24.437Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7"
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813"
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:12:47.714Z",
+              "time": "2026-06-11T05:24:23.052Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7"
+                "result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813"
               }
             },
             {
               "id": "evt_ecommerce_nba_yawl_export_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:12:52.739Z",
+              "time": "2026-06-11T05:24:22.608Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:12:53.320Z",
+              "time": "2026-06-11T05:24:26.888Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_ecommerce_nba_yawl_export_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:12:52.515Z",
+              "time": "2026-06-11T05:24:24.314Z",
               "relationships": [
                 {
                   "objectId": "result_yawl_export_ecommerce_nba",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "9e22f1c83621c8aad6e5f439c5c7a06cf8aa4bedcc76c22c1c1b9267c4fa4008",
-        "observed_result_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7"
+        "observed_ocel2_hash": "dc8d8c7a4d18a48f489f565f79de7a73a97007275a654d2165cdc0f7ff49a177",
+        "observed_result_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "875c5a7a9a5bfe73394cd2598da49474276df5d2a7ae2aa70236aca9d59990b7",
+        "output_artifact_hash": "facf810a96475e098b49a74409ffa22091291b3dc4f2e3099b75737432f5d813",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "playout",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0",
-      "duration_ms": 23.836,
+      "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622",
+      "duration_ms": 13.936,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.playout.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0",
-                "duration_ms": 23.836
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622",
+                "duration_ms": 13.936
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0"
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0"
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "c967e64b356faef531c45bf915503e9058d1eca37a9137499ea04b7dc7bf155a"
+        "expected_ocel2_hash": "a23532d4cebb3ba27366a8a2c3e7973dfb3df5114987c18041a41066732535fb"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_ecommerce_nba_playout_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:12:46.862Z",
+              "time": "2026-06-11T05:24:21.748Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_ecommerce_nba_playout_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:12:45.206Z",
+              "time": "2026-06-11T05:24:23.878Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_ecommerce_nba_playout_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:12:46.520Z",
+              "time": "2026-06-11T05:24:23.557Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_ecommerce_nba_playout_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:12:48.689Z",
+              "time": "2026-06-11T05:24:21.363Z",
               "relationships": [
                 {
                   "objectId": "algorithm_playout",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_ecommerce_nba_playout_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:12:49.500Z",
+              "time": "2026-06-11T05:24:24.128Z",
               "relationships": [
                 {
                   "objectId": "algorithm_playout",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0",
-                "duration_ms": 23.836
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622",
+                "duration_ms": 13.936
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:12:48.383Z",
+              "time": "2026-06-11T05:24:23.187Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0"
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622"
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:12:48.768Z",
+              "time": "2026-06-11T05:24:22.935Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0"
+                "result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622"
               }
             },
             {
               "id": "evt_ecommerce_nba_playout_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:12:51.176Z",
+              "time": "2026-06-11T05:24:26.659Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_ecommerce_nba_playout_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:12:51.980Z",
+              "time": "2026-06-11T05:24:27.052Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_ecommerce_nba_playout_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:12:53.535Z",
+              "time": "2026-06-11T05:24:25.157Z",
               "relationships": [
                 {
                   "objectId": "result_playout_ecommerce_nba",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "fb50f8b1ec546962a09bcd4369e8957d4afc397f31e33f4acd7fcc30216474cb",
-        "observed_result_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0"
+        "observed_ocel2_hash": "a957b2939dd2943d1617863e99893e7617511472ad2aac6bcc62b99257bc2c86",
+        "observed_result_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "a4d26a47412d31ba92d8ee79c45d5245e979a3bcb1b3dcc01c01e25114119db0",
+        "output_artifact_hash": "778da35c5d02d44ad837f3d8efd66d618c108213ab683109325bc5ed3354c622",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "monte_carlo_simulation",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579",
-      "duration_ms": 21.362,
+      "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9",
+      "duration_ms": 31.228,
       "expected_path": {
         "route_id": "wpm.example.ecommerce_nba.monte_carlo_simulation.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579",
-                "duration_ms": 21.362
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9",
+                "duration_ms": 31.228
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579"
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579"
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "240443c18bb49df606c0d263ce997ea708e559ab09425ff831c8c44ddd680e42"
+        "expected_ocel2_hash": "f7193b64bd2bde19b1a13d8b070f46b3085ccff4c91bcecad4ccd37f093fb131"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:12:47.071Z",
+              "time": "2026-06-11T05:24:21.496Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:12:47.947Z",
+              "time": "2026-06-11T05:24:23.560Z",
               "relationships": [
                 {
                   "objectId": "log_ecommerce_nba",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:12:49.383Z",
+              "time": "2026-06-11T05:24:22.267Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:12:49.613Z",
+              "time": "2026-06-11T05:24:24.555Z",
               "relationships": [
                 {
                   "objectId": "algorithm_monte_carlo_simulation",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:12:47.838Z",
+              "time": "2026-06-11T05:24:24.572Z",
               "relationships": [
                 {
                   "objectId": "algorithm_monte_carlo_simulation",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579",
-                "duration_ms": 21.362
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9",
+                "duration_ms": 31.228
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:12:49.235Z",
+              "time": "2026-06-11T05:24:25.884Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579"
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9"
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:12:50.231Z",
+              "time": "2026-06-11T05:24:24.914Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579"
+                "result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9"
               }
             },
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:12:50.623Z",
+              "time": "2026-06-11T05:24:25.697Z",
               "relationships": [
                 {
                   "objectId": "example_ecommerce_nba",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:12:48.879Z",
+              "time": "2026-06-11T05:24:25.006Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_ecommerce_nba_monte_carlo_simulation_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:12:53.212Z",
+              "time": "2026-06-11T05:24:27.217Z",
               "relationships": [
                 {
                   "objectId": "result_monte_carlo_simulation_ecommerce_nba",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "332ba1fb190d603ba9b91b309fc19398a08fdd7251e756e9f197ec09881f7919",
-        "observed_result_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579"
+        "observed_ocel2_hash": "b117b0fd59ed48678b94c1378b67948a506f12d07647e35c0fd51329e9845157",
+        "observed_result_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "7862ef36c1282b9e2941e2812c2c5a5d3b3615c0a355260b9491d640cb53179c",
-        "output_artifact_hash": "bd72814ed2c91e5af207c54e57c2062534f0ea3fd31fca69bb8fc133199de579",
+        "output_artifact_hash": "243a2a179b4441878369e517771d969abdf78d70ee927a3434833675c6bdcab9",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-11T05:12:44.291Z",
+  "created_at": "2026-06-11T05:24:18.892Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "379df39d3d66e533b61d9a7b0f9029095bfa82fafbff94412952fc76227c5491"
+  "receipt_hash": "c01aaeb05e9e3ddd2d013fbb7fe9df5320090f1b1dd142052e9ebf40f2f7d498"
 }
