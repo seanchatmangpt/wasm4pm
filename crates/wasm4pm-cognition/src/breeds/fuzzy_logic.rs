@@ -16,6 +16,7 @@
 //! Trace kinds: `fuzzy-fuzzify`(1,*) → `fuzzy-fire`(1,*) →
 //! `fuzzy-aggregate`(1,*) → `fuzzy-defuzz`(1,1).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -294,15 +295,13 @@ impl CognitionBreed for FuzzyLogic {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        for kind in ["fuzzy-fuzzify", "fuzzy-fire", "fuzzy-aggregate", "fuzzy-defuzz"] {
-            if !output.inference_trace.iter().any(|t| t.kind == kind) {
-                return Err(format!("trace missing required kind '{}'", kind));
-            }
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&[
+            "fuzzy-fuzzify",
+            "fuzzy-fire",
+            "fuzzy-aggregate",
+            "fuzzy-defuzz",
+        ])?;
         if !output.facts.iter().any(|f| f.key.starts_with("fuzzy:output:")) {
             return Err("missing fuzzy:output: fact".to_string());
         }

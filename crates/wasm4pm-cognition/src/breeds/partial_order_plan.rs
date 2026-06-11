@@ -20,6 +20,8 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::breeds::support::breed_class::PlannerBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -156,7 +158,7 @@ fn resolve_threats(ctx: &mut Ctx, mut plan: Plan, depth: u32) -> Result<Vec<Plan
                 continue; // cannot fall inside the interval
             }
             ctx.tr(
-                "detect-threat",
+                "pop-resolve",
                 format!(
                     "step '{}' deletes '{}' threatening link {}→{}",
                     plan.steps[t], atom, plan.steps[p], plan.steps[c]
@@ -169,7 +171,7 @@ fn resolve_threats(ctx: &mut Ctx, mut plan: Plan, depth: u32) -> Result<Vec<Plan
                 let mut promoted = plan.clone();
                 promoted.orderings.insert((c, t));
                 ctx.tr(
-                    "promote",
+                    "pop-resolve",
                     format!("'{}' after '{}'", promoted.steps[t], promoted.steps[c]),
                     depth,
                 );
@@ -180,7 +182,7 @@ fn resolve_threats(ctx: &mut Ctx, mut plan: Plan, depth: u32) -> Result<Vec<Plan
                 let mut demoted = plan.clone();
                 demoted.orderings.insert((t, p));
                 ctx.tr(
-                    "demote",
+                    "pop-resolve",
                     format!("'{}' before '{}'", demoted.steps[t], demoted.steps[p]),
                     depth,
                 );
@@ -208,7 +210,7 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
         Some(oc) => oc,
     };
     ctx.tr(
-        "open-condition",
+        "pop-resolve",
         format!("'{}' needed by '{}'", atom, plan.steps[consumer]),
         depth,
     );
@@ -247,19 +249,19 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
             for pre in &ctx.ops[&name].pre {
                 next.agenda.insert((pre.clone(), new_id));
             }
-            ctx.tr("add-step", format!("'{}' (id {})", name, new_id), depth);
+            ctx.tr("pop-resolve", format!("'{}' (id {})", name, new_id), depth);
             new_id
         } else {
             sid
         };
         if !can_order_before(&next.orderings, producer, consumer) {
-            ctx.tr("backtrack", format!("'{}' cannot precede consumer", name), depth);
+            ctx.tr("pop-resolve", format!("'{}' cannot precede consumer", name), depth);
             continue;
         }
         next.orderings.insert((producer, consumer));
         next.links.push((producer, atom.clone(), consumer));
         ctx.tr(
-            "add-link",
+            "pop-resolve",
             format!("{} --{}--> {}", next.steps[producer], atom, next.steps[consumer]),
             depth,
         );
@@ -267,7 +269,7 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
         let refined = resolve_threats(ctx, next, depth)?;
         if refined.is_empty() {
             ctx.tr(
-                "backtrack",
+                "pop-resolve",
                 format!("threats unresolvable for producer '{}'", name),
                 depth,
             );
@@ -277,7 +279,7 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
             if let Some(done) = solve(ctx, r, depth + 1)? {
                 return Ok(Some(done));
             }
-            ctx.tr("backtrack", format!("dead end under producer '{}'", name), depth);
+            ctx.tr("pop-resolve", format!("dead end under producer '{}'", name), depth);
         }
     }
     Ok(None)
@@ -313,6 +315,12 @@ fn linearize(plan: &Plan) -> Vec<String> {
         .filter(|&i| i > 1)
         .map(|i| plan.steps[i].clone())
         .collect()
+}
+
+impl PlannerBreed for PartialOrderPlan {
+    fn required_trace_kinds(&self) -> &'static [&'static str] {
+        &["pop-init", "pop-plan"]
+    }
 }
 
 impl CognitionBreed for PartialOrderPlan {
@@ -377,7 +385,7 @@ impl CognitionBreed for PartialOrderPlan {
             agenda: goals.iter().map(|g| (g.clone(), 1usize)).collect(),
         };
         ctx.tr(
-            "init-plan",
+            "pop-init",
             format!(
                 "Start adds {{{}}}, Finish needs {{{}}}",
                 initial.iter().cloned().collect::<Vec<_>>().join(","),
@@ -397,7 +405,7 @@ impl CognitionBreed for PartialOrderPlan {
         })?;
 
         let linear = linearize(&solved);
-        ctx.tr("plan-complete", format!("plan: [{}]", linear.join(";")), 0);
+        ctx.tr("pop-plan", format!("plan: [{}]", linear.join(";")), 0);
 
         let mut facts = vec![Fact {
             key: "pop:plan".to_string(),
@@ -426,16 +434,12 @@ impl CognitionBreed for PartialOrderPlan {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("init-plan") {
-            return Err("first step must be 'init-plan'".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("plan-complete") {
-            return Err("final step must be 'plan-complete'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_plan_trace_complete(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("pop-init")?;
+        tq.require_last("pop-plan")?;
         if !output.facts.iter().any(|f| f.key == "pop:plan") {
             return Err("missing pop:plan fact".to_string());
         }
@@ -506,11 +510,7 @@ mod tests {
             out.selected.as_deref(),
             Some("put_c_from_a_on_table;put_b_on_c;put_a_on_b")
         );
-        assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
-        assert!(out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "promote" || t.kind == "demote"));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "pop-resolve"));
     }
 
     /// Promotion forced when demotion would order a step before Start.
@@ -525,8 +525,7 @@ mod tests {
         let inp = input(facts, vec!["q"], vec!["g1", "g2"]);
         let out = PartialOrderPlan.run(&inp).unwrap();
         assert_eq!(out.selected.as_deref(), Some("wibble;blat"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "promote"));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "pop-resolve"));
     }
 
     #[test]

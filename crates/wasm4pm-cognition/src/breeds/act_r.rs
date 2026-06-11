@@ -20,11 +20,26 @@
 //! The whole interleaved cycle is one multi-kind lifecycle phase
 //! (HEARSAY_MODEL precedent). Caps: ≤32 cycles, ≤64 chunks (refusals).
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::BTreeSet;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// ACT-R production/retrieval cycle.
 pub struct ActR;
+
+impl BoundedBreed for ActR {
+    fn breed_name(&self) -> &'static str {
+        "act_r"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound {
+            max_cases: 64,
+            ..DomainBound::default()
+        }
+    }
+}
 
 impl CognitionBreed for ActR {
     fn id(&self) -> BreedId {
@@ -43,12 +58,7 @@ impl CognitionBreed for ActR {
         if input.rules.is_empty() {
             return Err("act_r requires at least one production rule".to_string());
         }
-        if input.cases.len() > 64 {
-            return Err(format!(
-                "complexity cap exceeded: {} chunks > 64 (refusal, not truncation)",
-                input.cases.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -229,17 +239,9 @@ impl CognitionBreed for ActR {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of a production cycle".to_string());
-        }
-        if !output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "fire-production")
-        {
-            return Err("no production fired — the cycle did no work".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["fire-production"])?;
         Ok(())
     }
 }

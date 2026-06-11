@@ -18,8 +18,10 @@
 
 use std::collections::BTreeMap;
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Maximum number of variables.
@@ -323,6 +325,46 @@ fn label(
     Ok(None)
 }
 
+impl BoundedBreed for Clp {
+    fn breed_name(&self) -> &'static str {
+        "clp"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let mut vars: std::collections::BTreeSet<&str> = std::collections::BTreeSet::new();
+        for f in &input.facts {
+            if let Some(x) = f.key.strip_prefix("clp:var:") {
+                // Unparseable domains are content errors, reported by preconditions().
+                if let Ok(d) = parse_domain(&f.value) {
+                    if d.len() > MAX_DOMAIN {
+                        return Some(CognitionError::ComplexityCap {
+                            breed: self.breed_name(),
+                            detail: format!(
+                                "domain of '{}' has {} values (cap {})",
+                                x,
+                                d.len(),
+                                MAX_DOMAIN
+                            ),
+                        });
+                    }
+                }
+                vars.insert(x);
+            }
+        }
+        if vars.len() > MAX_VARS {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("variable count {} exceeds cap {}", vars.len(), MAX_VARS),
+            });
+        }
+        None
+    }
+}
+
 impl CognitionBreed for Clp {
     fn id(&self) -> BreedId {
         BreedId::Clp
@@ -337,21 +379,16 @@ impl CognitionBreed for Clp {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         let mut domains: Domains = BTreeMap::new();
         for f in &input.facts {
             if let Some(x) = f.key.strip_prefix("clp:var:") {
                 let d = parse_domain(&f.value)?;
-                if d.len() > MAX_DOMAIN {
-                    return Err(format!("domain of '{}' has {} values (cap {})", x, d.len(), MAX_DOMAIN));
-                }
                 domains.insert(x.to_string(), d);
             }
         }
         if domains.is_empty() {
             return Err("clp requires at least one clp:var:* fact".to_string());
-        }
-        if domains.len() > MAX_VARS {
-            return Err(format!("variable count {} exceeds cap {}", domains.len(), MAX_VARS));
         }
         let mut any = false;
         for f in &input.facts {
@@ -478,14 +515,11 @@ impl CognitionBreed for Clp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("post-constraint") {
-            return Err("first step must be 'post-constraint'".to_string());
-        }
-        let last = output.inference_trace.last().map(|t| t.kind.as_str());
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("post-constraint")?;
+        let last = tq.as_slice().last().map(|t| t.kind.as_str());
         if last != Some("solution") && last != Some("inconsistent") {
             return Err("final step must be 'solution' or 'inconsistent'".to_string());
         }

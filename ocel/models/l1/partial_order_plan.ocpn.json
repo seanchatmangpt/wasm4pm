@@ -2,47 +2,25 @@
   "model_id": "partial_order_plan-l1-v1",
   "model_level": "L1",
   "breed_id": "partial_order_plan",
-  "object_types": ["plan", "open_condition", "causal_link", "threat"],
+  "object_types": ["plan"],
   "places": [
     {"id": "p1", "name": "problem_loaded",  "object_type": "plan"},
-    {"id": "p2", "name": "plan_initial",    "object_type": "plan"},
-    {"id": "p3", "name": "agenda",          "object_type": "open_condition"},
-    {"id": "p4", "name": "link_added",      "object_type": "causal_link"},
-    {"id": "p5", "name": "threats_handled", "object_type": "threat"},
-    {"id": "p6", "name": "plan_done",       "object_type": "plan"}
+    {"id": "p2", "name": "plan_resolving",  "object_type": "plan"},
+    {"id": "p3", "name": "plan_done",       "object_type": "plan"}
   ],
   "transitions": [
-    {"id": "t1", "name": "init_plan",      "label": "init-plan"},
-    {"id": "t2", "name": "open_condition", "label": "open-condition"},
-    {"id": "t3", "name": "add_step",       "label": "add-step"},
-    {"id": "t4", "name": "add_link",       "label": "add-link"},
-    {"id": "t5", "name": "detect_threat",  "label": "detect-threat"},
-    {"id": "t6", "name": "promote",        "label": "promote"},
-    {"id": "t7", "name": "demote",         "label": "demote"},
-    {"id": "t8", "name": "backtrack",      "label": "backtrack"},
-    {"id": "t9", "name": "plan_complete",  "label": "plan-complete"}
+    {"id": "t1", "name": "pop_init",      "label": "pop-init"},
+    {"id": "t2", "name": "pop_resolve",   "label": "pop-resolve"},
+    {"id": "t3", "name": "pop_plan",      "label": "pop-plan"}
   ],
   "arcs": [
     {"from": "p1", "to": "t1", "type": "consume"},
     {"from": "t1", "to": "p2", "type": "produce"},
     {"from": "p2", "to": "t2", "type": "consume"},
-    {"from": "t2", "to": "p3", "type": "produce"},
-    {"from": "p3", "to": "t3", "type": "consume"},
-    {"from": "t3", "to": "p3", "type": "produce"},
-    {"from": "p3", "to": "t4", "type": "consume"},
-    {"from": "t4", "to": "p4", "type": "produce"},
-    {"from": "p4", "to": "t5", "type": "consume"},
-    {"from": "t5", "to": "p5", "type": "produce"},
-    {"from": "p5", "to": "t6", "type": "consume"},
-    {"from": "p5", "to": "t7", "type": "consume"},
-    {"from": "p5", "to": "t8", "type": "consume"},
-    {"from": "t6", "to": "p2", "type": "produce"},
-    {"from": "t7", "to": "p2", "type": "produce"},
-    {"from": "t8", "to": "p2", "type": "produce"},
-    {"from": "p4", "to": "t2", "type": "consume"},
-    {"from": "p4", "to": "t9", "type": "consume"},
-    {"from": "t9", "to": "p6", "type": "produce"}
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"}
   ],
   "initial_marking": {"p1": 1},
-  "final_markings": [{"p6": 1}]
+  "final_markings": [{"p3": 1}]
 }

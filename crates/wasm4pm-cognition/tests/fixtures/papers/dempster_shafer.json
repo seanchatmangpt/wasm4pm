@@ -41,9 +41,14 @@
         "predicate": "query",
         "value": "life"
       }
-    ]
+    ],
+    "candidates": [],
+    "facts": [],
+    "cases": [],
+    "state": []
   },
   "expected": {
+    "value": 0.99,
     "belief": 0.99,
     "tolerance": 1e-06
   }

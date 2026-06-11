@@ -10,10 +10,10 @@ Each breed implements the `CognitionBreed` trait in Rust, gets registered in `mo
 | 2 | `description_logic` | DONE | 2c3723b7-fd93-4e64-aa06-1c5b4901ac69 | docs/breeds/description_logic.md, ocel/reports/description_logic.json |
 | 3 | `abductive_lp` | DONE | 2c3723b7-fd93-4e64-aa06-1c5b4901ac69 | docs/breeds/abductive_lp.md, ocel/reports/abductive_lp.json |
 | 4 | `abductive_ibe` | DONE | 2c3723b7-fd93-4e64-aa06-1c5b4901ac69 | docs/breeds/abductive_ibe.md, ocel/reports/abductive_ibe.json |
-| 5 | `partial_order_plan` | IN_PROGRESS | 520f9a40-de76-4e04-a6a6-82f0c01d8290 | |
-| 6 | `event_calculus` | IN_PROGRESS | 520f9a40-de76-4e04-a6a6-82f0c01d8290 | |
-| 7 | `mdp` | IN_PROGRESS | 520f9a40-de76-4e04-a6a6-82f0c01d8290 | |
-| 8 | `version_space` | IN_PROGRESS | 520f9a40-de76-4e04-a6a6-82f0c01d8290 | |
+| 5 | `partial_order_plan` | IN_PROGRESS | da26e72c-e534-4460-9fc9-48271f2adabd | |
+| 6 | `event_calculus` | IN_PROGRESS | da26e72c-e534-4460-9fc9-48271f2adabd | |
+| 7 | `mdp` | IN_PROGRESS | da26e72c-e534-4460-9fc9-48271f2adabd | |
+| 8 | `version_space` | IN_PROGRESS | da26e72c-e534-4460-9fc9-48271f2adabd | |
 | 9 | `belief_merging` | PLANNED | | |
 | 10 | `qualitative_reason` | PLANNED | | |
 | 11 | `script_sam` | PLANNED | | |

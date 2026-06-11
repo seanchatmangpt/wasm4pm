@@ -1,45 +1,25 @@
-# FRAMES_INHERITANCE
+# frames_inheritance — Frame-based Inheritance
 
-## Origin
-- **Paper:** "A Framework for Representing Knowledge" (MIT AI Memo 306, 1974)
-- **Authors:** Marvin Minsky
-- **Tradition:** Frame systems, semantic networks
+## 1. Identity & Lineage
+Frame-based inheritance — Minsky 1974. BreedId `frames_inheritance`, module `src/breeds/frames_inheritance.rs`.
 
-## Algorithm
-Slot resolution walks the isa-chain upward from the queried frame. At each frame an OWN slot value beats a DEFAULT slot value, and the nearest frame on the chain wins (inferential distance): a child's value overrides any ancestor default. Cycles in the isa-chain are detected and refused. The resolve step is emitted even when the slot is unresolved so the lifecycle is always complete.
+## 2. Algorithm
+Slot resolution walks the isa-chain upward from the target frame. An own slot value is preferred over a default slot value. The nearest frame on the chain wins (inferential distance). Cycles in the isa-chain are detected and trigger refusal.
 
-## Pseudocode
-```
-function run(input):
-    parse "resolve <frame> <slot>"; load frame:* facts; emit frame-load
-    f = frame; visited = {}
-    loop:
-        if f in visited: error cycle
-        emit frame-walk
-        if own[f][slot]:     resolve (own)
-        if default[f][slot]: resolve (default)
-        f = isa[f] or break
-    emit frame-resolve (value or "unresolved")
-```
+## 3. Input Contract
+Intent = `"resolve <frame> <slot>"`. Facts encode the network: `frame:<F>:isa` = parent, `frame:<F>:slot:<s>` = own value, `frame:<F>:slot:<s>:default` = default value.
 
-## Input contract
-- intent `"resolve <frame> <slot>"`
-- facts `frame:<F>:isa`, `frame:<F>:slot:<s>`, `frame:<F>:slot:<s>:default`
+## 4. Output Contract
+Fact `frame:resolved:<frame>:<slot>` with resolved value. `selected` = value string.
 
-## Output contract
-- `selected` = value; fact `frame:resolved:<frame>:<slot>`
-- trace: `frame-load`(1,1) → `frame-walk`(1,*) → `frame-resolve`(1,1)
+## 5. Trace & OCEL Lifecycle
+`frame-load`(1,1) → `frame-walk`(1,*) → `frame-resolve`(1,1). Trace emitted even when unresolved. Report fitness 1.0.
 
-## Complexity
-O(chain length) per query.
+## 6. Oracles
+Refusal: malformed intent / no frame facts / isa cycle. Hidden: own overrides default; nearest ancestor wins. Paper: my_chair isa chair isa furniture; default legs=4 inherited.
 
-## Generalization examples
-Type hierarchies with defaults, prototype objects, ontology slot lookup.
+## 7. Determinism & Bounds
+BTreeMap and BTreeSet working sets only. Cycle detection set prevents infinite walks. Fixed string comparisons for resolution. 
 
-## Adversarial coverage
-- Refusal: malformed intent, no frame facts, malformed frame keys
-- Hidden: zilk→welp→snorf — welp own slot overrides snorf root default; frame-walk count == path length (defeats flat lookup); isa-cycle run error
-- Paper: Minsky 1974 — my_chair inherits legs=4 default from chair at distance 1
-
-## See also
-- `default_logic.md`
+## 8. Provenance
+Fixture `tests/fixtures/papers/frames_inheritance.json` (Minsky 1974 frame systems and default assignments).

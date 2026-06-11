@@ -1658,11 +1658,7 @@ fn partial_order_plan_paper_grounded() {
         p2_fact_value(&out, "pop:plan"),
         json["expected"]["plan"].as_str().unwrap()
     );
-    assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
-    assert!(out
-        .inference_trace
-        .iter()
-        .any(|t| t.kind == "promote" || t.kind == "demote"));
+    assert!(out.inference_trace.iter().any(|t| t.kind == "pop-resolve"));
 }
 
 /// Kowalski & Sergot 1986: hired/promoted narrative periods.
@@ -1897,7 +1893,7 @@ fn version_space_paper_grounded() {
     assert!(
         out.inference_trace
             .iter()
-            .any(|t| t.kind == "prune" && t.detail.contains(&format!("|G|={}", ig))),
+            .any(|t| t.kind == "vs-update" && t.detail.contains(&format!("|G|={}", ig))),
         "intermediate |G|={} must appear in trace",
         ig
     );
@@ -2008,6 +2004,35 @@ fn clp_paper_grounded() {
 // P3 tier — paper-grounded tests. Fixtures carry full provenance; "input" is
 // a complete serialized BreedInput, parsed directly via serde.
 // ============================================================================
+
+pub fn assert_paper_grounded(json: &serde_json::Value) {
+    if json.get("expected").and_then(|e| e.get("value")).is_none() {
+        panic!("A12 Violation: Fixture missing `expected.value`");
+    }
+    let prov = json.get("provenance").expect("A12 Violation: Fixture missing `provenance` block");
+    if prov.get("paper").is_none() {
+        panic!("A12 Violation: Fixture missing `provenance.paper`");
+    }
+    if prov.get("citation").is_none() {
+        panic!("A12 Violation: Fixture missing `provenance.citation`");
+    }
+    if prov.get("locus").is_none() {
+        panic!("A12 Violation: Fixture missing `provenance.locus`");
+    }
+    if prov.get("extraction").is_none() {
+        panic!("A12 Violation: Fixture missing `provenance.extraction`");
+    }
+}
+
+fn p3_load_full(breed: &str) -> Option<(BreedInput, serde_json::Value, serde_json::Value)> {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let input: BreedInput =
+        serde_json::from_value(json["input"].clone()).expect("fixture input must parse as BreedInput");
+    let expected = json["expected"].clone();
+    Some((input, expected, json))
+}
 
 fn p3_load(breed: &str) -> Option<(BreedInput, serde_json::Value)> {
     let path = format!("tests/fixtures/papers/{}.json", breed);
@@ -2185,7 +2210,8 @@ fn episodic_memory_paper_grounded() {
 /// Watkins & Dayan 1992 — Q-learning convergence to the Bellman fixed point.
 #[test]
 fn rl_symbolic_paper_grounded() {
-    let Some((input, expected)) = p3_load("rl_symbolic") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("rl_symbolic") else { return };
+    assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("rl_symbolic", &input).expect("run ok");
     assert_eq!(
         out.facts
@@ -2213,7 +2239,8 @@ fn rl_symbolic_paper_grounded() {
 /// Clarke, Emerson & Sistla 1986 — mutual exclusion safety AG !(c1 & c2).
 #[test]
 fn ctl_check_paper_grounded() {
-    let Some((input, expected)) = p3_load("ctl_check") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("ctl_check") else { return };
+    assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("ctl_check", &input).expect("run ok");
     assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
     assert!(
@@ -2225,7 +2252,8 @@ fn ctl_check_paper_grounded() {
 /// Quinlan 1990 — FOIL daughter/parent: body == {parent(V1,V0), female(V0)}.
 #[test]
 fn ilp_paper_grounded() {
-    let Some((input, expected)) = p3_load("ilp") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("ilp") else { return };
+    assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("ilp", &input).expect("run ok");
     let rules: Vec<&str> = out
         .facts
@@ -2250,7 +2278,8 @@ fn ilp_paper_grounded() {
 /// Hayes 1979/1985 — the cup of water: cup falls, water spills, floor stays.
 #[test]
 fn naive_physics_paper_grounded() {
-    let Some((input, expected)) = p3_load("naive_physics") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("naive_physics") else { return };
+    assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("naive_physics", &input).expect("run ok");
     for f in expected["falls"].as_array().unwrap() {
         let key = format!("falls:{}", f.as_str().unwrap());

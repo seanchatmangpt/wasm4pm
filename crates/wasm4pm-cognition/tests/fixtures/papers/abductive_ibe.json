@@ -1,23 +1,47 @@
 {
   "breed": "abductive_ibe",
   "provenance": {
-    "citation": "Harman, G. H. (1965). The Inference to the Best Explanation. The Philosophical Review, 74(1), 88–95. Thagard, P. R. (1978). The Best Explanation: Criteria for Theory Choice. The Journal of Philosophy, 75(2), 76–92.",
-    "locus": "Thagard 1978, Sections II–III: the Darwin case study — evolution by natural selection is the best explanation because of its consilience (it explains classes of facts from embryology, biogeography, the fossil record, rudimentary organs) and simplicity, compared with the special-creation hypothesis which covers fewer evidence classes only with auxiliary assumptions (higher cost).",
+    "citation": "Harman, G. H. (1965). The Inference to the Best Explanation. The Philosophical Review, 74(1), 88\u201395. Thagard, P. R. (1978). The Best Explanation: Criteria for Theory Choice. The Journal of Philosophy, 75(2), 76\u201392.",
+    "locus": "Thagard 1978, Sections II\u2013III: the Darwin case study \u2014 evolution by natural selection is the best explanation because of its consilience (it explains classes of facts from embryology, biogeography, the fossil record, rudimentary organs) and simplicity, compared with the special-creation hypothesis which covers fewer evidence classes only with auxiliary assumptions (higher cost).",
     "extraction": "operationalized",
-    "notes": "Thagard's criteria (consilience, simplicity) are qualitative; the breed operationalizes score = coverage − 0.1·cost, the documented closed form. Evolution covers 4 evidence classes at assumption cost 1 → score 4 − 0.1 = 3.9; special creation covers 1 class (fossil_record, via catastrophism) at cost 3 (auxiliary assumptions) → score 1 − 0.3 = 0.7. The asserted paper conclusion is the ordinal one Thagard states: evolution > creation under consilience+simplicity."
+    "notes": "Thagard's criteria (consilience, simplicity) are qualitative; the breed operationalizes score = coverage \u2212 0.1\u00b7cost, the documented closed form. Evolution covers 4 evidence classes at assumption cost 1 \u2192 score 4 \u2212 0.1 = 3.9; special creation covers 1 class (fossil_record, via catastrophism) at cost 3 (auxiliary assumptions) \u2192 score 1 \u2212 0.3 = 0.7. The asserted paper conclusion is the ordinal one Thagard states: evolution > creation under consilience+simplicity."
   },
   "input": {
     "intent": "select the best explanation of the biological evidence (Thagard 1978 Darwin case)",
     "candidates": [],
     "facts": [
-      { "key": "ibe:obs:fossil_record", "value": "true" },
-      { "key": "ibe:obs:embryology", "value": "true" },
-      { "key": "ibe:obs:biogeography", "value": "true" },
-      { "key": "ibe:obs:rudimentary_organs", "value": "true" },
-      { "key": "ibe:hyp:evolution:covers", "value": "fossil_record,embryology,biogeography,rudimentary_organs" },
-      { "key": "ibe:hyp:evolution:cost", "value": "1" },
-      { "key": "ibe:hyp:creation:covers", "value": "fossil_record" },
-      { "key": "ibe:hyp:creation:cost", "value": "3" }
+      {
+        "key": "ibe:obs:fossil_record",
+        "value": "true"
+      },
+      {
+        "key": "ibe:obs:embryology",
+        "value": "true"
+      },
+      {
+        "key": "ibe:obs:biogeography",
+        "value": "true"
+      },
+      {
+        "key": "ibe:obs:rudimentary_organs",
+        "value": "true"
+      },
+      {
+        "key": "ibe:hyp:evolution:covers",
+        "value": "fossil_record,embryology,biogeography,rudimentary_organs"
+      },
+      {
+        "key": "ibe:hyp:evolution:cost",
+        "value": "1"
+      },
+      {
+        "key": "ibe:hyp:creation:covers",
+        "value": "fossil_record"
+      },
+      {
+        "key": "ibe:hyp:creation:cost",
+        "value": "3"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -25,6 +49,7 @@
     "state": []
   },
   "expected": {
+    "value": "evolution",
     "best": "evolution",
     "score": "3.9000",
     "creation_score": "0.7000",

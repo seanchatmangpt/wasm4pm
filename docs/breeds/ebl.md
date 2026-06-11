@@ -1,41 +1,25 @@
-# EBL
+# ebl — Explanation-Based Learning
 
-## Origin
-- **Paper:** "Explanation-Based Generalization: A Unifying View" (Machine Learning 1(1), 1986)
-- **Authors:** Tom M. Mitchell, Richard M. Keller, Smadar T. Kedar-Cabelli
-- **Tradition:** Analytic learning, explanation-based learning
+## 1. Identity & Lineage
+Explanation-Based Generalization (Mitchell, Keller & Kedar-Cabelli, Machine Learning 1(1), 1986). BreedId `ebl`, module `crates/wasm4pm-cognition/src/breeds/ebl.rs`.
 
-## Algorithm
-Three phases. Explain: SLD backward chaining (term unification with depth-suffixed variable renaming, depth ≤32) proves the training goal from facts + the domain theory, building a proof tree. Generalize: EGGS goal regression — every constant argument of the goal becomes a fresh `?targetN` variable (multi-argument goals included; audit defect EBL-3 fixed) and the proof's substitutions are replayed symbolically. Operationalize: the generalized proof's leaves become the premise of a new operational rule emitted as the `ebl:rule` fact. Anti-fraud postcondition: the learned rule must contain at least one variable.
+## 2. Algorithm
+Explain: SLD backward chaining (depth ≤32) proves the training goal from facts + domain theory, building a proof tree. Generalize: EGGS goal regression replaces constants with variables and replays substitutions. Operationalize: the generalized proof's leaves become the premise of a new operational rule.
 
-## Pseudocode
-```
-function run(input):
-    proof = explain(goal, rules, facts, 32)        // emit ebl-explain per node
-    gen_goal = goal with all constant args → ?targetN
-    leaves = generalize(proof, gen_goal)           // emit ebl-generalize per rule node
-    rule = leaves.join(", ") + " => " + gen_head   // emit ebl-operationalize
-    output fact ebl:rule
-```
+## 3. Input Contract
+Facts: ground atoms as keys (e.g. `weight(obj1,light)`). Rules: `?var` arguments. Goals: training example (e.g. `safe_to_stack(obj1,obj2)`).
 
-## Input contract
-- facts: ground atoms in their KEYS (e.g. `weight(obj1,light)`)
-- rules: `?var` arguments; goals[0] = training example (predicate is the atom when value=="true")
+## 4. Output Contract
+Fact `ebl:rule` containing the new generalized rule (must contain ≥1 variable).
 
-## Output contract
-- fact `ebl:rule` = `"p1, p2 => head"` with ≥1 variable
-- trace: `ebl-explain`(1,*) → `ebl-generalize`(1,*) → `ebl-operationalize`(1,1)
+## 5. Trace & OCEL Lifecycle
+`ebl-explain`(1,*) → `ebl-generalize`(1,*) → `ebl-operationalize`(1,1). Model: `ocel/models/l1/ebl.ocpn.json`; report: `ocel/reports/ebl.json` (fitness 1.0).
 
-## Complexity
-O(b^d) proof search, depth-capped at 32.
+## 6. Oracles
+Refusal: no goals, no domain theory, unprovable goal. Hidden: the learned rule is executed as a domain rule on fresh objects. Paper: Mitchell 1986 SafeToStack (learned rule fully variablized over training constants).
 
-## Generalization examples
-SafeToStack, cup/drinkable, macro-operator learning from single examples.
+## 7. Determinism & Bounds
+Depth-capped (32) SLD search; bit-exact double-run determinism.
 
-## Adversarial coverage
-- Refusal: no goals, no domain theory, unprovable goal
-- Hidden: the learned rule is EXECUTED as a domain rule through a second inference run on fresh objects never seen in training (audit defect EBL-1 fixed: no string-replacement simulation); real double-run determinism (EBL-2 fixed)
-- Paper: Mitchell 1986 SafeToStack — learned rule fully variablized over training constants
-
-## See also
-- `prolog` lineage (SLD resolution) in the P0 cards
+## 8. Provenance
+Fixture `tests/fixtures/papers/ebl.json` (Mitchell 1986 SafeToStack).

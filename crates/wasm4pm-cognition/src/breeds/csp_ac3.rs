@@ -12,13 +12,61 @@
 //! Trace kinds: `csp-init`(1,1) → {`csp-revise`,`csp-assign`,
 //! `csp-backtrack`}(0,*) → `csp-verdict`(1,1).
 
+use crate::breeds::support::breed_class::VerifierBreed;
 use crate::breeds::support::csp::{CspSolver, TraceEvent};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// AC-3 + MAC constraint satisfaction breed.
 pub struct CspAc3;
+
+impl BoundedBreed for CspAc3 {
+    fn breed_name(&self) -> &'static str {
+        "csp_ac3"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let vars: Vec<&Fact> = input.facts.iter().filter(|f| f.key == "csp-var").collect();
+        if vars.len() > 24 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("CSP vars exceeded limit: {} > 24", vars.len()),
+            });
+        }
+        for v in vars {
+            let parts: Vec<&str> = v.value.split(':').collect();
+            if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
+                // Malformed csp-var is a content error, reported by preconditions().
+                continue;
+            }
+            let domain: Vec<&str> = parts[1].split(',').collect();
+            if domain.len() > 16 {
+                return Some(CognitionError::ComplexityCap {
+                    breed: self.breed_name(),
+                    detail: format!(
+                        "CSP domain size exceeded limit: {} > 16 for var {}",
+                        domain.len(),
+                        parts[0]
+                    ),
+                });
+            }
+        }
+        None
+    }
+}
+
+impl VerifierBreed for CspAc3 {
+    fn valid_verdicts(&self) -> &'static [&'static str] {
+        &["sat", "unsat"]
+    }
+}
 
 impl CognitionBreed for CspAc3 {
     fn id(&self) -> BreedId {
@@ -39,21 +87,11 @@ impl CognitionBreed for CspAc3 {
         if vars.is_empty() {
             return Err("csp_ac3 requires at least one csp-var fact".to_string());
         }
-        if vars.len() > 24 {
-            return Err(format!("CSP vars exceeded limit: {} > 24", vars.len()));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         for v in vars {
             let parts: Vec<&str> = v.value.split(':').collect();
             if parts.len() != 2 || parts[0].is_empty() || parts[1].is_empty() {
                 return Err(format!("malformed csp-var: {}", v.value));
-            }
-            let domain: Vec<&str> = parts[1].split(',').collect();
-            if domain.len() > 16 {
-                return Err(format!(
-                    "CSP domain size exceeded limit: {} > 16 for var {}",
-                    domain.len(),
-                    parts[0]
-                ));
             }
         }
         for c in input.facts.iter().filter(|f| f.key == "csp-constraint") {
@@ -167,15 +205,9 @@ impl CognitionBreed for CspAc3 {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        let has_init = output.inference_trace.iter().any(|t| t.kind == "csp-init");
-        let has_verdict = output.inference_trace.iter().any(|t| t.kind == "csp-verdict");
-        if !has_init || !has_verdict {
-            return Err("trace must include csp-init and csp-verdict".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_verdict_valid(output)?;
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&["csp-init", "csp-verdict"])?;
         Ok(())
     }
 }

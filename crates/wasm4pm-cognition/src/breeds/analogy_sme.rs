@@ -17,6 +17,7 @@
 //! Caps (refusals): ≤32 expressions per side, depth ≤8.
 
 use crate::breeds::support::sexpr::Sexpr;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::BTreeMap;
 
@@ -285,13 +286,8 @@ impl CognitionBreed for AnalogySme {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of structure mapping".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "local-match") {
-            return Err("no local-match step — mapping did not run".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&["local-match"])?;
         Ok(())
     }
 }

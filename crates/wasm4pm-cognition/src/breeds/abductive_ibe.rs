@@ -17,8 +17,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::breeds::support::breed_class::ClassifierBreed;
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError, Fact,
+    TraceStep,
 };
 
 /// Maximum number of hypotheses.
@@ -28,6 +32,31 @@ const COST_WEIGHT: f32 = 0.1;
 
 /// IBE breed: best-explanation selection by consilience-minus-cost scoring.
 pub struct AbductiveIbe;
+
+impl BoundedBreed for AbductiveIbe {
+    fn breed_name(&self) -> &'static str {
+        "abductive_ibe"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let (_, hyps) = parse(input).ok()?;
+        if hyps.len() > MAX_HYPOTHESES {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "hypothesis count {} exceeds cap {}",
+                    hyps.len(),
+                    MAX_HYPOTHESES
+                ),
+            });
+        }
+        None
+    }
+}
 
 struct Hypothesis {
     covers: BTreeSet<String>,
@@ -104,13 +133,7 @@ impl CognitionBreed for AbductiveIbe {
         if hyps.is_empty() {
             return Err("abductive_ibe requires at least one ibe:hyp:*:covers fact".to_string());
         }
-        if hyps.len() > MAX_HYPOTHESES {
-            return Err(format!(
-                "hypothesis count {} exceeds cap {}",
-                hyps.len(),
-                MAX_HYPOTHESES
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -163,6 +186,7 @@ impl CognitionBreed for AbductiveIbe {
         }
 
         let mut best: Option<(String, f32)> = None;
+        let mut scored: Vec<(String, f32)> = Vec::with_capacity(candidates.len());
         for set in &candidates {
             let s = score(set, &hyps, &obs);
             let name = set
@@ -170,6 +194,7 @@ impl CognitionBreed for AbductiveIbe {
                 .map(|h| h.as_str())
                 .collect::<Vec<_>>()
                 .join("+");
+            scored.push((name.clone(), s));
             tr(
                 &mut trace,
                 "score-hypothesis",
@@ -220,9 +245,29 @@ impl CognitionBreed for AbductiveIbe {
             },
         ];
 
+        // Ranked candidate list from the scored hypothesis sets, sorted by
+        // (score desc, id asc) — the SAME tie-break as best-selection, so
+        // candidates[0].id == selected. Note: raw IBE scores are not
+        // normalized to [0, 1]; coverage-minus-cost can exceed 1.0.
+        let mut ranked: Vec<Candidate> = scored
+            .into_iter()
+            .map(|(id, s)| Candidate {
+                id,
+                score: s,
+                eliminated: false,
+                elimination_reason: None,
+            })
+            .collect();
+        ranked.sort_by(|a, b| {
+            b.score
+                .partial_cmp(&a.score)
+                .unwrap_or(std::cmp::Ordering::Equal)
+                .then_with(|| a.id.cmp(&b.id))
+        });
+
         Ok(BreedOutput {
             breed: BreedId::AbductiveIbe,
-            candidates: input.candidates.clone(),
+            candidates: ranked,
             facts,
             selected: Some(best_name.clone()),
             explanation: format!(
@@ -238,19 +283,26 @@ impl CognitionBreed for AbductiveIbe {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("best-explanation") {
-            return Err("final step must be 'best-explanation'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_last("best-explanation")?;
         if output.selected.is_none() {
             return Err("IBE must select a best explanation".to_string());
+        }
+        self.assert_ranking_valid(output)?;
+        if output.candidates.first().map(|c| c.id.as_str()) != output.selected.as_deref() {
+            return Err(format!(
+                "IBE top-ranked candidate {:?} does not match selected {:?}",
+                output.candidates.first().map(|c| c.id.as_str()),
+                output.selected.as_deref()
+            ));
         }
         Ok(())
     }
 }
+
+impl ClassifierBreed for AbductiveIbe {}
 
 #[cfg(test)]
 mod tests {

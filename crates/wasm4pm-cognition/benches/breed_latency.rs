@@ -323,6 +323,9 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_semantics", AutoinstinctSemantics);
     bench_breed!(group, "autoinstinct_neurosis", AutoinstinctNeurosis);
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
+    bench_breed!(group, "event_calculus", EventCalculus);
+    bench_breed!(group, "mdp", Mdp);
+    bench_breed!(group, "version_space", VersionSpace);
 
     macro_rules! bench_p1_breed {
         ($group:expr, $name:expr, $breed:expr) => {

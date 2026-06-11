@@ -10,26 +10,59 @@
   "input": {
     "intent": "monitor traffic light safety",
     "facts": [
-      { "key": "ltl:formula", "value": "G (red -> !green)" },
-      { "key": "trace:0", "value": "red" },
-      { "key": "trace:1", "value": "green" },
-      { "key": "trace:2", "value": "red" },
-      { "key": "trace:3", "value": "green" }
-    ]
+      {
+        "key": "ltl:formula",
+        "value": "G (red -> !green)"
+      },
+      {
+        "key": "trace:0",
+        "value": "red"
+      },
+      {
+        "key": "trace:1",
+        "value": "green"
+      },
+      {
+        "key": "trace:2",
+        "value": "red"
+      },
+      {
+        "key": "trace:3",
+        "value": "green"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
   },
   "violating_input": {
     "intent": "monitor traffic light safety",
     "facts": [
-      { "key": "ltl:formula", "value": "G (red -> !green)" },
-      { "key": "trace:0", "value": "red" },
-      { "key": "trace:1", "value": "red,green" },
-      { "key": "trace:2", "value": "green" }
+      {
+        "key": "ltl:formula",
+        "value": "G (red -> !green)"
+      },
+      {
+        "key": "trace:0",
+        "value": "red"
+      },
+      {
+        "key": "trace:1",
+        "value": "red,green"
+      },
+      {
+        "key": "trace:2",
+        "value": "green"
+      }
     ]
   },
   "expected": {
     "verdict": true,
     "progress_steps": 4,
     "violating_verdict": false,
-    "violating_progress_steps": 2
+    "violating_progress_steps": 2,
+    "value": "true"
   }
 }

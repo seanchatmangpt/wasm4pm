@@ -24,6 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Maximum number of distinct concept names.
 const MAX_CONCEPTS: usize = 32;
@@ -269,20 +270,9 @@ impl CognitionBreed for DescriptionLogic {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "fixpoint") {
-            return Err("missing 'fixpoint' step".to_string());
-        }
-        if !output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "classify-verdict")
-        {
-            return Err("missing 'classify-verdict' step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["fixpoint", "classify-verdict"])?;
         if !output.facts.iter().any(|f| f.key.starts_with("dl:verdict:")) {
             return Err("missing dl:verdict fact".to_string());
         }

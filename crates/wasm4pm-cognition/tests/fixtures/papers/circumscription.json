@@ -11,25 +11,71 @@
     "intent": "circumscribe abnormality over the bird/penguin theory",
     "candidates": [],
     "facts": [
-      {"key": "bird_tweety", "value": "true"},
-      {"key": "bird_opus", "value": "true"},
-      {"key": "penguin_opus", "value": "true"}
+      {
+        "key": "bird_tweety",
+        "value": "true"
+      },
+      {
+        "key": "bird_opus",
+        "value": "true"
+      },
+      {
+        "key": "penguin_opus",
+        "value": "true"
+      }
     ],
     "cases": [],
     "rules": [
-      {"id": "r-fly-tweety", "premise": ["bird_tweety", "not_ab_bird_tweety"], "conclusion": "flies_tweety", "certainty": 1.0},
-      {"id": "r-fly-opus", "premise": ["bird_opus", "not_ab_bird_opus"], "conclusion": "flies_opus", "certainty": 1.0},
-      {"id": "r-penguin-ab", "premise": ["penguin_opus"], "conclusion": "ab_bird_opus", "certainty": 1.0}
+      {
+        "id": "r-fly-tweety",
+        "premise": [
+          "bird_tweety",
+          "not_ab_bird_tweety"
+        ],
+        "conclusion": "flies_tweety",
+        "certainty": 1.0
+      },
+      {
+        "id": "r-fly-opus",
+        "premise": [
+          "bird_opus",
+          "not_ab_bird_opus"
+        ],
+        "conclusion": "flies_opus",
+        "certainty": 1.0
+      },
+      {
+        "id": "r-penguin-ab",
+        "premise": [
+          "penguin_opus"
+        ],
+        "conclusion": "ab_bird_opus",
+        "certainty": 1.0
+      }
     ],
     "goals": [
-      {"id": "g1", "predicate": "entail", "value": "flies_tweety"},
-      {"id": "g2", "predicate": "entail", "value": "flies_opus"}
+      {
+        "id": "g1",
+        "predicate": "entail",
+        "value": "flies_tweety"
+      },
+      {
+        "id": "g2",
+        "predicate": "entail",
+        "value": "flies_opus"
+      }
     ],
     "state": []
   },
   "expected": {
-    "entailed": {"flies_tweety": true, "flies_opus": false},
-    "minimal_ab_set": ["ab_bird_opus"],
-    "notes": "The unique ab-minimal model has exactly {ab_bird_opus}: penguin_opus forces it, while ab_bird_tweety stays false by minimization, so flies_tweety holds and flies_opus does not."
+    "entailed": {
+      "flies_tweety": true,
+      "flies_opus": false
+    },
+    "minimal_ab_set": [
+      "ab_bird_opus"
+    ],
+    "notes": "The unique ab-minimal model has exactly {ab_bird_opus}: penguin_opus forces it, while ab_bird_tweety stays false by minimization, so flies_tweety holds and flies_opus does not.",
+    "value": "flies_tweety=true,flies_opus=false"
   }
 }

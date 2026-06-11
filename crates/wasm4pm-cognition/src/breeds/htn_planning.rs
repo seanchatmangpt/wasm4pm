@@ -14,6 +14,8 @@
 //! Trace kinds: {`htn-decompose`,`htn-apply`,`htn-backtrack`}(1,*) →
 //! `htn-plan`(1,1).
 
+use crate::breeds::support::breed_class::PlannerBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, StateAtom, TraceStep,
 };
@@ -134,6 +136,12 @@ fn htn_seek(
     None
 }
 
+impl PlannerBreed for HtnPlanning {
+    fn required_trace_kinds(&self) -> &'static [&'static str] {
+        &["htn-plan"]
+    }
+}
+
 impl CognitionBreed for HtnPlanning {
     fn id(&self) -> BreedId {
         BreedId::HtnPlanning
@@ -235,26 +243,15 @@ impl CognitionBreed for HtnPlanning {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        if !output
-            .inference_trace
-            .iter()
-            .any(|t| matches!(t.kind.as_str(), "htn-decompose" | "htn-apply" | "htn-backtrack"))
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_plan_trace_complete(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        if !(tq.has_kind("htn-decompose") || tq.has_kind("htn-apply") || tq.has_kind("htn-backtrack"))
         {
             return Err("trace must contain decomposition/apply/backtrack steps".to_string());
         }
-        if output
-            .inference_trace
-            .iter()
-            .filter(|t| t.kind == "htn-plan")
-            .count()
-            != 1
-        {
-            return Err("trace must contain exactly one htn-plan step".to_string());
-        }
+        tq.require_count("htn-plan", 1)?;
         Ok(())
     }
 }

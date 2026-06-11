@@ -19,6 +19,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Minsky frame-inheritance breed (module name avoids collision with
 /// `frame.rs`, which is ELIZA).
@@ -195,13 +196,9 @@ impl CognitionBreed for FramesInheritance {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "frame-walk") {
-            return Err("trace must contain at least one frame-walk step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["frame-walk"])?;
         if output
             .inference_trace
             .iter()

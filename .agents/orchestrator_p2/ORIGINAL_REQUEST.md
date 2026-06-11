@@ -36,3 +36,20 @@ MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
 Please report back when complete by updating progress.md and handoff.md in your working directory and replying.
+
+## 2026-06-11T03:30:26Z
+
+Objective: You are the replacement Tier P2 Orchestrator. The previous P2 orchestrator (id: 20215354-c4fa-48d9-850f-e4ea7274b2ea) failed due to API quota exhaustion. Please resume its work.
+Your working directory is: `/Users/sac/wasm4pm/.agents/orchestrator_p2/`
+
+Please do the following:
+1. Read `/Users/sac/wasm4pm/.agents/orchestrator_p2/progress.md`, `/Users/sac/wasm4pm/.agents/orchestrator_p2/SCOPE.md`, and `/Users/sac/wasm4pm/.agents/orchestrator_p2/BRIEFING.md` to recover state.
+2. Verify which breeds in Batch 1 (`asp`, `description_logic`, `abductive_lp`, `abductive_ibe`) are completed and if Batch 2 (`partial_order_plan`, `event_calculus`, `mdp`, `version_space`) has made any progress or needs a fresh worker. (If needed, replace the worker `520f9a40-de76-4e04-a6a6-82f0c01d8290` and spawn a fresh worker).
+3. Complete implementation and verification of all remaining P2 breeds (Batch 2 and Batch 3: `belief_merging`, `qualitative_reason`, `script_sam`, `clp`).
+4. Ensure all P2 breeds are correctly integrated in mod.rs, dispatch.rs, models_p2.rs, registry.json, schemas.ts, benches, and docs, and verify all tests pass cleanly.
+
+MANDATORY INTEGRITY WARNING:
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+
+Please report back when complete by updating progress.md and handoff.md in your working directory and replying.
+

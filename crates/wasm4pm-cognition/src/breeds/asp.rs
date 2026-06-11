@@ -15,15 +15,42 @@
 use std::collections::BTreeSet;
 
 use crate::breeds::support::closure::{forward_close, HornRule};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Maximum number of distinct atoms (2^12 = 4096 candidate sets).
 const MAX_ATOMS: usize = 12;
 
 /// ASP breed: Gelfond–Lifschitz stable models by candidate enumeration.
 pub struct Asp;
+
+impl BoundedBreed for Asp {
+    fn breed_name(&self) -> &'static str {
+        "asp"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let atoms = atom_universe(input);
+        if atoms.len() > MAX_ATOMS {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "ASP atom universe {} exceeds cap {} (2^n candidate enumeration)",
+                    atoms.len(),
+                    MAX_ATOMS
+                ),
+            });
+        }
+        None
+    }
+}
 
 /// Strip a `"not "` prefix, returning (is_naf, atom).
 fn parse_literal(lit: &str) -> (bool, &str) {
@@ -74,14 +101,7 @@ impl CognitionBreed for Asp {
         if input.rules.is_empty() {
             return Err("ASP requires at least one program rule".to_string());
         }
-        let atoms = atom_universe(input);
-        if atoms.len() > MAX_ATOMS {
-            return Err(format!(
-                "ASP atom universe {} exceeds cap {} (2^n candidate enumeration)",
-                atoms.len(),
-                MAX_ATOMS
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         for r in &input.rules {
             if r.conclusion.trim().is_empty() {
                 return Err(format!("rule '{}' has empty conclusion", r.id));
@@ -236,13 +256,9 @@ impl CognitionBreed for Asp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "ground") {
-            return Err("missing 'ground' step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["ground"])?;
         if output
             .inference_trace
             .last()

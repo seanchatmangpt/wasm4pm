@@ -14,6 +14,7 @@
 //! like `daughter(mary,ann)`. Caps (refusals): ≤64 background facts,
 //! ≤32 examples, body length ≤4, ≤256 candidate literals per step.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -386,13 +387,9 @@ impl CognitionBreed for Ilp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of induction".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "emit-clause") {
-            return Err("no emit-clause step — nothing was learned".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["emit-clause"])?;
         // Fraud guard: a learned clause must contain at least one variable.
         if !output.facts.iter().any(|f| f.key.starts_with("ilp:rule:") && f.value.contains('V')) {
             return Err("learned rule contains no variables — ground rule is a fraud signal".to_string());

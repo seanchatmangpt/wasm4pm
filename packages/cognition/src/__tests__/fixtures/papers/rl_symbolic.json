@@ -3,21 +3,42 @@
   "provenance": {
     "paper": "Watkins, C. J. C. H., & Dayan, P. (1992). Q-learning.",
     "citation": "Watkins, C. J. C. H., & Dayan, P. (1992). Machine Learning, 8(3-4), 279-292.",
-    "locus": "Theorem (p. 281): Q-learning converges to Q* with probability 1 under bounded rewards and repeated sampling; one-step lookup Q*(s,a) = r + γ max_a' Q*(s',a').",
+    "locus": "Theorem (p. 281): Q-learning converges to Q* with probability 1 under bounded rewards and repeated sampling; one-step lookup Q*(s,a) = r + \u03b3 max_a' Q*(s',a').",
     "extraction": "instantiated",
-    "notes": "Two-state task: 'go' moves s0 to the terminal goal with reward 1, so the Bellman optimality equation gives Q*(s0,go) = 1 + γ·0 = 1 exactly; 'stay' self-loops with reward 0, Q*(s0,stay) = 0 + γ·max Q*(s0,·) = 0.9·Q*(s0,go) = 0.9. The learned table must satisfy these closed-form values and the greedy policy must choose 'go'."
+    "notes": "Two-state task: 'go' moves s0 to the terminal goal with reward 1, so the Bellman optimality equation gives Q*(s0,go) = 1 + \u03b3\u00b70 = 1 exactly; 'stay' self-loops with reward 0, Q*(s0,stay) = 0 + \u03b3\u00b7max Q*(s0,\u00b7) = 0.9\u00b7Q*(s0,go) = 0.9. The learned table must satisfy these closed-form values and the greedy policy must choose 'go'."
   },
   "input": {
     "intent": "learn the optimal policy for the two-state goal task",
     "candidates": [],
     "facts": [
-      {"key": "mdp:gamma", "value": "0.9"},
-      {"key": "mdp:start", "value": "s0"},
-      {"key": "mdp:terminal:goal", "value": "true"},
-      {"key": "mdp:t:s0:go", "value": "goal"},
-      {"key": "mdp:t:s0:stay", "value": "s0"},
-      {"key": "mdp:r:s0:go", "value": "1.0"},
-      {"key": "rl:episodes", "value": "300"}
+      {
+        "key": "mdp:gamma",
+        "value": "0.9"
+      },
+      {
+        "key": "mdp:start",
+        "value": "s0"
+      },
+      {
+        "key": "mdp:terminal:goal",
+        "value": "true"
+      },
+      {
+        "key": "mdp:t:s0:go",
+        "value": "goal"
+      },
+      {
+        "key": "mdp:t:s0:stay",
+        "value": "s0"
+      },
+      {
+        "key": "mdp:r:s0:go",
+        "value": "1.0"
+      },
+      {
+        "key": "rl:episodes",
+        "value": "300"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -29,6 +50,7 @@
     "q_s0_go": 1.0,
     "q_s0_stay": 0.9,
     "tolerance": 0.05,
-    "notes": "Closed-form Bellman fixed point; Watkins-Dayan convergence checked against exact Q*."
+    "notes": "Closed-form Bellman fixed point; Watkins-Dayan convergence checked against exact Q*.",
+    "value": "verified"
   }
 }

@@ -1,47 +1,46 @@
-# BRIEFING — 2026-06-10T23:53:35-07:00
+# BRIEFING — 2026-06-11T03:30:10Z
 
 ## Mission
-Implement and verify Batch 2 of Tier P2 cognition breeds: `partial_order_plan`, `event_calculus`, `mdp`, and `version_space`.
+Implement Batch 2 of Tier P2 cognition breeds: partial_order_plan, event_calculus, mdp, version_space.
 
 ## 🔒 My Identity
-- Archetype: implementer
+- Archetype: team_worker
 - Roles: implementer, qa, specialist
 - Working directory: /Users/sac/wasm4pm/.agents/worker_p2_batch2/
 - Original parent: 20215354-c4fa-48d9-850f-e4ea7274b2ea
-- Milestone: P2 Breed Implementation Batch 2
+- Milestone: Batch 2 of Tier P2 cognition breeds
 
 ## 🔒 Key Constraints
-- Pure logic implementations matching the breed requirements
-- Real boundary testing: negative, hidden oracle, paper-grounded, determinism, and benchmark tests
-- Strict telemetry and correct refusal checks
-- 100% genuine code, no shortcuts or cheats (no dummy values or stubs)
+- CODE_ONLY network mode: no external HTTP clients (curl/wget/lynx etc).
+- Do not cheat: no hardcoded test results, expected outputs, dummy/facade implementations.
+- Write only to your folder `/Users/sac/wasm4pm/.agents/worker_p2_batch2/` for metadata, read anything.
+- Output files must be verified on disk and bind to current commit.
 
 ## Current Parent
 - Conversation ID: 20215354-c4fa-48d9-850f-e4ea7274b2ea
 - Updated: not yet
 
 ## Task Summary
-- **What to build**: Core algorithm implementations for `partial_order_plan`, `event_calculus`, `mdp`, and `version_space`. Register, configure, test, benchmark, schema, and document them.
-- **Success criteria**: All cargo and vitest tests pass, OCEL fitness measured, documentation generated.
-- **Interface contracts**: `crates/wasm4pm-cognition/src/breeds/mod.rs` and the `CognitionBreed` trait.
-- **Code layout**: Rust breed modules in `crates/wasm4pm-cognition/src/breeds/`.
+- **What to build**: Core algorithms for `partial_order_plan`, `event_calculus`, `mdp`, `version_space` in crates/wasm4pm-cognition/src/breeds/. Register them, define static lifecycle models, write Petri-net models, negative tests, hidden oracle tests, paper-grounded JSON fixtures, determinism tests, benchmark entries, vitest integration tests, measure OCEL fitness, update registry status, write doc cards.
+- **Success criteria**: All Rust tests pass (`cargo test -p wasm4pm-cognition`), all Vitest tests pass (`pnpm test`), and all evidence is generated/verified.
+- **Interface contracts**: crates/wasm4pm-cognition/src/breeds/mod.rs (CognitionBreed trait)
+- **Code layout**: Rust: crates/wasm4pm-cognition/, TS: packages/cognition/
 
 ## Key Decisions Made
-- [TBD]
+- Re-initialize progress tracking and analyze existing breeds first.
 
 ## Artifact Index
-- /Users/sac/wasm4pm/.agents/worker_p2_batch2/progress.md — progress tracker
-- /Users/sac/wasm4pm/.agents/worker_p2_batch2/handoff.md — final handoff report
+- None yet.
 
 ## Change Tracker
 - **Files modified**: None
-- **Build status**: Unknown
-- **Pending issues**: Implement breeds
+- **Build status**: [TBD]
+- **Pending issues**: [TBD]
 
 ## Quality Status
-- **Build/test result**: Unknown
-- **Lint status**: Unknown
-- **Tests added/modified**: None
+- **Build/test result**: [TBD]
+- **Lint status**: [TBD]
+- **Tests added/modified**: [TBD]
 
 ## Loaded Skills
 - None

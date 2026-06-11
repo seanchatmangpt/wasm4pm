@@ -1,127 +1,53 @@
 # wasm4pm — Claude Code Configuration
 
-**REQUIRED READING:**
-- **Quality Standards**: See `GEMINI.md` (Release and Proof Discipline, Evidence Gates)
+**Quality Standards:** See `GEMINI.md`. **SPR context:** `.claude/spr-context.md`.
 
 ## What this project is
 
-**wasm4pm** is a process mining platform with two layers:
+**wasm4pm**: process mining platform. Two layers:
+1. **Rust/WASM core** (`wasm4pm/`) — 60 algorithms, compiled via wasm-pack.
+2. **TypeScript monorepo** (`packages/` + `apps/`) — 12 packages, `wpm` CLI ships from `apps/wasm4pm/` (`@wasm4pm/cli`). Rust CLI at `crates/wasm4pm-cli/` is a dev tool only.
 
-1. **Rust/WASM core** (`wasm4pm/`) — **60 algorithms** registered in the kernel registry, compiled to WebAssembly via wasm-pack. This is the deterministic algorithm backend.
+**References:** [Architecture](docs/explanation/architecture_overview.md) · `WASM_API.md` · `TESTING.md`
 
-2. **TypeScript monorepo** (`packages/` + `apps/`) — 12 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration, and observability.
+## Versioning: CalVer `vYY.M.D`
+PATCH = day of month (1–31, never higher). Same-day: append `a`, `b`, `c`.
 
-**State Machine Source of Truth:** [Architecture Overview](docs/explanation/architecture_overview.md) (Engine State Machine section).
+## Key paths
+`wasm4pm/` WASM core · `crates/wasm4pm-cognition/` cognition layer (52 PARTIAL_ALIVE breeds, v26.6.10) · `crates/prolog8/` · `apps/wasm4pm/` published CLI · `packages/` TS monorepo · `ocel/models/l1/` OCPN models · `ocel/reports/` fitness reports
 
-**WASM API Reference:** `WASM_API.md` — complete catalog of all `wasm_bindgen` exports.
+**`wasm4pm-compat` is crates.io only — never add a path dep.**
 
-**Testing Docs:** `TESTING.md` — test layers, oracle hierarchy, and Prolog8 AAT.
-
----
-
-## Versioning: CalVer (Calendar Versioning)
-
-**Format:** `vYEAR.MONTH.DAY` — PATCH is literally the day of month (1-31)
-- `v26.4.9` = April 9, 2026
-- `v26.4.10` = April 10, 2026
-- Multiple releases same day: `v26.4.10a`, `v26.4.10b`, `v26.4.10c` (letter suffixes)
-
-**Key points:**
-- Day advances when calendar date changes OR if multiple patches exhausted in one day.
-- Never use a PATCH value > 31 — it's the day of month, not a counter.
-
----
-
-## Repository structure
-
-```
-wasm4pm/
-├── Cargo.toml              # Rust workspace (member: wasm4pm/)
-├── wasm4pm/                # Rust/WASM core — algorithms
-├── crates/
-│   ├── wasm4pm-cli/        # SECONDARY Rust binary (also named "wpm") — NOT published
-│   ├── miniml-core/        # Micro-ML Rust crate
-│   ├── wasm4pm-cognition/  # Cognition layer WASM crate
-│   ├── prolog8/            # Prolog8 inference engine
-│   └── ocpq/               # Object-centric process querying crate
-│   # NOTE: wasm4pm-compat is crates.io only — never add a path dep.
-├── packages/               # TypeScript monorepo (11 packages)
-├── apps/
-│   └── wasm4pm/            # PRIMARY CLI tool (@wasm4pm/cli) — this is what ships
-├── lab/                    # Post-publish artifact validation
-└── playground/             # Local dev behavior testing
-```
-
-### Source of Truth for `wpm` Binary
-
-| Binary | Source | Published | Commands | Auth |
-|--------|--------|-----------|----------|------|
-| TypeScript CLI | `apps/wasm4pm/` | YES (`@wasm4pm/cli`) | 50+ | **Source of truth** |
-| Rust CLI | `crates/wasm4pm-cli/` | NO | 10 | Developer tool |
-
----
-
-## Configuration & Deployment
-
-- **Config Schema:** See [Configuration Schema Reference](docs/reference/configuration_schema.md).
-- **Deployment Profiles:** See [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
-- **Algorithms Registry:** See [Algorithms Reference](docs/reference/algorithms.md) (60 registered).
-
----
-
-## TypeScript packages (`packages/`)
-
-| Package | Role |
-|---|---|
-| `@wasm4pm/contracts` | Shared types + receipts + algorithm registry |
-| `@wasm4pm/engine` | Engine lifecycle state machine |
-| `@wasm4pm/kernel` | WASM boundary — 60 registered algorithms |
-| `@wasm4pm/config` | Zod-validated config resolution (CLI > TOML > JSON > ENV > defaults) |
-| `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`. 4 profiles: fast/balanced/quality/stream |
-| `@wasm4pm/observability` | CLI human output, JSONL machine output, OTEL spans |
-| `@wasm4pm/testing` | Parity, determinism, CLI, and certification harnesses |
-| `@wasm4pm/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
-| `@wasm4pm/cognition` | Cognition layer — 52 PARTIAL_ALIVE breeds (13 original incl. 4 autoinstinct + 39 full-periodic-table symbolic breeds, v26.6.10) |
-| `@wasm4pm/agents` | Agent orchestration layer |
-| `@wasm4pm/supabase` | Supabase integration adapter |
-
----
-
-## Build commands
-
-### TypeScript
+## Build
 ```bash
-pnpm build && pnpm test
+pnpm build && pnpm test                                    # TypeScript
+cargo check && cargo test                                   # Rust
+wasm-pack build --target nodejs --out-dir pkg -- --features wasm  # cognition WASM
+cargo check --target wasm32-unknown-unknown --features wasm        # wasm32 gate (required)
 ```
 
-### WASM core (wasm4pm/)
-```bash
-npm run build          # Browser target (DEFAULT)
-npm run build:nodejs   # Node.js target
-npm test               # vitest unit + integration
-```
+## Cognition breed rules (binding)
+- **Anti-cheat ARD:** `docs/breeds/anti-cheat-threat-model.md` — per-breed counter-test must exist and pass.
+- **Write ALL code first** (module → OCPN → lifecycle const → tests → fixtures), then build/test gates.
+- `registry.json` flips UNSUPPORTED→PARTIAL_ALIVE only after gates green + OCEL report has measured-fitness provenance.
+- Paper fixtures require `expected.value` + `provenance`; assert the published number (e.g. Pearl 0.284171835).
+- Hidden-oracle fresh names must not appear in `src/breeds/` — grep gate in `anti_fraud_gate.rs` enforces A8.
+- Determinism test uses shared `assert_deterministic` harness (full `BreedOutput` bytes). Hand-rolled = A11.
+- `wpm compile --spec <f.json> [--run]` — multi-stage pipeline; unknown breed exits 2.
 
-### Rust
-```bash
-cargo check            # fast type check
-cargo build --release  # build WASM library
-cargo test             # Rust unit tests
-```
-
----
+## Multi-agent reality
+Multiple AI fleets may edit this repo simultaneously. If `cargo check` errors change between runs without your edits, another fleet is mid-write — isolate with `git worktree add ../wasm4pm-wt-<name>`. Treat other fleets' output as untrusted; audit line by line. Integrator unions branches alphabetically `--no-ff`; never rebase.
 
 ## Common gotchas
-
-- `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests.
-- All receipts auto-save to `.wasm4pm/results/` unless `--no-save` is passed.
-- ENV var prefix is `WASM4PM_*`. Precedence: CLI > TOML > JSON > ENV > defaults.
-- OTEL span `startTime`/`endTime` are in **nanoseconds**.
-- Exit codes: 0 ok, 1 config, 2 source ("bad algorithm" = `SOURCE_ERROR`), 3 execution, 4 partial, 5 system.
-- `to_js(&json!({...}))` silently returns `{}` on wasm32 — use `to_js_str()` in `utilities.rs`.
-- `to_js` returns `JsValue::NULL` on native — validation MUST happen in Node.js.
-- `cargo test --lib` may exit with SIGABRT (signal 6) — check pass count via grep.
+- `WasmLoader` is a singleton — call `WasmLoader.reset()` between tests.
+- `cargo test --lib` may SIGABRT (signal 6) — check pass count via grep.
 - Run vitest from the package directory, not monorepo root.
-- Determinism is a merge gate: same input → bit-exact output (seed all RNG, sort HashMap iteration).
-- Fitness threshold >0.85 for valid models; MCPP route admission requires exactly 1.0 conformance.
-- Discovery extra params: `discover_heuristic_miner(handle, activity_key, dependency_threshold)` (use 0.2-0.4).
-- Audit records decay in both directions (understate AND overstate). Point-in-time audits were consolidated into `docs/audit-history.md` (verified on disk 2026-06-09) — check there first, and verify artifacts on disk before citing any audit doc or memory note.
+- `to_js(&json!({...}))` returns `{}` on wasm32 — use `to_js_str()`.
+- wasm32 failures: `OcelLog` wrong field names; `ActorId::as_bytes()` → use `.public_key`.
+- `rand` in cognition: `version="0.8", default-features=false, features=["small_rng"]`. Only RNG: `support::rng::seeded_rng()`.
+- `CognitionBreed::postconditions` is 3 args: `(&self, input, output)`.
+- All breed collections must be BTreeMap/BTreeSet/sorted Vec — HashMap order breaks determinism + receipts.
+- Fitness >0.85 for valid models; MCPP route admission requires exactly 1.0.
+- ENV prefix `WASM4PM_*`. Exit codes: 0 ok · 1 config · 2 source · 3 exec · 4 partial · 5 system.
+- Audit records decay both ways — verify on disk before citing `docs/audit-history.md` or any memory note.
+- **Andon:** stop on `error[E` · `test.*FAILED` · `FM-5 violation` · `panicked at` · `<new-diagnostics>`.

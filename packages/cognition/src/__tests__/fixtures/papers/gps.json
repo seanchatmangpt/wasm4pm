@@ -2,10 +2,10 @@
   "breed": "gps",
   "provenance": {
     "paper": "/Users/sac/Documents/Papers/AI_LLM/Newell-Simon-1963-GPS-RAND.pdf",
-    "citation": "A. Newell and H. A. Simon, \"GPS, A Program That Simulates Human Thought,\" RAND Corporation, P-2257, March 30, 1961 (Revised April 10, 1961). Presented at the Conference on Learning Automata, Karlsruhe, Germany, April 11–14, 1961.",
-    "locus": "Fig. 3 (Methods for GPS — difference table) and Fig. 4 (Trace of GPS on First Part of Problem), pp. 3–15.",
+    "citation": "A. Newell and H. A. Simon, \"GPS, A Program That Simulates Human Thought,\" RAND Corporation, P-2257, March 30, 1961 (Revised April 10, 1961). Presented at the Conference on Learning Automata, Karlsruhe, Germany, April 11\u201314, 1961.",
+    "locus": "Fig. 3 (Methods for GPS \u2014 difference table) and Fig. 4 (Trace of GPS on First Part of Problem), pp. 3\u201315.",
     "extraction": "grounded-encoding",
-    "notes": "GPS means-ends analysis: identify the first gap between current state and goal, find an operator that reduces that gap, apply it, recurse. The GPS breed engine operates on pred=val atoms — operator conclusions must contain the exact goal string as an add-effect. This fixture encodes a 2-step symbolic-logic transformation grounded from Fig. 4: current-expression=L1, target=L0; apply R6 to get L2 (horseshoe eliminated), then R12 to get L0 (double-negation removed). Each operator conclusion contains the exact goal atom it produces."
+    "notes": "GPS means-ends analysis: identify the first gap between current state and goal, find an operator that reduces that gap, apply it, recurse. The GPS breed engine operates on pred=val atoms \u2014 operator conclusions must contain the exact goal string as an add-effect. This fixture encodes a 2-step symbolic-logic transformation grounded from Fig. 4: current-expression=L1, target=L0; apply R6 to get L2 (horseshoe eliminated), then R12 to get L0 (double-negation removed). Each operator conclusion contains the exact goal atom it produces."
   },
   "input": {
     "intent": "transform propositional logic expression L1 into L0 using symbolic-logic rules",
@@ -45,8 +45,14 @@
     ]
   },
   "expected": {
-    "solution_steps": ["R6", "R12"],
-    "operators_applied": ["R6", "R12"],
-    "note": "GPS applies R6 to reduce the horseshoe-connective difference (L1→L2), then R12 to remove the double-negation (L2→L0). This matches the GPS trace in Fig. 4 of Newell & Simon P-2257: GPS first selects the delete-connective method (R6/R7 family), then the delete-sign method (R12 family) to reach L0."
+    "solution_steps": [
+      "R6",
+      "R12"
+    ],
+    "operators_applied": [
+      "R6",
+      "R12"
+    ],
+    "note": "GPS applies R6 to reduce the horseshoe-connective difference (L1\u2192L2), then R12 to remove the double-negation (L2\u2192L0). This matches the GPS trace in Fig. 4 of Newell & Simon P-2257: GPS first selects the delete-connective method (R6/R7 family), then the delete-sign method (R12 family) to reach L0."
   }
 }

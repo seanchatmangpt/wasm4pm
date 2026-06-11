@@ -4,7 +4,7 @@
   "model_level": "L1",
   "report_date": "2026-06-10",
   "method": "native_dfa_replay",
-  "fitness": 1.0,
+  "fitness": 1,
   "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay). Conformance gate enforced in run_breed().",
   "trace_coverage": {
     "declared_steps": [
@@ -21,11 +21,11 @@
       "threshold_checked",
       "diagnosis_emitted"
     ],
-    "coverage": 1.0,
+    "coverage": 1,
     "coverage_note": "All 5 declared L1 steps appear in accepted trace corpus (tracing::debug! spans in breeds/production_rules.rs). Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
   },
-  "l0_fitness": 1.0,
-  "l0_fitness_note": "L0 wrapper lifecycle (dispatch\u2192execute\u2192verify\u2192commit) enforced structurally by the BVC admission gate. This is the fitness=1.0 claim that is measured and admissible.",
+  "l0_fitness": 1,
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate. This is the fitness=1.0 claim that is measured and admissible.",
   "status": "ADMITTED",
   "admitted": true,
   "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",

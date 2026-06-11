@@ -18,6 +18,7 @@
 
 use std::collections::BTreeMap;
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -165,7 +166,7 @@ impl CognitionBreed for EventCalculus {
 
         tr(
             &mut trace,
-            "load-narrative",
+            "ec-load",
             format!(
                 "{} events, {} initially-fluents",
                 n.happens.len(),
@@ -187,7 +188,7 @@ impl CognitionBreed for EventCalculus {
                     None => {
                         tr(
                             &mut trace,
-                            "clipped-check",
+                            "ec-infer",
                             format!("Clipped(0,{},{}) = false (initial persistence)", fluent, t),
                             1,
                         );
@@ -196,7 +197,7 @@ impl CognitionBreed for EventCalculus {
                     Some((e, a)) => {
                         tr(
                             &mut trace,
-                            "clipped-check",
+                            "ec-infer",
                             format!("Clipped(0,{},{}) = true (by '{}'@{})", fluent, t, a, e),
                             1,
                         );
@@ -211,7 +212,7 @@ impl CognitionBreed for EventCalculus {
                     }
                     tr(
                         &mut trace,
-                        "evaluate-happens",
+                        "ec-infer",
                         format!("Happens({},{}) initiates {}", a, e, fluent),
                         1,
                     );
@@ -219,7 +220,7 @@ impl CognitionBreed for EventCalculus {
                         None => {
                             tr(
                                 &mut trace,
-                                "clipped-check",
+                                "ec-infer",
                                 format!("Clipped({},{},{}) = false (inertia)", e, fluent, t),
                                 2,
                             );
@@ -228,7 +229,7 @@ impl CognitionBreed for EventCalculus {
                         Some((ce, ca)) => {
                             tr(
                                 &mut trace,
-                                "clipped-check",
+                                "ec-infer",
                                 format!("Clipped({},{},{}) = true (by '{}'@{})", e, fluent, t, ca, ce),
                                 2,
                             );
@@ -239,7 +240,7 @@ impl CognitionBreed for EventCalculus {
 
             tr(
                 &mut trace,
-                "holdsat-verdict",
+                "ec-infer",
                 format!("HoldsAt({},{}) = {}", fluent, t, holds),
                 0,
             );
@@ -250,7 +251,7 @@ impl CognitionBreed for EventCalculus {
             verdicts.push(format!("{}@{}={}", fluent, t, holds));
         }
 
-        tr(&mut trace, "answer", format!("{} verdict(s)", verdicts.len()), 0);
+        tr(&mut trace, "ec-model", format!("{} verdict(s)", verdicts.len()), 0);
 
         Ok(BreedOutput {
             breed: BreedId::EventCalculus,
@@ -268,16 +269,11 @@ impl CognitionBreed for EventCalculus {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("load-narrative") {
-            return Err("first step must be 'load-narrative'".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("answer") {
-            return Err("final step must be 'answer'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("ec-load")?;
+        tq.require_last("ec-model")?;
         if !output.facts.iter().any(|f| f.key.starts_with("ec:verdict:")) {
             return Err("missing ec:verdict fact".to_string());
         }

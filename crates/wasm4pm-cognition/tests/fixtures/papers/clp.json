@@ -10,10 +10,22 @@
     "intent": "solve arithmetic constraints by propagation (CLP scheme, FD instantiation)",
     "candidates": [],
     "facts": [
-      { "key": "clp:var:x", "value": "6..9" },
-      { "key": "clp:var:y", "value": "0..9" },
-      { "key": "clp:constraint:c1", "value": "x=y+3" },
-      { "key": "clp:constraint:c2", "value": "y<4" }
+      {
+        "key": "clp:var:x",
+        "value": "6..9"
+      },
+      {
+        "key": "clp:var:y",
+        "value": "0..9"
+      },
+      {
+        "key": "clp:constraint:c1",
+        "value": "x=y+3"
+      },
+      {
+        "key": "clp:constraint:c2",
+        "value": "y<4"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -23,6 +35,7 @@
   "expected": {
     "solution": "x=6,y=3",
     "backtracks": "0",
-    "notes": "Unique solution forced by arc consistency on x=y+3 ∧ y<4 ∧ x≥6 — the solver, not enumeration, does the work (Jaffar & Lassez 1987)."
+    "notes": "Unique solution forced by arc consistency on x=y+3 ∧ y<4 ∧ x≥6 — the solver, not enumeration, does the work (Jaffar & Lassez 1987).",
+    "value": "x=6,y=3"
   }
 }

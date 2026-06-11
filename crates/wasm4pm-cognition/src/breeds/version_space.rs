@@ -16,8 +16,10 @@
 //! from S; prune non-maximal and S-incompatible specializations. Boundary
 //! collapse (S over-generalized past G, or G empty) is an error.
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Maximum number of attributes.
@@ -97,6 +99,38 @@ fn parse(input: &BreedInput) -> Result<Parsed, String> {
     })
 }
 
+impl BoundedBreed for VersionSpace {
+    fn breed_name(&self) -> &'static str {
+        "version_space"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        // Unparseable inputs are content errors, reported by preconditions().
+        let p = parse(input).ok()?;
+        if p.attrs.len() > MAX_ATTRS {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("attribute count {} exceeds cap {}", p.attrs.len(), MAX_ATTRS),
+            });
+        }
+        if p.examples.len() > MAX_EXAMPLES {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "example count {} exceeds cap {}",
+                    p.examples.len(),
+                    MAX_EXAMPLES
+                ),
+            });
+        }
+        None
+    }
+}
+
 impl CognitionBreed for VersionSpace {
     fn id(&self) -> BreedId {
         BreedId::VersionSpace
@@ -115,18 +149,9 @@ impl CognitionBreed for VersionSpace {
         if p.attrs.is_empty() {
             return Err("vs:attrs must list at least one attribute".to_string());
         }
-        if p.attrs.len() > MAX_ATTRS {
-            return Err(format!("attribute count {} exceeds cap {}", p.attrs.len(), MAX_ATTRS));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         if p.examples.is_empty() {
             return Err("version_space requires at least one vs:example:* fact".to_string());
-        }
-        if p.examples.len() > MAX_EXAMPLES {
-            return Err(format!(
-                "example count {} exceeds cap {}",
-                p.examples.len(),
-                MAX_EXAMPLES
-            ));
         }
         if !p.examples.iter().any(|(_, pos)| *pos) {
             return Err("version_space requires at least one positive example".to_string());
@@ -158,7 +183,7 @@ impl CognitionBreed for VersionSpace {
         let mut g: Vec<Hyp> = vec![vec!["?".to_string(); n]];
         tr(
             &mut trace,
-            "init-boundaries",
+            "vs-init",
             format!("S={}, G={{{}}}", render(&s), render(&g[0])),
             0,
         );
@@ -167,7 +192,7 @@ impl CognitionBreed for VersionSpace {
             if *pos {
                 tr(
                     &mut trace,
-                    "process-positive",
+                    "vs-update",
                     format!("example {} <{}>", i, ex.join(",")),
                     1,
                 );
@@ -180,7 +205,7 @@ impl CognitionBreed for VersionSpace {
                             s[j] = "?".to_string();
                         }
                     }
-                    tr(&mut trace, "generalize-s", format!("S := {}", render(&s)), 2);
+                    tr(&mut trace, "vs-update", format!("S := {}", render(&s)), 2);
                 }
                 // Prune G members that fail to cover the positive example.
                 let before = g.len();
@@ -188,7 +213,7 @@ impl CognitionBreed for VersionSpace {
                 if g.len() != before {
                     tr(
                         &mut trace,
-                        "prune",
+                        "vs-update",
                         format!("G pruned {} -> {} (non-covering)", before, g.len()),
                         2,
                     );
@@ -196,7 +221,7 @@ impl CognitionBreed for VersionSpace {
             } else {
                 tr(
                     &mut trace,
-                    "process-negative",
+                    "vs-update",
                     format!("example {} <{}>", i, ex.join(",")),
                     1,
                 );
@@ -223,7 +248,7 @@ impl CognitionBreed for VersionSpace {
                             h2[j] = s[j].clone();
                             tr(
                                 &mut trace,
-                                "specialize-g",
+                                "vs-update",
                                 format!("{} -> {}", render(h), render(&h2)),
                                 2,
                             );
@@ -245,7 +270,7 @@ impl CognitionBreed for VersionSpace {
                 if new_g.len() != before {
                     tr(
                         &mut trace,
-                        "prune",
+                        "vs-update",
                         format!("G pruned {} -> {} (non-maximal / below S)", before, new_g.len()),
                         2,
                     );
@@ -261,7 +286,7 @@ impl CognitionBreed for VersionSpace {
             // Record boundary sizes for auditability.
             tr(
                 &mut trace,
-                "prune",
+                "vs-update",
                 format!("|S|=1 S={}, |G|={}", render(&s), g.len()),
                 1,
             );
@@ -269,11 +294,11 @@ impl CognitionBreed for VersionSpace {
 
         let converged = g.len() == 1 && g[0] == s;
         if converged {
-            tr(&mut trace, "converged", format!("S == G == {}", render(&s)), 0);
+            tr(&mut trace, "vs-verdict", format!("S == G == {}", render(&s)), 0);
         } else {
             tr(
                 &mut trace,
-                "boundaries-final",
+                "vs-verdict",
                 format!(
                     "S={}, G={{{}}}",
                     render(&s),
@@ -316,17 +341,11 @@ impl CognitionBreed for VersionSpace {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("init-boundaries") {
-            return Err("first step must be 'init-boundaries'".to_string());
-        }
-        let last = output.inference_trace.last().map(|t| t.kind.as_str());
-        if last != Some("converged") && last != Some("boundaries-final") {
-            return Err("final step must be 'converged' or 'boundaries-final'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("vs-init")?;
+        tq.require_last("vs-verdict")?;
         if !output.facts.iter().any(|f| f.key == "vs:s") {
             return Err("missing vs:s fact".to_string());
         }
@@ -384,7 +403,7 @@ mod tests {
         assert!(out
             .inference_trace
             .iter()
-            .any(|t| t.kind == "prune" && t.detail.contains("|G|=3")));
+            .any(|t| t.kind == "vs-update" && t.detail.contains("|G|=3")));
     }
 
     /// Convergence: S == G after enough examples.
@@ -407,7 +426,7 @@ mod tests {
             .facts
             .iter()
             .any(|f| f.key == "vs:s" && f.value == "?,big,?"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "converged"));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "vs-verdict"));
     }
 
     /// Collapse: contradictory labels are refused at run time.

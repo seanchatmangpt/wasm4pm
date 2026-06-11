@@ -23,6 +23,7 @@
 //! "sneezed the napkin off the table"), the construction itself contributes
 //! the caused-motion meaning and the output carries `cxg:coerced = true`.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -365,13 +366,8 @@ impl CognitionBreed for ConstructionGrammar {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "fuse-meaning") {
-            return Err("missing fuse-meaning step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&["fuse-meaning"])?;
         if !output.facts.iter().any(|f| f.key == "cxg:meaning") {
             return Err("missing cxg:meaning fact".to_string());
         }

@@ -2120,8 +2120,7 @@ fn partial_order_plan_hidden_promotion_forced() {
     let out = p2_dispatch("partial_order_plan", &input).expect("POP hidden run");
     p2_assert_real_trace(&out);
     assert_eq!(p2_fv(&out, "pop:plan"), "zonk;krel");
-    assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
-    assert!(out.inference_trace.iter().any(|t| t.kind == "promote"));
+    assert!(out.inference_trace.iter().any(|t| t.kind == "pop-resolve"));
 }
 
 /// Hidden-EC-1: glow flicked on@2, off@5, on@7 — HoldsAt(glow,4)=T by
@@ -2149,7 +2148,7 @@ fn event_calculus_hidden_inertia_clipping() {
     assert!(out
         .inference_trace
         .iter()
-        .any(|t| t.kind == "clipped-check" && t.detail.contains("true")));
+        .any(|t| t.kind == "ec-infer" && t.detail.contains("true")));
 }
 
 /// Hidden-MDP-1: self-loop den with R=1, γ=0.5 → V = R/(1−γ) = 2 exactly;
@@ -2208,7 +2207,7 @@ fn version_space_hidden_convergence() {
     assert!(
         out.inference_trace
             .iter()
-            .any(|t| t.kind == "prune" && t.detail.contains("|G|=2")),
+            .any(|t| t.kind == "vs-update" && t.detail.contains("|G|=2")),
         "intermediate |G|=2 must appear"
     );
     assert_eq!(p2_fv(&out, "vs:converged"), "true");

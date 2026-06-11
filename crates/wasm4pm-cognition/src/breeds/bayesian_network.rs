@@ -19,13 +19,36 @@
 //! Trace kinds: `bn-load-cpt`(1,*) → `bn-observe`(0,*) → `bn-eliminate`(0,*)
 //! → `bn-verdict`(1,1).
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 
 /// Bayesian network breed (exact VE + d-separation).
 pub struct BayesianNetwork;
+
+impl BoundedBreed for BayesianNetwork {
+    fn breed_name(&self) -> &'static str {
+        "bayesian_network"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let node_count = input.facts.iter().filter(|f| f.key.starts_with("cpt:")).count();
+        if node_count > 16 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("max 16 nodes supported (got {})", node_count),
+            });
+        }
+        None
+    }
+}
 
 #[derive(Debug, Clone)]
 struct Factor {
@@ -51,9 +74,7 @@ impl CognitionBreed for BayesianNetwork {
         if node_count == 0 {
             return Err("bayesian_network requires at least one cpt: fact".to_string());
         }
-        if node_count > 16 {
-            return Err(format!("max 16 nodes supported (got {})", node_count));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         let has_query = input.goals.iter().any(|g| {
             g.predicate == "query" && (g.value.starts_with("prob:") || g.value.starts_with("dsep:"))
         });
@@ -402,22 +423,10 @@ impl CognitionBreed for BayesianNetwork {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "bn-load-cpt") {
-            return Err("trace missing bn-load-cpt".to_string());
-        }
-        if output
-            .inference_trace
-            .iter()
-            .filter(|t| t.kind == "bn-verdict")
-            .count()
-            != 1
-        {
-            return Err("trace must contain exactly one bn-verdict".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["bn-load-cpt"])?;
+        tq.require_count("bn-verdict", 1)?;
         Ok(())
     }
 }

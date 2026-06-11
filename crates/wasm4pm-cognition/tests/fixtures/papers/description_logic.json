@@ -1,26 +1,49 @@
 {
   "breed": "description_logic",
   "provenance": {
-    "citation": "Baader, F., Brandt, S., & Lutz, C. (2005). Pushing the EL Envelope. In: Proceedings of the 19th International Joint Conference on Artificial Intelligence (IJCAI 2005), pp. 364–369.",
-    "locus": "Section 1 (introduction) medical-ontology example: Pericarditis ⊑ Inflammation ⊓ ∃has-location.Pericardium; Inflammation ⊑ Disease; ... entailing Pericarditis ⊑ HeartDisease. Section 3, Table 2: completion rules (here CR1–CR4 for the role-inclusion-free fragment).",
+    "citation": "Baader, F., Brandt, S., & Lutz, C. (2005). Pushing the EL Envelope. In: Proceedings of the 19th International Joint Conference on Artificial Intelligence (IJCAI 2005), pp. 364\u2013369.",
+    "locus": "Section 1 (introduction) medical-ontology example: Pericarditis \u2291 Inflammation \u2293 \u2203has-location.Pericardium; Inflammation \u2291 Disease; ... entailing Pericarditis \u2291 HeartDisease. Section 3, Table 2: completion rules (here CR1\u2013CR4 for the role-inclusion-free fragment).",
     "extraction": "adapted",
-    "notes": "The paper's full derivation uses the role inclusion has-location ∘ contained-in ⊑ has-location. This breed implements the role-inclusion-free EL fragment (CR1–CR4 of the paper's completion algorithm), so the composed role step is pre-composed in the fixture: Pericarditis ⊑ ∃has_location.Heart is asserted directly (in the paper it is derived via Pericardium ⊑ ∃contained-in.Heart plus the role chain). All remaining steps — conjunction splitting (CR1), the GCI Disease ⊓ ∃has-location.Heart ⊑ HeartDisease (encoded via an exists_lhs alias concept plus CR2), and the existential propagation (CR3/CR4) — follow the paper exactly, and the entailment Pericarditis ⊑ HeartDisease is the paper's stated conclusion."
+    "notes": "The paper's full derivation uses the role inclusion has-location \u2218 contained-in \u2291 has-location. This breed implements the role-inclusion-free EL fragment (CR1\u2013CR4 of the paper's completion algorithm), so the composed role step is pre-composed in the fixture: Pericarditis \u2291 \u2203has_location.Heart is asserted directly (in the paper it is derived via Pericardium \u2291 \u2203contained-in.Heart plus the role chain). All remaining steps \u2014 conjunction splitting (CR1), the GCI Disease \u2293 \u2203has-location.Heart \u2291 HeartDisease (encoded via an exists_lhs alias concept plus CR2), and the existential propagation (CR3/CR4) \u2014 follow the paper exactly, and the entailment Pericarditis \u2291 HeartDisease is the paper's stated conclusion."
   },
   "input": {
     "intent": "classify the EL medical ontology from Baader-Brandt-Lutz 2005",
     "candidates": [],
     "facts": [
-      { "key": "dl:subclass:Pericarditis", "value": "Inflammation" },
-      { "key": "dl:subclass:Inflammation", "value": "Disease" },
-      { "key": "dl:exists_rhs:Pericarditis", "value": "has_location.Heart" },
-      { "key": "dl:exists_lhs:has_location.Heart", "value": "HasLocationHeart" },
-      { "key": "dl:conj:Disease+HasLocationHeart", "value": "HeartDisease" }
+      {
+        "key": "dl:subclass:Pericarditis",
+        "value": "Inflammation"
+      },
+      {
+        "key": "dl:subclass:Inflammation",
+        "value": "Disease"
+      },
+      {
+        "key": "dl:exists_rhs:Pericarditis",
+        "value": "has_location.Heart"
+      },
+      {
+        "key": "dl:exists_lhs:has_location.Heart",
+        "value": "HasLocationHeart"
+      },
+      {
+        "key": "dl:conj:Disease+HasLocationHeart",
+        "value": "HeartDisease"
+      }
     ],
     "cases": [],
     "rules": [],
     "goals": [
-      { "id": "q1", "predicate": "dl:subsumes", "value": "Pericarditis:HeartDisease" },
-      { "id": "q2", "predicate": "dl:subsumes", "value": "HeartDisease:Pericarditis" }
+      {
+        "id": "q1",
+        "predicate": "dl:subsumes",
+        "value": "Pericarditis:HeartDisease"
+      },
+      {
+        "id": "q2",
+        "predicate": "dl:subsumes",
+        "value": "HeartDisease:Pericarditis"
+      }
     ],
     "state": []
   },
@@ -29,7 +52,12 @@
       "dl:verdict:Pericarditis:HeartDisease": "true",
       "dl:verdict:HeartDisease:Pericarditis": "false"
     },
-    "required_trace_kinds": ["apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4"],
-    "notes": "Pericarditis ⊑ HeartDisease is entailed (paper Section 1); the converse is not."
+    "required_trace_kinds": [
+      "apply-cr1",
+      "apply-cr2",
+      "apply-cr3",
+      "apply-cr4"
+    ],
+    "notes": "Pericarditis \u2291 HeartDisease is entailed (paper Section 1); the converse is not."
   }
 }

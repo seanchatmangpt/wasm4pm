@@ -4,19 +4,42 @@
     "title": "Markov logic networks",
     "venue": "Machine Learning 62(1-2):107-136",
     "year": 2006,
-    "section": "Table 1 / Fig. 1 — smoking causes cancer (w=1.5-style weighted implication) and friends have similar smoking habits, grounded for two constants",
+    "section": "Table 1 / Fig. 1 \u2014 smoking causes cancer (w=1.5-style weighted implication) and friends have similar smoking habits, grounded for two constants",
     "claim": "Ground MLN for {anna, bob} with evidence smokes(anna) and friends(anna,bob): the MAP state satisfies every ground clause (cost 0) and entails smokes(bob), cancer(anna), cancer(bob)."
   },
   "input": {
     "intent": "MAP inference on the smokes/friends MLN",
     "facts": [
-      { "key": "mln:clause:smoke-cancer-a", "value": "1.5|!smokes_anna,cancer_anna" },
-      { "key": "mln:clause:smoke-cancer-b", "value": "1.5|!smokes_bob,cancer_bob" },
-      { "key": "mln:clause:friends-ab-1", "value": "1.1|!friends_ab,!smokes_anna,smokes_bob" },
-      { "key": "mln:clause:friends-ab-2", "value": "1.1|!friends_ab,!smokes_bob,smokes_anna" },
-      { "key": "evidence:smokes_anna", "value": "true" },
-      { "key": "evidence:friends_ab", "value": "true" }
-    ]
+      {
+        "key": "mln:clause:smoke-cancer-a",
+        "value": "1.5|!smokes_anna,cancer_anna"
+      },
+      {
+        "key": "mln:clause:smoke-cancer-b",
+        "value": "1.5|!smokes_bob,cancer_bob"
+      },
+      {
+        "key": "mln:clause:friends-ab-1",
+        "value": "1.1|!friends_ab,!smokes_anna,smokes_bob"
+      },
+      {
+        "key": "mln:clause:friends-ab-2",
+        "value": "1.1|!friends_ab,!smokes_bob,smokes_anna"
+      },
+      {
+        "key": "evidence:smokes_anna",
+        "value": "true"
+      },
+      {
+        "key": "evidence:friends_ab",
+        "value": "true"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
   },
   "expected": {
     "cost": "0.000000",

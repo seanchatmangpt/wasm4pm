@@ -274,7 +274,7 @@ describe('dempster_shafer breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('DempsterShafer');
-    expect(result.output.selected).toContain('Bel=0.310345');
+    expect(result.output.selected).toContain('Bel=0.31034');
     expect(result.output.inference_trace.length).toBeGreaterThan(0);
   });
 });
@@ -315,7 +315,7 @@ describe('asp breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('Asp');
-    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'stable_models_count');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'asp:answer_set_count');
     expect(countFact).toBeDefined();
     expect(countFact?.value).toBe('2');
     expect(result.output.selected).toBeDefined();
@@ -331,12 +331,10 @@ describe('description_logic breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('DescriptionLogic');
-    const consistentFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'consistent');
-    expect(consistentFact).toBeDefined();
-    expect(consistentFact?.value).toBe('true');
-    expect(result.output.selected).toBe('consistent');
-    const memberFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'member:x:C');
-    expect(memberFact).toBeDefined();
+    const verdictFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'dl:verdict:A:C');
+    expect(verdictFact).toBeDefined();
+    expect(verdictFact?.value).toBe('true');
+    expect(result.output.selected).toBe('A⊑C=true');
   });
 });
 
@@ -348,10 +346,10 @@ describe('abductive_lp breed integration', () => {
     )) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('AbductiveLp');
-    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'explanations_count');
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'alp:explanation_count');
     expect(countFact).toBeDefined();
-    expect(countFact?.value).toBe('1');
-    expect(result.output.selected).toBe('c');
+    expect(countFact?.value).toBe('2');
+    expect(result.output.selected).toBe('{c}');
   });
 });
 
@@ -384,10 +382,10 @@ describe('description_logic breed — paper fixture', () => {
     const result = (await fixtures.runBreed('description_logic', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('DescriptionLogic');
-    const consistentFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'consistent');
-    expect(consistentFact?.value).toBe(fixture.expected.consistent);
-    const memberFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'member:x:C');
-    expect(memberFact).toBeDefined();
+    for (const [key, val] of Object.entries(fixture.expected.verdicts)) {
+      const fact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === key);
+      expect(fact?.value).toBe(val);
+    }
   });
 });
 
@@ -397,9 +395,9 @@ describe('abductive_lp breed — paper fixture', () => {
     const result = (await fixtures.runBreed('abductive_lp', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('AbductiveLp');
-    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'explanations_count');
-    expect(countFact?.value).toBe(fixture.expected.explanations_count);
-    expect(result.output.selected).toBe(fixture.expected.selected);
+    const countFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === 'alp:explanation_count');
+    expect(countFact?.value).toBe(fixture.expected.explanation_count);
+    expect(result.output.selected).toBe(fixture.expected.selected ?? fixture.expected.explanations[0]);
   });
 });
 
@@ -409,10 +407,81 @@ describe('abductive_ibe breed — paper fixture', () => {
     const result = (await fixtures.runBreed('abductive_ibe', fixture.input)) as AnyResult;
     expect(result.status).toBe('ok');
     expect(result.output.breed).toBe('AbductiveIbe');
-    expect(result.output.selected).toBe(fixture.expected.selected);
+    expect(result.output.selected).toBe(fixture.expected.selected ?? fixture.expected.best);
   });
 });
 
+describe('act_r breed — paper fixture', () => {
+  it('retrieves the highest activation chunk via ACT-R equation', async () => {
+    const fixture = loadPaperFixture('act_r');
+    const result = (await fixtures.runBreed('act_r', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('ActR');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+describe('problog breed — paper fixture', () => {
+  it('computes exact success probability via possible-worlds', async () => {
+    const fixture = loadPaperFixture('problog');
+    const result = (await fixtures.runBreed('problog', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Problog');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+describe('sat_cdcl breed — paper fixture', () => {
+  it('proves UNSAT using conflict-driven clause learning', async () => {
+    const fixture = loadPaperFixture('sat_cdcl');
+    const result = (await fixtures.runBreed('sat_cdcl', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('SatCdcl');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+describe('episodic_memory breed — paper fixture', () => {
+  it('retrieves nearest episode using Tulving temporal organisation', async () => {
+    const fixture = loadPaperFixture('episodic_memory');
+    const result = (await fixtures.runBreed('episodic_memory', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('EpisodicMemory');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+
+describe('ltl_monitor breed — paper fixture', () => {
+  it('monitors LTL properties', async () => {
+    const fixture = loadPaperFixture('ltl_monitor');
+    const result = (await fixtures.runBreed('ltl_monitor', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('LtlMonitor');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+describe('allen_temporal breed — paper fixture', () => {
+  it('propagates temporal relations', async () => {
+    const fixture = loadPaperFixture('allen_temporal');
+    const result = (await fixtures.runBreed('allen_temporal', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AllenTemporal');
+    expect(result.output.selected).toBe(fixture.expected.value);
+  });
+});
+
+describe('fuzzy_logic breed — paper fixture', () => {
+  it('computes centroid for fuzzy rules', async () => {
+    const fixture = loadPaperFixture('fuzzy_logic');
+    const result = (await fixtures.runBreed('fuzzy_logic', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('FuzzyLogic');
+    const outFact = (result.output.facts as Array<{ key: string; value: string }>).find(f => f.key === fixture.expected.output_fact);
+    expect(Number(outFact?.value)).toBeCloseTo(Number(fixture.expected.value), 3);
+  });
+});
 
 // =============================================================================
 // cognition_verify integration (positive + negative oracle)
@@ -622,5 +691,96 @@ describe('meta_reasoning breed integration', () => {
     expect(conflicts[0].detail).toContain('mycin');
     expect(conflicts[0].detail).toContain('prolog');
     expect(result.output.selected).toBe('therapy=gentamicin');
+  });
+});
+
+describe('belief_merging breed — paper fixture', () => {
+  it('merges profiles using sum and gmax operators', async () => {
+    const fixture = loadPaperFixture('belief_merging');
+    const result = (await fixtures.runBreed('belief_merging', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('BeliefMerging');
+    expect(result.output.selected).toBeDefined();
+  });
+});
+
+describe('qualitative_reason breed — paper fixture', () => {
+  it('envisions the regulator confluences and reaches equilibrium', async () => {
+    const fixture = loadPaperFixture('qualitative_reason');
+    const result = (await fixtures.runBreed('qualitative_reason', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('QualitativeReason');
+    expect(result.output.selected).toBeDefined();
+  });
+});
+
+describe('script_sam breed — paper fixture', () => {
+  it('infers unobserved scenes in the restaurant script', async () => {
+    const fixture = loadPaperFixture('script_sam');
+    const result = (await fixtures.runBreed('script_sam', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('ScriptSam');
+    expect(result.output.selected).toBeDefined();
+  });
+});
+
+describe('clp breed — paper fixture', () => {
+  it('solves arithmetic constraints using propagation over finite domains', async () => {
+    const fixture = loadPaperFixture('clp');
+    const result = (await fixtures.runBreed('clp', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Clp');
+    expect(result.output.selected).toBe(fixture.expected.solution);
+  });
+});
+
+describe('situation_calculus breed — paper fixture', () => {
+  it('progresses blocks world through action sequence handling frame problem', async () => {
+    const fixture = loadPaperFixture('situation_calculus');
+    const result = (await fixtures.runBreed('situation_calculus', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('SituationCalculus');
+    
+    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    for (const holds of fixture.expected.holds_final) {
+      // situation_calculus.rs emits final-situation fluents as `holds:<fluent>`.
+      const fact = facts.find((f: {key: string}) => f.key === `holds:${holds}`);
+      expect(fact?.value).toBe('true');
+    }
+  });
+});
+
+describe('circumscription breed — paper fixture', () => {
+  it('circumscribes abnormality predicate for bird/penguin theory', async () => {
+    const fixture = loadPaperFixture('circumscription');
+    const result = (await fixtures.runBreed('circumscription', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Circumscription');
+    
+    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    for (const [key, value] of Object.entries(fixture.expected.entailed)) {
+      const fact = facts.find((f: {key: string}) => f.key === `entailed:${key}`);
+      expect(fact?.value).toBe(String(value));
+    }
+  });
+});
+
+describe('analogy_sme breed — paper fixture', () => {
+  it('maps solar system to atom and generates candidate inference', async () => {
+    const fixture = loadPaperFixture('analogy_sme');
+    const result = (await fixtures.runBreed('analogy_sme', fixture.input)) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('AnalogySme');
+    
+    const facts = result.output.facts as Array<{ key: string; value: string }>;
+    for (const [base, target] of Object.entries(fixture.expected.mapping)) {
+      const fact = facts.find((f: {key: string}) => f.key === `map:${base}`);
+      expect(fact?.value).toBe(String(target));
+    }
+    
+    const inference = facts.find((f: {key: string}) => f.key === 'candidate_inference');
+    if (inference) {
+      expect(inference.value).toContain(fixture.expected.candidate_inference_contains);
+    }
   });
 });

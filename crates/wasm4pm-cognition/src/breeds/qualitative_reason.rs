@@ -17,6 +17,7 @@
 
 use std::collections::BTreeMap;
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -387,16 +388,11 @@ impl CognitionBreed for QualitativeReason {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("load-model") {
-            return Err("first step must be 'load-model'".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "envision-state") {
-            return Err("missing 'envision-state' step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("load-model")?;
+        tq.require_kind("envision-state")?;
         if !output.facts.iter().any(|f| f.key == "qr:state_count") {
             return Err("missing qr:state_count fact".to_string());
         }

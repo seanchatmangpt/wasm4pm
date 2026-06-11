@@ -21,6 +21,7 @@
 //! Production code contains no test-specific names or assertions: hidden
 //! oracles live exclusively in `tests/`.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -395,22 +396,10 @@ impl CognitionBreed for AllenTemporal {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|s| s.kind == "allen-load") {
-            return Err("trace must contain at least one allen-load step".to_string());
-        }
-        if output
-            .inference_trace
-            .iter()
-            .filter(|s| s.kind == "allen-verdict")
-            .count()
-            != 1
-        {
-            return Err("trace must contain exactly one allen-verdict step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["allen-load"])?;
+        tq.require_count("allen-verdict", 1)?;
         if !output.facts.iter().any(|f| f.key.starts_with("derived:")) {
             return Err("output must contain derived: relation facts".to_string());
         }

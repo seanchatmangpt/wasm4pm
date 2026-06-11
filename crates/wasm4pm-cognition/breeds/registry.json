@@ -11,7 +11,8 @@
     "ocel_model_id": "ocel_mycin_v1",
     "receipt_schema_id": "receipt_mycin_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "strips",
@@ -25,7 +26,8 @@
     "ocel_model_id": "ocel_strips_v1",
     "receipt_schema_id": "receipt_strips_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "soar",
@@ -39,7 +41,8 @@
     "ocel_model_id": "ocel_soar_v1",
     "receipt_schema_id": "receipt_soar_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "hearsay",
@@ -53,7 +56,8 @@
     "ocel_model_id": "ocel_hearsay_v1",
     "receipt_schema_id": "receipt_hearsay_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "prolog",
@@ -67,7 +71,8 @@
     "ocel_model_id": "ocel_prolog_v1",
     "receipt_schema_id": "receipt_prolog_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "cbr",
@@ -81,7 +86,8 @@
     "ocel_model_id": "ocel_cbr_v1",
     "receipt_schema_id": "receipt_cbr_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "gps",
@@ -95,7 +101,8 @@
     "ocel_model_id": "ocel_gps_v1",
     "receipt_schema_id": "receipt_gps_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "dendral",
@@ -109,7 +116,8 @@
     "ocel_model_id": "ocel_dendral_v1",
     "receipt_schema_id": "receipt_dendral_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "eliza",
@@ -123,7 +131,8 @@
     "ocel_model_id": "ocel_eliza_v1",
     "receipt_schema_id": "receipt_eliza_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_vision",
@@ -137,7 +146,8 @@
     "ocel_model_id": "ocel_autoinstinct_vision_v1",
     "receipt_schema_id": "receipt_autoinstinct_vision_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_semantics",
@@ -151,7 +161,8 @@
     "ocel_model_id": "ocel_autoinstinct_semantics_v1",
     "receipt_schema_id": "receipt_autoinstinct_semantics_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_neurosis",
@@ -165,7 +176,8 @@
     "ocel_model_id": "ocel_autoinstinct_neurosis_v1",
     "receipt_schema_id": "receipt_autoinstinct_neurosis_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_learning",
@@ -179,7 +191,8 @@
     "ocel_model_id": "ocel_autoinstinct_learning_v1",
     "receipt_schema_id": "receipt_autoinstinct_learning_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "bayesian_network",
@@ -193,7 +206,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_nodes": 16
+    }
   },
   {
     "breed_id": "fuzzy_logic",
@@ -207,7 +224,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "dempster_shafer",
@@ -221,7 +239,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "abductive_lp",
@@ -235,7 +254,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_abducibles": 12
+    }
   },
   {
     "breed_id": "ilp",
@@ -249,7 +272,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "allen_temporal",
@@ -263,7 +287,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "description_logic",
@@ -277,7 +302,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "csp_ac3",
@@ -291,7 +317,12 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_vars": 24,
+      "max_domain": 16
+    }
   },
   {
     "breed_id": "analogy_sme",
@@ -305,7 +336,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "ltl_monitor",
@@ -319,7 +351,12 @@
     "ocel_model_id": "ocel_ltl_monitor_v1",
     "receipt_schema_id": "receipt_ltl_monitor_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_formula_chars": 256,
+      "max_trace_events": 1000
+    }
   },
   {
     "breed_id": "default_logic",
@@ -333,7 +370,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "htn_planning",
@@ -347,7 +385,8 @@
     "ocel_model_id": "ocel_htn_planning_v1",
     "receipt_schema_id": "receipt_htn_planning_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "frames_inheritance",
@@ -361,7 +400,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "ebl",
@@ -375,7 +415,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "asp",
@@ -389,7 +430,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_atoms": 12
+    }
   },
   {
     "breed_id": "abductive_ibe",
@@ -403,7 +448,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_hypotheses": 10
+    }
   },
   {
     "breed_id": "partial_order_plan",
@@ -417,7 +466,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "event_calculus",
@@ -431,7 +481,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "mdp",
@@ -445,7 +496,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_states": 16
+    }
   },
   {
     "breed_id": "version_space",
@@ -459,7 +514,12 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_attrs": 12,
+      "max_examples": 64
+    }
   },
   {
     "breed_id": "belief_merging",
@@ -473,7 +533,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_atoms": 12
+    }
   },
   {
     "breed_id": "qualitative_reason",
@@ -487,7 +551,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "script_sam",
@@ -501,7 +566,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "clp",
@@ -515,7 +581,12 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_vars": 24,
+      "max_domain": 16
+    }
   },
   {
     "breed_id": "situation_calculus",
@@ -529,7 +600,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "circumscription",
@@ -543,7 +615,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_abnormality_atoms": 12
+    }
   },
   {
     "breed_id": "act_r",
@@ -557,7 +633,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_cases": 64
+    }
   },
   {
     "breed_id": "problog",
@@ -571,7 +651,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_probabilistic_facts": 12
+    }
   },
   {
     "breed_id": "sat_cdcl",
@@ -585,7 +669,12 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_clauses": 256,
+      "max_vars": 64
+    }
   },
   {
     "breed_id": "episodic_memory",
@@ -599,7 +688,11 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_cases": 128
+    }
   },
   {
     "breed_id": "rl_symbolic",
@@ -613,7 +706,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "ctl_check",
@@ -627,7 +721,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "naive_physics",
@@ -641,7 +736,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "pomdp",
@@ -655,7 +751,13 @@
     "ocel_model_id": "ocel_pomdp_v1",
     "receipt_schema_id": "receipt_pomdp_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "TRACEABLE",
+    "complexity_caps": {
+      "max_state_action_obs_product": 512,
+      "max_horizon": 8,
+      "max_history": 32
+    }
   },
   {
     "breed_id": "markov_logic",
@@ -669,7 +771,8 @@
     "ocel_model_id": "ocel_markov_logic_v1",
     "receipt_schema_id": "receipt_markov_logic_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "meta_reasoning",
@@ -683,7 +786,8 @@
     "ocel_model_id": "ocel_meta_reasoning_v1",
     "receipt_schema_id": "receipt_meta_reasoning_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "construction_grammar",
@@ -697,7 +801,8 @@
     "ocel_model_id": "ocel_construction_grammar_v1",
     "receipt_schema_id": "receipt_construction_grammar_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "contingent_plan",
@@ -711,7 +816,8 @@
     "ocel_model_id": "ocel_contingent_plan_v1",
     "receipt_schema_id": "receipt_contingent_plan_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "tableaux",
@@ -725,7 +831,8 @@
     "ocel_model_id": "ocel_tableaux_v1",
     "receipt_schema_id": "receipt_tableaux_v1",
     "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "morphological",
@@ -739,7 +846,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
   },
   {
     "breed_id": "triz",
@@ -753,7 +861,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
   },
   {
     "breed_id": "ocpm_route_discoverer",
@@ -767,468 +876,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "ltl_monitor",
-    "breed_name": "LTL Monitor",
-    "historical_ancestor": "LTL Monitor (Havelund & Roşu, 2001) (ltl_monitor)",
-    "generalized_family": "R_generalized_temporal",
-    "input_schema": "ltl_monitor_input_v1",
-    "output_schema": "ltl_monitor_output_v1",
-    "specification_relation": "havelund_rosu_progression",
-    "oracle_suite_id": "oracle_ltl_monitor_v1",
-    "ocel_model_id": "ocel_ltl_monitor_v1",
-    "receipt_schema_id": "receipt_ltl_monitor_v1",
-    "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "default_logic",
-    "breed_name": "Default Logic",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "default_logic_input_v1",
-    "output_schema": "default_logic_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "htn_planning",
-    "breed_name": "HTN Planning",
-    "historical_ancestor": "SHOP2 (Nau et al., 2003)",
-    "generalized_family": "hierarchical_task_network",
-    "input_schema": "htn_planning_input_v1",
-    "output_schema": "htn_planning_output_v1",
-    "specification_relation": "total_order_decomposition",
-    "oracle_suite_id": "oracle_htn_planning_v1",
-    "ocel_model_id": "ocel_htn_planning_v1",
-    "receipt_schema_id": "receipt_htn_planning_v1",
-    "wasm_export_name": "cognition_run",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "frames_inheritance",
-    "breed_name": "Frames Inheritance",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "frames_inheritance_input_v1",
-    "output_schema": "frames_inheritance_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "ebl",
-    "breed_name": "Ebl",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ebl_input_v1",
-    "output_schema": "ebl_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "asp",
-    "breed_name": "Asp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "asp_input_v1",
-    "output_schema": "asp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "abductive_ibe",
-    "breed_name": "Abductive Ibe",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "abductive_ibe_input_v1",
-    "output_schema": "abductive_ibe_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "partial_order_plan",
-    "breed_name": "Partial Order Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "partial_order_plan_input_v1",
-    "output_schema": "partial_order_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "event_calculus",
-    "breed_name": "Event Calculus",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "event_calculus_input_v1",
-    "output_schema": "event_calculus_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "mdp",
-    "breed_name": "Mdp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "mdp_input_v1",
-    "output_schema": "mdp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "version_space",
-    "breed_name": "Version Space",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "version_space_input_v1",
-    "output_schema": "version_space_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "belief_merging",
-    "breed_name": "Belief Merging",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "belief_merging_input_v1",
-    "output_schema": "belief_merging_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "qualitative_reason",
-    "breed_name": "Qualitative Reason",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "qualitative_reason_input_v1",
-    "output_schema": "qualitative_reason_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "script_sam",
-    "breed_name": "Script Sam",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "script_sam_input_v1",
-    "output_schema": "script_sam_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "clp",
-    "breed_name": "Clp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "clp_input_v1",
-    "output_schema": "clp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE"
-  },
-  {
-    "breed_id": "situation_calculus",
-    "breed_name": "Situation Calculus",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "situation_calculus_input_v1",
-    "output_schema": "situation_calculus_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "circumscription",
-    "breed_name": "Circumscription",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "circumscription_input_v1",
-    "output_schema": "circumscription_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "act_r",
-    "breed_name": "Act R",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "act_r_input_v1",
-    "output_schema": "act_r_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "problog",
-    "breed_name": "Problog",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "problog_input_v1",
-    "output_schema": "problog_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "sat_cdcl",
-    "breed_name": "Sat Cdcl",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "sat_cdcl_input_v1",
-    "output_schema": "sat_cdcl_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "episodic_memory",
-    "breed_name": "Episodic Memory",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "episodic_memory_input_v1",
-    "output_schema": "episodic_memory_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "rl_symbolic",
-    "breed_name": "Rl Symbolic",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "rl_symbolic_input_v1",
-    "output_schema": "rl_symbolic_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "ctl_check",
-    "breed_name": "Ctl Check",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ctl_check_input_v1",
-    "output_schema": "ctl_check_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "naive_physics",
-    "breed_name": "Naive Physics",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "naive_physics_input_v1",
-    "output_schema": "naive_physics_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "pomdp",
-    "breed_name": "Pomdp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "pomdp_input_v1",
-    "output_schema": "pomdp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "markov_logic",
-    "breed_name": "Markov Logic",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "markov_logic_input_v1",
-    "output_schema": "markov_logic_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "meta_reasoning",
-    "breed_name": "Meta Reasoning",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "meta_reasoning_input_v1",
-    "output_schema": "meta_reasoning_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "construction_grammar",
-    "breed_name": "Construction Grammar",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "construction_grammar_input_v1",
-    "output_schema": "construction_grammar_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "contingent_plan",
-    "breed_name": "Contingent Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "contingent_plan_input_v1",
-    "output_schema": "contingent_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "tableaux",
-    "breed_name": "Tableaux",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "tableaux_input_v1",
-    "output_schema": "tableaux_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "morphological",
-    "breed_name": "Morphological",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "morphological_input_v1",
-    "output_schema": "morphological_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "triz",
-    "breed_name": "Triz",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "triz_input_v1",
-    "output_schema": "triz_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "ocpm_route_discoverer",
-    "breed_name": "Ocpm Route Discoverer",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ocpm_route_discoverer_input_v1",
-    "output_schema": "ocpm_route_discoverer_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "UNSUPPORTED",
+    "standing": "REGISTERED"
   }
 ]

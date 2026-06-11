@@ -16,11 +16,26 @@
 //!
 //! Cap (refusal): ≤128 episodes.
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Tulving-style episodic recall engine.
 pub struct EpisodicMemory;
+
+impl BoundedBreed for EpisodicMemory {
+    fn breed_name(&self) -> &'static str {
+        "episodic_memory"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound {
+            max_cases: 128,
+            ..DomainBound::default()
+        }
+    }
+}
 
 fn episode_times(input: &BreedInput) -> Result<BTreeMap<String, i64>, String> {
     let mut times = BTreeMap::new();
@@ -55,12 +70,7 @@ impl CognitionBreed for EpisodicMemory {
         if input.cases.is_empty() {
             return Err("episodic_memory requires at least one episode (case)".to_string());
         }
-        if input.cases.len() > 128 {
-            return Err(format!(
-                "complexity cap exceeded: {} episodes > 128 (refusal, not truncation)",
-                input.cases.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         let times = episode_times(input)?;
         for c in &input.cases {
             if !times.contains_key(&c.id) {
@@ -192,10 +202,8 @@ impl CognitionBreed for EpisodicMemory {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of recall".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
         if output.selected.is_none() {
             return Err("episodic recall produced no winner".to_string());
         }

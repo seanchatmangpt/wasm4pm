@@ -23,6 +23,7 @@
 //! invokes the Prolog8 kernel which emits a positive or negative proof and
 //! a deterministic receipt.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Receipt, TraceStep,
 };
@@ -654,9 +655,7 @@ impl CognitionBreed for Prolog {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("Prolog must emit a non-empty inference trace".into());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 

@@ -10,14 +10,32 @@
   "input": {
     "intent": "resolve my_chair legs",
     "facts": [
-      { "key": "frame:my_chair:isa", "value": "chair" },
-      { "key": "frame:chair:isa", "value": "furniture" },
-      { "key": "frame:chair:slot:legs:default", "value": "4" },
-      { "key": "frame:furniture:slot:movable:default", "value": "yes" }
-    ]
+      {
+        "key": "frame:my_chair:isa",
+        "value": "chair"
+      },
+      {
+        "key": "frame:chair:isa",
+        "value": "furniture"
+      },
+      {
+        "key": "frame:chair:slot:legs:default",
+        "value": "4"
+      },
+      {
+        "key": "frame:furniture:slot:movable:default",
+        "value": "yes"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
   },
   "expected": {
     "selected": "4",
-    "walk_steps": 2
+    "walk_steps": 2,
+    "value": "4"
   }
 }

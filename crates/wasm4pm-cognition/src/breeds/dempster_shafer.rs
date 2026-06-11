@@ -17,6 +17,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Dempster–Shafer evidence-combination breed.
 pub struct DempsterShafer;
@@ -251,13 +252,9 @@ impl CognitionBreed for DempsterShafer {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "ds-load-bpa") {
-            return Err("trace must contain ds-load-bpa".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["ds-load-bpa"])?;
         if output
             .inference_trace
             .iter()

@@ -1,44 +1,25 @@
-# HTN_PLANNING
+# htn_planning — SHOP2-style Total-Order Decomposition
 
-## Origin
-- **Paper:** "SHOP2: An HTN Planning System" (JAIR 20, 2003)
-- **Authors:** Nau, Au, Ilghami, Kuter, Murdock, Wu, Yaman
-- **Tradition:** Hierarchical task network planning
+## 1. Identity & Lineage
+HTN planning — SHOP2-style total-order decomposition (Nau et al. 2003). BreedId `htn_planning`, module `src/breeds/htn_planning.rs`.
 
-## Algorithm
-Total-order decomposition: tasks come from goals; `method:<task>:<variant>` rules decompose a compound task into a subtask sequence when their preconditions hold; `op:<name>` rules are primitives with add/delete effects (`atom` / `!atom`). Method alternatives are tried in declaration order with chronological backtracking; depth ≤64, expansions ≤512. The returned plan is replayed against the initial state as a self-audit before being emitted.
+## 2. Algorithm
+Chronological backtracking over method choice (declaration order), depth cap 64, expansion cap 512. After planning, the plan is REPLAYED against the initial state (self-audit): a plan that does not replay is refused.
 
-## Pseudocode
-```
-function seek(state, tasks):
-    if tasks empty: return []
-    t = tasks[0]
-    if t is op: if applicable: emit htn-apply; recurse on effect(state)
-                on failure: emit htn-backtrack
-    else: for each method:t:* applicable:
-            emit htn-decompose; recurse with subtasks ++ rest
-            on failure: emit htn-backtrack
-function run: plan = seek(initial, goal tasks); replay plan (self-audit); emit htn-plan
-```
+## 3. Input Contract
+Goals define initial tasks (compound or `op:<name>`). Rules use `method:<task>:<variant>` or `op:<name>`. `method` premise = preconditions over `pred=val` state atoms, conclusion = `;`-separated subtasks. `op` conclusion = `;`-separated effects (`atom`, `!atom`). State array represents initial state.
 
-## Input contract
-- goals: each value is a task (compound name or `op:<name>`)
-- rules: `method:<task>:<variant>` / `op:<name>` ids (required); state atoms `pred=val`
+## 4. Output Contract
+Fact `htn:plan` with comma-separated operator plan. `selected` = plan string.
 
-## Output contract
-- `selected` / fact `htn:plan` — comma-joined operator sequence
-- trace: {`htn-decompose`,`htn-apply`,`htn-backtrack`}(1,*) → `htn-plan`(1,1)
+## 5. Trace & OCEL Lifecycle
+`{htn-decompose,htn-apply,htn-backtrack}`(1,*) → `htn-plan`(1,1). Exact operators and methods recorded in detail. Report fitness 1.0.
 
-## Complexity
-O(b^d) over method branching b, depth d; hard-capped at 512 expansions.
+## 6. Oracles
+Refusal: no tasks / no rules / plan self-audit failure / exceed depth or expansion limits. Hidden: correctly decomposes and returns sequence of operators. Paper: Logistics/transport domain, deliver decomposes into load;drive;unload.
 
-## Generalization examples
-Logistics (load/drive/unload), travel planning, build pipelines.
+## 7. Determinism & Bounds
+BTreeSet for state atoms. Depth cap 64, expansion cap 512. Fixed declaration order for method/operator selection. Plan self-audit ensures strict linear state application.
 
-## Adversarial coverage
-- Refusal: no goals, no rules, rules without method:/op: ids
-- Hidden: method A's operator precondition fails mid-sequence → forced backtrack to method B, exact plan + htn-backtrack step asserted
-- Paper: Nau 2003 logistics — exact plan op:load,op:drive,op:unload (audit defect HTN-1/2 fixed: Rust fixture + lifecycle kinds match emissions)
-
-## See also
-- `csp_ac3.md`
+## 8. Provenance
+Fixture `tests/fixtures/papers/htn_planning.json` (Nau et al. 2003 total-order decomposition logistics domain).

@@ -20,8 +20,8 @@ use crate::breeds::{
     partial_order_plan::PartialOrderPlan, problog::Problog, production_rules::Mycin,
     prolog::Prolog, qualitative_reason::QualitativeReason, rl_symbolic::RlSymbolic,
     sat_cdcl::SatCdcl, script_sam::ScriptSam, situation_calculus::SituationCalculus, soar::Soar,
-    strips::Strips, tableaux::Tableaux, version_space::VersionSpace, BreedInput, BreedOutput,
-    CognitionBreed,
+    strips::Strips, tableaux::Tableaux, version_space::VersionSpace, BreedId, BreedInput,
+    BreedOutput, CognitionBreed,
 };
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
@@ -36,6 +36,14 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
     let mut output = b
         .run(input)
         .map_err(|e| format!("{}: {}", e.breed, e.message))?;
+    // Framework-level FM-5 gate: a breed cannot claim success without an
+    // inference trace, independent of its own postconditions.
+    if output.inference_trace.is_empty() {
+        return Err(format!(
+            "{}: empty inference trace (FM-5 fraud signal, framework gate)",
+            b.id()
+        ));
+    }
     b.postconditions(input, &output)
         .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
 
@@ -64,128 +72,145 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
 
 /// Dispatch to the correct breed's `run()` method.
 ///
-/// Each branch delegates to `run_breed`, which enforces pre- and post-conditions
-/// so the empty-trace fraud signal is caught at the boundary.
+/// Parses the breed string via `BreedId::from_str_id` then matches exhaustively
+/// on the enum — the compiler enforces that every BreedId variant has a dispatch arm.
+/// Unknown or unsupported breed strings are caught before the enum match.
 pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => run_breed(&Eliza, input),
-        "cbr" => run_breed(&Cbr, input),
-        "dendral" => run_breed(&Dendral, input),
-        "strips" => run_breed(&Strips, input),
-        "prolog" => run_breed(&Prolog, input),
-        "mycin" => run_breed(&Mycin, input),
-        "gps" => run_breed(&Gps, input),
-        "soar" => run_breed(&Soar, input),
-        "hearsay" => run_breed(&Hearsay, input),
-        "autoinstinct_neurosis" => run_breed(&AutoinstinctNeurosis, input),
-        "autoinstinct_semantics" => run_breed(&AutoinstinctSemantics, input),
-        "autoinstinct_vision" => run_breed(&AutoinstinctVision, input),
-        "autoinstinct_learning" => run_breed(&AutoinstinctLearning, input),
-        "bayesian_network" => run_breed(&BayesianNetwork, input),
-        "fuzzy_logic" => run_breed(&FuzzyLogic, input),
-        "dempster_shafer" => run_breed(&DempsterShafer, input),
-        "abductive_lp" => run_breed(&AbductiveLp, input),
-        "ilp" => run_breed(&Ilp, input),
-        "allen_temporal" => run_breed(&AllenTemporal, input),
-        "description_logic" => run_breed(&DescriptionLogic, input),
-        "csp_ac3" => run_breed(&CspAc3, input),
-        "analogy_sme" => run_breed(&AnalogySme, input),
-        "ltl_monitor" => run_breed(&LtlMonitor, input),
-        "default_logic" => run_breed(&DefaultLogic, input),
-        "htn_planning" => run_breed(&HtnPlanning, input),
-        "frames_inheritance" => run_breed(&FramesInheritance, input),
-        "ebl" => run_breed(&Ebl, input),
-        "asp" => run_breed(&Asp, input),
-        "abductive_ibe" => run_breed(&AbductiveIbe, input),
-        "partial_order_plan" => run_breed(&PartialOrderPlan, input),
-        "event_calculus" => run_breed(&EventCalculus, input),
-        "mdp" => run_breed(&Mdp, input),
-        "version_space" => run_breed(&VersionSpace, input),
-        "belief_merging" => run_breed(&BeliefMerging, input),
-        "qualitative_reason" => run_breed(&QualitativeReason, input),
-        "script_sam" => run_breed(&ScriptSam, input),
-        "clp" => run_breed(&Clp, input),
-        "situation_calculus" => run_breed(&SituationCalculus, input),
-        "circumscription" => run_breed(&Circumscription, input),
-        "act_r" => run_breed(&ActR, input),
-        "problog" => run_breed(&Problog, input),
-        "sat_cdcl" => run_breed(&SatCdcl, input),
-        "episodic_memory" => run_breed(&EpisodicMemory, input),
-        "rl_symbolic" => run_breed(&RlSymbolic, input),
-        "ctl_check" => run_breed(&CtlCheck, input),
-        "naive_physics" => run_breed(&NaivePhysics, input),
-        "pomdp" => run_breed(&Pomdp, input),
-        "markov_logic" => run_breed(&MarkovLogic, input),
-        "meta_reasoning" => run_breed(&MetaReasoning, input),
-        "construction_grammar" => run_breed(&ConstructionGrammar, input),
-        "contingent_plan" => run_breed(&ContingentPlan, input),
-        "tableaux" => run_breed(&Tableaux, input),
-        "morphological" => Err("unsupported breed: morphological".to_string()),
-        "triz" => Err("unsupported breed: triz".to_string()),
-        "ocpm_route_discoverer" => Err("unsupported breed: ocpm_route_discoverer".to_string()),
-        other => Err(format!("unknown breed: {}", other)),
+    let id = BreedId::from_str_id(breed).ok_or_else(|| {
+        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
+            format!("unsupported breed: {}", breed)
+        } else {
+            format!("unknown breed: {}", breed)
+        }
+    })?;
+    dispatch_breed_id(id, input)
+}
+
+/// Enum-match dispatch — exhaustiveness is compiler-enforced.
+/// Adding a new `BreedId` variant without adding an arm here is a compile error.
+pub fn dispatch_breed_id(id: BreedId, input: &BreedInput) -> Result<BreedOutput, String> {
+    match id {
+        BreedId::Eliza => run_breed(&Eliza, input),
+        BreedId::Cbr => run_breed(&Cbr, input),
+        BreedId::Dendral => run_breed(&Dendral, input),
+        BreedId::Strips => run_breed(&Strips, input),
+        BreedId::Prolog => run_breed(&Prolog, input),
+        BreedId::Mycin => run_breed(&Mycin, input),
+        BreedId::Gps => run_breed(&Gps, input),
+        BreedId::Soar => run_breed(&Soar, input),
+        BreedId::Hearsay => run_breed(&Hearsay, input),
+        BreedId::AutoinstinctNeurosis => run_breed(&AutoinstinctNeurosis, input),
+        BreedId::AutoinstinctSemantics => run_breed(&AutoinstinctSemantics, input),
+        BreedId::AutoinstinctVision => run_breed(&AutoinstinctVision, input),
+        BreedId::AutoinstinctLearning => run_breed(&AutoinstinctLearning, input),
+        BreedId::BayesianNetwork => run_breed(&BayesianNetwork, input),
+        BreedId::FuzzyLogic => run_breed(&FuzzyLogic, input),
+        BreedId::DempsterShafer => run_breed(&DempsterShafer, input),
+        BreedId::AbductiveLp => run_breed(&AbductiveLp, input),
+        BreedId::Ilp => run_breed(&Ilp, input),
+        BreedId::AllenTemporal => run_breed(&AllenTemporal, input),
+        BreedId::DescriptionLogic => run_breed(&DescriptionLogic, input),
+        BreedId::CspAc3 => run_breed(&CspAc3, input),
+        BreedId::AnalogySme => run_breed(&AnalogySme, input),
+        BreedId::LtlMonitor => run_breed(&LtlMonitor, input),
+        BreedId::DefaultLogic => run_breed(&DefaultLogic, input),
+        BreedId::HtnPlanning => run_breed(&HtnPlanning, input),
+        BreedId::FramesInheritance => run_breed(&FramesInheritance, input),
+        BreedId::Ebl => run_breed(&Ebl, input),
+        BreedId::Asp => run_breed(&Asp, input),
+        BreedId::AbductiveIbe => run_breed(&AbductiveIbe, input),
+        BreedId::PartialOrderPlan => run_breed(&PartialOrderPlan, input),
+        BreedId::EventCalculus => run_breed(&EventCalculus, input),
+        BreedId::Mdp => run_breed(&Mdp, input),
+        BreedId::VersionSpace => run_breed(&VersionSpace, input),
+        BreedId::BeliefMerging => run_breed(&BeliefMerging, input),
+        BreedId::QualitativeReason => run_breed(&QualitativeReason, input),
+        BreedId::ScriptSam => run_breed(&ScriptSam, input),
+        BreedId::Clp => run_breed(&Clp, input),
+        BreedId::SituationCalculus => run_breed(&SituationCalculus, input),
+        BreedId::Circumscription => run_breed(&Circumscription, input),
+        BreedId::ActR => run_breed(&ActR, input),
+        BreedId::Problog => run_breed(&Problog, input),
+        BreedId::SatCdcl => run_breed(&SatCdcl, input),
+        BreedId::EpisodicMemory => run_breed(&EpisodicMemory, input),
+        BreedId::RlSymbolic => run_breed(&RlSymbolic, input),
+        BreedId::CtlCheck => run_breed(&CtlCheck, input),
+        BreedId::NaivePhysics => run_breed(&NaivePhysics, input),
+        BreedId::Pomdp => run_breed(&Pomdp, input),
+        BreedId::MarkovLogic => run_breed(&MarkovLogic, input),
+        BreedId::MetaReasoning => run_breed(&MetaReasoning, input),
+        BreedId::ConstructionGrammar => run_breed(&ConstructionGrammar, input),
+        BreedId::ContingentPlan => run_breed(&ContingentPlan, input),
+        BreedId::Tableaux => run_breed(&Tableaux, input),
     }
 }
 
-/// Test harness: dispatch to the correct breed's `run()` method without OCEL or pre/post checks.
-/// Usually used for unit tests of raw runs.
+/// Test harness: dispatch without OCEL or pre/post checks. Used for raw breed unit tests.
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_neurosis" => AutoinstinctNeurosis.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_semantics" => AutoinstinctSemantics.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_vision" => AutoinstinctVision.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_learning" => AutoinstinctLearning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "bayesian_network" => BayesianNetwork.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "fuzzy_logic" => FuzzyLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dempster_shafer" => DempsterShafer.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "abductive_lp" => AbductiveLp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ilp" => Ilp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "allen_temporal" => AllenTemporal.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "description_logic" => DescriptionLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "csp_ac3" => CspAc3.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "analogy_sme" => AnalogySme.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ltl_monitor" => LtlMonitor.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "default_logic" => DefaultLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "htn_planning" => HtnPlanning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "frames_inheritance" => FramesInheritance.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ebl" => Ebl.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "asp" => Asp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "abductive_ibe" => AbductiveIbe.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "partial_order_plan" => PartialOrderPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "event_calculus" => EventCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mdp" => Mdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "version_space" => VersionSpace.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "belief_merging" => BeliefMerging.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "qualitative_reason" => QualitativeReason.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "script_sam" => ScriptSam.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "clp" => Clp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "situation_calculus" => SituationCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "circumscription" => Circumscription.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "act_r" => ActR.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "problog" => Problog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "sat_cdcl" => SatCdcl.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "episodic_memory" => EpisodicMemory.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "rl_symbolic" => RlSymbolic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ctl_check" => CtlCheck.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "naive_physics" => NaivePhysics.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "pomdp" => Pomdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "markov_logic" => MarkovLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "meta_reasoning" => MetaReasoning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "construction_grammar" => ConstructionGrammar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "contingent_plan" => ContingentPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "tableaux" => Tableaux.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "morphological" => Err("unsupported breed: morphological".to_string()),
-        "triz" => Err("unsupported breed: triz".to_string()),
-        "ocpm_route_discoverer" => Err("unsupported breed: ocpm_route_discoverer".to_string()),
-        other => Err(format!("unknown breed: {}", other)),
+    let id = BreedId::from_str_id(breed).ok_or_else(|| {
+        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
+            format!("unsupported breed: {}", breed)
+        } else {
+            format!("unknown breed: {}", breed)
+        }
+    })?;
+    dispatch_breed_test_id(id, input)
+}
+
+/// Enum-match test dispatch — same exhaustiveness guarantee as `dispatch_breed_id`.
+pub fn dispatch_breed_test_id(id: BreedId, input: &BreedInput) -> Result<BreedOutput, String> {
+    match id {
+        BreedId::Eliza => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Cbr => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Dendral => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Strips => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Prolog => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Mycin => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Gps => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Soar => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Hearsay => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AutoinstinctNeurosis => AutoinstinctNeurosis.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AutoinstinctSemantics => AutoinstinctSemantics.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AutoinstinctVision => AutoinstinctVision.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AutoinstinctLearning => AutoinstinctLearning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::BayesianNetwork => BayesianNetwork.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::FuzzyLogic => FuzzyLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::DempsterShafer => DempsterShafer.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AbductiveLp => AbductiveLp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Ilp => Ilp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AllenTemporal => AllenTemporal.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::DescriptionLogic => DescriptionLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::CspAc3 => CspAc3.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AnalogySme => AnalogySme.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::LtlMonitor => LtlMonitor.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::DefaultLogic => DefaultLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::HtnPlanning => HtnPlanning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::FramesInheritance => FramesInheritance.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Ebl => Ebl.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Asp => Asp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::AbductiveIbe => AbductiveIbe.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::PartialOrderPlan => PartialOrderPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::EventCalculus => EventCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Mdp => Mdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::VersionSpace => VersionSpace.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::BeliefMerging => BeliefMerging.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::QualitativeReason => QualitativeReason.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::ScriptSam => ScriptSam.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Clp => Clp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::SituationCalculus => SituationCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Circumscription => Circumscription.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::ActR => ActR.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Problog => Problog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::SatCdcl => SatCdcl.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::EpisodicMemory => EpisodicMemory.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::RlSymbolic => RlSymbolic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::CtlCheck => CtlCheck.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::NaivePhysics => NaivePhysics.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Pomdp => Pomdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::MarkovLogic => MarkovLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::MetaReasoning => MetaReasoning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::ConstructionGrammar => ConstructionGrammar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::ContingentPlan => ContingentPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Tableaux => Tableaux.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
     }
 }

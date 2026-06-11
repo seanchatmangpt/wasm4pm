@@ -153,3 +153,93 @@ fn fresh_oracle_names_absent_from_production_sources() {
         }
     }
 }
+
+/// Every registry entry carries a parseable "standing"; PARTIAL_ALIVE entries
+/// satisfy the PARTIAL_ALIVE gate (>= Dispatchable); BOUNDED+ standing is
+/// EARNED — it requires a complexity_caps field (generated from the breed's
+/// DomainBound adoption, never hand-asserted). Duplicate breed_ids are a
+/// union-merge defect and are rejected outright.
+#[test]
+fn every_entry_has_lawful_standing() {
+    use wasm4pm_cognition::breeds::standing::BreedStanding;
+
+    let reg = registry();
+    let entries = reg.as_array().expect("registry is an array");
+
+    let mut seen = BTreeSet::new();
+    for entry in entries {
+        let id = entry["breed_id"].as_str().expect("breed_id");
+        assert!(seen.insert(id.to_string()), "duplicate registry entry: {}", id);
+
+        let raw = entry["standing"]
+            .as_str()
+            .unwrap_or_else(|| panic!("{} missing \"standing\" field", id));
+        let standing = BreedStanding::from_registry_str(raw)
+            .unwrap_or_else(|| panic!("{} has unparseable standing {:?}", id, raw));
+
+        if entry["status"] == "PARTIAL_ALIVE" {
+            assert!(
+                standing.is_partial_alive_eligible(),
+                "{} is PARTIAL_ALIVE but standing {:?} < Dispatchable",
+                id,
+                standing
+            );
+        } else {
+            assert!(
+                standing < BreedStanding::Dispatchable,
+                "{} claims standing {:?} but status is {}",
+                id,
+                standing,
+                entry["status"]
+            );
+        }
+
+        if standing >= BreedStanding::Bounded {
+            assert!(
+                entry.get("complexity_caps").map_or(false, |c| c.is_object()),
+                "{} claims {:?} without complexity_caps (BOUNDED unearned)",
+                id,
+                standing
+            );
+        }
+    }
+}
+
+/// A8 extension for the universal-oracle corpus: fresh `uo_` identifiers used
+/// by `support/oracle_impls/` must never appear in production breed sources
+/// (whole file, no test-module stripping), and the oracle_impls module must
+/// stay feature-gated so oracle inputs cannot leak into production builds.
+#[test]
+fn uo_oracle_names_absent_from_breed_sources() {
+    let re = regex::Regex::new(r"\buo_[a-z0-9_]+\b").expect("regex");
+    let scan_dirs = ["src/breeds", "src/breeds/support"];
+    for dir in scan_dirs {
+        for entry in std::fs::read_dir(dir).expect("readable dir") {
+            let path = entry.expect("dir entry").path();
+            if path.extension().map_or(true, |e| e != "rs") {
+                continue;
+            }
+            let name = path.file_name().unwrap().to_string_lossy().to_string();
+            if name == "oracle.rs" || name == "oracle_impls.rs" {
+                continue;
+            }
+            let body = std::fs::read_to_string(&path).expect("readable source");
+            if let Some(m) = re.find(&body) {
+                panic!(
+                    "FRAUD DETECTED: {} contains universal-oracle identifier {}",
+                    path.display(),
+                    m.as_str()
+                );
+            }
+        }
+    }
+
+    let support_mod =
+        std::fs::read_to_string("src/breeds/support/mod.rs").expect("support/mod.rs");
+    assert!(
+        support_mod.contains(
+            "#[cfg(all(not(target_arch = \"wasm32\"), feature = \"breed-oracles\"))]"
+        ),
+        "oracle_impls must remain gated behind the breed-oracles feature"
+    );
+}

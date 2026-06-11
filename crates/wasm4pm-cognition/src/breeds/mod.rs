@@ -77,6 +77,10 @@ pub mod situation_calculus;
 
 pub use dispatch::{dispatch_breed, run_breed};
 pub mod tableaux;
+/// Ten-rung certification ladder for cognition breeds.
+pub mod standing;
+/// Phantom-typed receipt chain for the oracle/audit layer.
+pub mod oracle_chain;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -408,6 +412,49 @@ impl fmt::Display for BreedError {
 
 impl std::error::Error for BreedError {}
 
+/// Structured error type for breed failures.
+///
+/// Use `CognitionError` in new breeds. `BreedError` remains as a type alias
+/// for backward compatibility with the 52 existing breed implementations.
+#[derive(Debug, Clone, thiserror::Error, serde::Serialize, serde::Deserialize)]
+pub enum CognitionError {
+    /// A required input fact or field was absent.
+    #[error("{breed}: missing required input — {field}")]
+    MissingInput {
+        /// Breed name.
+        breed: &'static str,
+        /// Missing field or fact key.
+        field: &'static str,
+    },
+    /// Precondition check rejected the input before execution.
+    #[error("{breed}: precondition — {reason}")]
+    PreconditionFailed {
+        /// Breed name.
+        breed: &'static str,
+        /// Human-readable reason.
+        reason: String,
+    },
+    /// Postcondition invariant was violated by the output.
+    #[error("{breed}: postcondition violated — {invariant}")]
+    PostconditionViolated {
+        /// Breed name.
+        breed: &'static str,
+        /// Invariant name or description.
+        invariant: &'static str,
+    },
+    /// Complexity cap exceeded (refusal, not truncation).
+    #[error("{breed}: complexity cap — {detail}")]
+    ComplexityCap {
+        /// Breed name.
+        breed: &'static str,
+        /// Detail message.
+        detail: String,
+    },
+    /// Breed string was not recognized.
+    #[error("unsupported breed: {0}")]
+    Unsupported(String),
+}
+
 /// Compute a BLAKE3 receipt for a breed's execution.
 ///
 /// # Arguments
@@ -444,8 +491,11 @@ pub trait CognitionBreed: Send + Sync {
     /// Unique identifier for this breed.
     fn id(&self) -> BreedId;
 
-    /// Human-readable capability description.
-    fn capabilities(&self) -> Vec<String>;
+    /// Human-readable capability list. Default: `[breed_id_string]`.
+    /// Override when the breed exposes multiple named capabilities.
+    fn capabilities(&self) -> Vec<String> {
+        vec![format!("{}", self.id())]
+    }
 
     /// Precondition checks: ensure the breed can run.
     /// Returns Ok(()) if all pass; Err(message) if violation.
@@ -483,6 +533,68 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
 }
 
 impl BreedId {
+    /// Parse a breed id string into a `BreedId`, if it is a known PARTIAL_ALIVE breed.
+    /// Returns `None` for unsupported (morphological, triz, ocpm_route_discoverer) or unknown strings.
+    pub fn from_str_id(s: &str) -> Option<Self> {
+        match s {
+            "eliza" => Some(Self::Eliza),
+            "cbr" => Some(Self::Cbr),
+            "dendral" => Some(Self::Dendral),
+            "strips" => Some(Self::Strips),
+            "prolog" => Some(Self::Prolog),
+            "mycin" => Some(Self::Mycin),
+            "gps" => Some(Self::Gps),
+            "soar" => Some(Self::Soar),
+            "hearsay" => Some(Self::Hearsay),
+            "autoinstinct_learning" => Some(Self::AutoinstinctLearning),
+            "autoinstinct_semantics" => Some(Self::AutoinstinctSemantics),
+            "autoinstinct_neurosis" => Some(Self::AutoinstinctNeurosis),
+            "autoinstinct_vision" => Some(Self::AutoinstinctVision),
+            "ltl_monitor" => Some(Self::LtlMonitor),
+            "allen_temporal" => Some(Self::AllenTemporal),
+            "fuzzy_logic" => Some(Self::FuzzyLogic),
+            "bayesian_network" => Some(Self::BayesianNetwork),
+            "csp_ac3" => Some(Self::CspAc3),
+            "default_logic" => Some(Self::DefaultLogic),
+            "htn_planning" => Some(Self::HtnPlanning),
+            "dempster_shafer" => Some(Self::DempsterShafer),
+            "frames_inheritance" => Some(Self::FramesInheritance),
+            "ebl" => Some(Self::Ebl),
+            "asp" => Some(Self::Asp),
+            "description_logic" => Some(Self::DescriptionLogic),
+            "abductive_lp" => Some(Self::AbductiveLp),
+            "abductive_ibe" => Some(Self::AbductiveIbe),
+            "partial_order_plan" => Some(Self::PartialOrderPlan),
+            "event_calculus" => Some(Self::EventCalculus),
+            "mdp" => Some(Self::Mdp),
+            "version_space" => Some(Self::VersionSpace),
+            "belief_merging" => Some(Self::BeliefMerging),
+            "qualitative_reason" => Some(Self::QualitativeReason),
+            "script_sam" => Some(Self::ScriptSam),
+            "clp" => Some(Self::Clp),
+            "situation_calculus" => Some(Self::SituationCalculus),
+            "circumscription" => Some(Self::Circumscription),
+            "analogy_sme" => Some(Self::AnalogySme),
+            "act_r" => Some(Self::ActR),
+            "problog" => Some(Self::Problog),
+            "sat_cdcl" => Some(Self::SatCdcl),
+            "episodic_memory" => Some(Self::EpisodicMemory),
+            "rl_symbolic" => Some(Self::RlSymbolic),
+            "ctl_check" => Some(Self::CtlCheck),
+            "ilp" => Some(Self::Ilp),
+            "naive_physics" => Some(Self::NaivePhysics),
+            "tableaux" => Some(Self::Tableaux),
+            "construction_grammar" => Some(Self::ConstructionGrammar),
+            "markov_logic" => Some(Self::MarkovLogic),
+            "pomdp" => Some(Self::Pomdp),
+            "contingent_plan" => Some(Self::ContingentPlan),
+            "meta_reasoning" => Some(Self::MetaReasoning),
+            // Registered but not yet implemented:
+            "morphological" | "triz" | "ocpm_route_discoverer" => None,
+            _ => None,
+        }
+    }
+
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
     pub const ALL: [BreedId; 52] = [
         BreedId::Eliza,

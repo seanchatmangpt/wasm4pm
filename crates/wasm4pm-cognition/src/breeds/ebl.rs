@@ -26,6 +26,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Explanation-based learning breed.
 pub struct Ebl;
@@ -327,7 +328,7 @@ impl CognitionBreed for Ebl {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         let rule_fact = output
             .facts
             .iter()
@@ -339,16 +340,8 @@ impl CognitionBreed for Ebl {
                     .to_string(),
             );
         }
-        let kinds: BTreeSet<&str> = output
-            .inference_trace
-            .iter()
-            .map(|t| t.kind.as_str())
-            .collect();
-        for required in ["ebl-explain", "ebl-generalize", "ebl-operationalize"] {
-            if !kinds.contains(required) {
-                return Err(format!("ebl trace missing required kind '{}'", required));
-            }
-        }
+        let tq = TraceQuery::from_output(output);
+        tq.require_kinds(&["ebl-explain", "ebl-generalize", "ebl-operationalize"])?;
         Ok(())
     }
 }

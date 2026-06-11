@@ -24,6 +24,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// DENDRAL constraint-based candidate enumerator.
 pub struct Dendral;
@@ -202,9 +203,7 @@ impl CognitionBreed for Dendral {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("DENDRAL must record at least one trace step".to_string());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

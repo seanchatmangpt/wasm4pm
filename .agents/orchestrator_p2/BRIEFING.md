@@ -47,20 +47,24 @@ Implement and verify the 12 Tier P2 cognition breeds in wasm4pm-cognition.
 | Agent | Type | Work Item | Status | Conv ID |
 |-------|------|-----------|--------|---------|
 | worker_1 | teamwork_preview_worker | Batch 1 breeds (asp, description_logic, abductive_lp, abductive_ibe) | completed | 2c3723b7-fd93-4e64-aa06-1c5b4901ac69 |
-| worker_2 | teamwork_preview_worker | Batch 2 breeds (partial_order_plan, event_calculus, mdp, version_space) | in-progress | 520f9a40-de76-4e04-a6a6-82f0c01d8290 |
+| worker_2 | teamwork_preview_worker | Batch 2 breeds (partial_order_plan, event_calculus, mdp, version_space) | failed | 520f9a40-de76-4e04-a6a6-82f0c01d8290 |
+| worker_2_retry | teamwork_preview_worker | Batch 2 breeds (partial_order_plan, event_calculus, mdp, version_space) | completed | da26e72c-e534-4460-9fc9-48271f2adabd |
+| worker_ts_fix | teamwork_preview_worker | Fix TypeScript integration tests | in-progress | 007cd332-6d02-46c9-b709-9a43349a60ec |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 2 / 16
-- Pending subagents: [520f9a40-de76-4e04-a6a6-82f0c01d8290]
+- Spawn count: 4 / 16
+- Pending subagents: [007cd332-6d02-46c9-b709-9a43349a60ec]
 - Predecessor: none
 - Successor: not yet spawned
 
 ## Active Timers
-- Heartbeat cron: task-11
-- Safety timer: none
+- Heartbeat cron: task-51
+- Safety timer: task-148
 
 ## Artifact Index
 - /Users/sac/wasm4pm/.agents/orchestrator_p2/ORIGINAL_REQUEST.md — Original user request
 - /Users/sac/wasm4pm/.agents/orchestrator_p2/BRIEFING.md — Persistent memory
 - /Users/sac/wasm4pm/.agents/orchestrator_p2/SCOPE.md — Decomposed milestones and progress
+- /Users/sac/wasm4pm/.agents/orchestrator_p2/plan.md — Current execution plan
+

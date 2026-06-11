@@ -2,10 +2,10 @@
   "breed": "cbr",
   "provenance": {
     "paper": "/Users/sac/Documents/Papers/AI_LLM/Aamodt-Plaza-1994-CBR-AIC.pdf",
-    "citation": "A. Aamodt, E. Plaza (1994). Case-Based Reasoning: Foundational Issues, Methodological Variations, and System Approaches. AI Communications, IOS Press, Vol. 7, No. 1, pp. 39–59.",
-    "locus": "§1.2 (p. 2) illustrative vignettes; §3 / Figure 1 (p. 8) CBR cycle (Retrieve, Reuse, Revise, Retain). No numeric case table appears in the paper; cases below are adapted from the three concrete vignettes the authors use to introduce CBR.",
+    "citation": "A. Aamodt, E. Plaza (1994). Case-Based Reasoning: Foundational Issues, Methodological Variations, and System Approaches. AI Communications, IOS Press, Vol. 7, No. 1, pp. 39\u201359.",
+    "locus": "\u00a71.2 (p. 2) illustrative vignettes; \u00a73 / Figure 1 (p. 8) CBR cycle (Retrieve, Reuse, Revise, Retain). No numeric case table appears in the paper; cases below are adapted from the three concrete vignettes the authors use to introduce CBR.",
     "extraction": "adapted",
-    "notes": "The paper (Aamodt & Plaza 1994) contains NO numeric case table or feature-vector example in §2–3. It defines the CBR cycle abstractly via Figure 1 (p. 8: Retrieve → Reuse → Revise → Retain) and introduces CBR through three narrative vignettes on p. 2: (1) physician reminded of a patient treated two weeks prior by similarity of symptoms; (2) drilling engineer reminded of past blowout situations by combination of critical measurements; (3) financial consultant reminded of a previous troubled company when deciding on a loan. The five cases in this fixture are adapted directly from those three vignettes, mapped onto the Case schema (id, intent, architecture, outcome_score, facts). The query is the physician vignette's new-problem side. The extraction is therefore \"adapted\" — the paper provides the scenarios in prose, not as structured feature vectors. The existing fixture in breed-inputs-real.ts uses a wholly fabricated 15-case IT-incident library and labels it only \"inspired by\" the paper; this extraction improves provenance by grounding cases in the paper's actual illustrative text."
+    "notes": "The paper (Aamodt & Plaza 1994) contains NO numeric case table or feature-vector example in \u00a72\u20133. It defines the CBR cycle abstractly via Figure 1 (p. 8: Retrieve \u2192 Reuse \u2192 Revise \u2192 Retain) and introduces CBR through three narrative vignettes on p. 2: (1) physician reminded of a patient treated two weeks prior by similarity of symptoms; (2) drilling engineer reminded of past blowout situations by combination of critical measurements; (3) financial consultant reminded of a previous troubled company when deciding on a loan. The five cases in this fixture are adapted directly from those three vignettes, mapped onto the Case schema (id, intent, architecture, outcome_score, facts). The query is the physician vignette's new-problem side. The extraction is therefore \"adapted\" \u2014 the paper provides the scenarios in prose, not as structured feature vectors. The existing fixture in breed-inputs-real.ts uses a wholly fabricated 15-case IT-incident library and labels it only \"inspired by\" the paper; this extraction improves provenance by grounding cases in the paper's actual illustrative text."
   },
   "input": {
     "intent": "diagnose-and-treat current patient with fever and cough",
@@ -117,7 +117,7 @@
       },
       {
         "id": "CASE-DRILLING-BLOWOUT-A",
-        "intent": "first blowout — critical-pressure combination triggered well blow-out",
+        "intent": "first blowout \u2014 critical-pressure combination triggered well blow-out",
         "architecture": "emergency-mud-weight-increase",
         "outcome_score": 0.88,
         "facts": [
@@ -145,7 +145,7 @@
       },
       {
         "id": "CASE-DRILLING-BLOWOUT-B",
-        "intent": "second blowout — engineer error contributed to blow-out recurrence",
+        "intent": "second blowout \u2014 engineer error contributed to blow-out recurrence",
         "architecture": "procedure-override-abort",
         "outcome_score": 0.6,
         "facts": [
@@ -173,7 +173,7 @@
       },
       {
         "id": "CASE-CREDIT-TROUBLED-CO",
-        "intent": "previous company in similar financial trouble — loan refused",
+        "intent": "previous company in similar financial trouble \u2014 loan refused",
         "architecture": "refuse-loan-application",
         "outcome_score": 0.91,
         "facts": [
@@ -236,10 +236,10 @@
   },
   "expected": {
     "retrieved_case": "CASE-PHYSICIAN-2WK",
-    "retrieval_rationale": "Highest Jaccard similarity: shares domain=medical, symptom_primary=fever, symptom_secondary=cough, urgency=moderate — 4 of 5 features match exactly (outcome_score 0.95).",
+    "retrieval_rationale": "Highest Jaccard similarity: shares domain=medical, symptom_primary=fever, symptom_secondary=cough, urgency=moderate \u2014 4 of 5 features match exactly (outcome_score 0.95).",
     "suggested_solution": "antibiotic-course (copied from CASE-PHYSICIAN-2WK; no adaptation needed because all discriminating symptoms match)",
     "revise_needed": false,
     "retain_action": "Store current case as new entry in case base with confirmed outcome after treatment",
-    "paper_statement": "A physician — after having examined a particular patient — gets a reminding to a patient that he treated two weeks ago. Assuming that the reminding was caused by a similarity of important symptoms (and not the patient's hair-color, say), the physician uses the diagnosis and treatment of the previous patient to determine the disease and treatment for the patient in front of him. (Aamodt & Plaza 1994, p. 2)"
+    "paper_statement": "A physician \u2014 after having examined a particular patient \u2014 gets a reminding to a patient that he treated two weeks ago. Assuming that the reminding was caused by a similarity of important symptoms (and not the patient's hair-color, say), the physician uses the diagnosis and treatment of the previous patient to determine the disease and treatment for the patient in front of him. (Aamodt & Plaza 1994, p. 2)"
   }
 }

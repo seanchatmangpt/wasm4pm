@@ -4,14 +4,22 @@
     "title": "First-Order Logic",
     "venue": "Springer-Verlag, Ergebnisse der Mathematik und ihrer Grenzgebiete 43",
     "year": 1968,
-    "section": "Part I, Chapter II — Analytic Tableaux (signed formulas, alpha/beta rules)",
+    "section": "Part I, Chapter II \u2014 Analytic Tableaux (signed formulas, alpha/beta rules)",
     "claim": "The K axiom A -> (B -> A) is a tautology; its signed tableau starting from F (A -> (B -> A)) closes using only alpha rules (no branching)."
   },
   "input": {
     "intent": "prove the K axiom",
     "facts": [
-      { "key": "tableaux:formula", "value": "a -> (b -> a)" }
-    ]
+      {
+        "key": "tableaux:formula",
+        "value": "a -> (b -> a)"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
   },
   "expected": {
     "verdict": "valid",

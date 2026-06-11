@@ -13,6 +13,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoInstinct Semantics breed: NLU, semantic frame extraction, Schank CD primitives.
 pub struct AutoinstinctSemantics;
@@ -210,11 +211,7 @@ impl CognitionBreed for AutoinstinctSemantics {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err(
-                "AutoinstinctSemantics must produce at least one inference trace step".to_string(),
-            );
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }
@@ -344,9 +341,7 @@ mod tests {
         };
         let result = breed.postconditions(&base_input(""), &output);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .contains("at least one inference trace step"));
+        assert!(result.unwrap_err().contains("empty inference trace"));
     }
 
     #[test]

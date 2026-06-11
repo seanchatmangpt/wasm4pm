@@ -15,8 +15,10 @@
 use std::collections::BTreeSet;
 
 use crate::breeds::support::closure::{forward_close, HornRule};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Maximum number of abducibles (2^12 candidate sets).
@@ -24,6 +26,31 @@ const MAX_ABDUCIBLES: usize = 12;
 
 /// KKT abductive logic programming breed.
 pub struct AbductiveLp;
+
+impl BoundedBreed for AbductiveLp {
+    fn breed_name(&self) -> &'static str {
+        "abductive_lp"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let abd = abducibles(input);
+        if abd.len() > MAX_ABDUCIBLES {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "abducible count {} exceeds cap {}",
+                    abd.len(),
+                    MAX_ABDUCIBLES
+                ),
+            });
+        }
+        None
+    }
+}
 
 fn abducibles(input: &BreedInput) -> Vec<String> {
     let mut set: BTreeSet<String> = BTreeSet::new();
@@ -99,13 +126,7 @@ impl CognitionBreed for AbductiveLp {
         if abd.is_empty() {
             return Err("abductive_lp requires at least one alp:abducible:* fact".to_string());
         }
-        if abd.len() > MAX_ABDUCIBLES {
-            return Err(format!(
-                "abducible count {} exceeds cap {}",
-                abd.len(),
-                MAX_ABDUCIBLES
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         if !input.goals.iter().any(|g| g.predicate == "alp:observe") {
             return Err("abductive_lp requires an alp:observe goal".to_string());
         }
@@ -257,16 +278,11 @@ impl CognitionBreed for AbductiveLp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("load-abducibles") {
-            return Err("first step must be 'load-abducibles'".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("minimal-set") {
-            return Err("final step must be 'minimal-set'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("load-abducibles")?;
+        tq.require_last("minimal-set")?;
         Ok(())
     }
 }

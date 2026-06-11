@@ -25,6 +25,7 @@ use crate::breeds::{
 };
 use std::collections::BTreeMap;
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Hearsay-II breed.
 pub struct Hearsay;
@@ -330,9 +331,7 @@ impl CognitionBreed for Hearsay {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("Hearsay must record at least one blackboard event".to_string());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

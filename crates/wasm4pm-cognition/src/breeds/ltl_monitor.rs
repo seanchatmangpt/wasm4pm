@@ -17,14 +17,51 @@
 //!
 //! Trace kinds: `ltl-init`(1,1) → `ltl-progress`(1,*) → `ltl-verdict`(1,1).
 
+use crate::breeds::support::breed_class::VerifierBreed;
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::formula::Formula;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 use std::collections::BTreeSet;
 
 /// LTL runtime monitor breed (Havelund–Roşu progression).
 pub struct LtlMonitor;
+
+impl BoundedBreed for LtlMonitor {
+    fn breed_name(&self) -> &'static str {
+        "ltl_monitor"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        // A missing formula is a content error, reported by preconditions().
+        if let Ok(formula_str) = extract_formula(input) {
+            if formula_str.len() > 256 {
+                return Some(CognitionError::ComplexityCap {
+                    breed: self.breed_name(),
+                    detail: format!("formula exceeds 256 chars (len={})", formula_str.len()),
+                });
+            }
+        }
+        let trace_count = input
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("trace:"))
+            .count();
+        if trace_count > 1000 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("trace exceeds 1000 events (len={})", trace_count),
+            });
+        }
+        None
+    }
+}
 
 /// LTL-only AST (CTL path quantifiers rejected at translation).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -220,6 +257,12 @@ fn extract_trace(input: &BreedInput) -> Vec<(usize, BTreeSet<String>)> {
     trace_events
 }
 
+impl VerifierBreed for LtlMonitor {
+    fn valid_verdicts(&self) -> &'static [&'static str] {
+        &["true", "false"]
+    }
+}
+
 impl CognitionBreed for LtlMonitor {
     fn id(&self) -> BreedId {
         BreedId::LtlMonitor
@@ -235,12 +278,7 @@ impl CognitionBreed for LtlMonitor {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         let formula_str = extract_formula(input)?;
-        if formula_str.len() > 256 {
-            return Err(format!(
-                "formula exceeds 256 chars (len={})",
-                formula_str.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         let formula_ast =
             Formula::parse(&formula_str).map_err(|e| format!("formula parse error: {}", e))?;
         Ltl::from_formula(&formula_ast)?;
@@ -251,9 +289,6 @@ impl CognitionBreed for LtlMonitor {
             .count();
         if trace_count == 0 {
             return Err("missing trace:N facts (at least one trace event required)".to_string());
-        }
-        if trace_count > 1000 {
-            return Err(format!("trace exceeds 1000 events (len={})", trace_count));
         }
         Ok(())
     }
@@ -333,31 +368,13 @@ impl CognitionBreed for LtlMonitor {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (fraud signal)".to_string());
-        }
-        let inits = output
-            .inference_trace
-            .iter()
-            .filter(|t| t.kind == "ltl-init")
-            .count();
-        let progresses = output
-            .inference_trace
-            .iter()
-            .filter(|t| t.kind == "ltl-progress")
-            .count();
-        let verdicts = output
-            .inference_trace
-            .iter()
-            .filter(|t| t.kind == "ltl-verdict")
-            .count();
-        if inits != 1 || verdicts != 1 || progresses == 0 {
-            return Err(format!(
-                "trace must contain exactly 1 ltl-init, >=1 ltl-progress, exactly 1 ltl-verdict (got {}/{}/{})",
-                inits, progresses, verdicts
-            ));
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_verdict_valid(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_count("ltl-init", 1)?;
+        tq.require_at_least("ltl-progress", 1)?;
+        tq.require_count("ltl-verdict", 1)?;
         if !output.facts.iter().any(|f| f.key == "ltl:verdict") {
             return Err("missing ltl:verdict output fact".to_string());
         }

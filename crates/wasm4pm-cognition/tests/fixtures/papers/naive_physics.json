@@ -11,11 +11,26 @@
     "intent": "predict what happens when the table is removed",
     "candidates": [],
     "facts": [
-      {"key": "np:ground:floor", "value": "true"},
-      {"key": "np:on:table", "value": "floor"},
-      {"key": "np:on:cup", "value": "table"},
-      {"key": "np:liquid:water", "value": "cup"},
-      {"key": "np:remove:table", "value": "true"}
+      {
+        "key": "np:ground:floor",
+        "value": "true"
+      },
+      {
+        "key": "np:on:table",
+        "value": "floor"
+      },
+      {
+        "key": "np:on:cup",
+        "value": "table"
+      },
+      {
+        "key": "np:liquid:water",
+        "value": "cup"
+      },
+      {
+        "key": "np:remove:table",
+        "value": "true"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -23,9 +38,17 @@
     "state": []
   },
   "expected": {
-    "falls": ["cup"],
-    "spills": ["water"],
-    "not_falls": ["floor", "table"],
-    "notes": "Exactly the cup falls (its direct support was removed) and exactly the water spills (its container falls); over-derivation (floor falling) is a defect."
+    "falls": [
+      "cup"
+    ],
+    "spills": [
+      "water"
+    ],
+    "not_falls": [
+      "floor",
+      "table"
+    ],
+    "notes": "Exactly the cup falls (its direct support was removed) and exactly the water spills (its container falls); over-derivation (floor falling) is a defect.",
+    "value": "verified"
   }
 }

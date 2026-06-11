@@ -1,10 +1,10 @@
 {
   "breed": "asp",
   "provenance": {
-    "citation": "Gelfond, M., & Lifschitz, V. (1988). The Stable Model Semantics for Logic Programming. In: Proceedings of the Fifth International Conference and Symposium on Logic Programming (ICLP/SLP 1988), MIT Press, pp. 1070–1080.",
-    "locus": "Section 2, Examples 1–2: the program {p(1,2). q(x) ← p(x,y), ¬q(y)} whose unique stable model is {p(1,2), q(1)}; Section 3 discussion of programs with no stable model (q ← ¬q).",
+    "citation": "Gelfond, M., & Lifschitz, V. (1988). The Stable Model Semantics for Logic Programming. In: Proceedings of the Fifth International Conference and Symposium on Logic Programming (ICLP/SLP 1988), MIT Press, pp. 1070\u20131080.",
+    "locus": "Section 2, Examples 1\u20132: the program {p(1,2). q(x) \u2190 p(x,y), \u00acq(y)} whose unique stable model is {p(1,2), q(1)}; Section 3 discussion of programs with no stable model (q \u2190 \u00acq).",
     "extraction": "verbatim-propositionalized",
-    "notes": "The paper's Example program is grounded over the constant domain {1,2}: p(1,2) is a fact; the ground instance q(1) ← p(1,2), not q(2) is the only productive rule instance (q(2) ← p(2,y) has no matching p-fact). Atoms are propositionalized as p_1_2, q_1, q_2. The paper proves the unique stable model is {p(1,2), q(1)} — q(1) is in, q(2) is out. The companion oracle {a ← not a} (no stable model) is the paper's Section 3 observation that some programs have zero stable models."
+    "notes": "The paper's Example program is grounded over the constant domain {1,2}: p(1,2) is a fact; the ground instance q(1) \u2190 p(1,2), not q(2) is the only productive rule instance (q(2) \u2190 p(2,y) has no matching p-fact). Atoms are propositionalized as p_1_2, q_1, q_2. The paper proves the unique stable model is {p(1,2), q(1)} \u2014 q(1) is in, q(2) is out. The companion oracle {a \u2190 not a} (no stable model) is the paper's Section 3 observation that some programs have zero stable models."
   },
   "input": {
     "intent": "compute stable models of the Gelfond-Lifschitz 1988 example program",
@@ -12,8 +12,21 @@
     "facts": [],
     "cases": [],
     "rules": [
-      { "id": "f-p12", "premise": [], "conclusion": "p_1_2", "certainty": 1.0 },
-      { "id": "r-q1", "premise": ["p_1_2", "not q_2"], "conclusion": "q_1", "certainty": 1.0 }
+      {
+        "id": "f-p12",
+        "premise": [],
+        "conclusion": "p_1_2",
+        "certainty": 1.0
+      },
+      {
+        "id": "r-q1",
+        "premise": [
+          "p_1_2",
+          "not q_2"
+        ],
+        "conclusion": "q_1",
+        "certainty": 1.0
+      }
     ],
     "goals": [],
     "state": []
@@ -21,8 +34,13 @@
   "expected": {
     "answer_set_count": "1",
     "answer_set_0": "p_1_2,q_1",
-    "contains": ["p_1_2", "q_1"],
-    "excludes": ["q_2"],
+    "contains": [
+      "p_1_2",
+      "q_1"
+    ],
+    "excludes": [
+      "q_2"
+    ],
     "notes": "Unique stable model {p(1,2), q(1)} per GL88 Section 2."
   }
 }

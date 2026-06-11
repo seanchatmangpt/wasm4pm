@@ -29,7 +29,7 @@ fn test_breed_id_schema_parity() {
     let schema_file = "../../packages/cognition/src/schemas.ts";
     let schema_content = fs::read_to_string(schema_file).expect("failed to read schemas.ts");
 
-    for &breed in BreedId::ALL {
+    for breed in BreedId::ALL {
         let breed_str = breed.to_string();
         // The breed string should be in the schemas.ts file somewhere, e.g., 'mycin'
         let pattern = format!("'{}'", breed_str);

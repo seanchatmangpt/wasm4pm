@@ -13,9 +13,12 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::breeds::support::breed_class::OptimizerBreed;
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::mdp::{value_iteration, MdpModel};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Maximum number of states.
@@ -26,9 +29,29 @@ const EPSILON: f64 = 1e-6;
 /// MDP value-iteration breed.
 pub struct Mdp;
 
+/// Collect the distinct state names referenced by `mdp:trans:<s>:<a>` keys and
+/// their next-state value specs. Malformed entries are skipped here — they are
+/// content errors reported by [`parse_model`]. Shared by [`parse_model`] and
+/// the [`BoundedBreed`] cap check so the two derivations cannot diverge.
+fn trans_state_names(input: &BreedInput) -> BTreeSet<String> {
+    let mut state_names: BTreeSet<String> = BTreeSet::new();
+    for f in &input.facts {
+        if let Some(rest) = f.key.strip_prefix("mdp:trans:") {
+            if let Some((s, _a)) = rest.split_once(':') {
+                state_names.insert(s.to_string());
+                for part in f.value.split(';').map(str::trim).filter(|p| !p.is_empty()) {
+                    if let Some((ns, _)) = part.split_once(':') {
+                        state_names.insert(ns.trim().to_string());
+                    }
+                }
+            }
+        }
+    }
+    state_names
+}
+
 fn parse_model(input: &BreedInput) -> Result<MdpModel, String> {
     let mut gamma: Option<f64> = None;
-    let mut state_names: BTreeSet<String> = BTreeSet::new();
     let mut action_names: BTreeSet<String> = BTreeSet::new();
     let mut raw_trans: Vec<(String, String, String)> = Vec::new();
     let mut raw_rewards: Vec<(String, String, f64)> = Vec::new();
@@ -45,13 +68,10 @@ fn parse_model(input: &BreedInput) -> Result<MdpModel, String> {
             let (s, a) = rest
                 .split_once(':')
                 .ok_or_else(|| format!("malformed mdp:trans key '{}'", f.key))?;
-            state_names.insert(s.to_string());
             action_names.insert(a.to_string());
             for part in f.value.split(';').map(str::trim).filter(|p| !p.is_empty()) {
-                let (ns, _) = part
-                    .split_once(':')
+                part.split_once(':')
                     .ok_or_else(|| format!("malformed transition '{}' (need s:p)", part))?;
-                state_names.insert(ns.trim().to_string());
             }
             raw_trans.push((s.to_string(), a.to_string(), f.value.clone()));
         } else if let Some(rest) = f.key.strip_prefix("mdp:reward:") {
@@ -71,6 +91,7 @@ fn parse_model(input: &BreedInput) -> Result<MdpModel, String> {
     if raw_trans.is_empty() {
         return Err("mdp requires at least one mdp:trans:<s>:<a> fact".to_string());
     }
+    let state_names = trans_state_names(input);
     if state_names.len() > MAX_STATES {
         return Err(format!(
             "state count {} exceeds cap {}",
@@ -116,6 +137,37 @@ fn parse_model(input: &BreedInput) -> Result<MdpModel, String> {
     })
 }
 
+impl OptimizerBreed for Mdp {
+    fn optimality_fact_key(&self) -> &'static str {
+        "mdp:policy:"
+    }
+}
+
+impl BoundedBreed for Mdp {
+    fn breed_name(&self) -> &'static str {
+        "mdp"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let state_names = trans_state_names(input);
+        if state_names.len() > MAX_STATES {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "state count {} exceeds cap {}",
+                    state_names.len(),
+                    MAX_STATES
+                ),
+            });
+        }
+        None
+    }
+}
+
 impl CognitionBreed for Mdp {
     fn id(&self) -> BreedId {
         BreedId::Mdp
@@ -130,6 +182,7 @@ impl CognitionBreed for Mdp {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         let model = parse_model(input)?;
         model.validate()
     }
@@ -159,7 +212,7 @@ impl CognitionBreed for Mdp {
         })?;
         tr(
             &mut trace,
-            "validate-model",
+            "mdp-init",
             format!(
                 "{} states, {} actions, gamma={:.6}",
                 model.states.len(),
@@ -178,11 +231,11 @@ impl CognitionBreed for Mdp {
         // when sweeps exceed 64, emit every ceil(n/64)-th sweep marker).
         let stride = result.sweeps.div_ceil(64).max(1);
         for i in (0..result.sweeps).step_by(stride) {
-            tr(&mut trace, "sweep", format!("sweep {}", i + 1), 1);
+            tr(&mut trace, "mdp-iterate", format!("sweep {}", i + 1), 1);
         }
         tr(
             &mut trace,
-            "converged",
+            "mdp-iterate",
             format!(
                 "{} sweeps, residual={:.3e} (threshold eps={:.0e})",
                 result.sweeps, result.residual, EPSILON
@@ -199,7 +252,7 @@ impl CognitionBreed for Mdp {
         }
         for (i, s) in model.states.iter().enumerate() {
             let a = &model.actions[result.policy[i]];
-            tr(&mut trace, "extract-policy", format!("{} -> {}", s, a), 1);
+            tr(&mut trace, "mdp-policy", format!("{} -> {}", s, a), 1);
             facts.push(Fact {
                 key: format!("mdp:policy:{}", s),
                 value: a.clone(),
@@ -229,19 +282,12 @@ impl CognitionBreed for Mdp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("validate-model") {
-            return Err("first step must be 'validate-model'".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "converged") {
-            return Err("missing 'converged' step".to_string());
-        }
-        if !output.facts.iter().any(|f| f.key.starts_with("mdp:policy:")) {
-            return Err("missing mdp:policy fact".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("mdp-init")?;
+        tq.require_at_least("mdp-iterate", 1)?;
+        self.assert_optimality_fact_present(output)?;
         Ok(())
     }
 }

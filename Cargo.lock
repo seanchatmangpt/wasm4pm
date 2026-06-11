@@ -2750,6 +2750,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "smallvec",
+ "thiserror 1.0.69",
  "tracing",
  "trybuild",
  "wasm-bindgen",

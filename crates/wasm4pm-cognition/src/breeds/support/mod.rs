@@ -23,3 +23,22 @@ pub mod mdp;
 pub mod rng;
 /// S-expression parser (SME structure mapping).
 pub mod sexpr;
+/// Sorted, deduplicated-by-key Fact collection — enforces receipt determinism as a type invariant.
+pub mod sorted_facts;
+/// Typed staged computation with automatic OCEL trace emission.
+pub mod pipeline;
+/// Zero-copy assertion API over a breed's `inference_trace`.
+pub mod trace_query;
+/// Universal anti-cheat oracle trait and harness.
+pub mod oracle;
+/// Breed class supertraits: VerifierBreed, PlannerBreed, ClassifierBreed, OptimizerBreed.
+pub mod breed_class;
+/// Typed complexity-cap enforcement via DomainBound + BoundedBreed trait.
+pub mod domain_bound;
+/// Append-only monotonically-indexed trace sequence.
+pub mod monotonic_trace;
+/// Per-breed [`oracle::BreedOracle`] implementations for the universal
+/// anti-cheat harness. Feature-gated: oracle inputs are test surface, never
+/// production or wasm code.
+#[cfg(all(not(target_arch = "wasm32"), feature = "breed-oracles"))]
+pub mod oracle_impls;

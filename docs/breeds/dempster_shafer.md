@@ -1,41 +1,25 @@
-# DEMPSTER_SHAFER
+# dempster_shafer — Dempster–Shafer Theory of Evidence
 
-## Origin
-- **Paper:** "A Mathematical Theory of Evidence" (1976)
-- **Authors:** Glenn Shafer (rule of combination: Dempster 1967)
-- **Tradition:** Evidence theory, belief functions
+## 1. Identity & Lineage
+Dempster–Shafer theory of evidence — Shafer 1976. BreedId `dempster_shafer`, module `src/breeds/dempster_shafer.rs`.
 
-## Algorithm
-Frame of discernment ≤8 hypotheses as u8 subset bitmasks. Rules sharing an id form one source's basic probability assignment (conclusion = subset, certainty = mass); unassigned mass goes to the full frame (ignorance). Sources fold pairwise under Dempster's rule: products of masses on intersecting subsets, conflict mass K discarded and renormalized by 1−K; K=1 (total conflict) is a run error. Bel(Q) sums masses of subsets ⊆ Q; Pl(Q) sums masses intersecting Q.
+## 2. Algorithm
+Frame of discernment ≤8 hypotheses encoded as u8 bitmasks. Sources are folded pairwise with Dempster's rule of combination with K-normalization. The goal's query subset gets Bel (sum of masses contained) and Pl (sum of masses intersecting).
 
-## Pseudocode
-```
-function run(input):
-    frame = hypotheses from conclusions + query (≤8); emit ds-load-bpa
-    group rules by id into BPAs; top up ignorance to the frame
-    fold sources: combined = dempster(current, next); emit ds-combine (K logged)
-    Bel/Pl over query subset; emit ds-belief
-    output facts belief:<q>, plausibility:<q> at 9 dp
-```
+## 3. Input Contract
+Query subset in goals (predicate `query`). Basic probability assignments (BPA) in rules. `rule.id` groups rules into sources. `rule.certainty` is mass [0,1]. Unassigned mass per source goes to ignorance (full frame).
 
-## Input contract
-- rules: id = source, conclusion = comma-separated subset, certainty = mass ∈ [0,1]
-- goal `query` — comma-separated query subset
+## 4. Output Contract
+Facts `belief:<query>` and `plausibility:<query>` formatted to 9 decimal places. `selected` = "Bel=..., Pl=...".
 
-## Output contract
-- facts `belief:<q>` / `plausibility:<q>`; `selected` = "Bel=…, Pl=…"
-- trace: `ds-load-bpa`(1,1) → `ds-combine`(0,*) → `ds-belief`(1,1)
+## 5. Trace & OCEL Lifecycle
+`ds-load-bpa`(1,1) → `ds-combine`(0,*) → `ds-belief`(1,1). Report fitness 1.0.
 
-## Complexity
-O(s · 2^|frame| squared per fold) — bounded by 8 hypotheses (256 subsets).
+## 6. Oracles
+Refusal: frame > 8 hypotheses / K=1 total conflict / missing query / mass > 1. Hidden: combination correctly normalizes conflict. Paper: Two independent witnesses at 0.9 reliability yield Bel(life) = 0.99.
 
-## Generalization examples
-Witness/sensor fusion, fault diagnosis with explicit ignorance.
+## 7. Determinism & Bounds
+BTreeMap/BTreeSet working sets only. BTreeMap for subset grouping. f64 for mass. Frame size bounded to 8 hypotheses (256 subsets).
 
-## Adversarial coverage
-- Refusal: empty rules, missing query, masses outside [0,1], mass on the empty set
-- Hidden: Bel(flim)+Bel(flam)=0.5<1 (signature subadditivity); two-source combination 0.125/0.625=0.2 to 1e-9; K=1 run error
-- Paper: Shafer 1976 two witnesses at 0.9 → Bel(life)=0.99
-
-## See also
-- `bayesian_network.md`
+## 8. Provenance
+Fixture `tests/fixtures/papers/dempster_shafer.json` (Shafer 1976, two-witness combination).

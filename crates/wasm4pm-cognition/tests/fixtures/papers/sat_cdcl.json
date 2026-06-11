@@ -5,21 +5,48 @@
     "citation": "Marques-Silva, J. P., & Sakallah, K. A. (1999). IEEE Transactions on Computers, 48(5), 506-521.",
     "locus": "Section 3 (conflict analysis): resolving the conflicting clause backwards along antecedent assignments yields a learned conflict clause; non-chronological backtracking to the asserting level.",
     "extraction": "instantiated",
-    "notes": "Pigeonhole PHP(3,2): 3 pigeons, 2 holes — variables p_ij = pigeon i in hole j numbered 1..6 (p11=1, p12=2, p21=3, p22=4, p31=5, p32=6). Provably UNSAT, and no resolution-free (pure DPLL backtrack-only) trace can avoid conflicts: GRASP-style learning must fire at least one learned clause before refutation."
+    "notes": "Pigeonhole PHP(3,2): 3 pigeons, 2 holes \u2014 variables p_ij = pigeon i in hole j numbered 1..6 (p11=1, p12=2, p21=3, p22=4, p31=5, p32=6). Provably UNSAT, and no resolution-free (pure DPLL backtrack-only) trace can avoid conflicts: GRASP-style learning must fire at least one learned clause before refutation."
   },
   "input": {
     "intent": "decide pigeonhole PHP(3,2)",
     "candidates": [],
     "facts": [
-      {"key": "clause:00", "value": "1 2"},
-      {"key": "clause:01", "value": "3 4"},
-      {"key": "clause:02", "value": "5 6"},
-      {"key": "clause:03", "value": "-1 -3"},
-      {"key": "clause:04", "value": "-1 -5"},
-      {"key": "clause:05", "value": "-3 -5"},
-      {"key": "clause:06", "value": "-2 -4"},
-      {"key": "clause:07", "value": "-2 -6"},
-      {"key": "clause:08", "value": "-4 -6"}
+      {
+        "key": "clause:00",
+        "value": "1 2"
+      },
+      {
+        "key": "clause:01",
+        "value": "3 4"
+      },
+      {
+        "key": "clause:02",
+        "value": "5 6"
+      },
+      {
+        "key": "clause:03",
+        "value": "-1 -3"
+      },
+      {
+        "key": "clause:04",
+        "value": "-1 -5"
+      },
+      {
+        "key": "clause:05",
+        "value": "-3 -5"
+      },
+      {
+        "key": "clause:06",
+        "value": "-2 -4"
+      },
+      {
+        "key": "clause:07",
+        "value": "-2 -6"
+      },
+      {
+        "key": "clause:08",
+        "value": "-4 -6"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -27,6 +54,7 @@
     "state": []
   },
   "expected": {
+    "value": "UNSAT",
     "verdict": "UNSAT",
     "min_learned_clauses": 1,
     "notes": "PHP(3,2) is the canonical UNSAT family; the solver must learn at least one conflict clause (each learn-clause trace step carries the resolution certificate from=/pivots= for independent re-derivation)."

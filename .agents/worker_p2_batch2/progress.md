@@ -1,20 +1,23 @@
-# Progress
+# Progress Tracker
 
-Last visited: 2026-06-10T23:53:35-07:00
+Last visited: 2026-06-11T03:30:10Z
 
-- [ ] Initialize and analyze workspace
-- [ ] Implement `partial_order_plan`
-- [ ] Implement `event_calculus`
-- [ ] Implement `mdp`
-- [ ] Implement `version_space`
-- [ ] Register breeds in mod.rs and dispatch.rs
-- [ ] Define static models in models_p2.rs and register them
-- [ ] Author OCPN Petri-net models
-- [ ] Implement negative and hidden oracle tests
-- [ ] Create paper-grounded JSON fixtures and tests
-- [ ] Implement determinism tests and update test count
-- [ ] Add benchmarks
-- [ ] Update packages/cognition schema and vitest tests
-- [ ] Measure OCEL fitness and generate reports
-- [ ] Update registry.json and documentation cards
-- [ ] Run final verification
+- [ ] Analyze existing breeds structure and dependencies
+- [ ] Implement core algorithms:
+  - [ ] partial_order_plan
+  - [ ] event_calculus
+  - [ ] mdp
+  - [ ] version_space
+- [ ] Register the breeds in `mod.rs`, `dispatch.rs`, and `model_sources.rs`
+- [ ] Create/update `models_p2.rs` and register in `crates/wasm4pm-cognition/src/ocel/mod.rs`
+- [ ] Author OCPN Petri-net models in `ocel/models/l1/`
+- [ ] Implement negative tests in `tests/oracle_negative.rs`
+- [ ] Implement hidden oracle tests in `tests/oracle_hidden.rs`
+- [ ] Create paper-grounded JSON fixtures and implement tests in `tests/paper_grounded.rs`
+- [ ] Implement determinism tests in `tests/breed_determinism.rs`
+- [ ] Add benchmark entries in `benches/breed_latency.rs`
+- [ ] Add to TS schemas and Vitest integration tests
+- [ ] Measure OCEL fitness and generate `ocel/reports/`
+- [ ] Flip status in `registry.json`
+- [ ] Generate documentation cards in `docs/breeds/`
+- [ ] Final verification and handoff

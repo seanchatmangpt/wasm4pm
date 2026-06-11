@@ -15,6 +15,7 @@
 
 use std::collections::BTreeMap;
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -259,16 +260,11 @@ impl CognitionBreed for ScriptSam {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("select-script") {
-            return Err("first step must be 'select-script'".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("summary") {
-            return Err("final step must be 'summary'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("select-script")?;
+        tq.require_last("summary")?;
         if !output.facts.iter().any(|f| f.key == "sam:script") {
             return Err("missing sam:script fact".to_string());
         }
