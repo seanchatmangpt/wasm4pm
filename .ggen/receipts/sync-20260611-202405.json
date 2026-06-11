@@ -1,16 +1,16 @@
 {
-  "operation_id": "8f58f4d9-692c-44a3-8c6d-6bd44889e056",
-  "timestamp": "2026-06-11T20:31:59.886362Z",
+  "operation_id": "7a778b43-8667-48a5-9aef-4f24d9485187",
+  "timestamp": "2026-06-11T20:24:05.265738Z",
   "input_hashes": [
     "ggen.toml:1a8de3632344cd8898626a49c48fd27f6f67f49c106499f0fea2f7825c1164b9"
   ],
   "output_hashes": [
     "./crates/wasm4pm-cognition/src/breeds/registration.rs:d14b4d3df117abfb491c2e17b91df34f935fc46228cabf1eec29e29574ae5119",
     "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:73a11cc198998e171bb2ae907531201869f41282acacfe81605b07efdba9508c",
-    "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:e94a7cccbc48e9cdc1f4017b64f4f00dc5b4b4cf76318e7acfbe73838ebfe227",
+    "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:7830038caf99f903f67a29bf7ade8dcad7ea3f1a04ab4d5d0fdda879756858c7",
     "./crates/wasm4pm-cognition/breeds/registry.json:e76199b28c062a4b723068007f492fe946924f3ef880e3eef6c2de7b3a92dbe8",
     "./packages/cognition/src/breed-ids.ts:937497368a97623c15c017d6c5a15526606780c121d29e1defddf643d0a979b3"
   ],
-  "signature": "af5e99aef15c66c46e4f0ca935a1c4c853db37918c3393643f24f62de82f2d823d8c1293a54640f899ae0c26f783f0e5e652c52bf32ec5ed4d4e162365c60f08",
-  "previous_receipt_hash": "a7250d275a216e52b70d2eb096fa3f2cfa436d4cef71ed278c70e173bab1067b"
+  "signature": "04ef4891c4c7f79b154190c729b7b3c45ee851c821da0fef714c64e4c348ee7a87beb5ba452c490847a01b3358d8c32c6b94c696ba81b6ec91339d5e1d72090a",
+  "previous_receipt_hash": "19dacc189460933cf2765973de1e996ca5b5a3f25c91f318c6b8febc3c408520"
 }

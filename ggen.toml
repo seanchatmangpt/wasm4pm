@@ -19,6 +19,8 @@ imports = [
   "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl",
   "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl",
   "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl",
+  "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl",
+  "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl",
   "ggen/ontology/breeds.ttl",
   "ocel/reports/evidence.ttl",
 ]

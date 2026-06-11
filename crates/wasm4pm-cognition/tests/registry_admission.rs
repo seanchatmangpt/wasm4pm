@@ -276,3 +276,25 @@ fn vendored_ocpn_models_match_canonical() {
         );
     }
 }
+
+/// Drill-4 lock: the consumer ontology must never hand-assert breedStatus —
+/// status is derived exclusively by the alive-gate CONSTRUCT from
+/// ocel/reports/evidence.ttl. A hand-asserted status in breeds.ttl leaks
+/// straight into BreedId::ALL and registry.json (verified by tamper drill);
+/// this gate plus every_alive_breed_has_ocpn_and_measured_report close it.
+#[test]
+fn consumer_ontology_never_asserts_breed_status() {
+    for path in ["../../ggen/ontology/breeds.ttl", "../../ocel/reports/evidence.ttl"] {
+        let ttl = std::fs::read_to_string(path)
+            .unwrap_or_else(|_| panic!("consumer ontology {} must exist", path));
+        let asserts_status = ttl
+            .lines()
+            .filter(|l| !l.trim_start().starts_with('#'))
+            .any(|l| l.contains("breedStatus"));
+        assert!(
+            !asserts_status,
+            "{} hand-asserts breedStatus — status must be CONSTRUCT-derived from fitness evidence only",
+            path
+        );
+    }
+}
