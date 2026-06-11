@@ -190,6 +190,11 @@ compat:Breed_meta_reasoning a compat:CognitionBreed ;
   compat:ocelAdmitted true ;
   compat:fitnessProvenance "meta_reasoning-l1-v1" .
 
+compat:Breed_morphological a compat:CognitionBreed ;
+  compat:measuredFitness 1.0 ;
+  compat:ocelAdmitted true ;
+  compat:fitnessProvenance "morphological-l1-v1" .
+
 compat:Breed_mycin a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;
   compat:ocelAdmitted true ;
@@ -199,6 +204,11 @@ compat:Breed_naive_physics a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;
   compat:ocelAdmitted true ;
   compat:fitnessProvenance "naive_physics-l1-v1" .
+
+compat:Breed_ocpm_route_discoverer a compat:CognitionBreed ;
+  compat:measuredFitness 1.0 ;
+  compat:ocelAdmitted true ;
+  compat:fitnessProvenance "ocpm_route_discoverer-l1-v1" .
 
 compat:Breed_partial_order_plan a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;
@@ -259,6 +269,11 @@ compat:Breed_tableaux a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;
   compat:ocelAdmitted true ;
   compat:fitnessProvenance "tableaux-l1-v1" .
+
+compat:Breed_triz a compat:CognitionBreed ;
+  compat:measuredFitness 1.0 ;
+  compat:ocelAdmitted true ;
+  compat:fitnessProvenance "triz-l1-v1" .
 
 compat:Breed_version_space a compat:CognitionBreed ;
   compat:measuredFitness 1.0 ;

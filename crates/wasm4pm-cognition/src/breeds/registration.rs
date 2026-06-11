@@ -116,7 +116,7 @@ impl BreedId {
     /// the alive-gate CONSTRUCT (measured fitness 1.0 + OCEL admission).
     /// A breed enters this list only through an ocel/reports/ entry; the
     /// hand-flip path no longer exists.
-    pub const ALL: [BreedId; 52] = [
+    pub const ALL: [BreedId; 55] = [
         BreedId::AbductiveIbe,
         BreedId::AbductiveLp,
         BreedId::ActR,
@@ -154,8 +154,10 @@ impl BreedId {
         BreedId::MarkovLogic,
         BreedId::Mdp,
         BreedId::MetaReasoning,
+        BreedId::Morphological,
         BreedId::Mycin,
         BreedId::NaivePhysics,
+        BreedId::OcpmRouteDiscoverer,
         BreedId::PartialOrderPlan,
         BreedId::Pomdp,
         BreedId::Problog,
@@ -168,6 +170,7 @@ impl BreedId {
         BreedId::Soar,
         BreedId::Strips,
         BreedId::Tableaux,
+        BreedId::Triz,
         BreedId::VersionSpace,
     ];
 }

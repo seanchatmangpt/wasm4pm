@@ -99,8 +99,10 @@ export const PARTIAL_ALIVE_BREED_IDS = [
   "markov_logic",
   "mdp",
   "meta_reasoning",
+  "morphological",
   "mycin",
   "naive_physics",
+  "ocpm_route_discoverer",
   "partial_order_plan",
   "pomdp",
   "problog",
@@ -113,6 +115,7 @@ export const PARTIAL_ALIVE_BREED_IDS = [
   "soar",
   "strips",
   "tableaux",
+  "triz",
   "version_space",
 ] as const;
 
