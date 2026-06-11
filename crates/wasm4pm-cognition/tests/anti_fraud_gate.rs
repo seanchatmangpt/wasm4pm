@@ -1,6 +1,42 @@
 use std::fs;
 use regex::Regex;
 
+/// Strip ALL inline `#[cfg(test)]` modules/items, not just the first.
+///
+/// A single truncate-at-first-marker (`src.find("#[cfg(test)]")`) is exploitable:
+/// an injected top-level `#[cfg(test)] mod _z {}` near the top of a breed file
+/// would hide the entire algorithm body from the fresh-name sweep. We scan
+/// line-by-line and, at every line whose trimmed text starts with `#[cfg(test)]`,
+/// drop that line and the following brace-balanced block until brace depth
+/// returns to the pre-marker level. Surviving production lines are returned.
+fn strip_cfg_test(src: &str) -> String {
+    let mut out = String::new();
+    let mut lines = src.lines();
+    while let Some(line) = lines.next() {
+        if line.trim_start().starts_with("#[cfg(test)]") {
+            let mut depth: i32 = 0;
+            let mut opened = false;
+            while let Some(cur) = lines.next() {
+                for ch in cur.chars() {
+                    if ch == '{' {
+                        depth += 1;
+                        opened = true;
+                    } else if ch == '}' {
+                        depth -= 1;
+                    }
+                }
+                if opened && depth <= 0 {
+                    break;
+                }
+            }
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+
 fn assert_no_fraud(file_path: &str, names: &[&str]) {
     // Attempt to read from several possible relative locations
     let content = fs::read_to_string(file_path)
@@ -225,11 +261,11 @@ fn anti_fraud_universal_sweep_all_breed_modules() {
             continue;
         }
         let src = fs::read_to_string(&path).expect("breed source readable");
-        // Only production half: inline #[cfg(test)] modules may cite fresh names legally.
-        let prod = match src.find("#[cfg(test)]") {
-            Some(i) => &src[..i],
-            None => src.as_str(),
-        };
+        // Only production half: inline #[cfg(test)] modules may cite fresh names
+        // legally. Strip ALL such modules (not just the first) so an injected
+        // top-level #[cfg(test)] mod _z {} cannot hide the algorithm body.
+        let prod = strip_cfg_test(&src);
+        let prod = prod.as_str();
         for name in &names {
             let re = Regex::new(&format!(r"\b{}\b", name)).unwrap();
             assert!(

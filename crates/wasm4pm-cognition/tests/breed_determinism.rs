@@ -1033,3 +1033,39 @@ fn meta_reasoning_deterministic() {
         ]),
     );
 }
+
+// ---------------------------------------------------------------------------
+// Fixture-backed determinism: breeds whose canonical input lives in the
+// paper fixture (built exactly like tests/ensemble_meta.rs / paper_grounded.rs).
+// ---------------------------------------------------------------------------
+
+fn fixture_input(breed_id: &str) -> BreedInput {
+    let path = format!("tests/fixtures/papers/{}.json", breed_id);
+    let data = std::fs::read_to_string(&path)
+        .unwrap_or_else(|_| panic!("missing fixture: {}", path));
+    let fixture: serde_json::Value =
+        serde_json::from_str(&data).expect("parse fixture json");
+    if fixture.get("input").is_some() {
+        serde_json::from_value(fixture["input"].clone()).expect("deserialize input")
+    } else {
+        serde_json::from_value(fixture).expect("deserialize fixture")
+    }
+}
+
+#[test]
+fn determinism_morphological() {
+    assert_deterministic("morphological", &fixture_input("morphological"));
+}
+
+#[test]
+fn determinism_triz() {
+    assert_deterministic("triz", &fixture_input("triz"));
+}
+
+#[test]
+fn determinism_ocpm_route_discoverer() {
+    assert_deterministic(
+        "ocpm_route_discoverer",
+        &fixture_input("ocpm_route_discoverer"),
+    );
+}

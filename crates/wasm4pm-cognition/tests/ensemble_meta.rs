@@ -6,7 +6,7 @@ use std::fs;
 /// Runs all ADMITTED breeds on their paper fixtures, collects their outputs as meta facts,
 /// and runs the meta_reasoning breed to resolve any conflicts.
 #[test]
-#[ignore = "ensemble verification runs after P4"]
+#[ignore = "requires ADMITTED breeds; registry currently has only PARTIAL_ALIVE entries so admitted_count would be 0 and the ingest-step assertion is vacuous"]
 fn test_full_ensemble_consistency() {
     let registry_data = fs::read_to_string("breeds/registry.json")
         .expect("failed to read registry.json");

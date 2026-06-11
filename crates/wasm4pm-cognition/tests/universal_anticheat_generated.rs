@@ -16,13 +16,44 @@ fn breed_source(module: &str) -> String {
         .unwrap_or_else(|_| panic!("MISSING SOURCE: {} — every pointer-bearing breed must have its module on disk", src_path))
 }
 
-/// Strip inline `#[cfg(test)]` modules: doc-comment examples and unit tests may
-/// legitimately mention paper values; the lock applies to production code only.
-fn production_half(src: &str) -> &str {
-    match src.find("#[cfg(test)]") {
-        Some(i) => &src[..i],
-        None => src,
+/// Strip ALL inline `#[cfg(test)]` modules/items, not just the first.
+///
+/// Doc-comment examples and unit tests may legitimately mention paper values;
+/// the lock applies to production code only. A single truncate-at-first-marker
+/// is exploitable: an injected top-level `#[cfg(test)] mod _z {}` near the top
+/// of the file would hide the entire algorithm body from the lock. We instead
+/// scan line-by-line and, at every line whose trimmed text starts with
+/// `#[cfg(test)]`, drop that line and the following brace-balanced block
+/// (`{ ... }`) until brace depth returns to where it was before the marker.
+/// The surviving production lines are concatenated and returned for searching.
+fn production_half(src: &str) -> String {
+    let mut out = String::new();
+    let mut lines = src.lines();
+    while let Some(line) = lines.next() {
+        if line.trim_start().starts_with("#[cfg(test)]") {
+            // Consume the marker's following brace-balanced block until depth
+            // returns to the pre-marker level (0 net). Drop the whole region.
+            let mut depth: i32 = 0;
+            let mut opened = false;
+            while let Some(cur) = lines.next() {
+                for ch in cur.chars() {
+                    if ch == '{' {
+                        depth += 1;
+                        opened = true;
+                    } else if ch == '}' {
+                        depth -= 1;
+                    }
+                }
+                if opened && depth <= 0 {
+                    break;
+                }
+            }
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
     }
+    out
 }
 
 #[test]
@@ -43,17 +74,15 @@ fn anticheat_abductive_ibe_decoy_1_not_in_source() {
 fn anticheat_abductive_ibe_true_2_not_hardcoded() {
     // Thagard 1978, Sections II–III (Darwin case study)
     // Derivation: expected.score: evolution score = coverage(4) − 0.1·cost(1) = 3.9
-    let value = r#"3.9000"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("abductive_ibe");
-    let needle = format!("{:?}", value);
+    let needle = r#"3.9000"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "abductive_ibe"
     );
@@ -77,17 +106,15 @@ fn anticheat_abductive_lp_decoy_3_not_in_source() {
 fn anticheat_abductive_lp_true_4_not_hardcoded() {
     // Kakas, Kowalski & Toni 1992, Section 1.1 (grass-is-wet example)
     // Derivation: expected.value: two minimal abductive explanations enumerated size-then-lex
-    let value = r#"{rained},{sprinkler_on}"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("abductive_lp");
-    let needle = format!("{:?}", value);
+    let needle = r#"{rained},{sprinkler_on}"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "abductive_lp"
     );
@@ -111,17 +138,15 @@ fn anticheat_act_r_decoy_5_not_in_source() {
 fn anticheat_act_r_true_6_not_hardcoded() {
     // Anderson & Lebiere 1998, Ch. 3 Eq. 3.1 / Ch. 9 addition-fact retrieval
     // Derivation: expected.activation_fact34: A(fact34)=0.5 + 2/3 ≈ 1.1667 (tolerance 0.001)
-    let value = r#"1.1667"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("act_r");
-    let needle = format!("{:?}", value);
+    let needle = r#"1.1667"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "act_r"
     );
@@ -145,17 +170,15 @@ fn anticheat_allen_temporal_decoy_7_not_in_source() {
 fn anticheat_allen_temporal_true_8_not_hardcoded() {
     // Allen 1983, Table 1 (transitivity table), entry meets ; during
     // Derivation: expected.derived['derived:A,C']: m composed with d = (o s d)
-    let value = r#"o|d|s"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("allen_temporal");
-    let needle = format!("{:?}", value);
+    let needle = r#"o|d|s"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "allen_temporal"
     );
@@ -179,17 +202,15 @@ fn anticheat_analogy_sme_decoy_9_not_in_source() {
 fn anticheat_analogy_sme_true_10_not_hardcoded() {
     // Falkenhainer, Forbus & Gentner 1989, Section 5.1, Figures 13–15
     // Derivation: expected.candidate_inference_contains: the unique candidate inference carried over from base:2 with substituted entities
-    let value = r#"(cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("analogy_sme");
-    let needle = format!("{:?}", value);
+    let needle = r#"(cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "analogy_sme"
     );
@@ -213,17 +234,15 @@ fn anticheat_asp_decoy_11_not_in_source() {
 fn anticheat_asp_true_12_not_hardcoded() {
     // Gelfond & Lifschitz 1988, Section 2, Examples 1–2
     // Derivation: expected.answer_set_0: unique stable model {p(1,2), q(1)}
-    let value = r#"p_1_2,q_1"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("asp");
-    let needle = format!("{:?}", value);
+    let needle = r#"p_1_2,q_1"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "asp"
     );
@@ -247,17 +266,15 @@ fn anticheat_autoinstinct_learning_decoy_13_not_in_source() {
 fn anticheat_autoinstinct_learning_true_14_not_hardcoded() {
     // Sussman 1973 (MIT AI TR-297), Chapter II Scenario Sections 1–5, Problems 3.1–3.5
     // Derivation: expected.next_prerequisite: lowest-index unachieved goal g2
-    let value = r#"section-3-space-allocation-compact"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("autoinstinct_learning");
-    let needle = format!("{:?}", value);
+    let needle = r#"section-3-space-allocation-compact"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "autoinstinct_learning"
     );
@@ -281,17 +298,15 @@ fn anticheat_autoinstinct_neurosis_decoy_15_not_in_source() {
 fn anticheat_autoinstinct_neurosis_true_16_not_hardcoded() {
     // Boden 1977, Artificial Intelligence and Natural Man, Chapter 6, pp. 198-212 (conflict detection framework)
     // Derivation: expected.conflict_pairs in the fixture lists exactly 6 mutually incompatible belief pairs; the algorithm must surface all 6 double-binds with status=has_findings
-    let value = r#"conflict_pairs=6"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("autoinstinct_neurosis");
-    let needle = format!("{:?}", value);
+    let needle = r#"conflict_pairs=6"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "autoinstinct_neurosis"
     );
@@ -306,26 +321,6 @@ fn anticheat_autoinstinct_semantics_decoy_17_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "autoinstinct_semantics"
-    );
-}
-
-#[test]
-fn anticheat_autoinstinct_semantics_true_18_not_hardcoded() {
-    // Schank 1972, Cognitive Psychology 3(4), Section 3 'The Primitive Acts', Table 1, pp. 567-571 ('John gave Mary a book')
-    // Derivation: expected.cd_primitive = 'Atrans' — the canonical CD primitive for abstract ownership transfer in the paper's most-cited worked example
-    let value = r#"Atrans"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("autoinstinct_semantics");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "autoinstinct_semantics"
     );
@@ -349,17 +344,15 @@ fn anticheat_autoinstinct_vision_decoy_19_not_in_source() {
 fn anticheat_autoinstinct_vision_true_20_not_hardcoded() {
     // Marr & Poggio 1976, Science 194(4262), Fig. 3 and 'Examples of Applying the Algorithm', p. 285
     // Derivation: expected.iterations_to_convergence = 14: the cooperative network on the 50%-density random-dot stereogram reaches its stable fixed point at iteration 14, with foreground square at disparity +3
-    let value = r#"iterations_to_convergence=14"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("autoinstinct_vision");
-    let needle = format!("{:?}", value);
+    let needle = r#"iterations_to_convergence=14"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "autoinstinct_vision"
     );
@@ -383,17 +376,15 @@ fn anticheat_bayesian_network_decoy_21_not_in_source() {
 fn anticheat_bayesian_network_true_22_not_hardcoded() {
     // Pearl 1988, Probabilistic Reasoning in Intelligent Systems, Ch. 2 burglary/earthquake/alarm network (parameterization as in Russell & Norvig Fig 14.2)
     // Derivation: expected.posterior = 0.284171835 with tolerance 1e-6: exact posterior P(Burglary | JohnCalls=t, MaryCalls=t) by enumeration over the canonical CPTs
-    let value = r#"0.284171835"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("bayesian_network");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.284171835"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "bayesian_network"
     );
@@ -408,26 +399,6 @@ fn anticheat_belief_merging_decoy_23_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "belief_merging"
-    );
-}
-
-#[test]
-fn anticheat_belief_merging_true_24_not_hardcoded() {
-    // Konieczny & Pino Perez 2002, Journal of Logic and Computation 12(5), Sections 5-6 (Sigma vs GMax discriminating profile)
-    // Derivation: expected.gmax_models = ['p,-q','-p,q']: GMax (egalitarian) selects the compromise worlds with leximax vector (1,1,1) over the majority world's (2,0,0); 'p,-q' is the first GMax model and never appears among the Sigma models
-    let value = r#"p,-q"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("belief_merging");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "belief_merging"
     );
@@ -451,17 +422,15 @@ fn anticheat_cbr_decoy_25_not_in_source() {
 fn anticheat_cbr_true_26_not_hardcoded() {
     // Aamodt & Plaza 1994, AI Communications 7(1), section 1.2 p. 2 (physician vignette); CBR cycle Figure 1, p. 8
     // Derivation: expected.retrieved_case = 'CASE-PHYSICIAN-2WK': highest Jaccard similarity (4 of 5 features match: medical/fever/cough/moderate), yielding suggested solution 'antibiotic-course'
-    let value = r#"CASE-PHYSICIAN-2WK"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("cbr");
-    let needle = format!("{:?}", value);
+    let needle = r#"CASE-PHYSICIAN-2WK"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "cbr"
     );
@@ -485,17 +454,15 @@ fn anticheat_circumscription_decoy_27_not_in_source() {
 fn anticheat_circumscription_true_28_not_hardcoded() {
     // McCarthy 1980, Artificial Intelligence 13(1-2), pp. 27-39, Section 4 (birds fly unless abnormal; penguins are abnormal)
     // Derivation: expected.value field verbatim; the unique ab-minimal model is {ab_bird_opus}, so flies_tweety is entailed and flies_opus is not
-    let value = r#"flies_tweety=true,flies_opus=false"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("circumscription");
-    let needle = format!("{:?}", value);
+    let needle = r#"flies_tweety=true,flies_opus=false"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "circumscription"
     );
@@ -533,17 +500,15 @@ fn anticheat_clp_decoy_30_not_in_source() {
 fn anticheat_clp_true_31_not_hardcoded() {
     // Jaffar & Lassez 1987, POPL '87, pp. 111-119, Sections 1-2 (CLP scheme)
     // Derivation: expected.value/solution: propagation on x=y+3, y<4, x in 6..9 yields unique solution x=6,y=3 with 0 backtracks
-    let value = r#"x=6,y=3"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("clp");
-    let needle = format!("{:?}", value);
+    let needle = r#"x=6,y=3"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "clp"
     );
@@ -558,26 +523,6 @@ fn anticheat_construction_grammar_decoy_32_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "construction_grammar"
-    );
-}
-
-#[test]
-fn anticheat_construction_grammar_true_33_not_hardcoded() {
-    // Goldberg 1995, Constructions, Univ. of Chicago Press, Ch. 1-2 (ditransitive construction, 'Pat faxed Bill the letter')
-    // Derivation: expected.meaning_frame: the ditransitive construction (not the verb 'fax') supplies the transfer meaning; coerced=true, slot_rec=bill
-    let value = r#"CAUSE-RECEIVE"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("construction_grammar");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "construction_grammar"
     );
@@ -601,17 +546,15 @@ fn anticheat_contingent_plan_decoy_34_not_in_source() {
 fn anticheat_contingent_plan_true_35_not_hardcoded() {
     // Russell & Norvig 2010 (AIMA 3rd ed.), §4.3.2, AND-OR search in the partially observable vacuum world
     // Derivation: expected.plan_tree: conditional plan 'sense dirt; if dirty then suck else nothing' returned by AND-OR search; sense_nodes=1
-    let value = r#"(sense check-dirt dirt (act suck (done)) (done))"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("contingent_plan");
-    let needle = format!("{:?}", value);
+    let needle = r#"(sense check-dirt dirt (act suck (done)) (done))"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "contingent_plan"
     );
@@ -635,17 +578,15 @@ fn anticheat_csp_ac3_decoy_36_not_in_source() {
 fn anticheat_csp_ac3_true_37_not_hardcoded() {
     // Mackworth 1977, Artificial Intelligence 8(1), 99-118, Section 3 (AC-3) on the canonical inequality network
     // Derivation: expected.explanation: MRV + lexicographic value order + MAC over complete triangle with domains {B,G,R} hand-derives X=B, Y=G, Z=R
-    let value = r#"SAT: X=B, Y=G, Z=R"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("csp_ac3");
-    let needle = format!("{:?}", value);
+    let needle = r#"SAT: X=B, Y=G, Z=R"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "csp_ac3"
     );
@@ -669,17 +610,15 @@ fn anticheat_ctl_check_decoy_38_not_in_source() {
 fn anticheat_ctl_check_true_39_not_hardcoded() {
     // Clarke, Emerson & Sistla 1986, ACM TOPLAS 8(2), 244-263, Sections 4-5 (fixed-point labeling; mutex AG ¬(c1∧c2))
     // Derivation: expected.value='verified' / verdict='holds': no reachable state of the two-process mutex system labels both c1 and c2, so AG !(c1 & c2) holds at s0 with no counterexample
-    let value = r#"verified"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("ctl_check");
-    let needle = format!("{:?}", value);
+    let needle = r#"verified"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "ctl_check"
     );
@@ -703,17 +642,15 @@ fn anticheat_default_logic_decoy_40_not_in_source() {
 fn anticheat_default_logic_true_41_not_hardcoded() {
     // Reiter 1980, Artificial Intelligence 13(1-2), 81-132, Section 1.1 (birds-fly default; Tweety the penguin)
     // Derivation: expected.extension_contains includes not_flies (with bird, penguin) and extension_excludes flies; justification M flies(tweety) is blocked (block_step=true)
-    let value = r#"not_flies"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("default_logic");
-    let needle = format!("{:?}", value);
+    let needle = r#"not_flies"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "default_logic"
     );
@@ -737,17 +674,15 @@ fn anticheat_dempster_shafer_decoy_42_not_in_source() {
 fn anticheat_dempster_shafer_true_43_not_hardcoded() {
     // Shafer 1976, A Mathematical Theory of Evidence, Princeton UP, Ch. 1 / Ch. 4 (two-witness combination, reliability 0.9 each)
     // Derivation: expected.value=expected.belief=0.99: m1(life)=m2(life)=0.9, K=0, combined m(life)=Bel(life)=1-0.1*0.1=0.99 (tolerance 1e-6)
-    let value = r#"0.99"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("dempster_shafer");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.99"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "dempster_shafer"
     );
@@ -771,17 +706,15 @@ fn anticheat_dendral_decoy_44_not_in_source() {
 fn anticheat_dendral_true_45_not_hardcoded() {
     // Feigenbaum, Buchanan & Lederberg 1971 (AIM-131), Tables 4-5 (pp. 21-22); zero-order pruning example p. 15
     // Derivation: expected.correct_structure / rank_of_correct_answer=1: diethyl ketone (3-pentanone) is ranked first by the Planner+Predictor, validated by alpha-cleavage fragments at m/z 57 and 29.
-    let value = r#"ketone-F1-C2H5-C2H5"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("dendral");
-    let needle = format!("{:?}", value);
+    let needle = r#"ketone-F1-C2H5-C2H5"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "dendral"
     );
@@ -805,17 +738,15 @@ fn anticheat_description_logic_decoy_46_not_in_source() {
 fn anticheat_description_logic_true_47_not_hardcoded() {
     // Baader, Brandt & Lutz 2005 (Pushing the EL Envelope, IJCAI), Section 1 medical-ontology example; completion rules Table 2 (CR1-CR4)
     // Derivation: expected.verdicts['dl:verdict:Pericarditis:HeartDisease']='true' — the paper's stated entailment.
-    let value = r#"Pericarditis ⊑ HeartDisease"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("description_logic");
-    let needle = format!("{:?}", value);
+    let needle = r#"Pericarditis ⊑ HeartDisease"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "description_logic"
     );
@@ -839,17 +770,15 @@ fn anticheat_ebl_decoy_48_not_in_source() {
 fn anticheat_ebl_true_49_not_hardcoded() {
     // Mitchell, Keller & Kedar-Cabelli 1986, Machine Learning 1(1):47-80, Section 3 SafeToStack worked example
     // Derivation: expected.rule_contains ['weight(','safe_to_stack('] + rule_excludes ['obj1','obj2'] + has_variable=true: goal-regression yields an operational, variabilized rule over the weight predicates.
-    let value = r#"safe_to_stack(?x,?y) :- weight(?x,light), weight(?y,heavy)"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("ebl");
-    let needle = format!("{:?}", value);
+    let needle = r#"safe_to_stack(?x,?y) :- weight(?x,light), weight(?y,heavy)"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "ebl"
     );
@@ -873,17 +802,15 @@ fn anticheat_eliza_decoy_50_not_in_source() {
 fn anticheat_eliza_true_51_not_hardcoded() {
     // Weizenbaum 1966, CACM 9(1):36-45, opening dialogue p. 36; DOCTOR script Appendix pp. 44-45 (ALIKE rank 10 -> DIT)
     // Derivation: expected.turn_1.eliza_response='IN WHAT WAY' — keyword ALIKE (rank 10, equivalenced to DIT) on 'Men are all alike.'
-    let value = r#"IN WHAT WAY"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("frame");
-    let needle = format!("{:?}", value);
+    let needle = r#"IN WHAT WAY"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "frame"
     );
@@ -907,17 +834,15 @@ fn anticheat_episodic_memory_decoy_52_not_in_source() {
 fn anticheat_episodic_memory_true_53_not_hardcoded() {
     // Tulving 1983 (Elements of Episodic Memory, Ch. 7, temporal organisation); Nuxoll & Laird 2007, AAAI 1560-1565, Section 3 (partial-match retrieval)
     // Derivation: expected.score_dinner=0.6111 = Jaccard 0.5 + temporal kernel 1/(1+|10-2|)=0.1111; breakfast wins at 1.0, so dinner's distinctive runner-up score is the assertable derived value (tol 0.001).
-    let value = r#"0.6111"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("episodic_memory");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.6111"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "episodic_memory"
     );
@@ -941,17 +866,15 @@ fn anticheat_event_calculus_decoy_54_not_in_source() {
 fn anticheat_event_calculus_true_55_not_hardcoded() {
     // Kowalski & Sergot 1986, New Generation Computing 4(1):67-95, Sections 2-5 hired/promoted narrative
     // Derivation: expected.verdicts['ec:verdict:lecturer@7']='false': the lecturer period is clipped by the promote event at t=5, so it does not hold at t=7.
-    let value = r#"lecturer@7=false"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("event_calculus");
-    let needle = format!("{:?}", value);
+    let needle = r#"lecturer@7=false"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "event_calculus"
     );
@@ -975,17 +898,15 @@ fn anticheat_frames_inheritance_decoy_56_not_in_source() {
 fn anticheat_frames_inheritance_true_57_not_hardcoded() {
     // Minsky 1974, MIT AI Lab Memo 306, frame systems / default assignments section
     // Derivation: expected.value='4', walk_steps=2: my_chair has no own legs slot, so inheritance walks my_chair -> chair (2 frames) and returns chair's default legs=4.
-    let value = r#"legs=4 (walk_steps=2)"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("frames_inheritance");
-    let needle = format!("{:?}", value);
+    let needle = r#"legs=4 (walk_steps=2)"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "frames_inheritance"
     );
@@ -1009,17 +930,15 @@ fn anticheat_fuzzy_logic_decoy_58_not_in_source() {
 fn anticheat_fuzzy_logic_true_59_not_hardcoded() {
     // Mamdani & Assilian 1975, Int. J. Man-Machine Studies 7(1), Section 3 (min-implication firing, max aggregation, discrete centroid defuzzification)
     // Derivation: expected.centroid / expected.value: 101-point discrete centroid of Tri(0,25,100) at fire strength 1.0; hand derivation in fixture notes gives sum(x*mu)/sum(mu)=2083.3333/50=41.66667, tolerance 1e-3
-    let value = r#"41.66667"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("fuzzy_logic");
-    let needle = format!("{:?}", value);
+    let needle = r#"41.66667"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "fuzzy_logic"
     );
@@ -1043,17 +962,15 @@ fn anticheat_gps_decoy_60_not_in_source() {
 fn anticheat_gps_true_61_not_hardcoded() {
     // Newell & Simon 1961, RAND P-2257, Fig. 3 (difference table) and Fig. 4 (GPS trace, first part of problem), pp. 3-15
     // Derivation: expected.solution_steps / operators_applied = [R6, R12]: GPS applies R6 to eliminate the horseshoe connective (L1->L2), then R12 to remove double negation (L2->L0)
-    let value = r#"R6,R12"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("gps");
-    let needle = format!("{:?}", value);
+    let needle = r#"R6,R12"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "gps"
     );
@@ -1077,17 +994,15 @@ fn anticheat_hearsay_decoy_62_not_in_source() {
 fn anticheat_hearsay_true_63_not_hardcoded() {
     // Erman, Hayes-Roth, Lesser & Reddy 1980, ACM Computing Surveys 12(2), Section 1.1-1.2, Figures 5a-5h, Step 38 (pp. 222-232)
     // Derivation: expected.final_phrase: complete spanning phrase selected when KS STOP fires at Step 38, credibility 85 over time span 0:225 centiseconds
-    let value = r#"[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("hearsay");
-    let needle = format!("{:?}", value);
+    let needle = r#"[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "hearsay"
     );
@@ -1111,17 +1026,15 @@ fn anticheat_htn_planning_decoy_64_not_in_source() {
 fn anticheat_htn_planning_true_65_not_hardcoded() {
     // Nau et al. 2003, SHOP2, JAIR 20:379-404, Section 2 (total-order decomposition) with the logistics/transport domain
     // Derivation: expected.value / expected.plan: deliver decomposes via method:deliver:by_truck into the unique executable operator sequence load;drive;unload verified by hand replay in fixture notes
-    let value = r#"op:load,op:drive,op:unload"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("htn_planning");
-    let needle = format!("{:?}", value);
+    let needle = r#"op:load,op:drive,op:unload"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "htn_planning"
     );
@@ -1145,17 +1058,15 @@ fn anticheat_ilp_decoy_66_not_in_source() {
 fn anticheat_ilp_true_67_not_hardcoded() {
     // Quinlan 1990, Machine Learning 5(3):239-266, Section 3 (FOIL information gain); the daughter/parent family example
     // Derivation: expected.body_set = {female(V0), parent(V1,V0)} with head daughter(V0,V1), clause_count = 1; one clause covers both positives and excludes all four negatives
-    let value = r#"female(V0), parent(V1,V0)"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("ilp");
-    let needle = format!("{:?}", value);
+    let needle = r#"female(V0), parent(V1,V0)"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "ilp"
     );
@@ -1179,17 +1090,15 @@ fn anticheat_ltl_monitor_decoy_68_not_in_source() {
 fn anticheat_ltl_monitor_true_69_not_hardcoded() {
     // Havelund & Rosu 2001, ASE 2001 pp. 135-143, Section 4 (formula rewriting/progression) and Section 2 (finite-trace LTL semantics)
     // Derivation: expected.verdict=true with expected.progress_steps=4: G (red -> !green) is progressed through all 4 events of the conforming trace and holds at end-of-trace; violating trace yields verdict=false with violating_progress_steps=2
-    let value = r#"progress_steps=4"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("ltl_monitor");
-    let needle = format!("{:?}", value);
+    let needle = r#"progress_steps=4"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "ltl_monitor"
     );
@@ -1213,17 +1122,15 @@ fn anticheat_markov_logic_decoy_70_not_in_source() {
 fn anticheat_markov_logic_true_71_not_hardcoded() {
     // Richardson & Domingos 2006, Machine Learning 62(1-2):107-136, Table 1 / Fig. 1 (smokes/friends MLN, w=1.5 and w=1.1 clauses) grounded for {anna, bob}
     // Derivation: expected.cost = \
-    let value = r#"0.000000"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("markov_logic");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.000000"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "markov_logic"
     );
@@ -1247,17 +1154,15 @@ fn anticheat_mdp_decoy_72_not_in_source() {
 fn anticheat_mdp_true_73_not_hardcoded() {
     // Bellman 1957, Dynamic Programming, Princeton Univ. Press, Ch. III–IV (functional equation / value iteration)
     // Derivation: expected.values.s0 = 1.8; closed-form fixed point of V(s0)=max(0.1+0.9·V(s0), 0+0.9·V(s1)) = max(1.0,1.8)=1.8, optimal action 'go'.
-    let value = r#"1.8"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("mdp");
-    let needle = format!("{:?}", value);
+    let needle = r#"1.8"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "mdp"
     );
@@ -1272,26 +1177,6 @@ fn anticheat_meta_reasoning_decoy_74_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "meta_reasoning"
-    );
-}
-
-#[test]
-fn anticheat_meta_reasoning_true_75_not_hardcoded() {
-    // Cox & Raja (eds.) 2011, Metareasoning: Thinking about Thinking, MIT Press, Ch. 1
-    // Derivation: expected.decision_therapy='gentamicin' / selected='therapy=gentamicin'; confidence-weighted arbitration picks the 0.8-confidence mycin conclusion over the 0.6 prolog one.
-    let value = r#"gentamicin"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("meta_reasoning");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "meta_reasoning"
     );
@@ -1315,17 +1200,15 @@ fn anticheat_morphological_decoy_76_not_in_source() {
 fn anticheat_morphological_true_77_not_hardcoded() {
     // Zwicky, F. 1969, Discovery, Invention, Research Through the Morphological Approach, Macmillan — propulsive system morphology (1947 jet engine field)
     // Derivation: expected.selected includes 'thrust-augmentation-1=translatory-motion'; the exclusion constraint forbids 'no-motion', so the first admissible value is translatory-motion.
-    let value = r#"thrust-augmentation-1=translatory-motion"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("morphological");
-    let needle = format!("{:?}", value);
+    let needle = r#"thrust-augmentation-1=translatory-motion"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "morphological"
     );
@@ -1349,17 +1232,15 @@ fn anticheat_mycin_decoy_78_not_in_source() {
 fn anticheat_mycin_true_79_not_hardcoded() {
     // Shortliffe & Buchanan 1975, Math. Biosciences 23(3–4):351–379, §11.4 p.247 (MB[h,e]=0.7 for the streptococcus rule)
     // Derivation: expected.organism_cf = 0.7; paper states MB[h,e]=0.7 ('7 out of 10' expert certainty, p.238 fn4) for gram-positive+coccus+chains→streptococcus.
-    let value = r#"0.7"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("production_rules");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.7"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "production_rules"
     );
@@ -1383,17 +1264,15 @@ fn anticheat_naive_physics_decoy_80_not_in_source() {
 fn anticheat_naive_physics_true_81_not_hardcoded() {
     // Hayes, P. J. 1985, Naive physics I: ontology for liquids, in Formal Theories of the Commonsense World pp.71–107, Ablex (§4–6, containment/support)
     // Derivation: expected.falls=['cup']; removing the table breaks the cup's direct support, so exactly the cup falls (and water spills).
-    let value = r#"cup"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("naive_physics");
-    let needle = format!("{:?}", value);
+    let needle = r#"cup"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "naive_physics"
     );
@@ -1417,17 +1296,15 @@ fn anticheat_ocpm_route_discoverer_decoy_82_not_in_source() {
 fn anticheat_ocpm_route_discoverer_true_83_not_hardcoded() {
     // van der Aalst, W.M.P. 2019, Object-Centric Process Mining: Dealing with Divergence and Convergence — Route Discovery
     // Derivation: expected.routes['route:o1']='Create->Pay'; object o1 participates in events e1(Create) and e2(Pay) only.
-    let value = r#"Create->Pay"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("ocpm_route_discoverer");
-    let needle = format!("{:?}", value);
+    let needle = r#"Create->Pay"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "ocpm_route_discoverer"
     );
@@ -1451,17 +1328,15 @@ fn anticheat_partial_order_plan_decoy_84_not_in_source() {
 fn anticheat_partial_order_plan_true_85_not_hardcoded() {
     // McAllester & Rosenblitt 1991, Systematic Nonlinear Planning, AAAI-91 pp.634–639 — Sussman anomaly / SNLP causal-link threat resolution
     // Derivation: expected.plan / expected.value = 'put_c_from_a_on_table;put_b_on_c;put_a_on_b'; the interleaved order resolving causal-link threats by promotion/demotion.
-    let value = r#"put_c_from_a_on_table;put_b_on_c;put_a_on_b"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("partial_order_plan");
-    let needle = format!("{:?}", value);
+    let needle = r#"put_c_from_a_on_table;put_b_on_c;put_a_on_b"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "partial_order_plan"
     );
@@ -1485,17 +1360,15 @@ fn anticheat_pomdp_decoy_86_not_in_source() {
 fn anticheat_pomdp_true_87_not_hardcoded() {
     // Kaelbling, Littman & Cassandra 1998, Artificial Intelligence 101(1-2):99-134, §3 (tiger problem)
     // Derivation: expected.belief_tiger_left: posterior P(tiger-left | listen, hear-left) = 0.85*0.5 / (0.85*0.5 + 0.15*0.5) = 0.85 exactly
-    let value = r#"0.850000"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("pomdp");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.850000"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "pomdp"
     );
@@ -1519,17 +1392,15 @@ fn anticheat_problog_decoy_88_not_in_source() {
 fn anticheat_problog_true_89_not_hardcoded() {
     // De Raedt, Kimmig & Toivonen 2007, IJCAI 2007 pp. 2468-2473, Section 2 (distribution semantics)
     // Derivation: expected.value/probability: P(wet) = 1 - (1-0.2)(1-0.2)(1-0.3) = 0.552, tolerance 1e-6; 2^3 = 8 worlds
-    let value = r#"0.552000"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("problog");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.552000"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "problog"
     );
@@ -1553,17 +1424,15 @@ fn anticheat_prolog_decoy_90_not_in_source() {
 fn anticheat_prolog_true_91_not_hardcoded() {
     // Kowalski 1974, IFIP Congress 74 pp. 569-574, Section 9 Figure 2 (parent/ancestor program)
     // Derivation: goal parent(bob-ann) is a direct fact; kernel returns Allow with selected='bob-ann', resolved binding 'ann'
-    let value = r#"bob-ann"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("prolog");
-    let needle = format!("{:?}", value);
+    let needle = r#"bob-ann"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "prolog"
     );
@@ -1587,17 +1456,15 @@ fn anticheat_qualitative_reason_decoy_92_not_in_source() {
 fn anticheat_qualitative_reason_true_93_not_hardcoded() {
     // de Kleer & Brown 1984, Artificial Intelligence 24(1-3):7-83, Sections 1-3 (pressure-regulator valve confluence dQ = dP + dA)
     // Derivation: expected.q_values: ambiguous sign sum + ⊕ - forces exactly three envisionment branches dQ ∈ {+, 0, -}; expected.state_count = 3
-    let value = r#"+,0,-"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("qualitative_reason");
-    let needle = format!("{:?}", value);
+    let needle = r#"+,0,-"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "qualitative_reason"
     );
@@ -1621,17 +1488,15 @@ fn anticheat_rl_symbolic_decoy_94_not_in_source() {
 fn anticheat_rl_symbolic_true_95_not_hardcoded() {
     // Watkins & Dayan 1992, Machine Learning 8(3-4):279-292, Theorem p. 281 (Q-learning convergence; Q*(s,a) = r + γ max Q*)
     // Derivation: expected.q_s0_stay = 0.9: Q*(s0,stay) = 0 + 0.9·Q*(s0,go) = 0.9 with Q*(s0,go)=1.0; greedy policy_s0 = 'go', tolerance 0.05
-    let value = r#"0.9"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("rl_symbolic");
-    let needle = format!("{:?}", value);
+    let needle = r#"0.9"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "rl_symbolic"
     );
@@ -1646,26 +1511,6 @@ fn anticheat_sat_cdcl_decoy_96_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "sat_cdcl"
-    );
-}
-
-#[test]
-fn anticheat_sat_cdcl_true_97_not_hardcoded() {
-    // Marques-Silva & Sakallah 1999, IEEE Trans. Computers 48(5):506-521, Section 3 (conflict analysis / non-chronological backtracking)
-    // Derivation: expected.value/verdict = UNSAT for pigeonhole PHP(3,2), with min_learned_clauses = 1 (at least one learned conflict clause must fire)
-    let value = r#"UNSAT"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("sat_cdcl");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "sat_cdcl"
     );
@@ -1689,17 +1534,15 @@ fn anticheat_script_sam_decoy_98_not_in_source() {
 fn anticheat_script_sam_true_99_not_hardcoded() {
     // Schank & Abelson 1977, Scripts, Plans, Goals and Understanding, Chapter 3 (the $RESTAURANT script; John/lobster story)
     // Derivation: expected.inferred = {sam:inferred:eat: john}, script = 'restaurant', inferred_count = 1, role customer = john; the unstated eating scene is the inferred gap
-    let value = r#"sam:inferred:eat"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("script_sam");
-    let needle = format!("{:?}", value);
+    let needle = r#"sam:inferred:eat"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "script_sam"
     );
@@ -1723,17 +1566,15 @@ fn anticheat_situation_calculus_decoy_100_not_in_source() {
 fn anticheat_situation_calculus_true_101_not_hardcoded() {
     // Reiter 1991, Sections 2-3 (successor-state axioms, blocks-world pickup/putdown example), in Lifschitz (Ed.), Papers in Honor of John McCarthy, pp. 359-380
     // Derivation: expected.value — final holding fluents after do(putdown_a, do(pickup_a, S0)) via Reiter successor-state axioms
-    let value = r#"on_a_table,on_b_table,clear_a,clear_b,handempty,color_b_red"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("situation_calculus");
-    let needle = format!("{:?}", value);
+    let needle = r#"on_a_table,on_b_table,clear_a,clear_b,handempty,color_b_red"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "situation_calculus"
     );
@@ -1757,17 +1598,15 @@ fn anticheat_soar_decoy_102_not_in_source() {
 fn anticheat_soar_true_103_not_hardcoded() {
     // Laird, Newell & Rosenbloom 1987, Artificial Intelligence 33(1), Section 2.3 (pp. 14-20), p. 17: single 'best' preference operator is selected; eight-puzzle Figures 3-5
     // Derivation: expected.selected_operator — 'best' preference dominates acceptables; 'worse' eliminates down; right inapplicable
-    let value = r#"op-move-blank-up"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("soar");
-    let needle = format!("{:?}", value);
+    let needle = r#"op-move-blank-up"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "soar"
     );
@@ -1791,17 +1630,15 @@ fn anticheat_strips_decoy_104_not_in_source() {
 fn anticheat_strips_true_105_not_hardcoded() {
     // Fikes & Nilsson 1971, Artificial Intelligence 2(3-4), Section 2 (p. 191) — world model, goal G, operators O1..On; room-navigation domain of Section 3
     // Derivation: expected.plan joined with commas — 2-step forward-search plan; goals ordered light=on then door1=closed
-    let value = r#"turn-on-light,close-door1"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("strips");
-    let needle = format!("{:?}", value);
+    let needle = r#"turn-on-light,close-door1"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "strips"
     );
@@ -1816,26 +1653,6 @@ fn anticheat_tableaux_decoy_106_not_in_source() {
     assert!(
         !production_half(&src).contains(needle),
         "ANTI-CHEAT A8/A12: decoy value {:?} found literally in {}.rs — algorithms must derive values, not hardcode miscitations",
-        needle,
-        "tableaux"
-    );
-}
-
-#[test]
-fn anticheat_tableaux_true_107_not_hardcoded() {
-    // Smullyan 1968, First-Order Logic, Part I Ch. II — Analytic Tableaux; F(A -> (B -> A)) closes using only alpha rules (beta_expansions = 0)
-    // Derivation: expected.verdict / expected.selected — K axiom tableau closes with zero beta (branching) expansions
-    let value = r#"valid"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
-    let src = breed_source("tableaux");
-    let needle = format!("{:?}", value);
-    assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "tableaux"
     );
@@ -1859,17 +1676,15 @@ fn anticheat_triz_decoy_108_not_in_source() {
 fn anticheat_triz_true_109_not_hardcoded() {
     // Altshuller 1984, Creativity as an Exact Science, Contradiction Matrix (improving weight vs worsening strength, per fixture rule matrix_1_2)
     // Derivation: expected.principles — matrix cell conclusion 'principles=40,26' for improving=weight, worsening=strength
-    let value = r#"40,26"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("triz");
-    let needle = format!("{:?}", value);
+    let needle = r#"40,26"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "triz"
     );
@@ -1893,17 +1708,15 @@ fn anticheat_version_space_decoy_110_not_in_source() {
 fn anticheat_version_space_true_111_not_hardcoded() {
     // Mitchell 1982, Artificial Intelligence 18(2), Sections 3-4 (candidate-elimination); EnjoySport worked instance in Mitchell 1997 ML, Ch. 2, Tables 2.1/2.5
     // Derivation: expected.s — final specific boundary S4 after the four EnjoySport examples
-    let value = r#"Sunny,Warm,?,Strong,?,?"#;
-    // The hardcode lock applies to DERIVED values (numerics): a verdict
-    // vocabulary string ("UNSAT", "valid") legitimately exists as a literal.
-    if value.parse::<f64>().is_err() {
-        return;
-    }
+    // Lockability is decided by the wasm4pm-compat lock-audit (compat:hardcodeLockable),
+    // NOT by whether the value parses as a float. The full published literal is
+    // currently absent from production, so this lock is a true constraint with
+    // no false positive: the algorithm must DERIVE the answer, not hardcode it.
     let src = breed_source("version_space");
-    let needle = format!("{:?}", value);
+    let needle = r#"Sunny,Warm,?,Strong,?,?"#;
     assert!(
-        !production_half(&src).contains(&needle),
-        "ANTI-CHEAT A8: published value {} appears as a string literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
+        !production_half(&src).contains(needle),
+        "ANTI-CHEAT A8: published value {:?} appears as a literal in {}.rs production code — it must be DERIVED by the algorithm, not hardcoded",
         needle,
         "version_space"
     );

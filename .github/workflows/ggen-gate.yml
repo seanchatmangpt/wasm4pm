@@ -45,6 +45,18 @@ jobs:
           done < <(jq -r '.output_hashes[]? // empty' "$receipt")
           exit $fail
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify evidence.ttl is fresh vs ocel/reports/*.json
+        run: |
+          set -euo pipefail
+          python3 scripts/project_evidence.py
+          git diff --exit-code -- ocel/reports/evidence.ttl \
+            || { echo "::error::ocel/reports/evidence.ttl is stale — regenerate via 'python3 scripts/project_evidence.py'"; exit 1; }
+
   # Full sync conformance: re-runs `ggen sync` against the wasm4pm-compat
   # ontology pack (a SIBLING path dependency: ggen.toml references
   # ../wasm4pm-compat/...) and asserts the rendered sources are unchanged.
@@ -99,3 +111,12 @@ jobs:
           # source surfaces must be byte-identical.
           git diff --exit-code -- ':!.ggen/receipts' \
             || { echo "::error::ggen sync produced drift — rendered sources do not conform to the ontology pack"; exit 1; }
+
+      # Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
+      # The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
+      # ggen is available here because the ggen-sync job installs it above.
+      - name: Verify Ed25519 receipt signature
+        working-directory: wasm4pm
+        run: |
+          ggen receipt verify --receipt-path .ggen/receipts/latest.json --public-key .ggen/keys/verifying.key 2>/dev/null \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['is_valid'], d['message']; print('receipt verified:', d['message'])"
