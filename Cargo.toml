@@ -4,7 +4,7 @@ resolver = "2"
 members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq"]
 
 [workspace.package]
-version = "26.6.9"
+version = "26.6.10"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
@@ -24,11 +24,11 @@ tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 wasm4pm-compat = { version = "26.6.8" }
-wasm4pm = { version = "26.6.9", path = "wasm4pm", features = ["cloud"] }
-wasm4pm-cognition = { version = "26.6.9", path = "crates/wasm4pm-cognition" }
-prolog8 = { version = "26.6.9", path = "crates/prolog8" }
-miniml = { version = "26.6.9", path = "crates/miniml-core" }
-ocpq = { version = "26.6.9", path = "crates/ocpq" }
+wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
+wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.6.10", path = "crates/prolog8" }
+miniml = { version = "26.6.10", path = "crates/miniml-core" }
+ocpq = { version = "26.6.10", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 tempfile = "3.8"
