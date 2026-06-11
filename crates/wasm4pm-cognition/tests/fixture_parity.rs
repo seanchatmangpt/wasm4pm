@@ -25,9 +25,10 @@ fn test_fixture_parity() {
 
 #[test]
 fn test_breed_id_schema_parity() {
-    // The test ensures the TS BreedIdSchema has the same variants as BreedId::ALL
-    let schema_file = "../../packages/cognition/src/schemas.ts";
-    let schema_content = fs::read_to_string(schema_file).expect("failed to read schemas.ts");
+    // The TS BreedIdSchema consumes the ggen-generated PARTIAL_ALIVE_BREED_IDS
+    // (breed-ids.ts); check the generated surface, which is the source of truth.
+    let schema_file = "../../packages/cognition/src/breed-ids.ts";
+    let schema_content = fs::read_to_string(schema_file).expect("failed to read breed-ids.ts");
 
     for breed in BreedId::ALL {
         let breed_str = breed.to_string();

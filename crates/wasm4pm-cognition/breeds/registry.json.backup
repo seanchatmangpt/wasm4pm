@@ -263,7 +263,7 @@
     "breed_name": "Morphological",
     "historical_ancestor": "See src/breeds/morphological.rs",
     "status": "UNSUPPORTED",
-    "standing": "REGISTERED"
+    "standing": "PENDING"
   },
   {
     "breed_id": "mycin",
@@ -284,7 +284,7 @@
     "breed_name": "OcpmRouteDiscoverer",
     "historical_ancestor": "See src/breeds/ocpm_route_discoverer.rs",
     "status": "UNSUPPORTED",
-    "standing": "REGISTERED"
+    "standing": "PENDING"
   },
   {
     "breed_id": "partial_order_plan",
@@ -375,7 +375,7 @@
     "breed_name": "Triz",
     "historical_ancestor": "See src/breeds/triz.rs",
     "status": "UNSUPPORTED",
-    "standing": "REGISTERED"
+    "standing": "PENDING"
   },
   {
     "breed_id": "version_space",

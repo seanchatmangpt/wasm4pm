@@ -7,6 +7,7 @@
 //! `crates/wasm4pm-cognition/src/wasm.rs`.
 
 import { z } from 'zod';
+import { PARTIAL_ALIVE_BREED_IDS } from './breed-ids.js';
 
 // =============================================================================
 // Foundational data
@@ -61,63 +62,7 @@ export type StateAtom = z.infer<typeof StateAtomSchema>;
 // Breed catalogue (returned by cognition_show)
 // =============================================================================
 
-export const BreedIdSchema = z.enum([
-  'eliza',
-  'cbr',
-  'dendral',
-  'strips',
-  'prolog',
-  'mycin',
-  'gps',
-  'soar',
-  'hearsay',
-  'autoinstinct_neurosis',
-  'autoinstinct_semantics',
-  'autoinstinct_vision',
-  'autoinstinct_learning',
-  'ltl_monitor',
-  'allen_temporal',
-  'fuzzy_logic',
-  'bayesian_network',
-  'csp_ac3',
-  'default_logic',
-  'htn_planning',
-  'dempster_shafer',
-  'frames_inheritance',
-  'ebl',
-  'asp',
-  'description_logic',
-  'abductive_lp',
-  'abductive_ibe',
-  'partial_order_plan',
-  'event_calculus',
-  'mdp',
-  'version_space',
-  'belief_merging',
-  'qualitative_reason',
-  'script_sam',
-  'clp',
-  'situation_calculus',
-  'circumscription',
-  'analogy_sme',
-  'act_r',
-  'problog',
-  'sat_cdcl',
-  'episodic_memory',
-  'rl_symbolic',
-  'ctl_check',
-  'ilp',
-  'naive_physics',
-  'tableaux',
-  'construction_grammar',
-  'markov_logic',
-  'pomdp',
-  'contingent_plan',
-  'meta_reasoning',
-  'morphological',
-  'triz',
-  'ocpm_route_discoverer',
-]);
+export const BreedIdSchema = z.enum(PARTIAL_ALIVE_BREED_IDS);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 
 export const BreedDescriptorSchema = z.object({

@@ -105,15 +105,24 @@ fn all_const_and_ts_schema_mirror_registry() {
         "BreedId::ALL must equal the registry PARTIAL_ALIVE set"
     );
 
+    // schemas.ts consumes the ggen-generated PARTIAL_ALIVE_BREED_IDS; parse the
+    // generated surface directly (breed-ids.ts) so this gate covers the actual
+    // source of truth and any hand-edit to it.
     let schemas = std::fs::read_to_string("../../packages/cognition/src/schemas.ts")
         .expect("schemas.ts readable");
-    let enum_block = schemas
-        .split("BreedIdSchema = z.enum([")
+    assert!(
+        schemas.contains("z.enum(PARTIAL_ALIVE_BREED_IDS)"),
+        "BreedIdSchema must consume the generated PARTIAL_ALIVE_BREED_IDS"
+    );
+    let breed_ids_ts = std::fs::read_to_string("../../packages/cognition/src/breed-ids.ts")
+        .expect("generated breed-ids.ts readable");
+    let enum_block = breed_ids_ts
+        .split("PARTIAL_ALIVE_BREED_IDS = [")
         .nth(1)
-        .and_then(|s| s.split("])").next())
-        .expect("BreedIdSchema enum block");
+        .and_then(|s| s.split(']').next())
+        .expect("PARTIAL_ALIVE_BREED_IDS block");
     let ts_ids: BTreeSet<String> = enum_block
-        .split('\'')
+        .split('"')
         .skip(1)
         .step_by(2)
         .map(|s| s.to_string())
