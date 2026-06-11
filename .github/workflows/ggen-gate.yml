@@ -80,6 +80,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: seanchatmangpt/wasm4pm-compat
+          # Pinned to compat main HEAD for reproducible sync (G7). Bump
+          # deliberately when the ontology pack advances.
+          ref: 9bffd6625b7e55ea2b5e25d3370fc33b797e6745
           path: wasm4pm-compat
 
       - name: Setup Rust
@@ -91,12 +94,18 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/ggen
-          key: ggen-bin-${{ runner.os }}-26.5
+          key: ggen-bin-${{ runner.os }}-git-555f857ac5dc
 
       - name: Install ggen
         run: |
+          # Pin ggen to a git rev until 26.6.x is published on crates.io.
+          # crates.io currently has NO ggen release, so `cargo install ggen`
+          # cannot resolve. The binary `ggen` lives in package `ggen-cli-lib`
+          # (path crates/ggen-cli) of seanchatmangpt/ggen (G4).
           if ! command -v ggen >/dev/null; then
-            cargo install ggen --locked
+            cargo install --git https://github.com/seanchatmangpt/ggen \
+              --rev 555f857ac5dcf236eba0121d0833bb764a782e3a \
+              --bin ggen ggen-cli-lib --locked
           fi
           ggen --version
 

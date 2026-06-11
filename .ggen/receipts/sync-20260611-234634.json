@@ -1,6 +1,6 @@
 {
-  "operation_id": "ed8e2d10-3d05-4807-8876-69b3a63f661f",
-  "timestamp": "2026-06-11T23:52:35.612878Z",
+  "operation_id": "c29cc489-191f-4fa2-8c39-0667ead564fb",
+  "timestamp": "2026-06-11T23:46:34.296281Z",
   "input_hashes": [
     "actuator:ggen-sync@26.6.9",
     "ggen.toml:22936d0e8401428469889ed429f7fd0cdf88eea8019853a291ad8b56db0d6f5b",
@@ -11,16 +11,16 @@
     "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl:ec257d944799c6834683874134ead188606f3820adf0028de311c4ac91928255",
     "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl:c045b785f399735da07931b83cbad7099bda352d1640e4862d3074b7d8197225",
     "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl:7eef8efd8df67d039fa454043d90a44c95c5a2bf716e6b91e44fcbf289ccc3f3",
-    "ggen/ontology/breeds.ttl:471b50111e5e3a09c4f2f2286bbe3bb5e816ce95dcc6c150812cf9d8dc18a123",
+    "ggen/ontology/breeds.ttl:443280fe2c9a33e7507e3231a50a587dfb273e0c940e475f9db1cb46fbd1ddab",
     "ocel/reports/evidence.ttl:492395fa75cccf8ec2551dbdbb340a49e2bd76b01f663e2d2947cd2f7e9cfdc2"
   ],
   "output_hashes": [
-    "./crates/wasm4pm-cognition/src/breeds/registration.rs:e650978c1952e5542580700898db7f90e1d29c3da5f45a36683febffd417fa96",
-    "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:34cdd6dc4af25e3b315f004730482a0ca6742940c80eff91c30ea933b3bc7d1a",
+    "./crates/wasm4pm-cognition/src/breeds/registration.rs:446c20d7dd2e6a267f0ba9a59cb336b681b5a9c5804ffc8c887c9e0fdeacc5c9",
+    "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:b330cd64b0b392261685c2a9edae50461be635800416e6f0e2c8d70d350d4a8c",
     "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:56d545227531e0429ad85482efba0b41733c4b40c12adc947dd8d5a92bd34150",
-    "./crates/wasm4pm-cognition/breeds/registry.json:37fa635b878fb689f642a4af664f93c53ffb503add2b25453a8a6596860e5836",
+    "./crates/wasm4pm-cognition/breeds/registry.json:88392b7d0ae568b18f66e1a39e8f649a86752ea8fdefd2302dcabbcc5bf97faf",
     "./packages/cognition/src/breed-ids.ts:0cae447da38256dd3bb1a784d6399481ad341f285e5124f71221640da221ab8a"
   ],
-  "signature": "a7dac0097b510e1181e690889f3d83075091a7f9287560c2197e480c2a18b650af427d3c0dfa8bf87f148e868deb178c90aa7588abb486f2b283f3eed879800a",
-  "previous_receipt_hash": "acb8873304fad5a1d6d54ab8647b29bcc2f472d2ec4af3824dba1093b96f5150"
+  "signature": "f431705282d03487a68ae91237e9bb72de8077cd3b07426246d7be09ef5aae36747b490551c5e1fe2f109e498740084148297996254eca1a7c9658e9c5253108",
+  "previous_receipt_hash": "e1529b521c26badd2b4d5c51007d36bba1fca73c749f43f443c1c843c1cfd7ca"
 }

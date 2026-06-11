@@ -1,6 +1,6 @@
 {
-  "operation_id": "ed8e2d10-3d05-4807-8876-69b3a63f661f",
-  "timestamp": "2026-06-11T23:52:35.612878Z",
+  "operation_id": "82fefca6-019d-4607-a2fa-6636bc8c16ba",
+  "timestamp": "2026-06-11T23:49:33.659383Z",
   "input_hashes": [
     "actuator:ggen-sync@26.6.9",
     "ggen.toml:22936d0e8401428469889ed429f7fd0cdf88eea8019853a291ad8b56db0d6f5b",
@@ -16,11 +16,11 @@
   ],
   "output_hashes": [
     "./crates/wasm4pm-cognition/src/breeds/registration.rs:e650978c1952e5542580700898db7f90e1d29c3da5f45a36683febffd417fa96",
-    "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:34cdd6dc4af25e3b315f004730482a0ca6742940c80eff91c30ea933b3bc7d1a",
+    "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:b330cd64b0b392261685c2a9edae50461be635800416e6f0e2c8d70d350d4a8c",
     "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:56d545227531e0429ad85482efba0b41733c4b40c12adc947dd8d5a92bd34150",
     "./crates/wasm4pm-cognition/breeds/registry.json:37fa635b878fb689f642a4af664f93c53ffb503add2b25453a8a6596860e5836",
     "./packages/cognition/src/breed-ids.ts:0cae447da38256dd3bb1a784d6399481ad341f285e5124f71221640da221ab8a"
   ],
-  "signature": "a7dac0097b510e1181e690889f3d83075091a7f9287560c2197e480c2a18b650af427d3c0dfa8bf87f148e868deb178c90aa7588abb486f2b283f3eed879800a",
-  "previous_receipt_hash": "acb8873304fad5a1d6d54ab8647b29bcc2f472d2ec4af3824dba1093b96f5150"
+  "signature": "49dd0150776e8baf2adbfd3db3815d05fcc602ab6cbf86c832c9ad6e1dd9d399f4d54eefe45489ff541950594789ae51388b17ae67f39b9a235aec664df8490d",
+  "previous_receipt_hash": "eb840d8e346682b2f399db7772270fd9393932c77d4bb0f1a87fc9a7244e1e94"
 }

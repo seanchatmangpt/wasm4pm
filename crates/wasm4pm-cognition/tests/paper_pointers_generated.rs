@@ -25,10 +25,18 @@ fn assert_real_fixture(breed_id: &str) {
         "SKELETON FIXTURE: {} still carries the generated placeholder — fill it from the paper",
         breed_id
     );
-    let has_provenance = raw.contains("provenance") || raw.contains("citation") || raw.contains("paper");
+    // Structural provenance: a top-level "provenance" or "paper" key, OR an
+    // "expected" object carrying a nested provenance. This requires a real JSON
+    // key — a bare substring "paper" in some unrelated field's value no longer
+    // satisfies this (A12 citation-without-assertion).
+    let has_provenance = v.get("provenance").is_some()
+        || v.get("paper").is_some()
+        || v.get("expected")
+            .and_then(|e| e.get("provenance"))
+            .is_some();
     assert!(
         has_provenance,
-        "NO PROVENANCE: fixture for {} cites no paper/citation/provenance — A12 citation-without-assertion",
+        "NO PROVENANCE: fixture for {} has no structural provenance key (top-level \"provenance\" or expected.provenance) — A12 citation-without-assertion",
         breed_id
     );
 }
