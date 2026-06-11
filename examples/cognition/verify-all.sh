@@ -221,7 +221,20 @@ echo ""
 echo ">>> Stage 4 PASS: All chain receipts verified successfully."
 echo ""
 
+echo "--------------------------------------------------------"
+echo " Stage 5: Auditing Exported OCEL Conformance"
+echo "--------------------------------------------------------"
+
+if ! bash "$SCRIPT_DIR/validate-ocel-conformance.sh"; then
+    echo "ERROR: OCEL Conformance audit failed." >&2
+    exit 1
+fi
+
+echo ""
+echo ">>> Stage 5 PASS: All exported OCEL traces conform to their lifecycle models."
+echo ""
+
 echo "========================================================"
-echo " AUDIT COMPLETE: ALL CHECKS PASSED SUCCESSFULLY (Exit 0)"
+echo " AUDIT COMPLETE WITH OCEL CONFORMANCE: ALL CHECKS PASSED SUCCESSFULLY (Exit 0)"
 echo "========================================================"
 exit 0
