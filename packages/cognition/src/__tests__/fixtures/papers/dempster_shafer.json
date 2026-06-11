@@ -1,40 +1,50 @@
 {
   "breed": "dempster_shafer",
   "provenance": {
-    "paper": "Shafer-1976-Mathematical-Theory-of-Evidence.pdf",
-    "citation": "G. Shafer (1976). A Mathematical Theory of Evidence. Princeton University Press.",
-    "locus": "Chapter 3, Dempster's Rule of Combination",
-    "extraction": "grounded"
+    "paper": "Shafer 1976",
+    "citation": "Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press.",
+    "locus": "Chapter 1 / Chapter 4 \u2014 the two-witness combination example: two independent witnesses each of reliability 0.9 supporting the same proposition.",
+    "extraction": "exact combination arithmetic",
+    "notes": "m1(life)=0.9 with 0.1 explicitly on the frame {life,death}; same for witness2. No conflict (K=0). Combined m(life) = 1 - 0.1*0.1 = 0.99 exactly; Bel(life)=0.99. Tolerance 1e-6 (not 1e-9) because BPA masses enter through f32 rule certainties and 0.9 is not exactly representable in binary floating point."
   },
   "input": {
-    "intent": "evaluate belief",
-    "candidates": [],
-    "facts": [],
-    "cases": [],
+    "intent": "combine two witnesses",
     "rules": [
       {
-        "id": "source1",
+        "id": "witness1",
         "premise": [],
-        "conclusion": "flim",
-        "certainty": 0.6
+        "conclusion": "life",
+        "certainty": 0.9
       },
       {
-        "id": "source2",
+        "id": "witness1",
         "premise": [],
-        "conclusion": "flam",
-        "certainty": 0.7
+        "conclusion": "life,death",
+        "certainty": 0.1
+      },
+      {
+        "id": "witness2",
+        "premise": [],
+        "conclusion": "life",
+        "certainty": 0.9
+      },
+      {
+        "id": "witness2",
+        "premise": [],
+        "conclusion": "life,death",
+        "certainty": 0.1
       }
     ],
     "goals": [
       {
         "id": "query",
         "predicate": "query",
-        "value": "flim"
+        "value": "life"
       }
-    ],
-    "state": []
+    ]
   },
   "expected": {
-    "belief": 0.310344
+    "belief": 0.99,
+    "tolerance": 1e-06
   }
 }

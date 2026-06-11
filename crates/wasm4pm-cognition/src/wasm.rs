@@ -16,13 +16,7 @@ use crate::autosystems::dimension::DimensionSpec;
 use crate::autosystems::dominance::{reject_dominated, DomainProfile};
 use crate::autosystems::findings::FindingRegistry;
 use crate::autosystems::receipt::ReceiptChain;
-use crate::breeds::{
-    autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
-    autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
-    prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
-    CognitionBreed,
-};
+use crate::breeds::{BreedError, BreedInput, BreedOutput};
 use crate::evidence::check_trace_laws;
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
@@ -42,6 +36,15 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
     let s = serde_json::to_string(val)
         .map_err(|e| wasm_err(&format!("Serialization failed: {}", e)))?;
     Ok(js_val(&s))
+}
+
+/// Dispatch to the correct breed's `run()` method.
+///
+/// Delegates to `crate::breeds::dispatch::dispatch_breed`, which enforces the
+/// full lifecycle (preconditions → run → postconditions → OCEL conformance
+/// gate) so the empty-trace fraud signal is caught at the WASM boundary.
+fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    crate::breeds::dispatch::dispatch_breed(breed, input)
 }
 
 /// JSON-backed evidence source for adversarial detection.
@@ -135,8 +138,7 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
 /// Return BLAKE3 hex of the L1 OCPN model JSON for a known breed, or
 /// "model-not-yet-defined" if no model file exists for the breed.
 fn compute_model_hash(breed: &str) -> String {
-    let json: Option<&str> = crate::ocel::model_sources::model_source(breed);
-    match json {
+    match crate::ocel::model_sources::model_source(breed) {
         Some(s) => blake3::hash(s.as_bytes()).to_hex().to_string(),
         None => "model-not-yet-defined".to_string(),
     }
@@ -162,8 +164,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     // Compute input hash before dispatch (covers raw request bytes).
     let input_hash = blake3::hash(input_json.as_bytes()).to_hex().to_string();
 
-    /// Dispatch to the breed's run() method.
-        let output = crate::breeds::dispatch::dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
+    // Dispatch to the breed's run() method.
+    let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
     // Compute deterministic hashes over the actual BreedOutput.
     let output_payload = serde_json::to_string(&output)
@@ -201,13 +203,13 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     // Build conformance summary — run_breed() already enforced the F7 gate,
     // so if we reach here conformance passed. Re-derive actual fitness from ocel_log.
     let conformance_summary = if let Some(ref ocel_log) = output.ocel_log {
-        if let Some(model) = crate::ocel::get_model(&input.breed) {
+        if let Some(model) = crate::ocel::lifecycle_model_for(&input.breed) {
             let ocel: crate::ocel::OcelLog = serde_json::from_value(ocel_log.clone())
                 .unwrap_or_else(|_| crate::ocel::OcelLog {
                     object_types: vec![],
                     event_types: vec![],
-                    events: vec![],
                     objects: vec![],
+                    events: vec![],
                 });
             let result = crate::ocel::validate_ocel_alignment(&ocel, model);
             serde_json::json!({

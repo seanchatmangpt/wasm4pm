@@ -1,61 +1,100 @@
-//! Mitchell's Candidate Elimination Version Space boundary tracker (Mitchell 1982).
+//! Version-space candidate elimination (Mitchell, "Generalization as Search",
+//! Artificial Intelligence 18(2), 1982).
 //!
-//! Steps: `vs-init`, `vs-update`, `vs-verdict`.
-//! Enforces General (G) and Specific (S) boundary constraints.
+//! Conjunctive hypotheses over nominal attributes. Hypothesis language:
+//! each attribute slot is a specific value, `?` (any), or `0` (bottom / no
+//! value). The S boundary is a single maximally-specific hypothesis; the G
+//! boundary is a set of maximally-general hypotheses.
+//!
+//! Input facts:
+//! - `vs:attrs`        value "a1,a2,..."                 — attribute names
+//! - `vs:example:<i>`  value "v1,v2,...:+" or "...:-"    — training examples
+//!   (processed in ascending numeric order of <i>)
+//!
+//! Positive example: minimally generalize S; prune G members not covering it.
+//! Negative example: minimally specialize each covering G member using values
+//! from S; prune non-maximal and S-incompatible specializations. Boundary
+//! collapse (S over-generalized past G, or G empty) is an error.
 
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::{HashMap, HashSet};
 
-/// Version Space Breed
+/// Maximum number of attributes.
+const MAX_ATTRS: usize = 12;
+/// Maximum number of examples.
+const MAX_EXAMPLES: usize = 64;
+
+/// Mitchell candidate-elimination breed.
 pub struct VersionSpace;
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-struct Hypothesis {
-    constraints: Vec<String>,
+type Hyp = Vec<String>; // per-attribute: value | "?" | "0"
+
+fn covers(h: &Hyp, ex: &[String]) -> bool {
+    h.iter()
+        .zip(ex.iter())
+        .all(|(s, v)| s == "?" || (s != "0" && s == v))
 }
 
-impl Hypothesis {
-    fn more_general_or_equal(&self, other: &Hypothesis) -> bool {
-        for (c1, c2) in self.constraints.iter().zip(other.constraints.iter()) {
-            if c1 == "?" {
-                continue;
-            }
-            if c2 == "Ø" {
-                continue;
-            }
-            if c1 == "Ø" {
-                if c2 != "Ø" {
-                    return false;
-                }
-            } else if c1 != c2 {
-                return false;
-            }
-        }
-        true
-    }
-
-    fn matches(&self, instance: &[String]) -> bool {
-        for (c, v) in self.constraints.iter().zip(instance.iter()) {
-            if c == "Ø" {
-                return false;
-            }
-            if c == "?" {
-                continue;
-            }
-            if c != v {
-                return false;
-            }
-        }
-        true
-    }
+/// h1 more-general-or-equal h2.
+fn more_general_eq(h1: &Hyp, h2: &Hyp) -> bool {
+    h1.iter().zip(h2.iter()).all(|(a, b)| {
+        a == "?" || (a != "0" && a == b) || b == "0"
+    })
 }
 
-#[derive(Clone, Debug)]
-struct Example {
-    values: Vec<String>,
-    label: bool,
+fn render(h: &Hyp) -> String {
+    format!("<{}>", h.join(","))
+}
+
+struct Parsed {
+    attrs: Vec<String>,
+    examples: Vec<(Vec<String>, bool)>,
+}
+
+fn parse(input: &BreedInput) -> Result<Parsed, String> {
+    let attrs: Vec<String> = input
+        .facts
+        .iter()
+        .find(|f| f.key == "vs:attrs")
+        .ok_or("missing vs:attrs fact")?
+        .value
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect();
+    let mut indexed: Vec<(usize, Vec<String>, bool)> = Vec::new();
+    for f in &input.facts {
+        if let Some(i) = f.key.strip_prefix("vs:example:") {
+            let idx: usize = i
+                .parse()
+                .map_err(|_| format!("malformed vs:example index '{}'", i))?;
+            let (vals, label) = f
+                .value
+                .rsplit_once(':')
+                .ok_or_else(|| format!("malformed example '{}' (need values:+/-)", f.value))?;
+            let pos = match label.trim() {
+                "+" => true,
+                "-" => false,
+                other => return Err(format!("malformed example label '{}'", other)),
+            };
+            let values: Vec<String> = vals.split(',').map(|s| s.trim().to_string()).collect();
+            if values.len() != attrs.len() {
+                return Err(format!(
+                    "example {} has {} values but {} attributes",
+                    idx,
+                    values.len(),
+                    attrs.len()
+                ));
+            }
+            indexed.push((idx, values, pos));
+        }
+    }
+    indexed.sort_by_key(|(i, _, _)| *i);
+    Ok(Parsed {
+        attrs,
+        examples: indexed.into_iter().map(|(_, v, p)| (v, p)).collect(),
+    })
 }
 
 impl CognitionBreed for VersionSpace {
@@ -64,263 +103,321 @@ impl CognitionBreed for VersionSpace {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["learning".to_string(), "classification".to_string(), "version_space".to_string()]
+        vec![
+            "candidate-elimination".to_string(),
+            "s-g-boundary-maintenance".to_string(),
+            "concept-convergence".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let has_attributes = input.facts.iter().any(|f| f.key == "attribute");
-        let has_examples = input.facts.iter().any(|f| f.key == "example");
-        if !has_attributes || !has_examples {
-            return Err("Version Space requires attribute declarations and example facts".to_string());
+        let p = parse(input)?;
+        if p.attrs.is_empty() {
+            return Err("vs:attrs must list at least one attribute".to_string());
+        }
+        if p.attrs.len() > MAX_ATTRS {
+            return Err(format!("attribute count {} exceeds cap {}", p.attrs.len(), MAX_ATTRS));
+        }
+        if p.examples.is_empty() {
+            return Err("version_space requires at least one vs:example:* fact".to_string());
+        }
+        if p.examples.len() > MAX_EXAMPLES {
+            return Err(format!(
+                "example count {} exceeds cap {}",
+                p.examples.len(),
+                MAX_EXAMPLES
+            ));
+        }
+        if !p.examples.iter().any(|(_, pos)| *pos) {
+            return Err("version_space requires at least one positive example".to_string());
         }
         Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut trace = Vec::new();
+        let p = parse(input).map_err(|m| BreedError {
+            breed: BreedId::VersionSpace,
+            message: m,
+        })?;
+        let n = p.attrs.len();
 
-        // Parse attributes and their domains
-        let mut attr_names = Vec::new();
-        let mut attr_domains = HashMap::new();
-        for fact in &input.facts {
-            if fact.key == "attribute" {
-                if let Some(colon) = fact.value.find(':') {
-                    let name = fact.value[..colon].trim().to_string();
-                    let values: Vec<String> = fact
-                        .value[colon + 1..]
-                        .split(',')
-                        .map(|s| s.trim().to_string())
-                        .collect();
-                    attr_names.push(name.clone());
-                    attr_domains.insert(name, values);
-                }
-            }
-        }
-
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "vs-init".to_string(),
-            detail: format!(
-                "Version Space initialized: attributes={:?}",
-                attr_names
-            ),
-            depth: 0,
-            objects: vec![],
-        });
-
-        // Parse examples
-        let mut examples = Vec::new();
-        for fact in &input.facts {
-            if fact.key == "example" {
-                let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
-                if parts.len() > 1 {
-                    let label_str = parts.last().unwrap().to_lowercase();
-                    let label = label_str == "positive"
-                        || label_str == "+"
-                        || label_str == "1"
-                        || label_str == "true";
-
-                    let mut val_map = HashMap::new();
-                    for part in &parts[..parts.len() - 1] {
-                        if let Some(eq) = part.find('=') {
-                            let k = part[..eq].trim().to_string();
-                            let v = part[eq + 1..].trim().to_string();
-                            val_map.insert(k, v);
-                        }
-                    }
-
-                    let mut values = Vec::new();
-                    for attr in &attr_names {
-                        let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
-                        values.push(val);
-                    }
-                    examples.push(Example { values, label });
-                }
-            }
-        }
-
-        // Initialize S and G sets
-        let mut s_set = HashSet::new();
-        s_set.insert(Hypothesis {
-            constraints: vec!["Ø".to_string(); attr_names.len()],
-        });
-
-        let mut g_set = HashSet::new();
-        g_set.insert(Hypothesis {
-            constraints: vec!["?".to_string(); attr_names.len()],
-        });
-
-        // Update loop
-        for (idx, example) in examples.iter().enumerate() {
-            if example.label {
-                // Positive example
-                g_set.retain(|g| g.matches(&example.values));
-
-                let mut new_s = HashSet::new();
-                for s in &s_set {
-                    if s.matches(&example.values) {
-                        new_s.insert(s.clone());
-                    } else {
-                        let mut generalized = s.constraints.clone();
-                        for i in 0..generalized.len() {
-                            if generalized[i] == "Ø" {
-                                generalized[i] = example.values[i].clone();
-                            } else if generalized[i] != example.values[i] {
-                                generalized[i] = "?".to_string();
-                            }
-                        }
-                        let h_gen = Hypothesis {
-                            constraints: generalized,
-                        };
-                        if g_set.iter().any(|g| g.more_general_or_equal(&h_gen)) {
-                            new_s.insert(h_gen);
-                        }
-                    }
-                }
-
-                let mut minimal_s = HashSet::new();
-                for h1 in &new_s {
-                    let mut keep = true;
-                    for h2 in &new_s {
-                        if h1 != h2 && h1.more_general_or_equal(h2) {
-                            keep = false;
-                            break;
-                        }
-                    }
-                    if keep {
-                        minimal_s.insert(h1.clone());
-                    }
-                }
-                s_set = minimal_s;
-            } else {
-                // Negative example
-                s_set.retain(|s| !s.matches(&example.values));
-
-                let mut new_g = HashSet::new();
-                for g in &g_set {
-                    if !g.matches(&example.values) {
-                        new_g.insert(g.clone());
-                    } else {
-                        for i in 0..g.constraints.len() {
-                            if g.constraints[i] == "?" {
-                                let attr_name = &attr_names[i];
-                                if let Some(domain) = attr_domains.get(attr_name) {
-                                    for val in domain {
-                                        if val != &example.values[i] {
-                                            let mut specialized = g.constraints.clone();
-                                            specialized[i] = val.clone();
-                                            let h_spec = Hypothesis {
-                                                constraints: specialized,
-                                            };
-                                            if s_set.iter().any(|s| h_spec.more_general_or_equal(s)) {
-                                                new_g.insert(h_spec);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-
-                let mut maximal_g = HashSet::new();
-                for h1 in &new_g {
-                    let mut keep = true;
-                    for h2 in &new_g {
-                        if h1 != h2 && h2.more_general_or_equal(h1) {
-                            keep = false;
-                            break;
-                        }
-                    }
-                    if keep {
-                        maximal_g.insert(h1.clone());
-                    }
-                }
-                g_set = maximal_g;
-            }
-
+        let mut trace: Vec<TraceStep> = Vec::new();
+        let mut step = 0usize;
+        let mut tr = |trace: &mut Vec<TraceStep>, kind: &str, detail: String, depth: u32| {
             trace.push(TraceStep {
-                step: trace.len(),
-                kind: "vs-update".to_string(),
-                detail: format!(
-                    "Update {}: S={:?}, G={:?}",
-                    idx + 1,
-                    s_set.iter().map(|h| h.constraints.clone()).collect::<Vec<_>>(),
-                    g_set.iter().map(|h| h.constraints.clone()).collect::<Vec<_>>()
-                ),
-                depth: 0,
+                step,
+                kind: kind.to_string(),
+                detail,
+                depth,
                 objects: vec![],
             });
-        }
+            step += 1;
+        };
 
-        // Parse classify target
-        let mut classify_instance = None;
-        for fact in &input.facts {
-            if fact.key == "classify" {
-                let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
-                let mut val_map = HashMap::new();
-                for part in &parts {
-                    if let Some(eq) = part.find('=') {
-                        let k = part[..eq].trim().to_string();
-                        let v = part[eq + 1..].trim().to_string();
-                        val_map.insert(k, v);
-                    }
-                }
-                let mut values = Vec::new();
-                for attr in &attr_names {
-                    let val = val_map.get(attr).cloned().unwrap_or_else(|| "?".to_string());
-                    values.push(val);
-                }
-                classify_instance = Some(values);
-            }
-        }
-
-        let mut verdict = "unknown".to_string();
-        if let Some(instance) = &classify_instance {
-            let matches_all_s = !s_set.is_empty() && s_set.iter().all(|s| s.matches(instance));
-            let matches_any_g = g_set.iter().any(|g| g.matches(instance));
-            if matches_all_s {
-                verdict = "positive".to_string();
-            } else if !matches_any_g {
-                verdict = "negative".to_string();
-            }
-        }
-
-        let explanation = format!(
-            "Version Space boundaries: S_size={}, G_size={}. Classification: {}",
-            s_set.len(),
-            g_set.len(),
-            verdict
+        let mut s: Hyp = vec!["0".to_string(); n];
+        let mut g: Vec<Hyp> = vec![vec!["?".to_string(); n]];
+        tr(
+            &mut trace,
+            "init-boundaries",
+            format!("S={}, G={{{}}}", render(&s), render(&g[0])),
+            0,
         );
 
-        trace.push(TraceStep {
-            step: trace.len(),
-            kind: "vs-verdict".to_string(),
-            detail: explanation.clone(),
-            depth: 0,
-            objects: vec![],
+        for (i, (ex, pos)) in p.examples.iter().enumerate() {
+            if *pos {
+                tr(
+                    &mut trace,
+                    "process-positive",
+                    format!("example {} <{}>", i, ex.join(",")),
+                    1,
+                );
+                // Minimally generalize S to cover ex.
+                if !covers(&s, ex) {
+                    for j in 0..n {
+                        if s[j] == "0" {
+                            s[j] = ex[j].clone();
+                        } else if s[j] != "?" && s[j] != ex[j] {
+                            s[j] = "?".to_string();
+                        }
+                    }
+                    tr(&mut trace, "generalize-s", format!("S := {}", render(&s)), 2);
+                }
+                // Prune G members that fail to cover the positive example.
+                let before = g.len();
+                g.retain(|h| covers(h, ex));
+                if g.len() != before {
+                    tr(
+                        &mut trace,
+                        "prune",
+                        format!("G pruned {} -> {} (non-covering)", before, g.len()),
+                        2,
+                    );
+                }
+            } else {
+                tr(
+                    &mut trace,
+                    "process-negative",
+                    format!("example {} <{}>", i, ex.join(",")),
+                    1,
+                );
+                if covers(&s, ex) {
+                    return Err(BreedError {
+                        breed: BreedId::VersionSpace,
+                        message: format!(
+                            "version space collapsed: S {} covers negative example {}",
+                            render(&s),
+                            i
+                        ),
+                    });
+                }
+                // Specialize each covering G member.
+                let mut new_g: Vec<Hyp> = Vec::new();
+                for h in &g {
+                    if !covers(h, ex) {
+                        new_g.push(h.clone());
+                        continue;
+                    }
+                    for j in 0..n {
+                        if h[j] == "?" && s[j] != "0" && s[j] != "?" && s[j] != ex[j] {
+                            let mut h2 = h.clone();
+                            h2[j] = s[j].clone();
+                            tr(
+                                &mut trace,
+                                "specialize-g",
+                                format!("{} -> {}", render(h), render(&h2)),
+                                2,
+                            );
+                            new_g.push(h2);
+                        }
+                    }
+                }
+                // Prune: keep only maximal members, more general than or equal to S.
+                let before = new_g.len();
+                new_g.retain(|h| more_general_eq(h, &s));
+                new_g.sort();
+                new_g.dedup();
+                let snapshot = new_g.clone();
+                new_g.retain(|h| {
+                    !snapshot
+                        .iter()
+                        .any(|h2| h2 != h && more_general_eq(h2, h))
+                });
+                if new_g.len() != before {
+                    tr(
+                        &mut trace,
+                        "prune",
+                        format!("G pruned {} -> {} (non-maximal / below S)", before, new_g.len()),
+                        2,
+                    );
+                }
+                g = new_g;
+                if g.is_empty() {
+                    return Err(BreedError {
+                        breed: BreedId::VersionSpace,
+                        message: format!("version space collapsed: G empty after example {}", i),
+                    });
+                }
+            }
+            // Record boundary sizes for auditability.
+            tr(
+                &mut trace,
+                "prune",
+                format!("|S|=1 S={}, |G|={}", render(&s), g.len()),
+                1,
+            );
+        }
+
+        let converged = g.len() == 1 && g[0] == s;
+        if converged {
+            tr(&mut trace, "converged", format!("S == G == {}", render(&s)), 0);
+        } else {
+            tr(
+                &mut trace,
+                "boundaries-final",
+                format!(
+                    "S={}, G={{{}}}",
+                    render(&s),
+                    g.iter().map(|h| render(h)).collect::<Vec<_>>().join(", ")
+                ),
+                0,
+            );
+        }
+
+        let mut facts = vec![Fact {
+            key: "vs:s".to_string(),
+            value: s.join(","),
+        }];
+        for (i, h) in g.iter().enumerate() {
+            facts.push(Fact {
+                key: format!("vs:g:{}", i),
+                value: h.join(","),
+            });
+        }
+        facts.push(Fact {
+            key: "vs:converged".to_string(),
+            value: converged.to_string(),
         });
 
         Ok(BreedOutput {
-            breed: self.id(),
+            breed: BreedId::VersionSpace,
             candidates: input.candidates.clone(),
-            facts: input.facts.clone(),
-            selected: Some(verdict),
-            explanation,
+            facts,
+            selected: Some(s.join(",")),
+            explanation: format!(
+                "Candidate elimination over {} examples: S={}, |G|={}, converged={}.",
+                p.examples.len(),
+                render(&s),
+                g.len(),
+                converged
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("Version Space must record update steps".to_string());
+            return Err("empty inference trace (FM-5 fraud signal)".to_string());
         }
-        let kinds: HashSet<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        if !kinds.contains("vs-init") || !kinds.contains("vs-update") || !kinds.contains("vs-verdict") {
-            return Err("Version Space trace missing required kinds".to_string());
+        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("init-boundaries") {
+            return Err("first step must be 'init-boundaries'".to_string());
+        }
+        let last = output.inference_trace.last().map(|t| t.kind.as_str());
+        if last != Some("converged") && last != Some("boundaries-final") {
+            return Err("final step must be 'converged' or 'boundaries-final'".to_string());
+        }
+        if !output.facts.iter().any(|f| f.key == "vs:s") {
+            return Err("missing vs:s fact".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fact(key: &str, value: &str) -> Fact {
+        Fact {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+
+    fn input(facts: Vec<Fact>) -> BreedInput {
+        BreedInput {
+            intent: "learn concept".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    /// Mitchell's EnjoySport: final S = <Sunny,Warm,?,Strong,?,?>,
+    /// intermediate |G| = 3 after the negative example, final |G| = 2.
+    #[test]
+    fn enjoysport_mitchell_1982() {
+        let facts = vec![
+            fact("vs:attrs", "sky,airtemp,humidity,wind,water,forecast"),
+            fact("vs:example:1", "Sunny,Warm,Normal,Strong,Warm,Same:+"),
+            fact("vs:example:2", "Sunny,Warm,High,Strong,Warm,Same:+"),
+            fact("vs:example:3", "Rainy,Cold,High,Strong,Warm,Change:-"),
+            fact("vs:example:4", "Sunny,Warm,High,Strong,Cool,Change:+"),
+        ];
+        let out = VersionSpace.run(&input(facts)).unwrap();
+        let s = out.facts.iter().find(|f| f.key == "vs:s").unwrap();
+        assert_eq!(s.value, "Sunny,Warm,?,Strong,?,?");
+        let g: Vec<&str> = out
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("vs:g:"))
+            .map(|f| f.value.as_str())
+            .collect();
+        assert_eq!(g.len(), 2);
+        assert!(g.contains(&"Sunny,?,?,?,?,?"));
+        assert!(g.contains(&"?,Warm,?,?,?,?"));
+        // Intermediate |G| = 3 after the negative example (Mitchell 1982 G3).
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "prune" && t.detail.contains("|G|=3")));
+    }
+
+    /// Convergence: S == G after enough examples.
+    #[test]
+    fn convergence_s_equals_g() {
+        let facts = vec![
+            fact("vs:attrs", "shape,size,color"),
+            fact("vs:example:1", "round,big,red:+"),
+            fact("vs:example:2", "square,small,red:-"),
+            fact("vs:example:3", "round,big,blue:+"),
+            fact("vs:example:4", "round,small,blue:-"),
+            fact("vs:example:5", "square,big,green:+"),
+        ];
+        let out = VersionSpace.run(&input(facts)).unwrap();
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "vs:converged" && f.value == "true"));
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "vs:s" && f.value == "?,big,?"));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "converged"));
+    }
+
+    /// Collapse: contradictory labels are refused at run time.
+    #[test]
+    fn collapse_on_contradiction() {
+        let facts = vec![
+            fact("vs:attrs", "a"),
+            fact("vs:example:1", "x:+"),
+            fact("vs:example:2", "x:-"),
+        ];
+        assert!(VersionSpace.run(&input(facts)).is_err());
     }
 }

@@ -1,10 +1,61 @@
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
-};
-use std::collections::HashSet;
+//! ASP: Answer Set Programming via Gelfond–Lifschitz stable-model semantics
+//! (Gelfond & Lifschitz, "The Stable Model Semantics for Logic Programming",
+//! ICLP/SLP 1988).
+//!
+//! Self-contained (prolog8 has no negation-as-failure): the program is the
+//! input `rules` vector, where a premise atom prefixed with `"not "` is a
+//! negation-as-failure literal. A rule with an empty premise is a fact.
+//!
+//! Algorithm: enumerate every candidate set M over the (≤12) atoms as a u32
+//! bitmask in ascending order; build the Gelfond–Lifschitz reduct P^M (drop
+//! rules with a NAF literal `not b` where b ∈ M, strip remaining NAF
+//! literals); compute the least Horn model of the reduct via
+//! `support::closure::forward_close`; accept iff the least model equals M.
 
-/// Answer Set Programming (stable models) breed.
+use std::collections::BTreeSet;
+
+use crate::breeds::support::closure::{forward_close, HornRule};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+
+/// Maximum number of distinct atoms (2^12 = 4096 candidate sets).
+const MAX_ATOMS: usize = 12;
+
+/// ASP breed: Gelfond–Lifschitz stable models by candidate enumeration.
 pub struct Asp;
+
+/// Strip a `"not "` prefix, returning (is_naf, atom).
+fn parse_literal(lit: &str) -> (bool, &str) {
+    match lit.strip_prefix("not ") {
+        Some(atom) => (true, atom.trim()),
+        None => (false, lit.trim()),
+    }
+}
+
+/// Collect the sorted atom universe of a program.
+fn atom_universe(input: &BreedInput) -> BTreeSet<String> {
+    let mut atoms = BTreeSet::new();
+    for r in &input.rules {
+        atoms.insert(r.conclusion.trim().to_string());
+        for p in &r.premise {
+            let (_, a) = parse_literal(p);
+            atoms.insert(a.to_string());
+        }
+    }
+    atoms
+}
+
+/// Render a candidate bitmask as a sorted comma-joined atom set.
+fn render_set(mask: u32, atoms: &[String]) -> String {
+    let mut parts: Vec<&str> = Vec::new();
+    for (i, a) in atoms.iter().enumerate() {
+        if mask & (1 << i) != 0 {
+            parts.push(a);
+        }
+    }
+    parts.join(",")
+}
 
 impl CognitionBreed for Asp {
     fn id(&self) -> BreedId {
@@ -13,198 +64,170 @@ impl CognitionBreed for Asp {
 
     fn capabilities(&self) -> Vec<String> {
         vec![
-            "answer_set_programming".to_string(),
-            "stable_models".to_string(),
-            "gelfond_lifschitz_reduct".to_string(),
-            "negation_as_failure".to_string(),
+            "stable-model-semantics".to_string(),
+            "negation-as-failure".to_string(),
+            "answer-set-enumeration".to_string(),
         ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        if input.rules.is_empty() && input.facts.is_empty() {
-            return Err("ASP requires at least one rule or fact".to_string());
+        if input.rules.is_empty() {
+            return Err("ASP requires at least one program rule".to_string());
+        }
+        let atoms = atom_universe(input);
+        if atoms.len() > MAX_ATOMS {
+            return Err(format!(
+                "ASP atom universe {} exceeds cap {} (2^n candidate enumeration)",
+                atoms.len(),
+                MAX_ATOMS
+            ));
+        }
+        for r in &input.rules {
+            if r.conclusion.trim().is_empty() {
+                return Err(format!("rule '{}' has empty conclusion", r.id));
+            }
+            if r.conclusion.trim().starts_with("not ") {
+                return Err(format!(
+                    "rule '{}' has NAF literal in head (not allowed in normal programs)",
+                    r.id
+                ));
+            }
         }
         Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut trace = Vec::new();
-        let mut step_count = 0;
+        let atoms: Vec<String> = atom_universe(input).into_iter().collect();
+        let n = atoms.len();
+        let idx_of = |a: &str| atoms.iter().position(|x| x == a).unwrap_or(usize::MAX);
 
-        trace.push(TraceStep {
-            step: step_count,
-            kind: "asp-load".to_string(),
-            detail: format!("Loaded {} rules, {} facts", input.rules.len(), input.facts.len()),
-            depth: 0,
-            objects: vec![],
-        });
-        step_count += 1;
-
-        // 1. Gather all unique atoms
-        let mut all_atoms = HashSet::new();
-        for r in &input.rules {
-            all_atoms.insert(r.conclusion.clone());
-            for p in &r.premise {
-                if let Some(atom) = p.strip_prefix("not ") {
-                    all_atoms.insert(atom.trim().to_string());
-                } else {
-                    all_atoms.insert(p.clone());
-                }
-            }
-        }
-        for f in &input.facts {
-            if !f.value.is_empty() {
-                all_atoms.insert(f.value.clone());
-            }
-            if !f.key.is_empty() && f.key != "relation" {
-                all_atoms.insert(f.key.clone());
-            }
-        }
-        for c in &input.candidates {
-            all_atoms.insert(c.id.clone());
-        }
-
-        let mut atoms_list: Vec<String> = all_atoms.into_iter().collect();
-        atoms_list.sort();
-
-        trace.push(TraceStep {
-            step: step_count,
-            kind: "asp-solve".to_string(),
-            detail: format!("Solving over {} atoms: {:?}", atoms_list.len(), atoms_list),
-            depth: 0,
-            objects: vec![],
-        });
-        step_count += 1;
-
-        // 2. Generate stable models
-        let mut stable_models = Vec::new();
-        let n_atoms = atoms_list.len();
-        
-        if n_atoms <= 16 {
-            let limit = 1 << n_atoms;
-            for mask in 0..limit {
-                let mut interpretation = HashSet::new();
-                for i in 0..n_atoms {
-                    if (mask & (1 << i)) != 0 {
-                        interpretation.insert(atoms_list[i].clone());
-                    }
-                }
-
-                // Compute Gelfond-Lifschitz reduct P^I
-                let mut reduct_rules = Vec::new();
-
-                // Facts
-                for f in &input.facts {
-                    if !f.value.is_empty() {
-                        reduct_rules.push((f.value.clone(), Vec::new()));
-                    }
-                    if !f.key.is_empty() && f.key != "relation" {
-                        reduct_rules.push((f.key.clone(), Vec::new()));
-                    }
-                }
-
-                let mut rule_ok = true;
-                for r in &input.rules {
-                    let mut pos_premises = Vec::new();
-                    let mut discard = false;
-                    for p in &r.premise {
-                        if let Some(atom) = p.strip_prefix("not ") {
-                            let atom_trimmed = atom.trim();
-                            if interpretation.contains(atom_trimmed) {
-                                discard = true;
-                                break;
-                            }
-                        } else {
-                            pos_premises.push(p.clone());
-                        }
-                    }
-                    if !discard {
-                        reduct_rules.push((r.conclusion.clone(), pos_premises));
-                    }
-                }
-
-                // Compute least model of P^I
-                let mut least_model = HashSet::new();
-                loop {
-                    let mut added = false;
-                    for (head, premises) in &reduct_rules {
-                        if !least_model.contains(head) {
-                            let all_met = premises.iter().all(|p| least_model.contains(p));
-                            if all_met {
-                                least_model.insert(head.clone());
-                                added = true;
-                            }
-                        }
-                    }
-                    if !added {
-                        break;
-                    }
-                }
-
-                // If interpretation == least_model, then interpretation is stable!
-                if interpretation == least_model {
-                    let mut model_atoms: Vec<String> = interpretation.into_iter().collect();
-                    model_atoms.sort();
-                    stable_models.push(model_atoms);
-                }
-            }
-        } else {
-            return Err(BreedError {
-                breed: BreedId::Asp,
-                message: format!("Too many atoms for exact ASP solver (max 16, got {})", n_atoms),
-            });
-        }
-
-        // Trace stable models
-        for (idx, model) in stable_models.iter().enumerate() {
+        let mut trace: Vec<TraceStep> = Vec::new();
+        let mut step = 0usize;
+        let mut tr = |trace: &mut Vec<TraceStep>, kind: &str, detail: String, depth: u32| {
             trace.push(TraceStep {
-                step: step_count,
-                kind: "asp-model".to_string(),
-                detail: format!("Model {}: {:?}", idx, model),
-                depth: 0,
+                step,
+                kind: kind.to_string(),
+                detail,
+                depth,
                 objects: vec![],
             });
-            step_count += 1;
-        }
+            step += 1;
+        };
 
-        // Set up output facts and selection
-        let mut out_facts = Vec::new();
-        out_facts.push(Fact {
-            key: "stable_models_count".to_string(),
-            value: stable_models.len().to_string(),
-        });
+        tr(
+            &mut trace,
+            "ground",
+            format!("{} atoms, {} rules", n, input.rules.len()),
+            0,
+        );
 
-        let mut selected = None;
-        let mut candidates = input.candidates.clone();
+        let mut answer_sets: Vec<u32> = Vec::new();
+        for mask in 0u32..(1u32 << n) {
+            tr(
+                &mut trace,
+                "guess-candidate",
+                format!("M={{{}}}", render_set(mask, &atoms)),
+                1,
+            );
 
-        if let Some(first_model) = stable_models.first() {
-            for (i, atom) in first_model.iter().enumerate() {
-                out_facts.push(Fact {
-                    key: format!("model_0_{}", i),
-                    value: atom.clone(),
-                });
-            }
-
-            for cand in &mut candidates {
-                if first_model.contains(&cand.id) {
-                    cand.score = 1.0;
-                    if selected.is_none() {
-                        selected = Some(cand.id.clone());
+            // Gelfond–Lifschitz reduct P^M
+            let mut reduct: Vec<HornRule> = Vec::new();
+            let mut dropped = 0usize;
+            'rules: for r in &input.rules {
+                let mut premises: Vec<String> = Vec::new();
+                for p in &r.premise {
+                    let (naf, atom) = parse_literal(p);
+                    if naf {
+                        let i = idx_of(atom);
+                        if i != usize::MAX && mask & (1 << i) != 0 {
+                            dropped += 1;
+                            continue 'rules; // not b fails: b ∈ M, drop rule
+                        }
+                        // not b succeeds: strip the literal
+                    } else {
+                        premises.push(atom.to_string());
                     }
                 }
+                reduct.push(HornRule {
+                    id: r.id.clone(),
+                    premises,
+                    conclusion: r.conclusion.trim().to_string(),
+                });
+            }
+            tr(
+                &mut trace,
+                "reduct",
+                format!("{} rules kept, {} dropped", reduct.len(), dropped),
+                2,
+            );
+
+            let closed = forward_close(&BTreeSet::new(), &reduct);
+            let mut lm_mask = 0u32;
+            for a in &closed.facts {
+                let i = idx_of(a);
+                if i != usize::MAX {
+                    lm_mask |= 1 << i;
+                }
+            }
+            tr(
+                &mut trace,
+                "least-model",
+                format!("LM(P^M)={{{}}}", render_set(lm_mask, &atoms)),
+                2,
+            );
+
+            if lm_mask == mask {
+                tr(
+                    &mut trace,
+                    "stable-accept",
+                    format!("{{{}}} is a stable model", render_set(mask, &atoms)),
+                    1,
+                );
+                answer_sets.push(mask);
+            } else {
+                tr(
+                    &mut trace,
+                    "stable-reject",
+                    format!(
+                        "LM(P^M) != M ({{{}}} vs {{{}}})",
+                        render_set(lm_mask, &atoms),
+                        render_set(mask, &atoms)
+                    ),
+                    1,
+                );
             }
         }
 
+        let mut facts: Vec<Fact> = Vec::new();
+        for (i, m) in answer_sets.iter().enumerate() {
+            facts.push(Fact {
+                key: format!("asp:answer_set:{}", i),
+                value: render_set(*m, &atoms),
+            });
+        }
+        facts.push(Fact {
+            key: "asp:answer_set_count".to_string(),
+            value: answer_sets.len().to_string(),
+        });
+        tr(
+            &mut trace,
+            "answer-set",
+            format!("{} answer set(s)", answer_sets.len()),
+            0,
+        );
+
+        let selected = answer_sets.first().map(|m| render_set(*m, &atoms));
         let explanation = format!(
-            "ASP: found {} stable model(s). Selected candidate: {:?}",
-            stable_models.len(),
-            selected
+            "Gelfond–Lifschitz enumeration over {} atoms ({} candidates): {} stable model(s).",
+            n,
+            1u32 << n,
+            answer_sets.len()
         );
 
         Ok(BreedOutput {
             breed: BreedId::Asp,
-            candidates,
-            facts: out_facts,
+            candidates: input.candidates.clone(),
+            facts,
             selected,
             explanation,
             inference_trace: trace,
@@ -213,15 +236,126 @@ impl CognitionBreed for Asp {
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("ASP must emit at least one trace step".to_string());
+            return Err("empty inference trace (FM-5 fraud signal)".to_string());
         }
-        let has_load = output.inference_trace.iter().any(|t| t.kind == "asp-load");
-        let has_solve = output.inference_trace.iter().any(|t| t.kind == "asp-solve");
-        if !has_load || !has_solve {
-            return Err("ASP trace must contain asp-load and asp-solve".to_string());
+        if !output.inference_trace.iter().any(|t| t.kind == "ground") {
+            return Err("missing 'ground' step".to_string());
+        }
+        if output
+            .inference_trace
+            .last()
+            .map(|t| t.kind != "answer-set")
+            .unwrap_or(true)
+        {
+            return Err("final step must be 'answer-set'".to_string());
+        }
+        if !output
+            .facts
+            .iter()
+            .any(|f| f.key == "asp:answer_set_count")
+        {
+            return Err("missing asp:answer_set_count fact".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::Rule;
+
+    fn input(rules: Vec<Rule>) -> BreedInput {
+        BreedInput {
+            intent: "asp".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules,
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    fn rule(id: &str, premise: Vec<&str>, conclusion: &str) -> Rule {
+        Rule {
+            id: id.into(),
+            premise: premise.into_iter().map(String::from).collect(),
+            conclusion: conclusion.into(),
+            certainty: 1.0,
+        }
+    }
+
+    /// Even loop {a :- not b. b :- not a.} has exactly the two stable models {a} and {b}.
+    #[test]
+    fn even_loop_two_stable_models() {
+        let out = Asp
+            .run(&input(vec![
+                rule("r1", vec!["not b"], "a"),
+                rule("r2", vec!["not a"], "b"),
+            ]))
+            .unwrap();
+        let count = out
+            .facts
+            .iter()
+            .find(|f| f.key == "asp:answer_set_count")
+            .unwrap();
+        assert_eq!(count.value, "2");
+        let sets: Vec<&str> = out
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("asp:answer_set:"))
+            .map(|f| f.value.as_str())
+            .collect();
+        assert_eq!(sets, vec!["a", "b"]);
+    }
+
+    /// Odd loop {a :- not a.} has zero stable models.
+    #[test]
+    fn odd_loop_zero_stable_models() {
+        let out = Asp.run(&input(vec![rule("r1", vec!["not a"], "a")])).unwrap();
+        let count = out
+            .facts
+            .iter()
+            .find(|f| f.key == "asp:answer_set_count")
+            .unwrap();
+        assert_eq!(count.value, "0");
+        assert!(out.selected.is_none());
+    }
+
+    /// Definite programs: unique stable model == least Horn model.
+    #[test]
+    fn definite_program_least_model() {
+        let out = Asp
+            .run(&input(vec![
+                rule("f1", vec![], "p"),
+                rule("r1", vec!["p"], "q"),
+            ]))
+            .unwrap();
+        assert_eq!(out.selected.as_deref(), Some("p,q"));
+    }
+
+    /// Non-monotonicity: adding `abnormal` retracts `flies`.
+    #[test]
+    fn nonmonotonic_retraction() {
+        let base = vec![
+            rule("f1", vec![], "bird"),
+            rule("r1", vec!["bird", "not abnormal"], "flies"),
+        ];
+        let out1 = Asp.run(&input(base.clone())).unwrap();
+        assert_eq!(out1.selected.as_deref(), Some("bird,flies"));
+
+        let mut with_ab = base;
+        with_ab.push(rule("f2", vec![], "abnormal"));
+        let out2 = Asp.run(&input(with_ab)).unwrap();
+        assert_eq!(out2.selected.as_deref(), Some("abnormal,bird"));
+    }
+
+    #[test]
+    fn refuses_oversized_universe() {
+        let rules: Vec<Rule> = (0..13).map(|i| rule(&format!("f{}", i), vec![], &format!("a{}", i))).collect();
+        assert!(Asp.preconditions(&input(rules)).is_err());
     }
 }

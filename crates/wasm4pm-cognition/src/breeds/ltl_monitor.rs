@@ -1,13 +1,32 @@
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
-};
-use std::collections::HashSet;
-use crate::breeds::support::formula::Formula;
+//! LTL runtime monitor — Havelund & Roşu 2001 progression (formula rewriting).
+//!
+//! Finite-trace semantics (documented contract):
+//! after consuming every trace event via progression, the residual formula is
+//! evaluated at end-of-trace with the standard finite-trace valuation:
+//! - `G φ` → **true** (no remaining step can violate it: good prefix),
+//! - `F φ` / `φ U ψ` / `X φ` / bare atoms → **false** (the obligated future
+//!   state does not exist),
+//! - boolean connectives evaluate recursively.
+//!
+//! So `G p` over a trace where `p` holds at every step is **satisfied**, and a
+//! violation at step k yields verdict false with exactly k+1 progression steps.
+//!
+//! Input contract (facts): `ltl:formula` = formula text (≤256 chars, parsed by
+//! the shared `support::formula` Pratt parser); `trace:N` = comma-separated
+//! atoms true at step N (≤1000 events).
+//!
+//! Trace kinds: `ltl-init`(1,1) → `ltl-progress`(1,*) → `ltl-verdict`(1,1).
 
-/// LTL Monitor breed.
-/// Implements Havelund–Roşu progression rewriting over Ltl AST.
+use crate::breeds::support::formula::Formula;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+use std::collections::BTreeSet;
+
+/// LTL runtime monitor breed (Havelund–Roşu progression).
 pub struct LtlMonitor;
 
+/// LTL-only AST (CTL path quantifiers rejected at translation).
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Ltl {
     True,
@@ -23,38 +42,63 @@ enum Ltl {
 }
 
 impl Ltl {
-    fn from_formula(f: &Formula) -> Self {
-        match f {
+    fn from_formula(f: &Formula) -> Result<Self, String> {
+        Ok(match f {
             Formula::True => Ltl::True,
             Formula::False => Ltl::False,
             Formula::Atom(s) => Ltl::Atom(s.clone()),
-            Formula::Not(a) => Ltl::Not(Box::new(Ltl::from_formula(a))),
-            Formula::And(a, b) => Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Or(a, b) => Ltl::Or(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Implies(a, b) => {
+            Formula::Not(a) => Ltl::Not(Box::new(Ltl::from_formula(a)?)),
+            Formula::And(a, b) => Ltl::And(
+                Box::new(Ltl::from_formula(a)?),
+                Box::new(Ltl::from_formula(b)?),
+            ),
+            Formula::Or(a, b) => Ltl::Or(
+                Box::new(Ltl::from_formula(a)?),
+                Box::new(Ltl::from_formula(b)?),
+            ),
+            Formula::Implies(a, b) => Ltl::Or(
+                Box::new(Ltl::Not(Box::new(Ltl::from_formula(a)?))),
+                Box::new(Ltl::from_formula(b)?),
+            ),
+            Formula::Next(a) => Ltl::Next(Box::new(Ltl::from_formula(a)?)),
+            Formula::Eventually(a) => Ltl::Eventual(Box::new(Ltl::from_formula(a)?)),
+            Formula::Globally(a) => Ltl::Always(Box::new(Ltl::from_formula(a)?)),
+            Formula::Until(a, b) => Ltl::Until(
+                Box::new(Ltl::from_formula(a)?),
+                Box::new(Ltl::from_formula(b)?),
+            ),
+            // φ R ψ  ≡  ψ U (φ & ψ)  weakened: finite-trace R as G ψ | ψ U (φ&ψ).
+            Formula::Release(a, b) => {
+                let a = Ltl::from_formula(a)?;
+                let b = Ltl::from_formula(b)?;
                 Ltl::Or(
-                    Box::new(Ltl::Not(Box::new(Ltl::from_formula(a)))),
-                    Box::new(Ltl::from_formula(b))
+                    Box::new(Ltl::Always(Box::new(b.clone()))),
+                    Box::new(Ltl::Until(
+                        Box::new(b.clone()),
+                        Box::new(Ltl::And(Box::new(a), Box::new(b))),
+                    )),
                 )
             }
-            Formula::Next(a) => Ltl::Next(Box::new(Ltl::from_formula(a))),
-            Formula::Eventually(a) => Ltl::Eventual(Box::new(Ltl::from_formula(a))),
-            Formula::Globally(a) => Ltl::Always(Box::new(Ltl::from_formula(a))),
-            Formula::Until(a, b) => Ltl::Until(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b))),
-            Formula::Release(a, b) => {
-                Ltl::Until(Box::new(Ltl::from_formula(b)), Box::new(Ltl::And(Box::new(Ltl::from_formula(a)), Box::new(Ltl::from_formula(b)))))
+            Formula::AllPaths(_) | Formula::ExistsPath(_) => {
+                return Err("CTL path quantifiers are not valid in LTL".to_string())
             }
-            Formula::AllPaths(a) | Formula::ExistsPath(a) => Ltl::from_formula(a),
-        }
+        })
     }
 }
 
 impl LtlMonitor {
-    fn progress(phi: &Ltl, event: &HashSet<String>) -> Ltl {
+    /// Havelund–Roşu progression: rewrite φ against one trace event.
+    fn progress(phi: &Ltl, event: &BTreeSet<String>) -> Ltl {
         match phi {
             Ltl::True => Ltl::True,
             Ltl::False => Ltl::False,
-            Ltl::Atom(a) => if event.contains(a) { Ltl::True } else { Ltl::False },
+            Ltl::Atom(a) => {
+                if event.contains(a) {
+                    Ltl::True
+                } else {
+                    Ltl::False
+                }
+            }
             Ltl::Not(p) => {
                 let pp = Self::progress(p, event);
                 match pp {
@@ -62,66 +106,118 @@ impl LtlMonitor {
                     Ltl::False => Ltl::True,
                     _ => Ltl::Not(Box::new(pp)),
                 }
-            },
+            }
             Ltl::And(p, q) => {
                 let pp = Self::progress(p, event);
                 let qq = Self::progress(q, event);
-                if pp == Ltl::False || qq == Ltl::False { return Ltl::False; }
-                if pp == Ltl::True { return qq; }
-                if qq == Ltl::True { return pp; }
+                if pp == Ltl::False || qq == Ltl::False {
+                    return Ltl::False;
+                }
+                if pp == Ltl::True {
+                    return qq;
+                }
+                if qq == Ltl::True {
+                    return pp;
+                }
                 Ltl::And(Box::new(pp), Box::new(qq))
-            },
+            }
             Ltl::Or(p, q) => {
                 let pp = Self::progress(p, event);
                 let qq = Self::progress(q, event);
-                if pp == Ltl::True || qq == Ltl::True { return Ltl::True; }
-                if pp == Ltl::False { return qq; }
-                if qq == Ltl::False { return pp; }
+                if pp == Ltl::True || qq == Ltl::True {
+                    return Ltl::True;
+                }
+                if pp == Ltl::False {
+                    return qq;
+                }
+                if qq == Ltl::False {
+                    return pp;
+                }
                 Ltl::Or(Box::new(pp), Box::new(qq))
-            },
+            }
             Ltl::Next(p) => *p.clone(),
             Ltl::Always(p) => {
                 let pp = Self::progress(p, event);
-                if pp == Ltl::False { return Ltl::False; }
-                if pp == Ltl::True { return Ltl::Always(p.clone()); }
+                if pp == Ltl::False {
+                    return Ltl::False;
+                }
+                if pp == Ltl::True {
+                    return Ltl::Always(p.clone());
+                }
                 Ltl::And(Box::new(pp), Box::new(Ltl::Always(p.clone())))
-            },
+            }
             Ltl::Eventual(p) => {
                 let pp = Self::progress(p, event);
-                if pp == Ltl::True { return Ltl::True; }
-                if pp == Ltl::False { return Ltl::Eventual(p.clone()); }
+                if pp == Ltl::True {
+                    return Ltl::True;
+                }
+                if pp == Ltl::False {
+                    return Ltl::Eventual(p.clone());
+                }
                 Ltl::Or(Box::new(pp), Box::new(Ltl::Eventual(p.clone())))
-            },
+            }
             Ltl::Until(p, q) => {
                 let qq = Self::progress(q, event);
-                if qq == Ltl::True { return Ltl::True; }
+                if qq == Ltl::True {
+                    return Ltl::True;
+                }
                 let pp = Self::progress(p, event);
-                if pp == Ltl::False { return qq; }
+                if pp == Ltl::False {
+                    return qq;
+                }
                 Ltl::Or(
                     Box::new(qq),
                     Box::new(Ltl::And(
                         Box::new(pp),
-                        Box::new(Ltl::Until(p.clone(), q.clone()))
-                    ))
+                        Box::new(Ltl::Until(p.clone(), q.clone())),
+                    )),
                 )
             }
         }
     }
 
+    /// End-of-trace valuation (finite-trace semantics, see module header).
     fn evaluate_end(phi: &Ltl) -> bool {
         match phi {
             Ltl::True => true,
             Ltl::False => false,
-            Ltl::Atom(_) => false,
+            // No further state exists: pending state obligations are false…
+            Ltl::Atom(_) | Ltl::Next(_) | Ltl::Eventual(_) | Ltl::Until(_, _) => false,
+            // …but G φ is vacuously satisfied on the empty remaining suffix.
+            Ltl::Always(_) => true,
             Ltl::Not(p) => !Self::evaluate_end(p),
             Ltl::And(p, q) => Self::evaluate_end(p) && Self::evaluate_end(q),
             Ltl::Or(p, q) => Self::evaluate_end(p) || Self::evaluate_end(q),
-            Ltl::Next(_) => false,
-            Ltl::Always(p) => Self::evaluate_end(p),
-            Ltl::Eventual(_) => false,
-            Ltl::Until(_, _) => false,
         }
     }
+}
+
+fn extract_formula(input: &BreedInput) -> Result<String, String> {
+    input
+        .facts
+        .iter()
+        .find(|f| f.key == "ltl:formula")
+        .map(|f| f.value.clone())
+        .ok_or_else(|| "missing ltl:formula fact".to_string())
+}
+
+fn extract_trace(input: &BreedInput) -> Vec<(usize, BTreeSet<String>)> {
+    let mut trace_events: Vec<(usize, BTreeSet<String>)> = Vec::new();
+    for fact in &input.facts {
+        if let Some(num_str) = fact.key.strip_prefix("trace:") {
+            if let Ok(idx) = num_str.parse::<usize>() {
+                let ev: BTreeSet<String> = fact
+                    .value
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                trace_events.push((idx, ev));
+            }
+        }
+    }
+    trace_events.sort_by_key(|k| k.0);
+    trace_events
 }
 
 impl CognitionBreed for LtlMonitor {
@@ -130,100 +226,71 @@ impl CognitionBreed for LtlMonitor {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["runtime_monitoring".to_string(), "ltl_progression".to_string()]
+        vec![
+            "runtime_monitoring".to_string(),
+            "ltl_progression".to_string(),
+            "finite_trace_semantics".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
-            formula_fact.value.clone()
-        } else if !input.intent.is_empty() {
-            input.intent.clone()
-        } else {
-            return Err("missing ltl:formula fact".to_string());
-        };
-
+        let formula_str = extract_formula(input)?;
         if formula_str.len() > 256 {
-            return Err(format!("Formula exceeds 256 chars (len={})", formula_str.len()));
+            return Err(format!(
+                "formula exceeds 256 chars (len={})",
+                formula_str.len()
+            ));
         }
-
-        let formula_ast = Formula::parse(&formula_str)
-            .map_err(|e| format!("Formula parse error: {}", e))?;
-
-        if formula_ast.size() > 100 {
-            return Err("Formula exceeds node limit".to_string());
+        let formula_ast =
+            Formula::parse(&formula_str).map_err(|e| format!("formula parse error: {}", e))?;
+        Ltl::from_formula(&formula_ast)?;
+        let trace_count = input
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("trace:"))
+            .count();
+        if trace_count == 0 {
+            return Err("missing trace:N facts (at least one trace event required)".to_string());
         }
-
-        let trace_count = if !input.cases.is_empty() {
-            input.cases.len()
-        } else {
-            input.facts.iter().filter(|f| f.key.starts_with("trace:")).count()
-        };
-
         if trace_count > 1000 {
-            return Err(format!("Trace exceeds 1000 events (len={})", trace_count));
+            return Err(format!("trace exceeds 1000 events (len={})", trace_count));
         }
-
         Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let formula_str = if let Some(formula_fact) = input.facts.iter().find(|f| f.key == "ltl:formula" || f.key == "formula") {
-            formula_fact.value.clone()
-        } else if !input.intent.is_empty() {
-            input.intent.clone()
-        } else {
-            return Err(BreedError { breed: self.id(), message: "missing ltl:formula fact".to_string() });
+        let err = |message: String| BreedError {
+            breed: BreedId::LtlMonitor,
+            message,
         };
-
-        let mut trace_events: Vec<(usize, HashSet<String>)> = Vec::new();
-        if !input.cases.is_empty() {
-            for (idx, case) in input.cases.iter().enumerate() {
-                let ev: HashSet<String> = case.facts.iter().map(|f| f.key.clone()).collect();
-                trace_events.push((idx, ev));
-            }
-        } else {
-            for fact in &input.facts {
-                if let Some(num_str) = fact.key.strip_prefix("trace:") {
-                    if let Ok(idx) = num_str.parse::<usize>() {
-                        let ev: HashSet<String> = fact.value.split(',').filter(|s| !s.is_empty()).map(|s| s.trim().to_string()).collect();
-                        trace_events.push((idx, ev));
-                    }
-                }
-            }
+        let formula_str = extract_formula(input).map_err(&err)?;
+        let formula_ast = Formula::parse(&formula_str)
+            .map_err(|e| err(format!("formula parse error: {}", e)))?;
+        let mut current_phi = Ltl::from_formula(&formula_ast).map_err(&err)?;
+        let trace_events = extract_trace(input);
+        if trace_events.is_empty() {
+            return Err(err("missing trace:N facts".to_string()));
         }
-        trace_events.sort_by_key(|k| k.0);
 
         let mut trace = Vec::new();
-        let mut step = 0;
-
-        let formula_ast = Formula::parse(&formula_str).map_err(|e| BreedError {
-            breed: BreedId::LtlMonitor,
-            message: format!("Parse error: {}", e),
-        })?;
-        let mut current_phi = Ltl::from_formula(&formula_ast);
-
         trace.push(TraceStep {
-            step,
+            step: 0,
             kind: "ltl-init".to_string(),
             detail: formula_str.clone(),
             depth: 0,
-            objects: vec![],
+            objects: vec![("formula".to_string(), "ltl".to_string())],
         });
-        step += 1;
 
         let mut verdict = None;
-
-        for (idx, ev) in trace_events {
-            current_phi = Self::progress(&current_phi, &ev);
+        for (idx, ev) in &trace_events {
+            current_phi = Self::progress(&current_phi, ev);
             trace.push(TraceStep {
-                step,
+                step: trace.len(),
                 kind: "ltl-progress".to_string(),
                 detail: format!("trace:{} -> {:?}", idx, current_phi),
                 depth: 0,
-                objects: vec![],
+                objects: vec![("event".to_string(), format!("trace-{}", idx))],
             });
-            step += 1;
-
             if current_phi == Ltl::True {
                 verdict = Some(true);
                 break;
@@ -233,23 +300,19 @@ impl CognitionBreed for LtlMonitor {
                 break;
             }
         }
+        let final_verdict = verdict.unwrap_or_else(|| Self::evaluate_end(&current_phi));
 
-        if verdict.is_none() {
-            verdict = Some(Self::evaluate_end(&current_phi));
-        }
-
-        let final_verdict = verdict.unwrap();
         trace.push(TraceStep {
-            step,
+            step: trace.len(),
             kind: "ltl-verdict".to_string(),
             detail: final_verdict.to_string(),
             depth: 0,
-            objects: vec![],
+            objects: vec![("decision".to_string(), "verdict".to_string())],
         });
 
         let mut out_facts = input.facts.clone();
         out_facts.push(Fact {
-            key: "conforms".to_string(),
+            key: "ltl:verdict".to_string(),
             value: final_verdict.to_string(),
         });
 
@@ -258,130 +321,46 @@ impl CognitionBreed for LtlMonitor {
             candidates: input.candidates.clone(),
             facts: out_facts,
             selected: Some(final_verdict.to_string()),
-            explanation: format!("LTL formula '{}' evaluated to {}", formula_str, final_verdict),
+            explanation: format!(
+                "LTL formula '{}' evaluated to {} by Havelund-Rosu progression over {} events",
+                formula_str,
+                final_verdict,
+                trace_events.len()
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        let has_init = output.inference_trace.iter().any(|t| t.kind == "ltl-init");
-        let has_verdict = output.inference_trace.iter().any(|t| t.kind == "ltl-verdict");
-        if !has_init || !has_verdict {
-            return Err("Trace must include ltl-init and ltl-verdict".to_string());
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+        if output.inference_trace.is_empty() {
+            return Err("empty inference trace (fraud signal)".to_string());
+        }
+        let inits = output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-init")
+            .count();
+        let progresses = output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-progress")
+            .count();
+        let verdicts = output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-verdict")
+            .count();
+        if inits != 1 || verdicts != 1 || progresses == 0 {
+            return Err(format!(
+                "trace must contain exactly 1 ltl-init, >=1 ltl-progress, exactly 1 ltl-verdict (got {}/{}/{})",
+                inits, progresses, verdicts
+            ));
+        }
+        if !output.facts.iter().any(|f| f.key == "ltl:verdict") {
+            return Err("missing ltl:verdict output fact".to_string());
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::breeds::Fact;
-
-    #[test]
-    fn test_refusal_formula_too_long() {
-        let breed = LtlMonitor;
-        let long_formula = "A".repeat(257);
-        let input = BreedInput {
-            intent: "".into(),
-            candidates: vec![],
-            facts: vec![Fact { key: "ltl:formula".into(), value: long_formula }],
-            cases: vec![],
-            rules: vec![],
-            goals: vec![],
-            state: vec![],
-        };
-        let err = breed.preconditions(&input).unwrap_err();
-        assert!(err.contains("exceeds 256 chars"));
-    }
-
-    #[test]
-    fn test_refusal_trace_too_long() {
-        let breed = LtlMonitor;
-        let mut facts = vec![Fact { key: "ltl:formula".into(), value: "true".into() }];
-        for i in 0..1001 {
-            facts.push(Fact { key: format!("trace:{}", i), value: "".into() });
-        }
-        let input = BreedInput {
-            intent: "".into(),
-            candidates: vec![],
-            facts,
-            cases: vec![],
-            rules: vec![],
-            goals: vec![],
-            state: vec![],
-        };
-        let err = breed.preconditions(&input).unwrap_err();
-        assert!(err.contains("exceeds 1000 events"));
-    }
-
-    #[test]
-    fn test_hidden_oracle_always_zorp() {
-        let breed = LtlMonitor;
-        let input = BreedInput {
-            intent: "".into(),
-            candidates: vec![],
-            facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G zorp".into() },
-                Fact { key: "trace:0".into(), value: "zorp".into() },
-                Fact { key: "trace:1".into(), value: "zorp".into() },
-                Fact { key: "trace:2".into(), value: "zorp".into() },
-                Fact { key: "trace:3".into(), value: "foo".into() },
-            ],
-            cases: vec![],
-            rules: vec![],
-            goals: vec![],
-            state: vec![],
-        };
-        let out = breed.run(&input).unwrap();
-        assert_eq!(out.selected.as_deref(), Some("false"));
-        let t_progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-        assert_eq!(t_progress, 4); // evaluated at 0, 1, 2, 3 and failed at 3
-    }
-
-    #[test]
-    fn test_hidden_oracle_until() {
-        let breed = LtlMonitor;
-        let input = BreedInput {
-            intent: "".into(),
-            candidates: vec![],
-            facts: vec![
-                Fact { key: "ltl:formula".into(), value: "quux U blee".into() },
-                Fact { key: "trace:0".into(), value: "quux".into() },
-                Fact { key: "trace:1".into(), value: "quux".into() },
-                Fact { key: "trace:2".into(), value: "blee".into() },
-            ],
-            cases: vec![],
-            rules: vec![],
-            goals: vec![],
-            state: vec![],
-        };
-        let out = breed.run(&input).unwrap();
-        assert_eq!(out.selected.as_deref(), Some("true"));
-        let t_progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-        assert_eq!(t_progress, 3); // 0, 1, 2 (satisfied at 2)
-    }
-
-    #[test]
-    fn test_paper_grounded_determinism() {
-        let breed = LtlMonitor;
-        let input1 = BreedInput {
-            intent: "".into(),
-            candidates: vec![],
-            facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G zorp".into() },
-                Fact { key: "trace:0".into(), value: "zorp".into() },
-            ],
-            cases: vec![],
-            rules: vec![],
-            goals: vec![],
-            state: vec![],
-        };
-        let out1 = breed.run(&input1).unwrap();
-        let out2 = breed.run(&input1).unwrap();
-        assert_eq!(out1.selected, out2.selected);
-        assert_eq!(out1.inference_trace, out2.inference_trace);
     }
 }

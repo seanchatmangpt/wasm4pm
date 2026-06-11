@@ -1,36 +1,27 @@
 {
   "breed": "htn_planning",
   "provenance": {
-    "paper": "citation-only",
-    "citation": "Nau et al. 2003"
+    "paper": "Nau et al. 2003",
+    "citation": "Nau, D., Au, T.-C., Ilghami, O., Kuter, U., Murdock, J. W., Wu, D., & Yaman, F. (2003). SHOP2: An HTN Planning System. Journal of Artificial Intelligence Research, 20, 379-404.",
+    "locus": "Section 2 (total-order decomposition of compound tasks into operator sequences) with the logistics/transport domain family used throughout the paper.",
+    "extraction": "method + hand-derived plan",
+    "notes": "Single-truck delivery: deliver decomposes into load;drive;unload. Hand replay: load consumes pkg=at_depot, drive moves the truck, unload requires pkg=in_truck and truck=at_dest. The unique plan is op:load,op:drive,op:unload."
   },
   "input": {
-    "intent": "plan",
+    "intent": "deliver the package",
     "state": [
-      { "predicate": "at", "value": "home" }
+      { "predicate": "pkg", "value": "at_depot" },
+      { "predicate": "truck", "value": "at_depot" }
     ],
-    "goals": [
-      { "id": "g1", "predicate": "task", "value": "go_to_dest" }
-    ],
+    "goals": [ { "id": "g1", "predicate": "task", "value": "deliver" } ],
     "rules": [
-      {
-        "id": "method:go_to_dest:walk",
-        "premise": ["at=home"],
-        "conclusion": "op:walk",
-        "certainty": 1.0
-      },
-      {
-        "id": "op:walk",
-        "premise": [],
-        "conclusion": "at=dest",
-        "certainty": 1.0
-      }
-    ],
-    "candidates": [],
-    "facts": [],
-    "cases": []
+      { "id": "method:deliver:by_truck", "premise": ["pkg=at_depot"], "conclusion": "op:load;op:drive;op:unload", "certainty": 1.0 },
+      { "id": "op:load", "premise": ["pkg=at_depot", "truck=at_depot"], "conclusion": "!pkg=at_depot;pkg=in_truck", "certainty": 1.0 },
+      { "id": "op:drive", "premise": ["truck=at_depot"], "conclusion": "!truck=at_depot;truck=at_dest", "certainty": 1.0 },
+      { "id": "op:unload", "premise": ["pkg=in_truck", "truck=at_dest"], "conclusion": "!pkg=in_truck;pkg=at_dest", "certainty": 1.0 }
+    ]
   },
   "expected": {
-    "plan": "op:walk"
+    "plan": "op:load,op:drive,op:unload"
   }
 }

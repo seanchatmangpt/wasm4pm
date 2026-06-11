@@ -1,0 +1,46 @@
+{
+  "breed": "belief_merging",
+  "provenance": {
+    "citation": "Konieczny, S., & Pino Pérez, R. (2002). Merging Information Under Constraints: A Logical Framework. Journal of Logic and Computation, 12(5), 773–808.",
+    "locus": "Sections 5–6: the Σ (sum) family is majoritarian, the GMax (leximax) family is egalitarian (arbitration); the two operator families are distinguished exactly by profiles where a repeated majority base opposes a single dissenting base.",
+    "extraction": "operationalized",
+    "notes": "Canonical discriminating profile over atoms {p,q}: E = {K1 = p∧q, K2 = p∧q, K3 = ¬p∧¬q}, IC = ⊤, Dalal distance. Hand-computed distance vectors: world (p,q): (0,0,2) → Σ=2, GMax-sorted (2,0,0); worlds (p,¬q)/(¬p,q): (1,1,1) → Σ=3, GMax (1,1,1); world (¬p,¬q): (2,2,0) → Σ=4, GMax (2,2,0). Σ selects the majority world (p,q); GMax selects the egalitarian pair {(p,¬q),(¬p,q)} since (1,1,1) <_lex (2,0,0). This Σ-vs-GMax disagreement is the paper's stated behavioural difference between the two families."
+  },
+  "input": {
+    "intent": "merge the conflicting profile under Sigma aggregation",
+    "candidates": [],
+    "facts": [
+      { "key": "bm:atoms", "value": "p,q" },
+      { "key": "bm:base:1", "value": "p,q" },
+      { "key": "bm:base:2", "value": "p,q" },
+      { "key": "bm:base:3", "value": "-p,-q" },
+      { "key": "bm:ic", "value": "true" },
+      { "key": "bm:operator", "value": "sum" }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "input_gmax": {
+    "intent": "merge the conflicting profile under GMax aggregation",
+    "candidates": [],
+    "facts": [
+      { "key": "bm:atoms", "value": "p,q" },
+      { "key": "bm:base:1", "value": "p,q" },
+      { "key": "bm:base:2", "value": "p,q" },
+      { "key": "bm:base:3", "value": "-p,-q" },
+      { "key": "bm:ic", "value": "true" },
+      { "key": "bm:operator", "value": "gmax" }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "sum_models": ["p,q"],
+    "gmax_models": ["p,-q", "-p,q"],
+    "notes": "Σ is majoritarian, GMax is egalitarian — the operators disagree on this profile (Konieczny & Pino Pérez 2002)."
+  }
+}

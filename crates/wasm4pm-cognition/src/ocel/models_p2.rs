@@ -1,199 +1,362 @@
+//! Static per-breed lifecycle models for the P2 tier (12 breeds).
+//!
+//! Each model is a forward-only phase DFA replayed by
+//! `validate_ocel_alignment`. Interleaved algorithm loops are modeled as a
+//! single multi-kind phase (Hearsay-II precedent). Trace kinds match the
+//! P2 plan table exactly.
+
 use super::{BreedLifecycleModel, LifecyclePhase};
 
-/// ASP lifecycle: asp-load -> asp-solve -> asp-model*
+/// ASP lifecycle: ground → {guess/reduct/least-model/accept/reject}+ → answer-set.
 pub static ASP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "asp",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["asp-load"],
+            name: "ground",
+            kinds: &["ground"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "solve",
-            kinds: &["asp-solve"],
+            name: "search",
+            kinds: &[
+                "guess-candidate",
+                "reduct",
+                "least-model",
+                "stable-accept",
+                "stable-reject",
+            ],
             min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "model",
-            kinds: &["asp-model"],
-            min_occurrences: 0,
             max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "answer-set",
+            kinds: &["answer-set"],
+            min_occurrences: 1,
+            max_occurrences: 1,
         },
     ],
 };
 
-/// Description Logic lifecycle: dl-load -> dl-subsume* -> dl-consistent
+/// EL description-logic lifecycle: normalize → completion rules+ → fixpoint → verdict.
 pub static DESCRIPTION_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "description_logic",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["dl-load"],
+            name: "normalize",
+            kinds: &["normalize"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "subsume",
-            kinds: &["dl-subsume"],
-            min_occurrences: 0,
+            name: "completion",
+            kinds: &["apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4", "fixpoint"],
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "consistent",
-            kinds: &["dl-consistent"],
+            name: "classify",
+            kinds: &["classify-verdict"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
     ],
 };
 
-/// Abductive LP lifecycle: alp-load -> alp-abduce -> alp-hypothesis*
+/// Abductive LP lifecycle (Kakas–Kowalski–Toni).
 pub static ABDUCTIVE_LP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "abductive_lp",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["alp-load"],
+            name: "load-abducibles",
+            kinds: &["load-abducibles"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "abduce",
-            kinds: &["alp-abduce"],
+            name: "search",
+            kinds: &[
+                "candidate-delta",
+                "derive",
+                "ic-check",
+                "explain-accept",
+                "explain-reject",
+            ],
             min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "hypothesis",
-            kinds: &["alp-hypothesis"],
-            min_occurrences: 0,
             max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "minimal-set",
+            kinds: &["minimal-set"],
+            min_occurrences: 1,
+            max_occurrences: 1,
         },
     ],
 };
 
-/// Abductive IBE lifecycle: ibe-load -> ibe-explain -> ibe-select
+/// IBE lifecycle: collect → score/compare+ → best-explanation.
 pub static ABDUCTIVE_IBE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "abductive_ibe",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["ibe-load"],
+            name: "collect-observations",
+            kinds: &["collect-observations"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "explain",
-            kinds: &["ibe-explain"],
+            name: "score",
+            kinds: &["score-hypothesis", "compare"],
             min_occurrences: 1,
-            max_occurrences: 1,
+            max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "select",
-            kinds: &["ibe-select"],
+            name: "best-explanation",
+            kinds: &["best-explanation"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// Partial Order Plan lifecycle: pop-init -> pop-resolve* -> pop-plan
+/// SNLP partial-order planning lifecycle.
 pub static PARTIAL_ORDER_PLAN_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "partial_order_plan",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["pop-init"],
+            name: "init-plan",
+            kinds: &["init-plan"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "resolve",
-            kinds: &["pop-resolve"],
-            min_occurrences: 0,
+            name: "refine",
+            kinds: &[
+                "open-condition",
+                "add-link",
+                "add-step",
+                "detect-threat",
+                "promote",
+                "demote",
+                "backtrack",
+            ],
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "plan",
-            kinds: &["pop-plan"],
+            name: "plan-complete",
+            kinds: &["plan-complete"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// Event Calculus lifecycle: ec-load -> ec-infer* -> ec-model
+/// Event calculus lifecycle.
 pub static EVENT_CALCULUS_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "event_calculus",
     phases: &[
         LifecyclePhase {
-            name: "load",
-            kinds: &["ec-load"],
+            name: "load-narrative",
+            kinds: &["load-narrative"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "infer",
-            kinds: &["ec-infer"],
-            min_occurrences: 0,
+            name: "evaluate",
+            kinds: &["evaluate-happens", "clipped-check", "holdsat-verdict"],
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "model",
-            kinds: &["ec-model"],
+            name: "answer",
+            kinds: &["answer"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// MDP lifecycle: mdp-init -> mdp-iterate* -> mdp-policy
+/// MDP value-iteration lifecycle.
 pub static MDP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "mdp",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["mdp-init"],
+            name: "validate-model",
+            kinds: &["validate-model"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "iterate",
-            kinds: &["mdp-iterate"],
+            name: "sweep",
+            kinds: &["sweep"],
             min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "policy",
-            kinds: &["mdp-policy"],
+            name: "converged",
+            kinds: &["converged"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "extract-policy",
+            kinds: &["extract-policy"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+    ],
+};
+
+/// Version-space candidate-elimination lifecycle.
+pub static VERSION_SPACE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "version_space",
+    phases: &[
+        LifecyclePhase {
+            name: "init-boundaries",
+            kinds: &["init-boundaries"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "process",
+            kinds: &[
+                "process-positive",
+                "process-negative",
+                "generalize-s",
+                "specialize-g",
+                "prune",
+            ],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "final",
+            kinds: &["converged", "boundaries-final"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// Version Space lifecycle: vs-init -> vs-update* -> vs-verdict
-pub static VERSION_SPACE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "version_space",
+/// Belief-merging lifecycle (Σ / GMax distance-based operators).
+pub static BELIEF_MERGING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "belief_merging",
     phases: &[
         LifecyclePhase {
-            name: "init",
-            kinds: &["vs-init"],
+            name: "enumerate-worlds",
+            kinds: &["enumerate-worlds"],
             min_occurrences: 1,
             max_occurrences: 1,
         },
         LifecyclePhase {
-            name: "update",
-            kinds: &["vs-update"],
+            name: "filter-ic",
+            kinds: &["filter-ic"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "score",
+            kinds: &["distance", "aggregate"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "select-min",
+            kinds: &["select-min"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "merged-belief",
+            kinds: &["merged-belief"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+/// Qualitative-reasoning (confluence) lifecycle.
+pub static QUALITATIVE_REASON_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "qualitative_reason",
+    phases: &[
+        LifecyclePhase {
+            name: "load-model",
+            kinds: &["load-model"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "propagate",
+            kinds: &["propagate-confluence", "branch-ambiguity"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "envision",
+            kinds: &["limit-analysis", "envision-state"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "equilibrium",
+            kinds: &["equilibrium"],
+            min_occurrences: 0,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+/// SAM script-application lifecycle.
+pub static SCRIPT_SAM_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "script_sam",
+    phases: &[
+        LifecyclePhase {
+            name: "select-script",
+            kinds: &["select-script"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "align",
+            kinds: &["align-event", "bind-role"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "infer-gap",
+            kinds: &["infer-gap"],
+            min_occurrences: 0,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "summary",
+            kinds: &["summary"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
+
+/// CLP(FD) lifecycle: post/propagate+ → label/propagate/backtrack* → verdict.
+pub static CLP_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "clp",
+    phases: &[
+        LifecyclePhase {
+            name: "post",
+            kinds: &["post-constraint", "propagate"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "label",
+            kinds: &["label", "propagate", "backtrack"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "verdict",
-            kinds: &["vs-verdict"],
+            kinds: &["solution", "inconsistent"],
             min_occurrences: 1,
             max_occurrences: 1,
         },

@@ -1,32 +1,27 @@
 {
   "breed": "fuzzy_logic",
   "provenance": {
-    "paper": "Mamdani-1975-Fuzzy-Logic-Inference.pdf",
-    "citation": "E. H. Mamdani, S. Assilian (1975). An Experiment in Linguistic Synthesis with a Fuzzy Logic Controller. International Journal of Man-Machine Studies, Vol. 7, No. 1, pp. 1-13.",
-    "locus": "§4 Controller Design and Rule Evaluation",
-    "extraction": "grounded"
+    "paper": "Mamdani & Assilian 1975",
+    "citation": "Mamdani, E. H., & Assilian, S. (1975). An Experiment in Linguistic Synthesis with a Fuzzy Logic Controller. International Journal of Man-Machine Studies, 7(1), 1-13.",
+    "locus": "Section 3 (linguistic control rules with min-implication firing and max aggregation over fuzzy subsets of the heat-change universe) — the steam-engine controller.",
+    "extraction": "method + hand-derived numeric oracle",
+    "notes": "Asymmetric output set defeats midpoint-arithmetic fakes. Hand derivation of the 101-point discrete centroid of Tri(0,25,100) at full firing strength over x=0..100 step 1: sum(x*mu) = 221 + 139675/75 = 2083.3333, sum(mu) = 13 + 37 = 50, centroid = 41.66667 (+-1e-3 for per-point 1e-5 rounding)."
   },
   "input": {
-    "intent": "Fuzzy control inference",
-    "candidates": [],
+    "intent": "steam controller heat change",
     "facts": [
-      {"key": "temperature", "value": "25.0"},
-      {"key": "fuzzy_set:temperature:warm", "value": "triangular 20,25,30"},
-      {"key": "fuzzy_set:ventilation:medium", "value": "triangular 10,50,90"}
+      { "key": "fuzzy:temp:hot", "value": "tri:10,30,50" },
+      { "key": "fuzzy:heat:change", "value": "tri:0,25,100" },
+      { "key": "fuzzy:input:temp", "value": "30" }
     ],
-    "cases": [],
     "rules": [
-      {
-        "id": "r1",
-        "premise": ["temperature is warm"],
-        "conclusion": "ventilation is medium",
-        "certainty": 1.0
-      }
-    ],
-    "goals": [],
-    "state": []
+      { "id": "pc1", "premise": ["fuzzy:temp:hot"], "conclusion": "fuzzy:heat:change", "certainty": 1.0 }
+    ]
   },
   "expected": {
-    "defuzzified_ventilation": 50.0
+    "fire_strength": 1.0,
+    "centroid": 41.66667,
+    "centroid_tolerance": 0.001,
+    "output_fact": "fuzzy:output:heat"
   }
 }

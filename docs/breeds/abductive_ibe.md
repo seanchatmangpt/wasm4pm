@@ -1,59 +1,25 @@
-# Inference to the Best Explanation (IBE)
+# abductive_ibe — Inference to the Best Explanation
 
-## Origin
-- **Paper:** "Explanatory Coherence" (Thagard, 1989)
-- **Authors:** Paul Thagard
-- **Tradition:** Philosophy of Science, Cognitive Science, Connectionist ECHO Model, Hypothesis Selection
+## 1. Identity & Lineage
+IBE (Harman, Phil. Review 1965) with Thagard's theory-choice criteria (J. Phil. 1978). BreedId `abductive_ibe`, module `src/breeds/abductive_ibe.rs`.
 
-## Algorithm
-IBE selects the most coherent hypothesis among competing ones using Thagard's ECHO connectionist network model.
-1. Build a network of evidence and hypothesis nodes from facts and rules.
-2. Construct connections:
-   - Coherence links (positive weights) between hypotheses and evidence they explain.
-   - Incoherence links (negative weights) between contradictory or competing hypotheses.
-   - External evidence links (positive weights) from evidence nodes to the external input.
-3. Run connectionist activation updates for 100 iterations:
-   - $a_i(t+1) = a_i(t)(1 - d) + \text{net}_i \cdot (\text{max} - a_i(t))$ if $\text{net}_i > 0$
-   - $a_i(t+1) = a_i(t)(1 - d) + \text{net}_i \cdot (a_i(t) - \text{min})$ otherwise
-   - Where $\text{net}_i = \sum w_{ij} a_j(t) + \text{external}_i$.
-4. Select the hypothesis node with the highest activation.
+## 2. Algorithm
+Closed-form score(H) = |observations covered| − 0.1·Σcost(h) over hypothesis sets of size 1 and 2 (≤10 hypotheses); deterministic lex tie-break on the joined set name.
 
-## Pseudocode
-```
-function solve(input):
-    (evidence, hypotheses, explains, contradicts) = parse_network(input)
-    activations = initialize_activations(evidence, hypotheses)
-    
-    for 100 iterations:
-        for each node i:
-            net = sum(w_ij * activations[j]) + external_i
-            activations[i] = update_activation(activations[i], net)
-            
-    best_hypothesis = argmax(activations[h] for h in hypotheses)
-    return best_hypothesis
-```
+## 3. Input Contract
+Facts `ibe:obs:<o>`="true", `ibe:hyp:<h>:covers`="o1,o2", `ibe:hyp:<h>:cost`=f32 ≥ 0.
 
-## Input contract
-- `intent`: not used
-- `facts`: contains network nodes and links:
-  - `evidence`: `"node_name"` (node is evidence)
-  - `hypothesis`: `"node_name"` (node is hypothesis)
-  - `contradicts` or `competes`: `"node1,node2"` (nodes contradict each other)
-- `rules`: rules with conclusion and premises (premises explain conclusion; rules concluding `"false"` define contradiction links).
+## 4. Output Contract
+Facts `ibe:best`, `ibe:score` ("%.4f"); `selected` = winning set name ("h1+h2" for pairs).
 
-## Output contract
-- `selected`: ID of the hypothesis with the highest activation.
-- `explanation`: `"IBE: Explanatory coherence (ECHO) finalized..."`
-- `inference_trace`: trace steps recording `"ibe-load"`, `"ibe-explain"`, and `"ibe-select"`.
+## 5. Trace & OCEL Lifecycle
+`collect-observations`(1,1) → {`score-hypothesis`,`compare`}(1,*) → `best-explanation`(1,1). Exact scores in `score-hypothesis` details. Report fitness 1.0.
 
-## Complexity
-- Time: $O(I \cdot (E + C))$ where $I$ is iteration count (100), $E$ is explain links, $C$ is contradiction links.
-- Space: $O(V + E + C)$ where $V$ is node count.
+## 6. Oracles
+Refusal: no observations / no hypotheses / >10 hyps / negative cost. Hidden: cheaper partial hypothesis (2−0.2=1.8) beats costly full coverage (3−2.5=0.5), exact scores asserted in trace. Paper: evolution (3.9) > creation (0.7), Thagard's Darwin case.
 
-## Generalization examples
-- **Competing Process Explanations**: Select the best explanation for a process delay among multiple competing hypotheses based on observed telemetry.
-- **Medical Diagnostics**: Select the most coherent disease diagnosis that explains symptoms and contradicts other diagnoses.
+## 7. Determinism & Bounds
+BTreeMap hypotheses, fixed-precision score formatting; ≤55 candidate sets.
 
-## Adversarial coverage
-- Precondition rejects if facts are empty.
-- Standardizes candidate scores by mapping activations from $[-1.0, 1.0]$ to $[0.0, 1.0]$.
+## 8. Provenance
+Fixture `tests/fixtures/papers/abductive_ibe.json` (operationalized Thagard 1978 consilience/simplicity).

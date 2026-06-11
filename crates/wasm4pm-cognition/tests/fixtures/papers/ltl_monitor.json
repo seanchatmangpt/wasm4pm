@@ -1,47 +1,35 @@
 {
   "breed": "ltl_monitor",
   "provenance": {
-    "paper": "Havelund-2001-LTL-monitoring.pdf",
-    "citation": "K. Havelund, G. Rosu (2001). Monitoring Programs using LTL. Electronic Notes in Theoretical Computer Science, Vol. 55, No. 2.",
-    "locus": "§3 Illustrative monitoring example",
-    "extraction": "grounded"
+    "paper": "Havelund & Rosu 2001",
+    "citation": "Havelund, K., & Rosu, G. (2001). Monitoring Programs Using Rewriting. Proceedings of ASE 2001 (16th IEEE International Conference on Automated Software Engineering), 135-143.",
+    "locus": "Section 4 (formula rewriting / progression semantics) and Section 2 (finite-trace LTL semantics); the safety-property monitoring style is their traffic-controller class of examples.",
+    "extraction": "semantics",
+    "notes": "The paper defines monitoring by progression (formula rewriting per event) with finite-trace end-of-trace evaluation: G phi holds on a finite trace iff phi holds at every event (good prefix). Fixture encodes a traffic-light mutual-exclusion safety property G (red -> !green): satisfied on the conforming trace, violated at exactly the event where red and green hold together."
   },
   "input": {
-    "intent": "G (req -> F res)",
-    "candidates": [],
-    "facts": [],
-    "cases": [
-      {
-        "id": "state0",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": [
-          {"key": "req", "value": "true"}
-        ]
-      },
-      {
-        "id": "state1",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": []
-      },
-      {
-        "id": "state2",
-        "intent": "",
-        "architecture": "",
-        "outcome_score": 1.0,
-        "facts": [
-          {"key": "res", "value": "true"}
-        ]
-      }
-    ],
-    "rules": [],
-    "goals": [],
-    "state": []
+    "intent": "monitor traffic light safety",
+    "facts": [
+      { "key": "ltl:formula", "value": "G (red -> !green)" },
+      { "key": "trace:0", "value": "red" },
+      { "key": "trace:1", "value": "green" },
+      { "key": "trace:2", "value": "red" },
+      { "key": "trace:3", "value": "green" }
+    ]
+  },
+  "violating_input": {
+    "intent": "monitor traffic light safety",
+    "facts": [
+      { "key": "ltl:formula", "value": "G (red -> !green)" },
+      { "key": "trace:0", "value": "red" },
+      { "key": "trace:1", "value": "red,green" },
+      { "key": "trace:2", "value": "green" }
+    ]
   },
   "expected": {
-    "satisfies": true
+    "verdict": true,
+    "progress_steps": 4,
+    "violating_verdict": false,
+    "violating_progress_steps": 2
   }
 }

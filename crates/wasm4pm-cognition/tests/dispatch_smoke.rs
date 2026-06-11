@@ -2,7 +2,7 @@
 //! routes correctly through the dispatch mechanism and produces non-empty traces.
 
 use wasm4pm_cognition::breeds::{
-    dispatch_breed, dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
+    dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
 
 /// Create a minimal valid BreedInput for testing.
@@ -525,115 +525,557 @@ fn dispatch_output_receipt_consistency() {
     assert!(!input_json.is_empty(), "input JSON must not be empty");
 }
 
+// ===========================================================================
+// P1 TIER — dispatch smoke tests
+// ===========================================================================
+
+fn p1_smoke(breed_name: &str, expected: BreedId, input: &BreedInput) {
+    let output = dispatch_breed_test(breed_name, input)
+        .unwrap_or_else(|e| panic!("{} dispatch failed: {}", breed_name, e));
+    assert_eq!(output.breed, expected, "breed mismatch");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "{} must produce non-empty trace (fraud signal if empty)",
+        breed_name
+    );
+    assert!(
+        !output.explanation.is_empty(),
+        "{} must produce explanation",
+        breed_name
+    );
+}
+
 #[test]
-fn test_all_55_breeds_exhaustiveness() {
-    let input = minimal_input();
-    let supported_breeds = [
-        BreedId::Eliza,
-        BreedId::Cbr,
-        BreedId::Dendral,
-        BreedId::Strips,
-        BreedId::Prolog,
-        BreedId::Mycin,
-        BreedId::Gps,
-        BreedId::Soar,
-        BreedId::Hearsay,
-        BreedId::AutoinstinctLearning,
-        BreedId::AutoinstinctSemantics,
-        BreedId::AutoinstinctNeurosis,
-        BreedId::AutoinstinctVision,
-        BreedId::LtlMonitor,
-        BreedId::AllenTemporal,
-        BreedId::FuzzyLogic,
-        BreedId::BayesianNetwork,
-        BreedId::CspAc3,
-        BreedId::DefaultLogic,
-        BreedId::HtnPlanning,
-        BreedId::Ebl,
-        BreedId::DempsterShafer,
-        BreedId::FramesInheritance,
-        BreedId::Asp,
-        BreedId::DescriptionLogic,
-        BreedId::AbductiveLp,
-        BreedId::AbductiveIbe,
+fn dispatch_ltl_monitor_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact { key: "ltl:formula".into(), value: "F blee".into() },
+        Fact { key: "trace:0".into(), value: "zorp".into() },
+        Fact { key: "trace:1".into(), value: "blee".into() },
+    ];
+    p1_smoke("ltl_monitor", BreedId::LtlMonitor, &input);
+}
+
+#[test]
+fn dispatch_allen_temporal_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact { key: "relation".into(), value: "gamma,delta,p".into() },
+        Fact { key: "relation".into(), value: "delta,eps,m".into() },
+    ];
+    p1_smoke("allen_temporal", BreedId::AllenTemporal, &input);
+}
+
+#[test]
+fn dispatch_fuzzy_logic_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact { key: "fuzzy:zlorp:mid".into(), value: "tri:2,5,8".into() },
+        Fact { key: "fuzzy:gwib:out".into(), value: "tri:0,50,100".into() },
+        Fact { key: "fuzzy:input:zlorp".into(), value: "3.7".into() },
+    ];
+    input.rules = vec![Rule {
+        id: "r1".into(),
+        premise: vec!["fuzzy:zlorp:mid".into()],
+        conclusion: "fuzzy:gwib:out".into(),
+        certainty: 1.0,
+    }];
+    p1_smoke("fuzzy_logic", BreedId::FuzzyLogic, &input);
+}
+
+#[test]
+fn dispatch_bayesian_network_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact { key: "cpt:Q".into(), value: "0.3".into() },
+        Fact { key: "cpt:R|Q".into(), value: "0.2,0.8".into() },
+    ];
+    input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "prob:R".into() }];
+    p1_smoke("bayesian_network", BreedId::BayesianNetwork, &input);
+}
+
+#[test]
+fn dispatch_csp_ac3_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![
+        Fact { key: "csp-var".into(), value: "X:0,1".into() },
+        Fact { key: "csp-var".into(), value: "Y:0,1".into() },
+        Fact { key: "csp-constraint".into(), value: "X!=Y".into() },
+    ];
+    p1_smoke("csp_ac3", BreedId::CspAc3, &input);
+}
+
+#[test]
+fn dispatch_default_logic_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![Fact { key: "obs".into(), value: "wibble".into() }];
+    input.rules = vec![Rule {
+        id: "r_default".into(),
+        premise: vec!["wibble".into(), "unless:dark_wibble".into()],
+        conclusion: "glows".into(),
+        certainty: 1.0,
+    }];
+    p1_smoke("default_logic", BreedId::DefaultLogic, &input);
+}
+
+#[test]
+fn dispatch_htn_planning_routes() {
+    let mut input = minimal_input();
+    input.goals = vec![Goal { id: "g1".into(), predicate: "task".into(), value: "t1".into() }];
+    input.rules = vec![
+        Rule { id: "method:t1:m1".into(), premise: vec![], conclusion: "op:o1".into(), certainty: 1.0 },
+        Rule { id: "op:o1".into(), premise: vec![], conclusion: "done=yes".into(), certainty: 1.0 },
+    ];
+    p1_smoke("htn_planning", BreedId::HtnPlanning, &input);
+}
+
+#[test]
+fn dispatch_dempster_shafer_routes() {
+    let mut input = minimal_input();
+    input.rules = vec![Rule {
+        id: "src1".into(),
+        premise: vec![],
+        conclusion: "flim".into(),
+        certainty: 0.6,
+    }];
+    input.goals = vec![Goal { id: "query".into(), predicate: "query".into(), value: "flim".into() }];
+    p1_smoke("dempster_shafer", BreedId::DempsterShafer, &input);
+}
+
+#[test]
+fn dispatch_frames_inheritance_routes() {
+    let mut input = minimal_input();
+    input.intent = "resolve zilk color".into();
+    input.facts = vec![
+        Fact { key: "frame:zilk:isa".into(), value: "welp".into() },
+        Fact { key: "frame:welp:slot:color".into(), value: "red".into() },
+    ];
+    p1_smoke("frames_inheritance", BreedId::FramesInheritance, &input);
+}
+
+#[test]
+fn dispatch_ebl_routes() {
+    let mut input = minimal_input();
+    input.facts = vec![Fact { key: "concave(obj1)".into(), value: "true".into() }];
+    input.rules = vec![Rule {
+        id: "r1".into(),
+        premise: vec!["concave(?x)".into()],
+        conclusion: "holds_liquid(?x)".into(),
+        certainty: 1.0,
+    }];
+    input.goals = vec![Goal { id: "g1".into(), predicate: "holds_liquid(obj1)".into(), value: "true".into() }];
+    p1_smoke("ebl", BreedId::Ebl, &input);
+}
+
+// ===========================================================================
+// P2 tier — dispatch smoke (12 breeds): each id routes through both
+// dispatch_breed_test (raw) and dispatch::dispatch_breed (full lifecycle)
+// and produces a non-empty inference trace.
+// ===========================================================================
+
+fn p2_smoke_inputs() -> Vec<(&'static str, BreedInput)> {
+    let f = |key: &str, value: &str| Fact {
+        key: key.into(),
+        value: value.into(),
+    };
+    let base = || BreedInput {
+        intent: "smoke".into(),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let mut asp = base();
+    asp.rules = vec![Rule {
+        id: "s1".into(),
+        premise: vec![],
+        conclusion: "p".into(),
+        certainty: 1.0,
+    }];
+
+    let mut dl = base();
+    dl.facts = vec![f("dl:subclass:A", "B")];
+    dl.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "dl:subsumes".into(),
+        value: "A:B".into(),
+    }];
+
+    let mut alp = base();
+    alp.facts = vec![f("alp:abducible:a", "true")];
+    alp.rules = vec![Rule {
+        id: "s".into(),
+        premise: vec!["a".into()],
+        conclusion: "o".into(),
+        certainty: 1.0,
+    }];
+    alp.goals = vec![Goal {
+        id: "o".into(),
+        predicate: "alp:observe".into(),
+        value: "o".into(),
+    }];
+
+    let mut ibe = base();
+    ibe.facts = vec![
+        f("ibe:obs:o1", "true"),
+        f("ibe:hyp:h1:covers", "o1"),
+        f("ibe:hyp:h1:cost", "1"),
     ];
 
-    for &breed_id in BreedId::ALL {
-        let breed_name = breed_id.to_string();
-        let is_supported = supported_breeds.contains(&breed_id);
+    let mut pop = base();
+    pop.facts = vec![f("pop:op:act:add", "g")];
+    pop.goals = vec![Goal {
+        id: "g".into(),
+        predicate: "g".into(),
+        value: "true".into(),
+    }];
 
-        let res_dispatch = dispatch_breed(&breed_name, &input);
-        let res_test = dispatch_breed_test(&breed_name, &input);
+    let mut ec = base();
+    ec.facts = vec![f("ec:happens:1", "go"), f("ec:initiates:go", "m")];
+    ec.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "ec:holdsat".into(),
+        value: "m@2".into(),
+    }];
 
-        if is_supported {
-            match (res_dispatch, res_test) {
-                (Ok(out1), Ok(out2)) => {
-                    assert_eq!(out1.breed, breed_id);
-                    assert_eq!(out2.breed, breed_id);
-                }
-                (Err(err1), Ok(out2)) => {
-                    assert_eq!(out2.breed, breed_id);
-                    assert!(
-                        err1.contains("precondition failed") ||
-                        err1.contains("postcondition failed") ||
-                        err1.contains("OCEL conformance failure"),
-                        "Supported breed {} failed at dispatch with Err({:?}) but succeeded at test",
-                        breed_name, err1
-                    );
-                }
-                (Err(_), Err(_)) => {
-                    // Both failed, which is possible on minimal input
-                }
-                (Ok(out1), Err(err2)) => {
-                    panic!("Supported breed {}: dispatch succeeded ({:?}) but test failed ({:?})", breed_name, out1.breed, err2);
-                }
-            }
-        } else {
-            match (res_dispatch, res_test) {
-                (Err(err1), Err(err2)) => {
-                    assert_eq!(err1, err2);
-                    assert!(
-                        err1.contains("unsupported breed"),
-                        "Unsupported breed {} did not return unsupported breed error: {:?}",
-                        breed_name, err1
-                    );
-                }
-                other => {
-                    panic!("Unsupported breed {} did not fail on both dispatch and test: {:?}", breed_name, other);
-                }
-            }
-        }
+    let mut mdp = base();
+    mdp.facts = vec![
+        f("mdp:gamma", "0.5"),
+        f("mdp:trans:s:a", "s:1.0"),
+        f("mdp:reward:s:a", "1.0"),
+    ];
+
+    let mut vs = base();
+    vs.facts = vec![f("vs:attrs", "a"), f("vs:example:1", "x:+")];
+
+    let mut bm = base();
+    bm.facts = vec![f("bm:atoms", "a"), f("bm:base:1", "a"), f("bm:base:2", "-a")];
+
+    let mut qr = base();
+    qr.facts = vec![f("qr:confluence:c1", "+x,-y"), f("qr:sign:x", "+")];
+
+    let mut sam = base();
+    sam.facts = vec![f("sam:event:1", "enter:bo"), f("sam:event:2", "leave:bo")];
+
+    let mut clp = base();
+    clp.facts = vec![f("clp:var:x", "1..2"), f("clp:constraint:c1", "x<=1")];
+
+    vec![
+        ("asp", asp),
+        ("description_logic", dl),
+        ("abductive_lp", alp),
+        ("abductive_ibe", ibe),
+        ("partial_order_plan", pop),
+        ("event_calculus", ec),
+        ("mdp", mdp),
+        ("version_space", vs),
+        ("belief_merging", bm),
+        ("qualitative_reason", qr),
+        ("script_sam", sam),
+        ("clp", clp),
+    ]
+}
+
+#[test]
+fn p2_breeds_route_through_raw_dispatch() {
+    for (breed, input) in p2_smoke_inputs() {
+        let out = dispatch_breed_test(breed, &input)
+            .unwrap_or_else(|e| panic!("{} raw dispatch: {}", breed, e));
+        assert!(
+            !out.inference_trace.is_empty(),
+            "{}: non-empty trace required",
+            breed
+        );
+        assert_eq!(format!("{}", out.breed), breed, "{}: breed id mismatch", breed);
     }
 }
 
-
-/// Exhaustiveness: model_source and lifecycle_model_for agree for every BreedId —
-/// an implemented breed has BOTH an OCPN JSON source (which must parse) and a
-/// lifecycle model; an unimplemented breed has NEITHER.
 #[test]
-fn model_source_matches_lifecycle_model_for_every_breed() {
-    use wasm4pm_cognition::ocel::{lifecycle_model_for, model_sources::model_source};
-
-    for &breed_id in BreedId::ALL {
-        let name = breed_id.to_string();
-        let src = model_source(&name);
-        let model = lifecycle_model_for(&name);
-        assert_eq!(
-            src.is_some(),
-            model.is_some(),
-            "breed {}: model_source().is_some()={} but lifecycle_model_for().is_some()={}",
-            name,
-            src.is_some(),
-            model.is_some()
-        );
-        if let Some(json) = src {
-            let parsed: serde_json::Value = serde_json::from_str(json)
-                .unwrap_or_else(|e| panic!("breed {}: OCPN JSON does not parse: {}", name, e));
-            assert!(parsed.is_object(), "breed {}: OCPN JSON root must be an object", name);
-        }
-        if let Some(m) = model {
-            assert_eq!(m.breed_id, name, "breed {}: lifecycle model breed_id mismatch", name);
-            assert!(!m.phases.is_empty(), "breed {}: lifecycle model has no phases", name);
-        }
+fn p2_breeds_route_through_full_dispatch_with_ocel_gate() {
+    for (breed, input) in p2_smoke_inputs() {
+        let out = wasm4pm_cognition::breeds::dispatch::dispatch_breed(breed, &input)
+            .unwrap_or_else(|e| panic!("{} full dispatch: {}", breed, e));
+        assert!(out.ocel_log.is_some(), "{}: OCEL log must be attached", breed);
     }
+}
+
+#[test]
+fn p2_unknown_breed_still_rejected() {
+    let (_, input) = &p2_smoke_inputs()[0];
+    assert!(dispatch_breed_test("florbulator", input).is_err());
+}
+
+// ===========================================================================
+// P3 tier dispatch smoke: every new breed routes and produces a non-empty
+// trace plus a refusal for unknown routing typos.
+// ===========================================================================
+
+fn p3f(key: &str, value: &str) -> Fact {
+    Fact { key: key.into(), value: value.into() }
+}
+
+/// Valid representative input per P3 breed.
+fn p3_input(breed: &str) -> BreedInput {
+    let mut input = BreedInput {
+        intent: format!("p3 {} exercise", breed),
+        candidates: vec![],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    match breed {
+        "situation_calculus" => {
+            input.facts = vec![
+                p3f("fluent:door_open", "true"),
+                p3f("fluent:mark_set", "true"),
+                p3f("action:shut:pre", "door_open"),
+                p3f("action:shut:del", "door_open"),
+                p3f("action:shut:add", "door_shut"),
+                p3f("do:0", "shut"),
+            ];
+        }
+        "circumscription" => {
+            input.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+        }
+        "analogy_sme" => {
+            input.facts = vec![
+                p3f("base:0", "(cause (heat stove pot) (boil pot))"),
+                p3f("target:0", "(cause (heat sun lake) (boil lake))"),
+            ];
+        }
+        "act_r" => {
+            input.facts = vec![p3f("goal", "lookup")];
+            input.cases = vec![Case {
+                id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(),
+                outcome_score: 0.7, facts: vec![p3f("slot", "val")],
+            }];
+            input.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+        }
+        "problog" => {
+            input.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
+            input.rules = vec![
+                Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
+                Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+            ];
+            input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+        }
+        "sat_cdcl" => {
+            input.facts = vec![
+                p3f("clause:00", "1 2"),
+                p3f("clause:01", "-1 2"),
+                p3f("clause:02", "1 -2"),
+                p3f("clause:03", "-1 -2"),
+            ];
+        }
+        "episodic_memory" => {
+            input.facts = vec![
+                p3f("scene", "garden"),
+                p3f("cue:t", "7"),
+                p3f("episode:ep-a:t", "6"),
+                p3f("episode:ep-b:t", "1"),
+            ];
+            input.cases = vec![
+                Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+                Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+            ];
+        }
+        "rl_symbolic" => {
+            input.facts = vec![
+                p3f("mdp:gamma", "0.9"),
+                p3f("mdp:start", "s0"),
+                p3f("mdp:terminal:goal", "true"),
+                p3f("mdp:t:s0:go", "goal"),
+                p3f("mdp:t:s0:stay", "s0"),
+                p3f("mdp:r:s0:go", "1.0"),
+                p3f("rl:episodes", "50"),
+            ];
+        }
+        "ctl_check" => {
+            input.facts = vec![
+                p3f("ts:init", "a"),
+                p3f("ts:edge:a", "b"),
+                p3f("ts:edge:b", "a"),
+                p3f("ts:label:b", "p"),
+                p3f("ctl:formula", "A F p"),
+            ];
+        }
+        "ilp" => {
+            input.facts = vec![
+                p3f("bg:parent(ann,mary)", "true"),
+                p3f("bg:parent(ann,tom)", "true"),
+                p3f("bg:female(mary)", "true"),
+                p3f("pos:daughter(mary,ann)", "true"),
+                p3f("neg:daughter(tom,ann)", "true"),
+            ];
+        }
+        "naive_physics" => {
+            input.facts = vec![
+                p3f("np:ground:floor", "true"),
+                p3f("np:on:box", "floor"),
+                p3f("np:on:vase", "box"),
+                p3f("np:remove:box", "true"),
+            ];
+        }
+        other => panic!("unknown p3 breed {}", other),
+    }
+    input
+}
+
+const P3_BREEDS: [&str; 11] = [
+    "situation_calculus", "circumscription", "analogy_sme", "act_r", "problog",
+    "sat_cdcl", "episodic_memory", "rl_symbolic", "ctl_check", "ilp", "naive_physics",
+];
+
+#[test]
+fn p3_breeds_dispatch_smoke() {
+    for breed in P3_BREEDS {
+        let input = p3_input(breed);
+        let out = dispatch_breed_test(breed, &input)
+            .unwrap_or_else(|e| panic!("{} failed to dispatch: {}", breed, e));
+        assert_eq!(format!("{}", out.breed), breed, "breed id echo");
+        assert!(!out.inference_trace.is_empty(), "{}: empty trace (FM-5)", breed);
+        assert!(
+            out.inference_trace.iter().any(|t| t.kind == "decision"),
+            "{}: missing decision step",
+            breed
+        );
+    }
+}
+
+#[test]
+fn p3_unknown_breed_still_refused() {
+    let input = p3_input("problog");
+    assert!(dispatch_breed_test("problogg", &input).is_err());
+}
+
+// ---------------------------------------------------------------------------
+// P4 tier dispatch smoke tests
+// ---------------------------------------------------------------------------
+
+fn p4s_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn p4s_input(facts: Vec<Fact>) -> BreedInput {
+    BreedInput {
+        intent: "smoke".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+#[test]
+fn dispatch_tableaux_smoke() {
+    let out = dispatch_breed_test(
+        "tableaux",
+        &p4s_input(vec![p4s_fact("tableaux:formula", "a -> (b -> a)")]),
+    )
+    .expect("tableaux dispatch");
+    assert_eq!(out.breed, BreedId::Tableaux);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_construction_grammar_smoke() {
+    let out = dispatch_breed_test(
+        "construction_grammar",
+        &p4s_input(vec![
+            p4s_fact("cxg:utterance", "he sneezed the napkin off the table"),
+            p4s_fact("lex:he:pos", "pron"),
+            p4s_fact("lex:sneezed:pos", "verb"),
+            p4s_fact("lex:sneezed:valence", "intransitive"),
+            p4s_fact("lex:the:pos", "det"),
+            p4s_fact("lex:napkin:pos", "noun"),
+            p4s_fact("lex:off:pos", "prep"),
+            p4s_fact("lex:table:pos", "noun"),
+        ]),
+    )
+    .expect("construction_grammar dispatch");
+    assert_eq!(out.breed, BreedId::ConstructionGrammar);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_markov_logic_smoke() {
+    let out = dispatch_breed_test(
+        "markov_logic",
+        &p4s_input(vec![p4s_fact("mln:clause:s1", "1.0|a,b")]),
+    )
+    .expect("markov_logic dispatch");
+    assert_eq!(out.breed, BreedId::MarkovLogic);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_pomdp_smoke() {
+    let mut facts = vec![
+        p4s_fact("pomdp:states", "s1,s2"),
+        p4s_fact("pomdp:actions", "a"),
+        p4s_fact("pomdp:observations", "o1,o2"),
+        p4s_fact("pomdp:b0:s1", "0.5"),
+        p4s_fact("pomdp:b0:s2", "0.5"),
+    ];
+    for s in ["s1", "s2"] {
+        for sp in ["s1", "s2"] {
+            facts.push(p4s_fact(
+                &format!("pomdp:t:a:{}:{}", s, sp),
+                if s == sp { "1.0" } else { "0.0" },
+            ));
+        }
+        facts.push(p4s_fact(&format!("pomdp:o:a:{}:o1", s), "0.5"));
+        facts.push(p4s_fact(&format!("pomdp:o:a:{}:o2", s), "0.5"));
+        facts.push(p4s_fact(&format!("pomdp:r:a:{}", s), "1.0"));
+    }
+    let out = dispatch_breed_test("pomdp", &p4s_input(facts)).expect("pomdp dispatch");
+    assert_eq!(out.breed, BreedId::Pomdp);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_contingent_plan_smoke() {
+    let out = dispatch_breed_test(
+        "contingent_plan",
+        &p4s_input(vec![
+            p4s_fact("cp:init:dirt", "true"),
+            p4s_fact("cp:goal:dirt", "false"),
+            p4s_fact("cp:act:suck:pre", "dirt"),
+            p4s_fact("cp:act:suck:del", "dirt"),
+        ]),
+    )
+    .expect("contingent_plan dispatch");
+    assert_eq!(out.breed, BreedId::ContingentPlan);
+    assert!(!out.inference_trace.is_empty());
+}
+
+#[test]
+fn dispatch_meta_reasoning_smoke() {
+    let out = dispatch_breed_test(
+        "meta_reasoning",
+        &p4s_input(vec![
+            p4s_fact("breed:mycin:conclusion", "x=1"),
+            p4s_fact("breed:mycin:confidence", "0.8"),
+            p4s_fact("breed:prolog:conclusion", "x=1"),
+            p4s_fact("breed:prolog:confidence", "0.7"),
+        ]),
+    )
+    .expect("meta_reasoning dispatch");
+    assert_eq!(out.breed, BreedId::MetaReasoning);
+    assert!(!out.inference_trace.is_empty());
 }

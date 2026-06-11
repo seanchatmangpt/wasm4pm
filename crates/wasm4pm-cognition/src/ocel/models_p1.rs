@@ -1,6 +1,9 @@
+//! Static per-breed lifecycle models for the P1 tier (10 symbolic-reasoning
+//! breeds). Phase kinds mirror each breed's documented trace-kind contract.
+
 use super::{BreedLifecycleModel, LifecyclePhase};
 
-/// LTL Monitor lifecycle: ltl-init -> ltl-progress* -> ltl-verdict
+/// LTL monitor: ltl-init(1,1) → ltl-progress(1,*) → ltl-verdict(1,1).
 pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "ltl_monitor",
     phases: &[
@@ -13,7 +16,7 @@ pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         LifecyclePhase {
             name: "progress",
             kinds: &["ltl-progress"],
-            min_occurrences: 0,
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
@@ -25,7 +28,7 @@ pub static LTL_MONITOR_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     ],
 };
 
-/// Allen Temporal lifecycle: allen-load* -> allen-compose* -> allen-verdict
+/// Allen temporal: allen-load(1,*) → allen-compose(0,*) → allen-verdict(1,1).
 pub static ALLEN_TEMPORAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "allen_temporal",
     phases: &[
@@ -36,7 +39,7 @@ pub static ALLEN_TEMPORAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "propagation",
+            name: "compose",
             kinds: &["allen-compose"],
             min_occurrences: 0,
             max_occurrences: usize::MAX,
@@ -50,38 +53,38 @@ pub static ALLEN_TEMPORAL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     ],
 };
 
-/// Fuzzy Logic lifecycle: fuzzy-fuzzify* -> fuzzy-fire* -> fuzzy-aggregate* -> fuzzy-defuzz*
+/// Fuzzy logic: fuzzify(1,*) → fire(1,*) → aggregate(1,*) → defuzz(1,1).
 pub static FUZZY_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "fuzzy_logic",
     phases: &[
         LifecyclePhase {
-            name: "fuzzification",
+            name: "fuzzify",
             kinds: &["fuzzy-fuzzify"],
             min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
-            name: "rules-evaluation",
+            name: "fire",
             kinds: &["fuzzy-fire"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "aggregation",
-            kinds: &["fuzzy-aggregate"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "defuzzification",
-            kinds: &["fuzzy-defuzz"],
             min_occurrences: 1,
             max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "aggregate",
+            kinds: &["fuzzy-aggregate"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "defuzz",
+            kinds: &["fuzzy-defuzz"],
+            min_occurrences: 1,
+            max_occurrences: 1,
         },
     ],
 };
 
-/// Bayesian Network lifecycle: bn-load-cpt* -> bn-observe* -> bn-eliminate* -> bn-verdict
+/// Bayesian network: load-cpt(1,*) → observe(0,*) → eliminate(0,*) → verdict(1,1).
 pub static BAYESIAN_NETWORK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "bayesian_network",
     phases: &[
@@ -112,22 +115,76 @@ pub static BAYESIAN_NETWORK_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     ],
 };
 
-/// HTN Planning lifecycle: decompose/apply/backtrack* -> plan
-pub static HTN_PLANNING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "htn_planning",
+/// CSP AC-3: init(1,1) → {revise,assign,backtrack}(0,*) → verdict(1,1).
+pub static CSP_AC3_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "csp_ac3",
     phases: &[
         LifecyclePhase {
-            name: "planning",
-            kinds: &["htn-decompose", "htn-apply", "htn-backtrack", "htn-plan", "decision", "no-plan-found"],
+            name: "init",
+            kinds: &["csp-init"],
             min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "search",
+            kinds: &["csp-revise", "csp-assign", "csp-backtrack"],
+            min_occurrences: 0,
             max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "verdict",
+            kinds: &["csp-verdict"],
+            min_occurrences: 1,
+            max_occurrences: 1,
         },
     ],
 };
 
+/// Default logic: load(1,1) → {fire,block}(1,*) → extension(1,1).
+pub static DEFAULT_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "default_logic",
+    phases: &[
+        LifecyclePhase {
+            name: "load",
+            kinds: &["default-load"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+        LifecyclePhase {
+            name: "apply",
+            kinds: &["default-fire", "default-block"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "extension",
+            kinds: &["default-extension"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
 
+/// HTN planning: {decompose,apply,backtrack}(1,*) → plan(1,1).
+pub static HTN_PLANNING_MODEL: BreedLifecycleModel = BreedLifecycleModel {
+    breed_id: "htn_planning",
+    phases: &[
+        LifecyclePhase {
+            name: "decompose",
+            kinds: &["htn-decompose", "htn-apply", "htn-backtrack"],
+            min_occurrences: 1,
+            max_occurrences: usize::MAX,
+        },
+        LifecyclePhase {
+            name: "plan",
+            kinds: &["htn-plan"],
+            min_occurrences: 1,
+            max_occurrences: 1,
+        },
+    ],
+};
 
-/// Dempster-Shafer lifecycle: ds-load-bpa -> ds-combine* -> ds-belief
+/// Dempster–Shafer: load-bpa(1,1) → combine(0,*) → belief(1,1).
 pub static DEMPSTER_SHAFER_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "dempster_shafer",
     phases: &[
@@ -152,57 +209,7 @@ pub static DEMPSTER_SHAFER_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     ],
 };
 
-/// CSP AC-3 lifecycle: csp-init -> csp-revise/csp-assign/csp-backtrack* -> csp-verdict
-pub static CSP_AC3_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "csp_ac3",
-    phases: &[
-        LifecyclePhase {
-            name: "init",
-            kinds: &["csp-init"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "propagation",
-            kinds: &["csp-revise", "csp-assign", "csp-backtrack"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "verdict",
-            kinds: &["csp-verdict"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-    ],
-};
-
-/// Default Logic lifecycle: default-load -> default-block/default-fire* -> default-extension
-pub static DEFAULT_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
-    breed_id: "default_logic",
-    phases: &[
-        LifecyclePhase {
-            name: "load",
-            kinds: &["default-load"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-        LifecyclePhase {
-            name: "reasoning",
-            kinds: &["default-block", "default-fire"],
-            min_occurrences: 0,
-            max_occurrences: usize::MAX,
-        },
-        LifecyclePhase {
-            name: "verdict",
-            kinds: &["default-extension"],
-            min_occurrences: 1,
-            max_occurrences: 1,
-        },
-    ],
-};
-
-/// Frames Inheritance lifecycle: frame-load -> frame-walk* -> frame-resolve
+/// Frames inheritance: load(1,1) → walk(1,*) → resolve(1,1).
 pub static FRAMES_INHERITANCE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "frames_inheritance",
     phases: &[
@@ -215,19 +222,19 @@ pub static FRAMES_INHERITANCE_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         LifecyclePhase {
             name: "walk",
             kinds: &["frame-walk"],
-            min_occurrences: 0,
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
             name: "resolve",
             kinds: &["frame-resolve"],
-            min_occurrences: 0,
+            min_occurrences: 1,
             max_occurrences: 1,
         },
     ],
 };
 
-/// EBL lifecycle: ebl-explain+ -> ebl-generalize* -> ebl-operationalize
+/// EBL: explain(1,*) → generalize(1,*) → operationalize(1,1).
 pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "ebl",
     phases: &[
@@ -240,7 +247,7 @@ pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         LifecyclePhase {
             name: "generalize",
             kinds: &["ebl-generalize"],
-            min_occurrences: 0,
+            min_occurrences: 1,
             max_occurrences: usize::MAX,
         },
         LifecyclePhase {
@@ -251,6 +258,3 @@ pub static EBL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
     ],
 };
-
-
-

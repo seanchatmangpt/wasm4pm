@@ -117,3 +117,17 @@ Total: 211 tests pass across both clusters. No fixes needed.
 
 ### DevDep alignment
 - packages/agents: typescript ^5.7.0 → ^5.3.3 (workspace-standard version)
+
+## 2026-06-10 — Full Periodic Table integration (periodic/integration, v26.6.10)
+
+Integrated four tier branches (periodic/p1 @ 4af5269c, p2 @ ebc3d57e, p3 @ b7369c20, p4 @ ded560fc; all based at 184f7af6) via `git merge --no-ff`, union-resolving the serialized files (BreedId enum/Display/ALL, dispatch.rs, ocel/mod.rs + model_sources.rs, registry.json, schemas.ts, oracle/paper/dispatch/conformance tests, breed_latency bench).
+
+Result: 39 new cognition breeds; registry now 52 PARTIAL_ALIVE of 55 ids (morphological, triz, ocpm_route_discoverer remain UNSUPPORTED). Evidence (measured on this branch, this date):
+
+- cargo test -p wasm4pm-cognition: 868 passed / 0 failed (incl. new tests/registry_admission.rs ratchet: dispatch routing, OCPN+report provenance, fixture parity, BreedId::ALL == registry == TS BreedIdSchema, A8 fresh-name grep gate)
+- cargo check native + wasm32-unknown-unknown --features wasm: clean
+- wasm-pack build nodejs: ok; pnpm build: ok; packages/cognition vitest: 237 passed (FM-5 real WASM); apps/wasm4pm compile-command suite: 8 passed; tsc --noEmit (apps/wasm4pm): clean
+- ocel/reports/: 52 reports, all fitness 1.0, all enriched with measured_by/measured_on provenance (backed by green tests/ocel_conformance.rs incl. shuffled-trace negative injections)
+- Anti-cheat (docs/breeds/anti-cheat-threat-model.md): fresh oracle names absent from production src/breeds (single hit was inside #[cfg(test)] in partial_order_plan.rs); all 39 paper fixtures carry expected values + provenance
+
+Integration defects found and fixed forward: (1) p4-merge conflict resolution dropped the 11 p3 registry PARTIAL_ALIVE flips — restored; (2) ebl.rs run() indexed goals[0] without a guard (panic on raw-run path bypassing preconditions) — defensive refusal added.

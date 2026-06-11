@@ -1,24 +1,43 @@
 {
-  "id": "ocel_asp_v1",
-  "name": "ASP Lifecycle Model",
-  "phases": [
-    {
-      "name": "load",
-      "kinds": ["asp-load"],
-      "min_occurrences": 1,
-      "max_occurrences": 1
-    },
-    {
-      "name": "solve",
-      "kinds": ["asp-solve"],
-      "min_occurrences": 1,
-      "max_occurrences": 1
-    },
-    {
-      "name": "model",
-      "kinds": ["asp-model"],
-      "min_occurrences": 0,
-      "max_occurrences": 99999
-    }
-  ]
+  "model_id": "asp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "asp",
+  "object_types": ["program", "candidate", "answer_set"],
+  "places": [
+    {"id": "p1", "name": "program_loaded",    "object_type": "program"},
+    {"id": "p2", "name": "grounded",          "object_type": "program"},
+    {"id": "p3", "name": "candidate_guessed", "object_type": "candidate"},
+    {"id": "p4", "name": "reduct_built",      "object_type": "candidate"},
+    {"id": "p5", "name": "least_model",       "object_type": "candidate"},
+    {"id": "p6", "name": "candidate_judged",  "object_type": "candidate"},
+    {"id": "p7", "name": "answer_sets",       "object_type": "answer_set"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ground",          "label": "ground"},
+    {"id": "t2", "name": "guess_candidate", "label": "guess-candidate"},
+    {"id": "t3", "name": "reduct",          "label": "reduct"},
+    {"id": "t4", "name": "least_model",     "label": "least-model"},
+    {"id": "t5", "name": "stable_accept",   "label": "stable-accept"},
+    {"id": "t6", "name": "stable_reject",   "label": "stable-reject"},
+    {"id": "t7", "name": "answer_set",      "label": "answer-set"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"},
+    {"from": "t6", "to": "p6", "type": "produce"},
+    {"from": "p6", "to": "t2", "type": "consume"},
+    {"from": "p6", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p7", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p7": 1}]
 }

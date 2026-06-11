@@ -634,6 +634,91 @@ export function minimalAbductiveIbeInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// PARTIAL ORDER PLAN — partial_order_plan.rs.
+// ---------------------------------------------------------------------------
+export function minimalPartialOrderPlanInput(): BreedInput {
+  return {
+    intent: 'planning',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'move', premise: ['robot_at=depot'], conclusion: 'robot_at=warehouse;!robot_at=depot', certainty: 1.0 },
+      { id: 'pickup', premise: ['robot_at=depot', 'at=depot'], conclusion: 'holding=true;!at=depot', certainty: 1.0 },
+    ],
+    goals: [
+      { id: 'g1', predicate: 'holding', value: 'true' },
+    ],
+    state: [
+      { predicate: 'robot_at', value: 'depot' },
+      { predicate: 'at', value: 'depot' },
+    ],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// EVENT CALCULUS — event_calculus.rs.
+// ---------------------------------------------------------------------------
+export function minimalEventCalculusInput(): BreedInput {
+  return {
+    intent: 'reasoning',
+    candidates: [],
+    facts: [
+      { key: 'initially', value: 'light_off' },
+      { key: 'happens', value: 'switch_on,2' },
+      { key: 'initiates', value: 'switch_on,light_on' },
+      { key: 'terminates', value: 'switch_on,light_off' },
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// MDP — mdp.rs.
+// ---------------------------------------------------------------------------
+export function minimalMdpInput(): BreedInput {
+  return {
+    intent: 'reinforcement_learning',
+    candidates: [],
+    facts: [
+      { key: 'state', value: 's0' },
+      { key: 'state', value: 's1' },
+      { key: 'action', value: 'go' },
+      { key: 'gamma', value: '0.5' },
+      { key: 'transition', value: 's0,go,s1,1.0' },
+      { key: 'transition', value: 's1,go,s1,1.0' },
+      { key: 'reward', value: 's0,go,10.0' },
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// VERSION SPACE — version_space.rs.
+// ---------------------------------------------------------------------------
+export function minimalVersionSpaceInput(): BreedInput {
+  return {
+    intent: 'learning',
+    candidates: [],
+    facts: [
+      { key: 'attribute', value: 'Color: Red, Blue' },
+      { key: 'example', value: 'Color=Red,positive' },
+      { key: 'classify', value: 'Color=Red' },
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

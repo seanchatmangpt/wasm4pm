@@ -1,64 +1,25 @@
-# Description Logic (DL)
+# description_logic — EL Completion Classification
 
-## Origin
-- **Paper:** "The Description Logic Handbook" (Baader, Calvanese, McGuinness, Nardi, Patel-Schneider, 2003)
-- **Authors:** Franz Baader et al.
-- **Tradition:** Ontological Reasoning, Semantic Web, ABox/TBox Subsumption
+## 1. Identity & Lineage
+EL++ completion-rule subsumption (Baader, Brandt & Lutz, IJCAI 2005). BreedId `description_logic`, module `src/breeds/description_logic.rs`.
 
-## Algorithm
-Description Logic reasoning propagates class subsumptions and checks consistency of individual class assertions.
-1. Parse the TBox (subsumption relations) and ABox (class assertions) from `input.facts`.
-2. Compute the transitive closure of the subsumes relation:
-   - If class $A$ subsumes $B$ and class $B$ subsumes $C$, then $A$ subsumes $C$.
-3. Propagate ABox individual class membership:
-   - If individual $x$ is a member of class $C$, and class $D$ subsumes class $C$, then $x$ is a member of class $D$.
-4. Check ABox/TBox consistency against disjointness assertions:
-   - If individual $x$ is derived to belong to both classes $C_1$ and $C_2$, and $C_1$ is disjoint from $C_2$, then the ontology is inconsistent.
+## 2. Algorithm
+Completion rules CR1 (atomic GCI), CR2 (conjunction), CR3 (existential right), CR4 (existential left) iterated to fixpoint over subsumer sets S(C) and role edges R(r). Role-inclusion-free fragment.
 
-## Pseudocode
-```
-function solve(input):
-    (subsumes, member, disjoint) = parse_kb(input.facts)
-    
-    // TBox reasoning
-    repeat until no changes:
-        if A subsumes B and B subsumes C:
-            subsumes.insert(A subsumes C)
-            
-    // ABox reasoning
-    repeat until no changes:
-        if x is member of C and D subsumes C:
-            member.insert(x is member of D)
-            
-    // Consistency Check
-    for each (x, C1) and (x, C2) in member:
-        if disjoint(C1, C2):
-            return INCONSISTENT
-            
-    return CONSISTENT
-```
+## 3. Input Contract
+Facts: `dl:subclass:<A>`=B, `dl:conj:<A1>+<A2>`=B, `dl:exists_rhs:<A>`=r.B, `dl:exists_lhs:<r>.<A>`=B. Queries: goals `{predicate:"dl:subsumes", value:"A:B"}`. ≤32 concepts.
 
-## Input contract
-- `intent`: not used
-- `facts`: contains TBox and ABox statements:
-  - `subsumes`: `"ClassA,ClassB"` (ClassA subsumes ClassB)
-  - `subclass`: `"ClassB,ClassA"` (ClassB is a subclass of ClassA)
-  - `class`, `class_assertion`, or `type`: `"individual,Class"` (individual belongs to Class)
-  - `disjoint` or `disjoint_classes`: `"Class1,Class2"` (Class1 and Class2 are disjoint)
+## 4. Output Contract
+Facts `dl:verdict:<A>:<B>` = "true"/"false" per query; `selected` = first verdict summary.
 
-## Output contract
-- `selected`: `"consistent"` or `"inconsistent"`
-- `explanation`: `"Description Logic: KB is consistent..."` or error details on disjointness clashes.
-- `inference_trace`: trace steps recording `"dl-load"`, `"dl-subsume"`, and `"dl-consistent"`.
+## 5. Trace & OCEL Lifecycle
+`normalize`(1,1) → {`apply-cr1..4`,`fixpoint`}(1,*) → `classify-verdict`(1,*). Model `ocel/models/l1/description_logic.ocpn.json`; report fitness 1.0.
 
-## Complexity
-- Time: Polynomial $O(C^3 + I \cdot C^2)$ in class count $C$ and individual count $I$.
-- Space: $O(C^2 + I \cdot C)$ to store relations.
+## 6. Oracles
+Refusal: no TBox axioms / no query. Hidden: role-chain-only subsumption (CR3+CR4) with reverse direction NOT derived (precision). Paper: Pericarditis ⊑ HeartDisease (BBL05 medical example).
 
-## Generalization examples
-- **Workflow Compliance Auditing**: Match process instances (ABox individuals) to compliance types (TBox classes) and verify disjoint risk categories (e.g. `Maker` disjoint from `Checker`).
-- **Data Model Ontologies**: Check consistency of complex database schema mappings.
+## 7. Determinism & Bounds
+BTreeMap/BTreeSet saturation; polynomial fixpoint. Bit-exact double run.
 
-## Adversarial coverage
-- Precondition rejects if facts (knowledge base) is empty.
-- Detects disjoint clashes and eliminates all candidates with score 0.0.
+## 8. Provenance
+Fixture `tests/fixtures/papers/description_logic.json` (adapted: role chain pre-composed; deviation documented in fixture notes).

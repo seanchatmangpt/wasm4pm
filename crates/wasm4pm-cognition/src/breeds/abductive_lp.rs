@@ -1,10 +1,85 @@
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep, Candidate
-};
-use std::collections::HashSet;
+//! Abductive Logic Programming (Kakas, Kowalski & Toni, "Abductive Logic
+//! Programming", Journal of Logic and Computation 2(6), 1992).
+//!
+//! Theory ⟨P, A, IC⟩:
+//! - P  = input `rules` (definite Horn program; empty premise = fact)
+//! - A  = abducibles: facts `alp:abducible:<a>` = "true"  (≤12)
+//! - IC = integrity constraints: facts `alp:ic:<id>` = "a,b" — denial ← a ∧ b
+//!        (the listed atoms must not ALL be derivable)
+//! - O  = observation: goal `{ predicate: "alp:observe", value: <atom> }`
+//!
+//! An explanation Δ ⊆ A is accepted iff P ∪ Δ ⊢ O and every IC is satisfied.
+//! Candidates are enumerated by size then lexicographically; subset-minimality
+//! is enforced (a superset of an accepted Δ is rejected as non-minimal).
 
-/// Abductive Logic Programming (ALP) breed.
+use std::collections::BTreeSet;
+
+use crate::breeds::support::closure::{forward_close, HornRule};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+
+/// Maximum number of abducibles (2^12 candidate sets).
+const MAX_ABDUCIBLES: usize = 12;
+
+/// KKT abductive logic programming breed.
 pub struct AbductiveLp;
+
+fn abducibles(input: &BreedInput) -> Vec<String> {
+    let mut set: BTreeSet<String> = BTreeSet::new();
+    for f in &input.facts {
+        if let Some(a) = f.key.strip_prefix("alp:abducible:") {
+            set.insert(a.to_string());
+        }
+    }
+    set.into_iter().collect()
+}
+
+fn integrity_constraints(input: &BreedInput) -> Vec<(String, Vec<String>)> {
+    let mut ics: Vec<(String, Vec<String>)> = Vec::new();
+    for f in &input.facts {
+        if let Some(id) = f.key.strip_prefix("alp:ic:") {
+            let atoms: Vec<String> = f
+                .value
+                .split(',')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty())
+                .collect();
+            ics.push((id.to_string(), atoms));
+        }
+    }
+    ics.sort();
+    ics
+}
+
+fn horn_program(input: &BreedInput) -> Vec<HornRule> {
+    input
+        .rules
+        .iter()
+        .map(|r| HornRule {
+            id: r.id.clone(),
+            premises: r.premise.iter().map(|p| p.trim().to_string()).collect(),
+            conclusion: r.conclusion.trim().to_string(),
+        })
+        .collect()
+}
+
+/// Subsets of `n` elements ordered by popcount then numeric (lex on sorted atoms).
+fn subsets_by_size(n: usize) -> Vec<u32> {
+    let mut masks: Vec<u32> = (0..(1u32 << n)).collect();
+    masks.sort_by_key(|m| (m.count_ones(), *m));
+    masks
+}
+
+fn render(mask: u32, atoms: &[String]) -> String {
+    let parts: Vec<&str> = atoms
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| mask & (1 << i) != 0)
+        .map(|(_, a)| a.as_str())
+        .collect();
+    format!("{{{}}}", parts.join(","))
+}
 
 impl CognitionBreed for AbductiveLp {
     fn id(&self) -> BreedId {
@@ -13,240 +88,275 @@ impl CognitionBreed for AbductiveLp {
 
     fn capabilities(&self) -> Vec<String> {
         vec![
-            "abductive_logic_programming".to_string(),
-            "integrity_constraints".to_string(),
-            "explanation_generation".to_string(),
-            "minimal_hypothesis".to_string(),
+            "abductive-explanation".to_string(),
+            "integrity-constraints".to_string(),
+            "subset-minimality".to_string(),
         ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        if input.rules.is_empty() {
-            return Err("AbductiveLp requires at least one rule".to_string());
+        let abd = abducibles(input);
+        if abd.is_empty() {
+            return Err("abductive_lp requires at least one alp:abducible:* fact".to_string());
         }
-        if input.goals.is_empty() {
-            return Err("AbductiveLp requires at least one goal to explain".to_string());
+        if abd.len() > MAX_ABDUCIBLES {
+            return Err(format!(
+                "abducible count {} exceeds cap {}",
+                abd.len(),
+                MAX_ABDUCIBLES
+            ));
+        }
+        if !input.goals.iter().any(|g| g.predicate == "alp:observe") {
+            return Err("abductive_lp requires an alp:observe goal".to_string());
         }
         Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut trace = Vec::new();
-        let mut step_count = 0;
-
-        // 1. Load abducibles, rules, and integrity constraints
-        let mut abducibles = HashSet::new();
-        for f in &input.facts {
-            if f.key == "abducible" {
-                abducibles.insert(f.value.clone());
-            }
-        }
-        // Fallback: if no abducibles are explicitly declared, treat all undefined atoms
-        // appearing in premises but not in conclusions/facts as abducibles.
-        if abducibles.is_empty() {
-            let mut defined = HashSet::new();
-            for r in &input.rules {
-                defined.insert(r.conclusion.clone());
-            }
-            for f in &input.facts {
-                if !f.value.is_empty() {
-                    defined.insert(f.value.clone());
-                }
-            }
-            for r in &input.rules {
-                for p in &r.premise {
-                    if !defined.contains(p) && p != "false" {
-                        abducibles.insert(p.clone());
-                    }
-                }
-            }
-        }
-
-        trace.push(TraceStep {
-            step: step_count,
-            kind: "alp-load".to_string(),
-            detail: format!("Loaded {} rules, {} abducibles", input.rules.len(), abducibles.len()),
-            depth: 0,
-            objects: vec![],
-        });
-        step_count += 1;
-
-        let abducibles_list: Vec<String> = {
-            let mut list: Vec<String> = abducibles.into_iter().collect();
-            list.sort();
-            list
-        };
-
-        trace.push(TraceStep {
-            step: step_count,
-            kind: "alp-abduce".to_string(),
-            detail: format!("Abducing explanations over: {:?}", abducibles_list),
-            depth: 0,
-            objects: vec![],
-        });
-        step_count += 1;
-
-        // 2. Search for valid explanations by exploring subsets of abducibles.
-        // We want a minimal subset E of abducibles such that P U E derives all goals and violates no ICs.
-        let mut valid_explanations = Vec::new();
-        let n_abducibles = abducibles_list.len();
-
-        if n_abducibles <= 16 {
-            let limit = 1 << n_abducibles;
-            for mask in 0..limit {
-                let mut hypothesis = HashSet::new();
-                for i in 0..n_abducibles {
-                    if (mask & (1 << i)) != 0 {
-                        hypothesis.insert(abducibles_list[i].clone());
-                    }
-                }
-
-                // Compute least model of P U hypothesis
-                let mut model = HashSet::new();
-                // Initialize with facts and hypothesis
-                for f in &input.facts {
-                    if f.key != "abducible" && !f.value.is_empty() {
-                        model.insert(f.value.clone());
-                    }
-                }
-                for atom in &hypothesis {
-                    model.insert(atom.clone());
-                }
-
-                loop {
-                    let mut added = false;
-                    for r in &input.rules {
-                        if r.conclusion != "false" && !model.contains(&r.conclusion) {
-                            let all_met = r.premise.iter().all(|p| model.contains(p));
-                            if all_met {
-                                model.insert(r.conclusion.clone());
-                                added = true;
-                            }
-                        }
-                    }
-                    if !added {
-                        break;
-                    }
-                }
-
-                // Verify goals are satisfied
-                let goals_satisfied = input.goals.iter().all(|g| model.contains(&g.value) || model.contains(&g.predicate));
-
-                // Verify integrity constraints (rules with conclusion "false" must not fire)
-                let mut ic_violated = false;
-                for r in &input.rules {
-                    if r.conclusion == "false" {
-                        let all_met = r.premise.iter().all(|p| model.contains(p));
-                        if all_met {
-                            ic_violated = true;
-                            break;
-                        }
-                    }
-                }
-
-                if goals_satisfied && !ic_violated {
-                    let mut hyp_list: Vec<String> = hypothesis.into_iter().collect();
-                    hyp_list.sort();
-                    valid_explanations.push(hyp_list);
-                }
-            }
-        } else {
-            return Err(BreedError {
+        let abd = abducibles(input);
+        let ics = integrity_constraints(input);
+        let program = horn_program(input);
+        let observation = input
+            .goals
+            .iter()
+            .find(|g| g.predicate == "alp:observe")
+            .map(|g| g.value.trim().to_string())
+            .ok_or_else(|| BreedError {
                 breed: BreedId::AbductiveLp,
-                message: format!("Too many abducibles for exact ALP (max 16, got {})", n_abducibles),
-            });
-        }
+                message: "missing alp:observe goal".to_string(),
+            })?;
 
-        // Sort valid explanations: first by size (minimal first), then lexicographically
-        valid_explanations.sort_by(|a, b| {
-            a.len().cmp(&b.len()).then_with(|| a.cmp(b))
-        });
-
-        // Filter for minimality: keep an explanation only if no subset of it is also a valid explanation.
-        let mut minimal_explanations: Vec<Vec<String>> = Vec::new();
-        for exp in valid_explanations {
-            let exp_set: HashSet<&String> = exp.iter().collect();
-            let mut is_minimal = true;
-            for min_exp in &minimal_explanations {
-                if min_exp.iter().all(|item| exp_set.contains(item)) {
-                    is_minimal = false;
-                    break;
-                }
-            }
-            if is_minimal {
-                minimal_explanations.push(exp);
-            }
-        }
-        let valid_explanations = minimal_explanations;
-
-        // Trace the top explanations found
-        for (idx, explanation) in valid_explanations.iter().enumerate() {
+        let mut trace: Vec<TraceStep> = Vec::new();
+        let mut step = 0usize;
+        let mut tr = |trace: &mut Vec<TraceStep>, kind: &str, detail: String, depth: u32| {
             trace.push(TraceStep {
-                step: step_count,
-                kind: "alp-hypothesis".to_string(),
-                detail: format!("Explanation {}: {:?}", idx, explanation),
-                depth: 0,
+                step,
+                kind: kind.to_string(),
+                detail,
+                depth,
                 objects: vec![],
             });
-            step_count += 1;
-        }
+            step += 1;
+        };
 
-        let mut out_facts = Vec::new();
-        out_facts.push(Fact {
-            key: "explanations_count".to_string(),
-            value: valid_explanations.len().to_string(),
-        });
+        tr(
+            &mut trace,
+            "load-abducibles",
+            format!(
+                "A={{{}}}, {} ICs, observe '{}'",
+                abd.join(","),
+                ics.len(),
+                observation
+            ),
+            0,
+        );
 
-        let mut selected = None;
-        let mut candidates = input.candidates.clone();
-
-        if let Some(best_explanation) = valid_explanations.first() {
-            // Store the best explanation atoms as facts
-            for (i, atom) in best_explanation.iter().enumerate() {
-                out_facts.push(Fact {
-                    key: format!("explanation_0_{}", i),
-                    value: atom.clone(),
-                });
+        let mut accepted: Vec<u32> = Vec::new();
+        for mask in subsets_by_size(abd.len()) {
+            // Subset-minimality: skip supersets of accepted explanations.
+            if accepted.iter().any(|a| a & mask == *a) && !accepted.contains(&mask) {
+                tr(
+                    &mut trace,
+                    "explain-reject",
+                    format!("{} non-minimal (superset of accepted Δ)", render(mask, &abd)),
+                    1,
+                );
+                continue;
             }
+            tr(
+                &mut trace,
+                "candidate-delta",
+                format!("Δ={}", render(mask, &abd)),
+                1,
+            );
 
-            // Select candidate if its ID is in the best explanation
-            for cand in &mut candidates {
-                if best_explanation.contains(&cand.id) {
-                    cand.score = 1.0;
-                    if selected.is_none() {
-                        selected = Some(cand.id.clone());
-                    }
+            let delta: BTreeSet<String> = abd
+                .iter()
+                .enumerate()
+                .filter(|(i, _)| mask & (1 << i) != 0)
+                .map(|(_, a)| a.clone())
+                .collect();
+            let closed = forward_close(&delta, &program);
+            tr(
+                &mut trace,
+                "derive",
+                format!("|LM(P∪Δ)|={} atoms", closed.facts.len()),
+                2,
+            );
+
+            let derives_obs = closed.facts.contains(&observation);
+            let mut ic_ok = true;
+            for (id, atoms) in &ics {
+                let violated = !atoms.is_empty() && atoms.iter().all(|a| closed.facts.contains(a));
+                tr(
+                    &mut trace,
+                    "ic-check",
+                    format!("IC {}: {}", id, if violated { "violated" } else { "satisfied" }),
+                    2,
+                );
+                if violated {
+                    ic_ok = false;
                 }
             }
+
+            if derives_obs && ic_ok {
+                tr(
+                    &mut trace,
+                    "explain-accept",
+                    format!("Δ={} explains '{}'", render(mask, &abd), observation),
+                    1,
+                );
+                accepted.push(mask);
+            } else {
+                tr(
+                    &mut trace,
+                    "explain-reject",
+                    format!(
+                        "Δ={}: observation {}, ICs {}",
+                        render(mask, &abd),
+                        if derives_obs { "derived" } else { "not derived" },
+                        if ic_ok { "ok" } else { "violated" }
+                    ),
+                    1,
+                );
+            }
         }
 
-        let explanation = format!(
-            "ALP: generated {} explanations. Best explanation: {:?}",
-            valid_explanations.len(),
-            valid_explanations.first()
+        let mut facts: Vec<Fact> = Vec::new();
+        for (i, m) in accepted.iter().enumerate() {
+            facts.push(Fact {
+                key: format!("alp:explanation:{}", i),
+                value: render(*m, &abd),
+            });
+        }
+        facts.push(Fact {
+            key: "alp:explanation_count".to_string(),
+            value: accepted.len().to_string(),
+        });
+        tr(
+            &mut trace,
+            "minimal-set",
+            format!("{} minimal explanation(s)", accepted.len()),
+            0,
         );
 
         Ok(BreedOutput {
             breed: BreedId::AbductiveLp,
-            candidates,
-            facts: out_facts,
-            selected,
-            explanation,
+            candidates: input.candidates.clone(),
+            facts,
+            selected: accepted.first().map(|m| render(*m, &abd)),
+            explanation: format!(
+                "KKT abduction: {} minimal explanation(s) of '{}' over {} abducibles.",
+                accepted.len(),
+                observation,
+                abd.len()
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("AbductiveLp must emit at least one trace step".to_string());
+            return Err("empty inference trace (FM-5 fraud signal)".to_string());
         }
-        let has_load = output.inference_trace.iter().any(|t| t.kind == "alp-load");
-        let has_abduce = output.inference_trace.iter().any(|t| t.kind == "alp-abduce");
-        if !has_load || !has_abduce {
-            return Err("AbductiveLp trace must contain alp-load and alp-abduce".to_string());
+        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("load-abducibles") {
+            return Err("first step must be 'load-abducibles'".to_string());
+        }
+        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("minimal-set") {
+            return Err("final step must be 'minimal-set'".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Goal, Rule};
+
+    fn fact(key: &str, value: &str) -> Fact {
+        Fact {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+
+    fn rule(id: &str, premise: Vec<&str>, conclusion: &str) -> Rule {
+        Rule {
+            id: id.into(),
+            premise: premise.into_iter().map(String::from).collect(),
+            conclusion: conclusion.into(),
+            certainty: 1.0,
+        }
+    }
+
+    fn input(facts: Vec<Fact>, rules: Vec<Rule>, observe: &str) -> BreedInput {
+        BreedInput {
+            intent: "explain".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules,
+            goals: vec![Goal {
+                id: "o1".into(),
+                predicate: "alp:observe".into(),
+                value: observe.into(),
+            }],
+            state: vec![],
+        }
+    }
+
+    /// {a} accepted; {a,b} excluded by subset-minimality.
+    #[test]
+    fn minimality_excludes_supersets() {
+        let out = AbductiveLp
+            .run(&input(
+                vec![fact("alp:abducible:a", "true"), fact("alp:abducible:b", "true")],
+                vec![rule("r1", vec!["a"], "obs")],
+                "obs",
+            ))
+            .unwrap();
+        let expls: Vec<&str> = out
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("alp:explanation:"))
+            .map(|f| f.value.as_str())
+            .collect();
+        assert_eq!(expls, vec!["{a}"]);
+    }
+
+    /// IC forces rejection of the smallest Δ → correct answer is {b}.
+    #[test]
+    fn ic_rejects_smallest_delta() {
+        let out = AbductiveLp
+            .run(&input(
+                vec![
+                    fact("alp:abducible:a", "true"),
+                    fact("alp:abducible:b", "true"),
+                    fact("alp:ic:1", "a,obs"),
+                ],
+                vec![rule("r1", vec!["a"], "obs"), rule("r2", vec!["b"], "obs")],
+                "obs",
+            ))
+            .unwrap();
+        assert_eq!(out.selected.as_deref(), Some("{b}"));
+        let count = out
+            .facts
+            .iter()
+            .find(|f| f.key == "alp:explanation_count")
+            .unwrap();
+        assert_eq!(count.value, "1");
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "ic-check" && t.detail.contains("violated")));
+    }
+
+    #[test]
+    fn refuses_without_abducibles() {
+        let inp = input(vec![], vec![rule("r1", vec!["a"], "obs")], "obs");
+        assert!(AbductiveLp.preconditions(&inp).is_err());
     }
 }

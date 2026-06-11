@@ -1,53 +1,25 @@
-# Abductive Logic Programming (ALP)
+# abductive_lp — Abductive Logic Programming
 
-## Origin
-- **Paper:** "Abductive Logic Programming" (Kakas, Kowalski, Toni, 1992)
-- **Authors:** A.C. Kakas, R.A. Kowalski, F. Toni
-- **Tradition:** Logic Programming, Abduction, Hypothesis Generation, Integrity Constraints
+## 1. Identity & Lineage
+KKT abductive framework ⟨P, A, IC⟩ (Kakas, Kowalski & Toni, JLC 1992). BreedId `abductive_lp`, module `src/breeds/abductive_lp.rs`.
 
-## Algorithm
-ALP finds minimal abductive explanations (subsets of abducible atoms) to satisfy query goals under integrity constraints.
-1. Identify abducible atoms: either explicitly specified in facts, or derived as undefined atoms appearing only in premises.
-2. Explore subsets of abducible atoms. For each subset (hypothesis):
-   - Compute the least model of the rules $P \cup \text{hypothesis}$ by iterating rules to a fixpoint.
-   - Verify that all goals in `input.goals` are satisfied by the model.
-   - Verify that no integrity constraints are violated (rules with conclusion `"false"` must not fire).
-3. Sort valid explanations by size (minimal first) and filter for minimality (no subset of an explanation can be a valid explanation).
+## 2. Algorithm
+Enumerate Δ ⊆ abducibles by size then lex (≤12); forward-close P ∪ Δ (`support::closure`); accept iff observation derived and every IC (denial) satisfied; subset-minimality prunes supersets of accepted Δ.
 
-## Pseudocode
-```
-function solve(input):
-    abducibles = get_abducibles(input)
-    explanations = []
-    
-    for each subset H of abducibles:
-        model = ComputeLeastModel(input.rules, input.facts, H)
-        if satisfies_goals(model, input.goals) and not violates_constraints(model, input.rules):
-            explanations.push(H)
-            
-    minimal_explanations = filter_minimal(explanations)
-    return minimal_explanations
-```
+## 3. Input Contract
+Facts `alp:abducible:<a>`="true", `alp:ic:<id>`="a,b" (atoms that must not all hold); `rules` = definite Horn program; goal `{predicate:"alp:observe", value:<atom>}`.
 
-## Input contract
-- `intent`: not used
-- `facts`: contains facts and optional abducible definitions (`key="abducible", value="atom"`).
-- `rules`: rules with conclusion and premises; rules concluding `"false"` represent integrity constraints.
-- `goals`: list of query goals to satisfy.
+## 4. Output Contract
+Facts `alp:explanation:<i>` = "{a,b}", `alp:explanation_count`; `selected` = first minimal explanation.
 
-## Output contract
-- `selected`: ID of candidate that is part of the best minimal explanation.
-- `explanation`: `"ALP: generated <N> explanations. Best explanation: <best>"`
-- `inference_trace`: trace steps recording `"alp-load"`, `"alp-abduce"`, and `"alp-hypothesis"`.
+## 5. Trace & OCEL Lifecycle
+`load-abducibles`(1,1) → {`candidate-delta`,`derive`,`ic-check`,`explain-accept`,`explain-reject`}(1,*) → `minimal-set`(1,1). Report fitness 1.0.
 
-## Complexity
-- Time: Exponential $O(2^A \cdot R)$ in abducible count $A$ (max 16) and rules $R$.
-- Space: $O(A + R)$ to store states.
+## 6. Oracles
+Refusal: no abducibles / no observation goal. Hidden: {a} accepted and {a,b} excluded by minimality; IC rejects smallest Δ → answer {b}. Paper: grass-wet → {rained}, {sprinkler_on}.
 
-## Generalization examples
-- **Diagnostic Root Cause Analysis**: Find the minimal set of faulty components (abducibles) that explain observed process errors (goals) without violating physical constraints.
-- **Security Intrusion Attribution**: Find minimum-cardinality attack steps explaining audit logs.
+## 7. Determinism & Bounds
+Size-then-lex subset order; ≤2^12 candidates; BTreeSet closure.
 
-## Adversarial coverage
-- Precondition rejects if rules are empty or goals are empty.
-- Enforces a limit of 16 abducibles to avoid state space explosion (returns BreedError if exceeded).
+## 8. Provenance
+Fixture `tests/fixtures/papers/abductive_lp.json` (verbatim KKT92 Section 1.1 example).

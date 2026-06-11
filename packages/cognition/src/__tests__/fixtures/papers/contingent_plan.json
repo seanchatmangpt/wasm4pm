@@ -1,0 +1,24 @@
+{
+  "paper": {
+    "authors": "Stuart Russell and Peter Norvig",
+    "title": "Artificial Intelligence: A Modern Approach (3rd ed.)",
+    "venue": "Pearson",
+    "year": 2010,
+    "section": "§4.3.2 — AND-OR search trees for nondeterministic/partially observable vacuum worlds; conditional plans of the form [if-then-else]",
+    "claim": "With dirt status unknown, no unconditional plan is guaranteed; AND-OR search returns the conditional plan 'sense dirt; if dirty then suck else nothing', which achieves the goal in every possible initial world."
+  },
+  "input": {
+    "intent": "vacuum world contingent plan",
+    "facts": [
+      { "key": "cp:unknown", "value": "dirt" },
+      { "key": "cp:goal:dirt", "value": "false" },
+      { "key": "cp:act:suck:pre", "value": "dirt" },
+      { "key": "cp:act:suck:del", "value": "dirt" },
+      { "key": "cp:sense:check-dirt", "value": "dirt" }
+    ]
+  },
+  "expected": {
+    "plan_tree": "(sense check-dirt dirt (act suck (done)) (done))",
+    "sense_nodes": 1
+  }
+}

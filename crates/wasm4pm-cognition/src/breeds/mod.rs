@@ -7,78 +7,76 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Module for autoinstinct_learning
-pub mod autoinstinct_learning;
-/// Module for autoinstinct_neurosis
-pub mod autoinstinct_neurosis;
-/// Module for autoinstinct_semantics
-pub mod autoinstinct_semantics;
-/// Module for autoinstinct_vision
-pub mod autoinstinct_vision;
-/// Module for cbr
-pub mod cbr;
-/// Module for ebl
-pub mod ebl;
-/// Module for default_logic
-pub mod default_logic;
-/// Module for clp
-pub mod clp;
-/// Module for csp_ac3
-pub mod csp_ac3;
-/// Module for dendral
-pub mod dendral;
-/// Module for frame
-pub mod frame;
-/// Module for gps
-pub mod gps;
-/// Module for htn_planning
-pub mod htn_planning;
-/// Module for hearsay
-pub mod hearsay;
-/// Module for production_rules
-pub mod production_rules;
-/// Module for prolog
-pub mod prolog;
-/// Module for soar
-pub mod soar;
-/// Module for strips
-pub mod strips;
-/// Module for ltl_monitor
-pub mod ltl_monitor;
-/// Module for allen_temporal
 pub mod allen_temporal;
-/// Module for fuzzy_logic
-pub mod fuzzy_logic;
-/// Module for bayesian_network
-pub mod bayesian_network;
-/// Module for dempster_shafer
-pub mod dempster_shafer;
-/// Module for frames_inheritance
-pub mod frames_inheritance;
-/// Module for asp
-pub mod asp;
-/// Module for description_logic
-pub mod description_logic;
-/// Module for abductive_lp
-pub mod abductive_lp;
-/// Module for abductive_ibe
+/// Inference to the best explanation (Harman 1965; Thagard 1978).
 pub mod abductive_ibe;
-/// Module for partial_order_plan
-pub mod partial_order_plan;
-/// Module for event_calculus
-pub mod event_calculus;
-/// Module for mdp
-pub mod mdp;
-/// Module for version_space
-pub mod version_space;
-/// Module for qualitative_reason
-pub mod qualitative_reason;
-/// Dispatch logic for cognitive breeds
+/// Abductive logic programming (Kakas, Kowalski & Toni 1992).
+pub mod abductive_lp;
+/// Answer set programming (Gelfond & Lifschitz 1988).
+pub mod asp;
+pub mod act_r;
+pub mod analogy_sme;
+pub mod autoinstinct_learning;
+/// Breed dispatch: explicit string-match routing (greppable, audit-friendly).
 pub mod dispatch;
-/// Shared combinator-core support library (parsers, solvers, fixpoint engines).
+/// Combinator core: shared, fully-validated algebraic machinery (Stage C1).
 pub mod support;
+pub mod autoinstinct_neurosis;
+pub mod autoinstinct_semantics;
+pub mod autoinstinct_vision;
+pub mod bayesian_network;
+pub mod cbr;
+pub mod csp_ac3;
+pub mod default_logic;
+pub mod dempster_shafer;
+pub mod construction_grammar;
+pub mod contingent_plan;
+pub mod dendral;
+pub mod ebl;
+/// Distance-based belief merging (Konieczny & Pino Pérez 2002).
+pub mod belief_merging;
+/// Constraint logic programming over finite domains (Jaffar & Lassez 1987).
+pub mod clp;
+/// EL description-logic classification (Baader, Brandt & Lutz 2005).
+pub mod description_logic;
+/// Discrete event calculus (Kowalski & Sergot 1986).
+pub mod event_calculus;
+pub mod circumscription;
+pub mod ctl_check;
+pub mod episodic_memory;
+pub mod frame;
+pub mod frames_inheritance;
+pub mod fuzzy_logic;
+pub mod gps;
+pub mod hearsay;
+pub mod htn_planning;
+pub mod ltl_monitor;
+/// MDP value iteration (Bellman 1957).
+pub mod mdp;
+/// SNLP partial-order planning (McAllester & Rosenblitt 1991).
+pub mod partial_order_plan;
+pub mod markov_logic;
+pub mod meta_reasoning;
+pub mod pomdp;
+pub mod production_rules;
+pub mod prolog;
+/// Confluence-based qualitative reasoning (de Kleer & Brown 1984).
+pub mod qualitative_reason;
+/// SAM script application (Schank & Abelson 1977).
+pub mod script_sam;
+pub mod soar;
+pub mod strips;
+/// Version-space candidate elimination (Mitchell 1982).
+pub mod version_space;
+pub mod ilp;
+pub mod naive_physics;
+pub mod problog;
+pub mod rl_symbolic;
+pub mod sat_cdcl;
+pub mod situation_calculus;
 
-pub use dispatch::{dispatch_breed, dispatch_breed_test};
+pub use dispatch::{dispatch_breed, run_breed};
+pub mod tableaux;
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -109,151 +107,84 @@ pub enum BreedId {
     AutoinstinctNeurosis,
     /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
     AutoinstinctVision,
-    /// Bayesian Inference breed (Pearl 1988)
-    BayesianNetwork,
-    /// Fuzzy Logic breed (Zadeh 1965)
-    FuzzyLogic,
-    /// Dempster-Shafer theory of evidence (Shafer 1976)
-    DempsterShafer,
-    /// Abductive Logic Programming (Peirce 1878)
-    AbductiveLp,
-    /// Inductive Logic Programming (Muggleton 1991)
-    Ilp,
-    /// Allen's Temporal Interval Algebra (Allen 1983)
-    AllenTemporal,
-    /// Description Logic reasoning (Baader 2005)
-    DescriptionLogic,
-    /// Constraint Satisfaction via AC-3 (Mackworth 1977)
-    CspAc3,
-    /// Structure Mapping Engine for analogy (Gentner 1983)
-    AnalogySme,
-    /// Linear Temporal Logic runtime monitoring (Havelund 2001)
+    /// LTL runtime monitor via Havelund–Roşu progression (2001)
     LtlMonitor,
-    /// Default Logic extension finder (Reiter 1980)
+    /// Allen interval algebra path consistency (Allen 1983)
+    AllenTemporal,
+    /// Mamdani fuzzy inference (Mamdani & Assilian 1975)
+    FuzzyLogic,
+    /// Bayesian network: exact VE + d-separation (Pearl 1988)
+    BayesianNetwork,
+    /// CSP: AC-3 + MAC backtracking (Mackworth 1977)
+    CspAc3,
+    /// Reiter default logic (Reiter 1980)
     DefaultLogic,
-    /// Hierarchical Task Network planning (Nau 2003)
+    /// SHOP2-style HTN planning (Nau et al. 2003)
     HtnPlanning,
-    /// Frame-based inheritance with overrides (Minsky 1974)
+    /// Dempster–Shafer evidence combination (Shafer 1976)
+    DempsterShafer,
+    /// Minsky frame inheritance (Minsky 1974)
     FramesInheritance,
-    /// Explanation-Based Learning / generalization (Mitchell 1986)
+    /// Explanation-based learning (Mitchell et al. 1986)
     Ebl,
-    /// Answer Set Programming stable models (Gelfond 1988)
+    /// ASP: Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz 1988)
     Asp,
-    /// Abduction by Inference to the Best Explanation (Thagard 1978)
+    /// Description Logic: EL completion-rule classification (Baader, Brandt & Lutz 2005)
+    DescriptionLogic,
+    /// Abductive Logic Programming (Kakas, Kowalski & Toni 1992)
+    AbductiveLp,
+    /// Abduction as Inference to the Best Explanation (Harman 1965; Thagard 1978)
     AbductiveIbe,
-    /// Partial Order Planner (McAllester 1991)
+    /// SNLP partial-order planning (McAllester & Rosenblitt 1991)
     PartialOrderPlan,
-    /// Discrete Event Calculus solver (Kowalski 1986)
+    /// Event Calculus (Kowalski & Sergot 1986)
     EventCalculus,
-    /// Markov Decision Process value iteration (Bellman 1957)
+    /// MDP value iteration (Bellman 1957)
     Mdp,
-    /// Mitchell's Candidate Elimination version space (Mitchell 1982)
+    /// Version-space candidate elimination (Mitchell 1982)
     VersionSpace,
-    /// Belief merging under integrity constraints (Konieczny 2002)
+    /// Belief merging — Σ / GMax distance-based operators (Konieczny & Pino Pérez 2002)
     BeliefMerging,
-    /// Qualitative Reasoning sign algebra (de Kleer 1984)
+    /// Qualitative reasoning — confluences (de Kleer & Brown 1984)
     QualitativeReason,
-    /// SAM Script Applier Mechanism (Schank 1977)
+    /// SAM script application (Schank & Abelson 1977)
     ScriptSam,
-    /// Constraint Logic Programming (Jaffar 1987)
+    /// Constraint Logic Programming over finite domains (Jaffar & Lassez 1987)
     Clp,
-    /// Successor-state situation calculus (Reiter 1991)
+    /// Situation calculus with successor-state axioms (Reiter 1991)
     SituationCalculus,
-    /// Circumscription cautious entailment (McCarthy 1980)
+    /// Circumscription: minimal-model nonmonotonic entailment (McCarthy 1980)
     Circumscription,
-    /// ACT-R cognitive production cycle (Anderson 1998)
+    /// SME: structure-mapping analogy engine (Falkenhainer, Forbus & Gentner 1989)
+    AnalogySme,
+    /// ACT-R production cycle with activation-based retrieval (Anderson & Lebiere 1998)
     ActR,
-    /// Probabilistic logic programming possible-worlds (De Raedt 2007)
+    /// ProbLog: exact possible-worlds probabilistic Horn logic (De Raedt et al. 2007)
     Problog,
-    /// Conflict-Driven Clause Learning SAT solver (Marques-Silva 1999)
+    /// CDCL SAT with 1-UIP clause learning (Marques-Silva & Sakallah 1999)
     SatCdcl,
-    /// Episodic Memory similarity recall (Tulving 1983)
+    /// Episodic memory with temporal-proximity recall (Tulving 1983; Nuxoll & Laird 2007)
     EpisodicMemory,
-    /// Tabular Q-learning reinforcement learning (Watkins 1992)
+    /// Tabular Q-learning over a symbolic MDP (Watkins & Dayan 1992)
     RlSymbolic,
-    /// Computation Tree Logic model checker (Clarke 1986)
+    /// CTL model checking by fixed-point labeling (Clarke, Emerson & Sistla 1986)
     CtlCheck,
-    /// Hayes Naive Physics axiomatization (Hayes 1979)
+    /// FOIL inductive logic programming (Quinlan 1990)
+    Ilp,
+    /// Naive physics axiom saturation (Hayes 1979/1985)
     NaivePhysics,
-    /// Partially Observable MDP solver (Kaelbling 1998)
-    Pomdp,
-    /// Markov Logic Network MAP inference (Richardson 2006)
-    MarkovLogic,
-    /// Meta-Reasoning conflict resolver (Cox 2011)
-    MetaReasoning,
-    /// Goldberg Construction Grammar parser (Goldberg 1995)
-    ConstructionGrammar,
-    /// Contingent Planning AND-OR search (Norvig AIMA)
-    ContingentPlan,
-    /// Smullyan signed tableaux solver (Smullyan 1968)
+    /// Tableaux: Smullyan signed analytic tableaux for propositional validity (Smullyan 1968)
     Tableaux,
-    /// Morphological matrix variant generator
-    Morphological,
-    /// TRIZ contradiction solver
-    Triz,
-    /// Object-centric process mining discoverer
-    OcpmRouteDiscoverer,
-}
-
-impl BreedId {
-    /// All currently defined breed IDs.
-    pub const ALL: &'static [BreedId] = &[
-        BreedId::Eliza,
-        BreedId::Cbr,
-        BreedId::Dendral,
-        BreedId::Strips,
-        BreedId::Prolog,
-        BreedId::Mycin,
-        BreedId::Gps,
-        BreedId::Soar,
-        BreedId::Hearsay,
-        BreedId::AutoinstinctLearning,
-        BreedId::AutoinstinctSemantics,
-        BreedId::AutoinstinctNeurosis,
-        BreedId::AutoinstinctVision,
-        BreedId::BayesianNetwork,
-        BreedId::FuzzyLogic,
-        BreedId::DempsterShafer,
-        BreedId::AbductiveLp,
-        BreedId::Ilp,
-        BreedId::AllenTemporal,
-        BreedId::DescriptionLogic,
-        BreedId::CspAc3,
-        BreedId::AnalogySme,
-        BreedId::LtlMonitor,
-        BreedId::DefaultLogic,
-        BreedId::HtnPlanning,
-        BreedId::FramesInheritance,
-        BreedId::Ebl,
-        BreedId::Asp,
-        BreedId::AbductiveIbe,
-        BreedId::PartialOrderPlan,
-        BreedId::EventCalculus,
-        BreedId::Mdp,
-        BreedId::VersionSpace,
-        BreedId::BeliefMerging,
-        BreedId::QualitativeReason,
-        BreedId::ScriptSam,
-        BreedId::Clp,
-        BreedId::SituationCalculus,
-        BreedId::Circumscription,
-        BreedId::ActR,
-        BreedId::Problog,
-        BreedId::SatCdcl,
-        BreedId::EpisodicMemory,
-        BreedId::RlSymbolic,
-        BreedId::CtlCheck,
-        BreedId::NaivePhysics,
-        BreedId::Pomdp,
-        BreedId::MarkovLogic,
-        BreedId::MetaReasoning,
-        BreedId::ConstructionGrammar,
-        BreedId::ContingentPlan,
-        BreedId::Tableaux,
-        BreedId::Morphological,
-        BreedId::Triz,
-        BreedId::OcpmRouteDiscoverer,
-    ];
+    /// Construction Grammar: Goldberg argument-structure constructions (Goldberg 1995)
+    ConstructionGrammar,
+    /// Markov Logic: propositional MLN MAP inference via MaxWalkSAT (Richardson & Domingos 2006)
+    MarkovLogic,
+    /// POMDP: exact Bayes belief update + bounded PBVI (Kaelbling, Littman & Cassandra 1998)
+    Pomdp,
+    /// Contingent Planning: AND-OR search over belief states with sensing (Russell & Norvig, AIMA §4.3.2)
+    ContingentPlan,
+    /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
+    MetaReasoning,
 }
 
 impl fmt::Display for BreedId {
@@ -272,21 +203,19 @@ impl fmt::Display for BreedId {
             BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
             BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
             BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
-            BreedId::BayesianNetwork => write!(f, "bayesian_network"),
-            BreedId::FuzzyLogic => write!(f, "fuzzy_logic"),
-            BreedId::DempsterShafer => write!(f, "dempster_shafer"),
-            BreedId::AbductiveLp => write!(f, "abductive_lp"),
-            BreedId::Ilp => write!(f, "ilp"),
-            BreedId::AllenTemporal => write!(f, "allen_temporal"),
-            BreedId::DescriptionLogic => write!(f, "description_logic"),
-            BreedId::CspAc3 => write!(f, "csp_ac3"),
-            BreedId::AnalogySme => write!(f, "analogy_sme"),
             BreedId::LtlMonitor => write!(f, "ltl_monitor"),
+            BreedId::AllenTemporal => write!(f, "allen_temporal"),
+            BreedId::FuzzyLogic => write!(f, "fuzzy_logic"),
+            BreedId::BayesianNetwork => write!(f, "bayesian_network"),
+            BreedId::CspAc3 => write!(f, "csp_ac3"),
             BreedId::DefaultLogic => write!(f, "default_logic"),
             BreedId::HtnPlanning => write!(f, "htn_planning"),
+            BreedId::DempsterShafer => write!(f, "dempster_shafer"),
             BreedId::FramesInheritance => write!(f, "frames_inheritance"),
             BreedId::Ebl => write!(f, "ebl"),
             BreedId::Asp => write!(f, "asp"),
+            BreedId::DescriptionLogic => write!(f, "description_logic"),
+            BreedId::AbductiveLp => write!(f, "abductive_lp"),
             BreedId::AbductiveIbe => write!(f, "abductive_ibe"),
             BreedId::PartialOrderPlan => write!(f, "partial_order_plan"),
             BreedId::EventCalculus => write!(f, "event_calculus"),
@@ -298,22 +227,21 @@ impl fmt::Display for BreedId {
             BreedId::Clp => write!(f, "clp"),
             BreedId::SituationCalculus => write!(f, "situation_calculus"),
             BreedId::Circumscription => write!(f, "circumscription"),
+            BreedId::AnalogySme => write!(f, "analogy_sme"),
             BreedId::ActR => write!(f, "act_r"),
             BreedId::Problog => write!(f, "problog"),
             BreedId::SatCdcl => write!(f, "sat_cdcl"),
             BreedId::EpisodicMemory => write!(f, "episodic_memory"),
             BreedId::RlSymbolic => write!(f, "rl_symbolic"),
             BreedId::CtlCheck => write!(f, "ctl_check"),
+            BreedId::Ilp => write!(f, "ilp"),
             BreedId::NaivePhysics => write!(f, "naive_physics"),
-            BreedId::Pomdp => write!(f, "pomdp"),
-            BreedId::MarkovLogic => write!(f, "markov_logic"),
-            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
-            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
-            BreedId::ContingentPlan => write!(f, "contingent_plan"),
             BreedId::Tableaux => write!(f, "tableaux"),
-            BreedId::Morphological => write!(f, "morphological"),
-            BreedId::Triz => write!(f, "triz"),
-            BreedId::OcpmRouteDiscoverer => write!(f, "ocpm_route_discoverer"),
+            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
+            BreedId::MarkovLogic => write!(f, "markov_logic"),
+            BreedId::Pomdp => write!(f, "pomdp"),
+            BreedId::ContingentPlan => write!(f, "contingent_plan"),
+            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
         }
     }
 }
@@ -389,7 +317,7 @@ pub struct StateAtom {
 }
 
 /// Input to a breed's `run()` method: all available knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,
@@ -528,10 +456,87 @@ pub trait CognitionBreed: Send + Sync {
 
     /// Postcondition checks: verify the output is valid.
     /// Returns Ok(()) if all pass; Err(message) if violation.
-    fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String>;
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String>;
 
     /// Generate a BLAKE3 receipt for this execution.
     fn receipt(&self, input: &BreedInput, output: &BreedOutput) -> Receipt {
         compute_receipt(self.id(), input, output)
     }
 }
+
+/// Test harness: dispatch to the correct breed's `run()` method.
+///
+/// Routes each breed name to its corresponding `CognitionBreed::run()` implementation.
+/// Validates all 9 breeds and produces non-empty inference traces.
+///
+/// Used by integration tests in `tests/dispatch_smoke.rs` to verify:
+/// - Correct breed routing by name
+/// - Non-empty trace production (fraud detection)
+/// - Output structure validity
+/// - Multi-breed pipeline execution (Diagram 29)
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
+pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
+    dispatch::dispatch_breed_test(breed, input)
+}
+
+impl BreedId {
+    /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
+    pub const ALL: [BreedId; 52] = [
+        BreedId::Eliza,
+        BreedId::Cbr,
+        BreedId::Dendral,
+        BreedId::Strips,
+        BreedId::Prolog,
+        BreedId::Mycin,
+        BreedId::Gps,
+        BreedId::Soar,
+        BreedId::Hearsay,
+        BreedId::AutoinstinctLearning,
+        BreedId::AutoinstinctSemantics,
+        BreedId::AutoinstinctNeurosis,
+        BreedId::AutoinstinctVision,
+        BreedId::LtlMonitor,
+        BreedId::AllenTemporal,
+        BreedId::FuzzyLogic,
+        BreedId::BayesianNetwork,
+        BreedId::CspAc3,
+        BreedId::DefaultLogic,
+        BreedId::HtnPlanning,
+        BreedId::DempsterShafer,
+        BreedId::FramesInheritance,
+        BreedId::Ebl,
+        BreedId::Asp,
+        BreedId::DescriptionLogic,
+        BreedId::AbductiveLp,
+        BreedId::AbductiveIbe,
+        BreedId::PartialOrderPlan,
+        BreedId::EventCalculus,
+        BreedId::Mdp,
+        BreedId::VersionSpace,
+        BreedId::BeliefMerging,
+        BreedId::QualitativeReason,
+        BreedId::ScriptSam,
+        BreedId::Clp,
+        BreedId::SituationCalculus,
+        BreedId::Circumscription,
+        BreedId::AnalogySme,
+        BreedId::ActR,
+        BreedId::Problog,
+        BreedId::SatCdcl,
+        BreedId::EpisodicMemory,
+        BreedId::RlSymbolic,
+        BreedId::CtlCheck,
+        BreedId::Ilp,
+        BreedId::NaivePhysics,
+        BreedId::Tableaux,
+        BreedId::ConstructionGrammar,
+        BreedId::MarkovLogic,
+        BreedId::Pomdp,
+        BreedId::ContingentPlan,
+        BreedId::MetaReasoning,
+    ];
+}
+

@@ -457,3 +457,170 @@ describe('cognition_verify integration', () => {
     expect(verifyResult.findings.length).toBeGreaterThan(0);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// P4 tier breeds (real WASM, FM-5 — no init mocking)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function p4Input(facts: Array<{ key: string; value: string }>) {
+  return {
+    intent: 'p4 integration',
+    candidates: [],
+    facts,
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } as any;
+}
+
+describe('tableaux breed integration', () => {
+  it('proves the K axiom valid with zero beta expansions', async () => {
+    const result = (await fixtures.runBreed(
+      'tableaux',
+      p4Input([{ key: 'tableaux:formula', value: 'a -> (b -> a)' }])
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.breed).toBe('Tableaux');
+    expect(result.output.selected).toBe('valid');
+    const betas = result.output.inference_trace.filter(
+      (t: { kind: string }) => t.kind === 'beta-expand'
+    );
+    expect(betas.length).toBe(0);
+  });
+});
+
+describe('construction_grammar breed integration', () => {
+  it('coerces intransitive sneeze into the caused-motion construction', async () => {
+    const result = (await fixtures.runBreed(
+      'construction_grammar',
+      p4Input([
+        { key: 'cxg:utterance', value: 'he sneezed the napkin off the table' },
+        { key: 'lex:he:pos', value: 'pron' },
+        { key: 'lex:sneezed:pos', value: 'verb' },
+        { key: 'lex:sneezed:valence', value: 'intransitive' },
+        { key: 'lex:the:pos', value: 'det' },
+        { key: 'lex:napkin:pos', value: 'noun' },
+        { key: 'lex:off:pos', value: 'prep' },
+        { key: 'lex:table:pos', value: 'noun' },
+      ])
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    expect(result.output.selected).toBe('caused-motion');
+    const coerced = result.output.facts.find(
+      (f: { key: string }) => f.key === 'cxg:coerced'
+    );
+    expect(coerced?.value).toBe('true');
+  });
+});
+
+describe('markov_logic breed integration', () => {
+  it('reaches the zero-cost MAP state of the smokes/friends MLN', async () => {
+    const result = (await fixtures.runBreed(
+      'markov_logic',
+      p4Input([
+        { key: 'mln:clause:c1', value: '1.5|!smokes_anna,cancer_anna' },
+        { key: 'mln:clause:c2', value: '1.1|!friends_ab,!smokes_anna,smokes_bob' },
+        { key: 'evidence:smokes_anna', value: 'true' },
+        { key: 'evidence:friends_ab', value: 'true' },
+      ])
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    const cost = result.output.facts.find((f: { key: string }) => f.key === 'mln:cost');
+    expect(cost?.value).toBe('0.000000');
+    const bob = result.output.facts.find(
+      (f: { key: string }) => f.key === 'mln:atom:smokes_bob'
+    );
+    expect(bob?.value).toBe('true');
+  });
+});
+
+describe('pomdp breed integration', () => {
+  it('computes the exact tiger posterior 0.85 after one hear-left', async () => {
+    const facts: Array<{ key: string; value: string }> = [
+      { key: 'pomdp:states', value: 'tiger-left,tiger-right' },
+      { key: 'pomdp:actions', value: 'listen,open-left,open-right' },
+      { key: 'pomdp:observations', value: 'hear-left,hear-right' },
+      { key: 'pomdp:gamma', value: '0.95' },
+      { key: 'pomdp:horizon', value: '3' },
+      { key: 'pomdp:b0:tiger-left', value: '0.5' },
+      { key: 'pomdp:b0:tiger-right', value: '0.5' },
+      { key: 'pomdp:o:listen:tiger-left:hear-left', value: '0.85' },
+      { key: 'pomdp:o:listen:tiger-left:hear-right', value: '0.15' },
+      { key: 'pomdp:o:listen:tiger-right:hear-left', value: '0.15' },
+      { key: 'pomdp:o:listen:tiger-right:hear-right', value: '0.85' },
+      { key: 'pomdp:step:0', value: 'listen|hear-left' },
+    ];
+    for (const s of ['tiger-left', 'tiger-right']) {
+      for (const sp of ['tiger-left', 'tiger-right']) {
+        facts.push({
+          key: `pomdp:t:listen:${s}:${sp}`,
+          value: s === sp ? '1.0' : '0.0',
+        });
+      }
+      facts.push({ key: `pomdp:r:listen:${s}`, value: '-1.0' });
+    }
+    for (const a of ['open-left', 'open-right']) {
+      for (const s of ['tiger-left', 'tiger-right']) {
+        for (const sp of ['tiger-left', 'tiger-right']) {
+          facts.push({ key: `pomdp:t:${a}:${s}:${sp}`, value: '0.5' });
+        }
+        for (const ob of ['hear-left', 'hear-right']) {
+          facts.push({ key: `pomdp:o:${a}:${s}:${ob}`, value: '0.5' });
+        }
+      }
+    }
+    facts.push({ key: 'pomdp:r:open-left:tiger-left', value: '-100.0' });
+    facts.push({ key: 'pomdp:r:open-left:tiger-right', value: '10.0' });
+    facts.push({ key: 'pomdp:r:open-right:tiger-left', value: '10.0' });
+    facts.push({ key: 'pomdp:r:open-right:tiger-right', value: '-100.0' });
+
+    const result = (await fixtures.runBreed('pomdp', p4Input(facts))) as AnyResult;
+    expect(result.status).toBe('ok');
+    const belief = result.output.facts.find(
+      (f: { key: string }) => f.key === 'pomdp:belief:tiger-left'
+    );
+    expect(belief?.value).toBe('0.850000');
+  });
+});
+
+describe('contingent_plan breed integration', () => {
+  it('emits the AIMA vacuum conditional plan with exactly one sense node', async () => {
+    const result = (await fixtures.runBreed(
+      'contingent_plan',
+      p4Input([
+        { key: 'cp:unknown', value: 'dirt' },
+        { key: 'cp:goal:dirt', value: 'false' },
+        { key: 'cp:act:suck:pre', value: 'dirt' },
+        { key: 'cp:act:suck:del', value: 'dirt' },
+        { key: 'cp:sense:check-dirt', value: 'dirt' },
+      ])
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    const tree = result.output.facts.find((f: { key: string }) => f.key === 'plan:tree');
+    expect(tree?.value).toBe('(sense check-dirt dirt (act suck (done)) (done))');
+  });
+});
+
+describe('meta_reasoning breed integration', () => {
+  it('detects the mycin-vs-prolog conflict and resolves by confidence', async () => {
+    const result = (await fixtures.runBreed(
+      'meta_reasoning',
+      p4Input([
+        { key: 'breed:mycin:conclusion', value: 'therapy=gentamicin' },
+        { key: 'breed:mycin:confidence', value: '0.8' },
+        { key: 'breed:prolog:conclusion', value: 'therapy=none' },
+        { key: 'breed:prolog:confidence', value: '0.6' },
+      ])
+    )) as AnyResult;
+    expect(result.status).toBe('ok');
+    const conflicts = result.output.inference_trace.filter(
+      (t: { kind: string }) => t.kind === 'conflict-detected'
+    );
+    expect(conflicts.length).toBe(1);
+    expect(conflicts[0].detail).toContain('mycin');
+    expect(conflicts[0].detail).toContain('prolog');
+    expect(result.output.selected).toBe('therapy=gentamicin');
+  });
+});

@@ -1,24 +1,43 @@
 {
-  "id": "ocel_abductive_lp_v1",
-  "name": "Abductive LP Lifecycle Model",
-  "phases": [
-    {
-      "name": "load",
-      "kinds": ["alp-load"],
-      "min_occurrences": 1,
-      "max_occurrences": 1
-    },
-    {
-      "name": "abduce",
-      "kinds": ["alp-abduce"],
-      "min_occurrences": 1,
-      "max_occurrences": 1
-    },
-    {
-      "name": "hypothesis",
-      "kinds": ["alp-hypothesis"],
-      "min_occurrences": 0,
-      "max_occurrences": 99999
-    }
-  ]
+  "model_id": "abductive_lp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "abductive_lp",
+  "object_types": ["abducible", "delta", "explanation"],
+  "places": [
+    {"id": "p1", "name": "theory_loaded",   "object_type": "abducible"},
+    {"id": "p2", "name": "abducibles_set",  "object_type": "abducible"},
+    {"id": "p3", "name": "delta_candidate", "object_type": "delta"},
+    {"id": "p4", "name": "delta_closed",    "object_type": "delta"},
+    {"id": "p5", "name": "delta_checked",   "object_type": "delta"},
+    {"id": "p6", "name": "delta_judged",    "object_type": "delta"},
+    {"id": "p7", "name": "minimal_sets",    "object_type": "explanation"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load_abducibles", "label": "load-abducibles"},
+    {"id": "t2", "name": "candidate_delta", "label": "candidate-delta"},
+    {"id": "t3", "name": "derive",          "label": "derive"},
+    {"id": "t4", "name": "ic_check",        "label": "ic-check"},
+    {"id": "t5", "name": "explain_accept",  "label": "explain-accept"},
+    {"id": "t6", "name": "explain_reject",  "label": "explain-reject"},
+    {"id": "t7", "name": "minimal_set",     "label": "minimal-set"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"},
+    {"from": "t6", "to": "p6", "type": "produce"},
+    {"from": "p6", "to": "t2", "type": "consume"},
+    {"from": "p6", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p7", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p7": 1}]
 }

@@ -1,58 +1,41 @@
-# Explanation-Based Learning (EBL)
+# EBL
 
 ## Origin
-- **Paper:** "Explanation-Based Generalization: A Unifying View" (Mitchell, Keller & Kedar-Cabelli, 1986)
+- **Paper:** "Explanation-Based Generalization: A Unifying View" (Machine Learning 1(1), 1986)
 - **Authors:** Tom M. Mitchell, Richard M. Keller, Smadar T. Kedar-Cabelli
-- **Tradition:** Machine Learning, Generalization, Analytical Learning, Prolog Lineage
+- **Tradition:** Analytic learning, explanation-based learning
 
 ## Algorithm
-Explanation-Based Learning learns a generalized rule from a single training example and domain theory.
-1. **Explain:** Perform SLD backward chaining to prove the training example goal using the domain rules and training facts, up to a maximum depth (32). Construct a proof tree of the derivation.
-2. **Generalize:** Regress the generalized target concept (replacing constants with variables) back through the proof tree. For each node in the tree:
-   - Unify the generalized subgoal with the rule conclusion.
-   - Propagate the resulting substitutions down to the subgoals (premises).
-3. **Operationalize:** Extract the leaves of the generalized proof tree (which represent operational predicates) and combine them as premises to form a new operational rule:
-   `Leaf1, Leaf2, ... => Generalized_Concept`.
-4. Return the new rule as a discovered fact `ebl:rule`.
+Three phases. Explain: SLD backward chaining (term unification with depth-suffixed variable renaming, depth ≤32) proves the training goal from facts + the domain theory, building a proof tree. Generalize: EGGS goal regression — every constant argument of the goal becomes a fresh `?targetN` variable (multi-argument goals included; audit defect EBL-3 fixed) and the proof's substitutions are replayed symbolically. Operationalize: the generalized proof's leaves become the premise of a new operational rule emitted as the `ebl:rule` fact. Anti-fraud postcondition: the learned rule must contain at least one variable.
 
 ## Pseudocode
 ```
 function run(input):
-    goal = parse_goal(input.goals[0])
-    proof_tree = prove(goal, input.rules, input.facts)
-    if proof_tree is null:
-        return Err("explain phase failed")
-        
-    gen_goal = generalize_concept(goal)
-    leaves = regress(proof_tree, gen_goal)
-    
-    new_rule = join(leaves) + " => " + gen_goal
-    return new_rule
+    proof = explain(goal, rules, facts, 32)        // emit ebl-explain per node
+    gen_goal = goal with all constant args → ?targetN
+    leaves = generalize(proof, gen_goal)           // emit ebl-generalize per rule node
+    rule = leaves.join(", ") + " => " + gen_head   // emit ebl-operationalize
+    output fact ebl:rule
 ```
 
 ## Input contract
-- `intent`: not used
-- `facts`: contains training example facts.
-- `rules`: represents the domain theory.
-- `goals`: first goal is the training example to explain.
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+- facts: ground atoms in their KEYS (e.g. `weight(obj1,light)`)
+- rules: `?var` arguments; goals[0] = training example (predicate is the atom when value=="true")
 
 ## Output contract
-- `selected`: newly learned operationalized rule.
-- `explanation`: `"EBL operationalized a new rule"`
-- `facts`: contains original facts plus `ebl:rule` showing the generalized rule.
-- `inference_trace`: trace steps recording `"ebl-explain"`, `"ebl-generalize"`, and `"ebl-operationalize"`.
+- fact `ebl:rule` = `"p1, p2 => head"` with ≥1 variable
+- trace: `ebl-explain`(1,*) → `ebl-generalize`(1,*) → `ebl-operationalize`(1,1)
 
 ## Complexity
-- Time: $O(D \cdot R \cdot U)$ where $D$ is the proof depth, $R$ is the number of rules, and $U$ is the cost of unification.
-- Space: $O(P)$ where $P$ is the size of the proof tree.
+O(b^d) proof search, depth-capped at 32.
 
 ## Generalization examples
-- **Safe State Learning**: Deriving generalized safety rules from a single crash trace by regressing hazard conditions to structural root causes.
-- **Workflow Optimization**: Generalizing a specific order-processing sequence to a reusable generic template.
+SafeToStack, cup/drinkable, macro-operator learning from single examples.
 
 ## Adversarial coverage
-- Precondition rejects if goals or rules (domain theory) are empty.
-- Postcondition validates that `ebl:rule` is produced with variables, and trace contains `ebl-explain`, `ebl-generalize`, and `ebl-operationalize` steps.
+- Refusal: no goals, no domain theory, unprovable goal
+- Hidden: the learned rule is EXECUTED as a domain rule through a second inference run on fresh objects never seen in training (audit defect EBL-1 fixed: no string-replacement simulation); real double-run determinism (EBL-2 fixed)
+- Paper: Mitchell 1986 SafeToStack — learned rule fully variablized over training constants
+
+## See also
+- `prolog` lineage (SLD resolution) in the P0 cards

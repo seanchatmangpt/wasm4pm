@@ -1,65 +1,45 @@
-# Default Logic
+# DEFAULT_LOGIC
 
 ## Origin
-- **Paper:** "A Logic for Default Reasoning" (Reiter, 1980)
+- **Paper:** "A Logic for Default Reasoning" (AIJ 13, 1980)
 - **Authors:** Raymond Reiter
-- **Tradition:** Nonmonotonic Reasoning, Formal Logic, Knowledge Representation
+- **Tradition:** Nonmonotonic reasoning
 
 ## Algorithm
-Default Logic computes nonmonotonic extensions closed under Reiter's normal default rules. Normal defaults have the form `A : B / B` (if A is known, and it is consistent to assume B, then infer B).
-1. Initialize extension set from the input facts values.
-2. Sort default rules by specificity: premise count descending, certainty factor descending, then lexicographical order.
-3. Iteratively attempt to apply default rules:
-   - For each rule, check if all premises are satisfied in the current extension.
-   - For justification requirements (`unless:X`), check if `X` is absent in the current extension.
-   - If premises match and justifications are consistent, add the conclusion to the extension.
-   - If justification is violated, record default blocking.
-4. Continue until a fixpoint is reached (no further rules can fire).
+Semi-normal defaults over ground atoms: plain premises are prerequisites; `unless:<atom>` entries are justifications; `not_<atom>` conclusions encode negation. Defaults apply to fixpoint in a fixed specificity order — REAL prerequisite count descending (justifications excluded), certainty descending, lexicographic id — so specific rules fire before defaults and block them. After the fixpoint every fired rule's justifications are re-validated against the final extension; a late-derived violator refuses the run (documented deviation/guard for audit defect DL-1).
 
 ## Pseudocode
 ```
 function run(input):
-    extension = {f.value for f in input.facts}
-    rules = sort_by_specificity(input.rules)
-    
-    loop:
-        changed = false
-        for each rule in rules:
-            if premise_satisfied(rule, extension):
-                if justification_violated(rule, extension):
-                    record_blocking(rule)
-                else:
-                    extension.insert(rule.conclusion)
-                    record_firing(rule)
-                    changed = true
-        if not changed:
-            break
-            
-    return extension
+    extension = fact values; emit default-load
+    sort rules by (prereq count desc, certainty desc, id)
+    repeat until no change:
+        for rule not fired/blocked:
+            if prereqs ⊆ extension:
+                if some unless:j with j ∈ extension: block (emit default-block)
+                else: extension += conclusion (emit default-fire)
+    re-validate fired justifications against final extension (else Err)
+    emit default-extension (sorted atoms)
 ```
 
 ## Input contract
-- `intent`: not used
-- `facts`: initial known facts; values are added directly to the starting extension.
-- `rules`: Reiter normal default rules. Premises with `"unless:X"` represent justifications that must be consistent (i.e. `X` must be absent).
-- `goals`: not used
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+- facts: values are the initial atoms; ≥1 fact and ≥1 rule required
+- rules: premise atoms + optional `unless:` justifications
 
 ## Output contract
-- `selected`: comma-separated sorted list of facts in the final extension.
-- `explanation`: `"DefaultLogic: extension finalized with N facts"`
-- `inference_trace`: trace steps recording `"default-load"`, `"default-fire"`, `"default-block"`, and `"default-extension"`.
+- `selected` = sorted extension; facts `ext:<atom>`
+- trace: `default-load`(1,1) → {`default-fire`,`default-block`}(1,*) → `default-extension`(1,1)
 
 ## Complexity
-- Time: O(R^2 * P) where R is the number of rules and P is the average premise count.
-- Space: O(F + R) where F is the number of facts and R is the number of rules.
+O(|rules|² × |premises|) for the fixpoint.
 
 ## Generalization examples
-- **Common-sense Reasoning**: default rules for birds flying (`bird : fly / fly`), blocked by specific non-flying birds (`penguin`).
-- **Policy Enforcement**: default permissions (`employee : access / access`), blocked by specific revoked criteria (`on_probation`).
+Taxonomic defaults with exceptions, policy rules with overrides.
 
 ## Adversarial coverage
-- Precondition rejects if rules list is empty.
-- Postcondition validates that the trace contains `default-extension` step.
+- Refusal: empty rules / empty facts; no applicable rule
+- Hidden: gronk/wibble/dark_wibble — specific rule blocks the default (extension has not_glows, block step present); without the dark chain the default fires
+- Paper: Reiter 1980 Tweety — penguin blocks the birds-fly default
+
+## See also
+- `frames_inheritance.md` — default inheritance in the frame tradition

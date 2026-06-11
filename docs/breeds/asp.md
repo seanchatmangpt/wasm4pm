@@ -1,55 +1,25 @@
-# Answer Set Programming (ASP)
+# asp — Answer Set Programming
 
-## Origin
-- **Paper:** "The Stable Model Semantics for Logic Programming" (Gelfond & Lifschitz, 1988)
-- **Authors:** Michael Gelfond, Vladimir Lifschitz
-- **Tradition:** Logic Programming, Stable Models Semantics, Negation as Failure (NAF)
+## 1. Identity & Lineage
+Gelfond–Lifschitz stable-model semantics (Gelfond & Lifschitz, ICLP/SLP 1988). BreedId `asp`, module `crates/wasm4pm-cognition/src/breeds/asp.rs`.
 
-## Algorithm
-The Answer Set Programming breed computes stable models of a logic program over a finite domain of atoms using the Gelfond-Lifschitz reduct.
-1. Gather all unique atoms appearing in the logic program rules, facts, and candidates.
-2. For each possible interpretation (subset of all atoms):
-   - Compute the Gelfond-Lifschitz reduct $P^I$ of the logic program with respect to the interpretation $I$:
-     - For each rule, if a premise has `"not atom"` and `atom` $\in I$, discard the rule.
-     - Otherwise, keep the rule with the remaining positive premises.
-   - Compute the unique least model of the positive reduct logic program $P^I$ by iterating to a fixpoint.
-   - If the least model is exactly equal to the interpretation $I$, then $I$ is a stable model (answer set).
+## 2. Algorithm
+Enumerate every candidate atom set M (u32 bitmask, ≤12 atoms); build the GL reduct P^M (drop rules whose `not b` literal fails, strip surviving NAF literals); compute the least Horn model via `support::closure::forward_close`; accept iff LM(P^M) == M.
 
-## Pseudocode
-```
-function solve(input):
-    atoms = gather_atoms(input)
-    stable_models = []
-    
-    for each interpretation I in power_set(atoms):
-        reduct_rules = GelfondLifschitzReduct(input.rules, I)
-        least_model = ComputeLeastModel(reduct_rules, input.facts)
-        if I == least_model:
-            stable_models.push(I)
-            
-    return stable_models
-```
+## 3. Input Contract
+`rules` is the program. Premise atoms prefixed `"not "` are negation-as-failure literals; empty premise = fact. `Rule.certainty` required (use 1.0).
 
-## Input contract
-- `intent`: not used
-- `facts`: list of facts acting as ground atoms.
-- `rules`: rules containing a `conclusion` and a list of premises. Negation as failure (NAF) is supported using the `"not "` prefix in premises.
-- `goals`: not used
-- `candidates`: candidate structures whose IDs are collected as atoms and scored if they are in the selected stable model.
+## 4. Output Contract
+Facts `asp:answer_set:<i>` (sorted comma-joined atoms), `asp:answer_set_count`; `selected` = first answer set (None when 0 models).
 
-## Output contract
-- `selected`: ID of candidate that is included in the first stable model, if any.
-- `explanation`: `"ASP: found <N> stable model(s). Selected candidate: <id>"`
-- `inference_trace`: trace steps recording `"asp-load"`, `"asp-solve"`, and `"asp-model"`.
+## 5. Trace & OCEL Lifecycle
+`ground`(1,1) → {`guess-candidate`,`reduct`,`least-model`,`stable-accept`,`stable-reject`}(1,*) → `answer-set`(1,1). Model: `ocel/models/l1/asp.ocpn.json`; report: `ocel/reports/asp.json` (fitness 1.0).
 
-## Complexity
-- Time: Exponential $O(2^A \cdot R)$ in the number of unique atoms $A$ (max 16) and rules $R$.
-- Space: $O(A + R)$ to store interpretations and reduct rules.
+## 6. Oracles
+Refusal: >12 atoms / NAF head. Hidden: even loop {a:-not b; b:-not a} → exactly 2 answer sets; {a:-not a} → 0; non-monotonic retraction (abnormal removes flies). Paper: GL88 unique stable model {p(1,2), q(1)}.
 
-## Generalization examples
-- **Process Configuration Rules**: Check if a selected set of process variants satisfies negation-as-failure configuration constraints.
-- **Workflow Resource Constraints**: Enforce mutually exclusive role assignments via stable model rules.
+## 7. Determinism & Bounds
+Pure bitmask enumeration in ascending order, BTreeSet atoms; ≤2^12 candidates. Bit-exact double-run test in `breed_determinism.rs`.
 
-## Adversarial coverage
-- Precondition rejects if rules and facts are both empty.
-- Limit of 16 atoms is enforced to prevent state explosion; more than 16 atoms returns a BreedError.
+## 8. Provenance
+Fixture `tests/fixtures/papers/asp.json` (verbatim-propositionalized GL88 Example, Section 2).

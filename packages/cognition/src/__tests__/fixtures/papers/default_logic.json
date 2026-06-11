@@ -1,28 +1,24 @@
 {
   "breed": "default_logic",
   "provenance": {
-    "paper": "citation-only",
-    "citation": "Reiter 1980"
+    "paper": "Reiter 1980",
+    "citation": "Reiter, R. (1980). A Logic for Default Reasoning. Artificial Intelligence, 13(1-2), 81-132.",
+    "locus": "Section 1.1 — the canonical 'birds fly' default bird(x) : M flies(x) / flies(x), with penguins as the exceptional subclass that blocks the default.",
+    "extraction": "verbatim example (Tweety)",
+    "notes": "Tweety is a penguin; penguins are birds and do not fly. The flies default's justification M flies(tweety) is inconsistent with not_flies, so the extension contains not_flies and NOT flies, with an explicit block step."
   },
   "input": {
-    "intent": "solve",
-    "facts": [
-      { "key": "bird", "value": "tweety" }
-    ],
+    "intent": "does tweety fly",
+    "facts": [ { "key": "obs:tweety", "value": "penguin" } ],
     "rules": [
-      {
-        "id": "r_default",
-        "premise": ["tweety", "unless:non_flying"],
-        "conclusion": "flies",
-        "certainty": 1.0
-      }
-    ],
-    "candidates": [],
-    "cases": [],
-    "goals": [],
-    "state": []
+      { "id": "r_isa", "premise": ["penguin"], "conclusion": "bird", "certainty": 1.0 },
+      { "id": "r_penguin", "premise": ["penguin"], "conclusion": "not_flies", "certainty": 1.0 },
+      { "id": "r_birds_fly", "premise": ["bird", "unless:not_flies"], "conclusion": "flies", "certainty": 0.9 }
+    ]
   },
   "expected": {
-    "extension": "flies"
+    "extension_contains": ["bird", "not_flies", "penguin"],
+    "extension_excludes": ["flies"],
+    "block_step": true
   }
 }

@@ -1416,784 +1416,976 @@ fn autoinstinct_semantics_paper_grounded() {
 }
 
 // ============================================================================
-// Tier P1 Breeds Paper Grounded Tests
+// P1 TIER — paper-grounded oracles with published values asserted
 // ============================================================================
 
+/// Shared fixture parser for the P1 tier: builds a `BreedInput` from a
+/// fixture's `input`-shaped JSON object (intent/facts/rules/goals/state).
+fn parse_breed_input(inp: &serde_json::Value) -> BreedInput {
+    let mut facts = Vec::new();
+    if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
+        for f in arr {
+            if let (Some(k), Some(v)) = (
+                f.get("key").and_then(|v| v.as_str()),
+                f.get("value").and_then(|v| v.as_str()),
+            ) {
+                facts.push(Fact { key: k.to_string(), value: v.to_string() });
+            }
+        }
+    }
+    let mut rules = Vec::new();
+    if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
+        for r in arr {
+            if let (Some(id), Some(conclusion), Some(certainty)) = (
+                r.get("id").and_then(|v| v.as_str()),
+                r.get("conclusion").and_then(|v| v.as_str()),
+                r.get("certainty").and_then(|v| v.as_f64()),
+            ) {
+                let premise = r
+                    .get("premise")
+                    .and_then(|v| v.as_array())
+                    .map(|a| a.iter().filter_map(|p| p.as_str().map(String::from)).collect())
+                    .unwrap_or_default();
+                rules.push(Rule {
+                    id: id.to_string(),
+                    premise,
+                    conclusion: conclusion.to_string(),
+                    certainty: certainty as f32,
+                });
+            }
+        }
+    }
+    let mut goals = Vec::new();
+    if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
+        for g in arr {
+            if let (Some(id), Some(pred), Some(val)) = (
+                g.get("id").and_then(|v| v.as_str()),
+                g.get("predicate").and_then(|v| v.as_str()),
+                g.get("value").and_then(|v| v.as_str()),
+            ) {
+                goals.push(Goal {
+                    id: id.to_string(),
+                    predicate: pred.to_string(),
+                    value: val.to_string(),
+                });
+            }
+        }
+    }
+    let mut state = Vec::new();
+    if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
+        for s in arr {
+            if let (Some(pred), Some(val)) = (
+                s.get("predicate").and_then(|v| v.as_str()),
+                s.get("value").and_then(|v| v.as_str()),
+            ) {
+                state.push(StateAtom { predicate: pred.to_string(), value: val.to_string() });
+            }
+        }
+    }
+    BreedInput {
+        intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("test").to_string(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules,
+        goals,
+        state,
+    }
+}
+
+fn load_fixture(breed: &str) -> serde_json::Value {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("mandatory paper fixture {} missing: {}", path, e));
+    serde_json::from_str(&content).unwrap_or_else(|e| panic!("fixture {} unparsable: {}", path, e))
+}
+
+/// Havelund & Roşu 2001 — progression over a finite trace: the traffic-light
+/// safety formula is SATISFIED on the conforming trace (good-prefix G
+/// semantics) and VIOLATED at exactly the red∧green event on the bad trace.
 #[test]
 fn ltl_monitor_paper_grounded() {
-    let path = "tests/fixtures/papers/ltl_monitor.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut cases = Vec::new();
-            if let Some(arr) = inp.get("cases").and_then(|v| v.as_array()) {
-                for c in arr {
-                    if let Some(id) = c.get("id").and_then(|v| v.as_str()) {
-                        let mut case_facts = Vec::new();
-                        if let Some(c_arr) = c.get("facts").and_then(|v| v.as_array()) {
-                            for f in c_arr {
-                                if let (Some(k), Some(v)) = (
-                                    f.get("key").and_then(|v| v.as_str()),
-                                    f.get("value").and_then(|v| v.as_str()),
-                                ) {
-                                    case_facts.push(Fact {
-                                        key: k.to_string(),
-                                        value: v.to_string(),
-                                    });
-                                }
-                            }
-                        }
-                        cases.push(Case {
-                            id: id.to_string(),
-                            intent: "".into(),
-                            architecture: "".into(),
-                            outcome_score: 1.0,
-                            facts: case_facts,
-                        });
-                    }
-                }
-            }
+    let json = load_fixture("ltl_monitor");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
+    let exp = &json["expected"];
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(if exp["verdict"].as_bool().unwrap() { "true" } else { "false" }),
+        "Havelund-Rosu 2001: conforming trace must satisfy G (red -> !green)"
+    );
+    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress as u64, exp["progress_steps"].as_u64().unwrap());
 
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts: vec![],
-                cases,
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
-
-            let breed = ltl_monitor::LtlMonitor;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("LtlMonitor paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::LtlMonitor);
-            let conforms = output.facts.iter().find(|f| f.key == "conforms").expect("conforms fact exists");
-            assert_eq!(conforms.value, "true");
-        }
-    }
+    let bad = parse_breed_input(&json["violating_input"]);
+    let out_bad = dispatch_breed_test("ltl_monitor", &bad).expect("ltl run");
+    assert_eq!(out_bad.selected.as_deref(), Some("false"));
+    let progress_bad = out_bad.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    assert_eq!(progress_bad as u64, exp["violating_progress_steps"].as_u64().unwrap());
 }
 
+/// Allen 1983 Table 1 — m∘d = (o s d): published transitivity-table entry.
 #[test]
 fn allen_temporal_paper_grounded() {
-    let path = "tests/fixtures/papers/allen_temporal.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
-
-            let breed = allen_temporal::AllenTemporal;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("AllenTemporal paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::AllenTemporal);
-            let rel = output.facts.iter().find(|f| f.key == "relation:A:C").expect("relation exists");
-            assert_eq!(rel.value, "p");
-        }
+    let json = load_fixture("allen_temporal");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("allen_temporal", &input).expect("allen run");
+    for (key, val) in json["expected"]["derived"].as_object().unwrap() {
+        let actual = out
+            .facts
+            .iter()
+            .find(|f| &f.key == key)
+            .unwrap_or_else(|| panic!("missing derived fact {}", key));
+        assert_eq!(
+            &actual.value,
+            val.as_str().unwrap(),
+            "Allen 1983 Table 1 entry mismatch for {}",
+            key
+        );
     }
 }
 
-#[test]
-fn fuzzy_logic_paper_grounded() {
-    let path = "tests/fixtures/papers/fuzzy_logic.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
+// ============================================================================
+// P2 tier — paper-grounded tests (12 breeds)
+// All P2 runs go through breeds::dispatch::dispatch_breed, which enforces
+// preconditions, postconditions, and the OCEL conformance gate (fitness 1.0).
+// ============================================================================
 
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    if let (Some(id), Some(conclusion), Some(certainty)) = (
-                        r.get("id").and_then(|v| v.as_str()),
-                        r.get("conclusion").and_then(|v| v.as_str()),
-                        r.get("certainty").and_then(|v| v.as_f64()),
-                    ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
-                        rules.push(Rule {
-                            id: id.to_string(),
-                            premise: premises,
-                            conclusion: conclusion.to_string(),
-                            certainty: certainty as f32,
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules,
-                goals: vec![],
-                state: vec![],
-            };
-
-            let breed = fuzzy_logic::FuzzyLogic;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("FuzzyLogic paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::FuzzyLogic);
-            let fact = output.facts.iter().find(|f| f.key == "ventilation").expect("ventilation exists");
-            let val: f64 = fact.value.parse().unwrap();
-            assert!((val - 50.0).abs() < 1.0);
-        }
-    }
+/// Load a P2 fixture and deserialize its "input" object into a BreedInput.
+fn p2_load(breed: &str) -> (BreedInput, serde_json::Value) {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path)
+        .unwrap_or_else(|e| panic!("fixture {} must exist: {}", path, e));
+    let json: serde_json::Value =
+        serde_json::from_str(&content).unwrap_or_else(|e| panic!("fixture {} parse: {}", path, e));
+    let input: BreedInput = serde_json::from_value(json["input"].clone())
+        .unwrap_or_else(|e| panic!("fixture {} input parse: {}", path, e));
+    (input, json)
 }
 
-#[test]
-fn bayesian_network_paper_grounded() {
-    let path = "tests/fixtures/papers/bayesian_network.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    if let (Some(id), Some(conclusion), Some(certainty)) = (
-                        r.get("id").and_then(|v| v.as_str()),
-                        r.get("conclusion").and_then(|v| v.as_str()),
-                        r.get("certainty").and_then(|v| v.as_f64()),
-                    ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
-                        rules.push(Rule {
-                            id: id.to_string(),
-                            premise: premises,
-                            conclusion: conclusion.to_string(),
-                            certainty: certainty as f32,
-                        });
-                    }
-                }
-            }
-
-            let mut goals = Vec::new();
-            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
-                for g in arr {
-                    if let (Some(id), Some(predicate), Some(value)) = (
-                        g.get("id").and_then(|v| v.as_str()),
-                        g.get("predicate").and_then(|v| v.as_str()),
-                        g.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        goals.push(Goal {
-                            id: id.to_string(),
-                            predicate: predicate.to_string(),
-                            value: value.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules,
-                goals,
-                state: vec![],
-            };
-
-            let breed = bayesian_network::BayesianNetwork;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("BayesianNetwork paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::BayesianNetwork);
-            let fact = output.facts.iter().find(|f| f.key == "probability:Burglary").expect("prob exists");
-            let val: f64 = fact.value.parse().unwrap();
-            assert!(val > 0.0 && val < 1.0);
-        }
-    }
+fn p2_fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
+    out.facts
+        .iter()
+        .find(|f| f.key == key)
+        .map(|f| f.value.as_str())
+        .unwrap_or_else(|| panic!("missing output fact '{}'", key))
 }
 
-#[test]
-fn csp_ac3_paper_grounded() {
-    let path = "tests/fixtures/papers/csp_ac3.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
-
-            let breed = csp_ac3::CspAc3;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("CspAc3 paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::CspAc3);
-            assert!(output.selected.is_some());
-            assert_eq!(output.explanation, "SAT: V1=B, V2=G");
-        }
-    }
-}
-
-#[test]
-fn default_logic_paper_grounded() {
-    let path = "tests/fixtures/papers/default_logic.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    if let (Some(k), Some(v)) = (
-                        f.get("key").and_then(|v| v.as_str()),
-                        f.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        facts.push(Fact {
-                            key: k.to_string(),
-                            value: v.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    if let (Some(id), Some(conclusion), Some(certainty)) = (
-                        r.get("id").and_then(|v| v.as_str()),
-                        r.get("conclusion").and_then(|v| v.as_str()),
-                        r.get("certainty").and_then(|v| v.as_f64()),
-                    ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
-                        rules.push(Rule {
-                            id: id.to_string(),
-                            premise: premises,
-                            conclusion: conclusion.to_string(),
-                            certainty: certainty as f32,
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules,
-                goals: vec![],
-                state: vec![],
-            };
-
-            let breed = default_logic::DefaultLogic;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("DefaultLogic paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::DefaultLogic);
-            let selected = output.selected.as_ref().unwrap();
-            assert!(selected.contains("tweety"));
-            assert!(selected.contains("flies"));
-        }
-    }
-}
-
-#[test]
-fn htn_planning_paper_grounded() {
-    let path = "tests/fixtures/papers/htn_planning.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut state = Vec::new();
-            if let Some(arr) = inp.get("state").and_then(|v| v.as_array()) {
-                for s in arr {
-                    if let (Some(pred), Some(val)) = (
-                        s.get("predicate").and_then(|v| v.as_str()),
-                        s.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        state.push(StateAtom {
-                            predicate: pred.to_string(),
-                            value: val.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    if let (Some(id), Some(conclusion), Some(certainty)) = (
-                        r.get("id").and_then(|v| v.as_str()),
-                        r.get("conclusion").and_then(|v| v.as_str()),
-                        r.get("certainty").and_then(|v| v.as_f64()),
-                    ) {
-                        let premises: Vec<String> = r.get("premise").and_then(|v| v.as_array()).unwrap().iter().map(|v| v.as_str().unwrap().to_string()).collect();
-                        rules.push(Rule {
-                            id: id.to_string(),
-                            premise: premises,
-                            conclusion: conclusion.to_string(),
-                            certainty: certainty as f32,
-                        });
-                    }
-                }
-            }
-
-            let mut goals = Vec::new();
-            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
-                for g in arr {
-                    if let (Some(id), Some(predicate), Some(value)) = (
-                        g.get("id").and_then(|v| v.as_str()),
-                        g.get("predicate").and_then(|v| v.as_str()),
-                        g.get("value").and_then(|v| v.as_str()),
-                    ) {
-                        goals.push(Goal {
-                            id: id.to_string(),
-                            predicate: predicate.to_string(),
-                            value: value.to_string(),
-                        });
-                    }
-                }
-            }
-
-            let input = BreedInput {
-                intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                candidates: vec![],
-                facts: vec![],
-                cases: vec![],
-                rules,
-                goals,
-                state,
-            };
-
-            let breed = htn_planning::HtnPlanning;
-            assert!(breed.preconditions(&input).is_ok());
-
-            let output = breed.run(&input).expect("HtnPlanning paper grounded run must succeed");
-            assert_eq!(output.breed, BreedId::HtnPlanning);
-            assert_eq!(output.selected.as_deref(), Some("op:walk"));
-        }
-    }
-}
-
-#[test]
-fn dempster_shafer_paper_grounded() {
-    let path = "tests/fixtures/papers/dempster_shafer.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    rules.push(Rule {
-                        id: r["id"].as_str().unwrap().to_string(),
-                        premise: vec![],
-                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
-                        certainty: r["certainty"].as_f64().unwrap() as f32,
-                    });
-                }
-            }
-            let mut goals = Vec::new();
-            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
-                for g in arr {
-                    goals.push(Goal {
-                        id: g["id"].as_str().unwrap().to_string(),
-                        predicate: g["predicate"].as_str().unwrap().to_string(),
-                        value: g["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap().to_string(),
-                candidates: vec![],
-                facts: vec![],
-                cases: vec![],
-                rules,
-                goals,
-                state: vec![],
-            };
-            let breed = dempster_shafer::DempsterShafer;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("DempsterShafer run must succeed");
-            assert_eq!(output.breed, BreedId::DempsterShafer);
-            let bel_val = output.facts.iter().find(|f| f.key == "belief:flim").unwrap().value.parse::<f64>().unwrap();
-            let expected_bel = json["expected"]["belief"].as_f64().unwrap();
-            assert!((bel_val - expected_bel).abs() < 1e-5);
-        }
-    }
-}
-
-#[test]
-fn frames_inheritance_paper_grounded() {
-    let path = "tests/fixtures/papers/frames_inheritance.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    facts.push(Fact {
-                        key: f["key"].as_str().unwrap().to_string(),
-                        value: f["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap().to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
-            let breed = frames_inheritance::FramesInheritance;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("FramesInheritance run must succeed");
-            assert_eq!(output.breed, BreedId::FramesInheritance);
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["resolved_value"].as_str().unwrap()));
-        }
-    }
-}
-
-#[test]
-fn ebl_paper_grounded() {
-    let path = "tests/fixtures/papers/ebl.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    facts.push(Fact {
-                        key: f["key"].as_str().unwrap().to_string(),
-                        value: f["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
-                    rules.push(Rule {
-                        id: r["id"].as_str().unwrap().to_string(),
-                        premise: premises,
-                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
-                        certainty: r["certainty"].as_f64().unwrap() as f32,
-                    });
-                }
-            }
-            let mut goals = Vec::new();
-            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
-                for g in arr {
-                    goals.push(Goal {
-                        id: g["id"].as_str().unwrap().to_string(),
-                        predicate: g["predicate"].as_str().unwrap().to_string(),
-                        value: g["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap().to_string(),
-                candidates: vec![],
-                facts,
-                cases: vec![],
-                rules,
-                goals,
-                state: vec![],
-            };
-            let breed = ebl::Ebl;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("Ebl run must succeed");
-            assert_eq!(output.breed, BreedId::Ebl);
-            let rule_fact = output.facts.iter().find(|f| f.key == "ebl:rule").unwrap();
-            let contains_str = json["expected"]["rule_contains"].as_str().unwrap();
-            assert!(rule_fact.value.contains(contains_str));
-        }
-    }
-}
-
+/// Gelfond & Lifschitz 1988: unique stable model {p(1,2), q(1)}.
 #[test]
 fn asp_paper_grounded() {
-    let path = "tests/fixtures/papers/asp.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
-                    rules.push(Rule {
-                        id: r["id"].as_str().unwrap().to_string(),
-                        premise: premises,
-                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
-                        certainty: r["certainty"].as_f64().unwrap() as f32,
-                    });
-                }
-            }
-            let mut candidates = Vec::new();
-            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
-                for c in arr {
-                    candidates.push(Candidate {
-                        id: c["id"].as_str().unwrap().to_string(),
-                        score: c["score"].as_f64().unwrap() as f32,
-                        eliminated: c["eliminated"].as_bool().unwrap(),
-                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap_or("solve").to_string(),
-                candidates,
-                facts: vec![],
-                cases: vec![],
-                rules,
-                goals: vec![],
-                state: vec![],
-            };
-            let breed = asp::Asp;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("ASP run must succeed");
-            assert_eq!(output.breed, BreedId::Asp);
-            let count_fact = output.facts.iter().find(|f| f.key == "stable_models_count").unwrap();
-            assert_eq!(count_fact.value, json["expected"]["stable_models_count"].as_str().unwrap());
-        }
-    }
+    let (input, json) = p2_load("asp");
+    let out = dispatch::dispatch_breed("asp", &input).expect("ASP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "asp:answer_set_count"),
+        json["expected"]["answer_set_count"].as_str().unwrap()
+    );
+    assert_eq!(
+        p2_fact_value(&out, "asp:answer_set:0"),
+        json["expected"]["answer_set_0"].as_str().unwrap()
+    );
+    assert!(out.ocel_log.is_some(), "OCEL log must be attached");
 }
 
+/// Baader, Brandt & Lutz 2005: Pericarditis ⊑ HeartDisease via CR1–CR4.
 #[test]
 fn description_logic_paper_grounded() {
-    let path = "tests/fixtures/papers/description_logic.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    facts.push(Fact {
-                        key: f["key"].as_str().unwrap().to_string(),
-                        value: f["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let mut candidates = Vec::new();
-            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
-                for c in arr {
-                    candidates.push(Candidate {
-                        id: c["id"].as_str().unwrap().to_string(),
-                        score: c["score"].as_f64().unwrap() as f32,
-                        eliminated: c["eliminated"].as_bool().unwrap(),
-                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap_or("classify").to_string(),
-                candidates,
-                facts,
-                cases: vec![],
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
-            let breed = description_logic::DescriptionLogic;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("DescriptionLogic run must succeed");
-            assert_eq!(output.breed, BreedId::DescriptionLogic);
-            let consistent_fact = output.facts.iter().find(|f| f.key == "consistent").unwrap();
-            assert_eq!(consistent_fact.value, json["expected"]["consistent"].as_str().unwrap());
-            let member_xc = output.facts.iter().find(|f| f.key == "member:x:C");
-            assert!(member_xc.is_some());
-        }
+    let (input, json) = p2_load("description_logic");
+    let out = dispatch::dispatch_breed("description_logic", &input).expect("DL paper run");
+    for (key, val) in json["expected"]["verdicts"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+    for kind in json["expected"]["required_trace_kinds"].as_array().unwrap() {
+        let k = kind.as_str().unwrap();
+        assert!(
+            out.inference_trace.iter().any(|t| t.kind == k),
+            "trace must contain '{}'",
+            k
+        );
     }
 }
 
+/// Kakas, Kowalski & Toni 1992: grass-wet — explanations {rained}, {sprinkler_on}.
 #[test]
 fn abductive_lp_paper_grounded() {
-    let path = "tests/fixtures/papers/abductive_lp.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    facts.push(Fact {
-                        key: f["key"].as_str().unwrap().to_string(),
-                        value: f["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
-                    rules.push(Rule {
-                        id: r["id"].as_str().unwrap().to_string(),
-                        premise: premises,
-                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
-                        certainty: r["certainty"].as_f64().unwrap() as f32,
-                    });
-                }
-            }
-            let mut goals = Vec::new();
-            if let Some(arr) = inp.get("goals").and_then(|v| v.as_array()) {
-                for g in arr {
-                    goals.push(Goal {
-                        id: g["id"].as_str().unwrap().to_string(),
-                        predicate: g["predicate"].as_str().unwrap().to_string(),
-                        value: g["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let mut candidates = Vec::new();
-            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
-                for c in arr {
-                    candidates.push(Candidate {
-                        id: c["id"].as_str().unwrap().to_string(),
-                        score: c["score"].as_f64().unwrap() as f32,
-                        eliminated: c["eliminated"].as_bool().unwrap(),
-                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap_or("abduce").to_string(),
-                candidates,
-                facts,
-                cases: vec![],
-                rules,
-                goals,
-                state: vec![],
-            };
-            let breed = abductive_lp::AbductiveLp;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("AbductiveLp run must succeed");
-            assert_eq!(output.breed, BreedId::AbductiveLp);
-            let count_fact = output.facts.iter().find(|f| f.key == "explanations_count").unwrap();
-            assert_eq!(count_fact.value, json["expected"]["explanations_count"].as_str().unwrap());
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
-        }
+    let (input, json) = p2_load("abductive_lp");
+    let out = dispatch::dispatch_breed("abductive_lp", &input).expect("ALP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "alp:explanation_count"),
+        json["expected"]["explanation_count"].as_str().unwrap()
+    );
+    let expls: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("alp:explanation:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    for e in json["expected"]["explanations"].as_array().unwrap() {
+        assert!(expls.contains(&e.as_str().unwrap()), "missing {}", e);
     }
 }
 
+/// Harman 1965 / Thagard 1978: evolution is the best explanation (score 3.9).
 #[test]
 fn abductive_ibe_paper_grounded() {
-    let path = "tests/fixtures/papers/abductive_ibe.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-            let mut facts = Vec::new();
-            if let Some(arr) = inp.get("facts").and_then(|v| v.as_array()) {
-                for f in arr {
-                    facts.push(Fact {
-                        key: f["key"].as_str().unwrap().to_string(),
-                        value: f["value"].as_str().unwrap().to_string(),
-                    });
-                }
-            }
-            let mut rules = Vec::new();
-            if let Some(arr) = inp.get("rules").and_then(|v| v.as_array()) {
-                for r in arr {
-                    let premises: Vec<String> = r["premise"].as_array().unwrap().iter().map(|p| p.as_str().unwrap().to_string()).collect();
-                    rules.push(Rule {
-                        id: r["id"].as_str().unwrap().to_string(),
-                        premise: premises,
-                        conclusion: r["conclusion"].as_str().unwrap().to_string(),
-                        certainty: r["certainty"].as_f64().unwrap() as f32,
-                    });
-                }
-            }
-            let mut candidates = Vec::new();
-            if let Some(arr) = inp.get("candidates").and_then(|v| v.as_array()) {
-                for c in arr {
-                    candidates.push(Candidate {
-                        id: c["id"].as_str().unwrap().to_string(),
-                        score: c["score"].as_f64().unwrap() as f32,
-                        eliminated: c["eliminated"].as_bool().unwrap(),
-                        elimination_reason: c["elimination_reason"].as_str().map(|s| s.to_string()),
-                    });
-                }
-            }
-            let input = BreedInput {
-                intent: inp["intent"].as_str().unwrap_or("coherence").to_string(),
-                candidates,
-                facts,
-                cases: vec![],
-                rules,
-                goals: vec![],
-                state: vec![],
-            };
-            let breed = abductive_ibe::AbductiveIbe;
-            assert!(breed.preconditions(&input).is_ok());
-            let output = breed.run(&input).expect("AbductiveIbe run must succeed");
-            assert_eq!(output.breed, BreedId::AbductiveIbe);
-            assert_eq!(output.selected.as_deref(), Some(json["expected"]["selected"].as_str().unwrap()));
-        }
+    let (input, json) = p2_load("abductive_ibe");
+    let out = dispatch::dispatch_breed("abductive_ibe", &input).expect("IBE paper run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["best"].as_str().unwrap())
+    );
+    assert_eq!(
+        p2_fact_value(&out, "ibe:score"),
+        json["expected"]["score"].as_str().unwrap()
+    );
+    let creation = json["expected"]["creation_score"].as_str().unwrap();
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "score-hypothesis"
+                && t.detail == format!("creation score={}", creation)),
+        "creation score {} must appear in trace",
+        creation
+    );
+}
+
+/// McAllester & Rosenblitt 1991: Sussman anomaly — interleaved solution.
+#[test]
+fn partial_order_plan_paper_grounded() {
+    let (input, json) = p2_load("partial_order_plan");
+    let out = dispatch::dispatch_breed("partial_order_plan", &input).expect("SNLP paper run");
+    assert_eq!(
+        p2_fact_value(&out, "pop:plan"),
+        json["expected"]["plan"].as_str().unwrap()
+    );
+    assert!(out.inference_trace.iter().any(|t| t.kind == "detect-threat"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "promote" || t.kind == "demote"));
+}
+
+/// Kowalski & Sergot 1986: hired/promoted narrative periods.
+#[test]
+fn event_calculus_paper_grounded() {
+    let (input, json) = p2_load("event_calculus");
+    let out = dispatch::dispatch_breed("event_calculus", &input).expect("EC paper run");
+    for (key, val) in json["expected"]["verdicts"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
     }
 }
 
+/// Bellman 1957: closed-form fixed point of the functional equation.
+#[test]
+fn mdp_paper_grounded() {
+    let (input, json) = p2_load("mdp");
+    let out = dispatch::dispatch_breed("mdp", &input).expect("MDP paper run");
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    for (state, expected) in json["expected"]["values"].as_object().unwrap() {
+        let v: f64 = p2_fact_value(&out, &format!("mdp:value:{}", state))
+            .parse()
+            .unwrap();
+        assert!(
+            (v - expected.as_f64().unwrap()).abs() < tol,
+            "V({}) = {} != {}",
+            state,
+            v,
+            expected
+        );
+    }
+    for (state, action) in json["expected"]["policy"].as_object().unwrap() {
+        assert_eq!(
+            p2_fact_value(&out, &format!("mdp:policy:{}", state)),
+            action.as_str().unwrap()
+        );
+    }
+}
 
+/// Mamdani & Assilian 1975 — min-firing + max aggregation + centroid:
+/// hand-derived 101-point discrete centroid of Tri(0,25,100) = 41.66667.
+#[test]
+fn fuzzy_logic_paper_grounded() {
+    let json = load_fixture("fuzzy_logic");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("fuzzy_logic", &input).expect("fuzzy run");
+    let exp = &json["expected"];
+    let fire = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "fuzzy-fire")
+        .expect("fire step");
+    let strength: f64 = fire.detail.rsplit(' ').next().unwrap().parse().unwrap();
+    assert!((strength - exp["fire_strength"].as_f64().unwrap()).abs() < 1e-9);
+    let out_fact = out
+        .facts
+        .iter()
+        .find(|f| f.key == exp["output_fact"].as_str().unwrap())
+        .expect("output fact");
+    let centroid: f64 = out_fact.value.parse().unwrap();
+    assert!(
+        (centroid - exp["centroid"].as_f64().unwrap()).abs()
+            < exp["centroid_tolerance"].as_f64().unwrap(),
+        "Mamdani centroid of asymmetric Tri(0,25,100) must be 41.66667 (+-1e-3), got {}",
+        centroid
+    );
+}
 
+/// Pearl 1988 — burglary network: P(B | j, m) = 0.284171835… to 1e-6.
+#[test]
+fn bayesian_network_paper_grounded() {
+    let json = load_fixture("bayesian_network");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("bayesian_network", &input).expect("bn run");
+    let verdict = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "bn-verdict")
+        .expect("verdict step");
+    let p: f64 = verdict.detail.split('=').nth(1).unwrap().parse().unwrap();
+    let expected = json["expected"]["posterior"].as_f64().unwrap();
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    assert!(
+        (p - expected).abs() < tol,
+        "Pearl 1988 P(B|j,m) must be 0.284171835 (+-1e-6), got {}",
+        p
+    );
+}
+
+/// Mackworth 1977 — AC-3 + search on a complete inequality triangle:
+/// exact lex-least coloring.
+#[test]
+fn csp_ac3_paper_grounded() {
+    let json = load_fixture("csp_ac3");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("csp_ac3", &input).expect("csp run");
+    assert_eq!(out.explanation, json["expected"]["explanation"].as_str().unwrap());
+    assert!(out.inference_trace.iter().any(|t| t.kind == "csp-assign"));
+}
+
+/// Reiter 1980 — Tweety: the penguin exception blocks the flies default.
+#[test]
+fn default_logic_paper_grounded() {
+    let json = load_fixture("default_logic");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("default_logic", &input).expect("dl run");
+    let ext = out.selected.expect("extension");
+    let atoms: Vec<&str> = ext.split(", ").collect();
+    for atom in json["expected"]["extension_contains"].as_array().unwrap() {
+        assert!(
+            atoms.contains(&atom.as_str().unwrap()),
+            "Reiter 1980 extension must contain {}: {}",
+            atom,
+            ext
+        );
+    }
+    for atom in json["expected"]["extension_excludes"].as_array().unwrap() {
+        assert!(
+            !atoms.contains(&atom.as_str().unwrap()),
+            "Reiter 1980 extension must NOT contain {}: {}",
+            atom,
+            ext
+        );
+    }
+    assert!(out.inference_trace.iter().any(|t| t.kind == "default-block"));
+}
+
+/// Nau et al. 2003 — SHOP2 total-order decomposition: exact delivery plan.
+#[test]
+fn htn_planning_paper_grounded() {
+    let json = load_fixture("htn_planning");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("htn_planning", &input).expect("htn run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["plan"].as_str().unwrap()),
+        "SHOP2 logistics plan must be load,drive,unload exactly"
+    );
+}
+
+/// Shafer 1976 — two witnesses at 0.9: Bel(life) = 0.99 exactly.
+#[test]
+fn dempster_shafer_paper_grounded() {
+    let json = load_fixture("dempster_shafer");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("dempster_shafer", &input).expect("ds run");
+    let bel: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "belief:life")
+        .expect("belief fact")
+        .value
+        .parse()
+        .unwrap();
+    let expected = json["expected"]["belief"].as_f64().unwrap();
+    let tol = json["expected"]["tolerance"].as_f64().unwrap();
+    assert!(
+        (bel - expected).abs() < tol,
+        "Shafer 1976 two-witness Bel must be 0.99 exactly, got {}",
+        bel
+    );
+}
+
+/// Minsky 1974 — default inheritance: my_chair inherits legs=4 from chair.
+#[test]
+fn frames_inheritance_paper_grounded() {
+    let json = load_fixture("frames_inheritance");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("frames_inheritance", &input).expect("frames run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["selected"].as_str().unwrap())
+    );
+    let walks = out.inference_trace.iter().filter(|t| t.kind == "frame-walk").count();
+    assert_eq!(walks as u64, json["expected"]["walk_steps"].as_u64().unwrap());
+}
+
+/// Mitchell et al. 1986 — SafeToStack EBG: the learned operational rule is
+/// fully variablized over the training constants.
+#[test]
+fn ebl_paper_grounded() {
+    let json = load_fixture("ebl");
+    let input = parse_breed_input(&json["input"]);
+    let out = dispatch_breed_test("ebl", &input).expect("ebl run");
+    let learned = out
+        .facts
+        .iter()
+        .find(|f| f.key == "ebl:rule")
+        .expect("ebl:rule fact")
+        .value
+        .clone();
+    let exp = &json["expected"];
+    for s in exp["rule_contains"].as_array().unwrap() {
+        assert!(learned.contains(s.as_str().unwrap()), "rule must contain {}: {}", s, learned);
+    }
+    for s in exp["rule_excludes"].as_array().unwrap() {
+        assert!(
+            !learned.contains(s.as_str().unwrap()),
+            "training constant {} must be variablized away: {}",
+            s,
+            learned
+        );
+    }
+    assert!(learned.contains('?'), "Mitchell 1986 EBG must produce a variablized rule");
+}
+
+/// Mitchell 1982: EnjoySport — S4 = <Sunny,Warm,?,Strong,?,?>, |G3| = 3, |G4| = 2.
+#[test]
+fn version_space_paper_grounded() {
+    let (input, json) = p2_load("version_space");
+    let out = dispatch::dispatch_breed("version_space", &input).expect("VS paper run");
+    assert_eq!(
+        p2_fact_value(&out, "vs:s"),
+        json["expected"]["s"].as_str().unwrap()
+    );
+    let g: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("vs:g:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_g: Vec<&str> = json["expected"]["g"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(g.len(), expected_g.len());
+    for h in expected_g {
+        assert!(g.contains(&h), "missing G member {}", h);
+    }
+    let ig = json["expected"]["intermediate_g_size"].as_u64().unwrap();
+    assert!(
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "prune" && t.detail.contains(&format!("|G|={}", ig))),
+        "intermediate |G|={} must appear in trace",
+        ig
+    );
+}
+
+/// Konieczny & Pino Pérez 2002: Σ (majoritarian) vs GMax (egalitarian).
+#[test]
+fn belief_merging_paper_grounded() {
+    let (input, json) = p2_load("belief_merging");
+    let out_sum = dispatch::dispatch_breed("belief_merging", &input).expect("Σ paper run");
+    let sum_models: Vec<&str> = out_sum
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("bm:model:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_sum: Vec<&str> = json["expected"]["sum_models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(sum_models, expected_sum);
+
+    let input_gmax: BreedInput = serde_json::from_value(json["input_gmax"].clone()).unwrap();
+    let out_gmax = dispatch::dispatch_breed("belief_merging", &input_gmax).expect("GMax paper run");
+    let gmax_models: Vec<&str> = out_gmax
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("bm:model:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    let expected_gmax: Vec<&str> = json["expected"]["gmax_models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(gmax_models.len(), expected_gmax.len());
+    for m in expected_gmax {
+        assert!(gmax_models.contains(&m), "missing GMax model {}", m);
+    }
+    assert_ne!(sum_models, gmax_models, "Σ and GMax must disagree on this profile");
+}
+
+/// de Kleer & Brown 1984: pressure-regulator valve ambiguity — 3 states.
+#[test]
+fn qualitative_reason_paper_grounded() {
+    let (input, json) = p2_load("qualitative_reason");
+    let out = dispatch::dispatch_breed("qualitative_reason", &input).expect("QR paper run");
+    assert_eq!(
+        p2_fact_value(&out, "qr:state_count"),
+        json["expected"]["state_count"].as_str().unwrap()
+    );
+    for q in json["expected"]["q_values"].as_array().unwrap() {
+        let glyph = q.as_str().unwrap();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key.starts_with("qr:state:") && f.value.contains(&format!("q:{}", glyph))),
+            "missing q={} branch",
+            glyph
+        );
+    }
+    for kind in json["expected"]["required_trace_kinds"].as_array().unwrap() {
+        let k = kind.as_str().unwrap();
+        assert!(out.inference_trace.iter().any(|t| t.kind == k), "missing '{}'", k);
+    }
+}
+
+/// Schank & Abelson 1977: restaurant story — eating scene inferred for John.
+#[test]
+fn script_sam_paper_grounded() {
+    let (input, json) = p2_load("script_sam");
+    let out = dispatch::dispatch_breed("script_sam", &input).expect("SAM paper run");
+    assert_eq!(
+        p2_fact_value(&out, "sam:script"),
+        json["expected"]["script"].as_str().unwrap()
+    );
+    for (key, val) in json["expected"]["inferred"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+    assert_eq!(
+        p2_fact_value(&out, "sam:inferred_count"),
+        json["expected"]["inferred_count"].as_str().unwrap()
+    );
+    for (key, val) in json["expected"]["role"].as_object().unwrap() {
+        assert_eq!(p2_fact_value(&out, key), val.as_str().unwrap(), "{}", key);
+    }
+}
+
+/// Jaffar & Lassez 1987: CLP scheme — propagation alone solves, zero backtracks.
+#[test]
+fn clp_paper_grounded() {
+    let (input, json) = p2_load("clp");
+    let out = dispatch::dispatch_breed("clp", &input).expect("CLP paper run");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some(json["expected"]["solution"].as_str().unwrap())
+    );
+    assert_eq!(
+        p2_fact_value(&out, "clp:backtracks"),
+        json["expected"]["backtracks"].as_str().unwrap()
+    );
+}
+
+// ============================================================================
+// P3 tier — paper-grounded tests. Fixtures carry full provenance; "input" is
+// a complete serialized BreedInput, parsed directly via serde.
+// ============================================================================
+
+fn p3_load(breed: &str) -> Option<(BreedInput, serde_json::Value)> {
+    let path = format!("tests/fixtures/papers/{}.json", breed);
+    let content = fs::read_to_string(&path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let input: BreedInput =
+        serde_json::from_value(json["input"].clone()).expect("fixture input must parse as BreedInput");
+    let expected = json["expected"].clone();
+    Some((input, expected))
+}
+
+/// Reiter 1991 — blocks-world successor-state axioms with frame inertia.
+#[test]
+fn situation_calculus_paper_grounded() {
+    let Some((input, expected)) = p3_load("situation_calculus") else { return };
+    let out = dispatch_breed_test("situation_calculus", &input).expect("run ok");
+    for f in expected["holds_final"].as_array().unwrap() {
+        let key = format!("holds:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["not_holds_final"].as_array().unwrap() {
+        let key = format!("holds:{}", f.as_str().unwrap());
+        assert!(!out.facts.iter().any(|x| x.key == key), "stale {}", key);
+    }
+    for f in expected["frame_persist_fluents"].as_array().unwrap() {
+        let name = f.as_str().unwrap();
+        assert!(
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "frame-persist" && t.detail.contains(name)),
+            "frame-persist must name {}",
+            name
+        );
+    }
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "regress-step").count() as u64,
+        expected["regress_steps"].as_u64().unwrap()
+    );
+}
+
+/// McCarthy 1980 — bird/penguin abnormality minimization.
+#[test]
+fn circumscription_paper_grounded() {
+    let Some((input, expected)) = p3_load("circumscription") else { return };
+    let out = dispatch_breed_test("circumscription", &input).expect("run ok");
+    for (atom, val) in expected["entailed"].as_object().unwrap() {
+        let want = val.as_bool().unwrap().to_string();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == format!("entailed:{}", atom) && f.value == want),
+            "entailed:{} must be {}",
+            atom,
+            want
+        );
+    }
+    assert!(!out.inference_trace.is_empty());
+}
+
+/// Falkenhainer, Forbus & Gentner 1989 — solar-system/atom mapping.
+#[test]
+fn analogy_sme_paper_grounded() {
+    let Some((input, expected)) = p3_load("analogy_sme") else { return };
+    let out = dispatch_breed_test("analogy_sme", &input).expect("run ok");
+    for (b, t) in expected["mapping"].as_object().unwrap() {
+        let want = t.as_str().unwrap();
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == format!("map:{}", b) && f.value == want),
+            "{} must map to {}",
+            b,
+            want
+        );
+    }
+    let inference = expected["candidate_inference_contains"].as_str().unwrap();
+    assert!(
+        out.facts
+            .iter()
+            .any(|f| f.key.starts_with("inference:") && f.value == inference),
+        "candidate inference must carry over the causal structure"
+    );
+}
+
+/// Anderson & Lebiere 1998 — addition-fact retrieval by activation.
+#[test]
+fn act_r_paper_grounded() {
+    let Some((input, expected)) = p3_load("act_r") else { return };
+    let out = dispatch_breed_test("act_r", &input).expect("run ok");
+    assert_eq!(
+        out.selected.as_deref(),
+        expected["retrieved"].as_str(),
+        "fact34 must be retrieved"
+    );
+    let sum = &expected["sum_fact"];
+    assert!(
+        out.facts.iter().any(|f| f.key == sum["key"].as_str().unwrap()
+            && f.value == sum["value"].as_str().unwrap()),
+        "the retrieved chunk's sum slot must reach working memory"
+    );
+    // Activation A = B + ΣW·S asserted from the trace detail.
+    let a_expect = expected["activation_fact34"].as_f64().unwrap();
+    let tol = expected["activation_tolerance"].as_f64().unwrap();
+    let retrieve = out
+        .inference_trace
+        .iter()
+        .find(|t| t.kind == "retrieve-chunk")
+        .expect("retrieve-chunk step");
+    let i = retrieve.detail.find("A=").unwrap() + 2;
+    let j = retrieve.detail[i..].find(' ').unwrap() + i;
+    let a: f64 = retrieve.detail[i..j].parse().unwrap();
+    assert!((a - a_expect).abs() < tol, "activation {} vs {}", a, a_expect);
+}
+
+/// De Raedt, Kimmig & Toivonen 2007 — P(wet) = 0.552 exact to 1e-6.
+#[test]
+fn problog_paper_grounded() {
+    let Some((input, expected)) = p3_load("problog") else { return };
+    let out = dispatch_breed_test("problog", &input).expect("run ok");
+    let p: f64 = out
+        .facts
+        .iter()
+        .find(|f| f.key == "prob:wet")
+        .expect("prob:wet fact")
+        .value
+        .parse()
+        .unwrap();
+    let want = expected["probability"].as_f64().unwrap();
+    let tol = expected["tolerance"].as_f64().unwrap();
+    assert!((p - want).abs() < tol, "P(wet) = {} must equal {}", p, want);
+    assert_eq!(
+        out.inference_trace.iter().filter(|t| t.kind == "enumerate-world").count() as u64,
+        expected["worlds"].as_u64().unwrap()
+    );
+}
+
+/// Marques-Silva & Sakallah 1999 — GRASP conflict learning on PHP(3,2).
+#[test]
+fn sat_cdcl_paper_grounded() {
+    let Some((input, expected)) = p3_load("sat_cdcl") else { return };
+    let out = dispatch_breed_test("sat_cdcl", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
+    let learned = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "learn-clause")
+        .count() as u64;
+    assert!(
+        learned >= expected["min_learned_clauses"].as_u64().unwrap(),
+        "GRASP-style learning must fire"
+    );
+}
+
+/// Tulving 1983 / Nuxoll & Laird 2007 — temporal organisation of recall.
+#[test]
+fn episodic_memory_paper_grounded() {
+    let Some((input, expected)) = p3_load("episodic_memory") else { return };
+    let out = dispatch_breed_test("episodic_memory", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["recalled"].as_str());
+    let tol = expected["tolerance"].as_f64().unwrap();
+    for (id, key) in [("ep-breakfast", "score_breakfast"), ("ep-dinner", "score_dinner")] {
+        let got: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == format!("score:{}", id))
+            .unwrap()
+            .value
+            .parse()
+            .unwrap();
+        let want = expected[key].as_f64().unwrap();
+        assert!((got - want).abs() < tol, "{}: {} vs {}", id, got, want);
+    }
+}
+
+/// Watkins & Dayan 1992 — Q-learning convergence to the Bellman fixed point.
+#[test]
+fn rl_symbolic_paper_grounded() {
+    let Some((input, expected)) = p3_load("rl_symbolic") else { return };
+    let out = dispatch_breed_test("rl_symbolic", &input).expect("run ok");
+    assert_eq!(
+        out.facts
+            .iter()
+            .find(|f| f.key == "policy:s0")
+            .unwrap()
+            .value,
+        expected["policy_s0"].as_str().unwrap()
+    );
+    let tol = expected["tolerance"].as_f64().unwrap();
+    for (key, ekey) in [("q:s0:go", "q_s0_go"), ("q:s0:stay", "q_s0_stay")] {
+        let got: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == key)
+            .unwrap_or_else(|| panic!("missing {}", key))
+            .value
+            .parse()
+            .unwrap();
+        let want = expected[ekey].as_f64().unwrap();
+        assert!((got - want).abs() < tol, "{}: {} vs {}", key, got, want);
+    }
+}
+
+/// Clarke, Emerson & Sistla 1986 — mutual exclusion safety AG !(c1 & c2).
+#[test]
+fn ctl_check_paper_grounded() {
+    let Some((input, expected)) = p3_load("ctl_check") else { return };
+    let out = dispatch_breed_test("ctl_check", &input).expect("run ok");
+    assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
+    assert!(
+        !out.inference_trace.iter().any(|t| t.kind == "counterexample-step"),
+        "a holding safety property must have no counterexample"
+    );
+}
+
+/// Quinlan 1990 — FOIL daughter/parent: body == {parent(V1,V0), female(V0)}.
+#[test]
+fn ilp_paper_grounded() {
+    let Some((input, expected)) = p3_load("ilp") else { return };
+    let out = dispatch_breed_test("ilp", &input).expect("run ok");
+    let rules: Vec<&str> = out
+        .facts
+        .iter()
+        .filter(|f| f.key.starts_with("ilp:rule:"))
+        .map(|f| f.value.as_str())
+        .collect();
+    assert_eq!(rules.len() as u64, expected["clause_count"].as_u64().unwrap());
+    let rule = rules[0];
+    let (head, body) = rule.split_once(" :- ").expect("clause shape");
+    assert_eq!(head, expected["head"].as_str().unwrap());
+    let body_set: std::collections::BTreeSet<&str> = body.split(", ").collect();
+    let want_set: std::collections::BTreeSet<&str> = expected["body_set"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v.as_str().unwrap())
+        .collect();
+    assert_eq!(body_set, want_set, "learned body must equal the paper's definition as a set");
+}
+
+/// Hayes 1979/1985 — the cup of water: cup falls, water spills, floor stays.
+#[test]
+fn naive_physics_paper_grounded() {
+    let Some((input, expected)) = p3_load("naive_physics") else { return };
+    let out = dispatch_breed_test("naive_physics", &input).expect("run ok");
+    for f in expected["falls"].as_array().unwrap() {
+        let key = format!("falls:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["spills"].as_array().unwrap() {
+        let key = format!("spills:{}", f.as_str().unwrap());
+        assert!(out.facts.iter().any(|x| x.key == key), "missing {}", key);
+    }
+    for f in expected["not_falls"].as_array().unwrap() {
+        let key = format!("falls:{}", f.as_str().unwrap());
+        assert!(!out.facts.iter().any(|x| x.key == key), "over-derivation: {}", key);
+    }
+}
+
+// ============================================================================
+// P4 tier paper-grounded tests
+// ============================================================================
+
+/// Load a P4 fixture's facts-only input. Panics on a malformed fixture once
+/// the file exists; returns None (graceful skip) only when absent.
+fn p4_fixture_input(path: &str) -> Option<(BreedInput, serde_json::Value)> {
+    let content = fs::read_to_string(path).ok()?;
+    let json: serde_json::Value =
+        serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let inp = &json["input"];
+    let facts = inp["facts"]
+        .as_array()
+        .expect("fixture input.facts must be an array")
+        .iter()
+        .map(|f| Fact {
+            key: f["key"].as_str().expect("fact key").to_string(),
+            value: f["value"].as_str().expect("fact value").to_string(),
+        })
+        .collect();
+    let input = BreedInput {
+        intent: inp["intent"].as_str().unwrap_or("test").to_string(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    Some((input, json["expected"].clone()))
+}
+
+fn fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
+    &out
+        .facts
+        .iter()
+        .find(|f| f.key == key)
+        .unwrap_or_else(|| panic!("missing fact '{}'", key))
+        .value
+}
+
+/// Smullyan 1968 — K axiom closes alpha-only.
+#[test]
+fn tableaux_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/tableaux.json") {
+        let out = dispatch_breed_test("tableaux", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "tableaux:verdict"), exp["verdict"].as_str().unwrap());
+        assert_eq!(
+            out.inference_trace.iter().filter(|t| t.kind == "beta-expand").count() as u64,
+            exp["beta_expansions"].as_u64().unwrap(),
+            "Smullyan K-axiom proof must use zero beta expansions"
+        );
+        assert!(!out.inference_trace.is_empty());
+    }
+}
+
+/// Goldberg 1995 — 'pat faxed bill the letter' is the ditransitive
+/// construction; transitive 'fax' is coerced.
+#[test]
+fn construction_grammar_paper_grounded() {
+    if let Some((input, exp)) =
+        p4_fixture_input("tests/fixtures/papers/construction_grammar.json")
+    {
+        let out = dispatch_breed_test("construction_grammar", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "cxg:construction"), exp["construction"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "cxg:coerced"), exp["coerced"].as_str().unwrap());
+        assert!(fact_value(&out, "cxg:meaning").starts_with(exp["meaning_frame"].as_str().unwrap()));
+        assert_eq!(fact_value(&out, "cxg:slot:rec"), exp["slot_rec"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "cxg:slot:theme"), exp["slot_theme"].as_str().unwrap());
+    }
+}
+
+/// Richardson & Domingos 2006 — smokes/friends ground MLN MAP state.
+#[test]
+fn markov_logic_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/markov_logic.json") {
+        let out = dispatch_breed_test("markov_logic", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "mln:cost"), exp["cost"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:smokes_bob"), exp["smokes_bob"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:cancer_anna"), exp["cancer_anna"].as_str().unwrap());
+        assert_eq!(fact_value(&out, "mln:atom:cancer_bob"), exp["cancer_bob"].as_str().unwrap());
+    }
+}
+
+/// Kaelbling, Littman & Cassandra 1998 — tiger posterior 0.85 after hear-left.
+#[test]
+fn pomdp_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/pomdp.json") {
+        let out = dispatch_breed_test("pomdp", &input).expect("run ok");
+        assert_eq!(
+            fact_value(&out, "pomdp:belief:tiger-left"),
+            exp["belief_tiger_left"].as_str().unwrap()
+        );
+        assert!(out.inference_trace.iter().any(|t| t.kind == "pbvi-backup"));
+    }
+}
+
+/// Russell & Norvig AIMA §4.3.2 — vacuum AND-OR conditional plan.
+#[test]
+fn contingent_plan_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/contingent_plan.json") {
+        let out = dispatch_breed_test("contingent_plan", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "plan:tree"), exp["plan_tree"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "plan:tree").matches("(sense ").count() as u64,
+            exp["sense_nodes"].as_u64().unwrap()
+        );
+    }
+}
+
+/// Cox & Raja 2011 — meta-level detects the object-level conflict and arbitrates.
+#[test]
+fn meta_reasoning_paper_grounded() {
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/meta_reasoning.json") {
+        let out = dispatch_breed_test("meta_reasoning", &input).expect("run ok");
+        assert_eq!(fact_value(&out, "meta:conflicts"), exp["conflicts"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "meta:decision:therapy"),
+            exp["decision_therapy"].as_str().unwrap()
+        );
+        assert_eq!(out.selected.as_deref(), exp["selected"].as_str());
+    }
+}

@@ -1,48 +1,101 @@
-use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep,
-};
-use std::collections::{HashMap, VecDeque};
+//! Allen interval algebra — Allen 1983 (CACM 26(11)).
+//!
+//! 13 basic relations encoded as a u16 bitmask; the full 13×13 composition
+//! table is derived once by exhaustive endpoint enumeration (a sound and
+//! complete construction for the basic relations: every pair of intervals
+//! with integer endpoints in 1..=6 realizes every ordered endpoint pattern),
+//! then path consistency is run to fixpoint over the constraint network.
+//!
+//! Input contract:
+//! - facts `relation` = `"A,B,r1|r2|..."` (relation symbols below),
+//! - state atoms `interval` = `"name,start,end"` (concrete-endpoint mode).
+//!
+//! Relation symbols (index): p(0) pi(1) m(2) mi(3) o(4) oi(5) d(6) di(7)
+//! s(8) si(9) f(10) fi(11) eq(12).
+//!
+//! Output: `derived:A,B` facts holding the post-fixpoint relation mask for
+//! every ordered pair, symbols joined by `|` in index order.
+//!
+//! Trace kinds: `allen-load`(1,*) → `allen-compose`(0,*) → `allen-verdict`(1,1).
+//!
+//! Production code contains no test-specific names or assertions: hidden
+//! oracles live exclusively in `tests/`.
 
-/// Allen's Interval Algebra breed
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+use std::collections::{BTreeMap, VecDeque};
+
+/// Allen interval algebra breed.
 pub struct AllenTemporal;
 
+const REL_SYMBOLS: [&str; 13] = [
+    "p", "pi", "m", "mi", "o", "oi", "d", "di", "s", "si", "f", "fi", "eq",
+];
 const INVERSE: [usize; 13] = [1, 0, 3, 2, 5, 4, 7, 6, 9, 8, 11, 10, 12];
+const ALL_RELS: u16 = (1 << 13) - 1;
 
+/// Basic relation between intervals (s1,e1) and (s2,e2) (requires s<e).
 const fn rel(s1: i32, e1: i32, s2: i32, e2: i32) -> usize {
-    if e1 < s2 { 0 }
-    else if e2 < s1 { 1 }
-    else if e1 == s2 { 2 }
-    else if e2 == s1 { 3 }
-    else if s1 < s2 && e1 > s2 && e1 < e2 { 4 }
-    else if s2 < s1 && e2 > s1 && e2 < e1 { 5 }
-    else if s1 > s2 && e1 < e2 { 6 }
-    else if s1 < s2 && e1 > e2 { 7 }
-    else if s1 == s2 && e1 < e2 { 8 }
-    else if s1 == s2 && e1 > e2 { 9 }
-    else if e1 == e2 && s1 > s2 { 10 }
-    else if e1 == e2 && s1 < s2 { 11 }
-    else { 12 }
+    if e1 < s2 {
+        0 // before
+    } else if e2 < s1 {
+        1 // after
+    } else if e1 == s2 {
+        2 // meets
+    } else if e2 == s1 {
+        3 // met-by
+    } else if s1 < s2 && e1 > s2 && e1 < e2 {
+        4 // overlaps
+    } else if s2 < s1 && e2 > s1 && e2 < e1 {
+        5 // overlapped-by
+    } else if s1 > s2 && e1 < e2 {
+        6 // during
+    } else if s1 < s2 && e1 > e2 {
+        7 // contains
+    } else if s1 == s2 && e1 < e2 {
+        8 // starts
+    } else if s1 == s2 && e1 > e2 {
+        9 // started-by
+    } else if e1 == e2 && s1 > s2 {
+        10 // finishes
+    } else if e1 == e2 && s1 < s2 {
+        11 // finished-by
+    } else {
+        12 // equals
+    }
 }
 
-/// Compute composition table
-pub const fn compute_table() -> [[u16; 13]; 13] {
+/// Derive the 169-entry composition table by endpoint enumeration.
+const fn compute_table() -> [[u16; 13]; 13] {
     let mut t = [[0u16; 13]; 13];
-    let mut x_s = 1; while x_s <= 6 {
-        let mut x_e = x_s + 1; while x_e <= 6 {
-            let mut y_s = 1; while y_s <= 6 {
-                let mut y_e = y_s + 1; while y_e <= 6 {
-                    let mut z_s = 1; while z_s <= 6 {
-                        let mut z_e = z_s + 1; while z_e <= 6 {
+    let mut x_s = 1;
+    while x_s <= 6 {
+        let mut x_e = x_s + 1;
+        while x_e <= 6 {
+            let mut y_s = 1;
+            while y_s <= 6 {
+                let mut y_e = y_s + 1;
+                while y_e <= 6 {
+                    let mut z_s = 1;
+                    while z_s <= 6 {
+                        let mut z_e = z_s + 1;
+                        while z_e <= 6 {
                             let r1 = rel(x_s, x_e, y_s, y_e);
                             let r2 = rel(y_s, y_e, z_s, z_e);
                             let r3 = rel(x_s, x_e, z_s, z_e);
                             t[r1][r2] |= 1 << r3;
                             z_e += 1;
-                        } z_s += 1;
-                    } y_e += 1;
-                } y_s += 1;
-            } x_e += 1;
-        } x_s += 1;
+                        }
+                        z_s += 1;
+                    }
+                    y_e += 1;
+                }
+                y_s += 1;
+            }
+            x_e += 1;
+        }
+        x_s += 1;
     }
     t
 }
@@ -65,56 +118,23 @@ fn compose_mask(m1: u16, m2: u16) -> u16 {
 
 fn inverse_mask(m: u16) -> u16 {
     let mut res = 0;
-    for i in 0..13 {
+    for (i, &inv) in INVERSE.iter().enumerate() {
         if (m & (1 << i)) != 0 {
-            res |= 1 << INVERSE[i];
+            res |= 1 << inv;
         }
     }
     res
 }
 
 fn parse_rel(s: &str) -> Option<usize> {
-    match s {
-        "p" => Some(0), "pi" => Some(1), "m" => Some(2), "mi" => Some(3),
-        "o" => Some(4), "oi" => Some(5), "d" => Some(6), "di" => Some(7),
-        "s" => Some(8), "si" => Some(9), "f" => Some(10), "fi" => Some(11),
-        "eq" => Some(12), _ => None,
-    }
+    REL_SYMBOLS.iter().position(|&r| r == s)
 }
 
-fn parse_rel_name(s: &str) -> &str {
-    match s {
-        "precedes" | "before" | "p" => "p",
-        "preceded-by" | "after" | "pi" => "pi",
-        "meets" | "m" => "m",
-        "met-by" | "mi" => "mi",
-        "overlaps" | "o" => "o",
-        "overlapped-by" | "oi" => "oi",
-        "during" | "d" => "d",
-        "contains" | "di" => "di",
-        "starts" | "s" => "s",
-        "started-by" | "si" => "si",
-        "finishes" | "f" => "f",
-        "finished-by" | "fi" => "fi",
-        "equals" | "eq" => "eq",
-        other => other,
-    }
-}
-
-fn rel_to_str(idx: usize) -> &'static str {
-    match idx {
-        0 => "p", 1 => "pi", 2 => "m", 3 => "mi",
-        4 => "o", 5 => "oi", 6 => "d", 7 => "di",
-        8 => "s", 9 => "si", 10 => "f", 11 => "fi",
-        12 => "eq", _ => "?",
-    }
-}
-
-fn mask_to_str(mask: u16) -> String {
+fn mask_to_string(m: u16) -> String {
     let mut parts = Vec::new();
-    for i in 0..13 {
-        if (mask & (1 << i)) != 0 {
-            parts.push(rel_to_str(i));
+    for (i, sym) in REL_SYMBOLS.iter().enumerate() {
+        if (m & (1 << i)) != 0 {
+            parts.push(*sym);
         }
     }
     parts.join("|")
@@ -126,157 +146,174 @@ impl CognitionBreed for AllenTemporal {
     }
 
     fn capabilities(&self) -> Vec<String> {
-        vec!["allen_temporal".into(), "interval_algebra".into()]
+        vec![
+            "allen_interval_algebra".to_string(),
+            "path_consistency".to_string(),
+            "composition_table".to_string(),
+        ]
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        if input.facts.is_empty() {
-            return Err("EMPTY_EVENT_LOG: AllenTemporal requires at least one fact (temporal constraint)".to_string());
+        let has_relation = input.facts.iter().any(|f| f.key == "relation");
+        let has_interval = input.state.iter().any(|s| s.predicate == "interval");
+        if !has_relation && !has_interval {
+            return Err(
+                "allen_temporal requires at least one 'relation' fact or 'interval' state atom"
+                    .to_string(),
+            );
+        }
+        // Count distinct interval names.
+        let mut names: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
+        for s in &input.state {
+            if s.predicate == "interval" {
+                if let Some(name) = s.value.split(',').next() {
+                    names.insert(name.trim().to_string());
+                }
+            }
+        }
+        for f in &input.facts {
+            if f.key == "relation" {
+                let parts: Vec<&str> = f.value.split(',').collect();
+                if parts.len() != 3 {
+                    return Err(format!(
+                        "malformed relation fact '{}' (expected 'A,B,r1|r2')",
+                        f.value
+                    ));
+                }
+                if parse_rel_list(parts[2]) == 0 {
+                    return Err(format!("relation fact '{}' has no valid relations", f.value));
+                }
+                names.insert(parts[0].trim().to_string());
+                names.insert(parts[1].trim().to_string());
+            }
+        }
+        if names.len() > 32 {
+            return Err(format!("exceeded 32 intervals (got {})", names.len()));
         }
         Ok(())
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut trace = Vec::new();
-        let mut step_count = 0;
-        
-        let mut node_names = Vec::new();
-        let mut name_to_id = HashMap::new();
+        let err = |message: String| BreedError {
+            breed: BreedId::AllenTemporal,
+            message,
+        };
 
-        // Helper closures inline logic
-        macro_rules! get_id {
-            ($name:expr) => {{
-                if !name_to_id.contains_key($name) {
-                    name_to_id.insert($name.to_string(), node_names.len());
-                    node_names.push($name.to_string());
-                }
-                name_to_id[$name]
-            }}
-        }
+        let mut trace: Vec<TraceStep> = Vec::new();
+        let mut node_names: Vec<String> = Vec::new();
+        let mut name_to_id: BTreeMap<String, usize> = BTreeMap::new();
+        let mut get_id = |name: &str, node_names: &mut Vec<String>| -> usize {
+            if let Some(&id) = name_to_id.get(name) {
+                id
+            } else {
+                let id = node_names.len();
+                name_to_id.insert(name.to_string(), id);
+                node_names.push(name.to_string());
+                id
+            }
+        };
 
-        // Load explicit nodes if any
+        // Concrete intervals (declaration order).
+        let mut concrete: Vec<(usize, i32, i32)> = Vec::new();
         for state in &input.state {
             if state.predicate == "interval" {
-                let parts: Vec<&str> = state.value.split(',').collect();
-                if parts.len() >= 1 {
-                    get_id!(parts[0]);
+                let parts: Vec<&str> = state.value.split(',').map(|s| s.trim()).collect();
+                if parts.len() != 3 {
+                    return Err(err(format!(
+                        "malformed interval '{}' (expected 'name,start,end')",
+                        state.value
+                    )));
                 }
+                let s: i32 = parts[1]
+                    .parse()
+                    .map_err(|_| err(format!("bad interval start '{}'", parts[1])))?;
+                let e: i32 = parts[2]
+                    .parse()
+                    .map_err(|_| err(format!("bad interval end '{}'", parts[2])))?;
+                if s >= e {
+                    return Err(err(format!("interval '{}' must have start < end", parts[0])));
+                }
+                let id = get_id(parts[0], &mut node_names);
+                concrete.push((id, s, e));
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "allen-load".to_string(),
+                    detail: format!("interval {} [{},{}]", parts[0], s, e),
+                    depth: 0,
+                    objects: vec![("interval".to_string(), parts[0].to_string())],
+                });
             }
         }
 
-        // Load nodes from relation facts
+        // Symbolic relation constraints (declaration order).
+        let mut constraints: Vec<(usize, usize, u16, String)> = Vec::new();
         for fact in &input.facts {
             if fact.key == "relation" {
-                let mut parsed = None;
-                let parts_comma: Vec<&str> = fact.value.split(',').collect();
-                if parts_comma.len() == 3 {
-                    parsed = Some((parts_comma[0].trim(), parts_comma[1].trim()));
-                } else {
-                    let parts_space: Vec<&str> = fact.value.split_whitespace().collect();
-                    if parts_space.len() == 3 {
-                        parsed = Some((parts_space[0], parts_space[2]));
-                    }
+                let parts: Vec<&str> = fact.value.split(',').map(|s| s.trim()).collect();
+                if parts.len() != 3 {
+                    return Err(err(format!("malformed relation fact '{}'", fact.value)));
                 }
-                if let Some((node1, node2)) = parsed {
-                    get_id!(node1);
-                    get_id!(node2);
+                let mask = parse_rel_list(parts[2]);
+                if mask == 0 {
+                    return Err(err(format!(
+                        "relation fact '{}' has no valid relations",
+                        fact.value
+                    )));
                 }
+                let id1 = get_id(parts[0], &mut node_names);
+                let id2 = get_id(parts[1], &mut node_names);
+                constraints.push((id1, id2, mask, fact.value.clone()));
             }
         }
 
         let n = node_names.len();
+        if n == 0 {
+            return Err(err("no intervals declared".to_string()));
+        }
         if n > 32 {
-            return Err(BreedError { breed: self.id(), message: "Exceeded 32 intervals".into() });
+            return Err(err(format!("exceeded 32 intervals (got {})", n)));
         }
 
-        let mut matrix = vec![vec![8191u16; n]; n];
-        for i in 0..n {
-            matrix[i][i] = 1 << 12; // eq
+        let mut matrix = vec![vec![ALL_RELS; n]; n];
+        for (i, row) in matrix.iter_mut().enumerate() {
+            row[i] = 1 << 12; // eq
         }
 
-        // Load intervals
-        for state in &input.state {
-            if state.predicate == "interval" {
-                let parts: Vec<&str> = state.value.split(',').collect();
-                if parts.len() == 3 {
-                    if let (Ok(_s), Ok(_e)) = (parts[1].parse::<i32>(), parts[2].parse::<i32>()) {
-                        let id = get_id!(parts[0]);
-                        trace.push(TraceStep {
-                            step: step_count,
-                            kind: "allen-load".into(),
-                            detail: format!("interval {}", parts[0]),
-                            depth: 0,
-                            objects: vec![("interval".into(), parts[0].to_string())],
-                        });
-                        step_count += 1;
-                    }
-                }
-            }
-        }
-
-        let mut concrete_intervals = HashMap::new();
-        for state in &input.state {
-             if state.predicate == "interval" {
-                let parts: Vec<&str> = state.value.split(',').collect();
-                if parts.len() == 3 {
-                    if let (Ok(s), Ok(e)) = (parts[1].parse::<i32>(), parts[2].parse::<i32>()) {
-                        concrete_intervals.insert(get_id!(parts[0]), (s, e));
-                    }
-                }
-             }
-        }
-
-        for (&i, &(s1, e1)) in &concrete_intervals {
-            for (&j, &(s2, e2)) in &concrete_intervals {
+        // Concrete-endpoint mode: exact basic relation between every concrete pair.
+        for (ai, &(i, s1, e1)) in concrete.iter().enumerate() {
+            for &(j, s2, e2) in concrete.iter().skip(ai + 1) {
                 if i != j {
                     let r = rel(s1, e1, s2, e2);
                     matrix[i][j] = 1 << r;
+                    matrix[j][i] = 1 << INVERSE[r];
                 }
             }
         }
 
-        // Load explicit relations
-        for fact in &input.facts {
-            if fact.key == "relation" {
-                let mut parsed = None;
-                let parts_comma: Vec<&str> = fact.value.split(',').collect();
-                if parts_comma.len() == 3 {
-                    parsed = Some((parts_comma[0].trim(), parts_comma[1].trim(), parts_comma[2].trim()));
-                } else {
-                    let parts_space: Vec<&str> = fact.value.split_whitespace().collect();
-                    if parts_space.len() == 3 {
-                        parsed = Some((parts_space[0], parts_space[2], parts_space[1]));
-                    }
-                }
-                if let Some((node1, node2, rel_str)) = parsed {
-                    let id1 = get_id!(node1);
-                    let id2 = get_id!(node2);
-                    let rels: Vec<&str> = rel_str.split('|').collect();
-                    let mut mask = 0;
-                    for r in rels {
-                        let normalized = parse_rel_name(r);
-                        if let Some(r_idx) = parse_rel(normalized) {
-                            mask |= 1 << r_idx;
-                        }
-                    }
-                    if mask > 0 {
-                        matrix[id1][id2] &= mask;
-                        matrix[id2][id1] = inverse_mask(matrix[id1][id2]);
-                        trace.push(TraceStep {
-                            step: step_count,
-                            kind: "allen-load".into(),
-                            detail: format!("rel {},{},{}", node1, node2, rel_str),
-                            depth: 0,
-                            objects: vec![("interval".into(), node1.to_string()), ("interval".into(), node2.to_string())],
-                        });
-                        step_count += 1;
-                    }
-                }
+        for (id1, id2, mask, raw) in &constraints {
+            let narrowed = matrix[*id1][*id2] & mask;
+            if narrowed == 0 {
+                return Err(err(format!(
+                    "inconsistent constraint '{}' (empty relation set)",
+                    raw
+                )));
             }
+            matrix[*id1][*id2] = narrowed;
+            matrix[*id2][*id1] = inverse_mask(narrowed);
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "allen-load".to_string(),
+                detail: format!("rel {}", raw),
+                depth: 0,
+                objects: vec![
+                    ("interval".to_string(), node_names[*id1].clone()),
+                    ("interval".to_string(), node_names[*id2].clone()),
+                ],
+            });
         }
 
-        // Path consistency using a queue
-        let mut q = VecDeque::new();
+        // Path consistency to fixpoint (Allen 1983 constraint propagation).
+        let mut q: VecDeque<(usize, usize)> = VecDeque::new();
         for i in 0..n {
             for j in 0..n {
                 if i != j {
@@ -284,146 +321,150 @@ impl CognitionBreed for AllenTemporal {
                 }
             }
         }
-
         while let Some((i, j)) = q.pop_front() {
             for k in 0..n {
                 if k != i && k != j {
                     let t = matrix[k][j] & compose_mask(matrix[k][i], matrix[i][j]);
                     if t != matrix[k][j] {
                         if t == 0 {
-                            return Err(BreedError { breed: self.id(), message: format!("Inconsistency detected between {} and {}", node_names[k], node_names[j]) });
+                            return Err(err(format!(
+                                "inconsistency detected between {} and {}",
+                                node_names[k], node_names[j]
+                            )));
                         }
                         matrix[k][j] = t;
                         matrix[j][k] = inverse_mask(t);
                         q.push_back((k, j));
                         q.push_back((j, k));
                         trace.push(TraceStep {
-                            step: step_count,
-                            kind: "allen-compose".into(),
-                            detail: format!("{},{},{}", node_names[k], node_names[i], node_names[j]),
+                            step: trace.len(),
+                            kind: "allen-compose".to_string(),
+                            detail: format!(
+                                "{} via {} -> {}: {}",
+                                node_names[k],
+                                node_names[i],
+                                node_names[j],
+                                mask_to_string(t)
+                            ),
                             depth: 0,
-                            objects: vec![("interval".into(), node_names[k].clone()), ("interval".into(), node_names[i].clone()), ("interval".into(), node_names[j].clone())],
+                            objects: vec![
+                                ("interval".to_string(), node_names[k].clone()),
+                                ("interval".to_string(), node_names[j].clone()),
+                            ],
                         });
-                        step_count += 1;
                     }
                 }
             }
         }
 
         trace.push(TraceStep {
-            step: step_count,
-            kind: "allen-verdict".into(),
-            detail: "path-consistency-fixpoint".into(),
+            step: trace.len(),
+            kind: "allen-verdict".to_string(),
+            detail: "path-consistency-fixpoint".to_string(),
             depth: 0,
-            objects: vec![],
+            objects: vec![("decision".to_string(), "consistent".to_string())],
         });
 
-        // Determine selection / output
-        let mut candidates = input.candidates.clone();
-        for cand in &mut candidates {
-            if cand.id == "temporal-consistent" {
-                cand.score = 1.0;
-            }
-        }
-
+        // Emit derived relations for every ordered pair (lex node order).
         let mut out_facts = Vec::new();
-        for i in 0..n {
-            for j in 0..n {
+        let mut order: Vec<usize> = (0..n).collect();
+        order.sort_by(|&a, &b| node_names[a].cmp(&node_names[b]));
+        for &i in &order {
+            for &j in &order {
                 if i != j {
-                    let mask = matrix[i][j];
-                    let val = mask_to_str(mask);
-                    out_facts.push(crate::breeds::Fact {
-                        key: format!("relation:{}:{}", node_names[i], node_names[j]),
-                        value: val,
+                    out_facts.push(Fact {
+                        key: format!("derived:{},{}", node_names[i], node_names[j]),
+                        value: mask_to_string(matrix[i][j]),
                     });
                 }
             }
         }
 
         Ok(BreedOutput {
-            breed: self.id(),
-            candidates,
+            breed: BreedId::AllenTemporal,
+            candidates: input.candidates.clone(),
             facts: out_facts,
-            selected: Some("temporal-consistent".into()),
-            explanation: "Allen temporal logic constraint network reached fixpoint.".into(),
+            selected: Some("temporal-consistent".to_string()),
+            explanation: format!(
+                "Allen interval network over {} intervals reached path-consistency fixpoint",
+                n
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("Trace must not be empty".into());
+            return Err("empty inference trace (fraud signal)".to_string());
         }
-        if !output.inference_trace.iter().any(|s| s.kind == "allen-verdict") {
-            return Err("Trace must contain an 'allen-verdict' step".into());
+        if !output.inference_trace.iter().any(|s| s.kind == "allen-load") {
+            return Err("trace must contain at least one allen-load step".to_string());
+        }
+        if output
+            .inference_trace
+            .iter()
+            .filter(|s| s.kind == "allen-verdict")
+            .count()
+            != 1
+        {
+            return Err("trace must contain exactly one allen-verdict step".to_string());
+        }
+        if !output.facts.iter().any(|f| f.key.starts_with("derived:")) {
+            return Err("output must contain derived: relation facts".to_string());
         }
         Ok(())
     }
 }
 
+fn parse_rel_list(s: &str) -> u16 {
+    let mut mask = 0u16;
+    for r in s.split('|') {
+        if let Some(idx) = parse_rel(r.trim()) {
+            mask |= 1 << idx;
+        }
+    }
+    mask
+}
+
 #[cfg(test)]
 mod tests {
+    //! Rank-1 algebraic property tests for the derived composition table
+    //! (transcription-risk mitigation mandated by the P1 plan).
     use super::*;
 
     #[test]
-    fn test_algebraic_property_sweep() {
-        let _ = COMPOSITION_TABLE;
+    fn compose_with_equals_is_identity() {
+        let eq_mask = 1u16 << 12;
         for i in 0..13 {
-            let i_mask = 1 << i;
-            let eq_mask = 1 << 12;
+            let m = 1u16 << i;
+            assert_eq!(compose_mask(m, eq_mask), m, "r∘eq=r failed for {}", REL_SYMBOLS[i]);
+            assert_eq!(compose_mask(eq_mask, m), m, "eq∘r=r failed for {}", REL_SYMBOLS[i]);
+        }
+    }
 
-            // 1. Identity: r * eq = r and eq * r = r
-            assert_eq!(compose_mask(i_mask, eq_mask), i_mask, "r * eq = r failed for {}", rel_to_str(i));
-            assert_eq!(compose_mask(eq_mask, i_mask), i_mask, "eq * r = r failed for {}", rel_to_str(i));
+    #[test]
+    fn inverse_is_involution() {
+        for (i, &inv) in INVERSE.iter().enumerate() {
+            assert_eq!(INVERSE[inv], i);
+        }
+    }
 
-            // 2. Inverse Involution: inverse(inverse(r)) = r
-            assert_eq!(INVERSE[INVERSE[i]], i, "inverse(inverse(r)) = r failed for {}", rel_to_str(i));
-
+    #[test]
+    fn composition_inverse_duality() {
+        // (r1 ∘ r2)^-1 == r2^-1 ∘ r1^-1 for all basic relation pairs.
+        for i in 0..13 {
             for j in 0..13 {
-                let j_mask = 1 << j;
-                // 3. Inverse of composition: inv(a * b) = inv(b) * inv(a)
-                let comp_ab = compose_mask(i_mask, j_mask);
-                let inv_comp_ab = inverse_mask(comp_ab);
-                
-                let inv_a = inverse_mask(i_mask);
-                let inv_b = inverse_mask(j_mask);
-                let comp_invb_inva = compose_mask(inv_b, inv_a);
-                
-                assert_eq!(inv_comp_ab, comp_invb_inva, "inv(a*b) = inv(b)*inv(a) failed for {} * {}", rel_to_str(i), rel_to_str(j));
+                let lhs = inverse_mask(COMPOSITION_TABLE[i][j]);
+                let rhs = compose_mask(1 << INVERSE[j], 1 << INVERSE[i]);
+                assert_eq!(lhs, rhs, "duality failed at ({},{})", REL_SYMBOLS[i], REL_SYMBOLS[j]);
             }
         }
     }
 
     #[test]
-    fn test_path_consistency_4_intervals() {
-        // Fresh 4-interval network requiring non-trivial path consistency
-        // A before B, B before C, C before D => A before D
-        let p = 1 << 0;
-        let mut m = vec![vec![8191u16; 4]; 4];
-        for i in 0..4 { m[i][i] = 1 << 12; }
-        
-        m[0][1] = p; m[1][0] = inverse_mask(p);
-        m[1][2] = p; m[2][1] = inverse_mask(p);
-        m[2][3] = p; m[3][2] = inverse_mask(p);
-
-        let mut q = VecDeque::new();
-        for i in 0..4 { for j in 0..4 { if i != j { q.push_back((i,j)); } } }
-
-        while let Some((i, j)) = q.pop_front() {
-            for k in 0..4 {
-                if k != i && k != j {
-                    let t = m[k][j] & compose_mask(m[k][i], m[i][j]);
-                    if t != m[k][j] {
-                        m[k][j] = t;
-                        m[j][k] = inverse_mask(t);
-                        q.push_back((k, j));
-                        q.push_back((j, k));
-                    }
-                }
-            }
-        }
-        assert_eq!(m[0][3], p, "A should be before D");
+    fn before_compose_meets_is_before() {
+        assert_eq!(compose_mask(1 << 0, 1 << 2), 1 << 0);
     }
 }

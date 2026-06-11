@@ -1,32 +1,44 @@
-# HTN Planning
+# HTN_PLANNING
 
-Hierarchical Task Network (HTN) Planning is a cognitive breed based on SHOP2 (Nau et al., 2003) for total-order task decomposition.
+## Origin
+- **Paper:** "SHOP2: An HTN Planning System" (JAIR 20, 2003)
+- **Authors:** Nau, Au, Ilghami, Kuter, Murdock, Wu, Yaman
+- **Tradition:** Hierarchical task network planning
 
-## Overview
+## Algorithm
+Total-order decomposition: tasks come from goals; `method:<task>:<variant>` rules decompose a compound task into a subtask sequence when their preconditions hold; `op:<name>` rules are primitives with add/delete effects (`atom` / `!atom`). Method alternatives are tried in declaration order with chronological backtracking; depth ≤64, expansions ≤512. The returned plan is replayed against the initial state as a self-audit before being emitted.
 
-Unlike STRIPS, which searches backward from goals, HTN planning starts with an initial high-level task and uses domain-specific methods to decompose it into smaller subtasks, continuing until primitive operators are reached. This allows domain knowledge to guide and restrict the search space, making it efficient.
+## Pseudocode
+```
+function seek(state, tasks):
+    if tasks empty: return []
+    t = tasks[0]
+    if t is op: if applicable: emit htn-apply; recurse on effect(state)
+                on failure: emit htn-backtrack
+    else: for each method:t:* applicable:
+            emit htn-decompose; recurse with subtasks ++ rest
+            on failure: emit htn-backtrack
+function run: plan = seek(initial, goal tasks); replay plan (self-audit); emit htn-plan
+```
 
-## Lifecycle
+## Input contract
+- goals: each value is a task (compound name or `op:<name>`)
+- rules: `method:<task>:<variant>` / `op:<name>` ids (required); state atoms `pred=val`
 
-The `htn_planning` breed follows a strict lifecycle model with trace steps representing its search:
-1. `htn-decompose`: Selects a method to break down a compound task.
-2. `htn-apply`: Applies a primitive operator, modifying the state.
-3. `htn-backtrack`: Reverses a choice if decomposition fails.
-4. `htn-plan`: Emits the successfully verified plan.
+## Output contract
+- `selected` / fact `htn:plan` — comma-joined operator sequence
+- trace: {`htn-decompose`,`htn-apply`,`htn-backtrack`}(1,*) → `htn-plan`(1,1)
 
-## Input Encoding
+## Complexity
+O(b^d) over method branching b, depth d; hard-capped at 512 expansions.
 
-* **Initial State**: Defined in `input.state`.
-* **Initial Tasks**: Encoded in `input.goals` with `predicate: "task"` and `value: "task-name"`.
-* **Methods**: Defined in `input.rules` with `id: "method:<task>:<variant>"`. The `conclusion` is a semicolon-separated list of subtasks.
-* **Operators**: Defined in `input.rules` with `id: "op:<name>"`. The `conclusion` contains adds and deletes (prefixed with `!`).
+## Generalization examples
+Logistics (load/drive/unload), travel planning, build pipelines.
 
-## Algorithm Limits
+## Adversarial coverage
+- Refusal: no goals, no rules, rules without method:/op: ids
+- Hidden: method A's operator precondition fails mid-sequence → forced backtrack to method B, exact plan + htn-backtrack step asserted
+- Paper: Nau 2003 logistics — exact plan op:load,op:drive,op:unload (audit defect HTN-1/2 fixed: Rust fixture + lifecycle kinds match emissions)
 
-* **Max Depth**: 64
-* **Max Expansions**: 512
-* **Backtracking**: Chronological
-
-## Self-Audit
-
-The resulting plan is always replayed against the initial state to ensure that every operator's preconditions were correctly met in sequence, preventing state leakage during the depth-first search.
+## See also
+- `csp_ac3.md`

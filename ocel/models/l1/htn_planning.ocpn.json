@@ -2,30 +2,32 @@
   "model_id": "htn_planning-l1-v1",
   "model_level": "L1",
   "breed_id": "htn_planning",
-  "object_types": ["task", "method", "operator"],
+  "object_types": ["task", "method", "operator", "decision"],
   "places": [
-    {"id": "p_start", "name": "start", "object_type": "task"},
-    {"id": "p_end", "name": "end", "object_type": "task"}
+    {"id": "p1", "name": "tasks_posed",  "object_type": "task"},
+    {"id": "p2", "name": "decomposing",  "object_type": "method"},
+    {"id": "p3", "name": "plan_emitted", "object_type": "decision"}
   ],
   "transitions": [
-    {"id": "t_decompose", "name": "htn-decompose", "label": "htn-decompose"},
-    {"id": "t_apply", "name": "htn-apply", "label": "htn-apply"},
-    {"id": "t_backtrack", "name": "htn-backtrack", "label": "htn-backtrack"},
-    {"id": "t_plan", "name": "htn-plan", "label": "htn-plan"}
+    {"id": "t1", "name": "htn-decompose", "label": "htn-decompose"},
+    {"id": "t2", "name": "htn-apply",     "label": "htn-apply"},
+    {"id": "t3", "name": "htn-backtrack", "label": "htn-backtrack"},
+    {"id": "t4", "name": "htn-plan",      "label": "htn-plan"}
   ],
   "arcs": [
-    {"from": "p_start", "to": "t_decompose", "type": "consume"},
-    {"from": "t_decompose", "to": "p_start", "type": "produce"},
-    
-    {"from": "p_start", "to": "t_apply", "type": "consume"},
-    {"from": "t_apply", "to": "p_start", "type": "produce"},
-    
-    {"from": "p_start", "to": "t_backtrack", "type": "consume"},
-    {"from": "t_backtrack", "to": "p_start", "type": "produce"},
-    
-    {"from": "p_start", "to": "t_plan", "type": "consume"},
-    {"from": "t_plan", "to": "p_end", "type": "produce"}
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p1", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p3", "type": "produce"}
   ],
-  "initial_marking": {"p_start": 1},
-  "final_markings": [{"p_end": 1}]
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p3": 1}]
 }

@@ -1,78 +1,43 @@
-# CSP AC-3
+# CSP_AC3
 
 ## Origin
-- **Paper:** "Consistency in Networks of Relations" (Mackworth, 1977)
-- **Authors:** Alan Mackworth
-- **Tradition:** Constraint Satisfaction Problems, Arc Consistency, Backtracking Search
+- **Paper:** "Consistency in Networks of Relations" (AIJ 8(1), 1977)
+- **Authors:** Alan K. Mackworth
+- **Tradition:** Constraint satisfaction, arc consistency
 
 ## Algorithm
-Finite-domain Constraint Satisfaction is solved using the AC-3 algorithm for maintaining arc consistency combined with backtracking search. Minimum Remaining Values (MRV) is used as a variable ordering heuristic, and lexicographic value sorting is used for tie-breaking.
-During backtrack search:
-1. Select the unassigned variable with the fewest remaining values (lexicographic tiebreak).
-2. For each value in the variable's sorted domain:
-   - Check consistency with current assignments.
-   - If consistent, assign the variable, and maintaining arc consistency (MAC) via AC-3 is run.
-   - Recursively solve for remaining variables.
-   - If search fails, backtrack and restore domains.
+Delegates to the proven `support::csp` solver: AC-3 runs the revise queue to fixpoint (domain wipeout ⇒ unsatisfiable); search uses backtracking with MRV variable selection (lexicographic tie-break), lexicographic value ordering, and MAC — full AC-3 re-propagation after every assignment. The solver records Init/Revise/Assign/Backtrack/Verdict events translated 1:1 into trace steps.
 
 ## Pseudocode
 ```
-function solve(input):
-    vars = parse_vars(input.facts)
-    constraints = parse_constraints(input.facts)
-    domains = {v: v.domain for v in vars}
-    
-    if not ac3(domains, constraints):
-        return UNSAT
-        
-    assignments = {}
-    if backtrack(assignments, domains, constraints):
-        return SAT(assignments)
-    return UNSAT
-
-function ac3(domains, constraints):
-    queue = all_arcs(constraints)
-    while queue not empty:
-        (x, y) = queue.pop()
-        if revise(domains, x, y):
-            if domains[x] is empty:
-                return false
-            for each neighbor z of x (z != y):
-                queue.push((z, x))
-    return true
-
-function revise(domains, x, y):
-    revised = false
-    for each vx in domains[x]:
-        if no vy in domains[y] satisfies constraint(x, y):
-            remove vx from domains[x]
-            revised = true
-    return revised
+function run(input):
+    build vars (csp-var facts) and binary constraints (csp-constraint)
+    emit csp-init
+    if !ac3(domains): verdict UNSAT
+    backtrack: var = MRV-lex; for val in sorted(domain):
+        if consistent: assign (emit csp-assign); MAC ac3 (emit csp-revise…)
+        on failure: emit csp-backtrack
+    emit csp-verdict; explanation "SAT: lex-sorted assignment" | "UNSAT"
 ```
 
 ## Input contract
-- `intent`: not used
-- `facts`: contains variables and constraints. Variable encoded as `csp-var` with value `"name:domain_value1,domain_value2,..."`. Constraint encoded as `csp-constraint` with value `"var1!=var2"` or `"var1==var2"`.
-- `rules`: not used
-- `goals`: not used
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+- facts `csp-var` = `"Name:v1,v2"` (≤24 vars, domains ≤16)
+- facts `csp-constraint` = `"X!=Y"` | `"X==Y"`
 
 ## Output contract
-- `selected`: `"sat"` if satisfiable, otherwise `None`
-- `explanation`: `"SAT: var1=val1, var2=val2, ..."` (sorted lexicographically) or `"UNSAT"`
-- `inference_trace`: trace steps recording `"csp-init"`, `"csp-revise"`, `"csp-assign"`, `"csp-backtrack"`, `"csp-verdict"`
+- explanation `SAT: V1=…, V2=…` (lex order) or `UNSAT`; facts `csp:assignment:<var>`
+- trace: `csp-init`(1,1) → {`csp-revise`,`csp-assign`,`csp-backtrack`}(0,*) → `csp-verdict`(1,1)
 
 ## Complexity
-- Time: AC-3 time complexity is O(c * d^3) where c is constraint count and d is max domain size. Combined with backtracking, worst-case is exponential in variable count.
-- Space: O(v * d + c) where v is variable count and c is constraint count.
+AC-3 O(e·d³); search worst-case exponential, bounded by the 24/16 caps.
 
 ## Generalization examples
-- **Resource Allocation**: variables represent resources, domains represent timeslots, constraints enforce non-overlapping allocation (AllDiff or Inequality).
-- **Process Step Assignment**: variables represent steps in a workflow, domains represent actors, constraints enforce separation of duties (e.g. `stepA != stepB`).
+Graph coloring, scheduling, configuration with inequality/equality constraints.
 
 ## Adversarial coverage
-- Precondition rejects if variables exceed 24 or domain size exceeds 16.
-- Empty variables array triggers a precondition error.
-- Postcondition validates that the trace contains `csp-init` and `csp-verdict` steps.
+- Refusal: >24 vars, domain >16, malformed var/constraint
+- Hidden: K4-minus-edge 3-coloring exact lex-least V1=B,V2=G,V3=R,V4=R; K3/2-colors UNSAT with domain-wipeout revise steps
+- Paper: Mackworth 1977 — inequality triangle, exact lex-least coloring
+
+## See also
+- `default_logic.md`

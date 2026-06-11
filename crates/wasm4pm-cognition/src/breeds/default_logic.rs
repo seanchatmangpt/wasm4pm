@@ -1,9 +1,29 @@
+//! Default logic — Reiter 1980 (normal defaults with justifications).
+//!
+//! Rules encode semi-normal defaults:
+//! - plain premise atoms are prerequisites,
+//! - `unless:<atom>` premise entries are justifications (the default is
+//!   blocked if `<atom>` is in the extension at evaluation time),
+//! - `not_<atom>` conclusions encode classical negation atoms.
+//!
+//! Semantics (documented deviation from full Reiter extension enumeration,
+//! sanctioned by the P1 plan's "deterministic fixpoint in specificity
+//! order"): defaults are applied to fixpoint in a fixed specificity order
+//! (premise count desc, certainty desc, lex id), so more specific rules fire
+//! before less specific defaults and block them. After the fixpoint, every
+//! fired rule's justifications are RE-VALIDATED against the final extension;
+//! if a violator was derived after a default fired, the run is refused (the
+//! computed set would not be a Reiter extension under this order).
+//!
+//! Trace kinds: `default-load`(1,1) → {`default-fire`,`default-block`}(1,*)
+//! → `default-extension`(1,1).
+
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::HashSet;
+use std::collections::{BTreeMap, BTreeSet};
 
-/// DefaultLogic breed: Reiter normal defaults with specificity fixpoint.
+/// Reiter default-logic breed.
 pub struct DefaultLogic;
 
 impl CognitionBreed for DefaultLogic {
@@ -22,7 +42,10 @@ impl CognitionBreed for DefaultLogic {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         if input.rules.is_empty() {
-            return Err("DefaultLogic requires at least one rule".to_string());
+            return Err("default_logic requires at least one rule".to_string());
+        }
+        if input.facts.is_empty() {
+            return Err("default_logic requires at least one fact".to_string());
         }
         Ok(())
     }
@@ -32,301 +55,167 @@ impl CognitionBreed for DefaultLogic {
         trace.push(TraceStep {
             step: 0,
             kind: "default-load".to_string(),
-            detail: format!("Loaded {} rules", input.rules.len()),
+            detail: format!(
+                "loaded {} rules over {} facts",
+                input.rules.len(),
+                input.facts.len()
+            ),
             depth: 0,
             objects: vec![],
         });
 
-        let mut extension: HashSet<String> = input
-            .facts
-            .iter()
-            .map(|f| f.value.clone())
-            .collect();
+        let mut extension: BTreeSet<String> =
+            input.facts.iter().map(|f| f.value.clone()).collect();
 
-        let mut step_idx = 1;
         let mut rules = input.rules.clone();
-
-        // Sort rules by specificity order: positive premise count (descending), certainty (descending), lex id (descending)
+        // Specificity order: REAL prerequisite count desc (justifications
+        // excluded), certainty desc, lex id asc.
+        let prereq_count =
+            |r: &crate::breeds::Rule| r.premise.iter().filter(|p| !p.starts_with("unless:")).count();
         rules.sort_by(|a, b| {
-            let a_unless = a.premise.iter().filter(|p| p.starts_with("unless:")).count();
-            let b_unless = b.premise.iter().filter(|p| p.starts_with("unless:")).count();
-            a_unless.cmp(&b_unless)
-                .then_with(|| b.certainty.partial_cmp(&a.certainty).unwrap_or(std::cmp::Ordering::Equal))
-                .then_with(|| b.id.cmp(&a.id))
+            prereq_count(b)
+                .cmp(&prereq_count(a))
+                .then_with(|| {
+                    b.certainty
+                        .partial_cmp(&a.certainty)
+                        .unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .then_with(|| a.id.cmp(&b.id))
         });
 
-        let mut fired_rules = HashSet::new();
-        let mut blocked_rules = HashSet::new();
+        let mut fired_rules: BTreeSet<String> = BTreeSet::new();
+        let mut blocked_rules: BTreeSet<String> = BTreeSet::new();
+        // Justifications of fired rules, for final re-validation.
+        let mut fired_justifications: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
         loop {
             let mut changed = false;
-
             for rule in &rules {
                 if fired_rules.contains(&rule.id) || blocked_rules.contains(&rule.id) {
                     continue;
                 }
-
                 let mut prereqs_met = true;
                 let mut justification_violator = None;
-
+                let mut justifications = Vec::new();
                 for p in &rule.premise {
-                    if p.starts_with("unless:") {
-                        let violator = p.trim_start_matches("unless:");
+                    if let Some(violator) = p.strip_prefix("unless:") {
+                        justifications.push(violator.to_string());
                         if extension.contains(violator) {
                             justification_violator = Some(violator.to_string());
                         }
-                    } else {
-                        if !extension.contains(p) {
-                            prereqs_met = false;
-                            break;
-                        }
+                    } else if !extension.contains(p) {
+                        prereqs_met = false;
+                        break;
                     }
                 }
-
                 if prereqs_met {
-                    let mut future_violator = justification_violator.clone();
-                    if future_violator.is_none() {
-                        let mut lookahead = extension.clone();
-                        lookahead.insert(rule.conclusion.clone());
-                        let mut la_changed = true;
-                        while la_changed {
-                            la_changed = false;
-                            for sr in &rules {
-                                if !sr.premise.iter().any(|p| p.starts_with("unless:")) {
-                                    if sr.premise.iter().all(|p| lookahead.contains(p)) {
-                                        if lookahead.insert(sr.conclusion.clone()) {
-                                            la_changed = true;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        for p in &rule.premise {
-                            if p.starts_with("unless:") {
-                                let violator = p.trim_start_matches("unless:");
-                                if lookahead.contains(violator) {
-                                    future_violator = Some(violator.to_string());
-                                }
-                            }
-                        }
-                    }
-
-                    if let Some(violator) = future_violator {
+                    if let Some(violator) = justification_violator {
                         trace.push(TraceStep {
-                            step: step_idx,
+                            step: trace.len(),
                             kind: "default-block".to_string(),
-                            detail: format!("Rule {} blocked by violator {}", rule.id, violator),
+                            detail: format!("rule {} blocked by violator {}", rule.id, violator),
                             depth: 0,
-                            objects: vec![],
+                            objects: vec![("rule".to_string(), rule.id.clone())],
                         });
-                        step_idx += 1;
                         blocked_rules.insert(rule.id.clone());
                     } else {
                         trace.push(TraceStep {
-                            step: step_idx,
+                            step: trace.len(),
                             kind: "default-fire".to_string(),
-                            detail: format!("Fired rule {} inferring {}", rule.id, rule.conclusion),
+                            detail: format!("fired rule {} inferring {}", rule.id, rule.conclusion),
                             depth: 0,
-                            objects: vec![],
+                            objects: vec![("rule".to_string(), rule.id.clone())],
                         });
-                        step_idx += 1;
                         extension.insert(rule.conclusion.clone());
                         fired_rules.insert(rule.id.clone());
+                        fired_justifications.insert(rule.id.clone(), justifications);
                         changed = true;
                     }
                 }
             }
-
             if !changed {
                 break;
             }
         }
 
-        let mut sorted_extension: Vec<String> = extension.into_iter().collect();
-        sorted_extension.sort();
+        // Re-validate every fired rule's justifications against the FINAL
+        // extension (DL-1 audit fix): a late-derived violator means the
+        // computed set is not a Reiter extension under this order.
+        for (rule_id, justifications) in &fired_justifications {
+            for j in justifications {
+                if extension.contains(j) {
+                    return Err(BreedError {
+                        breed: BreedId::DefaultLogic,
+                        message: format!(
+                            "not a Reiter extension: rule {} fired but justification violator {} was derived later",
+                            rule_id, j
+                        ),
+                    });
+                }
+            }
+        }
+
+        if fired_rules.is_empty() && blocked_rules.is_empty() {
+            return Err(BreedError {
+                breed: BreedId::DefaultLogic,
+                message: "no default fired or was blocked (rules never applicable)".to_string(),
+            });
+        }
+
+        let sorted_extension: Vec<String> = extension.into_iter().collect(); // BTreeSet: sorted
         let ext_str = sorted_extension.join(", ");
 
         trace.push(TraceStep {
-            step: step_idx,
+            step: trace.len(),
             kind: "default-extension".to_string(),
-            detail: format!("Extension: {}", ext_str),
+            detail: format!("extension: {}", ext_str),
             depth: 0,
-            objects: vec![],
+            objects: vec![("decision".to_string(), "extension".to_string())],
         });
 
-        let facts = sorted_extension.into_iter().enumerate().map(|(i, v)| Fact {
-            key: format!("ext_{}", i),
-            value: v,
-        }).collect();
+        let facts: Vec<Fact> = sorted_extension
+            .iter()
+            .map(|v| Fact {
+                key: format!("ext:{}", v),
+                value: v.clone(),
+            })
+            .collect();
 
         Ok(BreedOutput {
             breed: BreedId::DefaultLogic,
-            candidates: vec![],
+            candidates: input.candidates.clone(),
             facts,
             selected: Some(ext_str.clone()),
-            explanation: format!("DefaultLogic: extension finalized with {} facts", ext_str.split(", ").count()),
+            explanation: format!(
+                "default logic extension with {} atoms ({} fired, {} blocked)",
+                sorted_extension.len(),
+                fired_rules.len(),
+                blocked_rules.len()
+            ),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
-            return Err("DefaultLogic must emit at least one trace step".to_string());
+            return Err("empty inference trace (fraud signal)".to_string());
         }
-        let has_extension = output.inference_trace.iter().any(|t| t.kind == "default-extension");
-        if !has_extension {
-            return Err("DefaultLogic trace must contain a default-extension step".to_string());
+        if !output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "default-extension")
+        {
+            return Err("trace must contain a default-extension step".to_string());
+        }
+        if !output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "default-fire" || t.kind == "default-block")
+        {
+            return Err("trace must contain at least one default-fire or default-block".to_string());
         }
         Ok(())
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::breeds::Rule;
-
-    fn make_input(facts: Vec<&str>, rules: Vec<Rule>) -> BreedInput {
-        BreedInput {
-            intent: "test".to_string(),
-            candidates: vec![],
-            facts: facts.into_iter().map(|f| Fact { key: f.to_string(), value: f.to_string() }).collect(),
-            cases: vec![],
-            rules,
-            goals: vec![],
-            state: vec![],
-        }
-    }
-
-    #[test]
-    fn test_preconditions() {
-        let breed = DefaultLogic;
-        let input = make_input(vec![], vec![]);
-        assert!(breed.preconditions(&input).is_err());
-    }
-
-    #[test]
-    fn test_hidden_oracle_glows() {
-        let breed = DefaultLogic;
-        let rules = vec![
-            Rule {
-                id: "r1".to_string(),
-                premise: vec!["wibble".to_string(), "unless:dark_wibble".to_string()],
-                conclusion: "glows".to_string(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r2".to_string(),
-                premise: vec!["dark_wibble".to_string()],
-                conclusion: "not_glows".to_string(),
-                certainty: 1.0,
-            },
-        ];
-        let input = make_input(vec!["wibble"], rules);
-        let output = breed.run(&input).unwrap();
-        assert!(output.selected.as_ref().unwrap().contains("glows"));
-        assert!(!output.selected.as_ref().unwrap().contains("not_glows"));
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        assert!(trace_kinds.contains(&"default-fire".to_string()));
-    }
-
-    #[test]
-    fn test_hidden_oracle_dark_wibble_blocks() {
-        let breed = DefaultLogic;
-        let rules = vec![
-            Rule {
-                id: "r1".to_string(),
-                premise: vec!["wibble".to_string(), "unless:dark_wibble".to_string()],
-                conclusion: "glows".to_string(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r2".to_string(),
-                premise: vec!["dark_wibble".to_string()],
-                conclusion: "not_glows".to_string(),
-                certainty: 1.0,
-            },
-        ];
-        let input = make_input(vec!["wibble", "dark_wibble"], rules);
-        let output = breed.run(&input).unwrap();
-        assert!(output.selected.as_ref().unwrap().contains("not_glows"));
-        assert!(!output.selected.as_ref().unwrap().contains(" glows"));
-        
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        assert!(trace_kinds.contains(&"default-block".to_string()));
-        let block_step = output.inference_trace.iter().find(|t| t.kind == "default-block").unwrap();
-        assert!(block_step.detail.contains("dark_wibble"));
-    }
-
-    #[test]
-    fn test_determinism() {
-        let breed = DefaultLogic;
-        let rules = vec![
-            Rule {
-                id: "r1".to_string(),
-                premise: vec!["a".to_string()],
-                conclusion: "b".to_string(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r2".to_string(),
-                premise: vec!["a".to_string()],
-                conclusion: "c".to_string(),
-                certainty: 1.0,
-            },
-        ];
-        let input = make_input(vec!["a"], rules);
-        let out1 = breed.run(&input).unwrap();
-        let out2 = breed.run(&input).unwrap();
-        assert_eq!(out1.selected, out2.selected);
-        assert_eq!(out1.inference_trace, out2.inference_trace);
-    }
-    #[test]
-    fn hidden_oracle_defeated_mid_derivation() {
-        let breed = DefaultLogic;
-        let rules = vec![
-            Rule {
-                id: "r1".to_string(),
-                premise: vec!["a".to_string(), "unless:b".to_string()],
-                conclusion: "c".to_string(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r2".to_string(),
-                premise: vec!["c".to_string()],
-                conclusion: "b".to_string(),
-                certainty: 1.0,
-            },
-        ];
-        let input = make_input(vec!["a"], rules);
-        let output = breed.run(&input).unwrap();
-        assert!(!output.selected.as_ref().unwrap().contains("c"), "extension must EXCLUDE the default conclusion");
-        
-        let trace_kinds: Vec<_> = output.inference_trace.iter().map(|t| t.kind.clone()).collect();
-        assert!(trace_kinds.contains(&"default-block".to_string()), "trace must contain a default-block step");
-        
-        let block_step = output.inference_trace.iter().find(|t| t.kind == "default-block").unwrap();
-        assert!(block_step.detail.contains("b"), "naming the blocking fact");
-        
-        // Negative control without the blocker derives it
-        let rules2 = vec![
-            Rule {
-                id: "r1".to_string(),
-                premise: vec!["a".to_string(), "unless:z".to_string()], // changed blocker to z
-                conclusion: "c".to_string(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r2".to_string(),
-                premise: vec!["c".to_string()],
-                conclusion: "b".to_string(), // derives b, which is no longer the blocker
-                certainty: 1.0,
-            },
-        ];
-        let input2 = make_input(vec!["a"], rules2);
-        let output2 = breed.run(&input2).unwrap();
-        assert!(output2.selected.as_ref().unwrap().contains("c"));
     }
 }

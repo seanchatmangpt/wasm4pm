@@ -1,0 +1,40 @@
+{
+  "model_id": "pomdp-l1-v1",
+  "model_level": "L1",
+  "breed_id": "pomdp",
+  "object_types": ["model", "belief", "alpha_vector", "action"],
+  "places": [
+    {"id": "p1", "name": "model_raw",        "object_type": "model"},
+    {"id": "p2", "name": "model_parsed",     "object_type": "model"},
+    {"id": "p3", "name": "belief_current",   "object_type": "belief"},
+    {"id": "p4", "name": "points_expanded",  "object_type": "belief"},
+    {"id": "p5", "name": "alphas_backed_up", "object_type": "alpha_vector"},
+    {"id": "p6", "name": "action_selected",  "object_type": "action"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "parse-model",          "label": "parse-model"},
+    {"id": "t2", "name": "init-belief",          "label": "init-belief"},
+    {"id": "t3", "name": "belief-update",        "label": "belief-update"},
+    {"id": "t4", "name": "expand-belief-points", "label": "expand-belief-points"},
+    {"id": "t5", "name": "pbvi-backup",          "label": "pbvi-backup"},
+    {"id": "t6", "name": "select-action",        "label": "select-action"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

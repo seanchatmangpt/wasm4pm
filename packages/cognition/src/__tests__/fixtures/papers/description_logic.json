@@ -1,27 +1,35 @@
 {
   "breed": "description_logic",
   "provenance": {
-    "paper": "citation-only",
-    "citation": "Baader et al. 2003"
+    "citation": "Baader, F., Brandt, S., & Lutz, C. (2005). Pushing the EL Envelope. In: Proceedings of the 19th International Joint Conference on Artificial Intelligence (IJCAI 2005), pp. 364–369.",
+    "locus": "Section 1 (introduction) medical-ontology example: Pericarditis ⊑ Inflammation ⊓ ∃has-location.Pericardium; Inflammation ⊑ Disease; ... entailing Pericarditis ⊑ HeartDisease. Section 3, Table 2: completion rules (here CR1–CR4 for the role-inclusion-free fragment).",
+    "extraction": "adapted",
+    "notes": "The paper's full derivation uses the role inclusion has-location ∘ contained-in ⊑ has-location. This breed implements the role-inclusion-free EL fragment (CR1–CR4 of the paper's completion algorithm), so the composed role step is pre-composed in the fixture: Pericarditis ⊑ ∃has_location.Heart is asserted directly (in the paper it is derived via Pericardium ⊑ ∃contained-in.Heart plus the role chain). All remaining steps — conjunction splitting (CR1), the GCI Disease ⊓ ∃has-location.Heart ⊑ HeartDisease (encoded via an exists_lhs alias concept plus CR2), and the existential propagation (CR3/CR4) — follow the paper exactly, and the entailment Pericarditis ⊑ HeartDisease is the paper's stated conclusion."
   },
   "input": {
-    "intent": "classify",
+    "intent": "classify the EL medical ontology from Baader-Brandt-Lutz 2005",
+    "candidates": [],
     "facts": [
-      { "key": "subclass", "value": "A,B" },
-      { "key": "subclass", "value": "B,C" },
-      { "key": "class", "value": "x,A" },
-      { "key": "disjoint", "value": "C,D" }
-    ],
-    "rules": [],
-    "candidates": [
-      { "id": "x", "score": 0.5, "eliminated": false, "elimination_reason": null }
+      { "key": "dl:subclass:Pericarditis", "value": "Inflammation" },
+      { "key": "dl:subclass:Inflammation", "value": "Disease" },
+      { "key": "dl:exists_rhs:Pericarditis", "value": "has_location.Heart" },
+      { "key": "dl:exists_lhs:has_location.Heart", "value": "HasLocationHeart" },
+      { "key": "dl:conj:Disease+HasLocationHeart", "value": "HeartDisease" }
     ],
     "cases": [],
-    "goals": [],
+    "rules": [],
+    "goals": [
+      { "id": "q1", "predicate": "dl:subsumes", "value": "Pericarditis:HeartDisease" },
+      { "id": "q2", "predicate": "dl:subsumes", "value": "HeartDisease:Pericarditis" }
+    ],
     "state": []
   },
   "expected": {
-    "consistent": "true",
-    "member_xc": "true"
+    "verdicts": {
+      "dl:verdict:Pericarditis:HeartDisease": "true",
+      "dl:verdict:HeartDisease:Pericarditis": "false"
+    },
+    "required_trace_kinds": ["apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4"],
+    "notes": "Pericarditis ⊑ HeartDisease is entailed (paper Section 1); the converse is not."
   }
 }

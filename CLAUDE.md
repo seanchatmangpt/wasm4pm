@@ -81,7 +81,7 @@ wasm4pm/
 | `@wasm4pm/observability` | CLI human output, JSONL machine output, OTEL spans |
 | `@wasm4pm/testing` | Parity, determinism, CLI, and certification harnesses |
 | `@wasm4pm/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
-| `@wasm4pm/cognition` | Cognition layer — 13 breeds incl. 4 autoinstinct (vision/semantics/neurosis/learning) |
+| `@wasm4pm/cognition` | Cognition layer — 52 PARTIAL_ALIVE breeds (13 original incl. 4 autoinstinct + 39 full-periodic-table symbolic breeds, v26.6.10) |
 | `@wasm4pm/agents` | Agent orchestration layer |
 | `@wasm4pm/supabase` | Supabase integration adapter |
 

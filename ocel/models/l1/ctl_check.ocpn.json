@@ -1,0 +1,40 @@
+{
+  "model_id": "ctl_check-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ctl_check",
+  "object_types": ["formula", "labeling", "path", "decision"],
+  "places": [
+    {"id": "p1", "name": "formula_raw",       "object_type": "formula"},
+    {"id": "p2", "name": "formula_parsed",    "object_type": "formula"},
+    {"id": "p3", "name": "labeling_open",     "object_type": "labeling"},
+    {"id": "p4", "name": "labeling_complete", "object_type": "labeling"},
+    {"id": "p5", "name": "path_witnessed",    "object_type": "path"},
+    {"id": "p6", "name": "verdict_emitted",   "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "parse-formula",       "label": "parse-formula"},
+    {"id": "t2", "name": "label-states",        "label": "label-states"},
+    {"id": "t3", "name": "fixpoint-iterate",    "label": "fixpoint-iterate"},
+    {"id": "t4", "name": "counterexample-step", "label": "counterexample-step"},
+    {"id": "t5", "name": "decision",            "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}
