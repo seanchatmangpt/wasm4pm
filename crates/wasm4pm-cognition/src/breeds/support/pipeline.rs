@@ -1,5 +1,10 @@
 //! `BreedPipeline<S>` — typed staged computation with automatic OCEL trace.
 //!
+//! STATUS (2026-06-11): zero breed adoption. For new breeds, prefer the
+//! lighter-weight [`super::tracer::Tracer`] + `BreedOutput::from_parts`
+//! combination; do not adopt `BreedPipeline` without fleet-lead signoff.
+//! Kept for in-flight fleets — do not delete (union-merge law).
+//!
 //! Each `stage()` call emits one `TraceStep` (kind = stage name) before
 //! executing the stage body. The `finish()` call validates that the required
 //! stage kinds were emitted and returns the `BreedOutput`. This makes empty-

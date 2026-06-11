@@ -382,6 +382,32 @@ pub struct BreedOutput {
     pub retained_cases: Vec<Case>,
 }
 
+impl BreedOutput {
+    /// Standard-shape constructor: fills the fields every breed sets the
+    /// same way (`candidates` passed through from input, no OCEL log yet,
+    /// no retained cases). Breeds that mutate candidates or retain a case
+    /// set those `pub` fields after construction.
+    pub fn from_parts(
+        breed: BreedId,
+        input: &BreedInput,
+        facts: Vec<Fact>,
+        selected: Option<String>,
+        explanation: String,
+        inference_trace: Vec<TraceStep>,
+    ) -> Self {
+        Self {
+            breed,
+            candidates: input.candidates.clone(),
+            facts,
+            selected,
+            explanation,
+            inference_trace,
+            ocel_log: None,
+            retained_cases: vec![],
+        }
+    }
+}
+
 /// Receipt from a breed's `run()` method: BLAKE3 hashes for integrity.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Receipt {
@@ -511,6 +537,16 @@ pub trait CognitionBreed: Send + Sync {
     /// Generate a BLAKE3 receipt for this execution.
     fn receipt(&self, input: &BreedInput, output: &BreedOutput) -> Receipt {
         compute_receipt(self.id(), input, output)
+    }
+
+    /// Construct a `BreedError` tagged with this breed's id. Replaces the
+    /// hand-rolled local `err` closure pattern. Takes `String` (not
+    /// `impl Into<String>`) to keep the trait dyn-compatible.
+    fn error(&self, message: String) -> BreedError {
+        BreedError {
+            breed: self.id(),
+            message,
+        }
     }
 }
 

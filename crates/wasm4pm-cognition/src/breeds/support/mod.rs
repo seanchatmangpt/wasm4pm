@@ -29,6 +29,8 @@ pub mod sorted_facts;
 pub mod pipeline;
 /// Zero-copy assertion API over a breed's `inference_trace`.
 pub mod trace_query;
+/// Append-only `TraceStep` accumulator (replaces hand-rolled push closures).
+pub mod tracer;
 /// Universal anti-cheat oracle trait and harness.
 pub mod oracle;
 /// Breed class supertraits: VerifierBreed, PlannerBreed, ClassifierBreed, OptimizerBreed.
