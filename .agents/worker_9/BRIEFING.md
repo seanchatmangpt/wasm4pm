@@ -1,7 +1,7 @@
-# BRIEFING — 2026-06-11T06:51:30Z
+# BRIEFING — 2026-06-11T18:31:45Z
 
 ## Mission
-Populate and verify individual examples and chain stages for cognition breeds 48-52.
+Populate examples/cognition/ directories for pomdp, problog, prolog, qualitative_reason, rl_symbolic, sat_cdcl.
 
 ## 🔒 My Identity
 - Archetype: implementer
@@ -16,27 +16,30 @@ Populate and verify individual examples and chain stages for cognition breeds 48
 - Always use the precise final proof block and state classification in final response.
 
 ## Current Parent
-- Conversation ID: d89d07ab-966a-42a8-9712-32afc9952dd3
-- Updated: 2026-06-11T06:51:30Z
+- Conversation ID: e1e903a8-4108-4423-a882-db22da9c48dc
+- Updated: 2026-06-11T18:31:45Z
 
 ## Task Summary
-- **What to build**: Individual example directories and chain stages for `situation_calculus`, `soar`, `strips`, `tableaux`, `version_space` breeds, including running `run.sh` to generate results and creating Python transform scripts.
-- **Success criteria**: Functional examples on disk, valid run.sh files, correct execution results and log files, functional transform.py scripts.
-- **Interface contracts**: Input block extraction from `packages/cognition/src/__tests__/fixtures/papers/<breed>.json`, output matching `BreedInput` JSON.
+- **What to build**: For `pomdp`, `problog`, `prolog`, `qualitative_reason`, `rl_symbolic`, `sat_cdcl`, create `intent.json` from their corresponding minimal/real inputs in fixtures, and run `run.sh` inside each directory to verify execution.
+- **Success criteria**: Functional examples on disk, valid `intent.json`, correct execution output `result.json` and logs.
+- **Interface contracts**: Input block extraction from `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` and `breed-inputs-real.ts`.
+- **Code layout**: `examples/cognition/<breed_name>/`
 
 ## Key Decisions Made
-- Created 5 new example directories with `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- Overwrote existing `intent.json` for soar and strips with the official paper fixture inputs to align properly.
-- Created 5 new stage directories under `examples/cognition/chains/factory-agent/stages/` containing `transform.py` scripts.
+- Extracted and populated `intent.json` files using the official codebase fixtures.
+- Executed `run.sh` inside each directory redirecting logs to `last-output.log`.
+- Ran examples gate and vitest test suite to confirm complete alignment and validity.
 
 ## Artifact Index
-- examples/cognition/situation_calculus/ - example directory
-- examples/cognition/soar/ - example directory
-- examples/cognition/strips/ - example directory
-- examples/cognition/tableaux/ - example directory
-- examples/cognition/version_space/ - example directory
-- examples/cognition/chains/factory-agent/stages/47-situation_calculus/transform.py - transform script
-- examples/cognition/chains/factory-agent/stages/48-soar/transform.py - transform script
-- examples/cognition/chains/factory-agent/stages/49-strips/transform.py - transform script
-- examples/cognition/chains/factory-agent/stages/50-tableaux/transform.py - transform script
-- examples/cognition/chains/factory-agent/stages/51-version_space/transform.py - transform script
+- examples/cognition/pomdp/intent.json — POMDP intent
+- examples/cognition/pomdp/result.json — POMDP output
+- examples/cognition/problog/intent.json — Problog intent
+- examples/cognition/problog/result.json — Problog output
+- examples/cognition/prolog/intent.json — Prolog intent
+- examples/cognition/prolog/result.json — Prolog output
+- examples/cognition/qualitative_reason/intent.json — Qualitative Reason intent
+- examples/cognition/qualitative_reason/result.json — Qualitative Reason output
+- examples/cognition/rl_symbolic/intent.json — RL Symbolic intent
+- examples/cognition/rl_symbolic/result.json — RL Symbolic output
+- examples/cognition/sat_cdcl/intent.json — SAT CDCL intent
+- examples/cognition/sat_cdcl/result.json — SAT CDCL output

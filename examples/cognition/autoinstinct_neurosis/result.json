@@ -19,61 +19,41 @@
       ],
       "facts": [
         {
-          "key": "belief:system_redundancy",
-          "value": "high — multiple replicas ensure no single point of failure"
+          "key": "belief:safety",
+          "value": "0.9"
         },
         {
-          "key": "belief:system_reliability",
-          "value": "low — any single node outage causes full service loss"
+          "key": "belief:control",
+          "value": "0.2"
         },
         {
-          "key": "belief:deployment_is_automated",
-          "value": "true — CI/CD pipeline handles all releases without human review"
+          "key": "belief:social_approval",
+          "value": "0.6"
         },
         {
-          "key": "belief:deployment_requires_manual_approval",
-          "value": "true — all production changes require sign-off from on-call engineer"
+          "key": "belief:competence",
+          "value": "0.4"
         },
         {
-          "key": "belief:data_is_ephemeral",
-          "value": "true — containers are stateless; no durable data written locally"
+          "key": "belief:health",
+          "value": "0.75"
         },
         {
-          "key": "belief:data_must_be_local",
-          "value": "true — latency constraints require in-process data cache written to local disk"
+          "key": "belief:future_outcomes",
+          "value": "0.35"
         },
         {
-          "key": "belief:scaling_is_horizontal",
-          "value": "true — load is distributed across N identical stateless pods"
-        },
-        {
-          "key": "belief:database_is_single_writer",
-          "value": "true — all writes funnel through one primary to preserve ordering guarantees"
-        },
-        {
-          "key": "belief:config_is_immutable",
-          "value": "true — service config baked into container image at build time"
-        },
-        {
-          "key": "belief:config_is_runtime_dynamic",
-          "value": "true — feature flags and thresholds updated live via config service without redeploy"
-        },
-        {
-          "key": "belief:observability_is_complete",
-          "value": "true — every operation emits a span; no blind spots"
-        },
-        {
-          "key": "belief:tracing_is_sampled",
-          "value": "true — only 1% of traces are retained to control storage costs"
+          "key": "belief:worthiness",
+          "value": "0.55"
         }
       ],
-      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.050,\"belief_count\":13}",
-      "explanation": "AutoinstinctNeurosis: processed 1 stimuli over 12 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.050",
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.050,\"belief_count\":8}",
+      "explanation": "AutoinstinctNeurosis: processed 1 stimuli over 7 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.050",
       "inference_trace": [
         {
           "step": 0,
           "kind": "seed-beliefs",
-          "detail": "seeded 12 beliefs from facts",
+          "detail": "seeded 7 beliefs from facts",
           "depth": 0
         },
         {
@@ -85,22 +65,22 @@
         {
           "step": 2,
           "kind": "affect-snapshot",
-          "detail": "fear=0.000 anger=0.000 mistrust=0.050 beliefs=13",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.050 beliefs=8",
           "depth": 0
         }
       ]
     },
-    "run_id": "5631e867ea91e1f9ae00b9de1bb21e77ea8942d42eac7b31aafb44b349a41f27",
-    "output_hash": "d3e33c417e99da15e0fa449b2cc636b6a575e92d9bfc61592ca7121526aeea9e",
-    "replay_pointer": "d3e33c417e99da15",
+    "run_id": "72c91ab26311fd8a3b3d8ee814b90380bbb06806be9913f7450716488ae1dde1",
+    "output_hash": "ddb68d72a0c5ac18020e361043f0737838e94464431d75ed5bc3b2dd77bab5f2",
+    "replay_pointer": "ddb68d72a0c5ac18",
     "inference_step_count": 3,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_neurosis/.wasm4pm/receipts/5631e867ea91e1f9ae00b9de1bb21e77ea8942d42eac7b31aafb44b349a41f27.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_neurosis/.wasm4pm/receipts/72c91ab26311fd8a3b3d8ee814b90380bbb06806be9913f7450716488ae1dde1.json"
   },
   "meta": {
-    "run_id": "ba79680e-fd05-4237-99f8-0e57796dc7ba",
-    "timestamp": "2026-06-11T07:02:55.259Z",
-    "duration_ms": 17,
+    "run_id": "b533dfec-f92b-49ce-976c-0c00f88791c5",
+    "timestamp": "2026-06-11T18:48:16.309Z",
+    "duration_ms": 15,
     "version": "26.6.10"
   }
 }

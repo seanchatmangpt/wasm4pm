@@ -353,6 +353,8 @@ impl SimdStreamingDfg {
                 frequency: freq,
             })
             .collect();
+        dfg.edges.sort_unstable_by(|a, b| a.from.cmp(&b.from).then(a.to.cmp(&b.to)));
+
 
         // Start activities
         for (&id, &cnt) in &self.start_counts {

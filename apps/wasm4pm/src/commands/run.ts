@@ -453,7 +453,7 @@ export const run = defineCommand({
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
               EXIT_CODES.source_error,
-              'CONFIG_ALGORITHM_NOT_FOUND'
+              'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
@@ -1285,6 +1285,35 @@ export const run = defineCommand({
 
               // Normalise result (WASM may return string or object)
               const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+              // Normalise nodes/edges for Petri Net models
+              if (resultData && typeof resultData === 'object') {
+                const rData = resultData as Record<string, any>;
+                const hasPetriNetFields =
+                  typeof rData.places === 'number' ||
+                  Array.isArray(rData.places) ||
+                  typeof rData.transitions === 'number' ||
+                  Array.isArray(rData.transitions) ||
+                  typeof rData.arcs === 'number' ||
+                  Array.isArray(rData.arcs);
+                if (hasPetriNetFields) {
+                  if (typeof rData.nodes === 'undefined') {
+                    const numPlaces = typeof rData.places === 'number'
+                      ? rData.places
+                      : (Array.isArray(rData.places) ? rData.places.length : 0);
+                    const numTransitions = typeof rData.transitions === 'number'
+                      ? rData.transitions
+                      : (Array.isArray(rData.transitions) ? rData.transitions.length : 0);
+                    rData.nodes = numPlaces + numTransitions;
+                  }
+                  if (typeof rData.edges === 'undefined') {
+                    const numArcs = typeof rData.arcs === 'number'
+                      ? rData.arcs
+                      : (Array.isArray(rData.arcs) ? rData.arcs.length : 0);
+                    rData.edges = numArcs;
+                  }
+                }
+              }
 
               // Surface K: add `count` alias for `frequency` so consumers can read either name.
               // Truth lives in WASM (frequency is authoritative); count is a presentation alias.
@@ -2120,6 +2149,34 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
 
   // Normalise result
   const resultData: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+  if (resultData && typeof resultData === 'object') {
+    const rData = resultData as Record<string, any>;
+    const hasPetriNetFields =
+      typeof rData.places === 'number' ||
+      Array.isArray(rData.places) ||
+      typeof rData.transitions === 'number' ||
+      Array.isArray(rData.transitions) ||
+      typeof rData.arcs === 'number' ||
+      Array.isArray(rData.arcs);
+    if (hasPetriNetFields) {
+      if (typeof rData.nodes === 'undefined') {
+        const numPlaces = typeof rData.places === 'number'
+          ? rData.places
+          : (Array.isArray(rData.places) ? rData.places.length : 0);
+        const numTransitions = typeof rData.transitions === 'number'
+          ? rData.transitions
+          : (Array.isArray(rData.transitions) ? rData.transitions.length : 0);
+        rData.nodes = numPlaces + numTransitions;
+      }
+      if (typeof rData.edges === 'undefined') {
+        const numArcs = typeof rData.arcs === 'number'
+          ? rData.arcs
+          : (Array.isArray(rData.arcs) ? rData.arcs.length : 0);
+        rData.edges = numArcs;
+      }
+    }
+  }
 
   // Cleanup WASM handle
   try {

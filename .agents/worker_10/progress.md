@@ -1,16 +1,15 @@
 # Progress Log — Worker 10
 
-Last visited: 2026-06-11T06:51:20Z
+Last visited: 2026-06-11T18:31:45Z
 
 ## Active Milestone
-- Waiting for all 52 breed directories and stages to be populated by Workers 1-9.
+- Populate breed directories for: script_sam, situation_calculus, soar, strips, tableaux, version_space.
 
 ## Accomplished
-- Checked the existing directories and stages: found 52 breed directories exist, but stages 12 to 23 are still missing under `examples/cognition/chains/factory-agent/stages/`.
+- Setup briefing and updated progress log.
 
 ## Pending
-- Wait for Workers 1-9 to finish populating all 52 stages.
-- Delete legacy 13 stages.
-- Update `chain.sh`, `run-all.sh`.
-- Create `verify-all.sh` and run it.
-- Update `README.md`.
+- Locate input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` and `breed-inputs-real.ts`.
+- Save `intent.json` for each of the 6 breeds.
+- Run `run.sh` for each of the 6 breeds.
+- Verify outputs and report.

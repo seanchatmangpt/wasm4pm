@@ -13,11 +13,11 @@
       "facts": [
         {
           "key": "cxg:construction",
-          "value": "ditransitive"
+          "value": "caused-motion"
         },
         {
           "key": "cxg:meaning",
-          "value": "CAUSE-RECEIVE(pat, bill, the letter; verb=faxed)"
+          "value": "CAUSE-MOVE(he, the napkin, off the table; verb=sneezed)"
         },
         {
           "key": "cxg:coerced",
@@ -25,121 +25,139 @@
         },
         {
           "key": "cxg:verb",
-          "value": "faxed"
+          "value": "sneezed"
         },
         {
           "key": "cxg:slot:subj",
-          "value": "pat"
+          "value": "he"
         },
         {
-          "key": "cxg:slot:rec",
-          "value": "bill"
+          "key": "cxg:slot:obj",
+          "value": "the napkin"
         },
         {
-          "key": "cxg:slot:theme",
-          "value": "the letter"
+          "key": "cxg:slot:obl",
+          "value": "off the table"
         }
       ],
-      "selected": "ditransitive",
-      "explanation": "Construction grammar: 'pat faxed bill the letter' matched ditransitive (CAUSE-RECEIVE(pat, bill, the letter; verb=faxed)) — meaning coerced by construction, not the verb's lexical entry",
+      "selected": "caused-motion",
+      "explanation": "Construction grammar: 'he sneezed the napkin off the table' matched caused-motion (CAUSE-MOVE(he, the napkin, off the table; verb=sneezed)) — meaning coerced by construction, not the verb's lexical entry",
       "inference_trace": [
         {
           "step": 0,
           "kind": "tokenize",
-          "detail": "pat faxed bill the letter",
+          "detail": "he sneezed the napkin off the table",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "pos-tag",
-          "detail": "pat/noun",
+          "detail": "he/pron",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "pos-tag",
-          "detail": "faxed/verb",
+          "detail": "sneezed/verb",
           "depth": 0
         },
         {
           "step": 3,
           "kind": "pos-tag",
-          "detail": "bill/noun",
+          "detail": "the/det",
           "depth": 0
         },
         {
           "step": 4,
           "kind": "pos-tag",
-          "detail": "the/det",
+          "detail": "napkin/noun",
           "depth": 0
         },
         {
           "step": 5,
           "kind": "pos-tag",
-          "detail": "letter/noun",
+          "detail": "off/prep",
           "depth": 0
         },
         {
           "step": 6,
-          "kind": "chunk",
-          "detail": "NP[pat]",
+          "kind": "pos-tag",
+          "detail": "the/det",
           "depth": 0
         },
         {
           "step": 7,
-          "kind": "chunk",
-          "detail": "NP[bill]",
+          "kind": "pos-tag",
+          "detail": "table/noun",
           "depth": 0
         },
         {
           "step": 8,
           "kind": "chunk",
-          "detail": "NP[the letter]",
+          "detail": "NP[he]",
           "depth": 0
         },
         {
           "step": 9,
-          "kind": "match-construction",
-          "detail": "ditransitive: match",
+          "kind": "chunk",
+          "detail": "NP[the napkin]",
           "depth": 0
         },
         {
           "step": 10,
-          "kind": "bind-slot",
-          "detail": "subj <- pat",
+          "kind": "chunk",
+          "detail": "PP[off the table]",
           "depth": 0
         },
         {
           "step": 11,
-          "kind": "bind-slot",
-          "detail": "rec <- bill (arg 1)",
+          "kind": "match-construction",
+          "detail": "ditransitive: no-match",
           "depth": 0
         },
         {
           "step": 12,
-          "kind": "bind-slot",
-          "detail": "theme <- the letter (arg 2)",
+          "kind": "match-construction",
+          "detail": "caused-motion: match",
           "depth": 0
         },
         {
           "step": 13,
+          "kind": "bind-slot",
+          "detail": "subj <- he",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "bind-slot",
+          "detail": "obj <- the napkin (arg 1)",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "bind-slot",
+          "detail": "obl <- off the table (arg 2)",
+          "depth": 0
+        },
+        {
+          "step": 16,
           "kind": "fuse-meaning",
-          "detail": "CAUSE-RECEIVE(pat, bill, the letter; verb=faxed) via ditransitive [coerced]",
+          "detail": "CAUSE-MOVE(he, the napkin, off the table; verb=sneezed) via caused-motion [coerced]",
           "depth": 0
         }
       ]
     },
-    "run_id": "a33abdcb11fa124215163a8dfd1c77430358ed0e658b49fe19af87432c3a171c",
-    "output_hash": "391261ee6ea3b91fe9b5afcf2ae2b7aadedbbb6d468f555c5a713fdbc12f7772",
-    "replay_pointer": "391261ee6ea3b91f",
-    "inference_step_count": 14,
+    "run_id": "4e1842dee73083beec09d7b19c46e33e4dd1812212e4b13c694907b0a6132a3a",
+    "output_hash": "0f6ab332253254c873233f9fd0e7a4ef512478e5b70d98b37d1b1e49e0e6d028",
+    "replay_pointer": "0f6ab332253254c8",
+    "inference_step_count": 17,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/construction_grammar/.wasm4pm/receipts/a33abdcb11fa124215163a8dfd1c77430358ed0e658b49fe19af87432c3a171c.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/construction_grammar/.wasm4pm/receipts/4e1842dee73083beec09d7b19c46e33e4dd1812212e4b13c694907b0a6132a3a.json"
   },
   "meta": {
-    "run_id": "563556c8-ed50-4413-a1f9-6b3c9ea79f7e",
-    "timestamp": "2026-06-11T07:03:00.737Z",
-    "duration_ms": 15,
+    "run_id": "4a65c476-10dd-4344-9cd8-5cf8e64bd636",
+    "timestamp": "2026-06-11T18:43:41.915Z",
+    "duration_ms": 16,
     "version": "26.6.10"
   }
 }

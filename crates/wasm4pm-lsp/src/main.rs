@@ -510,6 +510,30 @@ struct Backend {
 }
 
 impl Backend {
+    /// Walk upward from the first open document to find `.wasm4pm/receipts/`.
+    fn receipts_dir(&self) -> Option<std::path::PathBuf> {
+        let first_path = std::path::PathBuf::from(
+            self.documents.iter().next()?.key().path().as_str()
+        );
+        let mut cur = first_path.parent()?.to_path_buf();
+        loop {
+            let candidate = cur.join(".wasm4pm/receipts");
+            if candidate.is_dir() { return Some(candidate); }
+            if !cur.pop() { return None; }
+        }
+    }
+
+    /// Snapshot the Gall verdict for a document as a JSON string.
+    fn verdict_json(state: &DocumentState) -> serde_json::Value {
+        match state.conformance.as_ref().map(|c| &c.verdict) {
+            Some(GallVerdict::Fit { fitness }) => serde_json::json!({"verdict":"FIT","fitness":fitness}),
+            Some(GallVerdict::Deviation { fitness, .. }) => serde_json::json!({"verdict":"DEVIATION","fitness":fitness}),
+            Some(GallVerdict::Blocked { reason }) => serde_json::json!({"verdict":"BLOCKED","reason":reason}),
+            Some(GallVerdict::Inconclusive) => serde_json::json!({"verdict":"INCONCLUSIVE"}),
+            None => serde_json::json!({"verdict":"NONE"}),
+        }
+    }
+
     async fn store_and_diagnose(&self, uri: Url, text: String) {
         let cfg = self.config.read().ok().map(|g| g.clone()).unwrap_or_default();
 
@@ -695,6 +719,56 @@ impl Backend {
                     severity: Some(DiagnosticSeverity::ERROR),
                     code: Some(NumberOrString::String("STRUCTURAL-FAKERY-WASM-STUB".to_string())),
                     message: "Ok(JsValue::NULL) or UNDEFINED detected. WASM boundaries must not return empty stub values.".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+
+            // C1: Non-deterministic selection
+            if text.contains(".iter().next()") || text.contains(".iter_mut().next()") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-C1".to_string())),
+                    message: ".iter().next() used for element selection — non-deterministic across runs in HashSets.".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+
+            // C2: Non-seeded RNG
+            if text.contains("thread_rng()") || text.contains("from_entropy()") || text.contains("rand::random()") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-C2".to_string())),
+                    message: "Non-seeded RNG detected. All stochastic algorithms must use seed_from_u64 for reproducibility.".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+
+            // D1: Hardcoded metrics
+            if text.contains(r#""fitness": 1.0"#) || text.contains(r#""precision": 1.0"#) || text.contains(r#""score": 1.0"#) || text.contains(r#""fitness": 0.0"#) || text.contains(r#""fitness": 0.5"#) || text.contains(r#""score": 0.5"#) {
+                if !path_str.contains("/tests/") && !path_str.contains("cli.rs") {
+                    diags.push(Diagnostic {
+                        range: Range::default(),
+                        severity: Some(DiagnosticSeverity::ERROR),
+                        code: Some(NumberOrString::String("STRUCTURAL-FAKERY-D1".to_string())),
+                        message: "Hardcoded fitness/score literal detected in algorithm output. Compute it dynamically.".to_string(),
+                        source: Some("wasm4pm-lsp".to_string()),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            // B2: Discarded algorithm results in tests
+            if path_str.contains("/tests/") && text.contains("let _ = discover_") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-B2".to_string())),
+                    message: "Discarded algorithm result: `let _ = discover_...`. You must assert correctness, not just panic-freedom.".to_string(),
                     source: Some("wasm4pm-lsp".to_string()),
                     ..Default::default()
                 });
@@ -3190,100 +3264,331 @@ impl lsp_max::LanguageServer for Backend {
     }
 
     async fn max_admission(&self) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "admitted": true, "reason": "conformance_gate_pass" }))
-    }
-
-    async fn max_autonomic_loop(&self) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "status": "idle", "cycles": 0 }))
-    }
-
-    async fn max_chain(&self) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "chain": [], "length": 0 }))
-    }
-
-    async fn max_hook(&self) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "hook": "registered", "handlers": [] }))
-    }
-
-    async fn max_hook_graph(&self) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "nodes": [], "edges": [] }))
-    }
-
-    async fn max_lawful_transition(&self, params: String) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({ "transition": params, "admitted": true }))
-    }
-
-    async fn max_ledger_report(&self) -> Result<String> {
-        let count = self.documents.len();
-        Ok(format!("wasm4pm ledger: {} open documents, 0 receipts", count))
-    }
-
-    async fn max_manifold_snapshot(&self) -> Result<serde_json::Value> {
+        let mut fit = 0usize;
+        let mut deviation = 0usize;
+        let mut blocked = 0usize;
+        let mut inconclusive = 0usize;
+        let mut none = 0usize;
+        for entry in self.documents.iter() {
+            match entry.conformance.as_ref().map(|c| &c.verdict) {
+                Some(GallVerdict::Fit { .. }) => fit += 1,
+                Some(GallVerdict::Deviation { .. }) => deviation += 1,
+                Some(GallVerdict::Blocked { .. }) => blocked += 1,
+                Some(GallVerdict::Inconclusive) => inconclusive += 1,
+                None => none += 1,
+            }
+        }
+        let refused = deviation + blocked;
+        let admitted = refused == 0 && (fit > 0 || inconclusive > 0 || none > 0);
         Ok(serde_json::json!({
-            "snapshots": [],
-            "conformance_states": []
+            "admitted": admitted,
+            "reason": if refused > 0 { "conformance_gate_fail" } else { "conformance_gate_pass" },
+            "document_count": self.documents.len(),
+            "fit": fit, "deviation": deviation, "blocked": blocked,
+            "inconclusive": inconclusive, "no_conformance": none,
         }))
     }
 
-    async fn max_propagate(&self, params: max_protocol::Receipt) -> Result<serde_json::Value> {
+    async fn max_autonomic_loop(&self) -> Result<serde_json::Value> {
+        let ocel_docs: Vec<serde_json::Value> = self.documents.iter()
+            .filter(|e| e.key().path().as_str().ends_with(".ocel.json"))
+            .map(|e| serde_json::json!({
+                "uri": e.key().to_string(),
+                "conformance": Self::verdict_json(&e),
+            }))
+            .collect();
+        let deviating = ocel_docs.iter()
+            .filter(|d| matches!(d["conformance"]["verdict"].as_str(), Some("DEVIATION") | Some("BLOCKED")))
+            .count();
         Ok(serde_json::json!({
-            "propagated": true,
+            "status": if deviating > 0 { "correcting" } else { "idle" },
+            "cycles": deviating,
+            "ocel_documents": ocel_docs,
+        }))
+    }
+
+    async fn max_chain(&self) -> Result<serde_json::Value> {
+        // Receipts written by wpm use run_id + output_hash (no input_hash per current schema).
+        let chain: Vec<serde_json::Value> = self.receipts_dir()
+            .and_then(|dir| std::fs::read_dir(&dir).ok())
+            .into_iter().flatten().flatten()
+            .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+            .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+            .filter_map(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .map(|v| serde_json::json!({
+                "run_id": v.get("run_id"),
+                "output_hash": v.get("output_hash"),
+                "breed": v.get("breed"),
+                "status": v.get("status"),
+            }))
+            .collect();
+        let length = chain.len();
+        Ok(serde_json::json!({ "chain": chain, "length": length }))
+    }
+
+    async fn max_hook(&self) -> Result<serde_json::Value> {
+        // Report the LSP notification handlers wired into this server.
+        let handlers = vec![
+            serde_json::json!({"event":"textDocument/didOpen","action":"store_and_diagnose"}),
+            serde_json::json!({"event":"textDocument/didChange","action":"store_and_diagnose"}),
+            serde_json::json!({"event":"workspace/didChangeWatchedFiles","action":"reload_config"}),
+            serde_json::json!({"event":"workspace/didChangeConfiguration","action":"update_config"}),
+        ];
+        Ok(serde_json::json!({ "hook": "registered", "handlers": handlers }))
+    }
+
+    async fn max_hook_graph(&self) -> Result<serde_json::Value> {
+        // Dependency DAG: LSP events → store_and_diagnose → analysis operators → publishDiagnostics
+        let nodes = vec![
+            serde_json::json!({"id":"textDocument/didOpen","type":"event"}),
+            serde_json::json!({"id":"textDocument/didChange","type":"event"}),
+            serde_json::json!({"id":"store_and_diagnose","type":"handler"}),
+            serde_json::json!({"id":"analyze_ocel","type":"operator"}),
+            serde_json::json!({"id":"check_structural","type":"operator"}),
+            serde_json::json!({"id":"ts_analyzer","type":"operator"}),
+            serde_json::json!({"id":"publishDiagnostics","type":"effect"}),
+        ];
+        let edges = vec![
+            serde_json::json!({"from":"textDocument/didOpen","to":"store_and_diagnose"}),
+            serde_json::json!({"from":"textDocument/didChange","to":"store_and_diagnose"}),
+            serde_json::json!({"from":"store_and_diagnose","to":"analyze_ocel"}),
+            serde_json::json!({"from":"store_and_diagnose","to":"check_structural"}),
+            serde_json::json!({"from":"store_and_diagnose","to":"ts_analyzer"}),
+            serde_json::json!({"from":"analyze_ocel","to":"publishDiagnostics"}),
+            serde_json::json!({"from":"check_structural","to":"publishDiagnostics"}),
+            serde_json::json!({"from":"ts_analyzer","to":"publishDiagnostics"}),
+        ];
+        Ok(serde_json::json!({ "nodes": nodes, "edges": edges }))
+    }
+
+    async fn max_lawful_transition(&self, params: String) -> Result<serde_json::Value> {
+        // Validate that `params` names an event type declared in at least one open OCEL document.
+        let transition = params.trim().trim_matches('"').to_string();
+        let found_in: Vec<String> = self.documents.iter()
+            .filter_map(|e| {
+                let idx = e.index.as_ref()?;
+                if idx.event_types.iter().any(|t| t == &transition) {
+                    Some(e.key().to_string())
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(serde_json::json!({
+            "transition": transition,
+            "admitted": !found_in.is_empty(),
+            "found_in": found_in,
+        }))
+    }
+
+    async fn max_ledger_report(&self) -> Result<String> {
+        let doc_count = self.documents.len();
+        let receipt_count = self.receipts_dir()
+            .and_then(|dir| std::fs::read_dir(&dir).ok())
+            .map(|rd| rd.flatten()
+                .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+                .count())
+            .unwrap_or(0);
+        let deviating = self.documents.iter()
+            .filter(|e| matches!(e.conformance.as_ref().map(|c| &c.verdict),
+                Some(GallVerdict::Deviation { .. }) | Some(GallVerdict::Blocked { .. })))
+            .count();
+        Ok(format!("wasm4pm ledger: {} open documents, {} receipts, {} deviating",
+            doc_count, receipt_count, deviating))
+    }
+
+    async fn max_manifold_snapshot(&self) -> Result<serde_json::Value> {
+        let snapshots: Vec<serde_json::Value> = self.documents.iter()
+            .map(|entry| {
+                let mut v = Self::verdict_json(&entry);
+                v["uri"] = serde_json::json!(entry.key().to_string());
+                v["event_count"] = serde_json::json!(entry.index.as_ref().map(|i| i.events.len()));
+                v["object_count"] = serde_json::json!(entry.index.as_ref().map(|i| i.objects.len()));
+                v
+            })
+            .collect();
+        let document_count = snapshots.len();
+        Ok(serde_json::json!({ "snapshots": snapshots, "document_count": document_count }))
+    }
+
+    async fn max_propagate(&self, params: max_protocol::Receipt) -> Result<serde_json::Value> {
+        // Persist the receipt to .wasm4pm/receipts/<receipt_id>.json on disk.
+        let persisted = self.receipts_dir().map(|dir| {
+            let path = dir.join(format!("{}.json", params.receipt_id));
+            let payload = serde_json::json!({
+                "receipt_id": &params.receipt_id,
+                "hash": &params.hash,
+                "source": "max_propagate",
+            });
+            std::fs::write(&path, payload.to_string()).is_ok()
+        }).unwrap_or(false);
+        Ok(serde_json::json!({
+            "propagated": persisted,
             "receipt_id": params.receipt_id,
-            "hash": params.hash
+            "hash": params.hash,
+            "persisted_to_disk": persisted,
         }))
     }
 
     async fn max_refusal(&self, params: String) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({
-            "verdict": "refused",
-            "reason": params
-        }))
+        // Append refusal to .wasm4pm/refusals.jsonl for audit trail.
+        let logged = self.receipts_dir()
+            .and_then(|dir| dir.parent().map(|p| p.to_path_buf()))
+            .map(|wasm4pm_dir| {
+                use std::io::Write;
+                let path = wasm4pm_dir.join("refusals.jsonl");
+                let entry = serde_json::json!({"verdict":"refused","reason":&params}).to_string() + "\n";
+                std::fs::OpenOptions::new().create(true).append(true).open(&path)
+                    .map(|mut f| f.write_all(entry.as_bytes()).is_ok())
+                    .unwrap_or(false)
+            })
+            .unwrap_or(false);
+        Ok(serde_json::json!({ "verdict": "refused", "reason": params, "logged": logged }))
     }
 
     async fn max_replay(&self) -> Result<serde_json::Value> {
+        let receipts: Vec<serde_json::Value> = self.receipts_dir()
+            .and_then(|dir| std::fs::read_dir(&dir).ok())
+            .into_iter().flatten().flatten()
+            .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+            .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+            .filter_map(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .map(|v| serde_json::json!({
+                "run_id": v.get("run_id"),
+                "output_hash": v.get("output_hash"),
+                "breed": v.get("breed"),
+                "status": v.get("status"),
+            }))
+            .collect();
+        let count = receipts.len();
         Ok(serde_json::json!({
-            "status": "replayed",
-            "receipt_count": 0,
-            "replayed_receipts": []
+            "status": if count > 0 { "replayed" } else { "no_receipts" },
+            "receipt_count": count,
+            "replayed_receipts": receipts,
         }))
     }
 
     async fn max_verify_ledger(&self) -> Result<serde_json::Value> {
+        // Verify structural integrity of receipts. Current wpm schema: run_id + output_hash.
+        // CLAUDE.md rule 6 requires input_hash too — receipts lacking it are flagged as warnings.
+        let receipts: Vec<serde_json::Value> = self.receipts_dir()
+            .and_then(|dir| std::fs::read_dir(&dir).ok())
+            .into_iter().flatten().flatten()
+            .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+            .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+            .filter_map(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .collect();
+        // Hard broken: missing output_hash (the primary integrity field wpm always writes).
+        let broken: Vec<serde_json::Value> = receipts.iter()
+            .filter(|v| v.get("output_hash").and_then(|h| h.as_str()).unwrap_or("").is_empty())
+            .map(|v| v.get("run_id").cloned().unwrap_or(Value::Null))
+            .collect();
+        // Warning: missing input_hash (CLAUDE.md rule 6 violation — wpm should write this).
+        let missing_input_hash: usize = receipts.iter()
+            .filter(|v| v.get("input_hash").is_none())
+            .count();
         Ok(serde_json::json!({
-            "valid": true,
-            "receipt_count": 0,
-            "hash_chain_intact": true
+            "valid": broken.is_empty(),
+            "receipt_count": receipts.len(),
+            "broken_receipts": broken,
+            "hash_chain_intact": broken.is_empty(),
+            "missing_input_hash_count": missing_input_hash,
+            "input_hash_warning": if missing_input_hash > 0 {
+                format!("{} receipts missing input_hash (CLAUDE.md rule 6: wpm must write input_hash)", missing_input_hash)
+            } else {
+                String::new()
+            },
         }))
     }
 
     async fn max_conformance_delta(&self, params: serde_json::Value) -> Result<serde_json::Value> {
-        Ok(serde_json::json!({
-            "delta": [],
-            "from_snapshot": params.get("from").cloned().unwrap_or(Value::Null),
-            "to_snapshot": params.get("to").cloned().unwrap_or(Value::Null)
-        }))
+        // Diff provided `before` snapshot against live conformance state.
+        // params: { "before": { "<uri>": "FIT"|"DEVIATION"|... } }
+        let before = params.get("before").and_then(|v| v.as_object()).cloned().unwrap_or_default();
+        let delta: Vec<serde_json::Value> = self.documents.iter()
+            .filter_map(|entry| {
+                let uri = entry.key().to_string();
+                let now = match entry.conformance.as_ref().map(|c| &c.verdict) {
+                    Some(GallVerdict::Fit { .. }) => "FIT",
+                    Some(GallVerdict::Deviation { .. }) => "DEVIATION",
+                    Some(GallVerdict::Blocked { .. }) => "BLOCKED",
+                    Some(GallVerdict::Inconclusive) => "INCONCLUSIVE",
+                    None => "NONE",
+                };
+                let was = before.get(&uri).and_then(|v| v.as_str()).unwrap_or("UNKNOWN");
+                if was != now {
+                    Some(serde_json::json!({"uri": uri, "was": was, "now": now}))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        let changed_count = delta.len();
+        Ok(serde_json::json!({ "delta": delta, "changed_count": changed_count }))
     }
 
     async fn max_dump_state(&self) -> Result<serde_json::Value> {
-        let doc_count = self.documents.len();
+        let documents: Vec<serde_json::Value> = self.documents.iter().map(|entry| {
+            let mut v = Self::verdict_json(&entry);
+            v["uri"] = serde_json::json!(entry.key().to_string());
+            v["has_index"] = serde_json::json!(entry.index.is_some());
+            v["event_count"] = serde_json::json!(entry.index.as_ref().map(|i| i.events.len()));
+            v["object_count"] = serde_json::json!(entry.index.as_ref().map(|i| i.objects.len()));
+            v
+        }).collect();
+        let receipts: Vec<serde_json::Value> = self.receipts_dir()
+            .and_then(|dir| std::fs::read_dir(&dir).ok())
+            .into_iter().flatten().flatten()
+            .filter(|e| e.path().extension().map(|x| x == "json").unwrap_or(false))
+            .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+            .filter_map(|s| serde_json::from_str::<serde_json::Value>(&s).ok())
+            .map(|v| serde_json::json!({
+                "receipt_id": v.get("receipt_id").or_else(|| v.get("run_id")),
+                "output_hash": v.get("output_hash"),
+            }))
+            .collect();
         Ok(serde_json::json!({
-            "diagnostics": [],
-            "document_count": doc_count,
-            "receipts": []
+            "document_count": self.documents.len(),
+            "documents": documents,
+            "receipt_count": receipts.len(),
+            "receipts": receipts,
         }))
     }
 
-    async fn max_restore_state(&self, _params: serde_json::Value) -> Result<()> {
+    async fn max_restore_state(&self, params: serde_json::Value) -> Result<()> {
+        // Re-trigger analysis for any already-open documents listed in the dump.
+        if let Some(docs) = params.get("documents").and_then(|v| v.as_array()) {
+            let uris: Vec<String> = docs.iter()
+                .filter_map(|d| d.get("uri").and_then(|u| u.as_str()).map(String::from))
+                .collect();
+            for uri_str in &uris {
+                if let Ok(uri) = Url::from_str(uri_str) {
+                    if let Some(state) = self.documents.get(&uri) {
+                        let text = state.text.clone();
+                        drop(state);
+                        self.store_and_diagnose(uri, text).await;
+                    }
+                }
+            }
+        }
         Ok(())
     }
 
     async fn max_instance_list(&self) -> Result<Value> {
-        Ok(serde_json::json!({
-            "instances": []
-        }))
+        let instances: Vec<serde_json::Value> = self.documents.iter()
+            .map(|entry| {
+                let mut v = Self::verdict_json(&entry);
+                v["uri"] = serde_json::json!(entry.key().to_string());
+                v["has_index"] = serde_json::json!(entry.index.is_some());
+                v
+            })
+            .collect();
+        let count = instances.len();
+        Ok(serde_json::json!({ "instances": instances, "count": count }))
     }
 
     async fn max_reset(&self) -> Result<()> {
+        self.documents.clear();
         Ok(())
     }
 
@@ -3691,6 +3996,9 @@ if (result.findings.length > 0) { throw new Error('bad'); }
     fn structural_fakery_ts_detectors() {
         let content = r#"
 import { cognition_run } from '@wasm4pm/cognition';
+export const runCmd = async () => {
+    return { status: 'ok' };
+};
 const my_hash = {
     hash: "short_hash_here_only_24_chars"
 };
@@ -3710,5 +4018,14 @@ const val = Math.random();
         assert!(codes.contains(&"STRUCTURAL-FAKERY-R3"), "Missing R3 for optimal: true");
         assert!(codes.contains(&"STRUCTURAL-FAKERY-R4"), "Missing R4 for fitness stub");
         assert!(codes.contains(&"STRUCTURAL-FAKERY-TS-MARKER"), "Missing marker for TODO");
+        assert!(codes.contains(&"STRUCTURAL-FAKERY-D2"), "Missing D2 for ghost command");
+    }
+
+    #[test]
+    fn check_structural_empty_index_produces_no_issues() {
+        // check_structural on an empty OcelIndex must return no issues.
+        let idx = OcelIndex::default();
+        let issues = check_structural(&idx);
+        assert!(issues.is_empty(), "empty index should produce no issues, got: {:?}", issues);
     }
 }

@@ -58,3 +58,26 @@ MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
 When completed, report back with your findings and file list.
+
+## 2026-06-11T18:31:44Z
+
+Your task is to populate the `examples/cognition/` directories for the following cognition breeds:
+- dempster_shafer
+- dendral
+- description_logic
+- ebl
+- eliza
+
+To do this:
+1. Locate the input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` (or `breed-inputs-real.ts` if applicable).
+- For `dempster_shafer`, `description_logic`, `ebl` (periodic table breeds), use minimal functions from `breed-inputs.ts`:
+  - `minimalDempsterShaferInput()`
+  - `minimalDescriptionLogicInput()`
+  - `minimalEblInput()`
+- For `dendral`, `eliza` (classic breeds), use the real functions from `packages/cognition/src/__tests__/fixtures/breed-inputs-real.ts`:
+  - `realDendralInput()`
+  - `realElizaInput()`
+2. Save the extracted BreedInput objects as formatted JSON to `examples/cognition/<breed_name>/intent.json`. Make sure the JSON keys match the `BreedInput` schema.
+3. Run the shell script `examples/cognition/<breed_name>/run.sh` to execute the breed under the CLI, which generates `result.json` and logs.
+4. Verify that the execution outputs contain no "fake" or placeholder strings and that the run is successful.
+5. Report back with a summary of the generated files.

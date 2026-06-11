@@ -1,9 +1,12 @@
 # Progress
 
-Last visited: 2026-06-11T06:50:20Z
+Last visited: 2026-06-11T18:45:00Z
 
-- [x] Breed 43: prolog (Chain Stage `42-prolog`)
-- [x] Breed 44: qualitative_reason (Chain Stage `43-qualitative_reason`)
-- [x] Breed 45: rl_symbolic (Chain Stage `44-rl_symbolic`)
-- [x] Breed 46: sat_cdcl (Chain Stage `45-sat_cdcl`)
-- [x] Breed 47: script_sam (Chain Stage `46-script_sam`)
+- [x] Identify and read breed-inputs.ts and breed-inputs-real.ts
+- [x] Extract and write intent.json for mdp
+- [x] Extract and write intent.json for meta_reasoning
+- [x] Extract and write intent.json for mycin
+- [x] Extract and write intent.json for naive_physics
+- [x] Extract and write intent.json for partial_order_plan
+- [x] Verify that run.sh exists (or create it) for each breed and make sure it runs and produces valid result.json
+- [x] Run verify scripts/tests

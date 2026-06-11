@@ -53,3 +53,26 @@ B. Create a chain stage directory under `examples/cognition/chains/factory-agent
     print(json.dumps(base_input, indent=2))
     ```
     Ensure the `transform.py` outputs a valid `BreedInput` JSON.
+
+## 2026-06-11T18:31:44Z
+
+You are a Worker subagent (Subagent 3).
+Your task is to populate the `examples/cognition/` directories for the following cognition breeds:
+- bayesian_network
+- belief_merging
+- cbr
+- circumscription
+- clp
+
+To do this:
+1. Locate the input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` (or `breed-inputs-real.ts` if applicable).
+- For `bayesian_network`, `belief_merging`, `circumscription`, `clp` (periodic table breeds), use minimal functions from `breed-inputs.ts`:
+  - `minimalBayesianNetworkInput()`
+  - `minimalBeliefMergingInput()`
+  - `minimalCircumscriptionInput()`
+  - `minimalClpInput()`
+- For `cbr` (classic breed), use `realCbrInput()` from `packages/cognition/src/__tests__/fixtures/breed-inputs-real.ts`.
+2. Save the extracted BreedInput objects as formatted JSON to `examples/cognition/<breed_name>/intent.json`. Make sure the JSON keys match the `BreedInput` schema.
+3. Run the shell script `examples/cognition/<breed_name>/run.sh` to execute the breed under the CLI, which generates `result.json` and logs.
+4. Verify that the execution outputs contain no "fake" or placeholder strings and that the run is successful.
+5. Report back with a summary of the generated files.

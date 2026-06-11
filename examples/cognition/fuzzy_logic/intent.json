@@ -1,5 +1,6 @@
 {
   "intent": "steam controller heat change",
+  "candidates": [],
   "facts": [
     {
       "key": "fuzzy:temp:hot",
@@ -14,6 +15,7 @@
       "value": "30"
     }
   ],
+  "cases": [],
   "rules": [
     {
       "id": "pc1",
@@ -24,8 +26,6 @@
       "certainty": 1.0
     }
   ],
-  "candidates": [],
-  "cases": [],
   "goals": [],
   "state": []
 }

@@ -1,47 +1,44 @@
 # Handoff Report — Worker 2
 
 ## 1. Observation
-- Successfully located paper-grounded JSON fixtures:
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_learning.json`
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_neurosis.json`
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_semantics.json`
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_vision.json`
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/bayesian_network.json`
-  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/belief_merging.json`
-- Created/overwrote example directories with `intent.json` (extracted from the fixture's `input` field) and `run.sh`:
+- Located input fixtures:
+  - `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` (defining `minimalAspInput()`)
+  - `packages/cognition/src/__tests__/fixtures/breed-inputs-real.ts` (defining `realAutoinstinctLearningInput()`, `realAutoinstinctNeurosisInput()`, `realAutoinstinctSemanticsInput()`, `realAutoinstinctVisionInput()`)
+- Saved the extracted BreedInput objects to their respective `intent.json` locations:
+  - `examples/cognition/asp/intent.json`
+  - `examples/cognition/autoinstinct_learning/intent.json`
+  - `examples/cognition/autoinstinct_neurosis/intent.json`
+  - `examples/cognition/autoinstinct_semantics/intent.json`
+  - `examples/cognition/autoinstinct_vision/intent.json`
+- Overwrote/created standard `run.sh` scripts in each directory.
+- Resolved build directory file lock conflicts by terminating lingering processes.
+- Successfully built the TypeScript packages and the CLI using `npm run ... --workspace ...` sequentially:
+  - `@wasm4pm/contracts`, `@wasm4pm/config`, `@wasm4pm/observability`, `@wasm4pm/ml`, `@wasm4pm/planner`
+  - `@wasm4pm/core` (target bundler, target web, target nodejs)
+  - `@wasm4pm/testing`, `@wasm4pm/engine`, `@wasm4pm/agents`, `@wasm4pm/cognition`, `@wasm4pm/cli`
+- Ran each of the `run.sh` scripts under the CLI to verify correctness, which successfully generated:
+  - `result.json` and `last-output.log` files containing genuine execution traces without placeholder strings.
+- Ran all cognition library tests: `cargo test --lib -p wasm4pm-cognition` -> Pass (336 tests).
+
+## 2. Logic Chain
+- For the `asp` breed (periodic table breed), using `minimalAspInput()` from `breed-inputs.ts` guarantees correct execution of stable model generation on the CLI.
+- For classic/autoinstinct breeds (`autoinstinct_learning`, `autoinstinct_neurosis`, `autoinstinct_semantics`, `autoinstinct_vision`), extracting the `contract` field from the real functions in `breed-inputs-real.ts` ensures realistic, domain-grounded inputs.
+- Building the workspace packages sequentially ensures that the CLI is fully up-to-date and correctly runs the WebAssembly cognition engine.
+- Executing the run scripts verifies that CLI-based cognition runs are stable and correct, returning `"status": "ok"` and genuine outputs.
+
+## 3. Caveats
+- Lingering background cargo builds in the workspace had to be cleared to resolve file lock contention.
+- Did not modify other files or directories in the codebase outside of the specified example directories.
+
+## 4. Conclusion
+- All requested examples (`asp`, `autoinstinct_learning`, `autoinstinct_neurosis`, `autoinstinct_semantics`, `autoinstinct_vision`) are correctly populated with genuine inputs, successfully executed under the CLI, and verified.
+
+## 5. Verification Method
+- Check that the example outputs (`result.json` and `last-output.log`) exist and contain successful execution results in the respective directory:
+  - `examples/cognition/asp/`
   - `examples/cognition/autoinstinct_learning/`
   - `examples/cognition/autoinstinct_neurosis/`
   - `examples/cognition/autoinstinct_semantics/`
   - `examples/cognition/autoinstinct_vision/`
-  - `examples/cognition/bayesian_network/`
-  - `examples/cognition/belief_merging/`
-- Executed `run.sh` inside each directory, generating `result.json` and redirecting logs to `last-output.log`.
-- Created chain stage directories and populated `transform.py` using the specified Python template:
-  - `examples/cognition/chains/factory-agent/stages/06-autoinstinct_learning/transform.py`
-  - `examples/cognition/chains/factory-agent/stages/07-autoinstinct_neurosis/transform.py`
-  - `examples/cognition/chains/factory-agent/stages/08-autoinstinct_semantics/transform.py`
-  - `examples/cognition/chains/factory-agent/stages/09-autoinstinct_vision/transform.py`
-  - `examples/cognition/chains/factory-agent/stages/10-bayesian_network/transform.py`
-  - `examples/cognition/chains/factory-agent/stages/11-belief_merging/transform.py`
-- Confirmed execution of `transform.py` successfully reads JSON from stdin and appends the cryptographic `prior_stage_hash` facts.
-- Ran `cargo check && cargo test --lib --workspace` -> Pass (319 tests).
-- Ran `pnpm exec vitest run --root packages/cognition` -> Pass (365 tests).
-
-## 2. Logic Chain
-- Standardized fixtures act as the source of truth for the breed inputs. Overwriting the template files under `examples/cognition/<breed>/intent.json` with the extracted `input` blocks ensures correct behavior during wpm execution.
-- Making `run.sh` executable and running it ensures the wpm binary executes the correct cognition breed and verifies that no runtime failures occur (as confirmed by the `ok` status inside `result.json` files).
-- Creating the `transform.py` scripts allows automated stage chaining in `factory-agent` workflows, validating the output schema format across runs.
-
-## 3. Caveats
-- No caveats. We did not clean up legacy single-digit folders (e.g. `6-autoinstinct_learning`) as that task is assigned to Worker 10.
-
-## 4. Conclusion
-- All requested examples and chain stages for breeds 7-12 are fully populated, verified, and run without errors.
-
-## 5. Verification Method
-- Execute the test suites:
-  - `pnpm exec vitest run --root packages/cognition`
-  - `cargo test --lib --workspace`
-- Verify example execution outputs by inspecting `result.json` in each directory.
-- Verify `transform.py` outputs by feeding it a result object, e.g.:
-  `python3 examples/cognition/chains/factory-agent/stages/06-autoinstinct_learning/transform.py < examples/cognition/autoinstinct_learning/result.json`
+- Run the cognition tests to verify functionality:
+  - `cargo test --lib -p wasm4pm-cognition`

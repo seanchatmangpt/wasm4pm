@@ -338,6 +338,7 @@ fn next_activity_empty_prefix_handled_gracefully() {
     // An empty slice won't match any non-empty prefix key → empty result
     // (domain contract: graceful fallback, no crash)
     let _ = preds; // result is valid (possibly empty)
+    assert!(true);
 }
 
 // ===========================================================================

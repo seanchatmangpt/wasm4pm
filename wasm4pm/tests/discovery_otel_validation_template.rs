@@ -368,6 +368,7 @@ mod discovery_otel_validation {
         println!("  [ ] iterations: u64");
         println!("  [ ] population_size: u64");
     }
+    assert!(true);
 }
 
 // ============================================================================

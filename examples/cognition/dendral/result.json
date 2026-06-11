@@ -150,9 +150,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/7497f85b29f8b9ad8e602c5436834ec83e5f2f58380cf9f1f4a7a6ff836ed5bd.json"
   },
   "meta": {
-    "run_id": "63fde592-b479-4b82-948e-f6869367f4e5",
-    "timestamp": "2026-06-11T18:39:32.803Z",
-    "duration_ms": 20,
+    "run_id": "bccaf423-14dc-4be7-ade9-398c6dacd008",
+    "timestamp": "2026-06-11T18:43:44.061Z",
+    "duration_ms": 16,
     "version": "26.6.10"
   }
 }

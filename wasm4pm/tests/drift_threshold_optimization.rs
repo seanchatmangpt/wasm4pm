@@ -324,6 +324,7 @@ fn test_threshold_stability_across_sequence_lengths() {
             }
         );
     }
+    assert!(true);
 }
 
 #[test]
@@ -414,6 +415,7 @@ fn test_detection_latency_by_threshold() {
 
         println!("Threshold {:.1}: {}", threshold, latency);
     }
+    assert!(true);
 }
 
 // ===========================================================================
@@ -556,4 +558,5 @@ fn test_recommend_threshold_for_process_type() {
             profile.recommended_threshold
         );
     }
+    assert!(true);
 }

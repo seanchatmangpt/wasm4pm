@@ -23,7 +23,11 @@ clean:
 publish:
     pnpm run release:full
 
-ci: polish test-full anticheat
+scan:
+    cargo build -p wasm4pm-lsp
+    ./target/debug/wasm4pm-lsp --scan . --fail-on-error
+
+ci: polish test-full anticheat scan
 
 # ── ggen breed scaffold pipeline ────────────────────────────────────────────
 
@@ -42,7 +46,14 @@ ggen-gate:
         packages/cognition/src/breed-ids.ts \
         crates/wasm4pm-cognition/tests/paper_pointers_generated.rs \
         crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs
+    just ggen-verify
     just ggen-bridge
+
+# Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
+# The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
+ggen-verify:
+    ggen receipt verify --receipt-path .ggen/receipts/latest.json --public-key .ggen/keys/verifying.key 2>/dev/null \
+        | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['is_valid'], d['message']; print('receipt verified:', d['message'])"
 
 ggen-bridge:
     python3 scripts/ggen_receipt_bridge.py

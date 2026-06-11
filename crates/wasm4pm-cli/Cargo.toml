@@ -21,7 +21,7 @@ dialoguer = "0.11"
 colored = "2.1"
 indicatif = "0.17"
 wasm4pm = { workspace = true }
-wasm4pm-compat = { workspace = true }
+wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"

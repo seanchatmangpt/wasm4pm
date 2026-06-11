@@ -57,3 +57,26 @@ MANDATORY INTEGRITY WARNING:
 DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
 
 When completed, report back with your findings and file list.
+
+## 2026-06-11T18:31:44Z
+You are a Worker subagent (Subagent 4).
+Your task is to populate the `examples/cognition/` directories for the following cognition breeds:
+- construction_grammar
+- contingent_plan
+- csp_ac3
+- ctl_check
+- default_logic
+
+To do this:
+1. Locate the input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` (or `breed-inputs-real.ts` if applicable).
+- Since these are periodic table breeds, use the minimal functions from `packages/cognition/src/__tests__/fixtures/breed-inputs.ts`:
+  - `minimalConstructionGrammarInput()` or similar (verify the exact function name in breed-inputs.ts)
+  - `minimalContingentPlanInput()`
+  - `minimalCspAc3Input()`
+  - `minimalCtlCheckInput()`
+  - `minimalDefaultLogicInput()`
+2. Save the extracted BreedInput objects as formatted JSON to `examples/cognition/<breed_name>/intent.json`. Make sure the JSON keys match the `BreedInput` schema.
+3. Run the shell script `examples/cognition/<breed_name>/run.sh` to execute the breed under the CLI, which generates `result.json` and logs.
+4. Verify that the execution outputs contain no "fake" or placeholder strings and that the run is successful.
+5. Report back with a summary of the generated files.
+

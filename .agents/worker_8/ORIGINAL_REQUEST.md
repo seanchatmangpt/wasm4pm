@@ -50,3 +50,25 @@ B. Create a chain stage directory under `examples/cognition/chains/factory-agent
     print(json.dumps(base_input, indent=2))
     ```
     Ensure the `transform.py` outputs a valid `BreedInput` JSON.
+
+## 2026-06-11T18:31:45Z
+You are a Worker subagent (Subagent 8).
+Your task is to populate the `examples/cognition/` directories for the following cognition breeds:
+- mdp
+- meta_reasoning
+- mycin
+- naive_physics
+- partial_order_plan
+
+To do this:
+1. Locate the input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` (or `breed-inputs-real.ts` if applicable).
+- For `mdp`, `meta_reasoning`, `naive_physics`, `partial_order_plan` (periodic table breeds), use minimal functions from `breed-inputs.ts`:
+  - `minimalMdpInput()`
+  - `minimalMetaReasoningInput()` or similar
+  - `minimalNaivePhysicsInput()`
+  - `minimalPartialOrderPlanInput()`
+- For `mycin` (classic breed), use `realMycinInput()` from `packages/cognition/src/__tests__/fixtures/breed-inputs-real.ts`.
+2. Save the extracted BreedInput objects as formatted JSON to `examples/cognition/<breed_name>/intent.json`. Make sure the JSON keys match the `BreedInput` schema.
+3. Run the shell script `examples/cognition/<breed_name>/run.sh` to execute the breed under the CLI, which generates `result.json` and logs.
+4. Verify that the execution outputs contain no "fake" or placeholder strings and that the run is successful.
+5. Report back with a summary of the generated files.

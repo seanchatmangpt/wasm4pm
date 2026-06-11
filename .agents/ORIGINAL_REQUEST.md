@@ -1268,3 +1268,41 @@ Run the cognition breeds and inspect the generated OCEL 2.0 logs (`ocel_log` fie
 ### Test Validation
 - [ ] A test suite execution (`pnpm test` or similar) runs successfully, asserting the correct rejection of "fake" artifacts.
 - [ ] OCEL derivation is verified to match the declared OCPN models for all active breeds, proving that execution is fully processed.
+
+## Follow-up — 2026-06-11T10:43:05-07:00
+
+Generate a detailed correctness and optimization review file for each of the 60 discovery and analysis algorithms in the codebase, writing one markdown review file per algorithm to `docs/reference/reviews/`.
+
+Working directory: `/Users/sac/wasm4pm`
+Integrity mode: demo
+
+## Requirements
+
+### R1. Inspect Active Execution Code for Each Algorithm
+Inspect the actual executing code (Rust kernel implementations, TS dispatch wrappers, and test suites) for each of the 60 algorithms (e.g., `dfg`, `inductive_miner`, `alignments`, `predict_next_activity`, etc.) to assess correctness, parameter boundary checks, and potential areas for improvement.
+
+### R2. Generate One Review File Per Algorithm
+For each of the 60 algorithms, generate a separate markdown file under `docs/reference/reviews/{algorithm_id}.md` containing:
+- **Algorithm ID & Domain:** The registry ID and category of the algorithm.
+- **Correctness Audit:** Verification of input/output contracts, boundary checks, and potential edge-case errors.
+- **Improvement Areas:** Concrete recommendations on performance optimization, feature flags, or logic refinement.
+- **Code References:** Specific files and methods implementing the execution path.
+
+### R3. Update the Reviews Index
+Create or update `docs/reference/reviews/INDEX.md` listing all 60 algorithms, their categories, and linking to their respective individual review markdown files.
+
+## Acceptance Criteria
+
+### Outputs on Disk
+- [ ] A dedicated subdirectory `docs/reference/reviews/` is created.
+- [ ] Exactly 60 individual markdown files (one for each algorithm) exist in that directory (e.g. `dfg.md`, `heuristic_miner.md`, etc.).
+- [ ] `docs/reference/reviews/INDEX.md` is present and correctly indexes all 60 review files with working Markdown links.
+
+### Content Completeness
+- [ ] Each review file contains realistic correctness assessments and concrete improvements based on the actual executing code. No stubbed or copy-pasted boilerplate across different files.
+- [ ] Specific file pathways in the codebase are referenced in each file.
+
+## Follow-up — 2026-06-11T18:25:30Z
+
+The user has clarified that you do not need to generate usage combinations from scratch. Please use the existing robust fixtures located in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` and `breed-inputs-real.ts` to populate the `examples/cognition/` directories. They contain exhaustive combinations for the 52 cognition breeds!
+

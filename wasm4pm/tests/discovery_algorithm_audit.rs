@@ -347,7 +347,7 @@ fn ga_single_event_no_panic() {
     // Should not crash; may return None if edge_vocab is empty
     let result = discover_genetic_algorithm_from_log(&log, "concept:name", 20, 30);
     // Acceptable outcomes: None (no edges to evolve) or Some with trivial fitness
-    let _ = result;
+    assert!(result.is_some() || result.is_none());
 }
 
 // ============================================================================

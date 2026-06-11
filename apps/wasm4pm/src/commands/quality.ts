@@ -227,8 +227,9 @@ export const quality = defineCommand({
                   `    wpm quality log.xes --metrics fitness,precision  # selected metrics\n\n` +
                   `  Run "wpm quality --help" for details.`
               ),
-              EXIT_CODES.config_error,
-              'INVALID_METRICS'
+              EXIT_CODES.source_error,
+              'SOURCE_ERROR',
+              `Verify the metrics passed to the --metrics parameter are valid.`
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);

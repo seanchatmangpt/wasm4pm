@@ -51,9 +51,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/dempster_shafer/.wasm4pm/receipts/68e3104d3368dcf7a569c0d8ecd6374e65fe7a8f4d8a0e5910800a78a174fc38.json"
   },
   "meta": {
-    "run_id": "6655c377-88e9-4919-9af0-2241a1aaaad1",
-    "timestamp": "2026-06-11T18:39:32.467Z",
-    "duration_ms": 15,
+    "run_id": "698d6d4b-afe3-454a-b5e5-d5d6c3e78b3b",
+    "timestamp": "2026-06-11T18:43:43.712Z",
+    "duration_ms": 37,
     "version": "26.6.10"
   }
 }

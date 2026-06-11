@@ -414,11 +414,11 @@ struct TraceProfile {
     /// Bitmask of present activities (A <= 128).
     activity_mask: u128,
     /// first_position[a] = index of first occurrence of activity a in trace
-    /// (or u8::MAX if not present).
-    first_positions: Vec<u8>,
+    /// (or usize::MAX if not present).
+    first_positions: Vec<usize>,
     /// last_position[a] = index of last occurrence of activity a in trace
-    /// (or u8::MAX if not present).
-    last_positions: Vec<u8>,
+    /// (or usize::MAX if not present).
+    last_positions: Vec<usize>,
     /// immediate_follows[(a,b)] = true if a is immediately followed by b at least once.
     /// FxHashSet is ~2× faster than std HashSet for small integer tuple keys because
     /// it skips the SipHash DoS-resistance overhead irrelevant for internal data.
@@ -429,8 +429,8 @@ impl TraceProfile {
     fn new(n: usize) -> Self {
         TraceProfile {
             activity_mask: 0,
-            first_positions: vec![u8::MAX; n],
-            last_positions: vec![u8::MAX; n],
+            first_positions: vec![usize::MAX; n],
+            last_positions: vec![usize::MAX; n],
             immediate_follows: FxHashSet::default(),
         }
     }
@@ -440,12 +440,10 @@ impl TraceProfile {
         if activity_idx < 128 {
             self.activity_mask |= 1u128 << (activity_idx as u128);
         }
-        if position < 256 {
-            if self.first_positions[activity_idx] == u8::MAX {
-                self.first_positions[activity_idx] = position as u8;
-            }
-            self.last_positions[activity_idx] = position as u8;
+        if self.first_positions[activity_idx] == usize::MAX {
+            self.first_positions[activity_idx] = position;
         }
+        self.last_positions[activity_idx] = position;
     }
 
     /// Check if activity a appeared before activity b in this trace.
@@ -453,7 +451,7 @@ impl TraceProfile {
     fn appears_before(&self, a: usize, b: usize) -> bool {
         let fa = self.first_positions[a];
         let fb = self.first_positions[b];
-        (fa != u8::MAX) & (fb != u8::MAX) & (fa < fb)
+        (fa != usize::MAX) & (fb != usize::MAX) & (fa < fb)
     }
 
     /// Check if activity a appeared after activity b in this trace.
@@ -462,7 +460,7 @@ impl TraceProfile {
     fn appears_after(&self, a: usize, b: usize) -> bool {
         let la = self.last_positions[a];
         let fb = self.first_positions[b];
-        (la != u8::MAX) & (fb != u8::MAX) & (la > fb)
+        (la != usize::MAX) & (fb != usize::MAX) & (la > fb)
     }
 }
 
@@ -546,7 +544,7 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
                 for (a, count) in activity_counts.iter_mut().enumerate() {
-                    if profile.first_positions[a] != u8::MAX {
+                    if profile.first_positions[a] != usize::MAX {
                         *count += 1;
                     }
                 }
@@ -583,8 +581,8 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     let mut a_before_b_count = 0;
                     let mut a_immediately_before_b_count = 0;
                     for profile in &traces_profiles {
-                        let has_a = profile.first_positions[a] != u8::MAX;
-                        let has_b = profile.first_positions[b] != u8::MAX;
+                        let has_a = profile.first_positions[a] != usize::MAX;
+                        let has_b = profile.first_positions[b] != usize::MAX;
 
                         if has_a && has_b {
                             both_count += 1;

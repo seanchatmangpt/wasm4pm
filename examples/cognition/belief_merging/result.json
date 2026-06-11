@@ -105,9 +105,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/belief_merging/.wasm4pm/receipts/57d7a9d771cdad93af6d9575ba3f3f513a1ab534a8e9be1202eb82b18000ad06.json"
   },
   "meta": {
-    "run_id": "9ffd978b-759b-4856-abb4-abfa3a88789f",
-    "timestamp": "2026-06-11T18:35:31.207Z",
-    "duration_ms": 38,
+    "run_id": "3c64829e-c228-440e-b83a-f174c781f9c5",
+    "timestamp": "2026-06-11T18:43:40.486Z",
+    "duration_ms": 16,
     "version": "26.6.10"
   }
 }

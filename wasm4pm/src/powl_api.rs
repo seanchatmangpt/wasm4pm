@@ -252,7 +252,7 @@ pub fn powl_to_process_tree(s: &str) -> Result<String, JsValue> {
     if arena.is_empty() || root >= arena.len() as u32 {
         return Err(wasm_err("POWL arena is empty or root index out of bounds"));
     }
-    let tree = to_process_tree::apply(&arena, root);
+    let tree = to_process_tree::apply(&arena, root).map_err(|e| wasm_err(&e))?;
     serde_json::to_string_pretty(&tree).map_err(|e| wasm_err(&format!("json error: {}", e)))
 }
 
@@ -1033,7 +1033,7 @@ mod tests {
         assert!(bpmn.contains("<definitions"));
 
         // 5. Convert to process tree
-        let tree = to_process_tree::apply(&arena, root);
+        let tree = to_process_tree::apply(&arena, root).unwrap();
         assert!(tree.to_repr().contains("+")); // concurrent → parallel
 
         // 6. Compute complexity

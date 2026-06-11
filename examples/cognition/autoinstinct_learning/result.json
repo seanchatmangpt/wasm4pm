@@ -12,6 +12,24 @@
       "candidates": [
         {
           "id": "plan-step-0",
+          "score": 0.3999999761581421,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "plan-step-1",
+          "score": 0.6000000238418579,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "plan-step-2",
+          "score": 0.800000011920929,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "plan-step-3",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
@@ -20,55 +38,53 @@
       "facts": [
         {
           "key": "achieved",
-          "value": "section-1-cleartop"
+          "value": "sub-goal-0"
         },
         {
           "key": "achieved",
-          "value": "section-2-bottom-up-ordering"
-        },
-        {
-          "key": "belief:patch_cleartop_known",
-          "value": "1.0"
-        },
-        {
-          "key": "belief:patch_bottom_up_known",
-          "value": "1.0"
-        },
-        {
-          "key": "belief:patch_space_compacting_known",
-          "value": "0.5"
-        },
-        {
-          "key": "belief:patch_space_flushing_known",
-          "value": "0.2"
-        },
-        {
-          "key": "belief:patch_protect_known",
-          "value": "0.0"
+          "value": "sub-goal-2"
         }
       ],
-      "selected": "1 steps to goal",
-      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00011111, final_state=0b01111111, goal_reached=true",
+      "selected": "4 steps to goal",
+      "explanation": "AutoinstinctLearning: 4 plan steps, goal_mask=0b00011111, final_state=0b00011111, goal_reached=true",
       "inference_trace": [
         {
           "step": 0,
           "kind": "plan-step",
-          "detail": "state=0b01111111 distance=0 action toward goal: flip next missing bit",
+          "detail": "state=0b00000011 distance=3 action toward goal: flip next missing bit",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "plan-step",
+          "detail": "state=0b00000111 distance=2 action toward goal: flip next missing bit",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "plan-step",
+          "detail": "state=0b00001111 distance=1 action toward goal: flip next missing bit",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "plan-step",
+          "detail": "state=0b00011111 distance=0 action toward goal: flip next missing bit",
           "depth": 0
         }
       ]
     },
-    "run_id": "06c166b58439b943a2a8314c4054961fcec3f5fee87d5e94a6617f9d9ebb9220",
-    "output_hash": "9f1389b72fe6023c465a59996e49ba84ee6f8b461759181336bb20359477011c",
-    "replay_pointer": "9f1389b72fe6023c",
-    "inference_step_count": 1,
+    "run_id": "530283aa146ad98b7a35c5399204813f148ccb42ce08cce901e8aada75d02744",
+    "output_hash": "ff0d08435a5b2772b9a292fd2714084b75b278dcaeff29b611f31307bd78c1e1",
+    "replay_pointer": "ff0d08435a5b2772",
+    "inference_step_count": 4,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_learning/.wasm4pm/receipts/06c166b58439b943a2a8314c4054961fcec3f5fee87d5e94a6617f9d9ebb9220.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_learning/.wasm4pm/receipts/530283aa146ad98b7a35c5399204813f148ccb42ce08cce901e8aada75d02744.json"
   },
   "meta": {
-    "run_id": "f7848a5c-e238-431a-8441-76e099345af1",
-    "timestamp": "2026-06-11T07:02:54.576Z",
-    "duration_ms": 14,
+    "run_id": "17bbcc7b-f4af-48bf-aefc-29a668582983",
+    "timestamp": "2026-06-11T18:48:15.978Z",
+    "duration_ms": 18,
     "version": "26.6.10"
   }
 }

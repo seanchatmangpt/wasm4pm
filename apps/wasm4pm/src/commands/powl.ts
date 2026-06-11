@@ -183,7 +183,7 @@ export const powl = defineCommand({
       const result = makeErrorResult(
         'powl',
         `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-        EXIT_CODES.config_error,
+        EXIT_CODES.source_error,
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });

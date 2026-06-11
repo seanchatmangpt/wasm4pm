@@ -1,30 +1,22 @@
 {
-  "intent": "evaluate HoldsAt queries over the Kowalski-Sergot hired/promoted narrative",
+  "intent": "reasoning",
   "candidates": [],
   "facts": [
     {
+      "key": "ec:initially",
+      "value": "light_off"
+    },
+    {
       "key": "ec:happens:2",
-      "value": "hire"
+      "value": "switch_on"
     },
     {
-      "key": "ec:happens:5",
-      "value": "promote"
+      "key": "ec:initiates:switch_on",
+      "value": "light_on"
     },
     {
-      "key": "ec:initiates:hire",
-      "value": "employed"
-    },
-    {
-      "key": "ec:initiates:hire",
-      "value": "lecturer"
-    },
-    {
-      "key": "ec:initiates:promote",
-      "value": "professor"
-    },
-    {
-      "key": "ec:terminates:promote",
-      "value": "lecturer"
+      "key": "ec:terminates:switch_on",
+      "value": "light_off"
     }
   ],
   "cases": [],
@@ -33,27 +25,7 @@
     {
       "id": "q1",
       "predicate": "ec:holdsat",
-      "value": "lecturer@4"
-    },
-    {
-      "id": "q2",
-      "predicate": "ec:holdsat",
-      "value": "lecturer@7"
-    },
-    {
-      "id": "q3",
-      "predicate": "ec:holdsat",
-      "value": "professor@7"
-    },
-    {
-      "id": "q4",
-      "predicate": "ec:holdsat",
-      "value": "employed@7"
-    },
-    {
-      "id": "q5",
-      "predicate": "ec:holdsat",
-      "value": "professor@4"
+      "value": "light_on@3"
     }
   ],
   "state": []

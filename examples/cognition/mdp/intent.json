@@ -1,34 +1,22 @@
 {
-  "intent": "solve the chain MDP by value iteration (Bellman functional equation)",
+  "intent": "reinforcement_learning",
   "candidates": [],
   "facts": [
     {
       "key": "mdp:gamma",
-      "value": "0.9"
+      "value": "0.5"
     },
     {
       "key": "mdp:trans:s0:go",
       "value": "s1:1.0"
     },
     {
-      "key": "mdp:trans:s0:stay",
-      "value": "s0:1.0"
-    },
-    {
-      "key": "mdp:reward:s0:stay",
-      "value": "0.1"
-    },
-    {
       "key": "mdp:trans:s1:go",
-      "value": "goal:1.0"
+      "value": "s1:1.0"
     },
     {
-      "key": "mdp:reward:s1:go",
-      "value": "2.0"
-    },
-    {
-      "key": "mdp:trans:goal:stay",
-      "value": "goal:1.0"
+      "key": "mdp:reward:s0:go",
+      "value": "10.0"
     }
   ],
   "cases": [],

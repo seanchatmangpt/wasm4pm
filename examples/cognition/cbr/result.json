@@ -165,9 +165,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/cbr/.wasm4pm/receipts/81b813fc414a67496eda17fa17db6518cf4ad1f90a308c91f65820ef20887467.json"
   },
   "meta": {
-    "run_id": "21d3d08b-2b3a-4b3d-806e-f1c54eb467e6",
-    "timestamp": "2026-06-11T18:35:32.135Z",
-    "duration_ms": 36,
+    "run_id": "c991431c-ee82-4f1a-89f6-6db3cfd3d455",
+    "timestamp": "2026-06-11T18:43:40.834Z",
+    "duration_ms": 17,
     "version": "26.6.10"
   }
 }

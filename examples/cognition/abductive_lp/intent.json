@@ -1,13 +1,27 @@
 {
-  "intent": "explain the wet grass observation (KKT 1992 Section 1)",
-  "candidates": [],
+  "intent": "abduce",
+  "candidates": [
+    {
+      "id": "c",
+      "score": 0.5,
+      "eliminated": false
+    }
+  ],
   "facts": [
     {
-      "key": "alp:abducible:rained",
+      "key": "alp:abducible:a",
       "value": "true"
     },
     {
-      "key": "alp:abducible:sprinkler_on",
+      "key": "alp:abducible:b",
+      "value": "true"
+    },
+    {
+      "key": "alp:abducible:c",
+      "value": "true"
+    },
+    {
+      "key": "alp:abducible:d",
       "value": "true"
     }
   ],
@@ -16,25 +30,26 @@
     {
       "id": "r1",
       "premise": [
-        "rained"
+        "a",
+        "b"
       ],
-      "conclusion": "grass_wet",
+      "conclusion": "g",
       "certainty": 1.0
     },
     {
       "id": "r2",
       "premise": [
-        "sprinkler_on"
+        "c"
       ],
-      "conclusion": "grass_wet",
+      "conclusion": "g",
       "certainty": 1.0
     }
   ],
   "goals": [
     {
-      "id": "o1",
+      "id": "g1",
       "predicate": "alp:observe",
-      "value": "grass_wet"
+      "value": "g"
     }
   ],
   "state": []

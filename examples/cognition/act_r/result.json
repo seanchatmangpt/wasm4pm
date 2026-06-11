@@ -75,9 +75,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/act_r/.wasm4pm/receipts/afd5e362f3192212db0a34d9d0069f010569e7480c0f45636cb843f21f5daeb9.json"
   },
   "meta": {
-    "run_id": "30e59dec-6687-434c-abb3-898854534693",
-    "timestamp": "2026-06-11T07:02:51.853Z",
-    "duration_ms": 15,
+    "run_id": "260123f1-1076-4b6b-bd9a-7ba8581ca3dd",
+    "timestamp": "2026-06-11T18:43:35.914Z",
+    "duration_ms": 24,
     "version": "26.6.10"
   }
 }

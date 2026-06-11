@@ -79,9 +79,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/episodic_memory/.wasm4pm/receipts/b6ce4a29423b155d2c5e32b4fe31b037d0e44c38ea7b795413b6794ed4e335b3.json"
   },
   "meta": {
-    "run_id": "ba33b74b-499b-4e0c-ab6e-939357790ee1",
-    "timestamp": "2026-06-11T07:03:07.703Z",
-    "duration_ms": 17,
+    "run_id": "4451df23-e817-4721-bb33-fb333ed51924",
+    "timestamp": "2026-06-11T18:43:45.447Z",
+    "duration_ms": 16,
     "version": "26.6.10"
   }
 }

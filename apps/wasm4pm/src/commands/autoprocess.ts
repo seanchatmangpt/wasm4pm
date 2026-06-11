@@ -225,7 +225,10 @@ async function loadState(wasm: Record<string, any>): Promise<void> {
       await fs.copyFile(AUTOPROCESS_STATE_FILE, backupPath);
     } catch { /* best effort */ }
     console.warn(
-      `[autoprocess] State file schema mismatch (v${savedVersion} vs v${STATE_SCHEMA_VERSION}). Starting fresh.`
+      `[autoprocess] State file schema mismatch: schema v${savedVersion} is incompatible with current schema v${STATE_SCHEMA_VERSION}.\n` +
+      `File path: ${path.resolve(AUTOPROCESS_STATE_FILE)}\n` +
+      `A backup has been saved to: ${path.resolve(backupPath)}\n` +
+      `Starting fresh.`
     );
     return;
   }
@@ -513,7 +516,41 @@ export const autoprocess = defineCommand({
                 EXIT_CODES.success
               );
 
-              emitResult(resultWithRecommendations, { format, verbose, quiet });
+              emitResult(resultWithRecommendations, { format, verbose, quiet }, (res, projection) => {
+                const payload = res.payload as any;
+                const cr = (payload.cycle_result ?? payload) as Record<string, any>;
+                const timing = (payload.timing ?? {}) as Record<string, any>;
+
+                projection.log('');
+                projection.success(`Autonomic Process Control Cycle Completed Successfully`);
+                projection.log(`  Cycles run: ${payload.cycles_run}`);
+                projection.log('');
+                
+                projection.log('  MAPE-K Phase Summary:');
+                projection.log('    [M] Monitor:  Perception layer analyzed event log characteristics.');
+                projection.log('    [A] Analyze:  Decision layer evaluated model state boundaries.');
+                projection.log('    [P] Plan:     Protection layer checked circuit breaker guards.');
+                projection.log('    [E] Execute:  Optimization layer dispatched healing actions.');
+                projection.log('    [L] Learn:    Reinforcement Learning policy updated weights.');
+                projection.log('');
+
+                projection.log('  Timing:');
+                projection.log(`    Perception:   ${(timing.perception_us ?? 0).toLocaleString()} µs`);
+                projection.log(`    Decision:     ${(timing.decision_us ?? 0).toLocaleString()} µs`);
+                projection.log(`    Protection:   ${(timing.protection_us ?? 0).toLocaleString()} µs`);
+                projection.log(`    Total:        ${(timing.total_us ?? 0).toLocaleString()} µs`);
+                projection.log('');
+
+                projection.log('  Recommended next actions:');
+                if (payload.recommendations && payload.recommendations.length > 0) {
+                  for (const rec of payload.recommendations) {
+                    projection.log(`    - ${rec}`);
+                  }
+                } else {
+                  projection.log('    - No further healing action required. System is stable.');
+                }
+                projection.log('');
+              });
               return await exitWithFlush(resultWithRecommendations.exit_code);
             }
           ),

@@ -13,105 +13,71 @@
       "facts": [
         {
           "key": "csp-var",
-          "value": "X:B,G,R"
+          "value": "V1:R,G,B"
         },
         {
           "key": "csp-var",
-          "value": "Y:B,G,R"
-        },
-        {
-          "key": "csp-var",
-          "value": "Z:B,G,R"
+          "value": "V2:R,G,B"
         },
         {
           "key": "csp-constraint",
-          "value": "X!=Y"
+          "value": "V1!=V2"
         },
         {
-          "key": "csp-constraint",
-          "value": "Y!=Z"
-        },
-        {
-          "key": "csp-constraint",
-          "value": "X!=Z"
-        },
-        {
-          "key": "csp:assignment:X",
+          "key": "csp:assignment:V1",
           "value": "B"
         },
         {
-          "key": "csp:assignment:Y",
+          "key": "csp:assignment:V2",
           "value": "G"
-        },
-        {
-          "key": "csp:assignment:Z",
-          "value": "R"
         }
       ],
       "selected": "sat",
-      "explanation": "SAT: X=B, Y=G, Z=R",
+      "explanation": "SAT: V1=B, V2=G",
       "inference_trace": [
         {
           "step": 0,
           "kind": "csp-init",
-          "detail": "vars=3 constraints=3",
+          "detail": "vars=2 constraints=1",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "csp-assign",
-          "detail": "var=X val=B",
+          "detail": "var=V1 val=B",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "csp-revise",
-          "detail": "x=Y y=X pruned=1",
+          "detail": "x=V2 y=V1 pruned=1",
           "depth": 0
         },
         {
           "step": 3,
-          "kind": "csp-revise",
-          "detail": "x=Z y=X pruned=1",
+          "kind": "csp-assign",
+          "detail": "var=V2 val=G",
           "depth": 0
         },
         {
           "step": 4,
-          "kind": "csp-assign",
-          "detail": "var=Y val=G",
-          "depth": 0
-        },
-        {
-          "step": 5,
-          "kind": "csp-revise",
-          "detail": "x=Z y=Y pruned=1",
-          "depth": 0
-        },
-        {
-          "step": 6,
-          "kind": "csp-assign",
-          "detail": "var=Z val=R",
-          "depth": 0
-        },
-        {
-          "step": 7,
           "kind": "csp-verdict",
           "detail": "satisfiable=true",
           "depth": 0
         }
       ]
     },
-    "run_id": "ba6dabb346b63978d3fded5734ef1808e61351b3bb093baa3db69c134f9e23a9",
-    "output_hash": "85014b3e712b45b82a97337b63a327bab55e0be31f11bfdcac78b2fb303454a6",
-    "replay_pointer": "85014b3e712b45b8",
-    "inference_step_count": 8,
+    "run_id": "af2cb29c52a12df073e1bb012ab516666b5118aac8a068b2d0d4f568feaaaa27",
+    "output_hash": "7ed2f98a659172145fc4a57fa79317ef66a451e3975e6b60da2f44ee0fd958a0",
+    "replay_pointer": "7ed2f98a65917214",
+    "inference_step_count": 5,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/csp_ac3/.wasm4pm/receipts/ba6dabb346b63978d3fded5734ef1808e61351b3bb093baa3db69c134f9e23a9.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/csp_ac3/.wasm4pm/receipts/af2cb29c52a12df073e1bb012ab516666b5118aac8a068b2d0d4f568feaaaa27.json"
   },
   "meta": {
-    "run_id": "49a25729-1264-4a20-a5d9-4e393ce4d72f",
-    "timestamp": "2026-06-11T07:03:02.153Z",
-    "duration_ms": 17,
+    "run_id": "be685756-9745-4855-95cd-6b15e3a7b4a4",
+    "timestamp": "2026-06-11T18:43:42.628Z",
+    "duration_ms": 16,
     "version": "26.6.10"
   }
 }

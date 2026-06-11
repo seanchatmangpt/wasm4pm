@@ -5,7 +5,7 @@ test.describe('OTEL + WASM lifecycle', () => {
   test('wasm.init span has service_name, status=ok, duration_ms', async ({ page }) => {
     const otel = createOtelCollector(page)
     await page.goto('/play')
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 20000 })
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 20000 })
 
     const span = otel.assertSpan('wasm.init', { service_name: 'playground-web', status: 'ok' })
     expect(typeof span.duration_ms).toBe('number')
@@ -15,8 +15,8 @@ test.describe('OTEL + WASM lifecycle', () => {
   test('wasm.run span emitted after algorithm run with algorithm and status', async ({ page }) => {
     const otel = createOtelCollector(page)
     await page.goto('/play?algo=dfg&preset=small-example')
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /^Run/i }).click()
     await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
 
     const span = otel.assertSpan('wasm.run', { service_name: 'playground-web', status: 'ok', algorithm: 'dfg' })
@@ -28,12 +28,12 @@ test.describe('OTEL + WASM lifecycle', () => {
   test('all spans in a full session are well-formed', async ({ page }) => {
     const otel = createOtelCollector(page)
     await page.goto('/play?algo=dfg&preset=small-example')
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 20000 })
-    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 20000 })
+    await page.getByRole('button', { name: /^Run/i }).click()
     await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
     // Run a second algorithm to accumulate more spans
     await page.getByRole('button', { name: /Alpha Miner/i }).click()
-    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    await page.getByRole('button', { name: /^Run/i }).click()
     await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
 
     // All spans — init + both runs — must have service_name, event, status, duration_ms
@@ -58,9 +58,8 @@ test.describe('OTEL + WASM lifecycle', () => {
   test('Petri net page loads Vue Flow canvas after run', async ({ page }) => {
     const otel = createOtelCollector(page)
     await page.goto('/play/petri-net')
-    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /^Run/i }).click()
-    await expect(page.locator('.vue-flow__container, .vue-flow').first()).toBeVisible({ timeout: 10000 })
+    // Runs automatically on mount — wait for the canvas to render
+    await expect(page.locator('.vue-flow__container, .vue-flow').first()).toBeVisible({ timeout: 20000 })
     // Petri net page must also emit OTEL spans
     otel.assertSpan('wasm.init', { service_name: 'playground-web', status: 'ok' })
   })

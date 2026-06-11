@@ -6,13 +6,14 @@
  */
 
 import { describe, test } from 'vitest';
-import { createJaegerClient, wrapJaegerExpect } from '@un-test/otel';
 import { createTracer } from '../otel.js';
 
 const SKIP = !process.env.OTEL_TESTCONTAINERS;
 
 describe('OtelTracer — real Jaeger collector', () => {
   test.skipIf(SKIP)('emits spans to real Jaeger', async () => {
+    // @ts-ignore
+    const { createJaegerClient, wrapJaegerExpect } = await import('@un-test/otel');
     const endpoint = process.env.WASM4PM_OTEL_ENDPOINT ?? 'http://localhost:4318';
 
     const config = {

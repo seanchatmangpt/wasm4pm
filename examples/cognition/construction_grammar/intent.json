@@ -1,36 +1,40 @@
 {
-  "intent": "parse a ditransitive",
+  "intent": "parse a caused motion sentence with coercion",
+  "candidates": [],
   "facts": [
     {
       "key": "cxg:utterance",
-      "value": "pat faxed bill the letter"
+      "value": "he sneezed the napkin off the table"
     },
     {
-      "key": "lex:pat:pos",
-      "value": "noun"
+      "key": "lex:he:pos",
+      "value": "pron"
     },
     {
-      "key": "lex:faxed:pos",
+      "key": "lex:sneezed:pos",
       "value": "verb"
     },
     {
-      "key": "lex:faxed:valence",
-      "value": "transitive"
-    },
-    {
-      "key": "lex:bill:pos",
-      "value": "noun"
+      "key": "lex:sneezed:valence",
+      "value": "intransitive"
     },
     {
       "key": "lex:the:pos",
       "value": "det"
     },
     {
-      "key": "lex:letter:pos",
+      "key": "lex:napkin:pos",
+      "value": "noun"
+    },
+    {
+      "key": "lex:off:pos",
+      "value": "prep"
+    },
+    {
+      "key": "lex:table:pos",
       "value": "noun"
     }
   ],
-  "candidates": [],
   "cases": [],
   "rules": [],
   "goals": [],

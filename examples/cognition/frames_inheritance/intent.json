@@ -1,24 +1,20 @@
 {
-  "intent": "resolve my_chair legs",
+  "intent": "resolve widget_a weight",
+  "candidates": [],
   "facts": [
     {
-      "key": "frame:my_chair:isa",
-      "value": "chair"
+      "key": "frame:widget_a:isa",
+      "value": "widget"
     },
     {
-      "key": "frame:chair:isa",
-      "value": "furniture"
+      "key": "frame:widget:slot:weight:default",
+      "value": "10kg"
     },
     {
-      "key": "frame:chair:slot:legs:default",
-      "value": "4"
-    },
-    {
-      "key": "frame:furniture:slot:movable:default",
-      "value": "yes"
+      "key": "frame:widget_a:slot:weight",
+      "value": "5kg"
     }
   ],
-  "candidates": [],
   "cases": [],
   "rules": [],
   "goals": [],

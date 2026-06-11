@@ -43,6 +43,7 @@ pub trait BatchAlgorithm {
 /// use wasm4pm::streaming::StreamingAlgorithm;
 /// use wasm4pm::models::DFG;
 ///
+/// #[derive(Default)]
 /// struct GeneticAlgorithm;
 ///
 /// impl BatchAlgorithm for GeneticAlgorithm {

@@ -146,7 +146,13 @@ export const list = defineCommand({
           };
         });
 
-        const payload = { vda_agents: vdaAgents, rl_agents: rlAgents, summary, rl_telemetry: rlTelemetry };
+        const payload = {
+          vda_agents: vdaAgents,
+          rl_agents: rlAgents,
+          agents: vdaAgents,
+          summary,
+          rl_telemetry: rlTelemetry,
+        };
         const result = makeResult('agent list', payload, performance.now() - t0, EXIT_CODES.success);
 
         emitResult(result, { format, verbose, quiet }, (res, projection) => {

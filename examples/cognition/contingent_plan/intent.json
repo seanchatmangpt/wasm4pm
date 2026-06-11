@@ -1,5 +1,6 @@
 {
   "intent": "vacuum world contingent plan",
+  "candidates": [],
   "facts": [
     {
       "key": "cp:unknown",
@@ -22,7 +23,6 @@
       "value": "dirt"
     }
   ],
-  "candidates": [],
   "cases": [],
   "rules": [],
   "goals": [],

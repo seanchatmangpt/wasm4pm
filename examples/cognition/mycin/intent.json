@@ -11,40 +11,105 @@
       "value": "coccus"
     },
     {
-      "key": "growth-conformation",
-      "value": "chains"
-    },
-    {
       "key": "site",
       "value": "blood"
+    },
+    {
+      "key": "patient-age",
+      "value": "adult"
+    },
+    {
+      "key": "immunocompromised",
+      "value": "yes"
+    },
+    {
+      "key": "fever",
+      "value": "high"
+    },
+    {
+      "key": "wbc-count",
+      "value": "elevated"
     },
     {
       "key": "allergy-penicillin",
       "value": "no"
     }
   ],
+  "cases": [],
   "rules": [
     {
-      "id": "RULE050-class",
+      "id": "rule-52-strep",
       "premise": [
         "gram-positive",
-        "coccus",
-        "chains"
+        "coccus"
       ],
       "conclusion": "organism=streptococcus",
       "certainty": 0.7
     },
     {
-      "id": "RULE071-class",
+      "id": "rule-53-staph",
+      "premise": [
+        "gram-positive",
+        "coccus",
+        "blood"
+      ],
+      "conclusion": "organism=staphylococcus",
+      "certainty": 0.6
+    },
+    {
+      "id": "rule-54-staph-immuno",
+      "premise": [
+        "organism=staphylococcus",
+        "immunocompromised=yes"
+      ],
+      "conclusion": "organism=mrsa",
+      "certainty": 0.5
+    },
+    {
+      "id": "rule-71-pen",
       "premise": [
         "organism=streptococcus",
         "allergy-penicillin=no"
       ],
       "conclusion": "therapy=penicillin",
       "certainty": 0.9
+    },
+    {
+      "id": "rule-72-vanc-immuno",
+      "premise": [
+        "organism=staphylococcus",
+        "immunocompromised=yes"
+      ],
+      "conclusion": "therapy=vancomycin",
+      "certainty": 0.85
+    },
+    {
+      "id": "rule-73-vanc-mrsa",
+      "premise": [
+        "organism=mrsa"
+      ],
+      "conclusion": "therapy=vancomycin",
+      "certainty": 0.95
+    },
+    {
+      "id": "rule-80-pen-dose",
+      "premise": [
+        "therapy=penicillin",
+        "adult"
+      ],
+      "conclusion": "dose=1g-iv-q4h",
+      "certainty": 0.8
+    },
+    {
+      "id": "rule-81-vanc-dose",
+      "premise": [
+        "therapy=vancomycin",
+        "elevated"
+      ],
+      "conclusion": "dose=15mg-kg-q12h",
+      "certainty": 0.9
     }
   ],
-  "cases": [],
   "goals": [],
   "state": []
 }

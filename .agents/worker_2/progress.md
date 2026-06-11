@@ -1,11 +1,10 @@
 # Progress
 
-Last visited: 2026-06-10T23:51:36-07:00
+Last visited: 2026-06-11T18:48:00-07:00
 
 ## Tasks
-- [x] Process autoinstinct_learning
-- [x] Process autoinstinct_neurosis
-- [x] Process autoinstinct_semantics
-- [x] Process autoinstinct_vision
-- [x] Process bayesian_network
-- [x] Process belief_merging
+- [x] Populate and run asp
+- [x] Populate and run autoinstinct_learning
+- [x] Populate and run autoinstinct_neurosis
+- [x] Populate and run autoinstinct_semantics
+- [x] Populate and run autoinstinct_vision

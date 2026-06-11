@@ -1,41 +1,54 @@
 # Handoff Report
 
 ## 1. Observation
-I have populated the example files for the 6 breeds and executed their runner scripts:
-- **`ctl_check`**: Created folder `examples/cognition/ctl_check/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- **`default_logic`**: Created folder `examples/cognition/default_logic/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- **`dempster_shafer`**: Created folder `examples/cognition/dempster_shafer/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- **`dendral`**: Created folder `examples/cognition/dendral/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- **`description_logic`**: Created folder `examples/cognition/description_logic/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-- **`ebl`**: Created folder `examples/cognition/ebl/` containing `intent.json`, `run.sh`, `result.json`, `last-output.log`.
-
-Additionally, I populated the chain stage directories under `examples/cognition/chains/factory-agent/stages/` with their respective `transform.py` scripts:
-- `18-ctl_check/transform.py`
-- `19-default_logic/transform.py`
-- `20-dempster_shafer/transform.py`
-- `21-dendral/transform.py`
-- `22-description_logic/transform.py`
-- `23-ebl/transform.py`
-
-Vitest execution output:
-```
- Test Files  21 passed (21)
-      Tests  365 passed (365)
-```
+- Modified file `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/breed-inputs.ts` to export two new minimal input functions: `minimalConstructionGrammarInput()` and `minimalContingentPlanInput()`.
+- Wrote updated configurations to `intent.json` files for the following directories:
+  - `examples/cognition/construction_grammar/intent.json`
+  - `examples/cognition/contingent_plan/intent.json`
+  - `examples/cognition/csp_ac3/intent.json`
+  - `examples/cognition/ctl_check/intent.json` (verified matching structure)
+  - `examples/cognition/default_logic/intent.json`
+- Ran the test suite for the `@wasm4pm/cognition` package:
+  ```bash
+  pnpm --filter @wasm4pm/cognition test
+  ```
+  Resulting output:
+  ```
+  Test Files  21 passed (21)
+        Tests  367 passed (367)
+  ```
+- Executed `run.sh` inside each of the five example directories with `NODE_OPTIONS="--experimental-wasm-modules"`. Verbatim output from `csp_ac3/run.sh` showing correct execution:
+  ```json
+  {
+    "command": "cognition run",
+    "status": "ok",
+    "message": "cognition run completed successfully",
+    "exit_code": 0,
+    "payload": {
+      "contract": "csp_ac3",
+      "breed": "csp_ac3",
+      "status": "ok",
+      "output": {
+        "breed": "CspAc3",
+        "selected": "sat",
+        "explanation": "SAT: V1=B, V2=G"
+      }
+    }
+  }
+  ```
 
 ## 2. Logic Chain
-- For each breed, the `input` field from `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/<breed>.json` was extracted and written to `intent.json`.
-- A shell script `run.sh` executing `wpm cognition run` was created and made executable.
-- Executing `run.sh` generated `result.json` and `last-output.log`.
-- Each `transform.py` script was written to parse previous stage input from stdin, extract `output_hash` and `breed` to cryptographically bind it to the prior stage's hash, and print the updated JSON matching the extracted breed inputs.
+- Identified that `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` did not originally contain `minimalConstructionGrammarInput` or `minimalContingentPlanInput`. Added these definitions based on integration test specifications to maintain complete minimal fixtures.
+- Populated `intent.json` for the 5 breeds (`construction_grammar`, `contingent_plan`, `csp_ac3`, `ctl_check`, `default_logic`) using their minimal input representations.
+- Executed each breed via `run.sh` dynamically loaded under Node 20. Enabling `NODE_OPTIONS="--experimental-wasm-modules"` resolved the ESM unknown extension `.wasm` issue, resulting in successful runs (payload status "ok") and updating `result.json` and `last-output.log` files on disk.
 
 ## 3. Caveats
-- No caveats. The process is fully automated and verified via vitest and py_compile.
+- Node 20 environment requires explicit activation of `--experimental-wasm-modules` via `NODE_OPTIONS` to load bundler-targeted WASM files directly as ESM in the CLI wrapper.
 
 ## 4. Conclusion
-All requested breeds (19-24) have their individual examples and chain stages populated and verified.
+The five target cognition breeds (`construction_grammar`, `contingent_plan`, `csp_ac3`, `ctl_check`, and `default_logic`) have been populated with their respective minimal `intent.json` files and successfully executed, producing correct cryptographic outputs, `result.json`, and logs.
 
 ## 5. Verification Method
-1. Run `pnpm --filter @wasm4pm/cognition test` to verify all cognition tests pass.
-2. Run `python3 -m py_compile examples/cognition/chains/factory-agent/stages/18-ctl_check/transform.py` (and similarly for other stages) to verify syntax correctness.
-3. Verify that `intent.json`, `run.sh`, `result.json`, and `last-output.log` exist under `examples/cognition/<breed>/` for breeds: `ctl_check`, `default_logic`, `dempster_shafer`, `dendral`, `description_logic`, `ebl`.
+1. Run `pnpm --filter @wasm4pm/cognition build` to compile the TypeScript definitions.
+2. Run `pnpm --filter @wasm4pm/cognition test` to verify all 367 integration/unit tests pass.
+3. Individually verify execution logs and output shapes by running `NODE_OPTIONS="--experimental-wasm-modules" bash run.sh` in each of the directories under `examples/cognition/` for the 5 breeds.

@@ -285,7 +285,8 @@ export const conformance = defineCommand({
             `  Example: wpm conformance log.xes --threshold 0.85`
         ),
         EXIT_CODES.config_error,
-        'CONFIG_ERROR'
+        'CONFIG_ERROR',
+        'Verify threshold is a float between 0.0 and 1.0'
       );
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);

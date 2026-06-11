@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/wasm4pm-lsp"]
 
 [workspace.package]
 version = "26.6.10"
@@ -23,7 +23,7 @@ blake3 = "1.5"
 tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-compat = { version = "26.6.8" }
+wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
 wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
 wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
 prolog8 = { version = "26.6.10", path = "crates/prolog8" }
@@ -35,7 +35,7 @@ tempfile = "3.8"
 
 [profile.release]
 opt-level = "z"
-lto = true
+lto = false
 codegen-units = 1
 panic = "abort"
 strip = "debuginfo"
@@ -43,3 +43,6 @@ strip = "debuginfo"
 [profile.bench]
 opt-level = 3
 lto = false
+
+[patch.crates-io]
+wasm4pm = { path = "wasm4pm" }

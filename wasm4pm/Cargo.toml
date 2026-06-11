@@ -1,10 +1,10 @@
 [package]
 name = "wasm4pm"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "26.6.10"
+edition = "2021"
+license = "BUSL-1.1"
 authors = ["Sean Chatman"]
-repository.workspace = true
+repository = "https://github.com/seanchatmangpt/wasm4pm"
 description = "High-performance process mining algorithms in WebAssembly for JavaScript/TypeScript"
 documentation = "https://docs.rs/wasm4pm"
 homepage = "https://github.com/seanchatmangpt/wasm4pm"

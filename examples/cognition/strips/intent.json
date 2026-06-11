@@ -23,12 +23,12 @@
   ],
   "goals": [
     {
-      "id": "g1",
+      "id": "g-light-on",
       "predicate": "light",
       "value": "on"
     },
     {
-      "id": "g2",
+      "id": "g-door1-closed",
       "predicate": "door1",
       "value": "closed"
     }

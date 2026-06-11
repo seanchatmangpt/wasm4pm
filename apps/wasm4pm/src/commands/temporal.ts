@@ -11,6 +11,67 @@ import {
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import * as path from 'path';
+
+function extractTimestamps(logContent: string, timestampKey: string): Date[] {
+  const dates: Date[] = [];
+  try {
+    const parsed = JSON.parse(logContent);
+    const traverse = (obj: any) => {
+      if (!obj) return;
+      if (typeof obj === 'object') {
+        if (obj[timestampKey]) {
+          const d = new Date(obj[timestampKey]);
+          if (!isNaN(d.getTime())) dates.push(d);
+        }
+        for (const k of Object.keys(obj)) {
+          traverse(obj[k]);
+        }
+      }
+    };
+    traverse(parsed);
+    if (dates.length > 0) return dates;
+  } catch {}
+
+  try {
+    const lines = logContent.split('\n');
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const obj = JSON.parse(line);
+        if (obj[timestampKey]) {
+          const d = new Date(obj[timestampKey]);
+          if (!isNaN(d.getTime())) dates.push(d);
+        } else if (obj.attributes && obj.attributes[timestampKey]) {
+          const d = new Date(obj.attributes[timestampKey]);
+          if (!isNaN(d.getTime())) dates.push(d);
+        } else if (Array.isArray(obj.events)) {
+          for (const ev of obj.events) {
+            if (ev[timestampKey]) {
+              const d = new Date(ev[timestampKey]);
+              if (!isNaN(d.getTime())) dates.push(d);
+            } else if (ev.attributes && ev.attributes[timestampKey]) {
+              const d = new Date(ev.attributes[timestampKey]);
+              if (!isNaN(d.getTime())) dates.push(d);
+            }
+          }
+        }
+      } catch {}
+    }
+    if (dates.length > 0) return dates;
+  } catch {}
+
+  const escapedKey = timestampKey.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  const regex = new RegExp(`<date\\s+key="${escapedKey}"\\s+value="([^"]+)"`, 'g');
+  let match;
+  while ((match = regex.exec(logContent)) !== null) {
+    const d = new Date(match[1]);
+    if (!isNaN(d.getTime())) {
+      dates.push(d);
+    }
+  }
+  return dates;
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -375,6 +436,22 @@ export const temporal = defineCommand({
     const showBreakdown = Boolean(ctx.args.breakdown);
     const showGantt = Boolean(ctx.args.gantt);
 
+    let bucketSizeHours = 1;
+    if (ctx.args['bucket-size']) {
+      const rawBucket = ctx.args['bucket-size'] as string;
+      bucketSizeHours = parseFloat(rawBucket);
+      if (Number.isNaN(bucketSizeHours) || bucketSizeHours <= 0) {
+        const result = makeErrorResult(
+          'temporal',
+          new Error(`--bucket-size must be a valid number, got: ${rawBucket}`),
+          EXIT_CODES.config_error,
+          'INVALID_BUCKET_SIZE'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+    }
+
     let slaHours: number | null = null;
     if (ctx.args.sla) {
       const rawSla = ctx.args.sla as string;
@@ -416,7 +493,7 @@ export const temporal = defineCommand({
           if (!inputPath) {
             const result = makeErrorResult(
               'temporal',
-              'Input file required.',
+              'Input file required.\nUsage: wpm temporal -i <log.xes> [--threshold <val>]',
               EXIT_CODES.source_error,
               'MISSING_INPUT'
             );
@@ -527,8 +604,67 @@ export const temporal = defineCommand({
               const sojournBreakdown = showBreakdown ? computeSojournBreakdown(allDetails, caseDurationsMs) : null;
               const slaCompliance = slaHours !== null ? computeSlaCompliance(caseMap, slaHours) : null;
 
+              // Extract timestamps from log file to compute buckets & trend
+              let buckets: Array<{ start: string; end: string; count: number }> = [];
+              let trendDirection = 'stable';
+              try {
+                const logContent = await fs.readFile(inputPath, 'utf8');
+                const dates = extractTimestamps(logContent, timestampKey);
+                if (dates.length > 0) {
+                  const sortedDates = dates.sort((a, b) => a.getTime() - b.getTime());
+                  const minTime = sortedDates[0].getTime();
+                  const maxTime = sortedDates[sortedDates.length - 1].getTime();
+                  const bucketMs = bucketSizeHours * 3600 * 1000;
+                  const numBuckets = Math.max(1, Math.ceil((maxTime - minTime) / bucketMs));
+                  
+                  buckets = Array.from({ length: numBuckets }, (_, i) => ({
+                    start: new Date(minTime + i * bucketMs).toISOString(),
+                    end: new Date(minTime + (i + 1) * bucketMs).toISOString(),
+                    count: 0,
+                  }));
+
+                  for (const date of sortedDates) {
+                    const t = date.getTime();
+                    const bucketIdx = Math.min(numBuckets - 1, Math.floor((t - minTime) / bucketMs));
+                    buckets[bucketIdx].count++;
+                  }
+
+                  if (numBuckets > 1) {
+                    const half = Math.floor(numBuckets / 2);
+                    let firstHalfSum = 0;
+                    let secondHalfSum = 0;
+                    for (let i = 0; i < numBuckets; i++) {
+                      if (i < half) firstHalfSum += buckets[i].count;
+                      else secondHalfSum += buckets[i].count;
+                    }
+                    const diff = secondHalfSum - firstHalfSum;
+                    const thresholdPct = 0.05 * sortedDates.length;
+                    if (diff > thresholdPct) {
+                      trendDirection = 'accelerating';
+                    } else if (diff < -thresholdPct) {
+                      trendDirection = 'decelerating';
+                    } else {
+                      trendDirection = 'stable';
+                    }
+                  }
+                }
+              } catch (e) {
+                // fallback
+              }
+
+              const bottlenecks = sojournBreakdown
+                ? sojournBreakdown.filter((x) => x.is_bottleneck).map((x) => x.activity)
+                : [];
+
               const payload = {
                 input: inputPath,
+                activityKey,
+                timestampKey,
+                threshold,
+                bucketSizeHours,
+                buckets,
+                trendDirection,
+                bottlenecks,
                 dfg: { nodes: dfg.nodes ?? [], edges: dfg.edges ?? [] },
                 temporalConformance,
                 violations: { count: violations.length, threshold, items: violations },
@@ -545,7 +681,60 @@ export const temporal = defineCommand({
               lateStatus = 'ok';
 
               const result = makeResult('temporal', payload, performance.now() - t0, EXIT_CODES.success);
-              emitResult(result, { format, verbose, quiet });
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const p = res.payload as any;
+                projection.log('');
+                projection.success(`Temporal Analysis Completed Successfully`);
+                projection.log(`  Input file: ${p.input}`);
+                projection.log(`  Activities: ${p.dfg?.nodes?.length ?? 0}`);
+                projection.log(`  Violations: ${p.violations?.count ?? 0}`);
+                projection.log(`  Bucket size: ${p.bucketSizeHours} hours`);
+                projection.log(`  Trend:       ${p.trendDirection}`);
+                projection.log('');
+
+                if (p.sla_compliance) {
+                  projection.log('SLA Compliance Summary:');
+                  projection.log(`  Target:      ${p.sla_compliance.target_hours} hours`);
+                  projection.log(`  Compliant:   ${p.sla_compliance.compliant_cases} / ${p.sla_compliance.total_cases} cases (${(p.sla_compliance.compliance_rate * 100).toFixed(1)}%)`);
+                  projection.log(`  Violated:    ${p.sla_compliance.violated_cases} cases`);
+                  if (p.sla_compliance.violated_cases > 0) {
+                    projection.log(`  Avg Breach:  ${p.sla_compliance.avg_violation_hours.toFixed(1)} hours`);
+                    projection.log(`  Max Breach:  ${p.sla_compliance.max_violation_hours.toFixed(1)} hours (case ${p.sla_compliance.max_violation_case})`);
+                  }
+                  projection.log('');
+                }
+
+                if (showBreakdown && p.sojourn_breakdown && p.sojourn_breakdown.length > 0) {
+                  projection.log('Sojourn Time Breakdown & Bottlenecks:');
+                  for (const b of p.sojourn_breakdown) {
+                    const bn = b.is_bottleneck ? ' [BOTTLENECK]' : '';
+                    projection.log(`  - ${b.activity}: avg sojourn = ${b.avg_sojourn_ms.toFixed(0)}ms (${(b.pct_of_case * 100).toFixed(1)}% of case)${bn}`);
+                  }
+                  projection.log('');
+                }
+
+                if (showGantt && p.temporalConformance?.details) {
+                  const details = p.temporalConformance.details as any[];
+                  const cases = new Map<string, any[]>();
+                  for (const d of details) {
+                    const cid = d.case_id ?? 'unknown';
+                    if (!cases.has(cid)) cases.set(cid, []);
+                    cases.get(cid)!.push(d);
+                  }
+                  const firstCaseId = Array.from(cases.keys())[0];
+                  if (firstCaseId) {
+                    const caseSteps = cases.get(firstCaseId)!;
+                    const gEvents = buildGanttEvents(caseSteps);
+                    const totalMs = caseSteps.reduce((s, e) => s + (e.duration_ms ?? 0), 0);
+                    const ganttLines = renderGantt(firstCaseId, gEvents, totalMs);
+                    projection.log('Gantt Chart:');
+                    for (const line of ganttLines) {
+                      projection.log(line);
+                    }
+                    projection.log('');
+                  }
+                }
+              });
 
               if (!ctx.args['no-save']) {
                 const inputBytes = await fs.readFile(inputPath!);

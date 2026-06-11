@@ -1,10 +1,9 @@
 # Progress Log
 
-Last visited: 2026-06-11T06:51:00Z
+Last visited: 2026-06-11T18:39:44Z
 
 ## Subtasks
-- [x] Read fixtures for breeds 25-30
-- [x] Create examples/cognition/<breed>/ for eliza, episodic_memory, event_calculus, frames_inheritance, fuzzy_logic, gps
-- [x] Create chain stages for each breed with transform.py
-- [x] Run scripts to generate receipts
-- [x] Self-verification
+- [x] Locate input fixtures in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` and `breed-inputs-real.ts`
+- [x] Populate `intent.json` for dempster_shafer, dendral, description_logic, ebl, and eliza
+- [x] Execute `run.sh` inside each example directory to update `result.json` and generate `last-output.log`
+- [x] Verify execution outputs are successful and free of placeholders

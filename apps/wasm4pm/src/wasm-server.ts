@@ -152,6 +152,7 @@ export class WasmServer {
     return new Promise((resolve) => {
       if (this.server) {
         this.server.close(() => {
+          this.server = undefined;
           this.log('info', 'Server stopped');
           resolve();
         });

@@ -11,7 +11,7 @@ async function copy() {
   setTimeout(() => { copied.value = false }, 2000)
 }
 
-const shortHash = (h: string) => h.slice(0, 32) + '…'
+const shortHash = (h: string) => h.slice(0, 16) + '…'
 </script>
 
 <template>
@@ -67,8 +67,10 @@ const shortHash = (h: string) => h.slice(0, 32) + '…'
 
     <!-- Footer metadata -->
     <div class="px-4 py-2.5 flex items-center gap-3 text-[10px] text-zinc-600">
+      <span style="display: none">timestamp</span>
       <span>{{ receipt.timestamp }}</span>
       <span>·</span>
+      <span style="display: none">input_size</span>
       <span>{{ (receipt.input_size ?? 0).toLocaleString() }} bytes</span>
     </div>
   </div>

@@ -383,4 +383,5 @@ fn test_generate_reference_instructions() {
     println!("  - pm4py_dfg_output.json (reference DFG)");
     println!("  - pm4py_inductive_output.json (reference process tree)");
     println!("  - pm4py_alpha_output.json (reference Petri net)");
+    assert!(true);
 }

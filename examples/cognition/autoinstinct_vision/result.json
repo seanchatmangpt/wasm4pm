@@ -11,73 +11,37 @@
       "breed": "AutoinstinctVision",
       "candidates": [
         {
-          "id": "0.50",
+          "id": "A",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "2.0",
+          "id": "B",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "3.0",
+          "id": "C",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "5",
+          "id": "D",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "7",
+          "id": "E",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "disparity_candidate:+1",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "disparity_candidate:+2",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "disparity_candidate:+3",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "disparity_candidate:-1",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "disparity_candidate:0",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "disparity_varies_smoothly_across_adjacent_regions",
-          "score": 1,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "each_region_assigned_at_most_one_disparity",
+          "id": "F",
           "score": 1,
           "eliminated": false,
           "elimination_reason": null
@@ -85,156 +49,104 @@
       ],
       "facts": [
         {
-          "key": "region:foreground_square",
-          "value": "disparity_candidate:+3"
+          "key": "cube",
+          "value": "A"
         },
         {
-          "key": "region:foreground_square",
-          "value": "disparity_candidate:+2"
+          "key": "cube",
+          "value": "B"
         },
         {
-          "key": "region:foreground_square",
-          "value": "disparity_candidate:+1"
+          "key": "sphere",
+          "value": "C"
         },
         {
-          "key": "region:background_field",
-          "value": "disparity_candidate:0"
+          "key": "pyramid",
+          "value": "D"
         },
         {
-          "key": "region:background_field",
-          "value": "disparity_candidate:-1"
+          "key": "cylinder",
+          "value": "E"
         },
         {
-          "key": "region:left_border",
-          "value": "disparity_candidate:0"
+          "key": "cube",
+          "value": "F"
         },
         {
-          "key": "region:right_border",
-          "value": "disparity_candidate:0"
+          "key": "supported_by:B",
+          "value": "A"
         },
         {
-          "key": "constraint:R1_uniqueness",
-          "value": "each_region_assigned_at_most_one_disparity"
+          "key": "supported_by:F",
+          "value": "B"
         },
         {
-          "key": "constraint:R2_continuity",
-          "value": "disparity_varies_smoothly_across_adjacent_regions"
+          "key": "supported_by:E",
+          "value": "C"
         },
         {
-          "key": "network:density",
-          "value": "0.50"
-        },
-        {
-          "key": "network:disparity_layers",
-          "value": "7"
-        },
-        {
-          "key": "network:theta",
-          "value": "3.0"
-        },
-        {
-          "key": "network:epsilon",
-          "value": "2.0"
-        },
-        {
-          "key": "network:excitatory_diameter_M",
-          "value": "5"
+          "key": "supported_by:D",
+          "value": "F"
         }
       ],
-      "selected": "0.50",
-      "explanation": "AutoinstinctVision: 12 objects observed; first clear object is 0.50",
+      "selected": "D",
+      "explanation": "AutoinstinctVision: 6 objects observed; first clear object is D",
       "inference_trace": [
         {
           "step": 0,
           "kind": "observe-object",
-          "detail": "observed 0.50 as network:density (on table)",
+          "detail": "observed A as cube (on table)",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "observe-object",
-          "detail": "observed 2.0 as network:epsilon (on table)",
+          "detail": "observed B as cube (supported_by=A)",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "observe-object",
-          "detail": "observed 3.0 as network:theta (on table)",
+          "detail": "observed C as sphere (on table)",
           "depth": 0
         },
         {
           "step": 3,
           "kind": "observe-object",
-          "detail": "observed 5 as network:excitatory_diameter_M (on table)",
+          "detail": "observed D as pyramid (supported_by=F)",
           "depth": 0
         },
         {
           "step": 4,
           "kind": "observe-object",
-          "detail": "observed 7 as network:disparity_layers (on table)",
+          "detail": "observed E as cylinder (supported_by=C)",
           "depth": 0
         },
         {
           "step": 5,
           "kind": "observe-object",
-          "detail": "observed disparity_candidate:+1 as region:foreground_square (on table)",
+          "detail": "observed F as cube (supported_by=B)",
           "depth": 0
         },
         {
           "step": 6,
-          "kind": "observe-object",
-          "detail": "observed disparity_candidate:+2 as region:foreground_square (on table)",
-          "depth": 0
-        },
-        {
-          "step": 7,
-          "kind": "observe-object",
-          "detail": "observed disparity_candidate:+3 as region:foreground_square (on table)",
-          "depth": 0
-        },
-        {
-          "step": 8,
-          "kind": "observe-object",
-          "detail": "observed disparity_candidate:-1 as region:background_field (on table)",
-          "depth": 0
-        },
-        {
-          "step": 9,
-          "kind": "observe-object",
-          "detail": "observed disparity_candidate:0 as region:right_border (on table)",
-          "depth": 0
-        },
-        {
-          "step": 10,
-          "kind": "observe-object",
-          "detail": "observed disparity_varies_smoothly_across_adjacent_regions as constraint:R2_continuity (on table)",
-          "depth": 0
-        },
-        {
-          "step": 11,
-          "kind": "observe-object",
-          "detail": "observed each_region_assigned_at_most_one_disparity as constraint:R1_uniqueness (on table)",
-          "depth": 0
-        },
-        {
-          "step": 12,
           "kind": "find-clear-object",
-          "detail": "clear object found: 0.50",
+          "detail": "clear object found: D",
           "depth": 0
         }
       ]
     },
-    "run_id": "c3936a9634fdf20197ce6b83a78db15a8c0bced5c4ae75c8b5097c6536b069b0",
-    "output_hash": "59ffb7d74da33fe7de1327b56f414ca112074748de323f961810ecb0f6b18a4a",
-    "replay_pointer": "59ffb7d74da33fe7",
-    "inference_step_count": 13,
+    "run_id": "3b3af0105879a81a944decc9fd876145a26dfffcf58c765bd715e7de3798fd9b",
+    "output_hash": "33907d154dbd58be61ef97f4f4ea230222b736988809820778b1c1ac77a26555",
+    "replay_pointer": "33907d154dbd58be",
+    "inference_step_count": 7,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_vision/.wasm4pm/receipts/c3936a9634fdf20197ce6b83a78db15a8c0bced5c4ae75c8b5097c6536b069b0.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_vision/.wasm4pm/receipts/3b3af0105879a81a944decc9fd876145a26dfffcf58c765bd715e7de3798fd9b.json"
   },
   "meta": {
-    "run_id": "f1daccd7-3f77-44c2-83f3-91592528d57c",
-    "timestamp": "2026-06-11T07:02:56.615Z",
-    "duration_ms": 17,
+    "run_id": "b6b1c616-137f-432e-8dac-a926984b0d3e",
+    "timestamp": "2026-06-11T18:48:16.961Z",
+    "duration_ms": 20,
     "version": "26.6.10"
   }
 }

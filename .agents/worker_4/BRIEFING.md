@@ -1,7 +1,7 @@
-# BRIEFING — 2026-06-11T06:56:30Z
+# BRIEFING — 2026-06-11T18:31:44Z
 
 ## Mission
-Populate and verify individual examples and chain stages for breeds 19-24.
+Populate and verify minimal examples for construction_grammar, contingent_plan, csp_ac3, ctl_check, and default_logic under examples/cognition/.
 
 ## 🔒 My Identity
 - Archetype: implementer, qa, specialist
@@ -16,19 +16,20 @@ Populate and verify individual examples and chain stages for breeds 19-24.
 - Write only to our worker folder (for agent files) and relevant workspace locations.
 
 ## Current Parent
-- Conversation ID: d89d07ab-966a-42a8-9712-32afc9952dd3
-- Updated: not yet
+- Conversation ID: e1e903a8-4108-4423-a882-db22da9c48dc
+- Updated: 2026-06-11T18:31:44Z
 
 ## Task Summary
-- **What to build**: Examples and chain stages for ctl_check, default_logic, dempster_shafer, dendral, description_logic, and ebl.
-- **Success criteria**: All examples have intent.json, executable run.sh, result.json, and last-output.log. All chain stages have transform.py that embeds the extracted input from fixture json files and cryptographically binds to the prior stage.
-- **Interface contracts**: examples/cognition/<breed>/, examples/cognition/chains/factory-agent/stages/
+- **What to build**: Examples for construction_grammar, contingent_plan, csp_ac3, ctl_check, and default_logic.
+- **Success criteria**: All five example folders have intent.json matching the minimal fixture from breed-inputs.ts (with added helper functions), executable run.sh, result.json, and last-output.log, and runs pass under wpm cognition run.
+- **Interface contracts**: examples/cognition/<breed>/
 - **Code layout**: examples/cognition/
 
 ## Key Decisions Made
-- Extracted input blocks exactly as specified in the respective fixture files for each breed.
-- Populated example folders and generated logs by running the wpm cognition run commands via the newly written `run.sh` scripts.
-- Placed Python-based transform files in the stages directory to connect the blockchain of cognition executions.
+- Extracted input blocks from breed-inputs.ts.
+- Added minimalConstructionGrammarInput and minimalContingentPlanInput functions to packages/cognition/src/__tests__/fixtures/breed-inputs.ts for completeness and to align with the periodic table breed definitions.
+- Populated example folders with intent.json and executed run.sh using NODE_OPTIONS="--experimental-wasm-modules" to bypass the Node.js ESM WebAssembly loader constraint.
+
 
 ## Artifact Index
 - /Users/sac/wasm4pm/examples/cognition/ctl_check/intent.json — ctl_check intent
@@ -61,3 +62,14 @@ Populate and verify individual examples and chain stages for breeds 19-24.
 - /Users/sac/wasm4pm/examples/cognition/chains/factory-agent/stages/21-dendral/transform.py — dendral transform stage
 - /Users/sac/wasm4pm/examples/cognition/chains/factory-agent/stages/22-description_logic/transform.py — description_logic transform stage
 - /Users/sac/wasm4pm/examples/cognition/chains/factory-agent/stages/23-ebl/transform.py — ebl transform stage
+- /Users/sac/wasm4pm/examples/cognition/construction_grammar/intent.json — construction_grammar intent
+- /Users/sac/wasm4pm/examples/cognition/construction_grammar/run.sh — construction_grammar runner script
+- /Users/sac/wasm4pm/examples/cognition/construction_grammar/result.json — construction_grammar execution output
+- /Users/sac/wasm4pm/examples/cognition/contingent_plan/intent.json — contingent_plan intent
+- /Users/sac/wasm4pm/examples/cognition/contingent_plan/run.sh — contingent_plan runner script
+- /Users/sac/wasm4pm/examples/cognition/contingent_plan/result.json — contingent_plan execution output
+- /Users/sac/wasm4pm/examples/cognition/csp_ac3/intent.json — csp_ac3 intent
+- /Users/sac/wasm4pm/examples/cognition/csp_ac3/run.sh — csp_ac3 runner script
+- /Users/sac/wasm4pm/examples/cognition/csp_ac3/result.json — csp_ac3 execution output
+- /Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/breed-inputs.ts — updated breed inputs
+

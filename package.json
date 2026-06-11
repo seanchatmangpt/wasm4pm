@@ -79,6 +79,9 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@oxc-minify/binding-darwin-arm64": "^0.135.0",
+    "@oxc-parser/binding-darwin-arm64": "^0.135.0",
+    "@oxc-transform/binding-darwin-arm64": "^0.135.0",
     "pathe": "^2.0.3"
   }
 }

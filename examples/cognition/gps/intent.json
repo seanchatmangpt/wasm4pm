@@ -1,37 +1,65 @@
 {
-  "intent": "transform propositional logic expression L1 into L0 using symbolic-logic rules",
+  "intent": "manufacture and deliver product from raw material to customer",
   "candidates": [],
   "facts": [],
   "cases": [],
   "rules": [
     {
-      "id": "R6",
+      "id": "op-machine",
       "premise": [
-        "expr=L1"
+        "material-state=raw"
       ],
-      "conclusion": "expr=L2;!expr=L1",
-      "certainty": 1
+      "conclusion": "material-state=processed;!material-state=raw",
+      "certainty": 1.0
     },
     {
-      "id": "R12",
+      "id": "op-qc",
       "premise": [
-        "expr=L2"
+        "material-state=processed",
+        "quality-checked=no"
       ],
-      "conclusion": "expr=L0;!expr=L2",
-      "certainty": 1
+      "conclusion": "quality-checked=yes;!quality-checked=no",
+      "certainty": 1.0
+    },
+    {
+      "id": "op-ship",
+      "premise": [
+        "location=warehouse",
+        "quality-checked=yes"
+      ],
+      "conclusion": "location=customer;!location=warehouse",
+      "certainty": 1.0
     }
   ],
   "goals": [
     {
-      "id": "goal-1",
-      "predicate": "expr",
-      "value": "L0"
+      "id": "g-processed",
+      "predicate": "material-state",
+      "value": "processed"
+    },
+    {
+      "id": "g-qc",
+      "predicate": "quality-checked",
+      "value": "yes"
+    },
+    {
+      "id": "g-shipped",
+      "predicate": "location",
+      "value": "customer"
     }
   ],
   "state": [
     {
-      "predicate": "expr",
-      "value": "L1"
+      "predicate": "material-state",
+      "value": "raw"
+    },
+    {
+      "predicate": "location",
+      "value": "warehouse"
+    },
+    {
+      "predicate": "quality-checked",
+      "value": "no"
     }
   ]
 }

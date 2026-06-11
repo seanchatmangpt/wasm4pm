@@ -118,7 +118,7 @@ def verify_chain_linkage(stages_dir):
         "39-partial_order_plan", "40-pomdp", "41-problog", "42-prolog",
         "43-qualitative_reason", "44-rl_symbolic", "45-sat_cdcl", "46-script_sam",
         "47-situation_calculus", "48-soar", "49-strips", "50-tableaux",
-        "51-version_space"
+        "51-version_space", "52-morphological", "53-triz", "54-ocpm_route_discoverer"
     ]
 
     for i in range(1, len(stages)):

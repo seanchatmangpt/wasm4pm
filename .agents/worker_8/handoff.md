@@ -1,50 +1,31 @@
-# Handoff Report - Worker 8
+# Handoff Report — 2026-06-11T18:45:00Z
 
-## 1. Observation
-- Read inputs for the 5 breeds from `packages/cognition/src/__tests__/fixtures/papers/` files:
-  - `prolog.json`
-  - `qualitative_reason.json`
-  - `rl_symbolic.json`
-  - `sat_cdcl.json`
-  - `script_sam.json`
-- Created example directories under `examples/cognition/`:
-  - `examples/cognition/prolog/`
-  - `examples/cognition/qualitative_reason/`
-  - `examples/cognition/rl_symbolic/`
-  - `examples/cognition/sat_cdcl/`
-  - `examples/cognition/script_sam/`
-- Created `intent.json` and `run.sh` in each example directory, set `run.sh` to executable, and ran them.
-- Verified that running `bash run.sh` successfully executed `wpm cognition run` and produced `result.json` and `last-output.log` files on disk (the logs were gitignored but reside on disk).
-- Created chain stage directories under `examples/cognition/chains/factory-agent/stages/`:
-  - `42-prolog/`
-  - `43-qualitative_reason/`
-  - `44-rl_symbolic/`
-  - `45-sat_cdcl/`
-  - `46-script_sam/`
-- Inside each chain stage directory, created a `transform.py` script that parses JSON inputs from stdin, extracts the previous output hash and breed, binds them cryptographically in a new fact `prior_stage_hash`, and outputs a valid `BreedInput` JSON.
-- Verified one of the transforms by executing:
-  ```bash
-  python3 examples/cognition/chains/factory-agent/stages/42-prolog/transform.py < examples/cognition/prolog/result.json
-  ```
-  which successfully outputted a valid JSON with the bound `prior_stage_hash`.
+## Observation
+1. Extracted `minimalMdpInput()`, `minimalNaivePhysicsInput()`, and `minimalPartialOrderPlanInput()` from `packages/cognition/src/__tests__/fixtures/breed-inputs.ts`.
+2. Extracted `realMycinInput()` from `packages/cognition/src/__tests__/fixtures/breed-inputs-real.ts`.
+3. Checked that `meta_reasoning` is a periodic breed with no custom minimal input in `breed-inputs.ts` but has its canonical input defined in `packages/cognition/src/__tests__/fixtures/papers/meta_reasoning.json`.
+4. Extracted and formatted each input block as structured JSON matching `BreedInput` schema and wrote them to `examples/cognition/<breed_name>/intent.json`.
+5. Run scripts located at `examples/cognition/<breed_name>/run.sh` generated corresponding `result.json` and saved execution logs to `last-output.log` successfully with exit code 0.
+6. Rebuilt the core WASM module with `wasm-pack build` and re-linked with `pnpm install` / built the kernel package to resolve the ESM runtime loader constraint on native `.wasm` packages.
 
-## 2. Logic Chain
-- The breed input fixtures contain the template structure for the initial `intent.json` inputs for individual examples.
-- Extracted those `input` structures and stored them as `intent.json` in their respective directories.
-- The `run.sh` template detects `wpm` in path or points to `node apps/wasm4pm/dist/bin/wpm.js`.
-- By creating the executable `run.sh` scripts and executing them, we confirmed the WASM cognition runtime successfully parses and runs the input intent.json, generating correct outputs in `result.json` and redirecting logs to `last-output.log`.
-- In the factory-agent chain, each stage transforms the output of the prior stage to bind it cryptographically.
-- The Python script `transform.py` implements this by reading from stdin, parsing the previous stage's JSON output, appending the key-value pair for `prior_stage_hash` if the prior output hash exists, and printing the updated template JSON.
+## Logic Chain
+- The prompt requested populating `examples/cognition/` directories for five breeds: `mdp`, `meta_reasoning`, `mycin`, `naive_physics`, and `partial_order_plan` using specific inputs from the source fixtures.
+- To fulfill this, the corresponding inputs were retrieved, formatted as JSON, written to the directory target `intent.json` files, and executed using `run.sh` under the wpm CLI.
+- The output results are validated as authentic (containing no fake hashes or placeholder values) and verified by executing `node apps/wasm4pm/dist/bin/wpm.js cognition verify --receipt <receipt_path>` successfully.
 
-## 3. Caveats
-- Chain stages 42-46 assume they are part of a larger chain (possibly built across multiple workers). We populated the directories for stages 42 to 46, but since stages 13 to 41 are managed by other workers or the orchestrator, we did not execute the full chain script `chain.sh` directly (it only defines stages up to 12 in the current version of the script). We verified the logic of `transform.py` individually.
+## Caveats
+- Direct execution of `verify-all.sh` can sometimes fail transiently on other breeds (like `autoinstinct_neurosis` or `episodic_memory`) when run in parallel with other concurrent subagents because `wasm-pack build` cleans/removes the `pkg` directory before rebuilding. However, once the build is restored and no concurrent build is deleting the `pkg` directory, verification passes completely.
 
-## 4. Conclusion
-- The individual examples for breeds 43-47 and their corresponding chain stage directories under `factory-agent` are fully populated, configured, executed, and verified.
+## Conclusion
+- All 5 cognition breed directories (`mdp`, `meta_reasoning`, `mycin`, `naive_physics`, `partial_order_plan`) are successfully populated with correct `intent.json` inputs, executed successfully via `run.sh`, and generate valid, authentic, and verifiable execution receipts.
 
-## 5. Verification Method
-- To verify the examples run correctly:
-  - Run `bash examples/cognition/prolog/run.sh` and inspect the generated `examples/cognition/prolog/result.json` and `examples/cognition/prolog/last-output.log`.
-  - Repeat for `qualitative_reason`, `rl_symbolic`, `sat_cdcl`, and `script_sam`.
-- To verify the transform scripts:
-  - Run `python3 examples/cognition/chains/factory-agent/stages/42-prolog/transform.py < examples/cognition/prolog/result.json` and verify the output contains the `prior_stage_hash` in its facts list.
+## Verification Method
+- Execute the individual `run.sh` scripts:
+  - `bash examples/cognition/mdp/run.sh`
+  - `bash examples/cognition/meta_reasoning/run.sh`
+  - `bash examples/cognition/mycin/run.sh`
+  - `bash examples/cognition/naive_physics/run.sh`
+  - `bash examples/cognition/partial_order_plan/run.sh`
+- Verify that `result.json` is generated for each, and the exit code is 0.
+- Verify receipt authenticity:
+  - `NODE_OPTIONS="--experimental-wasm-modules" node apps/wasm4pm/dist/bin/wpm.js cognition verify --receipt <receipt_saved_path>`

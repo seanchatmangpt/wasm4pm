@@ -184,6 +184,19 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
         }
     }
 
+    // D2: TS command returns ok without calling kernel
+    let is_command = content.contains("export async function main") || content.contains("export default async function") || content.contains("export const");
+    if is_command && (content.contains("status: 'ok'") || content.contains("status: \"ok\"")) {
+        let calls_kernel = content.contains("kernel.") || content.contains("wasm.") || content.contains("runAlgorithm") || content.contains(".run(");
+        if !calls_kernel {
+            issues.push(ConformanceIssue {
+                severity: "ERROR".to_string(),
+                code: "STRUCTURAL-FAKERY-D2".to_string(),
+                message: "TS command returns 'ok' status but makes no kernel/WASM calls. This is a ghost implementation.".to_string(),
+            });
+        }
+    }
+
     issues
 }
 

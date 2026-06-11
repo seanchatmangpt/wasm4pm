@@ -3,120 +3,42 @@
   "facts": [
     {
       "key": "achieved",
-      "value": "section-1-cleartop"
+      "value": "sub-goal-0"
     },
     {
       "key": "achieved",
-      "value": "section-2-bottom-up-ordering"
-    },
-    {
-      "key": "belief:patch_cleartop_known",
-      "value": "1.0"
-    },
-    {
-      "key": "belief:patch_bottom_up_known",
-      "value": "1.0"
-    },
-    {
-      "key": "belief:patch_space_compacting_known",
-      "value": "0.5"
-    },
-    {
-      "key": "belief:patch_space_flushing_known",
-      "value": "0.2"
-    },
-    {
-      "key": "belief:patch_protect_known",
-      "value": "0.0"
+      "value": "sub-goal-2"
     }
   ],
   "candidates": [],
-  "rules": [
-    {
-      "id": "rule-cleartop",
-      "premise": [
-        "wants-to-place-block",
-        "block-has-object-on-top"
-      ],
-      "conclusion": "prerequisite:clear-top-first",
-      "certainty": 1
-    },
-    {
-      "id": "rule-bottom-up",
-      "premise": [
-        "conjunctive-subgoals",
-        "on-chain-dependency"
-      ],
-      "conclusion": "prerequisite:build-bottom-subgoal-first",
-      "certainty": 1
-    },
-    {
-      "id": "rule-compact-before-flush",
-      "premise": [
-        "not-enough-space-on-surface",
-        "compacting-possible"
-      ],
-      "conclusion": "action:compact-then-place",
-      "certainty": 0.6
-    },
-    {
-      "id": "rule-flush-before-compact",
-      "premise": [
-        "not-enough-space-on-surface",
-        "compacting-violates-goal"
-      ],
-      "conclusion": "prerequisite:flush-first-then-compact",
-      "certainty": 0.8
-    }
-  ],
+  "rules": [],
   "cases": [],
   "goals": [
     {
       "id": "g0",
-      "predicate": "master",
-      "value": "section-1-cleartop"
+      "predicate": "achieve",
+      "value": "sub-goal-0"
     },
     {
       "id": "g1",
-      "predicate": "master",
-      "value": "section-2-bottom-up-ordering"
+      "predicate": "achieve",
+      "value": "sub-goal-1"
     },
     {
       "id": "g2",
-      "predicate": "master",
-      "value": "section-3-space-allocation-compact"
+      "predicate": "achieve",
+      "value": "sub-goal-2"
     },
     {
       "id": "g3",
-      "predicate": "master",
-      "value": "section-4-space-allocation-flush-ordering"
+      "predicate": "achieve",
+      "value": "sub-goal-3"
     },
     {
       "id": "g4",
-      "predicate": "master",
-      "value": "section-5-protection-constraints"
+      "predicate": "achieve",
+      "value": "sub-goal-4"
     }
   ],
-  "state": [
-    {
-      "predicate": "on",
-      "value": "A-B"
-    },
-    {
-      "predicate": "on",
-      "value": "B-TABLE"
-    },
-    {
-      "predicate": "on",
-      "value": "C-TABLE"
-    },
-    {
-      "predicate": "cleartop",
-      "value": "A"
-    },
-    {
-      "predicate": "cleartop",
-      "value": "C"
-    }
-  ]
+  "state": []
 }
