@@ -1,61 +1,61 @@
 {
   "version": "1.0.0",
-  "created_at": "2026-06-11T20:31:59.884663+00:00",
+  "created_at": "2026-06-11T21:04:02.220381+00:00",
   "ontology": {
     "hash": "f30c1795be202832d7045158909523d4328d9b35d1a533ad9a134ad89699b835",
-    "timestamp": "2026-06-11T20:31:59.884661+00:00",
+    "timestamp": "2026-06-11T21:04:02.220380+00:00",
     "size_bytes": 75081
   },
   "manifest": {
     "hash": "1a8de3632344cd8898626a49c48fd27f6f67f49c106499f0fea2f7825c1164b9",
-    "timestamp": "2026-06-11T20:31:59.884661+00:00",
+    "timestamp": "2026-06-11T21:04:02.220380+00:00",
     "size_bytes": 6561
   },
   "inference_rules": {
     "alive-gate": "31bf74ac4715487a95eac6fb7de7892fee9fa31a44010f01498f79052f2987cb"
   },
   "imports": {
+    "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl": {
+      "hash": "c0210ed38c3b00d078615c7df4a6022f2c1eee28d351e33424f0eb477027b75a",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
+      "size_bytes": 48267
+    },
+    "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl": {
+      "hash": "903278e387ccd3cd8e6edbafc67163263fe6c2a103e3ef9b88c823a3d4793021",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
+      "size_bytes": 3652
+    },
     "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl": {
       "hash": "cb3a556d437c1f0989aa24697cd22d04785ae60fd0cd736746615a2bbe3477f2",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
       "size_bytes": 21990
+    },
+    "ggen/ontology/breeds.ttl": {
+      "hash": "4bc3e1bd91b916612c24974feb870403579482fc86608c44155397a2981176ae",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
+      "size_bytes": 13182
     },
     "ocel/reports/evidence.ttl": {
       "hash": "455a47b036b0fb28796258068f1cdaafdd1482aedd988bfe2676e9f469d390df",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
       "size_bytes": 8670
+    },
+    "../wasm4pm-compat/ggen/ontology/papers.ttl": {
+      "hash": "51a12c41e86b593916c97008abbfccff9cdd23a58c5000d6dca61a34d1ae50d0",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
+      "size_bytes": 22198
     },
     "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl": {
       "hash": "ec257d944799c6834683874134ead188606f3820adf0028de311c4ac91928255",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
       "size_bytes": 18671
     },
     "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl": {
       "hash": "01593c15eed0d733fc409d72453e4dfd1cb3f25ee4108ec3dd0cfbd45ed336c5",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
+      "timestamp": "2026-06-11T21:04:02.220380+00:00",
       "size_bytes": 16179
-    },
-    "../wasm4pm-compat/ggen/ontology/papers.ttl": {
-      "hash": "51a12c41e86b593916c97008abbfccff9cdd23a58c5000d6dca61a34d1ae50d0",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
-      "size_bytes": 22198
-    },
-    "../wasm4pm-compat/ggen/ontology-breeds/breed-vocabulary.ttl": {
-      "hash": "903278e387ccd3cd8e6edbafc67163263fe6c2a103e3ef9b88c823a3d4793021",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
-      "size_bytes": 3652
-    },
-    "../wasm4pm-compat/ggen/ontology-breeds/paper-pointers.ttl": {
-      "hash": "c0210ed38c3b00d078615c7df4a6022f2c1eee28d351e33424f0eb477027b75a",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
-      "size_bytes": 48267
-    },
-    "ggen/ontology/breeds.ttl": {
-      "hash": "4bc3e1bd91b916612c24974feb870403579482fc86608c44155397a2981176ae",
-      "timestamp": "2026-06-11T20:31:59.884661+00:00",
-      "size_bytes": 13182
     }
   },
   "files_synced": 5,
-  "sync_duration_ms": 39
+  "sync_duration_ms": 57
 }
