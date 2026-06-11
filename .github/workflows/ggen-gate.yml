@@ -1,0 +1,101 @@
+name: ggen Conformance Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Verifies the latest ggen receipt without needing the ggen binary:
+  # every file listed in .ggen/receipts/latest.json output_hashes must
+  # hash (sha256) to the recorded value on disk.
+  receipt-check:
+    name: Receipt hash verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify output_hashes in .ggen/receipts/latest.json
+        run: |
+          set -euo pipefail
+          receipt=.ggen/receipts/latest.json
+          test -f "$receipt" || { echo "::error::$receipt missing"; exit 1; }
+          fail=0
+          while IFS= read -r entry; do
+            file="${entry%:*}"
+            expected="${entry##*:}"
+            if [ ! -f "$file" ]; then
+              echo "::error::receipt references missing file: $file"
+              fail=1
+              continue
+            fi
+            actual=$(shasum -a 256 "$file" | awk '{print $1}')
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::hash mismatch for $file (expected $expected, got $actual)"
+              fail=1
+            else
+              echo "ok: $file"
+            fi
+          done < <(jq -r '.output_hashes[]? // empty' "$receipt")
+          exit $fail
+
+  # Full sync conformance: re-runs `ggen sync` against the wasm4pm-compat
+  # ontology pack (a SIBLING path dependency: ggen.toml references
+  # ../wasm4pm-compat/...) and asserts the rendered sources are unchanged.
+  #
+  # Limitations:
+  # - ggen is installed from crates.io via `cargo install ggen`; the version
+  #   published there may lag the local dev binary (local: 26.5.21). If sync
+  #   output differs purely due to ggen version drift, pin the version below.
+  # - ggen emits OTel export errors when no collector listens on :4317;
+  #   these are non-fatal noise.
+  ggen-sync:
+    name: ggen sync conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # wasm4pm must live in a subdirectory so ../wasm4pm-compat resolves.
+      - uses: actions/checkout@v4
+        with:
+          path: wasm4pm
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          path: wasm4pm-compat
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo-installed binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/ggen
+          key: ggen-bin-${{ runner.os }}-26.5
+
+      - name: Install ggen
+        run: |
+          if ! command -v ggen >/dev/null; then
+            cargo install ggen --locked
+          fi
+          ggen --version
+
+      - name: Run ggen sync
+        working-directory: wasm4pm
+        run: ggen sync
+
+      - name: Assert rendered sources unchanged
+        working-directory: wasm4pm
+        run: |
+          # Receipts legitimately change on every sync; only generated
+          # source surfaces must be byte-identical.
+          git diff --exit-code -- ':!.ggen/receipts' \
+            || { echo "::error::ggen sync produced drift — rendered sources do not conform to the ontology pack"; exit 1; }

@@ -30,7 +30,7 @@ async function main() {
   const gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   const cases = generateCaseRegistry();
   const registryIds = new Set(getRegistry().list().map((a) => a.id));
-  const wasmBg = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm_bg.js'), 'utf8');
+  const wasmBg = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm.js'), 'utf8');
   const wasmExports = new Set([...wasmBg.matchAll(/export function (\w+)/g)].map((m) => m[1]));
   const apiSrc = fs.readFileSync(path.resolve(rootDir, 'packages/kernel/src/api.ts'), 'utf8');
   const apiCases = new Set([...apiSrc.matchAll(/case '([^']+)':/g)].map((m) => m[1]));
