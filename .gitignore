@@ -89,3 +89,6 @@ packages/agents/src/**/*.js.map
 packages/agents/src/**/*.d.ts.map
 /vendors/pm4py
 /vendors/POWL
+
+# orphan dir from unset test tmpDir
+undefined/
