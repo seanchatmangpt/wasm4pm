@@ -475,8 +475,6 @@ try {
 ## References
 
 - [wasm4pm Documentation](https://github.com/seanchatmangpt/wasm4pm)
-- [Algorithm Papers](./docs/algorithms.md)
-- [Performance Benchmarks](./docs/benchmarks.md)
 
 ## License
 
