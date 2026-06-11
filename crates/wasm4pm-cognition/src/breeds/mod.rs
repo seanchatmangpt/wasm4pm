@@ -317,7 +317,7 @@ pub struct StateAtom {
 }
 
 /// Input to a breed's `run()` method: all available knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,
@@ -456,7 +456,7 @@ pub trait CognitionBreed: Send + Sync {
 
     /// Postcondition checks: verify the output is valid.
     /// Returns Ok(()) if all pass; Err(message) if violation.
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String>;
+    fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String>;
 
     /// Generate a BLAKE3 receipt for this execution.
     fn receipt(&self, input: &BreedInput, output: &BreedOutput) -> Receipt {

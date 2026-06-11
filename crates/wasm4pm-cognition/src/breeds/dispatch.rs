@@ -36,7 +36,7 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
     let mut output = b
         .run(input)
         .map_err(|e| format!("{}: {}", e.breed, e.message))?;
-    b.postconditions(&output)
+    b.postconditions(input, &output)
         .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
 
     // Derive OCEL and validate conformance (van der Aalst doctrine)
