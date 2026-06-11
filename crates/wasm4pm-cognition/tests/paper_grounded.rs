@@ -103,20 +103,58 @@ fn mycin_paper_grounded() {
                 "MYCIN must have fired at least one rule (streptococcus chain from paper)"
             );
 
-            // Paper-expected: organism=streptococcus CF=0.7 must appear in trace conclusions
             let exp = &json["expected"];
-            if let Some(organism) = exp.get("organism").and_then(|v| v.as_str()) {
-                assert!(
-                    output
-                        .inference_trace
-                        .iter()
-                        .any(|t| t.detail.contains(organism)),
-                    "MYCIN must derive '{}' per Shortliffe & Buchanan 1975 p.238",
-                    organism
-                );
-            }
+
+            // Paper-grounded NUMERIC assertion: organism=streptococcus is derived at
+            // CF=0.7 (Shortliffe & Buchanan 1975, p.247, MB[h,e]=0.7). The CF is
+            // emitted in the fire-rule trace detail as "(cf=0.700)".
+            let organism = exp
+                .get("organism")
+                .and_then(|v| v.as_str())
+                .expect("fixture must declare expected.organism");
+            let organism_cf = exp
+                .get("organism_cf")
+                .and_then(|v| v.as_f64())
+                .expect("fixture must declare expected.organism_cf") as f32;
+            let organism_detail = output
+                .inference_trace
+                .iter()
+                .find(|t| t.detail.contains(&format!("organism={}", organism)))
+                .unwrap_or_else(|| {
+                    panic!("MYCIN must derive organism={organism} per Shortliffe & Buchanan 1975 p.247")
+                });
+            let derived_cf = parse_cf(&organism_detail.detail);
+            assert!(
+                (derived_cf - organism_cf).abs() < 1e-3,
+                "MYCIN organism CF must equal paper value {organism_cf} (Shortliffe & Buchanan 1975 p.247); got {derived_cf}"
+            );
+
+            // The diagnostic answer (selected) is the terminal therapy recommendation,
+            // not an intermediate organism or echoed input fact.
+            let top = exp
+                .get("top_conclusion")
+                .and_then(|v| v.as_str())
+                .expect("fixture must declare expected.top_conclusion");
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(top),
+                "MYCIN selected must be the terminal conclusion {top}"
+            );
+        } else {
+            panic!("tests/fixtures/papers/mycin.json must be valid JSON");
         }
+    } else {
+        panic!("tests/fixtures/papers/mycin.json must exist (paper-grounded test cannot silently skip)");
     }
+}
+
+/// Extract the certainty factor from a MYCIN fire-rule trace detail of the form
+/// "RULE… ⇒ conclusion (cf=0.700)". Returns 0.0 if no CF token is present.
+fn parse_cf(detail: &str) -> f32 {
+    detail
+        .rsplit_once("cf=")
+        .and_then(|(_, rest)| rest.trim_end_matches(')').parse::<f32>().ok())
+        .unwrap_or(0.0)
 }
 
 // ============================================================================

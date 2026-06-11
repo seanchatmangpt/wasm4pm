@@ -298,6 +298,15 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
         }
     }
 
+    if result_json.to_lowercase().contains("fake") {
+        findings.push(crate::autosystems::findings::Finding {
+            code: "FAKE_ARTEFACT_DETECTED".to_string(),
+            severity: crate::autosystems::findings::Severity::Fatal,
+            message: "Result contains 'fake'".to_string(),
+            evidence: vec!["Input JSON contains the word 'fake'".to_string()],
+        });
+    }
+
     let finding_jsons: Vec<serde_json::Value> = findings
         .into_iter()
         .map(|f| {

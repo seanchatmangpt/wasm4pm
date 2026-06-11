@@ -15,13 +15,13 @@ use crate::breeds::{
 };
 use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::support::certainty::combine_cf;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use tracing;
 
 /// MYCIN production-rule engine.
 pub struct Mycin;
 
-fn premise_satisfied(premise: &str, working_memory: &HashMap<String, f32>) -> Option<f32> {
+fn premise_satisfied(premise: &str, working_memory: &BTreeMap<String, f32>) -> Option<f32> {
     working_memory.get(premise).copied().filter(|cf| *cf > 0.2)
 }
 
@@ -45,14 +45,18 @@ impl CognitionBreed for Mycin {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut working_memory: HashMap<String, f32> = HashMap::new();
+        let mut working_memory: BTreeMap<String, f32> = BTreeMap::new();
         for f in &input.facts {
             let key = format!("{}={}", f.key, f.value);
             working_memory.insert(key, 1.0);
             working_memory.insert(f.value.clone(), 1.0);
         }
 
-        let mut fired: HashSet<String> = HashSet::new();
+        let mut fired: BTreeSet<String> = BTreeSet::new();
+        // Keys derived by rule conclusions (distinguishes inferences from seed facts).
+        let mut derived: BTreeSet<String> = BTreeSet::new();
+        // Premises consumed by fired rules (a conclusion used downstream is not terminal).
+        let mut consumed_premises: BTreeSet<String> = BTreeSet::new();
         let mut trace: Vec<TraceStep> = Vec::new();
         let max_iters = input.rules.len().saturating_mul(2);
 
@@ -105,6 +109,10 @@ impl CognitionBreed for Mycin {
             let prev = working_memory.get(&rule.conclusion).copied().unwrap_or(0.0);
             let new_cf = combine_cf(prev, inferred_cf);
             working_memory.insert(rule.conclusion.clone(), new_cf);
+            derived.insert(rule.conclusion.clone());
+            for p in &rule.premise {
+                consumed_premises.insert(p.clone());
+            }
 
             tracing::debug!(breed.step = "cf_accumulated", "MYCIN L1 step");
 
@@ -117,16 +125,27 @@ impl CognitionBreed for Mycin {
             });
         }
 
-        // Pick selected: highest-CF conclusion (k=v format); tiebreak = smallest key (deterministic).
-        let mut candidates: Vec<(String, f32)> = working_memory
-            .iter()
-            .filter(|(k, v)| k.contains('=') && **v > 0.0)
-            .map(|(k, v)| (k.clone(), *v))
-            .collect();
-        candidates.sort_by(|(ak, av), (bk, bv)| bv.total_cmp(av).then_with(|| ak.cmp(bk)));
-        let selected = candidates.into_iter().next().map(|(k, _)| k);
+        // Pick selected: the diagnostic answer is the terminal conclusion of the
+        // inference chain — a rule-derived conclusion that is NOT itself consumed as
+        // a premise by any fired rule (e.g. therapy=penicillin, not the intermediate
+        // organism=streptococcus). Seed facts are excluded entirely. Among terminal
+        // conclusions, highest CF wins; tiebreak = smallest key (deterministic).
+        // Fallback: if every derived conclusion feeds another rule (cyclic/no leaf),
+        // select the highest-CF derived conclusion outright.
+        let select_from = |only_terminal: bool| -> Option<String> {
+            let mut candidates: Vec<(String, f32)> = working_memory
+                .iter()
+                .filter(|(k, _)| derived.contains(*k))
+                .filter(|(k, _)| !only_terminal || !consumed_premises.contains(*k))
+                .filter(|(_, v)| **v > 0.0)
+                .map(|(k, v)| (k.clone(), *v))
+                .collect();
+            candidates.sort_by(|(ak, av), (bk, bv)| bv.total_cmp(av).then_with(|| ak.cmp(bk)));
+            candidates.into_iter().next().map(|(k, _)| k)
+        };
+        let selected = select_from(true).or_else(|| select_from(false));
 
-        let original: HashSet<String> = input
+        let original: BTreeSet<String> = input
             .facts
             .iter()
             .map(|f| format!("{}={}", f.key, f.value))
