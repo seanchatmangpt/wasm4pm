@@ -257,6 +257,14 @@ impl CognitionBreed for Ebl {
         let mut trace = Vec::new();
         let fact_set: BTreeSet<String> = input.facts.iter().map(|f| f.key.clone()).collect();
 
+        // Defensive refusal (mirrors preconditions): raw-run paths must not panic.
+        if input.goals.is_empty() {
+            return Err(BreedError {
+                breed: BreedId::Ebl,
+                message: "ebl requires at least one goal (the training example)".to_string(),
+            });
+        }
+
         // Training goal: goals[0]; value "true" means predicate IS the atom.
         let goal_str = if input.goals[0].value == "true" {
             input.goals[0].predicate.clone()

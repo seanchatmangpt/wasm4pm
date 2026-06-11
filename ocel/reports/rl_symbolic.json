@@ -30,5 +30,7 @@
   "l0_fitness_note": "L0 wrapper lifecycle (dispatch\u2192execute\u2192verify\u2192commit) enforced structurally by the BVC admission gate. This is the fitness=1.0 claim that is measured and admissible.",
   "status": "ADMITTED",
   "admitted": true,
-  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "tests/ocel_conformance.rs (cargo test -p wasm4pm-cognition, fitness measured by validate_ocel_alignment replay)",
+  "measured_on": "2026-06-10"
 }
