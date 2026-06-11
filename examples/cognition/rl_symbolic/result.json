@@ -3679,9 +3679,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/rl_symbolic/.wasm4pm/receipts/9e47ac1805768f931032047d1c3b279256eae5989ea83a395b2096ea9e42d465.json"
   },
   "meta": {
-    "run_id": "46aa0f1d-d75c-423b-9072-f77cab57349b",
-    "timestamp": "2026-06-11T07:03:20.902Z",
-    "duration_ms": 36,
+    "run_id": "57f43f07-4cfb-45dc-80cf-3decb9666865",
+    "timestamp": "2026-06-11T18:35:25.578Z",
+    "duration_ms": 178,
     "version": "26.6.10"
   }
 }

@@ -1,5 +1,6 @@
 {
   "intent": "diagnose burglary from phone calls",
+  "candidates": [],
   "facts": [
     {
       "key": "cpt:B",
@@ -30,6 +31,8 @@
       "value": "true"
     }
   ],
+  "cases": [],
+  "rules": [],
   "goals": [
     {
       "id": "g1",
@@ -37,8 +40,5 @@
       "value": "prob:B"
     }
   ],
-  "candidates": [],
-  "cases": [],
-  "rules": [],
   "state": []
 }

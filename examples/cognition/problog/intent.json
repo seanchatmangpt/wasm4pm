@@ -23,7 +23,7 @@
         "rain"
       ],
       "conclusion": "wet",
-      "certainty": 1.0
+      "certainty": 1
     },
     {
       "id": "r-sprinkler",
@@ -31,7 +31,7 @@
         "sprinkler"
       ],
       "conclusion": "wet",
-      "certainty": 1.0
+      "certainty": 1
     },
     {
       "id": "r-hose",
@@ -39,7 +39,7 @@
         "hose"
       ],
       "conclusion": "wet",
-      "certainty": 1.0
+      "certainty": 1
     }
   ],
   "goals": [

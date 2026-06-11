@@ -1,40 +1,28 @@
 {
-  "intent": "combine two witnesses",
+  "intent": "evaluate belief",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
   "rules": [
     {
-      "id": "witness1",
+      "id": "source1",
       "premise": [],
-      "conclusion": "life",
-      "certainty": 0.9
+      "conclusion": "flim",
+      "certainty": 0.6
     },
     {
-      "id": "witness1",
+      "id": "source2",
       "premise": [],
-      "conclusion": "life,death",
-      "certainty": 0.1
-    },
-    {
-      "id": "witness2",
-      "premise": [],
-      "conclusion": "life",
-      "certainty": 0.9
-    },
-    {
-      "id": "witness2",
-      "premise": [],
-      "conclusion": "life,death",
-      "certainty": 0.1
+      "conclusion": "flam",
+      "certainty": 0.7
     }
   ],
   "goals": [
     {
       "id": "query",
       "predicate": "query",
-      "value": "life"
+      "value": "flim"
     }
   ],
-  "candidates": [],
-  "facts": [],
-  "cases": [],
   "state": []
 }

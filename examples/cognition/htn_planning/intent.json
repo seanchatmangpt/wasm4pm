@@ -1,59 +1,33 @@
 {
-  "intent": "deliver the package",
+  "intent": "travel",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
   "state": [
-    {
-      "predicate": "pkg",
-      "value": "at_depot"
-    },
-    {
-      "predicate": "truck",
-      "value": "at_depot"
-    }
+    { "predicate": "at", "value": "home" },
+    { "predicate": "cash", "value": "high" }
   ],
   "goals": [
-    {
-      "id": "g1",
-      "predicate": "task",
-      "value": "deliver"
-    }
+    { "id": "g1", "predicate": "task", "value": "travel" }
   ],
   "rules": [
     {
-      "id": "method:deliver:by_truck",
-      "premise": [
-        "pkg=at_depot"
-      ],
-      "conclusion": "op:load;op:drive;op:unload",
+      "id": "method:travel:taxi",
+      "premise": ["at=home"],
+      "conclusion": "op:hail_taxi;op:pay_taxi",
       "certainty": 1.0
     },
     {
-      "id": "op:load",
-      "premise": [
-        "pkg=at_depot",
-        "truck=at_depot"
-      ],
-      "conclusion": "!pkg=at_depot;pkg=in_truck",
+      "id": "op:hail_taxi",
+      "premise": [],
+      "conclusion": "in=taxi",
       "certainty": 1.0
     },
     {
-      "id": "op:drive",
-      "premise": [
-        "truck=at_depot"
-      ],
-      "conclusion": "!truck=at_depot;truck=at_dest",
-      "certainty": 1.0
-    },
-    {
-      "id": "op:unload",
-      "premise": [
-        "pkg=in_truck",
-        "truck=at_dest"
-      ],
-      "conclusion": "!pkg=in_truck;pkg=at_dest",
+      "id": "op:pay_taxi",
+      "premise": ["in=taxi", "cash=high"],
+      "conclusion": "!in=taxi;at=dest",
       "certainty": 1.0
     }
-  ],
-  "candidates": [],
-  "facts": [],
-  "cases": []
+  ]
 }

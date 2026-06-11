@@ -9,92 +9,71 @@
     "status": "ok",
     "output": {
       "breed": "DescriptionLogic",
-      "candidates": [],
-      "facts": [
+      "candidates": [
         {
-          "key": "dl:verdict:Pericarditis:HeartDisease",
-          "value": "true"
-        },
-        {
-          "key": "dl:verdict:HeartDisease:Pericarditis",
-          "value": "false"
+          "id": "x",
+          "score": 0.5,
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
-      "selected": "Pericarditis⊑HeartDisease=true",
-      "explanation": "EL completion (CR1–CR4) to fixpoint over 6 concepts; verdicts: Pericarditis⊑HeartDisease=true; HeartDisease⊑Pericarditis=false",
+      "facts": [
+        {
+          "key": "dl:verdict:A:C",
+          "value": "true"
+        }
+      ],
+      "selected": "A⊑C=true",
+      "explanation": "EL completion (CR1–CR4) to fixpoint over 3 concepts; verdicts: A⊑C=true",
       "inference_trace": [
         {
           "step": 0,
           "kind": "normalize",
-          "detail": "6 concepts, 2 subclass, 1 conj, 1 exists-rhs, 1 exists-lhs axioms",
+          "detail": "3 concepts, 2 subclass, 0 conj, 0 exists-rhs, 0 exists-lhs axioms",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "apply-cr1",
-          "detail": "Inflammation ⊑ Disease (via Inflammation ⊑ Disease)",
+          "detail": "A ⊑ B (via A ⊑ B)",
           "depth": 1
         },
         {
           "step": 2,
           "kind": "apply-cr1",
-          "detail": "Pericarditis ⊑ Inflammation (via Pericarditis ⊑ Inflammation)",
+          "detail": "B ⊑ C (via B ⊑ C)",
           "depth": 1
         },
         {
           "step": 3,
-          "kind": "apply-cr3",
-          "detail": "(Pericarditis,Heart) ∈ R(has_location)",
+          "kind": "apply-cr1",
+          "detail": "A ⊑ C (via B ⊑ C)",
           "depth": 1
         },
         {
           "step": 4,
-          "kind": "apply-cr4",
-          "detail": "Pericarditis ⊑ HasLocationHeart (via ∃has_location.Heart)",
-          "depth": 1
+          "kind": "fixpoint",
+          "detail": "saturated: 6 subsumptions, 0 role edges",
+          "depth": 0
         },
         {
           "step": 5,
-          "kind": "apply-cr1",
-          "detail": "Pericarditis ⊑ Disease (via Inflammation ⊑ Disease)",
-          "depth": 1
-        },
-        {
-          "step": 6,
-          "kind": "apply-cr2",
-          "detail": "Pericarditis ⊑ HeartDisease (via Disease ⊓ HasLocationHeart)",
-          "depth": 1
-        },
-        {
-          "step": 7,
-          "kind": "fixpoint",
-          "detail": "saturated: 11 subsumptions, 1 role edges",
-          "depth": 0
-        },
-        {
-          "step": 8,
           "kind": "classify-verdict",
-          "detail": "Pericarditis ⊑ HeartDisease : true",
-          "depth": 0
-        },
-        {
-          "step": 9,
-          "kind": "classify-verdict",
-          "detail": "HeartDisease ⊑ Pericarditis : false",
+          "detail": "A ⊑ C : true",
           "depth": 0
         }
       ]
     },
-    "run_id": "17ca8614097b1b81fa194397b6afdff8807215db2a9cb014dd33826fd750351e",
-    "output_hash": "0c7afe958ae08ff82186c65d39811d0ad5c5948501c54e25d3b807d270076b5f",
-    "replay_pointer": "0c7afe958ae08ff8",
-    "inference_step_count": 10,
+    "run_id": "243d75f2090984e55c343c3ea33f427f3ba12ca59b00a5704b82d44550784448",
+    "output_hash": "91754a8318b67f930b3860c949bf725abea006546c9ece04d94c06844ed4b28d",
+    "replay_pointer": "91754a8318b67f93",
+    "inference_step_count": 6,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/description_logic/.wasm4pm/receipts/17ca8614097b1b81fa194397b6afdff8807215db2a9cb014dd33826fd750351e.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/description_logic/.wasm4pm/receipts/243d75f2090984e55c343c3ea33f427f3ba12ca59b00a5704b82d44550784448.json"
   },
   "meta": {
-    "run_id": "a0b83adf-6d9e-414a-8c1d-3fb1ed79a930",
-    "timestamp": "2026-06-11T07:03:05.594Z",
+    "run_id": "d65890db-326d-4be0-a745-d0a3e5671bc9",
+    "timestamp": "2026-06-11T18:39:33.133Z",
     "duration_ms": 15,
     "version": "26.6.10"
   }

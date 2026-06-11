@@ -11,164 +11,148 @@
       "breed": "Dendral",
       "candidates": [
         {
-          "id": "ketone-F1-C2H5-C2H5",
-          "score": 0.9100000262260437,
+          "id": "structure-A-aminopyridine",
+          "score": 0.8799999952316284,
           "eliminated": false,
           "elimination_reason": null
         },
         {
-          "id": "ketone-F2-CH3-C3H7",
-          "score": 0.8399999737739563,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "ketone-F3-CH3-C3H7-branched",
-          "score": 0.7799999713897705,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "ketone-F4-C4H9-CH3",
-          "score": 0.7200000286102295,
-          "eliminated": false,
-          "elimination_reason": null
-        },
-        {
-          "id": "ether-F5-C2H5-O-C2H5",
-          "score": 0.44999998807907104,
+          "id": "structure-B-pyrimidine-OH",
+          "score": 0.7599999904632568,
           "eliminated": true,
-          "elimination_reason": "forbidden by constraint forbid:ether-F5-C2H5-O-C2H5"
+          "elimination_reason": "missing required token pyridine"
         },
         {
-          "id": "amine-F6-C2H5-NH-C2H5",
-          "score": 0.3799999952316284,
+          "id": "structure-C-benzene-NH2",
+          "score": 0.6499999761581421,
           "eliminated": true,
-          "elimination_reason": "forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5"
+          "elimination_reason": "missing required token pyridine"
         },
         {
-          "id": "ketone-F7-C4H9-CH3-iso",
-          "score": 0.6600000262260437,
+          "id": "structure-D-furan-methyl",
+          "score": 0.7099999785423279,
           "eliminated": true,
-          "elimination_reason": "forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso"
+          "elimination_reason": "missing required token pyridine"
         },
         {
-          "id": "ketone-F8-CH3-CH3-C2H4",
+          "id": "structure-E-imidazole",
+          "score": 0.8299999833106995,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-F-alkyl-chain",
+          "score": 0.41999998688697815,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-G-naphthalene",
           "score": 0.550000011920929,
           "eliminated": true,
-          "elimination_reason": "forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4"
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-H-phenol",
+          "score": 0.6899999976158142,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
         }
       ],
       "facts": [
         {
-          "key": "molecular-formula",
-          "value": "C5H10O"
-        },
-        {
-          "key": "molecular-weight",
-          "value": "86"
+          "key": "constraint",
+          "value": "require:pyridine"
         },
         {
           "key": "constraint",
-          "value": "forbid:ether-F5-C2H5-O-C2H5"
+          "value": "require:amino"
         },
         {
           "key": "constraint",
-          "value": "forbid:amine-F6-C2H5-NH-C2H5"
+          "value": "forbid:furan-methyl"
         },
         {
           "key": "constraint",
-          "value": "forbid:ketone-F7-C4H9-CH3-iso"
+          "value": "forbid:alkyl-chain"
         },
         {
           "key": "constraint",
-          "value": "forbid:ketone-F8-CH3-CH3-C2H4"
+          "value": "forbid:naphthalene"
         },
         {
-          "key": "spectral-line",
-          "value": "57"
+          "key": "constraint",
+          "value": "min-score:0.6"
         },
         {
-          "key": "spectral-line",
-          "value": "29"
-        },
-        {
-          "key": "spectral-line",
-          "value": "86"
-        },
-        {
-          "key": "spectral-line",
-          "value": "71"
-        },
-        {
-          "key": "spectral-line",
-          "value": "43"
+          "key": "constraint",
+          "value": "max-score:0.95"
         }
       ],
-      "selected": "ketone-F1-C2H5-C2H5",
-      "explanation": "DENDRAL applied 4 constraints; 4/8 candidates survived",
+      "selected": "structure-A-aminopyridine",
+      "explanation": "DENDRAL applied 7 constraints; 1/8 candidates survived",
       "inference_trace": [
         {
           "step": 0,
           "kind": "survive",
-          "detail": "ketone-F1-C2H5-C2H5",
+          "detail": "structure-A-aminopyridine",
           "depth": 0
         },
         {
           "step": 1,
-          "kind": "survive",
-          "detail": "ketone-F2-CH3-C3H7",
+          "kind": "eliminate",
+          "detail": "structure-B-pyrimidine-OH by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 2,
-          "kind": "survive",
-          "detail": "ketone-F3-CH3-C3H7-branched",
+          "kind": "eliminate",
+          "detail": "structure-C-benzene-NH2 by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 3,
-          "kind": "survive",
-          "detail": "ketone-F4-C4H9-CH3",
+          "kind": "eliminate",
+          "detail": "structure-D-furan-methyl by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 4,
           "kind": "eliminate",
-          "detail": "ether-F5-C2H5-O-C2H5 by forbid:ether-F5-C2H5-O-C2H5: forbidden by constraint forbid:ether-F5-C2H5-O-C2H5",
+          "detail": "structure-E-imidazole by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 5,
           "kind": "eliminate",
-          "detail": "amine-F6-C2H5-NH-C2H5 by forbid:amine-F6-C2H5-NH-C2H5: forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5",
+          "detail": "structure-F-alkyl-chain by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 6,
           "kind": "eliminate",
-          "detail": "ketone-F7-C4H9-CH3-iso by forbid:ketone-F7-C4H9-CH3-iso: forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso",
+          "detail": "structure-G-naphthalene by require:pyridine: missing required token pyridine",
           "depth": 0
         },
         {
           "step": 7,
           "kind": "eliminate",
-          "detail": "ketone-F8-CH3-CH3-C2H4 by forbid:ketone-F8-CH3-CH3-C2H4: forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4",
+          "detail": "structure-H-phenol by require:pyridine: missing required token pyridine",
           "depth": 0
         }
       ]
     },
-    "run_id": "dd84be704ebf77014015c6328f798074662dcd2a0ae1e909447e64c97ef50452",
-    "output_hash": "e49b7fd1e3b9ba6510912f8d1c91e3d64580b6c4010b2af905615c402376e4b2",
-    "replay_pointer": "e49b7fd1e3b9ba65",
+    "run_id": "7497f85b29f8b9ad8e602c5436834ec83e5f2f58380cf9f1f4a7a6ff836ed5bd",
+    "output_hash": "44ac33679bbf53b0e85bf25a866d69aa151b023963f800f56c5e95d998fa1477",
+    "replay_pointer": "44ac33679bbf53b0",
     "inference_step_count": 8,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/dd84be704ebf77014015c6328f798074662dcd2a0ae1e909447e64c97ef50452.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/7497f85b29f8b9ad8e602c5436834ec83e5f2f58380cf9f1f4a7a6ff836ed5bd.json"
   },
   "meta": {
-    "run_id": "f97129e2-f027-4062-b06b-f4112cb2ef65",
-    "timestamp": "2026-06-11T07:03:04.907Z",
-    "duration_ms": 14,
+    "run_id": "63fde592-b479-4b82-948e-f6869367f4e5",
+    "timestamp": "2026-06-11T18:39:32.803Z",
+    "duration_ms": 20,
     "version": "26.6.10"
   }
 }

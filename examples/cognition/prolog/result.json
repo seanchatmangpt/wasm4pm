@@ -17,15 +17,87 @@
         },
         {
           "key": "parent",
+          "value": "tom-liz"
+        },
+        {
+          "key": "parent",
           "value": "bob-ann"
         },
         {
           "key": "parent",
           "value": "bob-pat"
+        },
+        {
+          "key": "parent",
+          "value": "pat-jim"
+        },
+        {
+          "key": "parent",
+          "value": "pat-dee"
+        },
+        {
+          "key": "parent",
+          "value": "liz-sue"
+        },
+        {
+          "key": "parent",
+          "value": "liz-dan"
+        },
+        {
+          "key": "parent",
+          "value": "ann-chris"
+        },
+        {
+          "key": "male",
+          "value": "tom"
+        },
+        {
+          "key": "male",
+          "value": "bob"
+        },
+        {
+          "key": "male",
+          "value": "pat"
+        },
+        {
+          "key": "male",
+          "value": "dan"
+        },
+        {
+          "key": "male",
+          "value": "jim"
+        },
+        {
+          "key": "male",
+          "value": "chris"
+        },
+        {
+          "key": "female",
+          "value": "liz"
+        },
+        {
+          "key": "female",
+          "value": "ann"
+        },
+        {
+          "key": "female",
+          "value": "dee"
+        },
+        {
+          "key": "female",
+          "value": "sue"
+        },
+        {
+          "key": "parent",
+          "value": "jim-ed"
+        },
+        {
+          "key": "male",
+          "value": "ed"
         }
       ],
-      "selected": "bob-ann",
-      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [6e, 8d, 49, 1d])",
+      "selected": null,
+      "explanation": "Prolog8 denied query (negative proof nodes: 1, receipt: [dd, 88, 9e, 76])",
       "inference_trace": [
         {
           "step": 0,
@@ -36,40 +108,166 @@
         {
           "step": 1,
           "kind": "intern-fact",
-          "detail": "parent=bob-ann",
+          "detail": "parent=tom-liz",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "intern-fact",
-          "detail": "parent=bob-pat",
+          "detail": "parent=bob-ann",
           "depth": 0
         },
         {
           "step": 3,
+          "kind": "intern-fact",
+          "detail": "parent=bob-pat",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "intern-fact",
+          "detail": "parent=pat-jim",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "intern-fact",
+          "detail": "parent=pat-dee",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "intern-fact",
+          "detail": "parent=liz-sue",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "intern-fact",
+          "detail": "parent=liz-dan",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "intern-fact",
+          "detail": "parent=ann-chris",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "intern-fact",
+          "detail": "male=tom",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "intern-fact",
+          "detail": "male=bob",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "intern-fact",
+          "detail": "male=pat",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "intern-fact",
+          "detail": "male=dan",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "intern-fact",
+          "detail": "male=jim",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "intern-fact",
+          "detail": "male=chris",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "intern-fact",
+          "detail": "female=liz",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "intern-fact",
+          "detail": "female=ann",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "intern-fact",
+          "detail": "female=dee",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "intern-fact",
+          "detail": "female=sue",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "intern-fact",
+          "detail": "parent=jim-ed",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "intern-fact",
+          "detail": "male=ed",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "load-rule",
+          "detail": "ancestor-base",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "load-rule",
+          "detail": "ancestor-rec",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "load-rule",
+          "detail": "sibling",
+          "depth": 0
+        },
+        {
+          "step": 24,
           "kind": "kernel-query",
           "detail": "pred_id=2 binding_mask=0b1",
           "depth": 0
         },
         {
-          "step": 4,
+          "step": 25,
           "kind": "decision",
-          "detail": "Allow with 1 proof nodes",
+          "detail": "Deny with 1 negative proof nodes",
           "depth": 0
         }
       ]
     },
-    "run_id": "497f0742cc352fd7fdbc380faa4648c6bf7afbe5514c87b01f55b9daa087b490",
-    "output_hash": "43d645c296cf7a9a8191c2ecb081c2db9857508127f825a3c06764558c2a4af2",
-    "replay_pointer": "43d645c296cf7a9a",
-    "inference_step_count": 5,
+    "run_id": "cf9b4916a3916ceda7b11516646f8c70d9dfa055f787638c9b8623c479c39416",
+    "output_hash": "44b841ade4660bbf9ca8a86d661edb7ced37c5a3a95b14b3062be69931b7c033",
+    "replay_pointer": "44b841ade4660bbf",
+    "inference_step_count": 26,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/prolog/.wasm4pm/receipts/497f0742cc352fd7fdbc380faa4648c6bf7afbe5514c87b01f55b9daa087b490.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/prolog/.wasm4pm/receipts/cf9b4916a3916ceda7b11516646f8c70d9dfa055f787638c9b8623c479c39416.json"
   },
   "meta": {
-    "run_id": "75edc302-a905-46f6-a860-0f7b9f734736",
-    "timestamp": "2026-06-11T07:03:19.488Z",
-    "duration_ms": 16,
+    "run_id": "65037f84-d33f-4bff-bbc6-49f99491a162",
+    "timestamp": "2026-06-11T18:35:23.306Z",
+    "duration_ms": 32,
     "version": "26.6.10"
   }
 }

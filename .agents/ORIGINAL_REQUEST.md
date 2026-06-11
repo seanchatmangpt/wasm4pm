@@ -1238,3 +1238,33 @@ Write a master verification runner script that runs all individual examples and 
 
 Please ensure that your team scales up to exactly 10 subagents to parallelize and execute the documentation rewrite task. Report back with the roles, IDs, and tasks of the 10 spawned subagents.
 
+
+## Follow-up — 2026-06-11T17:10:48Z
+
+Implement a strict check in the Rust/WASM cognition verifier to reject any inputs, receipts, or results containing the word "fake" (case-insensitive), and validate the full execution process by inspecting the generated OCEL logs.
+
+Working directory: `/Users/sac/wasm4pm`
+Integrity mode: demo
+
+## Requirements
+
+### R1. Implement "fake" Rejection in Rust Cognition Verifier
+Modify the Rust cognition verification logic (e.g., in `crates/wasm4pm-cognition/src/wasm.rs` or `crates/wasm4pm-cognition/src/autosystems/`) so that `cognition_verify` explicitly checks for the word "fake" (case-insensitive) in the input JSON string. If detected, it must return a `Fatal` finding with the code `FAKE_ARTEFACT_DETECTED`.
+
+### R2. Add Integration Tests for the "fake" Checker
+Add test cases in the test suite (such as `packages/cognition/src/__tests__/cognition-wasm.integration.test.ts` or `bvc.test.ts`) that pass a manipulated/fake receipt containing the word "fake" to the WASM verifier and assert that:
+- The verification fails.
+- The returned findings contain the `FAKE_ARTEFACT_DETECTED` code with `Fatal` severity.
+
+### R3. Validate the Process via OCEL Logs
+Run the cognition breeds and inspect the generated OCEL 2.0 logs (`ocel_log` field in the result) to validate that breed executions are actually going through the entire logical process and are not short-circuited or mocked.
+
+## Acceptance Criteria
+
+### Rust Verifier Behavior
+- [ ] Verifier rejects any result JSON string containing the word "fake" (case-insensitive) at the WASM boundary.
+- [ ] Rejections emit a structured finding with `code: "FAKE_ARTEFACT_DETECTED"` and `severity: "Fatal"`.
+
+### Test Validation
+- [ ] A test suite execution (`pnpm test` or similar) runs successfully, asserting the correct rejection of "fake" artifacts.
+- [ ] OCEL derivation is verified to match the declared OCPN models for all active breeds, proving that execution is fully processed.

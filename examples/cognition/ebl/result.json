@@ -12,76 +12,76 @@
       "candidates": [],
       "facts": [
         {
-          "key": "weight(obj1,light)",
+          "key": "has_handle(obj1)",
           "value": "true"
         },
         {
-          "key": "weight(obj2,heavy)",
+          "key": "concave(obj1)",
           "value": "true"
         },
         {
           "key": "ebl:rule",
-          "value": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)"
+          "value": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)"
         }
       ],
-      "selected": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)",
-      "explanation": "EBL operationalized a new rule from the proof of safe_to_stack(obj1,obj2)",
+      "selected": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)",
+      "explanation": "EBL operationalized a new rule from the proof of drinkable(obj1)",
       "inference_trace": [
         {
           "step": 0,
           "kind": "ebl-explain",
-          "detail": "fact: weight(obj1,light)",
+          "detail": "fact: has_handle(obj1)",
           "depth": 30
         },
         {
           "step": 1,
           "kind": "ebl-explain",
-          "detail": "fact: weight(obj2,heavy)",
+          "detail": "fact: concave(obj1)",
           "depth": 30
         },
         {
           "step": 2,
           "kind": "ebl-explain",
-          "detail": "rule: r_lighter",
+          "detail": "rule: r2",
           "depth": 31
         },
         {
           "step": 3,
           "kind": "ebl-explain",
-          "detail": "rule: r_safe",
+          "detail": "rule: r1",
           "depth": 32
         },
         {
           "step": 4,
           "kind": "ebl-generalize",
-          "detail": "rule: r_safe",
+          "detail": "rule: r1",
           "depth": 0
         },
         {
           "step": 5,
           "kind": "ebl-generalize",
-          "detail": "rule: r_lighter",
+          "detail": "rule: r2",
           "depth": 1
         },
         {
           "step": 6,
           "kind": "ebl-operationalize",
-          "detail": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)",
+          "detail": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)",
           "depth": 0
         }
       ]
     },
-    "run_id": "c9c0e50c102f3900ea4b969c5eb9b32ecedbef124d58920bfb3228ef856a9508",
-    "output_hash": "5d2b61fd7d0eac08b3956b1077c3fd18f697669d0b3a872e1a67344fe874169c",
-    "replay_pointer": "5d2b61fd7d0eac08",
+    "run_id": "9129185e22f5627dfe36ab27ea2c03e6109e51c80e9e1914862d7bdda1dd3d32",
+    "output_hash": "c500fe22e557ecd0c16bf966cfe676437953b4e7ea7daa4a0f70a4181d8b0961",
+    "replay_pointer": "c500fe22e557ecd0",
     "inference_step_count": 7,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/ebl/.wasm4pm/receipts/c9c0e50c102f3900ea4b969c5eb9b32ecedbef124d58920bfb3228ef856a9508.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/ebl/.wasm4pm/receipts/9129185e22f5627dfe36ab27ea2c03e6109e51c80e9e1914862d7bdda1dd3d32.json"
   },
   "meta": {
-    "run_id": "c6c7e381-b092-4a4f-9d48-d02cc08a40dc",
-    "timestamp": "2026-06-11T07:03:06.299Z",
-    "duration_ms": 15,
+    "run_id": "76676ce9-9321-469a-8f1f-b7dd74c2feab",
+    "timestamp": "2026-06-11T18:39:33.459Z",
+    "duration_ms": 17,
     "version": "26.6.10"
   }
 }

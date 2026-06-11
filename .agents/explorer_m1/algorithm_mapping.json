@@ -1,0 +1,482 @@
+{
+  "dfg": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_dfg",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "process_skeleton": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/more_discovery.rs",
+    "rust_method": "extract_process_skeleton",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/discovery-otel-spans.test.ts"
+  },
+  "alpha_plus_plus": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/algorithms.rs",
+    "rust_method": "discover_alpha_plus_plus",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/run-contracts.test.ts"
+  },
+  "heuristic_miner": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/advanced_algorithms.rs",
+    "rust_method": "discover_heuristic_miner",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-oracles.test.ts"
+  },
+  "inductive_miner": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/more_discovery.rs",
+    "rust_method": "discover_inductive_miner",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "genetic_algorithm": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/genetic_discovery.rs",
+    "rust_method": "discover_genetic_algorithm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-oracles.test.ts"
+  },
+  "pso": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/genetic_discovery.rs",
+    "rust_method": "discover_pso_algorithm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "a_star": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/fast_discovery.rs",
+    "rust_method": "discover_astar",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/discovery-otel-spans.test.ts"
+  },
+  "hill_climbing": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/fast_discovery.rs",
+    "rust_method": "discover_hill_climbing",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/discovery-otel-spans.test.ts"
+  },
+  "aco": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/more_discovery.rs",
+    "rust_method": "discover_ant_colony",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "simulated_annealing": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/more_discovery.rs",
+    "rust_method": "discover_simulated_annealing",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/discovery-otel-spans.test.ts"
+  },
+  "declare": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_declare",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "optimized_dfg": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_dfg",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/discovery-otel-spans.test.ts"
+  },
+  "ilp": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ilp_discovery.rs",
+    "rust_method": "discover_ilp_petri_net",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "simd_streaming_dfg": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/simd_streaming_dfg.rs",
+    "rust_method": "discover_dfg_simd",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-oracles.test.ts"
+  },
+  "hierarchical_dfg": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/hierarchical.rs",
+    "rust_method": "discover_dfg_hierarchical",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "streaming_log": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_dfg",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "smart_engine": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/smart_engine.rs",
+    "rust_method": "smart_engine_run",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "apps/wasm4pm/src/__tests__/algorithm-coverage-comprehensive.test.ts"
+  },
+  "ml_classify": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/classification.rs",
+    "rust_method": "discover_ml_classify",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ml_cluster": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/clustering.rs",
+    "rust_method": "discover_ml_cluster",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ml_forecast": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/forecasting.rs",
+    "rust_method": "discover_ml_forecast",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ml_anomaly": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/anomaly.rs",
+    "rust_method": "discover_ml_anomaly",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ml_regress": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/regression.rs",
+    "rust_method": "discover_ml_regress",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ml_pca": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/pca.rs",
+    "rust_method": "discover_ml_pca",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "transition_system": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/transition_system.rs",
+    "rust_method": "discover_transition_system_from_handle",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "log_to_trie": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/log_to_trie.rs",
+    "rust_method": "discover_prefix_tree",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "causal_graph": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/causal_graph.rs",
+    "rust_method": "discover_causal_alpha",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "performance_spectrum": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/performance_spectrum.rs",
+    "rust_method": "discover_performance_spectrum_wasm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "batches": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/batches.rs",
+    "rust_method": "discover_batches_wasm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "correlation_miner": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/correlation_miner.rs",
+    "rust_method": "discover_correlation",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "generalization": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/generalization.rs",
+    "rust_method": "generalization",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "etconformance_precision": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/etconformance_precision.rs",
+    "rust_method": "wasm_compute_precision",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "alignments": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/alignments.rs",
+    "rust_method": "compute_optimal_alignments",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "complexity_metrics": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/powl_api.rs",
+    "rust_method": "measure_complexity",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "pnml_import": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/pnml_io.rs",
+    "rust_method": "from_pnml_wasm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "bpmn_import": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/bpmn_import.rs",
+    "rust_method": "read_bpmn",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "powl_to_process_tree": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/powl_api.rs",
+    "rust_method": "powl_to_process_tree",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "yawl_export": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/powl/conversion/to_yawl.rs",
+    "rust_method": "powl_to_yawl_string",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "playout": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/playout.rs",
+    "rust_method": "play_out_dfg",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "monte_carlo_simulation": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/montecarlo.rs",
+    "rust_method": "monte_carlo_simulation",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "handover_network": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/social_network.rs",
+    "rust_method": "discover_handover_network",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "working_together_network": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/social_network.rs",
+    "rust_method": "discover_working_together_network",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ocel_dfg": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_ocel_dfg",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ocel_dfg_per_type": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/discovery.rs",
+    "rust_method": "discover_ocel_dfg_per_type",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/ocel-kernel-bridge.test.ts"
+  },
+  "ocel_petri_net": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/oc_petri_net.rs",
+    "rust_method": "discover_oc_petri_net",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/ocel-kernel-bridge.test.ts"
+  },
+  "ocel_encode": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/text_encoding.rs",
+    "rust_method": "encode_ocel_as_text",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/ocel-kernel-bridge.test.ts"
+  },
+  "ocel_ocla": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/advanced/mod.rs",
+    "rust_method": "discover_ocla_wasm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "ocel_oc_declare": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/advanced/mod.rs",
+    "rust_method": "discover_oc_declare_wasm",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "predict_next_activity": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/prediction.rs",
+    "rust_method": "predict_next_activity",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "predict_remaining_time": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/prediction_remaining_time.rs",
+    "rust_method": "predict_case_duration",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "predict_outcome": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/prediction_next_activity.rs",
+    "rust_method": "predict_next_k",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "detect_drift": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/prediction_drift.rs",
+    "rust_method": "detect_drift",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "compute_ewma": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/prediction_drift.rs",
+    "rust_method": "compute_ewma",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "analyze_variant_complexity": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/final_analytics.rs",
+    "rust_method": "analyze_variant_complexity",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "compute_activity_transition_matrix": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/final_analytics.rs",
+    "rust_method": "compute_activity_transition_matrix",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "analyze_process_speedup": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/final_analytics.rs",
+    "rust_method": "analyze_process_speedup",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "compute_trace_similarity_matrix": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/final_analytics.rs",
+    "rust_method": "compute_trace_similarity_matrix",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "automl_classify": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/automl.rs",
+    "rust_method": "discover_automl_classify",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "automl_forecast": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/ml/automl.rs",
+    "rust_method": "discover_automl_forecast",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  },
+  "agentic_pipeline": {
+    "category": "discovery",
+    "rust_file": "wasm4pm/src/lib.rs",
+    "rust_method": "run_agentic_pipeline",
+    "ts_file": "packages/kernel/src/api.ts",
+    "ts_method": "runRaw",
+    "test_file": "packages/kernel/src/__tests__/algorithm-parity.test.ts"
+  }
+}

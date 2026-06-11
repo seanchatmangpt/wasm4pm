@@ -113,9 +113,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/bayesian_network/.wasm4pm/receipts/d2a0dbdd0fdaf7c7cecb663e955e30361c1839dac0d62bda3789f0dd03d6f7de.json"
   },
   "meta": {
-    "run_id": "660dabdd-7221-43f5-92c0-23b4245867f8",
-    "timestamp": "2026-06-11T07:02:57.293Z",
-    "duration_ms": 17,
+    "run_id": "f2dbab2a-4cf5-40b1-9e01-7180441742e2",
+    "timestamp": "2026-06-11T18:35:30.323Z",
+    "duration_ms": 21,
     "version": "26.6.10"
   }
 }

@@ -7,4 +7,4 @@ else
   REPO_ROOT="$(cd ../../.. && pwd)"
   WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
-$WPM cognition run --contract clp --input intent.json --format json | tee result.json
+$WPM cognition run --contract clp --input intent.json --format json | tee result.json | tee last-output.log

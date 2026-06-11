@@ -1,63 +1,55 @@
-# Handoff Report — E2E LSP Lifecycle Testing
+# Handoff Report — worker_m2
 
 ## 1. Observation
-- **Test File Path**: `crates/pm4py-lsp/tests/e2e_lsp_test.rs`
-- **Other Affected File**: `crates/pm4py-lsp/tests/chaos_test.rs`
-- **Initial Compilation Error in `chaos_test.rs`**:
-  ```
-  error: out of range hex escape
-    --> crates/pm4py-lsp/tests/chaos_test.rs:27:22
-     |
-  27 |         "\x00\x01\x02\xFF\xFE import pm4py",
-     |                      ^^^^ must be a character in the range [\x00-\x7f]
-  ```
-- **Initial E2E Test Compilation/Borrow Check Error**:
-  ```
-  error[E0502]: cannot borrow `service` as mutable because it is also borrowed as immutable
-    --> crates/pm4py-lsp/tests/e2e_lsp_test.rs:44:13
-     |
-  21 |     let backend = service.inner();
-     |                   ------- immutable borrow occurs here
-  ...
-  44 |     let _ = service.call(init_req).await.unwrap();
-     |             ^^^^^^^^^^^^^^^^^^^^^^ mutable borrow occurs here
-  ```
-- **Hanging Behavior (Deadlock)**: After moving `backend = service.inner();` down, the E2E test task hung. An investigation showed that `received_requests` MutexGuard was held across backend await calls while the background task was trying to push new requests, creating a circular wait where `apply_edit` was waiting for mock response and mock receiver was waiting for the mutex lock.
-- **Bypassed LSP Handshake Failures**: Other E2E tests in the file were failing because they called `backend.did_open(...)` and other backend methods without initializing the service first, causing client requests and notifications to be silently suppressed by `Client::send_request` and `Client::send_notification`.
-- **Final Command Output**:
-  ```
-       Running tests/e2e_lsp_test.rs (target/debug/deps/e2e_lsp_test-d7ac7678a3f9c6f0)
-
-  running 7 tests
-  test test_e2e_initialize_and_shutdown ... ok
-  test test_e2e_close_removes_diagnostics ... ok
-  test test_e2e_did_open_triggers_diagnostics ... ok
-  test test_e2e_multiple_files_concurrent ... ok
-  test test_e2e_did_change_updates_diagnostics ... ok
-  test test_e2e_code_action_repairs_diagnostic ... ok
-  test test_e2e_lsp_lifecycle ... ok
-
-  test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
-  ```
+- **Registry mapping file**: Read from `/Users/sac/wasm4pm/.agents/explorer_m1/algorithm_mapping.json`.
+- **Target review files directory**: Generated 20 files inside `/Users/sac/wasm4pm/docs/reference/reviews/`.
+- **Review Files List & Sizes**:
+  - `a_star.md` (1965 bytes)
+  - `aco.md` (2018 bytes)
+  - `alpha_plus_plus.md` (2008 bytes)
+  - `declare.md` (2320 bytes)
+  - `dfg.md` (2227 bytes)
+  - `genetic_algorithm.md` (1847 bytes)
+  - `heuristic_miner.md` (2051 bytes)
+  - `hierarchical_dfg.md` (1696 bytes)
+  - `hill_climbing.md` (1903 bytes)
+  - `ilp.md` (2193 bytes)
+  - `inductive_miner.md` (2037 bytes)
+  - `ml_classify.md` (1922 bytes)
+  - `ml_cluster.md` (1778 bytes)
+  - `optimized_dfg.md` (1330 bytes)
+  - `process_skeleton.md` (1953 bytes)
+  - `pso.md` (1796 bytes)
+  - `simd_streaming_dfg.md` (1822 bytes)
+  - `simulated_annealing.md` (1622 bytes)
+  - `smart_engine.md` (1896 bytes)
+  - `streaming_log.md` (1106 bytes)
+- **Source Code Audits**:
+  - `process_skeleton` (`extract_process_skeleton` in `wasm4pm/src/more_discovery.rs`): Direct observation showed that the node frequencies are hardcoded to 0 (`dfg.nodes.push(DFGNode { id: activity.clone(), label: activity.clone(), frequency: 0 })`) and are never updated.
+  - `declare` (`discover_declare` in `wasm4pm/src/discovery.rs`): Direct observation showed position values are capped: `if position < 256` in `mark_activity`. Any activity at or past index 256 is ignored in traces.
+  - `smart_engine` (`run_with_dfg` in `wasm4pm/src/smart_engine.rs`): Direct observation showed linear scan `dfg.edges.iter().find(...)` to lookup reverse edge in the DFG, leading to `O(E^2)` complexity.
+  - `ml_classify` (`knn_internal_metrics` in `wasm4pm/src/ml/classification.rs`): Confirmed division-by-zero guards exist on precision, recall, f1, and macro metrics.
 
 ## 2. Logic Chain
-1. The out-of-range hex escapes in `tests/chaos_test.rs` were caused by using `\xFF` and `\xFE` in a normal string literal (`&str`). By replacing them with Unicode escapes `\u{FF}` and `\u{FE}`, the compilation succeeded.
-2. The borrow checker error was due to `backend` holding an immutable reference to `service` while `service.call()` was borrowing it mutably. Retrieving the backend reference *after* the initial handshake was completed resolved the issue.
-3. The deadlock in `test_e2e_lsp_lifecycle` was resolved by scoping the lock acquisitions on `received_requests` inside separate blocks, ensuring the mutex guards are dropped before the main thread invokes subsequent asynchronous backend methods (such as `execute_command`).
-4. The failing existing tests (`test_e2e_did_open_triggers_diagnostics`, `test_e2e_did_change_updates_diagnostics`, `test_e2e_code_action_repairs_diagnostic`) were fixed by adding the proper `initialize`/`initialized` JSON-RPC handshake at the beginning of each test, transitioning the backend to `Initialized` state and enabling `publish_diagnostics` and `apply_edit` messages.
+1. Read `/Users/sac/wasm4pm/.agents/explorer_m1/algorithm_mapping.json` to map each of the 20 algorithms to its respective Rust implementation.
+2. Inspected each Rust implementation file (`discovery.rs`, `more_discovery.rs`, `algorithms.rs`, `advanced_algorithms.rs`, `fast_discovery.rs`, `ilp_discovery.rs`, `simd_streaming_dfg.rs`, `hierarchical.rs`, `smart_engine.rs`, `classification.rs`, `clustering.rs`) to audit boundary conditions, Division by Zero safety, input/output contracts, and potential bugs.
+3. Created individual detailed markdown files under `/Users/sac/wasm4pm/docs/reference/reviews/` corresponding to the list of 20 algorithms.
+4. Verified that all 20 files are correctly written and structured with Category, Correctness Audit, Improvement Areas, and Code References.
 
 ## 3. Caveats
-- No caveats. The tests cover the entire 13-step lifecycle and compile/pass successfully on standard and stress test suites.
+- No dynamic execution was tested on all 20 algorithms within this worker step, as the task only requires code audits and markdown documentation review files. Performance suggestions are theoretical but based on direct inspection of algorithms' asymptotic complexity.
 
 ## 4. Conclusion
-- All LSP E2E tests are now structurally complete, compile, and run successfully without hangs or deadlocks.
+- All 20 markdown review files were successfully created and fully populated with high-fidelity, codebase-specific correctness audits and recommendations.
 
 ## 5. Verification Method
-Run the following test command:
-```bash
-DYLD_FRAMEWORK_PATH=/Applications/Xcode.app/Contents/Developer/Library/Frameworks cargo test -p pm4py-lsp
-```
-Verify that:
-1. `tests/e2e_lsp_test.rs` compiles cleanly.
-2. All 7 tests in `e2e_lsp_test.rs` pass, including `test_e2e_lsp_lifecycle`.
-3. All other tests in the crate pass cleanly.
+- **Inspect directory contents**:
+  ```bash
+  ls -l docs/reference/reviews/
+  ```
+  Ensure 20 files matching the algorithm IDs exist.
+- **Inspect contents of `process_skeleton.md`**:
+  ```bash
+  cat docs/reference/reviews/process_skeleton.md
+  ```
+  Confirm it outlines the `frequency: 0` correctness bug observed in `wasm4pm/src/more_discovery.rs`.

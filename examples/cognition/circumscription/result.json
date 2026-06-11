@@ -87,9 +87,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/circumscription/.wasm4pm/receipts/0e398d54d5e9bb71b8a1098472bed14e93d9f02ea2f1801c6a66facc84368914.json"
   },
   "meta": {
-    "run_id": "df56114e-25e4-4713-b5bd-36b1227115e6",
-    "timestamp": "2026-06-11T07:02:59.343Z",
-    "duration_ms": 18,
+    "run_id": "eb10bc44-cc3f-4a3d-85b6-7a5f58f477cb",
+    "timestamp": "2026-06-11T18:35:33.007Z",
+    "duration_ms": 42,
     "version": "26.6.10"
   }
 }

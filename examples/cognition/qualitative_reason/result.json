@@ -93,9 +93,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/qualitative_reason/.wasm4pm/receipts/565b62abf0cdbda406c6b9092c10f722e427e35da063891ed19a9bff933a79e9.json"
   },
   "meta": {
-    "run_id": "3e460e6f-ccec-4b75-b457-9f8cb4381579",
-    "timestamp": "2026-06-11T07:03:20.178Z",
-    "duration_ms": 14,
+    "run_id": "4b518fe1-ff1b-4ebe-bb03-9c14d9b330ea",
+    "timestamp": "2026-06-11T18:35:24.418Z",
+    "duration_ms": 99,
     "version": "26.6.10"
   }
 }

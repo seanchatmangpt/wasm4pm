@@ -143,9 +143,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/problog/.wasm4pm/receipts/9b66910789f2b66fa111d9daf62badfcb7dc96cabb81ef3a0961eac486220918.json"
   },
   "meta": {
-    "run_id": "17ff192d-cf18-4106-901b-08b2585c21d2",
-    "timestamp": "2026-06-11T07:03:18.796Z",
-    "duration_ms": 15,
+    "run_id": "3c23c038-2b08-4305-b818-7569758e9495",
+    "timestamp": "2026-06-11T18:35:22.293Z",
+    "duration_ms": 64,
     "version": "26.6.10"
   }
 }
