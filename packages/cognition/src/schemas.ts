@@ -114,6 +114,9 @@ export const BreedIdSchema = z.enum([
   'pomdp',
   'contingent_plan',
   'meta_reasoning',
+  'morphological',
+  'triz',
+  'ocpm_route_discoverer',
 ]);
 export type BreedId = z.infer<typeof BreedIdSchema>;
 

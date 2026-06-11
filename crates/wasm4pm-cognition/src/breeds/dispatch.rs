@@ -16,12 +16,12 @@ use crate::breeds::{
     event_calculus::EventCalculus, frame::Eliza, frames_inheritance::FramesInheritance,
     fuzzy_logic::FuzzyLogic, gps::Gps, hearsay::Hearsay, htn_planning::HtnPlanning, ilp::Ilp,
     ltl_monitor::LtlMonitor, markov_logic::MarkovLogic, mdp::Mdp, meta_reasoning::MetaReasoning,
-    naive_physics::NaivePhysics, pomdp::Pomdp,
+    morphological::Morphological, naive_physics::NaivePhysics, pomdp::Pomdp,
     partial_order_plan::PartialOrderPlan, problog::Problog, production_rules::Mycin,
     prolog::Prolog, qualitative_reason::QualitativeReason, rl_symbolic::RlSymbolic,
     sat_cdcl::SatCdcl, script_sam::ScriptSam, situation_calculus::SituationCalculus, soar::Soar,
-    strips::Strips, tableaux::Tableaux, version_space::VersionSpace, BreedId, BreedInput,
-    BreedOutput, CognitionBreed,
+    strips::Strips, tableaux::Tableaux, triz::Triz, ocpm_route_discoverer::OcpmRouteDiscoverer,
+    version_space::VersionSpace, BreedId, BreedInput, BreedOutput, CognitionBreed,
 };
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
@@ -77,11 +77,7 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
 /// Unknown or unsupported breed strings are caught before the enum match.
 pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     let id = BreedId::from_str_id(breed).ok_or_else(|| {
-        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
-            format!("unsupported breed: {}", breed)
-        } else {
-            format!("unknown breed: {}", breed)
-        }
+        format!("unknown breed: {}", breed)
     })?;
     dispatch_breed_id(id, input)
 }
@@ -139,20 +135,19 @@ pub fn dispatch_breed_id(id: BreedId, input: &BreedInput) -> Result<BreedOutput,
         BreedId::Pomdp => run_breed(&Pomdp, input),
         BreedId::MarkovLogic => run_breed(&MarkovLogic, input),
         BreedId::MetaReasoning => run_breed(&MetaReasoning, input),
+        BreedId::Morphological => run_breed(&Morphological, input),
         BreedId::ConstructionGrammar => run_breed(&ConstructionGrammar, input),
         BreedId::ContingentPlan => run_breed(&ContingentPlan, input),
         BreedId::Tableaux => run_breed(&Tableaux, input),
+        BreedId::Triz => run_breed(&Triz, input),
+        BreedId::OcpmRouteDiscoverer => run_breed(&OcpmRouteDiscoverer, input),
     }
 }
 
 /// Test harness: dispatch without OCEL or pre/post checks. Used for raw breed unit tests.
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     let id = BreedId::from_str_id(breed).ok_or_else(|| {
-        if matches!(breed, "morphological" | "triz" | "ocpm_route_discoverer") {
-            format!("unsupported breed: {}", breed)
-        } else {
-            format!("unknown breed: {}", breed)
-        }
+        format!("unknown breed: {}", breed)
     })?;
     dispatch_breed_test_id(id, input)
 }
@@ -209,8 +204,11 @@ pub fn dispatch_breed_test_id(id: BreedId, input: &BreedInput) -> Result<BreedOu
         BreedId::Pomdp => Pomdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         BreedId::MarkovLogic => MarkovLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         BreedId::MetaReasoning => MetaReasoning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Morphological => Morphological.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         BreedId::ConstructionGrammar => ConstructionGrammar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         BreedId::ContingentPlan => ContingentPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
         BreedId::Tableaux => Tableaux.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::Triz => Triz.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        BreedId::OcpmRouteDiscoverer => OcpmRouteDiscoverer.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
     }
 }

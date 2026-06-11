@@ -1,0 +1,26 @@
+{
+  "intent": "discover object routes",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "event",
+      "value": "id=e1|activity=Create|objects=o1,i1"
+    },
+    {
+      "key": "event",
+      "value": "id=e2|activity=Pay|objects=o1"
+    },
+    {
+      "key": "event",
+      "value": "id=e3|activity=Ship|objects=i1"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "triz:7a50c54aaa369aa94a85b10faf5f4ee06650cb5cb5659e2b27d3cd25734dbc10"
+    }
+  ],
+  "rules": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

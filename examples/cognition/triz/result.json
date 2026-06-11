@@ -1,0 +1,23 @@
+{
+  "command": "cognition run",
+  "status": "error",
+  "message": "Failed to initialize wasm4pm-cognition: Unknown file extension \".wasm\" for <home>/wasm4pm/crates/wasm4pm-cognition/pkg/wasm4pm_cognition_bg.wasm",
+  "exit_code": 3,
+  "payload": null,
+  "error": {
+    "code": "EXEC_FAILED",
+    "message": "Failed to initialize wasm4pm-cognition: Unknown file extension \".wasm\" for <home>/wasm4pm/crates/wasm4pm-cognition/pkg/wasm4pm_cognition_bg.wasm",
+    "remediation": "Algorithm execution failed. Check the error details, try a simpler algorithm, or run 'wpm doctor' to diagnose. Try: wpm doctor",
+    "docsUrl": "https://wasm4pm.dev/docs/troubleshooting",
+    "alternatives": [
+      "wpm run --algorithm dfg --input log.xes",
+      "wpm status --verbose"
+    ]
+  },
+  "meta": {
+    "run_id": "c3f77ab0-3686-4095-93eb-36b9484e1229",
+    "timestamp": "2026-06-11T18:56:13.390Z",
+    "duration_ms": 0,
+    "version": "26.6.10"
+  }
+}

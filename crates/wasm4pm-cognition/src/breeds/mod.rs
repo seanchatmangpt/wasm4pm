@@ -57,6 +57,9 @@ pub mod mdp;
 pub mod partial_order_plan;
 pub mod markov_logic;
 pub mod meta_reasoning;
+pub mod triz;
+pub mod ocpm_route_discoverer;
+pub mod morphological;
 pub mod pomdp;
 pub mod production_rules;
 pub mod prolog;
@@ -189,6 +192,12 @@ pub enum BreedId {
     ContingentPlan,
     /// Meta-Reasoning: cross-breed conflict detection + confidence-weighted vote (Cox & Raja 2011)
     MetaReasoning,
+    /// Morphological: Zwicky field construction + cross-consistency assessment (Zwicky 1947/1969; Ritchey 2011)
+    Morphological,
+    /// TRIZ: Altshuller's contradiction matrix and inventive principles
+    Triz,
+    /// OCPM Route Discoverer: Discovers object-centric routes
+    OcpmRouteDiscoverer,
 }
 
 impl fmt::Display for BreedId {
@@ -246,6 +255,9 @@ impl fmt::Display for BreedId {
             BreedId::Pomdp => write!(f, "pomdp"),
             BreedId::ContingentPlan => write!(f, "contingent_plan"),
             BreedId::MetaReasoning => write!(f, "meta_reasoning"),
+            BreedId::Morphological => write!(f, "morphological"),
+            BreedId::Triz => write!(f, "triz"),
+            BreedId::OcpmRouteDiscoverer => write!(f, "ocpm_route_discoverer"),
         }
     }
 }
@@ -589,14 +601,15 @@ impl BreedId {
             "pomdp" => Some(Self::Pomdp),
             "contingent_plan" => Some(Self::ContingentPlan),
             "meta_reasoning" => Some(Self::MetaReasoning),
-            // Registered but not yet implemented:
-            "morphological" | "triz" | "ocpm_route_discoverer" => None,
+            "morphological" => Some(Self::Morphological),
+            "triz" => Some(Self::Triz),
+            "ocpm_route_discoverer" => Some(Self::OcpmRouteDiscoverer),
             _ => None,
         }
     }
 
     /// All implemented breed ids (mirror of dispatch + registry ADMITTED-track).
-    pub const ALL: [BreedId; 52] = [
+    pub const ALL: [BreedId; 55] = [
         BreedId::Eliza,
         BreedId::Cbr,
         BreedId::Dendral,
@@ -649,6 +662,9 @@ impl BreedId {
         BreedId::Pomdp,
         BreedId::ContingentPlan,
         BreedId::MetaReasoning,
+        BreedId::Morphological,
+        BreedId::Triz,
+        BreedId::OcpmRouteDiscoverer,
     ];
 }
 

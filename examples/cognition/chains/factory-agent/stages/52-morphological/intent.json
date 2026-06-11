@@ -1,0 +1,42 @@
+{
+  "intent": "solve",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "morph:param:chemical-reactions",
+      "value": "self-contained|air-propelled|water-propelled|earth-propelled"
+    },
+    {
+      "key": "morph:param:thrust-augmentation-1",
+      "value": "no-motion|translatory-motion|rotary-motion|oscillatory-motion"
+    },
+    {
+      "key": "morph:param:thrust-augmentation-2",
+      "value": "no-augmentation|internal-augmentation|external-augmentation"
+    },
+    {
+      "key": "morph:param:propellant-state",
+      "value": "gaseous|liquid|solid"
+    },
+    {
+      "key": "morph:param:operating-mode",
+      "value": "continuous|intermittent"
+    },
+    {
+      "key": "morph:param:reactivity",
+      "value": "self-igniting|external-ignition"
+    },
+    {
+      "key": "morph:exclude",
+      "value": "chemical-reactions=self-contained|thrust-augmentation-1=no-motion"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "version_space:1dba3dc45e3818f52097f2c3764c674e7e9d71ac94e5756e8256f66e297cbf83"
+    }
+  ],
+  "rules": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

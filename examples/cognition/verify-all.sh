@@ -4,6 +4,9 @@
 # ===========================================================================
 set -euo pipefail
 
+export NODE_OPTIONS="--experimental-wasm-modules"
+
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
@@ -12,6 +15,8 @@ if command -v wpm &>/dev/null; then
     WPM="wpm"
 elif [ -f "$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js" ]; then
     WPM="node $REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
+elif [ -f "$REPO_ROOT/apps/wasm4pm/src/bin/wpm.ts" ]; then
+    WPM="npx --prefix $REPO_ROOT tsx $REPO_ROOT/apps/wasm4pm/src/bin/wpm.ts"
 else
     echo "ERROR: wpm not found in PATH or $REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js" >&2
     exit 1
@@ -69,7 +74,10 @@ BREEDS=(
   "soar"
   "strips"
   "tableaux"
+  "triz"
   "version_space"
+  "morphological"
+  "ocpm_route_discoverer"
 )
 
 echo "========================================================"
@@ -107,14 +115,14 @@ for breed in "${BREEDS[@]}"; do
     
     # Run 1
     run1_out="$TEMP_DIR/${breed}_run1.json"
-    if ! $WPM cognition run --contract "$breed" --input "$intent_file" --format json > "$run1_out" 2>/dev/null; then
+    if ! $WPM cognition run --contract "$breed" --input "$intent_file" --format json > "$run1_out"; then
         echo "ERROR: Breed '$breed' run 1 failed." >&2
         exit 1
     fi
     
     # Run 2
     run2_out="$TEMP_DIR/${breed}_run2.json"
-    if ! $WPM cognition run --contract "$breed" --input "$intent_file" --format json > "$run2_out" 2>/dev/null; then
+    if ! $WPM cognition run --contract "$breed" --input "$intent_file" --format json > "$run2_out"; then
         echo "ERROR: Breed '$breed' run 2 failed." >&2
         exit 1
     fi

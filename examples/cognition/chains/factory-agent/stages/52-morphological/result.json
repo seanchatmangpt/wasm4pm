@@ -1,0 +1,103 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "morphological",
+    "breed": "morphological",
+    "status": "ok",
+    "output": {
+      "breed": "Morphological",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "morphological:field_size",
+          "value": "576"
+        },
+        {
+          "key": "morphological:solution_space",
+          "value": "540"
+        },
+        {
+          "key": "morphological:reduction_bp",
+          "value": "625"
+        },
+        {
+          "key": "morphological:first_consistent",
+          "value": "chemical-reactions=self-contained;operating-mode=continuous;propellant-state=gaseous;reactivity=self-igniting;thrust-augmentation-1=translatory-motion;thrust-augmentation-2=no-augmentation"
+        }
+      ],
+      "selected": "chemical-reactions=self-contained;operating-mode=continuous;propellant-state=gaseous;reactivity=self-igniting;thrust-augmentation-1=translatory-motion;thrust-augmentation-2=no-augmentation",
+      "explanation": "Morphological field of 6 parameters: 576 formal configurations; CCA with 1 judgments leaves a solution space of 540 (625 bp reduced)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "define-parameter",
+          "detail": "chemical-reactions: 4 values [self-contained|air-propelled|water-propelled|earth-propelled]",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "define-parameter",
+          "detail": "operating-mode: 2 values [continuous|intermittent]",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "define-parameter",
+          "detail": "propellant-state: 3 values [gaseous|liquid|solid]",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "define-parameter",
+          "detail": "reactivity: 2 values [self-igniting|external-ignition]",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "define-parameter",
+          "detail": "thrust-augmentation-1: 4 values [no-motion|translatory-motion|rotary-motion|oscillatory-motion]",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "define-parameter",
+          "detail": "thrust-augmentation-2: 3 values [no-augmentation|internal-augmentation|external-augmentation]",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "compute-field-size",
+          "detail": "4 x 2 x 3 x 2 x 4 x 3 = 576",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "cca-assess",
+          "detail": "chemical-reactions=self-contained x thrust-augmentation-1=no-motion -> excluded in 36 configurations",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "synthesize-solution-space",
+          "detail": "540 of 576 configurations internally consistent (625 bp reduced)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "fd3de45dbace1496726fa92a797464ba0fdcd6e5bff033a6290ca96242312cc8",
+    "output_hash": "14a1b58d8054a31084fc8ce3ddb65228cae97d10cf9d2834f01279388f3e63fe",
+    "replay_pointer": "14a1b58d8054a310",
+    "inference_step_count": 9,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/fd3de45dbace1496726fa92a797464ba0fdcd6e5bff033a6290ca96242312cc8.json"
+  },
+  "meta": {
+    "run_id": "ebccaee8-c19e-401c-a2a6-0690588da77f",
+    "timestamp": "2026-06-11T19:32:25.614Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

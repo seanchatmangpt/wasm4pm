@@ -1,0 +1,41 @@
+{
+  "breed": "triz",
+  "provenance": {
+    "paper": "Altshuller's Contradiction Matrix",
+    "citation": "Altshuller, G. (1984). Creativity as an Exact Science. Gordon and Breach Science Publishers.",
+    "locus": "Contradiction Matrix",
+    "extraction": "verbatim",
+    "notes": "Classic TRIZ physical and technical contradictions."
+  },
+  "input": {
+    "intent": "solve contradiction",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "improving",
+        "value": "weight"
+      },
+      {
+        "key": "worsening",
+        "value": "strength"
+      }
+    ],
+    "rules": [
+      {
+        "id": "matrix_1_2",
+        "premise": [
+          "improving=weight",
+          "worsening=strength"
+        ],
+        "conclusion": "principles=40,26",
+        "certainty": 1.0
+      }
+    ],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "principles": "40,26"
+  }
+}

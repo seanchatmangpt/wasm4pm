@@ -58,7 +58,10 @@ EXAMPLES=(
   soar
   strips
   tableaux
+  triz
   version_space
+  morphological
+  ocpm_route_discoverer
 )
 
 PASS=0

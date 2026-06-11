@@ -52,8 +52,11 @@ export class WasmLoader {
   private async doInit(): Promise<void> {
     try {
       const specifier = this.config.modulePath ?? 'wasm4pm-cognition';
-      const mod = (await import(/* @vite-ignore */ specifier)) as CognitionWasmModule;
-      this.module = mod;
+      const rawMod = await import(/* @vite-ignore */ specifier);
+      const mod = ('default' in rawMod && rawMod.default && typeof (rawMod.default as any).cognition_run === 'function') 
+        ? rawMod.default 
+        : rawMod;
+      this.module = mod as CognitionWasmModule;
       this.initialized = true;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
