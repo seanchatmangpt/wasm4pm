@@ -173,7 +173,7 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // Stub Markers in TS
-    let ts_cheat_markers = ["TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not implemented"];
+    let ts_cheat_markers = ["TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not implemented", "REMOVEME", "NOCOMMIT", "coming soon", "work in progress"];
     for marker in ts_cheat_markers.iter() {
         if content.contains(marker) {
             issues.push(ConformanceIssue {
@@ -182,6 +182,69 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
                 message: format!("Forbidden placeholder token '{}' detected in TypeScript source.", marker),
             });
         }
+    }
+
+    // B2: Empty returns (return {}; return []; return { status: 'ok' })
+    if !is_test && (content.contains("return {}") || content.contains("return []") || content.contains("return { status: 'ok' }") || content.contains("return { status: \"ok\" }")) {
+        issues.push(ConformanceIssue {
+            severity: "ERROR".to_string(),
+            code: "STRUCTURAL-FAKERY-B2".to_string(),
+            message: "Bare empty-return stub (return {} / []) or fake success detected. Compute the actual result.".to_string(),
+        });
+    }
+
+    // C2: Skipped TS tests
+    if is_test && (content.contains(".skip(") || content.contains(".todo(") || content.contains("xit(") || content.contains("xdescribe(") || content.contains("xtest(")) {
+        issues.push(ConformanceIssue {
+            severity: "ERROR".to_string(),
+            code: "STRUCTURAL-FAKERY-C2".to_string(),
+            message: "Skipped tests (.skip, .todo, xit) violate test integrity.".to_string(),
+        });
+    }
+
+    // D1/D2: Silent failure swallowing
+    if !is_test && (content.contains("catch {}") || content.contains("catch (e) {}") || content.contains("catch(e) {}") || content.contains(".catch(() => undefined)") || content.contains(".catch(() => null)") || content.contains(".catch(() => {})")) {
+        issues.push(ConformanceIssue {
+            severity: "ERROR".to_string(),
+            code: "STRUCTURAL-FAKERY-D1".to_string(),
+            message: "Empty catch blocks or silent .catch() swallowing detected. Handle the error.".to_string(),
+        });
+    }
+
+    // D5: Silent fallback arrays/objects
+    if !is_test && (content.contains("|| {}") || content.contains("|| []")) {
+        issues.push(ConformanceIssue {
+            severity: "WARNING".to_string(),
+            code: "STRUCTURAL-FAKERY-D5".to_string(),
+            message: "Suspicious `|| {}` or `|| []` fallback detected. May silently mask failures.".to_string(),
+        });
+    }
+
+    // E3: Structural output lies
+    if !is_test && (content.contains(r#"nodes: []"#) || content.contains(r#"edges: []"#) || content.contains(r#"traces: []"#)) {
+        issues.push(ConformanceIssue {
+            severity: "ERROR".to_string(),
+            code: "STRUCTURAL-FAKERY-E3".to_string(),
+            message: "Hardcoded empty arrays in TypeScript output logic. Compute actual structure.".to_string(),
+        });
+    }
+
+    // G1: Undefined field accesses
+    if !is_test && (content.contains(".decision") || content.contains(".receipt_chain") || content.contains(".hash ")) {
+        issues.push(ConformanceIssue {
+            severity: "ERROR".to_string(),
+            code: "STRUCTURAL-FAKERY-G1".to_string(),
+            message: "Access to undefined cognition fields (.decision, .receipt_chain, .hash). Check schema.".to_string(),
+        });
+    }
+
+    // G4: Bare BreedInput
+    if !is_test && content.contains("cognition_run(") && !content.contains("breed:") {
+        issues.push(ConformanceIssue {
+            severity: "WARNING".to_string(),
+            code: "STRUCTURAL-FAKERY-G4".to_string(),
+            message: "cognition_run called without a `breed:` wrapper? Check usage.".to_string(),
+        });
     }
 
     // D2: TS command returns ok without calling kernel

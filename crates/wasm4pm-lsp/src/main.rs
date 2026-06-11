@@ -699,7 +699,7 @@ impl Backend {
             }
 
             // LLM Cheat Detectors for Rust
-            let cheat_markers = ["todo!(", "unimplemented!(", "pub struct Stub", "fake_impl", "TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not yet implemented"];
+            let cheat_markers = ["todo!(", "unimplemented!(", "pub struct Stub", "fake_impl", "TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not yet implemented", "REMOVEME", "NOCOMMIT", "coming soon", "work in progress"];
             for marker in cheat_markers.iter() {
                 if text.contains(marker) {
                     diags.push(Diagnostic {
@@ -748,18 +748,70 @@ impl Backend {
                 });
             }
 
-            // D1: Hardcoded metrics
-            if text.contains(r#""fitness": 1.0"#) || text.contains(r#""precision": 1.0"#) || text.contains(r#""score": 1.0"#) || text.contains(r#""fitness": 0.0"#) || text.contains(r#""fitness": 0.5"#) || text.contains(r#""score": 0.5"#) {
+            // C3: Bare #[ignore] in Rust tests
+            if path_str.contains("/tests/") && text.contains("#[ignore]") && !text.contains("#[ignore] //") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-C3".to_string())),
+                    message: "Bare #[ignore] without a comment reason. Skipped tests violate integrity.".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+
+            // D3/D4: Silent failure swallowing
+            if !path_str.contains("/tests/") && (text.contains(".unwrap_or_default()") || text.contains(".unwrap_or(vec![]")) {
+                // Heuristic: check if domain types are involved
+                let lower = text.to_lowercase();
+                if lower.contains("dfg") || lower.contains("log") || lower.contains("result") || lower.contains("fitness") || lower.contains("trace") {
+                    diags.push(Diagnostic {
+                        range: Range::default(),
+                        severity: Some(DiagnosticSeverity::WARNING), // Warning because it can have false positives
+                        code: Some(NumberOrString::String("STRUCTURAL-FAKERY-D3".to_string())),
+                        message: ".unwrap_or_default() or .unwrap_or(vec![]) detected on algorithm domain types. Silent failure swallowing.".to_string(),
+                        source: Some("wasm4pm-lsp".to_string()),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            // E1/E2/E3: Structural output lies
+            if !path_str.contains("/tests/") && (text.contains(r#"nodes": []"#) || text.contains(r#"edges": []"#) || text.contains("count: 0, fitness: 0.0")) {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-E1".to_string())),
+                    message: "Hardcoded empty arrays or zeroed structs in algorithm outputs. You must compute the actual output.".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
+            }
+
+            // D1/E4/H1: Hardcoded metrics
+            if text.contains(r#""fitness": 1.0"#) || text.contains(r#""precision": 1.0"#) || text.contains(r#""score": 1.0"#) || text.contains(r#""fitness": 0.0"#) || text.contains(r#""fitness": 0.5"#) || text.contains(r#""score": 0.5"#) || text.contains("return 1.0;") || text.contains("return 0.0;") {
                 if !path_str.contains("/tests/") && !path_str.contains("cli.rs") {
                     diags.push(Diagnostic {
                         range: Range::default(),
                         severity: Some(DiagnosticSeverity::ERROR),
                         code: Some(NumberOrString::String("STRUCTURAL-FAKERY-D1".to_string())),
-                        message: "Hardcoded fitness/score literal detected in algorithm output. Compute it dynamically.".to_string(),
+                        message: "Hardcoded fitness/score literal detected. Compute it dynamically.".to_string(),
                         source: Some("wasm4pm-lsp".to_string()),
                         ..Default::default()
                     });
                 }
+            }
+
+            // K2: serde_wasm_bindgen silent bug
+            if text.contains("serde_wasm_bindgen::to_value(&json!(") || text.contains("serde_wasm_bindgen::to_value(&serde_json::json!(") {
+                diags.push(Diagnostic {
+                    range: Range::default(),
+                    severity: Some(DiagnosticSeverity::ERROR),
+                    code: Some(NumberOrString::String("STRUCTURAL-FAKERY-K2".to_string())),
+                    message: "serde_wasm_bindgen::to_value(&json!(...)) detected. This returns {} silently on wasm32. Use js_sys::JSON::parse().".to_string(),
+                    source: Some("wasm4pm-lsp".to_string()),
+                    ..Default::default()
+                });
             }
 
             // B2: Discarded algorithm results in tests
