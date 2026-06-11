@@ -1,0 +1,34 @@
+{
+  "intent": "color the constraint network with fc6d1c16",
+  "facts": [
+    {
+      "key": "csp-var",
+      "value": "X_fc6d1c16:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Y_fc6d1c16:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Z_fc6d1c16:B,G,R"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X_fc6d1c16!=Y_fc6d1c16"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "Y_fc6d1c16!=Z_fc6d1c16"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X_fc6d1c16!=Z_fc6d1c16"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

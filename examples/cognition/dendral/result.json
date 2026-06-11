@@ -8,73 +8,167 @@
     "breed": "dendral",
     "status": "ok",
     "output": {
-      "breed": "dendral",
+      "breed": "Dendral",
       "candidates": [
         {
-          "id": "centralized-cloud",
-          "score": 0.8999999761581421,
+          "id": "ketone-F1-C2H5-C2H5",
+          "score": 0.9100000262260437,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F2-CH3-C3H7",
+          "score": 0.8399999737739563,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F3-CH3-C3H7-branched",
+          "score": 0.7799999713897705,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F4-C4H9-CH3",
+          "score": 0.7200000286102295,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ether-F5-C2H5-O-C2H5",
+          "score": 0.44999998807907104,
           "eliminated": true,
-          "elimination_reason": "forbidden by constraint forbid:centralized-cloud"
+          "elimination_reason": "forbidden by constraint forbid:ether-F5-C2H5-O-C2H5"
         },
         {
-          "id": "offline-edge",
-          "score": 0.75,
-          "eliminated": false
+          "id": "amine-F6-C2H5-NH-C2H5",
+          "score": 0.3799999952316284,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5"
         },
         {
-          "id": "hybrid-offline",
-          "score": 0.8500000238418579,
-          "eliminated": false
+          "id": "ketone-F7-C4H9-CH3-iso",
+          "score": 0.6600000262260437,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso"
+        },
+        {
+          "id": "ketone-F8-CH3-CH3-C2H4",
+          "score": 0.550000011920929,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4"
         }
       ],
       "facts": [
         {
-          "key": "constraint",
-          "value": "forbid:centralized-cloud"
+          "key": "molecular-formula",
+          "value": "C5H10O"
+        },
+        {
+          "key": "molecular-weight",
+          "value": "86"
         },
         {
           "key": "constraint",
-          "value": "require:offline"
+          "value": "forbid:ether-F5-C2H5-O-C2H5"
         },
         {
           "key": "constraint",
-          "value": "min-score:0.5"
+          "value": "forbid:amine-F6-C2H5-NH-C2H5"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:ketone-F7-C4H9-CH3-iso"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:ketone-F8-CH3-CH3-C2H4"
+        },
+        {
+          "key": "spectral-line",
+          "value": "57"
+        },
+        {
+          "key": "spectral-line",
+          "value": "29"
+        },
+        {
+          "key": "spectral-line",
+          "value": "86"
+        },
+        {
+          "key": "spectral-line",
+          "value": "71"
+        },
+        {
+          "key": "spectral-line",
+          "value": "43"
         }
       ],
-      "selected": "hybrid-offline",
-      "explanation": "DENDRAL applied 3 constraints; 2/3 candidates survived",
+      "selected": "ketone-F1-C2H5-C2H5",
+      "explanation": "DENDRAL applied 4 constraints; 4/8 candidates survived",
       "inference_trace": [
         {
           "step": 0,
-          "kind": "eliminate",
-          "detail": "centralized-cloud by forbid:centralized-cloud: forbidden by constraint forbid:centralized-cloud",
+          "kind": "survive",
+          "detail": "ketone-F1-C2H5-C2H5",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "survive",
-          "detail": "offline-edge",
+          "detail": "ketone-F2-CH3-C3H7",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "survive",
-          "detail": "hybrid-offline",
+          "detail": "ketone-F3-CH3-C3H7-branched",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "survive",
+          "detail": "ketone-F4-C4H9-CH3",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "eliminate",
+          "detail": "ether-F5-C2H5-O-C2H5 by forbid:ether-F5-C2H5-O-C2H5: forbidden by constraint forbid:ether-F5-C2H5-O-C2H5",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "eliminate",
+          "detail": "amine-F6-C2H5-NH-C2H5 by forbid:amine-F6-C2H5-NH-C2H5: forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "eliminate",
+          "detail": "ketone-F7-C4H9-CH3-iso by forbid:ketone-F7-C4H9-CH3-iso: forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "eliminate",
+          "detail": "ketone-F8-CH3-CH3-C2H4 by forbid:ketone-F8-CH3-CH3-C2H4: forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4",
           "depth": 0
         }
       ]
     },
-    "run_id": "9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb",
-    "output_hash": "9442f99ed7d0b0d839dad34b0d57e0669b87b2e38e52cf2aa242d3ba650760da",
-    "replay_pointer": "9442f99ed7d0b0d8",
-    "inference_step_count": 3,
+    "run_id": "dd84be704ebf77014015c6328f798074662dcd2a0ae1e909447e64c97ef50452",
+    "output_hash": "e49b7fd1e3b9ba6510912f8d1c91e3d64580b6c4010b2af905615c402376e4b2",
+    "replay_pointer": "e49b7fd1e3b9ba65",
+    "inference_step_count": 8,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/dd84be704ebf77014015c6328f798074662dcd2a0ae1e909447e64c97ef50452.json"
   },
   "meta": {
-    "run_id": "2c28d282-91da-4d70-acf9-7d9220514be5",
-    "timestamp": "2026-06-10T15:46:42.729Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "f97129e2-f027-4062-b06b-f4112cb2ef65",
+    "timestamp": "2026-06-11T07:03:04.907Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
   }
 }

@@ -1,3 +1,5 @@
+(node:13557) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,22 +10,25 @@
     "breed": "soar",
     "status": "ok",
     "output": {
-      "breed": "soar",
+      "breed": "Soar",
       "candidates": [
         {
           "id": "approach_NMR_COSY_first",
           "score": 0.8700000047683716,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "approach_GCMS_first",
           "score": 0.7900000214576721,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "approach_MSMS_first",
           "score": 0.7400000095367432,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -101,9 +106,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1014fda1ab4cfe8865cf0e43ec8523f65224cd8c08a08cea2dbf7cddf31551cc.json"
   },
   "meta": {
-    "run_id": "a86cb9e5-b941-40f5-811b-523088d79cf3",
-    "timestamp": "2026-06-10T15:46:49.806Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "3a0dc790-2e7b-448a-87fd-cc27bad9c2d2",
+    "timestamp": "2026-06-11T08:34:36.785Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
   }
 }

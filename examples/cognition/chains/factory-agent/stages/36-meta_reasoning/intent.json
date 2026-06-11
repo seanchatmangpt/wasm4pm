@@ -1,0 +1,30 @@
+{
+  "intent": "arbitrate mycin vs prolog",
+  "facts": [
+    {
+      "key": "breed:mycin:conclusion",
+      "value": "therapy=gentamicin"
+    },
+    {
+      "key": "breed:mycin:confidence",
+      "value": "0.8"
+    },
+    {
+      "key": "breed:prolog:conclusion",
+      "value": "therapy=none"
+    },
+    {
+      "key": "breed:prolog:confidence",
+      "value": "0.6"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "mdp:a233ae442bf64a09f829b5dbbf87bfac7d18475c8649093bb556b4cddfe92b62"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

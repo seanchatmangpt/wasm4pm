@@ -1,0 +1,34 @@
+{
+  "intent": "monitor traffic light safety",
+  "facts": [
+    {
+      "key": "ltl:formula",
+      "value": "G (red -> !green)"
+    },
+    {
+      "key": "trace:0",
+      "value": "red"
+    },
+    {
+      "key": "trace:1",
+      "value": "green"
+    },
+    {
+      "key": "trace:2",
+      "value": "red"
+    },
+    {
+      "key": "trace:3",
+      "value": "green"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "ilp:340869bc3cd91796551f0b84193f0725db44c43b4f8860bb13c2516dbc3883e7"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

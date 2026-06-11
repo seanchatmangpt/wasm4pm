@@ -1,0 +1,30 @@
+{
+  "intent": "compute stable models of the Gelfond-Lifschitz 1988 example program",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "prior_stage_hash",
+      "value": "analogy_sme:1c0c86192c1d10cc6aa70b386507439e863538ed4a97d827aa857e9cbd55fd65"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "f-p12",
+      "premise": [],
+      "conclusion": "p_1_2",
+      "certainty": 1.0
+    },
+    {
+      "id": "r-q1",
+      "premise": [
+        "p_1_2",
+        "not q_2"
+      ],
+      "conclusion": "q_1",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}

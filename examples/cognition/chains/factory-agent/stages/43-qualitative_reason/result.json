@@ -1,0 +1,101 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "qualitative_reason",
+    "breed": "qualitative_reason",
+    "status": "ok",
+    "output": {
+      "breed": "QualitativeReason",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "qr:state:0",
+          "value": "a:-,p:+,q:+"
+        },
+        {
+          "key": "qr:state:1",
+          "value": "a:-,p:+,q:0"
+        },
+        {
+          "key": "qr:state:2",
+          "value": "a:-,p:+,q:-"
+        },
+        {
+          "key": "qr:state_count",
+          "value": "3"
+        },
+        {
+          "key": "qr:equilibrium",
+          "value": "none"
+        }
+      ],
+      "selected": "3 states",
+      "explanation": "Confluence envisionment: 3 consistent qualitative state(s); equilibrium none.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-model",
+          "detail": "3 variables, 1 confluences, 2 known signs",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "branch-ambiguity",
+          "detail": "valve: + ⊕ − ambiguous, deferring to envisionment",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "envision-state",
+          "detail": "S0: a:-,p:+,q:+",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "limit-analysis",
+          "detail": "S0: moving variables [a,p,q]",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "envision-state",
+          "detail": "S1: a:-,p:+,q:0",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "limit-analysis",
+          "detail": "S1: moving variables [a,p]",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "envision-state",
+          "detail": "S2: a:-,p:+,q:-",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "limit-analysis",
+          "detail": "S2: moving variables [a,p,q]",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "565b62abf0cdbda406c6b9092c10f722e427e35da063891ed19a9bff933a79e9",
+    "output_hash": "4d46336a65718384488d8741167130eecc64b3dc391d103ea3ff4586713b9d3d",
+    "replay_pointer": "4d46336a65718384",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/565b62abf0cdbda406c6b9092c10f722e427e35da063891ed19a9bff933a79e9.json"
+  },
+  "meta": {
+    "run_id": "a8f45029-0b79-4c0e-8305-bd9beb81d69b",
+    "timestamp": "2026-06-11T08:38:28.880Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

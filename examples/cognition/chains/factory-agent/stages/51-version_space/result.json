@@ -1,0 +1,151 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "version_space",
+    "breed": "version_space",
+    "status": "ok",
+    "output": {
+      "breed": "VersionSpace",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "vs:s",
+          "value": "Sunny,Warm,?,Strong,?,?"
+        },
+        {
+          "key": "vs:g:0",
+          "value": "?,Warm,?,?,?,?"
+        },
+        {
+          "key": "vs:g:1",
+          "value": "Sunny,?,?,?,?,?"
+        },
+        {
+          "key": "vs:converged",
+          "value": "false"
+        }
+      ],
+      "selected": "Sunny,Warm,?,Strong,?,?",
+      "explanation": "Candidate elimination over 4 examples: S=<Sunny,Warm,?,Strong,?,?>, |G|=2, converged=false.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "vs-init",
+          "detail": "S=<0,0,0,0,0,0>, G={<?,?,?,?,?,?>}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "vs-update",
+          "detail": "example 0 <Sunny,Warm,Normal,Strong,Warm,Same>",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "vs-update",
+          "detail": "S := <Sunny,Warm,Normal,Strong,Warm,Same>",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "vs-update",
+          "detail": "|S|=1 S=<Sunny,Warm,Normal,Strong,Warm,Same>, |G|=1",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "vs-update",
+          "detail": "example 1 <Sunny,Warm,High,Strong,Warm,Same>",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "vs-update",
+          "detail": "S := <Sunny,Warm,?,Strong,Warm,Same>",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "vs-update",
+          "detail": "|S|=1 S=<Sunny,Warm,?,Strong,Warm,Same>, |G|=1",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "vs-update",
+          "detail": "example 2 <Rainy,Cold,High,Strong,Warm,Change>",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "vs-update",
+          "detail": "<?,?,?,?,?,?> -> <Sunny,?,?,?,?,?>",
+          "depth": 2
+        },
+        {
+          "step": 9,
+          "kind": "vs-update",
+          "detail": "<?,?,?,?,?,?> -> <?,Warm,?,?,?,?>",
+          "depth": 2
+        },
+        {
+          "step": 10,
+          "kind": "vs-update",
+          "detail": "<?,?,?,?,?,?> -> <?,?,?,?,?,Same>",
+          "depth": 2
+        },
+        {
+          "step": 11,
+          "kind": "vs-update",
+          "detail": "|S|=1 S=<Sunny,Warm,?,Strong,Warm,Same>, |G|=3",
+          "depth": 1
+        },
+        {
+          "step": 12,
+          "kind": "vs-update",
+          "detail": "example 3 <Sunny,Warm,High,Strong,Cool,Change>",
+          "depth": 1
+        },
+        {
+          "step": 13,
+          "kind": "vs-update",
+          "detail": "S := <Sunny,Warm,?,Strong,?,?>",
+          "depth": 2
+        },
+        {
+          "step": 14,
+          "kind": "vs-update",
+          "detail": "G pruned 3 -> 2 (non-covering)",
+          "depth": 2
+        },
+        {
+          "step": 15,
+          "kind": "vs-update",
+          "detail": "|S|=1 S=<Sunny,Warm,?,Strong,?,?>, |G|=2",
+          "depth": 1
+        },
+        {
+          "step": 16,
+          "kind": "vs-verdict",
+          "detail": "S=<Sunny,Warm,?,Strong,?,?>, G={<?,Warm,?,?,?,?>, <Sunny,?,?,?,?,?>}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9e5a53e4064e145d9143f1e1328e470fc7938bf377c1e84f0a993e20154d87fa",
+    "output_hash": "1dba3dc45e3818f52097f2c3764c674e7e9d71ac94e5756e8256f66e297cbf83",
+    "replay_pointer": "1dba3dc45e3818f5",
+    "inference_step_count": 17,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/9e5a53e4064e145d9143f1e1328e470fc7938bf377c1e84f0a993e20154d87fa.json"
+  },
+  "meta": {
+    "run_id": "9320f103-6c02-4bbc-8b6b-7ab29a396ce9",
+    "timestamp": "2026-06-11T08:38:32.014Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

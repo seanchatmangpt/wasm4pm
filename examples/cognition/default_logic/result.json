@@ -1,0 +1,75 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "default_logic",
+    "breed": "default_logic",
+    "status": "ok",
+    "output": {
+      "breed": "DefaultLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ext:bird",
+          "value": "bird"
+        },
+        {
+          "key": "ext:not_flies",
+          "value": "not_flies"
+        },
+        {
+          "key": "ext:penguin",
+          "value": "penguin"
+        }
+      ],
+      "selected": "bird, not_flies, penguin",
+      "explanation": "default logic extension with 3 atoms (2 fired, 1 blocked)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "default-load",
+          "detail": "loaded 3 rules over 1 facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "default-fire",
+          "detail": "fired rule r_isa inferring bird",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "default-fire",
+          "detail": "fired rule r_penguin inferring not_flies",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "default-block",
+          "detail": "rule r_birds_fly blocked by violator not_flies",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "default-extension",
+          "detail": "extension: bird, not_flies, penguin",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "cb08da93eaf4760dfb518f019b27120db55dbd2e0cafd6c0321850790b1fb473",
+    "output_hash": "a5497eeb4c461bbf0b53836d608c319af31f1d2524ac8dd930c63e1d5e56cf50",
+    "replay_pointer": "a5497eeb4c461bbf",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/default_logic/.wasm4pm/receipts/cb08da93eaf4760dfb518f019b27120db55dbd2e0cafd6c0321850790b1fb473.json"
+  },
+  "meta": {
+    "run_id": "2eaf5720-30e7-4629-9f94-a20ed7865b71",
+    "timestamp": "2026-06-11T07:03:03.545Z",
+    "duration_ms": 21,
+    "version": "26.6.10"
+  }
+}

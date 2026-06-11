@@ -1,3 +1,5 @@
+(node:13534) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,32 +10,37 @@
     "breed": "prolog",
     "status": "ok",
     "output": {
-      "breed": "prolog",
+      "breed": "Prolog",
       "candidates": [
         {
           "id": "cyclohexanol",
           "score": 0.8799999952316284,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "1_methylcyclopentanol",
           "score": 0.7400000095367432,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "cis_2_methylcyclopentanol",
           "score": 0.6899999976158142,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "trans_2_methylcyclopentanol",
           "score": 0.6899999976158142,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "oxacycloheptane",
           "score": 0.20999999344348907,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -74,6 +81,7 @@
           "value": "prolog_horn_clause_resolution"
         }
       ],
+      "selected": null,
       "explanation": "Prolog8 denied query (negative proof nodes: 1, receipt: [b8, de, 23, 6c])",
       "inference_trace": [
         {
@@ -176,9 +184,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/4f02691e51b10302cbead05a34b7fe582d0d8aa5abfdc3b2b07564927f78f8c7.json"
   },
   "meta": {
-    "run_id": "0a70bfa3-b794-4626-8fbb-a7ba91fa98dc",
-    "timestamp": "2026-06-10T15:46:48.651Z",
-    "duration_ms": 14,
-    "version": "26.6.9"
+    "run_id": "26da36b4-f30c-429c-9b3d-d43a1fe7b326",
+    "timestamp": "2026-06-11T08:34:35.697Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
   }
 }

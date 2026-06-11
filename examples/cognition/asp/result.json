@@ -1,0 +1,245 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "asp",
+    "breed": "asp",
+    "status": "ok",
+    "output": {
+      "breed": "Asp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "asp:answer_set:0",
+          "value": "p_1_2,q_1"
+        },
+        {
+          "key": "asp:answer_set_count",
+          "value": "1"
+        }
+      ],
+      "selected": "p_1_2,q_1",
+      "explanation": "Gelfond–Lifschitz enumeration over 3 atoms (8 candidates): 1 stable model(s).",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ground",
+          "detail": "3 atoms, 2 rules",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "guess-candidate",
+          "detail": "M={}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "reduct",
+          "detail": "2 rules kept, 0 dropped",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2,q_1}",
+          "depth": 2
+        },
+        {
+          "step": 4,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2,q_1} vs {})",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "guess-candidate",
+          "detail": "M={p_1_2}",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "reduct",
+          "detail": "2 rules kept, 0 dropped",
+          "depth": 2
+        },
+        {
+          "step": 7,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2,q_1}",
+          "depth": 2
+        },
+        {
+          "step": 8,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2,q_1} vs {p_1_2})",
+          "depth": 1
+        },
+        {
+          "step": 9,
+          "kind": "guess-candidate",
+          "detail": "M={q_1}",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "reduct",
+          "detail": "2 rules kept, 0 dropped",
+          "depth": 2
+        },
+        {
+          "step": 11,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2,q_1}",
+          "depth": 2
+        },
+        {
+          "step": 12,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2,q_1} vs {q_1})",
+          "depth": 1
+        },
+        {
+          "step": 13,
+          "kind": "guess-candidate",
+          "detail": "M={p_1_2,q_1}",
+          "depth": 1
+        },
+        {
+          "step": 14,
+          "kind": "reduct",
+          "detail": "2 rules kept, 0 dropped",
+          "depth": 2
+        },
+        {
+          "step": 15,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2,q_1}",
+          "depth": 2
+        },
+        {
+          "step": 16,
+          "kind": "stable-accept",
+          "detail": "{p_1_2,q_1} is a stable model",
+          "depth": 1
+        },
+        {
+          "step": 17,
+          "kind": "guess-candidate",
+          "detail": "M={q_2}",
+          "depth": 1
+        },
+        {
+          "step": 18,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 19,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2}",
+          "depth": 2
+        },
+        {
+          "step": 20,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2} vs {q_2})",
+          "depth": 1
+        },
+        {
+          "step": 21,
+          "kind": "guess-candidate",
+          "detail": "M={p_1_2,q_2}",
+          "depth": 1
+        },
+        {
+          "step": 22,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 23,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2}",
+          "depth": 2
+        },
+        {
+          "step": 24,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2} vs {p_1_2,q_2})",
+          "depth": 1
+        },
+        {
+          "step": 25,
+          "kind": "guess-candidate",
+          "detail": "M={q_1,q_2}",
+          "depth": 1
+        },
+        {
+          "step": 26,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 27,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2}",
+          "depth": 2
+        },
+        {
+          "step": 28,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2} vs {q_1,q_2})",
+          "depth": 1
+        },
+        {
+          "step": 29,
+          "kind": "guess-candidate",
+          "detail": "M={p_1_2,q_1,q_2}",
+          "depth": 1
+        },
+        {
+          "step": 30,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 31,
+          "kind": "least-model",
+          "detail": "LM(P^M)={p_1_2}",
+          "depth": 2
+        },
+        {
+          "step": 32,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({p_1_2} vs {p_1_2,q_1,q_2})",
+          "depth": 1
+        },
+        {
+          "step": 33,
+          "kind": "answer-set",
+          "detail": "1 answer set(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "efb924eefd1d05396f3e9c01ffab3caa63795909e100c7e937e941f61fdb25c1",
+    "output_hash": "26bc8234a55d2cf366a99df5ba0f44477a24343afff3eb416958e19e11a71acc",
+    "replay_pointer": "26bc8234a55d2cf3",
+    "inference_step_count": 34,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/asp/.wasm4pm/receipts/efb924eefd1d05396f3e9c01ffab3caa63795909e100c7e937e941f61fdb25c1.json"
+  },
+  "meta": {
+    "run_id": "084202d5-66f6-4b80-bda8-9bf2289b12ae",
+    "timestamp": "2026-06-11T07:02:53.912Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

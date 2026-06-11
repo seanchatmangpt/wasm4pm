@@ -1,0 +1,30 @@
+{
+  "intent": "vacuum world contingent plan",
+  "facts": [
+    {
+      "key": "cp:unknown",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:goal:dirt",
+      "value": "false"
+    },
+    {
+      "key": "cp:act:suck:pre",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:act:suck:del",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:sense:check-dirt",
+      "value": "dirt"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

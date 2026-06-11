@@ -1,0 +1,41 @@
+{
+  "intent": "classify the EL medical ontology from Baader-Brandt-Lutz 2005",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "dl:subclass:Pericarditis",
+      "value": "Inflammation"
+    },
+    {
+      "key": "dl:subclass:Inflammation",
+      "value": "Disease"
+    },
+    {
+      "key": "dl:exists_rhs:Pericarditis",
+      "value": "has_location.Heart"
+    },
+    {
+      "key": "dl:exists_lhs:has_location.Heart",
+      "value": "HasLocationHeart"
+    },
+    {
+      "key": "dl:conj:Disease+HasLocationHeart",
+      "value": "HeartDisease"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {
+      "id": "q1",
+      "predicate": "dl:subsumes",
+      "value": "Pericarditis:HeartDisease"
+    },
+    {
+      "id": "q2",
+      "predicate": "dl:subsumes",
+      "value": "HeartDisease:Pericarditis"
+    }
+  ],
+  "state": []
+}

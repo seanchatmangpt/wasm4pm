@@ -1,30 +1,54 @@
-## 2026-06-10T23:06:37Z
+## 2026-06-10T23:48:23-07:00
+Your working directory is `/Users/sac/wasm4pm/.agents/worker_2`. You are Worker 2.
+Objective: Populate and verify individual examples and chain stages for breeds 7-12:
+7. `autoinstinct_learning` (Chain Stage `06-autoinstinct_learning`)
+8. `autoinstinct_neurosis` (Chain Stage `07-autoinstinct_neurosis`)
+9. `autoinstinct_semantics` (Chain Stage `08-autoinstinct_semantics`)
+10. `autoinstinct_vision` (Chain Stage `09-autoinstinct_vision`)
+11. `bayesian_network` (Chain Stage `10-bayesian_network`)
+12. `belief_merging` (Chain Stage `11-belief_merging`)
 
-You are a teamwork_preview_worker. Your task is to implement and verify the next 3 of the 10 Tier P1 cognition breeds:
-5. `csp_ac3`
-6. `default_logic`
-7. `htn_planning`
+For each of the 6 breeds, you must:
+A. Create an example directory `examples/cognition/<breed>/`:
+  - Read `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/<breed>.json` to extract the `input` field.
+  - Write it as `intent.json` in the example directory.
+  - Create `run.sh` inside the directory:
+    ```bash
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "$(dirname "$0")"
+    if command -v wpm >/dev/null 2>&1; then
+      WPM=wpm
+    else
+      REPO_ROOT="$(cd ../../.. && pwd)"
+      WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
+    fi
+    $WPM cognition run --contract <breed> --input intent.json --format json | tee result.json
+    ```
+    (Note: replace <breed> with the actual breed_id). Make it executable!
+  - Execute `bash run.sh` to generate the initial `result.json` and redirect its output logs to `last-output.log`.
 
-For each of these 3 breeds, perform the following steps:
-1. Implement the core algorithm in `crates/wasm4pm-cognition/src/breeds/<b>.rs` implementing the `CognitionBreed` trait.
-   - For `csp_ac3`: Implement finite-domain Constraint Satisfaction via AC-3 Mackworth 1977. You MUST use the existing finite-domain CSP solver in `support::csp`. Parse variables, domains, and constraints (like Lt, EqOffset, Ne, AllDiff) from input facts, rules, or state, run `support::csp::solve()`, and return the solved assignment (mapping to updated candidates or new facts). Trace steps must record AC-3 revisions and backtrack steps.
-   - For `default_logic`: Implement Reiter's Default Logic extension finder. Parse default rules (e.g. from input rules: premise A, justifications B, consequent C) and facts, find all extensions closed under defaults and classical consequence, and return them. Trace steps must record applied defaults and extension candidates tested.
-   - For `htn_planning`: Implement Hierarchical Task Network planning (SHOP-style total order planner). Parse initial state, tasks to run, methods (compound task decompositions with preconditions), and operators (primitive actions with preconditions/effects) from input state, goals, and rules. Perform recursive planning and return the sequence of plan steps. Trace steps must record decomposition and operator applications.
-2. Register the module in `crates/wasm4pm-cognition/src/breeds/mod.rs` (e.g., `pub mod <b>;`).
-3. Wire up dispatch in `crates/wasm4pm-cognition/src/breeds/dispatch.rs` (update `dispatch_breed` and `dispatch_breed_test` to use the new implementations).
-4. Register static lifecycle models in `crates/wasm4pm-cognition/src/ocel/models_p1.rs` and update `crates/wasm4pm-cognition/src/ocel/mod.rs` `lifecycle_model_for`.
-5. Add `include_str!` in `crates/wasm4pm-cognition/src/ocel/model_sources.rs`.
-6. Author the OCPN model JSON in `ocel/models/l1/<b>.ocpn.json` (ensure fitness will be 1.0 against the generated trace steps).
-7. Implement test cases in `crates/wasm4pm-cognition/tests/oracle_negative.rs`, `crates/wasm4pm-cognition/tests/oracle_hidden.rs`, `crates/wasm4pm-cognition/tests/paper_grounded.rs` (with fixture `crates/wasm4pm-cognition/tests/fixtures/papers/<b>.json`), and `crates/wasm4pm-cognition/tests/breed_determinism.rs`.
-8. Add the breed bench entry in `crates/wasm4pm-cognition/benches/breed_latency.rs`.
-9. Add TS test cases in `packages/cognition/src/__tests__/cognition-breeds.integration.test.ts` and update TS inputs in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts`.
-10. Flip status in `crates/wasm4pm-cognition/breeds/registry.json` from `UNSUPPORTED` to `PARTIAL_ALIVE`.
-11. Generate documentation cards in `docs/breeds/<b>.md` (8-section format).
-12. Measure OCEL fitness (must be 1.0) and generate `ocel/reports/<b>.json`.
-13. Run `cargo test -p wasm4pm-cognition` and `pnpm run test` or `npx vitest` to ensure all tests pass cleanly.
+B. Create a chain stage directory under `examples/cognition/chains/factory-agent/stages/<stage_name>/` (e.g., `06-autoinstinct_learning`, `07-autoinstinct_neurosis`, etc.):
+  - Create a `transform.py` script:
+    ```python
+    import json
+    import sys
 
-MANDATORY INTEGRITY WARNING:
-DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+    prev = json.load(sys.stdin)
+    prev_payload = prev.get('payload', {})
+    prev_output_hash = prev_payload.get('output_hash', '') or prev.get('output_hash', '')
+    prev_breed = prev_payload.get('breed', '') or prev.get('breed', '')
 
-Please execute these changes carefully and run the test suites to verify. Write your final report and hand off your changes.
-Your working directory is: /Users/sac/wasm4pm/.agents/worker_2/
+    # Load base input from the template json
+    base_input = ... # insert the extracted 'input' block for this breed
+
+    # Cryptographically bind to prior stage
+    if prev_output_hash:
+        base_input['facts'].append({
+            'key': 'prior_stage_hash',
+            'value': f"{prev_breed}:{prev_output_hash}"
+        })
+
+    print(json.dumps(base_input, indent=2))
+    ```
+    Ensure the `transform.py` outputs a valid `BreedInput` JSON.

@@ -1,0 +1,101 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "description_logic",
+    "breed": "description_logic",
+    "status": "ok",
+    "output": {
+      "breed": "DescriptionLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "dl:verdict:Pericarditis:HeartDisease",
+          "value": "true"
+        },
+        {
+          "key": "dl:verdict:HeartDisease:Pericarditis",
+          "value": "false"
+        }
+      ],
+      "selected": "Pericarditis⊑HeartDisease=true",
+      "explanation": "EL completion (CR1–CR4) to fixpoint over 6 concepts; verdicts: Pericarditis⊑HeartDisease=true; HeartDisease⊑Pericarditis=false",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "normalize",
+          "detail": "6 concepts, 2 subclass, 1 conj, 1 exists-rhs, 1 exists-lhs axioms",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "apply-cr1",
+          "detail": "Inflammation ⊑ Disease (via Inflammation ⊑ Disease)",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-cr1",
+          "detail": "Pericarditis ⊑ Inflammation (via Pericarditis ⊑ Inflammation)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "apply-cr3",
+          "detail": "(Pericarditis,Heart) ∈ R(has_location)",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "apply-cr4",
+          "detail": "Pericarditis ⊑ HasLocationHeart (via ∃has_location.Heart)",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "apply-cr1",
+          "detail": "Pericarditis ⊑ Disease (via Inflammation ⊑ Disease)",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "apply-cr2",
+          "detail": "Pericarditis ⊑ HeartDisease (via Disease ⊓ HasLocationHeart)",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "fixpoint",
+          "detail": "saturated: 11 subsumptions, 1 role edges",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "classify-verdict",
+          "detail": "Pericarditis ⊑ HeartDisease : true",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "classify-verdict",
+          "detail": "HeartDisease ⊑ Pericarditis : false",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "17ca8614097b1b81fa194397b6afdff8807215db2a9cb014dd33826fd750351e",
+    "output_hash": "0c7afe958ae08ff82186c65d39811d0ad5c5948501c54e25d3b807d270076b5f",
+    "replay_pointer": "0c7afe958ae08ff8",
+    "inference_step_count": 10,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/17ca8614097b1b81fa194397b6afdff8807215db2a9cb014dd33826fd750351e.json"
+  },
+  "meta": {
+    "run_id": "c9516528-9fc7-4044-b9d0-8afd65a2ea0e",
+    "timestamp": "2026-06-11T08:38:20.736Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

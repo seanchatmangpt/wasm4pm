@@ -1,34 +1,47 @@
-# Handoff Report
+# Handoff Report — Worker 2
 
 ## 1. Observation
-- The three target Tier P1 cognition breeds (`csp_ac3`, `default_logic`, `htn_planning`) have core Rust implementations located in:
-  - `crates/wasm4pm-cognition/src/breeds/csp_ac3.rs`
-  - `crates/wasm4pm-cognition/src/breeds/default_logic.rs`
-  - `crates/wasm4pm-cognition/src/breeds/htn_planning.rs`
-- Registry registration is set to `"status": "PARTIAL_ALIVE"` in `crates/wasm4pm-cognition/breeds/registry.json`.
-- Dispatch is successfully wired in `crates/wasm4pm-cognition/src/breeds/dispatch.rs` and `mod.rs`.
-- OCPN models are written to `ocel/models/l1/{csp_ac3,default_logic,htn_planning}.ocpn.json`, linked in `crates/wasm4pm-cognition/src/ocel/model_sources.rs` and registered under `crates/wasm4pm-cognition/src/ocel/models_p1.rs`.
-- Test suites (`oracle_negative.rs`, `oracle_hidden.rs`, `paper_grounded.rs`, `breed_determinism.rs`) and benchmark entries are populated with cases for all three breeds.
-- TS tests and inputs in `packages/cognition/src/__tests__/cognition-breeds.integration.test.ts` and `packages/cognition/src/__tests__/fixtures/breed-inputs.ts` are implemented.
-- The command `cargo test -p wasm4pm-cognition` successfully completed with `test result: ok. 77 passed; 0 failed`.
-- Rebuilding the WASM module via `wasm-pack build --target nodejs --out-dir pkg -- --features wasm` in `crates/wasm4pm-cognition` succeeded.
-- Running `pnpm --filter @wasm4pm/cognition build` and `pnpm --filter @wasm4pm/cognition test` successfully ran and passed all 234 TS tests.
+- Successfully located paper-grounded JSON fixtures:
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_learning.json`
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_neurosis.json`
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_semantics.json`
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/autoinstinct_vision.json`
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/bayesian_network.json`
+  - `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/belief_merging.json`
+- Created/overwrote example directories with `intent.json` (extracted from the fixture's `input` field) and `run.sh`:
+  - `examples/cognition/autoinstinct_learning/`
+  - `examples/cognition/autoinstinct_neurosis/`
+  - `examples/cognition/autoinstinct_semantics/`
+  - `examples/cognition/autoinstinct_vision/`
+  - `examples/cognition/bayesian_network/`
+  - `examples/cognition/belief_merging/`
+- Executed `run.sh` inside each directory, generating `result.json` and redirecting logs to `last-output.log`.
+- Created chain stage directories and populated `transform.py` using the specified Python template:
+  - `examples/cognition/chains/factory-agent/stages/06-autoinstinct_learning/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/07-autoinstinct_neurosis/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/08-autoinstinct_semantics/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/09-autoinstinct_vision/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/10-bayesian_network/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/11-belief_merging/transform.py`
+- Confirmed execution of `transform.py` successfully reads JSON from stdin and appends the cryptographic `prior_stage_hash` facts.
+- Ran `cargo check && cargo test --lib --workspace` -> Pass (319 tests).
+- Ran `pnpm exec vitest run --root packages/cognition` -> Pass (365 tests).
 
 ## 2. Logic Chain
-- Since `cargo test -p wasm4pm-cognition` passed completely, all Rust unit tests, negative oracle tests, hidden oracle tests, paper-grounded tests, and determinism check assertions for `csp_ac3`, `default_logic`, and `htn_planning` are structurally and logically correct.
-- Since building the WASM module compiles successfully, all Rust to WASM/JS interface boundaries and WASM bindings functions function correctly.
-- Since the vitest suite in `packages/cognition` passes without error, the TS wrappers integration and the Zod schemas correctly marshal and invoke the WASM kernel dispatch, verifying the correctness of execution and OCEL log alignment fitness (fitness = 1.0) under TypeScript environment.
+- Standardized fixtures act as the source of truth for the breed inputs. Overwriting the template files under `examples/cognition/<breed>/intent.json` with the extracted `input` blocks ensures correct behavior during wpm execution.
+- Making `run.sh` executable and running it ensures the wpm binary executes the correct cognition breed and verifies that no runtime failures occur (as confirmed by the `ok` status inside `result.json` files).
+- Creating the `transform.py` scripts allows automated stage chaining in `factory-agent` workflows, validating the output schema format across runs.
 
 ## 3. Caveats
-- No caveats.
+- No caveats. We did not clean up legacy single-digit folders (e.g. `6-autoinstinct_learning`) as that task is assigned to Worker 10.
 
 ## 4. Conclusion
-- The implementation and verification of `csp_ac3`, `default_logic`, and `htn_planning` are complete and correct. All tests on both Rust and TS sides pass cleanly, the registry status is updated, documentation exists, and OCEL reports are generated.
+- All requested examples and chain stages for breeds 7-12 are fully populated, verified, and run without errors.
 
 ## 5. Verification Method
-- To run Rust tests:
-  `cargo test -p wasm4pm-cognition`
-- To rebuild WASM and run TS tests:
-  `cd crates/wasm4pm-cognition && wasm-pack build --target nodejs --out-dir pkg -- --features wasm`
-  `cd ../.. && pnpm --filter @wasm4pm/cognition build`
-  `pnpm --filter @wasm4pm/cognition test`
+- Execute the test suites:
+  - `pnpm exec vitest run --root packages/cognition`
+  - `cargo test --lib --workspace`
+- Verify example execution outputs by inspecting `result.json` in each directory.
+- Verify `transform.py` outputs by feeding it a result object, e.g.:
+  `python3 examples/cognition/chains/factory-agent/stages/06-autoinstinct_learning/transform.py < examples/cognition/autoinstinct_learning/result.json`

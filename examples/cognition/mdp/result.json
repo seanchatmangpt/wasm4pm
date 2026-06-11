@@ -1,0 +1,105 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "mdp",
+    "breed": "mdp",
+    "status": "ok",
+    "output": {
+      "breed": "Mdp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "mdp:value:goal",
+          "value": "0.000000"
+        },
+        {
+          "key": "mdp:value:s0",
+          "value": "1.800000"
+        },
+        {
+          "key": "mdp:value:s1",
+          "value": "2.000000"
+        },
+        {
+          "key": "mdp:policy:goal",
+          "value": "stay"
+        },
+        {
+          "key": "mdp:policy:s0",
+          "value": "go"
+        },
+        {
+          "key": "mdp:policy:s1",
+          "value": "go"
+        }
+      ],
+      "selected": "goal:stay,s0:go,s1:go",
+      "explanation": "Value iteration converged in 3 sweeps (residual 0.000e0); greedy policy extracted.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "mdp-init",
+          "detail": "3 states, 2 actions, gamma=0.900000",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "mdp-iterate",
+          "detail": "sweep 1",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "mdp-iterate",
+          "detail": "sweep 2",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "mdp-iterate",
+          "detail": "sweep 3",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "mdp-iterate",
+          "detail": "3 sweeps, residual=0.000e0 (threshold eps=1e-6)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "mdp-policy",
+          "detail": "goal -> stay",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "mdp-policy",
+          "detail": "s0 -> go",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "mdp-policy",
+          "detail": "s1 -> go",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "cc4559a94dd4444a7f1a5061f3d22720c42cd2c881afbb8fca140371df320e79",
+    "output_hash": "a233ae442bf64a09f829b5dbbf87bfac7d18475c8649093bb556b4cddfe92b62",
+    "replay_pointer": "a233ae442bf64a09",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/mdp/.wasm4pm/receipts/cc4559a94dd4444a7f1a5061f3d22720c42cd2c881afbb8fca140371df320e79.json"
+  },
+  "meta": {
+    "run_id": "5b43cefc-6830-419d-a23c-b58d514a2de1",
+    "timestamp": "2026-06-11T07:03:14.615Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

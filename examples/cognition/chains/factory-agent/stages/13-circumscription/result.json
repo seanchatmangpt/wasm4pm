@@ -1,0 +1,95 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "circumscription",
+    "breed": "circumscription",
+    "status": "ok",
+    "output": {
+      "breed": "Circumscription",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "entailed:flies_tweety",
+          "value": "true"
+        },
+        {
+          "key": "entailed:flies_opus",
+          "value": "false"
+        }
+      ],
+      "selected": "flies_tweety",
+      "explanation": "circumscription over 2 ab-atoms found 2 models, 1 minimal; entailed 1/2 goals",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-defaults",
+          "detail": "3 rules; abnormality atoms: {ab_bird_opus,ab_bird_tweety}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "enumerate-model",
+          "detail": "S={} -> rejected",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "enumerate-model",
+          "detail": "S={ab_bird_opus} -> model",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "enumerate-model",
+          "detail": "S={ab_bird_tweety} -> rejected",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "enumerate-model",
+          "detail": "S={ab_bird_opus,ab_bird_tweety} -> model",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "minimize",
+          "detail": "pruned S={ab_bird_opus,ab_bird_tweety}: strictly larger than another model's abnormality set",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "entail",
+          "detail": "flies_tweety |= true in 1/1 minimal models -> true",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "entail",
+          "detail": "flies_opus |= false in 0/1 minimal models -> false",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "decision",
+          "detail": "1 minimal models; cautiously entailed: {flies_tweety}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "0e398d54d5e9bb71b8a1098472bed14e93d9f02ea2f1801c6a66facc84368914",
+    "output_hash": "d43ab3c928ce1458187b4eef115cf20419d133899c951856950e7655d057b029",
+    "replay_pointer": "d43ab3c928ce1458",
+    "inference_step_count": 9,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/0e398d54d5e9bb71b8a1098472bed14e93d9f02ea2f1801c6a66facc84368914.json"
+  },
+  "meta": {
+    "run_id": "77fe5f01-9cfe-4899-9b32-34d113aadef6",
+    "timestamp": "2026-06-11T08:38:17.242Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

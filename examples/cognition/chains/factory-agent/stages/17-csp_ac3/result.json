@@ -1,0 +1,121 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "csp_ac3",
+    "breed": "csp_ac3",
+    "status": "ok",
+    "output": {
+      "breed": "CspAc3",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "csp-var",
+          "value": "X:B,G,R"
+        },
+        {
+          "key": "csp-var",
+          "value": "Y:B,G,R"
+        },
+        {
+          "key": "csp-var",
+          "value": "Z:B,G,R"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "X!=Y"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "Y!=Z"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "X!=Z"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "contingent_plan:3467f6a0049cb80128cb258fecc3d7d2c97c9d8174f7dc55353d4902861b21df"
+        },
+        {
+          "key": "csp:assignment:X",
+          "value": "B"
+        },
+        {
+          "key": "csp:assignment:Y",
+          "value": "G"
+        },
+        {
+          "key": "csp:assignment:Z",
+          "value": "R"
+        }
+      ],
+      "selected": "sat",
+      "explanation": "SAT: X=B, Y=G, Z=R",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "csp-init",
+          "detail": "vars=3 constraints=3",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "csp-assign",
+          "detail": "var=X val=B",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "csp-revise",
+          "detail": "x=Y y=X pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "csp-revise",
+          "detail": "x=Z y=X pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "csp-assign",
+          "detail": "var=Y val=G",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "csp-revise",
+          "detail": "x=Z y=Y pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "csp-assign",
+          "detail": "var=Z val=R",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "csp-verdict",
+          "detail": "satisfiable=true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "b3b9ac0e52d7a617e02045ba5e690b8be8cec26bb221d5bc9f90a06ffd8808ae",
+    "output_hash": "11946bdc64f393998544d08a08b6a1f00dce1d33353574e26733266f491aa972",
+    "replay_pointer": "11946bdc64f39399",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/b3b9ac0e52d7a617e02045ba5e690b8be8cec26bb221d5bc9f90a06ffd8808ae.json"
+  },
+  "meta": {
+    "run_id": "f6977521-1389-471a-ba92-618d4226c571",
+    "timestamp": "2026-06-11T08:38:18.799Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

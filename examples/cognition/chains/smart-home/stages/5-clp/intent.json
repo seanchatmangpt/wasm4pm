@@ -1,0 +1,26 @@
+{
+  "intent": "solve arithmetic constraints with 6ecab143",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "clp:var:x_6ecab143",
+      "value": "6..9"
+    },
+    {
+      "key": "clp:var:y_6ecab143",
+      "value": "0..9"
+    },
+    {
+      "key": "clp:constraint:c1_6ecab143",
+      "value": "x_6ecab143=y_6ecab143+3"
+    },
+    {
+      "key": "clp:constraint:c2_6ecab143",
+      "value": "y_6ecab143<4"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

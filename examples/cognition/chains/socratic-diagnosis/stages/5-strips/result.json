@@ -8,32 +8,37 @@
     "breed": "strips",
     "status": "ok",
     "output": {
-      "breed": "strips",
+      "breed": "Strips",
       "candidates": [
         {
           "id": "step1_administer_antiviral",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "step2_prescribe_antipyretic",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "step3_prescribe_fluids",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "step4_prescribe_rest",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "step5_followup_in_48h",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -105,9 +110,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/7c5c50954aa4a153d213db27bd082d29f50059ae9834b8fb9f2a13133c625c5b.json"
   },
   "meta": {
-    "run_id": "944a79bd-d0dd-4373-9f4d-aaa07e460e4a",
-    "timestamp": "2026-06-10T15:46:47.085Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "897606f3-7740-42f0-be20-1005d9d4e744",
+    "timestamp": "2026-06-11T08:34:34.210Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
   }
 }

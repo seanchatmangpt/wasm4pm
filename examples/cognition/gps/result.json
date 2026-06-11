@@ -8,49 +8,49 @@
     "breed": "gps",
     "status": "ok",
     "output": {
-      "breed": "gps",
+      "breed": "Gps",
       "candidates": [],
       "facts": [],
-      "selected": "put-on-shirt,get-dressed",
-      "explanation": "GPS plan (2 ops): put-on-shirt → get-dressed",
+      "selected": "R6,R12",
+      "explanation": "GPS plan (2 ops): R6 → R12",
       "inference_trace": [
         {
           "step": 0,
           "kind": "reduce-gap",
-          "detail": "dressed=yes",
+          "detail": "expr=L0",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "reduce-gap",
-          "detail": "shirt=on",
+          "detail": "expr=L2",
           "depth": 1
         },
         {
           "step": 2,
           "kind": "apply-operator",
-          "detail": "put-on-shirt",
+          "detail": "R6",
           "depth": 1
         },
         {
           "step": 3,
           "kind": "apply-operator",
-          "detail": "get-dressed",
+          "detail": "R12",
           "depth": 0
         }
       ]
     },
-    "run_id": "62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7",
-    "output_hash": "9f81a6c98331c6a900c8604a973146ba967b3e892ae055d689a95366cd1874fd",
-    "replay_pointer": "9f81a6c98331c6a9",
+    "run_id": "4ab385053d606adc516118257d882b97ab767d41570637fe5061ba896f746167",
+    "output_hash": "80fd9b7528bb883d506d02b35037f80633dff1326ea7282a0d098a9a1ce4e680",
+    "replay_pointer": "80fd9b7528bb883d",
     "inference_step_count": 4,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/gps/.wasm4pm/receipts/4ab385053d606adc516118257d882b97ab767d41570637fe5061ba896f746167.json"
   },
   "meta": {
-    "run_id": "e6795a65-80b6-46f7-9c17-0af4336e3084",
-    "timestamp": "2026-06-10T15:46:42.339Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "07298e31-79a4-4fd0-af71-1e3768ef40f9",
+    "timestamp": "2026-06-11T07:03:10.491Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
   }
 }

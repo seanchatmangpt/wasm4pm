@@ -1,0 +1,1 @@
+{"intent": "subsumption:A_c_f183927a SubClassOf C_c_f183927a", "facts": [{"key": "dl:subclass:A_c_f183927a", "value": "B_c_f183927a"}, {"key": "dl:subclass:B_c_f183927a", "value": "C_c_f183927a"}], "goals": [{"id": "g1", "predicate": "dl:subsumes", "value": "A_c_f183927a:C_c_f183927a"}], "rules": [], "candidates": [], "cases": [], "state": []}

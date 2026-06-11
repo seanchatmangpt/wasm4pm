@@ -1,0 +1,93 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ltl_monitor",
+    "breed": "ltl_monitor",
+    "status": "ok",
+    "output": {
+      "breed": "LtlMonitor",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ltl:formula",
+          "value": "G (red -> !green)"
+        },
+        {
+          "key": "trace:0",
+          "value": "red"
+        },
+        {
+          "key": "trace:1",
+          "value": "green"
+        },
+        {
+          "key": "trace:2",
+          "value": "red"
+        },
+        {
+          "key": "trace:3",
+          "value": "green"
+        },
+        {
+          "key": "ltl:verdict",
+          "value": "true"
+        }
+      ],
+      "selected": "true",
+      "explanation": "LTL formula 'G (red -> !green)' evaluated to true by Havelund-Rosu progression over 4 events",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ltl-init",
+          "detail": "G (red -> !green)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ltl-progress",
+          "detail": "trace:0 -> Always(Or(Not(Atom(\"red\")), Not(Atom(\"green\"))))",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "ltl-progress",
+          "detail": "trace:1 -> Always(Or(Not(Atom(\"red\")), Not(Atom(\"green\"))))",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "ltl-progress",
+          "detail": "trace:2 -> Always(Or(Not(Atom(\"red\")), Not(Atom(\"green\"))))",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "ltl-progress",
+          "detail": "trace:3 -> Always(Or(Not(Atom(\"red\")), Not(Atom(\"green\"))))",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "ltl-verdict",
+          "detail": "true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "0a2f7e3b1ff6091ed612efc504cb046ff9651a7acd24833a724bc67ba587aaf7",
+    "output_hash": "91da8cfb05ecbc34ffd8044645a7fa1928bdb744a600ab161ffe69787540a2b0",
+    "replay_pointer": "91da8cfb05ecbc34",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/ltl_monitor/.wasm4pm/receipts/0a2f7e3b1ff6091ed612efc504cb046ff9651a7acd24833a724bc67ba587aaf7.json"
+  },
+  "meta": {
+    "run_id": "47c8ac3d-8f5d-4e12-a641-4752120b18c4",
+    "timestamp": "2026-06-11T07:03:13.248Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

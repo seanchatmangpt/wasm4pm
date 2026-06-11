@@ -38,4 +38,4 @@ Model: `ocel/models/l1/markov_logic.ocpn.json`; fitness 1.0.
 Seeded SmallRng(42) only; bit-exact double run. Median 5.51 µs.
 
 ## 8. Status
-PARTIAL_ALIVE; full BVC ceremony complete.
+ADMITTED; full BVC ceremony complete.

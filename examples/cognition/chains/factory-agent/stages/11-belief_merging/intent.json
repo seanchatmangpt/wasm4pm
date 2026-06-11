@@ -1,0 +1,38 @@
+{
+  "intent": "merge the conflicting profile under Sigma aggregation",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "bm:atoms",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:1",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:2",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:3",
+      "value": "-p,-q"
+    },
+    {
+      "key": "bm:ic",
+      "value": "true"
+    },
+    {
+      "key": "bm:operator",
+      "value": "sum"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "bayesian_network:1f87a836ce0364ae0279e7eb61f9d155abe570ba7344f3d80ec47a8769c97e70"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

@@ -1,0 +1,48 @@
+{
+  "intent": "diagnose burglary from phone calls",
+  "facts": [
+    {
+      "key": "cpt:B",
+      "value": "0.001"
+    },
+    {
+      "key": "cpt:E",
+      "value": "0.002"
+    },
+    {
+      "key": "cpt:A|B,E",
+      "value": "0.001,0.29,0.94,0.95"
+    },
+    {
+      "key": "cpt:J|A",
+      "value": "0.05,0.90"
+    },
+    {
+      "key": "cpt:M|A",
+      "value": "0.01,0.70"
+    },
+    {
+      "key": "evidence:J",
+      "value": "true"
+    },
+    {
+      "key": "evidence:M",
+      "value": "true"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "autoinstinct_vision:22144f1ea996e1e7d5c69c478e472698ba412e8e9cc98e5d4981db869231bb1e"
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "query",
+      "value": "prob:B"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "state": []
+}

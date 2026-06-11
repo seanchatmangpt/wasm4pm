@@ -1,0 +1,40 @@
+{
+  "intent": "combine two witnesses",
+  "rules": [
+    {
+      "id": "witness1",
+      "premise": [],
+      "conclusion": "life",
+      "certainty": 0.9
+    },
+    {
+      "id": "witness1",
+      "premise": [],
+      "conclusion": "life,death",
+      "certainty": 0.1
+    },
+    {
+      "id": "witness2",
+      "premise": [],
+      "conclusion": "life",
+      "certainty": 0.9
+    },
+    {
+      "id": "witness2",
+      "premise": [],
+      "conclusion": "life,death",
+      "certainty": 0.1
+    }
+  ],
+  "goals": [
+    {
+      "id": "query",
+      "predicate": "query",
+      "value": "life"
+    }
+  ],
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "state": []
+}

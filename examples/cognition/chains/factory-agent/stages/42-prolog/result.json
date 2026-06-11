@@ -1,0 +1,85 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "prolog",
+    "breed": "prolog",
+    "status": "ok",
+    "output": {
+      "breed": "Prolog",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "parent",
+          "value": "tom-bob"
+        },
+        {
+          "key": "parent",
+          "value": "bob-ann"
+        },
+        {
+          "key": "parent",
+          "value": "bob-pat"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "problog:c2f11755fb85fa71c6584b26b6098bb88363ed2976a48e198f9042f14d054c24"
+        }
+      ],
+      "selected": "bob-ann",
+      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [9, 35, f7, 55])",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "intern-fact",
+          "detail": "parent=tom-bob",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "intern-fact",
+          "detail": "parent=bob-ann",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "intern-fact",
+          "detail": "parent=bob-pat",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "intern-fact",
+          "detail": "prior_stage_hash=problog:c2f11755fb85fa71c6584b26b6098bb88363ed2976a48e198f9042f14d054c24",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "kernel-query",
+          "detail": "pred_id=2 binding_mask=0b1",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "decision",
+          "detail": "Allow with 1 proof nodes",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "fe3dadd4357d16e1aa01ee178bd04ba7404ebdce8476713fd995281412883e12",
+    "output_hash": "a0998fc27758ab9e6e3d3c868626543c35366ea96f7e24351356ba573e84f072",
+    "replay_pointer": "a0998fc27758ab9e",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/fe3dadd4357d16e1aa01ee178bd04ba7404ebdce8476713fd995281412883e12.json"
+  },
+  "meta": {
+    "run_id": "bccdd655-9e47-464d-8320-a3d03c843c1b",
+    "timestamp": "2026-06-11T08:38:28.493Z",
+    "duration_ms": 20,
+    "version": "26.6.10"
+  }
+}

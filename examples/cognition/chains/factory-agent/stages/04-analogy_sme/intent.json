@@ -1,0 +1,38 @@
+{
+  "intent": "map the solar system onto the Rutherford atom",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "base:0",
+      "value": "(greater (mass sun) (mass planet))"
+    },
+    {
+      "key": "base:1",
+      "value": "(revolve planet sun)"
+    },
+    {
+      "key": "base:2",
+      "value": "(cause (greater (mass sun) (mass planet)) (revolve planet sun))"
+    },
+    {
+      "key": "base:3",
+      "value": "(greater (temperature sun) (temperature planet))"
+    },
+    {
+      "key": "target:0",
+      "value": "(greater (mass nucleus) (mass electron))"
+    },
+    {
+      "key": "target:1",
+      "value": "(revolve electron nucleus)"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "allen_temporal:5857df023eaa19ce0a2dbc5b6ab908c207a1f62cb7a0b3416b0f0d02bd4a194c"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

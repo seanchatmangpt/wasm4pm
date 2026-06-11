@@ -1,7 +1,7 @@
 {
   "package": "wasm4pm",
   "version": "26.6.10",
-  "generated_at": "2026-06-11T05:24:10.015Z",
+  "generated_at": "2026-06-11T07:09:50.608Z",
   "algorithm_count": 60,
   "algorithms": [
     {
@@ -545,5 +545,5 @@
       "structured_absence_reason": "requires feature-cloud WASM build"
     }
   ],
-  "reachability_hash": "92e0264e301a5dd0bb9b6c4e1846a0a2d4eeb39653441ddfb155252bd86d5900"
+  "reachability_hash": "9a54957f238b5846584c0ba57652c32f5334edd528f20903e7f0ba4678746092"
 }

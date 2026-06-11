@@ -1,0 +1,102 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_ibe",
+    "breed": "abductive_ibe",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveIbe",
+      "candidates": [
+        {
+          "id": "evolution",
+          "score": 3.9000000953674316,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "creation+evolution",
+          "score": 3.5999999046325684,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "creation",
+          "score": 0.699999988079071,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "ibe:best",
+          "value": "evolution"
+        },
+        {
+          "key": "ibe:score",
+          "value": "3.9000"
+        }
+      ],
+      "selected": "evolution",
+      "explanation": "IBE over 3 candidate sets: best explanation 'evolution' with score 3.9000 (coverage − 0.1·cost).",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "collect-observations",
+          "detail": "4 observations [biogeography,embryology,fossil_record,rudimentary_organs], 2 hypotheses",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "score-hypothesis",
+          "detail": "creation score=0.7000",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "compare",
+          "detail": "new best creation (0.7000)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "score-hypothesis",
+          "detail": "evolution score=3.9000",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "compare",
+          "detail": "new best evolution (3.9000 beats creation 0.7000)",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "score-hypothesis",
+          "detail": "creation+evolution score=3.6000",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "best-explanation",
+          "detail": "evolution score=3.9000",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4068b5167c3ec95788044f3c9f9018f66bde8360d85dc711d053523016fb3b8e",
+    "output_hash": "03505d975e04bcd59423ba1adc670229459c85b2d5d4f57d63ab1ab64b5b5a66",
+    "replay_pointer": "03505d975e04bcd5",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/abductive_ibe/.wasm4pm/receipts/4068b5167c3ec95788044f3c9f9018f66bde8360d85dc711d053523016fb3b8e.json"
+  },
+  "meta": {
+    "run_id": "9f669daa-2b43-4626-8d54-931879859e8a",
+    "timestamp": "2026-06-11T07:02:50.474Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

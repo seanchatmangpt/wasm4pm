@@ -1,0 +1,95 @@
+(node:14160) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "situation_calculus",
+    "breed": "situation_calculus",
+    "status": "ok",
+    "output": {
+      "breed": "SituationCalculus",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "holds:clear_a",
+          "value": "true"
+        },
+        {
+          "key": "holds:clear_b",
+          "value": "true"
+        },
+        {
+          "key": "holds:color_b_57820075",
+          "value": "true"
+        },
+        {
+          "key": "holds:handempty",
+          "value": "true"
+        },
+        {
+          "key": "holds:on_a_table",
+          "value": "true"
+        },
+        {
+          "key": "holds:on_b_table",
+          "value": "true"
+        }
+      ],
+      "selected": "s2",
+      "explanation": "situation_calculus progressed 2 actions; 6 fluents hold in the final situation; 2 fluents persisted by frame inertia",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-axioms",
+          "detail": "S0 |= {clear_a,color_b_57820075,handempty,on_a_b,on_b_table}; 2 actions; 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "regress-step",
+          "detail": "do(pickup_a, s0) -> s1: +{clear_b,holding_a} -{clear_a,handempty,on_a_b}",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "regress-step",
+          "detail": "do(putdown_a, s1) -> s2: +{clear_a,handempty,on_a_table} -{holding_a}",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "frame-persist",
+          "detail": "fluent 'color_b_57820075' persists by inertia across 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "frame-persist",
+          "detail": "fluent 'on_b_table' persists by inertia across 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "decision",
+          "detail": "final situation |= {clear_a,clear_b,color_b_57820075,handempty,on_a_table,on_b_table}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "832612e5c01e3433c7c330d156d755cbfe5c3a1a7ea945c2e7986877e9ba4e0a",
+    "output_hash": "ebd1649d87d1fd399c762ca63ebc3b6323fce3174af66e86b9defd3c012b5b62",
+    "replay_pointer": "ebd1649d87d1fd39",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/832612e5c01e3433c7c330d156d755cbfe5c3a1a7ea945c2e7986877e9ba4e0a.json"
+  },
+  "meta": {
+    "run_id": "753afab3-67fb-4b43-88dc-b33051c76e11",
+    "timestamp": "2026-06-11T08:35:10.819Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

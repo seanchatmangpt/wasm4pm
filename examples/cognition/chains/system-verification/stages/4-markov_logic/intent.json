@@ -1,0 +1,30 @@
+{
+  "intent": "MAP inference on the smokes/friends MLN with ev7c3d71e4",
+  "facts": [
+    {
+      "key": "mln:clause:smoke-cancer-a",
+      "value": "1.5|!smokes_anna,cancer_anna"
+    },
+    {
+      "key": "mln:clause:smoke-cancer-b",
+      "value": "1.5|!smokes_bob,cancer_bob"
+    },
+    {
+      "key": "mln:clause:smoke-ev7c3d71e4",
+      "value": "2.0|!ev7c3d71e4,cancer_anna"
+    },
+    {
+      "key": "evidence:smokes_anna",
+      "value": "true"
+    },
+    {
+      "key": "evidence:ev7c3d71e4",
+      "value": "true"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

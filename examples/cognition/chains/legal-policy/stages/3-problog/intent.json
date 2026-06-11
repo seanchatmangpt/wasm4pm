@@ -1,0 +1,1 @@
+{"intent": "prob", "facts": [{"key": "pfact:valid_c_53671937", "value": "0.8"}], "goals": [{"id": "g1", "predicate": "query", "value": "valid_c_53671937"}], "rules": [], "candidates": [], "cases": [], "state": []}

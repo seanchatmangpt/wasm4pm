@@ -1,0 +1,18 @@
+{
+  "intent": "propagate temporal constraints using 91da8cfb",
+  "facts": [
+    {
+      "key": "relation",
+      "value": "A,B_91da8cfb,m"
+    },
+    {
+      "key": "relation",
+      "value": "B_91da8cfb,C,d"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

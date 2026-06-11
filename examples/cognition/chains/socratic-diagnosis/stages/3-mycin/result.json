@@ -8,32 +8,37 @@
     "breed": "mycin",
     "status": "ok",
     "output": {
-      "breed": "mycin",
+      "breed": "Mycin",
       "candidates": [
         {
           "id": "influenza",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "pneumonia",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "covid19",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "common_cold",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "tuberculosis",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -113,9 +118,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/e78e47e0d84b8c3684e348b23d9a90e917a76474bc2af45f40d545940502bdec.json"
   },
   "meta": {
-    "run_id": "fc0ebdaf-e295-4629-86d4-11030abe56c3",
-    "timestamp": "2026-06-10T15:46:46.275Z",
-    "duration_ms": 14,
-    "version": "26.6.9"
+    "run_id": "c2062c5f-ef05-44a7-97b4-49ff01f5a2dc",
+    "timestamp": "2026-06-11T08:34:33.417Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
   }
 }

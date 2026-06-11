@@ -1,0 +1,75 @@
+(node:13889) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "fuzzy_logic",
+    "breed": "fuzzy_logic",
+    "status": "ok",
+    "output": {
+      "breed": "FuzzyLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "fuzzy:temp:hot_c_6bce1b0b",
+          "value": "tri:10,30,50"
+        },
+        {
+          "key": "fuzzy:heat:change_c_6bce1b0b",
+          "value": "tri:0,25,100"
+        },
+        {
+          "key": "fuzzy:input:temp",
+          "value": "30"
+        },
+        {
+          "key": "fuzzy:output:heat",
+          "value": "41.66667"
+        }
+      ],
+      "selected": null,
+      "explanation": "Mamdani fuzzy inference: min t-norm firing, max aggregation, 101-point centroid",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "fuzzy-fuzzify",
+          "detail": "fuzzy:temp:hot_c_6bce1b0b = 1",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "fuzzy-fire",
+          "detail": "rule r1 fired with strength 1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "fuzzy-aggregate",
+          "detail": "fuzzy:heat:change_c_6bce1b0b max strength = 1",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "fuzzy-defuzz",
+          "detail": "heat = 41.66667",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7d4b747a4c8a0ef70186acae311c07e3fee29031dcda1f45a78590181d0190e1",
+    "output_hash": "fc6d1c16d4743f0fe53deba4886b67e4836c585fe33975374cd112d100e08d9b",
+    "replay_pointer": "fc6d1c16d4743f0f",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/7d4b747a4c8a0ef70186acae311c07e3fee29031dcda1f45a78590181d0190e1.json"
+  },
+  "meta": {
+    "run_id": "32c22a27-bbbd-4286-b502-ba5106c6bb02",
+    "timestamp": "2026-06-11T08:34:58.214Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

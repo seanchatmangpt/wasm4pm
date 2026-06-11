@@ -34,4 +34,4 @@ Model: `ocel/models/l1/meta_reasoning.ocpn.json`; fitness 1.0.
 Deterministic (BTreeMap ordering); no RNG. Median 2.58 µs.
 
 ## 8. Status
-PARTIAL_ALIVE; integrates LAST in the P4 order (consumes the ensemble via host fan-in).
+ADMITTED; integrates LAST in the P4 order (consumes the ensemble via host fan-in).

@@ -1,0 +1,74 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_semantics",
+    "breed": "autoinstinct_semantics",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctSemantics",
+      "candidates": [
+        {
+          "id": "Atrans",
+          "score": 0.8999999761581421,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "act",
+          "value": "Atrans"
+        },
+        {
+          "key": "actor",
+          "value": "John"
+        },
+        {
+          "key": "object",
+          "value": "book"
+        },
+        {
+          "key": "to",
+          "value": "Mary"
+        }
+      ],
+      "selected": "{\"act\":\"Atrans\",\"actor\":\"John\",\"object\":\"book\",\"to\":\"Mary\",\"from\":null}",
+      "explanation": "AutoinstinctSemantics extracted CD primitive Atrans (transfer of abstract relationship (e.g. give)) from actor=John object=book",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-parser",
+          "detail": "SemanticParser created; parsing intent: \"John give book to Mary\"",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "extract-act",
+          "detail": "rule=sem-ATRANS act=Atrans actor=John object=book",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "extract-recipient",
+          "detail": "to=Mary",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5",
+    "output_hash": "936d32763f36fd871016eb8a4f15b928de058a8a63799e3bcdab54054216c343",
+    "replay_pointer": "936d32763f36fd87",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5.json"
+  },
+  "meta": {
+    "run_id": "16bfadcc-688b-4155-b2e3-c77cf40d641b",
+    "timestamp": "2026-06-11T08:38:15.279Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

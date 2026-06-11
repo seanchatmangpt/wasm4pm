@@ -1,0 +1,64 @@
+{
+  "intent": "deliver the package",
+  "state": [
+    {
+      "predicate": "pkg",
+      "value": "at_depot"
+    },
+    {
+      "predicate": "truck",
+      "value": "at_depot"
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "task",
+      "value": "deliver"
+    }
+  ],
+  "rules": [
+    {
+      "id": "method:deliver:by_truck",
+      "premise": [
+        "pkg=at_depot"
+      ],
+      "conclusion": "op:load;op:drive;op:unload",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:load",
+      "premise": [
+        "pkg=at_depot",
+        "truck=at_depot"
+      ],
+      "conclusion": "!pkg=at_depot;pkg=in_truck",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:drive",
+      "premise": [
+        "truck=at_depot"
+      ],
+      "conclusion": "!truck=at_depot;truck=at_dest",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:unload",
+      "premise": [
+        "pkg=in_truck",
+        "truck=at_dest"
+      ],
+      "conclusion": "!pkg=in_truck;pkg=at_dest",
+      "certainty": 1.0
+    }
+  ],
+  "candidates": [],
+  "facts": [
+    {
+      "key": "prior_stage_hash",
+      "value": "hearsay:f0af85a2f1d2eba4ce4c573060a552a8656c970a0492a015ae618b44af1daf89"
+    }
+  ],
+  "cases": []
+}

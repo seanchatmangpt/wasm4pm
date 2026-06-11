@@ -1,0 +1,61 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "gps",
+    "breed": "gps",
+    "status": "ok",
+    "output": {
+      "breed": "Gps",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "prior_stage_hash",
+          "value": "fuzzy_logic:19e706073a7021df719c2c347d1ee89920f91b729eecd25993be8688369df3b2"
+        }
+      ],
+      "selected": "R6,R12",
+      "explanation": "GPS plan (2 ops): R6 → R12",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "reduce-gap",
+          "detail": "expr=L0",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "reduce-gap",
+          "detail": "expr=L2",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-operator",
+          "detail": "R6",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "apply-operator",
+          "detail": "R12",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "2ebfae51582b624f42937307099213419ae13b37b47434f1005404a559a3978a",
+    "output_hash": "091667199098d94ee0e299ed1bd52f5511061c8f0594d36d9781b8050ba4d59c",
+    "replay_pointer": "091667199098d94e",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/2ebfae51582b624f42937307099213419ae13b37b47434f1005404a559a3978a.json"
+  },
+  "meta": {
+    "run_id": "483ecca4-ab7c-466c-a9c2-2ad713001ce1",
+    "timestamp": "2026-06-11T08:38:23.448Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

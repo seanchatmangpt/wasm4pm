@@ -8,11 +8,36 @@
     "breed": "eliza",
     "status": "ok",
     "output": {
-      "breed": "eliza",
+      "breed": "Eliza",
       "candidates": [],
-      "facts": [],
-      "selected": "i feel *",
-      "explanation": "Tell me more about feeling sad about your deadlines.",
+      "facts": [
+        {
+          "key": "utterance:1",
+          "value": "Men are all alike."
+        },
+        {
+          "key": "utterance:2",
+          "value": "They're always bugging us about something or other."
+        },
+        {
+          "key": "utterance:3",
+          "value": "Well, my boyfriend made me come here."
+        },
+        {
+          "key": "utterance:4",
+          "value": "He says I'm depressed much of the time."
+        },
+        {
+          "key": "utterance:5",
+          "value": "It's true, I am unhappy."
+        },
+        {
+          "key": "utterance:6",
+          "value": "I need some help, that much seems certain."
+        }
+      ],
+      "selected": "*",
+      "explanation": "Please go on.",
       "inference_trace": [
         {
           "step": 0,
@@ -28,29 +53,47 @@
         },
         {
           "step": 2,
-          "kind": "match-pattern",
-          "detail": "i feel *",
+          "kind": "try-pattern",
+          "detail": "i need *",
           "depth": 0
         },
         {
           "step": 3,
+          "kind": "try-pattern",
+          "detail": "i am *",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "try-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "match-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 6,
           "kind": "bind-slot",
-          "detail": "${1}=sad about my deadlines",
+          "detail": "${1}=men are all alike.",
           "depth": 0
         }
       ]
     },
-    "run_id": "1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722",
-    "output_hash": "9932078050af4f41040f5f277540604fc0fb4f8f68536c195e28df0050496ccf",
-    "replay_pointer": "9932078050af4f41",
-    "inference_step_count": 4,
+    "run_id": "f1e36831ca5ca3b1b7158bf3459277d8d63921a4b4d03a0e7301f3252ad1fc86",
+    "output_hash": "dd442150f3db7c73356816b7d9828d048467c6abe04301e45b9da162138bebdf",
+    "replay_pointer": "dd442150f3db7c73",
+    "inference_step_count": 7,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/eliza/.wasm4pm/receipts/f1e36831ca5ca3b1b7158bf3459277d8d63921a4b4d03a0e7301f3252ad1fc86.json"
   },
   "meta": {
-    "run_id": "37097ec3-2570-4949-ae7d-868ccd1e1de0",
-    "timestamp": "2026-06-10T15:46:43.113Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "41385f09-f3ce-4d57-a262-00e204427d39",
+    "timestamp": "2026-06-11T07:03:07.010Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

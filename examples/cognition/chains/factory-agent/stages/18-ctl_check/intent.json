@@ -1,0 +1,82 @@
+{
+  "intent": "verify mutual exclusion safety",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ts:init",
+      "value": "s0"
+    },
+    {
+      "key": "ts:edge:s0",
+      "value": "s1,s3"
+    },
+    {
+      "key": "ts:edge:s1",
+      "value": "s2,s5"
+    },
+    {
+      "key": "ts:edge:s2",
+      "value": "s0"
+    },
+    {
+      "key": "ts:edge:s3",
+      "value": "s4,s5"
+    },
+    {
+      "key": "ts:edge:s4",
+      "value": "s0"
+    },
+    {
+      "key": "ts:edge:s5",
+      "value": "s6,s7"
+    },
+    {
+      "key": "ts:edge:s6",
+      "value": "s3"
+    },
+    {
+      "key": "ts:edge:s7",
+      "value": "s1"
+    },
+    {
+      "key": "ts:label:s1",
+      "value": "t1"
+    },
+    {
+      "key": "ts:label:s2",
+      "value": "c1"
+    },
+    {
+      "key": "ts:label:s3",
+      "value": "t2"
+    },
+    {
+      "key": "ts:label:s4",
+      "value": "c2"
+    },
+    {
+      "key": "ts:label:s5",
+      "value": "t1,t2"
+    },
+    {
+      "key": "ts:label:s6",
+      "value": "c1,t2"
+    },
+    {
+      "key": "ts:label:s7",
+      "value": "t1,c2"
+    },
+    {
+      "key": "ctl:formula",
+      "value": "A G !(c1 & c2)"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "csp_ac3:11946bdc64f393998544d08a08b6a1f00dce1d33353574e26733266f491aa972"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

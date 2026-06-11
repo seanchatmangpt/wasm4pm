@@ -8,22 +8,25 @@
     "breed": "cbr",
     "status": "ok",
     "output": {
-      "breed": "cbr",
+      "breed": "Cbr",
       "candidates": [
         {
           "id": "retain_as_new_case",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "merge_with_existing_flu_case",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "flag_for_expert_review",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -64,6 +67,7 @@
           "value": "3"
         }
       ],
+      "selected": null,
       "explanation": "CBR found no cases",
       "inference_trace": [
         {
@@ -88,9 +92,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/c2ad18ec7695e8c01f9ad4b5fa03232de297efbd5eb8cb6eacd0964d523b884f.json"
   },
   "meta": {
-    "run_id": "96cf076e-2f0b-488d-8c84-e9add2e28223",
-    "timestamp": "2026-06-10T15:46:47.489Z",
-    "duration_ms": 15,
-    "version": "26.6.9"
+    "run_id": "064759a7-ce31-42c6-9f3a-3e891cbe5f3b",
+    "timestamp": "2026-06-11T08:34:34.602Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
   }
 }

@@ -40,4 +40,4 @@ is KEPT — the structural caps (belief points ≤ 16, horizon ≤ 8, refuse
 |S|·|A|·|O| > 512) are the paper-sanctioned PBVI approximation knob.
 
 ## 8. Status
-PARTIAL_ALIVE; full BVC ceremony complete.
+ADMITTED; full BVC ceremony complete.

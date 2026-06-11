@@ -8,46 +8,67 @@
     "breed": "autoinstinct_learning",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctlearning",
+      "breed": "AutoinstinctLearning",
       "candidates": [
         {
           "id": "plan-step-0",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
         {
-          "key": "on_table",
-          "value": "A"
+          "key": "achieved",
+          "value": "section-1-cleartop"
         },
         {
-          "key": "clear",
-          "value": "A"
+          "key": "achieved",
+          "value": "section-2-bottom-up-ordering"
+        },
+        {
+          "key": "belief:patch_cleartop_known",
+          "value": "1.0"
+        },
+        {
+          "key": "belief:patch_bottom_up_known",
+          "value": "1.0"
+        },
+        {
+          "key": "belief:patch_space_compacting_known",
+          "value": "0.5"
+        },
+        {
+          "key": "belief:patch_space_flushing_known",
+          "value": "0.2"
+        },
+        {
+          "key": "belief:patch_protect_known",
+          "value": "0.0"
         }
       ],
       "selected": "1 steps to goal",
-      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00000011, final_state=0b00000011, goal_reached=true",
+      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00011111, final_state=0b01111111, goal_reached=true",
       "inference_trace": [
         {
           "step": 0,
           "kind": "plan-step",
-          "detail": "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+          "detail": "state=0b01111111 distance=0 action toward goal: flip next missing bit",
           "depth": 0
         }
       ]
     },
-    "run_id": "7130631c2fdf19c04415ee25b3eb78b79bc59d072acbd73a27987e3f9b6a6ac9",
-    "output_hash": "98a21d56937ae82e6ecc7814b0f0a97469590d280639018178bcba4395de6a1e",
-    "replay_pointer": "98a21d56937ae82e",
+    "run_id": "06c166b58439b943a2a8314c4054961fcec3f5fee87d5e94a6617f9d9ebb9220",
+    "output_hash": "9f1389b72fe6023c465a59996e49ba84ee6f8b461759181336bb20359477011c",
+    "replay_pointer": "9f1389b72fe6023c",
     "inference_step_count": 1,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/7130631c2fdf19c04415ee25b3eb78b79bc59d072acbd73a27987e3f9b6a6ac9.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_learning/.wasm4pm/receipts/06c166b58439b943a2a8314c4054961fcec3f5fee87d5e94a6617f9d9ebb9220.json"
   },
   "meta": {
-    "run_id": "b1191f86-87f8-48a4-83a5-df351a6793f9",
-    "timestamp": "2026-06-10T15:46:43.494Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "f7848a5c-e238-431a-8441-76e099345af1",
+    "timestamp": "2026-06-11T07:02:54.576Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
   }
 }

@@ -1,3 +1,5 @@
+(node:13520) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,27 +10,31 @@
     "breed": "hearsay",
     "status": "ok",
     "output": {
-      "breed": "hearsay",
+      "breed": "Hearsay",
       "candidates": [
         {
           "id": "cyclohexanol",
           "score": 0.7200000286102295,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "hexanal",
           "score": 0.6499999761581421,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "2-hexanone",
           "score": 0.6100000143051147,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "methyl_cyclopentanol",
           "score": 0.47999998927116394,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -166,9 +172,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/2ef006d0ef4ad54e9ec86e824958b16e0988222f1a07ca15ad937fb01e45c11b.json"
   },
   "meta": {
-    "run_id": "9e2278bd-fa57-497b-b2d4-485cc1b4f623",
-    "timestamp": "2026-06-10T15:46:47.872Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "5cd26ec4-0bf8-44e4-9739-4644376b0080",
+    "timestamp": "2026-06-11T08:34:34.975Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
   }
 }

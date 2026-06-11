@@ -1,0 +1,241 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ilp",
+    "breed": "ilp",
+    "status": "ok",
+    "output": {
+      "breed": "Ilp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ilp:rule:0",
+          "value": "daughter(V0,V1) :- female(V0), parent(V1,V0)"
+        }
+      ],
+      "selected": "daughter(V0,V1) :- female(V0), parent(V1,V0)",
+      "explanation": "FOIL induced 1 clause(s) for daughter/2 by information gain",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-example",
+          "detail": "+daughter(eve,tom)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "load-example",
+          "detail": "+daughter(mary,ann)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "load-example",
+          "detail": "-daughter(ann,mary)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "load-example",
+          "detail": "-daughter(eve,ann)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "load-example",
+          "detail": "-daughter(ian,tom)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "load-example",
+          "detail": "-daughter(tom,ann)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "propose-literal",
+          "detail": "female(V0)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "score-gain",
+          "detail": "female(V0): t=2 p1=2 n1=2 gain=1.1699",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "propose-literal",
+          "detail": "female(V1)",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "score-gain",
+          "detail": "female(V1): t=1 p1=1 n1=3 gain=-0.4150",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "score-gain",
+          "detail": "parent(V1,V0): t=2 p1=2 n1=2 gain=1.1699",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V2)",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "score-gain",
+          "detail": "parent(V1,V2): t=2 p1=4 n1=6 gain=0.5261",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V0)",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "score-gain",
+          "detail": "parent(V2,V0): t=2 p1=2 n1=3 gain=0.5261",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V1)",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "score-gain",
+          "detail": "parent(V2,V1): t=1 p1=1 n1=2 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "add-literal",
+          "detail": "female(V0) (gain=1.1699)",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "propose-literal",
+          "detail": "female(V1)",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "score-gain",
+          "detail": "female(V1): t=1 p1=1 n1=2 gain=-0.5850",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "score-gain",
+          "detail": "parent(V1,V0): t=2 p1=2 n1=0 gain=2.0000",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V2)",
+          "depth": 0
+        },
+        {
+          "step": 24,
+          "kind": "score-gain",
+          "detail": "parent(V1,V2): t=2 p1=4 n1=2 gain=0.8301",
+          "depth": 0
+        },
+        {
+          "step": 25,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V0)",
+          "depth": 0
+        },
+        {
+          "step": 26,
+          "kind": "score-gain",
+          "detail": "parent(V2,V0): t=2 p1=2 n1=1 gain=0.8301",
+          "depth": 0
+        },
+        {
+          "step": 27,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V1)",
+          "depth": 0
+        },
+        {
+          "step": 28,
+          "kind": "score-gain",
+          "detail": "parent(V2,V1): t=1 p1=1 n1=1 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 29,
+          "kind": "add-literal",
+          "detail": "parent(V1,V0) (gain=2.0000)",
+          "depth": 0
+        },
+        {
+          "step": 30,
+          "kind": "cover-remove",
+          "detail": "+daughter(eve,tom) covered",
+          "depth": 0
+        },
+        {
+          "step": 31,
+          "kind": "cover-remove",
+          "detail": "+daughter(mary,ann) covered",
+          "depth": 0
+        },
+        {
+          "step": 32,
+          "kind": "emit-clause",
+          "detail": "daughter(V0,V1) :- female(V0), parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 33,
+          "kind": "decision",
+          "detail": "learned 1 clause(s) covering 2 positives, excluding 4 negatives",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "14adfababff250dd24a7247b1b0d7c9e90c9dfbf27f1162b7c1ce2068e378360",
+    "output_hash": "340869bc3cd91796551f0b84193f0725db44c43b4f8860bb13c2516dbc3883e7",
+    "replay_pointer": "340869bc3cd91796",
+    "inference_step_count": 34,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/ilp/.wasm4pm/receipts/14adfababff250dd24a7247b1b0d7c9e90c9dfbf27f1162b7c1ce2068e378360.json"
+  },
+  "meta": {
+    "run_id": "06c6e77c-9d40-4f93-b59d-b63339cf5dca",
+    "timestamp": "2026-06-11T07:03:12.559Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

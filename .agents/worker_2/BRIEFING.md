@@ -1,54 +1,64 @@
-# BRIEFING — 2026-06-10T23:15:30Z
+# BRIEFING — 2026-06-10T23:51:36-07:00
 
 ## Mission
-Implement and verify the next 3 of the 10 Tier P1 cognition breeds: csp_ac3, default_logic, and htn_planning.
+Populate and verify individual examples and chain stages for breeds 7-12.
 
 ## 🔒 My Identity
-- Archetype: teamwork_preview_worker
+- Archetype: implementer
 - Roles: implementer, qa, specialist
-- Working directory: /Users/sac/wasm4pm/.agents/worker_2/
-- Original parent: 3d567090-6d98-4a2d-b022-8e3643cef9d8
-- Milestone: P1 cognition breeds
+- Working directory: /Users/sac/wasm4pm/.agents/worker_2
+- Original parent: d89d07ab-966a-42a8-9712-32afc9952dd3
+- Milestone: Breed Examples and Chain Stages 7-12
 
 ## 🔒 Key Constraints
-- CODE_ONLY network mode: no external web access, no http requests.
-- No cheating, no dummy/facade implementations, no hardcoded verification results.
-- Write only to own folder for agent metadata, read any folder.
-- Follow the 5-component handoff report.
+- CODE_ONLY network mode: No external network access.
+- Minimal change principle.
+- Use explicit git commands, no blind `git add .`.
+- Required Final Proof Block in final response.
 
 ## Current Parent
-- Conversation ID: 3d567090-6d98-4a2d-b022-8e3643cef9d8
-- Updated: 2026-06-10T23:15:30Z
+- Conversation ID: d89d07ab-966a-42a8-9712-32afc9952dd3
+- Updated: yes
 
 ## Task Summary
-- **What to build**: 3 P1 cognition breeds (`csp_ac3`, `default_logic`, `htn_planning`) in `wasm4pm-cognition`.
-- **Success criteria**: All cargo tests, JS integration tests pass, fitness 1.0 against generated traces, documentation generated, registry updated.
-- **Interface contracts**: `crates/wasm4pm-cognition` and `packages/cognition` structures.
-- **Code layout**: Source in `crates/wasm4pm-cognition/src/breeds/`, tests in `crates/wasm4pm-cognition/tests/`, etc.
+- **What to build**: Examples and chain stages for breeds 7-12.
+- **Success criteria**: All directories created, run.sh scripts generated and executed, transform.py scripts verified.
+- **Interface contracts**: Input block extracted from `packages/cognition/src/__tests__/fixtures/papers/<breed>.json`.
+- **Code layout**: `examples/cognition/<breed>/` and `examples/cognition/chains/factory-agent/stages/<stage_name>/`.
 
 ## Change Tracker
 - **Files modified**:
-  - `crates/wasm4pm-cognition/src/breeds/csp_ac3.rs`
-  - `crates/wasm4pm-cognition/src/breeds/default_logic.rs`
-  - `crates/wasm4pm-cognition/src/breeds/htn_planning.rs`
+  - `examples/cognition/autoinstinct_learning/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/autoinstinct_neurosis/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/autoinstinct_semantics/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/autoinstinct_vision/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/bayesian_network/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/belief_merging/intent.json`, `run.sh`, `result.json`, `last-output.log`
+  - `examples/cognition/chains/factory-agent/stages/06-autoinstinct_learning/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/07-autoinstinct_neurosis/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/08-autoinstinct_semantics/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/09-autoinstinct_vision/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/10-bayesian_network/transform.py`
+  - `examples/cognition/chains/factory-agent/stages/11-belief_merging/transform.py`
 - **Build status**: Pass
 - **Pending issues**: None
 
 ## Quality Status
-- **Build/test result**: Pass (cargo test and vitest integration tests all passing)
+- **Build/test result**: Pass (319 cargo tests passed, 365 vitest tests passed)
 - **Lint status**: Pass
-- **Tests added/modified**: Yes, added test cases for all 3 new breeds across Rust and TypeScript files.
+- **Tests added/modified**: Verified all example execution outputs (result.json)
 
 ## Loaded Skills
-- **Source**: none
-- **Local copy**: none
-- **Core methodology**: none
+- **Source**: None
+- **Local copy**: None
+- **Core methodology**: None
 
 ## Key Decisions Made
-- Rebuild the WASM module using wasm-pack and execute Vitest integration tests without mocks to adhere to monorepo integrity checks.
+- All breed fixtures were parsed and input segments were mapped exactly to `intent.json`.
+- Completed execution of examples and verified they run successfully.
+- Written transform scripts to bind prior stages as requested.
 
 ## Artifact Index
-- `/Users/sac/wasm4pm/.agents/worker_2/ORIGINAL_REQUEST.md` — Original request text
-- `/Users/sac/wasm4pm/.agents/worker_2/BRIEFING.md` — Briefing card
-- `/Users/sac/wasm4pm/.agents/worker_2/progress.md` — Progress tracker
-- `/Users/sac/wasm4pm/.agents/worker_2/handoff.md` — Handoff report
+- `/Users/sac/wasm4pm/.agents/worker_2/ORIGINAL_REQUEST.md` — Original request
+- `/Users/sac/wasm4pm/.agents/worker_2/BRIEFING.md` — Current briefing
+- `/Users/sac/wasm4pm/.agents/worker_2/progress.md` — Progress log

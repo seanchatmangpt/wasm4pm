@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.6.10",
-  "commit": "eceacfcb43d58b230f109ecc553be55a186d2784",
+  "commit": "7a18553d4cbde7d842c7e2474563779a1ddd9ee0",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "compute_ewma",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db",
-      "duration_ms": 44.247,
+      "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88",
+      "duration_ms": 53.133,
       "expected_path": {
         "route_id": "wpm.example.production_line.compute_ewma.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db",
-                "duration_ms": 44.247
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88",
+                "duration_ms": 53.133
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db"
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db"
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "d30c1d50cee3065e7f0b980468c636117690eae18a595768ef117f242b02d6fa"
+        "expected_ocel2_hash": "38fb8821edbf3d6334f9c31057a0d5b85f74bf5959cab7b27c2a351b7dfd1c21"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_production_line_compute_ewma_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:24:21.328Z",
+              "time": "2026-06-11T07:10:06.116Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -412,7 +412,7 @@
             {
               "id": "evt_production_line_compute_ewma_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:24:20.924Z",
+              "time": "2026-06-11T07:10:05.738Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -426,7 +426,7 @@
             {
               "id": "evt_production_line_compute_ewma_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:24:24.264Z",
+              "time": "2026-06-11T07:10:04.453Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -440,7 +440,7 @@
             {
               "id": "evt_production_line_compute_ewma_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:24:21.560Z",
+              "time": "2026-06-11T07:10:05.788Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_ewma",
@@ -463,7 +463,7 @@
             {
               "id": "evt_production_line_compute_ewma_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:24:23.539Z",
+              "time": "2026-06-11T07:10:09.377Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_ewma",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db",
-                "duration_ms": 44.247
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88",
+                "duration_ms": 53.133
               }
             },
             {
               "id": "evt_production_line_compute_ewma_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:24:26.101Z",
+              "time": "2026-06-11T07:10:10.325Z",
               "relationships": [
                 {
                   "objectId": "result_compute_ewma_production_line",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db"
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88"
               }
             },
             {
               "id": "evt_production_line_compute_ewma_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:24:26.844Z",
+              "time": "2026-06-11T07:10:08.318Z",
               "relationships": [
                 {
                   "objectId": "result_compute_ewma_production_line",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db"
+                "result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88"
               }
             },
             {
               "id": "evt_production_line_compute_ewma_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:24:22.993Z",
+              "time": "2026-06-11T07:10:09.575Z",
               "relationships": [
                 {
                   "objectId": "example_production_line",
@@ -540,7 +540,7 @@
             {
               "id": "evt_production_line_compute_ewma_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:24:27.456Z",
+              "time": "2026-06-11T07:10:10.582Z",
               "relationships": [
                 {
                   "objectId": "result_compute_ewma_production_line",
@@ -558,7 +558,7 @@
             {
               "id": "evt_production_line_compute_ewma_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:24:25.854Z",
+              "time": "2026-06-11T07:10:11.256Z",
               "relationships": [
                 {
                   "objectId": "result_compute_ewma_production_line",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "7894bae9a2ee055eb7ea0a1c69137723c6dfcccd802945b4f3493ba75022b34f",
-        "observed_result_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db"
+        "observed_ocel2_hash": "01fe655f389bcbc481b55f7055354905865e3982bacfbb8a6e443f611a0626cd",
+        "observed_result_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
-        "output_artifact_hash": "f9810140f8c576e562d725521a621c0948bc49510250f531006f5e7fbef122db",
+        "output_artifact_hash": "91e0bf2d6d83165745f5b31e8a51ca64d780add500cea1135e3474edaea7ef88",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "analyze_variant_complexity",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354",
-      "duration_ms": 15.055,
+      "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d",
+      "duration_ms": 30.534,
       "expected_path": {
         "route_id": "wpm.example.production_line.analyze_variant_complexity.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354",
-                "duration_ms": 15.055
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d",
+                "duration_ms": 30.534
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354"
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354"
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "9c4d7d96c99357ea5781a075ddf79bcef2b585d3101c71ee2b37f45db1464b02"
+        "expected_ocel2_hash": "ccba2a12dc4a8c4b3677d55ac9d9395619c2108bfecca62615ceb0b573250913"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:24:23.539Z",
+              "time": "2026-06-11T07:10:05.149Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:24:24.096Z",
+              "time": "2026-06-11T07:10:07.896Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:24:19.960Z",
+              "time": "2026-06-11T07:10:04.606Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:24:23.357Z",
+              "time": "2026-06-11T07:10:09.012Z",
               "relationships": [
                 {
                   "objectId": "algorithm_analyze_variant_complexity",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:24:21.517Z",
+              "time": "2026-06-11T07:10:05.333Z",
               "relationships": [
                 {
                   "objectId": "algorithm_analyze_variant_complexity",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354",
-                "duration_ms": 15.055
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d",
+                "duration_ms": 30.534
               }
             },
             {
               "id": "evt_production_line_analyze_variant_complexity_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:24:25.475Z",
+              "time": "2026-06-11T07:10:07.610Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_variant_complexity_production_line",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354"
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d"
               }
             },
             {
               "id": "evt_production_line_analyze_variant_complexity_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:24:22.270Z",
+              "time": "2026-06-11T07:10:08.630Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_variant_complexity_production_line",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354"
+                "result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d"
               }
             },
             {
               "id": "evt_production_line_analyze_variant_complexity_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:24:24.989Z",
+              "time": "2026-06-11T07:10:08.330Z",
               "relationships": [
                 {
                   "objectId": "example_production_line",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:24:25.478Z",
+              "time": "2026-06-11T07:10:10.543Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_variant_complexity_production_line",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_production_line_analyze_variant_complexity_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:24:24.209Z",
+              "time": "2026-06-11T07:10:09.207Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_variant_complexity_production_line",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "bff31add958ce234bd947f2597541afabbb6b4fb1421513d61e3f7baeab6a6c6",
-        "observed_result_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354"
+        "observed_ocel2_hash": "0b4459d2df98d0bce2b3a6fc8837300c6fcc300062a0a458928e6fad70c87be7",
+        "observed_result_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
-        "output_artifact_hash": "1ab229cfff69145f727555913790bacad0b0283857e17186eb352425434e2354",
+        "output_artifact_hash": "15ca7af38839eb0ec540eee09b577fb58702d084d1caf3edd44860aefe1e3c9d",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "compute_activity_transition_matrix",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369",
-      "duration_ms": 21.074,
+      "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a",
+      "duration_ms": 13.099,
       "expected_path": {
         "route_id": "wpm.example.production_line.compute_activity_transition_matrix.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369",
-                "duration_ms": 21.074
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a",
+                "duration_ms": 13.099
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369"
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369"
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "9cccdd54e26a17eae8134443591e38e3d92ff089a8957562dc99b23aa834beb3"
+        "expected_ocel2_hash": "7db04c39e99ca107b4c657d1c332daca91bb468d0d3705920a02bf74905b4603"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:24:19.227Z",
+              "time": "2026-06-11T07:10:05.838Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:24:22.259Z",
+              "time": "2026-06-11T07:10:05.728Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:24:23.880Z",
+              "time": "2026-06-11T07:10:08.670Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:24:24.783Z",
+              "time": "2026-06-11T07:10:05.370Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_activity_transition_matrix",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:24:24.849Z",
+              "time": "2026-06-11T07:10:05.807Z",
               "relationships": [
                 {
                   "objectId": "algorithm_compute_activity_transition_matrix",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369",
-                "duration_ms": 21.074
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a",
+                "duration_ms": 13.099
               }
             },
             {
               "id": "evt_production_line_compute_activity_transition_matrix_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:24:24.970Z",
+              "time": "2026-06-11T07:10:08.215Z",
               "relationships": [
                 {
                   "objectId": "result_compute_activity_transition_matrix_production_line",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369"
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a"
               }
             },
             {
               "id": "evt_production_line_compute_activity_transition_matrix_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:24:22.292Z",
+              "time": "2026-06-11T07:10:08.991Z",
               "relationships": [
                 {
                   "objectId": "result_compute_activity_transition_matrix_production_line",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369"
+                "result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a"
               }
             },
             {
               "id": "evt_production_line_compute_activity_transition_matrix_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:24:26.190Z",
+              "time": "2026-06-11T07:10:10.008Z",
               "relationships": [
                 {
                   "objectId": "example_production_line",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:24:27.725Z",
+              "time": "2026-06-11T07:10:11.221Z",
               "relationships": [
                 {
                   "objectId": "result_compute_activity_transition_matrix_production_line",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:24:27.659Z",
+              "time": "2026-06-11T07:10:07.955Z",
               "relationships": [
                 {
                   "objectId": "result_compute_activity_transition_matrix_production_line",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "c184472b4d7b1e41b11d7a33af9a0006eeb4930a756bd7d54580d132d1eda92a",
-        "observed_result_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369"
+        "observed_ocel2_hash": "80620703ecf8a2670db23dbfe81662f7d78a10000dab865607f8a67f9e0d35b1",
+        "observed_result_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
-        "output_artifact_hash": "e2c655ab54a9439a4624032a8b9573075b0dcb66de6a55458dbd3584fdb98369",
+        "output_artifact_hash": "95b28091f8c9ae553494cfcb2ad2c2232306f7f419d93c333ae883fc0cdbe45a",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "analyze_process_speedup",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0",
-      "duration_ms": 33.407,
+      "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031",
+      "duration_ms": 44.33,
       "expected_path": {
         "route_id": "wpm.example.production_line.analyze_process_speedup.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0",
-                "duration_ms": 33.407
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031",
+                "duration_ms": 44.33
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0"
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0"
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "aae8435d7bc301b9adaa99455fd3d0721b6424320f1142062da7c4ab4cefc174"
+        "expected_ocel2_hash": "d3e27c3c6fbc7ca5ecdf0b4501eaef5f8898bc0292cba24a7ec37ffe54d04ee8"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-06-11T05:24:20.967Z",
+              "time": "2026-06-11T07:10:05.797Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-06-11T05:24:20.768Z",
+              "time": "2026-06-11T07:10:04.893Z",
               "relationships": [
                 {
                   "objectId": "log_production_line",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-06-11T05:24:24.583Z",
+              "time": "2026-06-11T07:10:06.478Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.6.10",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-06-11T05:24:24.628Z",
+              "time": "2026-06-11T07:10:08.300Z",
               "relationships": [
                 {
                   "objectId": "algorithm_analyze_process_speedup",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-06-11T05:24:25.197Z",
+              "time": "2026-06-11T07:10:09.674Z",
               "relationships": [
                 {
                   "objectId": "algorithm_analyze_process_speedup",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0",
-                "duration_ms": 33.407
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031",
+                "duration_ms": 44.33
               }
             },
             {
               "id": "evt_production_line_analyze_process_speedup_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-06-11T05:24:22.491Z",
+              "time": "2026-06-11T07:10:07.461Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_process_speedup_production_line",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0"
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031"
               }
             },
             {
               "id": "evt_production_line_analyze_process_speedup_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-06-11T05:24:26.586Z",
+              "time": "2026-06-11T07:10:09.179Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_process_speedup_production_line",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0"
+                "result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031"
               }
             },
             {
               "id": "evt_production_line_analyze_process_speedup_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-06-11T05:24:23.803Z",
+              "time": "2026-06-11T07:10:10.088Z",
               "relationships": [
                 {
                   "objectId": "example_production_line",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-06-11T05:24:25.013Z",
+              "time": "2026-06-11T07:10:10.293Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_process_speedup_production_line",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_production_line_analyze_process_speedup_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-06-11T05:24:26.042Z",
+              "time": "2026-06-11T07:10:09.650Z",
               "relationships": [
                 {
                   "objectId": "result_analyze_process_speedup_production_line",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "42b8457cea46c48d01a2d0e0fd368ba9f1122a2389c95c25da8c43c0a99ad277",
-        "observed_result_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0"
+        "observed_ocel2_hash": "0c060bd442f85730d563f2f5b0e4275a043b231ac1fc6dc34fd53ba5f963139f",
+        "observed_result_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,14 +2453,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
-        "output_artifact_hash": "770c1213e9de5b4950f960e27c413f163e283ba8f4dd3e9c0754304498cefeb0",
+        "output_artifact_hash": "e10639d4ee55ae745958ca1bc6d2fd97ea65e07c253fd4923198a76b15232031",
         "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 4,
-  "created_at": "2026-06-11T05:24:18.937Z",
+  "created_at": "2026-06-11T07:10:03.034Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "b326c4a078db79ba7d825e5825c342310b5e9bea0acb5ce4045688363266b763"
+  "receipt_hash": "3f2dad09f782c15175698086c5f1e8ad6ec9b057efa986c8615a663fe8aeec20"
 }

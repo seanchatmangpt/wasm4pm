@@ -1,0 +1,87 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "episodic_memory",
+    "breed": "episodic_memory",
+    "status": "ok",
+    "output": {
+      "breed": "EpisodicMemory",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "score:ep-breakfast",
+          "value": "1.0000"
+        },
+        {
+          "key": "score:ep-dinner",
+          "value": "0.6111"
+        },
+        {
+          "key": "recalled:ep-breakfast",
+          "value": "true"
+        }
+      ],
+      "selected": "ep-breakfast",
+      "explanation": "episodic recall selected 'ep-breakfast' by Jaccard + temporal kernel over 2 episodes",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "encode-episode",
+          "detail": "'ep-breakfast' t=9 (2 atoms, salience=0.50)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "encode-episode",
+          "detail": "'ep-dinner' t=2 (2 atoms, salience=0.50)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "present-cue",
+          "detail": "cue t=10 with 1 atoms",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "score-episode",
+          "detail": "'ep-breakfast' jaccard=0.5000 temporal=0.5000 score=1.0000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "score-episode",
+          "detail": "'ep-dinner' jaccard=0.5000 temporal=0.1111 score=0.6111",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "recall",
+          "detail": "recalled 'ep-breakfast' (score=1.0000)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "decision",
+          "detail": "episode 'ep-breakfast' wins over 2 candidates",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "b6ce4a29423b155d2c5e32b4fe31b037d0e44c38ea7b795413b6794ed4e335b3",
+    "output_hash": "7fb9b952ce035224e491960fe2acc35de812fe45f64a20890e25e1bc9792cb27",
+    "replay_pointer": "7fb9b952ce035224",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/episodic_memory/.wasm4pm/receipts/b6ce4a29423b155d2c5e32b4fe31b037d0e44c38ea7b795413b6794ed4e335b3.json"
+  },
+  "meta": {
+    "run_id": "ba33b74b-499b-4e0c-ab6e-939357790ee1",
+    "timestamp": "2026-06-11T07:03:07.703Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

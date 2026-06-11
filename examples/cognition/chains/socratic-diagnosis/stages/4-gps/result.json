@@ -8,32 +8,37 @@
     "breed": "gps",
     "status": "ok",
     "output": {
-      "breed": "gps",
+      "breed": "Gps",
       "candidates": [
         {
           "id": "administer_antiviral",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "prescribe_rest",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "prescribe_fluids",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "prescribe_antipyretic",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "hospitalize",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -107,9 +112,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/87318bae4aaf7111ca3c2bdddfdd7dc651e1dd89a1e9e9a4ca3d13184693953e.json"
   },
   "meta": {
-    "run_id": "ce55ff58-1b8a-4864-a466-c8eeba378d00",
-    "timestamp": "2026-06-10T15:46:46.681Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "4bc64b44-a2fb-4566-a3e8-208b5bdb9110",
+    "timestamp": "2026-06-11T08:34:33.812Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

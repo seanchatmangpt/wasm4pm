@@ -1,14 +1,11 @@
-# Progress Log
+# Progress
 
-Last visited: 2026-06-10T23:15:20Z
+Last visited: 2026-06-10T23:51:36-07:00
 
-## Status
-- [x] Implement `csp_ac3` breed
-- [x] Implement `default_logic` breed
-- [x] Implement `htn_planning` breed
-- [x] Register and wire up dispatch
-- [x] Lifecycle models, sources, and OCPN JSON files
-- [x] Tests and benches
-- [x] Registry status update
-- [x] Documentation cards and OCEL fitness reports
-- [x] Verify cargo and vitest tests
+## Tasks
+- [x] Process autoinstinct_learning
+- [x] Process autoinstinct_neurosis
+- [x] Process autoinstinct_semantics
+- [x] Process autoinstinct_vision
+- [x] Process bayesian_network
+- [x] Process belief_merging

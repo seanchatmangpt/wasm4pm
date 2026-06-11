@@ -1,39 +1,55 @@
-# Handoff Report — worker_3
+# Handoff Report — Worker 3
 
 ## 1. Observation
-- All code implementations for `dempster_shafer`, `frames_inheritance`, and `ebl` are fully complete and registered.
-- Git commit hash: `fbc6bef0450ad55597d295210b6f3b0a0a3d2763`
-- All tests pass cleanly:
-  - `cargo test -p wasm4pm-cognition`: passed 221 unit, 26 determinism, and integration tests.
-  - `pnpm --filter @wasm4pm/cognition run test`: 237 TS integration/unit tests passed.
-- Re-ran the verification commands:
-  - `npm run release:algorithm-reachability`: passed.
-  - `npm run release:algorithm-behavior`: passed.
-  - `npm run release:verify-algorithm-behavior`: passed. Stated hash: `ce66717e043f93344bb60ed3a01cea17497e3f32b5af1f144d369c80f48e1204`.
-  - `npm run examples:gate`: passed.
-  - `npm run release:certificate`: passed.
-  - `pnpm exec tsx scripts/release/verify-certificate-authenticity.ts`: passed.
-  - `pnpm exec tsx scripts/release/verify-receipt-authenticity.ts`: passed.
+- Created example folders and staged files:
+  - `examples/cognition/cbr/{intent.json,run.sh,result.json,last-output.log}`
+  - `examples/cognition/circumscription/{intent.json,run.sh,result.json,last-output.log}`
+  - `examples/cognition/clp/{intent.json,run.sh,result.json,last-output.log}`
+  - `examples/cognition/construction_grammar/{intent.json,run.sh,result.json,last-output.log}`
+  - `examples/cognition/contingent_plan/{intent.json,run.sh,result.json,last-output.log}`
+  - `examples/cognition/csp_ac3/{intent.json,run.sh,result.json,last-output.log}`
+- Created transform python scripts under `examples/cognition/chains/factory-agent/stages/`:
+  - `12-cbr/transform.py`
+  - `13-circumscription/transform.py`
+  - `14-clp/transform.py`
+  - `15-construction_grammar/transform.py`
+  - `16-contingent_plan/transform.py`
+  - `17-csp_ac3/transform.py`
+- Direct execution trace of example run (e.g. `cbr`):
+  ```json
+  "selected": "antibiotic-course",
+  "explanation": "CBR best=CASE-PHYSICIAN-2WK sim=0.667 weighted=0.633",
+  "inference_trace": [...]
+  ```
+- Direct execution trace of transform check:
+  ```bash
+  echo '{"output_hash": "dummy_hash", "breed": "dummy_breed"}' | python3 examples/cognition/chains/factory-agent/stages/12-cbr/transform.py
+  ```
+  Completed with exit code 0 and valid JSON output.
 
 ## 2. Logic Chain
-1. Core implementation was verified against the unit and integration test suites:
-   - `oracle_negative.rs` (precondition checks and refusals).
-   - `oracle_hidden.rs` (hidden challenges).
-   - `paper_grounded.rs` (grounded paper data validation).
-   - `breed_determinism.rs` (stability/determinism checks).
-2. The verification scripts successfully validate:
-   - Reachability manifest: `4da7c1cc296515d6a2fedd00255d47b44c5214ff368fda2379f970f96ca5ec30`
-   - Behavior evidence manifest: `ce66717e043f93344bb60ed3a01cea17497e3f32b5af1f144d369c80f48e1204`
-   - Examples manifest: `d7aa2dd9cd71a4c714ea3a834ca9596be707099d533a155199af02e549c2f39a`
-3. Intentional corruption of `RELEASE_CERTIFICATE.v26.6.10.json` and `ALGORITHM_BEHAVIOR_EVIDENCE.v26.6.10.json` hashes resulted in correct failures in verification scripts, demonstrating that verification is real and not simulated.
-4. Hence, the implementation is correct, complete, and fully verified.
+- The extracted input configurations from `packages/cognition/src/__tests__/fixtures/papers/<breed>.json` were written directly to `examples/cognition/<breed>/intent.json`.
+- The `run.sh` script invokes `node --experimental-wasm-modules` dynamically to support importing ES modules / WASM artifacts inside Node.js v20.
+- Running the `run.sh` script outputs both stdout and stderr into `last-output.log` and the structured result to `result.json`.
+- In each `transform.py`, the same `input` block is embedded in a Python dictionary. It is loaded, and then the cryptographically bound prior stage hash is appended to `facts` if it exists. All Python scripts have been verified to output valid `BreedInput` JSON structures.
 
 ## 3. Caveats
-- No caveats. All tasks are closed and fully tested.
+- Node.js environment requires `NODE_OPTIONS="--experimental-wasm-modules"` in this setup to load `.wasm` files as ES modules properly. This was handled when running the scripts.
+- Only the specific stages `12-cbr` to `17-csp_ac3` were populated and verified as per Worker 3's objective. Other stages are managed by other worker processes.
 
 ## 4. Conclusion
-- The final state is `Closed`. The remaining 3 cognition breeds are fully implemented and integrated.
+- All 6 examples (breeds 13-18) are fully populated with exact intent fixtures, correct `run.sh` scripts, and verified execution logs (`result.json` and `last-output.log`).
+- All 6 chain stages (`12-cbr` through `17-csp_ac3`) have working `transform.py` scripts that parse standard inputs and successfully output valid JSON representations.
+- All created and modified files are staged in git under explicit paths.
 
 ## 5. Verification Method
-- Clean checkout: Run `cargo test -p wasm4pm-cognition` and `pnpm --filter @wasm4pm/cognition run test`.
-- Verify the release pipeline: Run `npm run release:full` (or its component scripts).
+- Execute the transform script:
+  ```bash
+  echo '{"output_hash": "test_hash", "breed": "test_breed"}' | python3 examples/cognition/chains/factory-agent/stages/12-cbr/transform.py
+  ```
+  Ensure it prints a valid JSON showing the updated `facts` list with the prior stage hash.
+- Re-run the examples' run.sh:
+  ```bash
+  NODE_OPTIONS="--experimental-wasm-modules" bash examples/cognition/cbr/run.sh
+  ```
+  Verify that the `result.json` is generated correctly.

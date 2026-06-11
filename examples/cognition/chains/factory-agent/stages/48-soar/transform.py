@@ -1,0 +1,167 @@
+import json
+import sys
+
+_raw = sys.stdin.read()
+_idx = _raw.find('{')
+prev = json.loads(_raw[_idx:]) if _idx != -1 else {}
+prev_payload = prev.get('payload', {})
+prev_output_hash = prev_payload.get('output_hash', '') or prev.get('output_hash', '')
+prev_breed = prev_payload.get('breed', '') or prev.get('breed', '')
+
+# Load base input from the template json
+base_input = json.loads(r'''{
+  "intent": "select move operator for eight-puzzle tile via SOAR preference hierarchy",
+  "candidates": [
+    {
+      "id": "op-move-blank-up",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "op-move-blank-down",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "op-move-blank-left",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "op-move-blank-right",
+      "score": 0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "pref",
+      "value": "acceptable:op-move-blank-up"
+    },
+    {
+      "key": "pref",
+      "value": "acceptable:op-move-blank-down"
+    },
+    {
+      "key": "pref",
+      "value": "acceptable:op-move-blank-left"
+    },
+    {
+      "key": "pref",
+      "value": "acceptable:op-move-blank-right"
+    },
+    {
+      "key": "pref",
+      "value": "best:op-move-blank-up"
+    },
+    {
+      "key": "pref",
+      "value": "worse:op-move-blank-down"
+    },
+    {
+      "key": "tile-above-blank",
+      "value": "5"
+    },
+    {
+      "key": "tile-below-blank",
+      "value": "8"
+    },
+    {
+      "key": "tile-left-of-blank",
+      "value": "4"
+    },
+    {
+      "key": "tile-right-of-blank",
+      "value": "none"
+    },
+    {
+      "key": "goal-position-5",
+      "value": "row1-col2"
+    },
+    {
+      "key": "current-position-5",
+      "value": "row2-col2"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "pref-rule-acceptable-up",
+      "premise": [
+        "tile-above-blank"
+      ],
+      "conclusion": "pref:acceptable:op-move-blank-up",
+      "certainty": 1
+    },
+    {
+      "id": "pref-rule-acceptable-down",
+      "premise": [
+        "tile-below-blank"
+      ],
+      "conclusion": "pref:acceptable:op-move-blank-down",
+      "certainty": 1
+    },
+    {
+      "id": "pref-rule-acceptable-left",
+      "premise": [
+        "tile-left-of-blank"
+      ],
+      "conclusion": "pref:acceptable:op-move-blank-left",
+      "certainty": 1
+    },
+    {
+      "id": "pref-rule-best-if-moves-toward-goal",
+      "premise": [
+        "tile-above-blank",
+        "goal-position-5=row1-col2",
+        "current-position-5=row2-col2"
+      ],
+      "conclusion": "pref:best:op-move-blank-up",
+      "certainty": 1
+    },
+    {
+      "id": "pref-rule-worse-if-moves-away",
+      "premise": [
+        "tile-below-blank"
+      ],
+      "conclusion": "pref:worse:op-move-blank-down",
+      "certainty": 1
+    }
+  ],
+  "goals": [
+    {
+      "id": "g-select-operator",
+      "predicate": "selected-operator",
+      "value": "op-move-blank-up"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "blank-position",
+      "value": "row2-col2"
+    },
+    {
+      "predicate": "tile-5-position",
+      "value": "row2-col2-above"
+    },
+    {
+      "predicate": "goal-tile-5-position",
+      "value": "row1-col2"
+    },
+    {
+      "predicate": "last-operator",
+      "value": "op-move-blank-down"
+    }
+  ]
+}''')
+
+# Cryptographically bind to prior stage
+if prev_output_hash:
+    if 'facts' not in base_input:
+        base_input['facts'] = []
+    base_input['facts'].append({
+        'key': 'prior_stage_hash',
+        'value': f"{prev_breed}:{prev_output_hash}"
+    })
+
+print(json.dumps(base_input, indent=2))

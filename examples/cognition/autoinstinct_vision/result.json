@@ -8,86 +8,233 @@
     "breed": "autoinstinct_vision",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctvision",
+      "breed": "AutoinstinctVision",
       "candidates": [
         {
-          "id": "A",
+          "id": "0.50",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "id": "B",
+          "id": "2.0",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "id": "C",
+          "id": "3.0",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "5",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "7",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_candidate:+1",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_candidate:+2",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_candidate:+3",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_candidate:-1",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_candidate:0",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "disparity_varies_smoothly_across_adjacent_regions",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "each_region_assigned_at_most_one_disparity",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
         {
-          "key": "block",
-          "value": "A"
+          "key": "region:foreground_square",
+          "value": "disparity_candidate:+3"
         },
         {
-          "key": "block",
-          "value": "B"
+          "key": "region:foreground_square",
+          "value": "disparity_candidate:+2"
         },
         {
-          "key": "pyramid",
-          "value": "C"
+          "key": "region:foreground_square",
+          "value": "disparity_candidate:+1"
         },
         {
-          "key": "supported_by:B",
-          "value": "A"
+          "key": "region:background_field",
+          "value": "disparity_candidate:0"
         },
         {
-          "key": "supported_by:C",
-          "value": "B"
+          "key": "region:background_field",
+          "value": "disparity_candidate:-1"
+        },
+        {
+          "key": "region:left_border",
+          "value": "disparity_candidate:0"
+        },
+        {
+          "key": "region:right_border",
+          "value": "disparity_candidate:0"
+        },
+        {
+          "key": "constraint:R1_uniqueness",
+          "value": "each_region_assigned_at_most_one_disparity"
+        },
+        {
+          "key": "constraint:R2_continuity",
+          "value": "disparity_varies_smoothly_across_adjacent_regions"
+        },
+        {
+          "key": "network:density",
+          "value": "0.50"
+        },
+        {
+          "key": "network:disparity_layers",
+          "value": "7"
+        },
+        {
+          "key": "network:theta",
+          "value": "3.0"
+        },
+        {
+          "key": "network:epsilon",
+          "value": "2.0"
+        },
+        {
+          "key": "network:excitatory_diameter_M",
+          "value": "5"
         }
       ],
-      "selected": "C",
-      "explanation": "AutoinstinctVision: 3 objects observed; first clear object is C",
+      "selected": "0.50",
+      "explanation": "AutoinstinctVision: 12 objects observed; first clear object is 0.50",
       "inference_trace": [
         {
           "step": 0,
           "kind": "observe-object",
-          "detail": "observed A as block (on table)",
+          "detail": "observed 0.50 as network:density (on table)",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "observe-object",
-          "detail": "observed B as block (supported_by=A)",
+          "detail": "observed 2.0 as network:epsilon (on table)",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "observe-object",
-          "detail": "observed C as pyramid (supported_by=B)",
+          "detail": "observed 3.0 as network:theta (on table)",
           "depth": 0
         },
         {
           "step": 3,
+          "kind": "observe-object",
+          "detail": "observed 5 as network:excitatory_diameter_M (on table)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "observe-object",
+          "detail": "observed 7 as network:disparity_layers (on table)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "observe-object",
+          "detail": "observed disparity_candidate:+1 as region:foreground_square (on table)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "observe-object",
+          "detail": "observed disparity_candidate:+2 as region:foreground_square (on table)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "observe-object",
+          "detail": "observed disparity_candidate:+3 as region:foreground_square (on table)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "observe-object",
+          "detail": "observed disparity_candidate:-1 as region:background_field (on table)",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "observe-object",
+          "detail": "observed disparity_candidate:0 as region:right_border (on table)",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "observe-object",
+          "detail": "observed disparity_varies_smoothly_across_adjacent_regions as constraint:R2_continuity (on table)",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "observe-object",
+          "detail": "observed each_region_assigned_at_most_one_disparity as constraint:R1_uniqueness (on table)",
+          "depth": 0
+        },
+        {
+          "step": 12,
           "kind": "find-clear-object",
-          "detail": "clear object found: C",
+          "detail": "clear object found: 0.50",
           "depth": 0
         }
       ]
     },
-    "run_id": "c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f",
-    "output_hash": "0dddfce965370d09910c3f8b6530e98c60675799bc30c2b4e6f91f706d0fed23",
-    "replay_pointer": "0dddfce965370d09",
-    "inference_step_count": 4,
+    "run_id": "c3936a9634fdf20197ce6b83a78db15a8c0bced5c4ae75c8b5097c6536b069b0",
+    "output_hash": "59ffb7d74da33fe7de1327b56f414ca112074748de323f961810ecb0f6b18a4a",
+    "replay_pointer": "59ffb7d74da33fe7",
+    "inference_step_count": 13,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_vision/.wasm4pm/receipts/c3936a9634fdf20197ce6b83a78db15a8c0bced5c4ae75c8b5097c6536b069b0.json"
   },
   "meta": {
-    "run_id": "dae181dc-73fc-49f6-b1f1-5fd812e9043b",
-    "timestamp": "2026-06-10T15:46:44.635Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "f1daccd7-3f77-44c2-83f3-91592528d57c",
+    "timestamp": "2026-06-11T07:02:56.615Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
   }
 }

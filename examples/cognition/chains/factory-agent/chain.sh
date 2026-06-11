@@ -3,9 +3,7 @@ set -euo pipefail
 
 # ---------------------------------------------------------------------------
 # factory-agent breed chain
-# 13 stages: autoinstinct_vision → autoinstinct_semantics → hearsay → mycin
-#            → gps → strips → autoinstinct_learning → soar → dendral
-#            → prolog → autoinstinct_neurosis → cbr → eliza
+# 52 stages: abductive_ibe → ... → version_space
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -28,21 +26,60 @@ for stage_dir in stages/*/; do
     mkdir -p "$stage_dir"
 done
 
-# Stage definitions: "N-dirname breed"
+# Stage definitions: "NN-dirname breed"
 STAGES=(
-    "0-autoinstinct_vision autoinstinct_vision"
-    "1-autoinstinct_semantics autoinstinct_semantics"
-    "2-hearsay hearsay"
-    "3-mycin mycin"
-    "4-gps gps"
-    "5-strips strips"
-    "6-autoinstinct_learning autoinstinct_learning"
-    "7-soar soar"
-    "8-dendral dendral"
-    "9-prolog prolog"
-    "10-autoinstinct_neurosis autoinstinct_neurosis"
-    "11-cbr cbr"
-    "12-eliza eliza"
+    "00-abductive_ibe abductive_ibe"
+    "01-abductive_lp abductive_lp"
+    "02-act_r act_r"
+    "03-allen_temporal allen_temporal"
+    "04-analogy_sme analogy_sme"
+    "05-asp asp"
+    "06-autoinstinct_learning autoinstinct_learning"
+    "07-autoinstinct_neurosis autoinstinct_neurosis"
+    "08-autoinstinct_semantics autoinstinct_semantics"
+    "09-autoinstinct_vision autoinstinct_vision"
+    "10-bayesian_network bayesian_network"
+    "11-belief_merging belief_merging"
+    "12-cbr cbr"
+    "13-circumscription circumscription"
+    "14-clp clp"
+    "15-construction_grammar construction_grammar"
+    "16-contingent_plan contingent_plan"
+    "17-csp_ac3 csp_ac3"
+    "18-ctl_check ctl_check"
+    "19-default_logic default_logic"
+    "20-dempster_shafer dempster_shafer"
+    "21-dendral dendral"
+    "22-description_logic description_logic"
+    "23-ebl ebl"
+    "24-eliza eliza"
+    "25-episodic_memory episodic_memory"
+    "26-event_calculus event_calculus"
+    "27-frames_inheritance frames_inheritance"
+    "28-fuzzy_logic fuzzy_logic"
+    "29-gps gps"
+    "30-hearsay hearsay"
+    "31-htn_planning htn_planning"
+    "32-ilp ilp"
+    "33-ltl_monitor ltl_monitor"
+    "34-markov_logic markov_logic"
+    "35-mdp mdp"
+    "36-meta_reasoning meta_reasoning"
+    "37-mycin mycin"
+    "38-naive_physics naive_physics"
+    "39-partial_order_plan partial_order_plan"
+    "40-pomdp pomdp"
+    "41-problog problog"
+    "42-prolog prolog"
+    "43-qualitative_reason qualitative_reason"
+    "44-rl_symbolic rl_symbolic"
+    "45-sat_cdcl sat_cdcl"
+    "46-script_sam script_sam"
+    "47-situation_calculus situation_calculus"
+    "48-soar soar"
+    "49-strips strips"
+    "50-tableaux tableaux"
+    "51-version_space version_space"
 )
 
 TOTAL=${#STAGES[@]}
@@ -58,8 +95,8 @@ for entry in "${STAGES[@]}"; do
     RESULT="$STAGE_PATH/result.json"
     TRANSFORM="$STAGE_PATH/transform.py"
 
-    # If not stage 0, run transform to produce intent.json from prior result
-    if [ "$N" != "0" ]; then
+    # If not stage 00, run transform to produce intent.json from prior result
+    if [ "$N" != "00" ]; then
         if [ -z "$PREV_RESULT" ] || [ ! -f "$PREV_RESULT" ]; then
             echo "Stage $N [$BREED]: FAIL (no prior result)" >&2
             exit 1
@@ -69,7 +106,7 @@ for entry in "${STAGES[@]}"; do
 
     # Run cognition
     if ! $WPM cognition run --contract "$BREED" --input "$INTENT" --format json > "$RESULT" 2>/dev/null; then
-        echo "Stage $N [$BREED]: FAIL (wpm exited non-zero)"
+        echo "Stage $N [$BREED]: FAIL (wpm exited non-zero)" >&2
         exit 1
     fi
 
@@ -96,7 +133,7 @@ print(s)
         echo "Stage $N [$BREED]: ok / hash=$OUTPUT_HASH"
         OK=$((OK + 1))
     else
-        echo "Stage $N [$BREED]: FAIL (status=$STATUS)"
+        echo "Stage $N [$BREED]: FAIL (status=$STATUS)" >&2
         exit 1
     fi
 

@@ -1,0 +1,77 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "mycin",
+    "breed": "mycin",
+    "status": "ok",
+    "output": {
+      "breed": "Mycin",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "blood",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "chains",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "coccus",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "gram-positive",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "meta_reasoning:ac2659a7f875be3ef7afa266a166a3d51ddca1891542c8fd8d8ac359bf2e3723",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "no",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "organism",
+          "value": "streptococcus"
+        },
+        {
+          "key": "therapy",
+          "value": "penicillin"
+        }
+      ],
+      "selected": "allergy-penicillin=no",
+      "explanation": "MYCIN fired 2 rules; final selection Some(\"allergy-penicillin=no\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "fire-rule",
+          "detail": "RULE050-class ⇒ organism=streptococcus (cf=0.700)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "fire-rule",
+          "detail": "RULE071-class ⇒ therapy=penicillin (cf=0.630)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "146345d32097b263aa8a78d317d5db378567642b0e506780d9fd8806641709cf",
+    "output_hash": "d0f352b5e408b6cd68ab044f74ee2165f2d6afcb60045e388abf3162c0f9d30f",
+    "replay_pointer": "d0f352b5e408b6cd",
+    "inference_step_count": 2,
+    "rules_evaluated": 2,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/146345d32097b263aa8a78d317d5db378567642b0e506780d9fd8806641709cf.json"
+  },
+  "meta": {
+    "run_id": "9f7e55c5-2bb7-4034-a27b-775d1d0c8d2a",
+    "timestamp": "2026-06-11T08:38:26.545Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

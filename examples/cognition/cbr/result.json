@@ -8,80 +8,119 @@
     "breed": "cbr",
     "status": "ok",
     "output": {
-      "breed": "cbr",
-      "candidates": [],
-      "facts": [
+      "breed": "Cbr",
+      "candidates": [
         {
-          "key": "ingredient",
-          "value": "flour"
+          "id": "CASE-PHYSICIAN-2WK",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "key": "ingredient",
-          "value": "egg"
+          "id": "CASE-DRILLING-BLOWOUT-A",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "key": "prep_time",
-          "value": "5min"
+          "id": "CASE-DRILLING-BLOWOUT-B",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-CREDIT-TROUBLED-CO",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-PHYSICIAN-6MO",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
-      "selected": "pancakes",
-      "explanation": "CBR best=pancakes sim=0.500 weighted=0.450",
+      "facts": [
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "cough"
+        },
+        {
+          "key": "urgency",
+          "value": "moderate"
+        },
+        {
+          "key": "patient_status",
+          "value": "current"
+        }
+      ],
+      "selected": "antibiotic-course",
+      "explanation": "CBR best=CASE-PHYSICIAN-2WK sim=0.667 weighted=0.633",
       "inference_trace": [
         {
           "step": 0,
           "kind": "build-index",
-          "detail": "index built for 2 cases",
+          "detail": "index built for 5 cases",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "retrieve-candidates",
-          "detail": "retrieved 2 candidates from 2 total cases",
+          "detail": "retrieved 2 candidates from 5 total cases",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "score-case",
-          "detail": "pancakes sim=0.500 score=0.450",
+          "detail": "CASE-PHYSICIAN-2WK sim=0.667 score=0.633",
           "depth": 0
         },
         {
           "step": 3,
           "kind": "score-case",
-          "detail": "scones sim=0.200 score=0.140",
+          "detail": "CASE-PHYSICIAN-6MO sim=0.250 score=0.180",
           "depth": 0
         },
         {
           "step": 4,
           "kind": "reuse-adapt",
-          "detail": "pancakes adapted 0 facts",
+          "detail": "CASE-PHYSICIAN-2WK adapted 0 facts",
           "depth": 0
         },
         {
           "step": 5,
           "kind": "revise-accept",
-          "detail": "pancakes sim=0.667",
+          "detail": "CASE-PHYSICIAN-2WK sim=1.000",
           "depth": 0
         },
         {
           "step": 6,
           "kind": "retain-case",
-          "detail": "retained-fd60ef00",
+          "detail": "retained-9f365f86",
           "depth": 0
         }
       ]
     },
-    "run_id": "7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d",
-    "output_hash": "0f4e3c1bb49303487a88879835d5170521d3356612bbe5364280dd55df9828b5",
-    "replay_pointer": "0f4e3c1bb4930348",
+    "run_id": "c198615eddd13d222cbd75a078cdd1d947ee6d138c980e8026496a6658183777",
+    "output_hash": "9d1996d75e81d7e5437b47b9689076b48a58b931c58091fff875a449f987aff1",
+    "replay_pointer": "9d1996d75e81d7e5",
     "inference_step_count": 7,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/cbr/.wasm4pm/receipts/c198615eddd13d222cbd75a078cdd1d947ee6d138c980e8026496a6658183777.json"
   },
   "meta": {
-    "run_id": "51419448-3d5a-4084-ac4a-61a9bd9f5254",
-    "timestamp": "2026-06-10T15:46:41.189Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "83efd5cb-4a97-4d2a-83c3-3fcf7af078bb",
+    "timestamp": "2026-06-11T07:02:58.645Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

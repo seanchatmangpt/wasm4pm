@@ -1,0 +1,103 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "Eliza",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "utterance:1",
+          "value": "Men are all alike."
+        },
+        {
+          "key": "utterance:2",
+          "value": "They're always bugging us about something or other."
+        },
+        {
+          "key": "utterance:3",
+          "value": "Well, my boyfriend made me come here."
+        },
+        {
+          "key": "utterance:4",
+          "value": "He says I'm depressed much of the time."
+        },
+        {
+          "key": "utterance:5",
+          "value": "It's true, I am unhappy."
+        },
+        {
+          "key": "utterance:6",
+          "value": "I need some help, that much seems certain."
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "ebl:b829aa409ca0bfdf1ae1aad943e4ef5b49f396e967fd67989cc3d3e1e61a6719"
+        }
+      ],
+      "selected": "*",
+      "explanation": "Please go on.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "try-pattern",
+          "detail": "i need *",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "try-pattern",
+          "detail": "i am *",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "try-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "match-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "bind-slot",
+          "detail": "${1}=men are all alike.",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4513172168394c030c27909671d5d5cba9dcaa95b1184979955daeeb14b1bcd7",
+    "output_hash": "66b8d69e85828fd5e99bae0a4db32e4fad20bd5fca12eb602211e0bb4eadffa0",
+    "replay_pointer": "66b8d69e85828fd5",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/4513172168394c030c27909671d5d5cba9dcaa95b1184979955daeeb14b1bcd7.json"
+  },
+  "meta": {
+    "run_id": "a3e61241-6f2c-469e-88e1-edfbb7d437f6",
+    "timestamp": "2026-06-11T08:38:21.507Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

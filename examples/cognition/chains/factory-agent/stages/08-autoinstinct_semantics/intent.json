@@ -1,0 +1,67 @@
+{
+  "intent": "John give book to Mary",
+  "facts": [
+    {
+      "key": "cd_primitive",
+      "value": "ATRANS"
+    },
+    {
+      "key": "actor",
+      "value": "John"
+    },
+    {
+      "key": "object",
+      "value": "book"
+    },
+    {
+      "key": "from",
+      "value": "John"
+    },
+    {
+      "key": "to",
+      "value": "Mary"
+    },
+    {
+      "key": "instrument",
+      "value": "ATRANS(actor=John,object=ownership,from=John,to=Mary)"
+    },
+    {
+      "key": "tense",
+      "value": "past"
+    },
+    {
+      "key": "mode",
+      "value": "positive"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "autoinstinct_neurosis:ec49094817ba42e24893987163d6d91f0aab40d4967ce619da44ca3855ea0f4f"
+    }
+  ],
+  "candidates": [],
+  "rules": [],
+  "cases": [],
+  "goals": [
+    {
+      "id": "g-parse",
+      "predicate": "parse_sentence",
+      "value": "John give book to Mary"
+    },
+    {
+      "id": "g-primitive",
+      "predicate": "identify_cd_primitive",
+      "value": "ATRANS"
+    },
+    {
+      "id": "g-actor",
+      "predicate": "identify_actor",
+      "value": "John"
+    },
+    {
+      "id": "g-recipient",
+      "predicate": "identify_recipient",
+      "value": "Mary"
+    }
+  ],
+  "state": []
+}
