@@ -210,3 +210,199 @@ impl CognitionBreed for EpisodicMemory {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::Case;
+
+    #[test]
+    fn refuses_empty_episodes() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![Fact { key: "cue:t".to_string(), value: "10".to_string() }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(ep.preconditions(&input).is_err());
+        assert!(ep.run(&input).is_err());
+    }
+
+    #[test]
+    fn refuses_missing_cue_t() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![Fact { key: "episode:e1:t".to_string(), value: "5".to_string() }],
+            cases: vec![Case {
+                id: "e1".to_string(),
+                intent: "".to_string(),
+                architecture: "".to_string(),
+                facts: vec![],
+                outcome_score: 1.0,
+            }],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(ep.preconditions(&input).is_err());
+        assert!(ep.run(&input).is_err());
+    }
+
+    #[test]
+    fn refuses_missing_episode_t() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![Fact { key: "cue:t".to_string(), value: "10".to_string() }],
+            cases: vec![Case {
+                id: "e1".to_string(),
+                intent: "".to_string(),
+                architecture: "".to_string(),
+                facts: vec![],
+                outcome_score: 1.0,
+            }],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(ep.preconditions(&input).is_err());
+        assert!(ep.run(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_temporal_kernel_flip() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "cue:t".to_string(), value: "10".to_string() },
+                Fact { key: "A".to_string(), value: "1".to_string() },
+                Fact { key: "B".to_string(), value: "1".to_string() },
+                Fact { key: "episode:e1:t".to_string(), value: "0".to_string() },
+                Fact { key: "episode:e2:t".to_string(), value: "10".to_string() },
+            ],
+            cases: vec![
+                Case {
+                    id: "e1".to_string(),
+                    intent: "".to_string(),
+                    architecture: "".to_string(),
+                    facts: vec![Fact { key: "A".to_string(), value: "1".to_string() }],
+                    outcome_score: 1.0,
+                },
+                Case {
+                    id: "e2".to_string(),
+                    intent: "".to_string(),
+                    architecture: "".to_string(),
+                    facts: vec![],
+                    outcome_score: 1.0,
+                },
+            ],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ep.run(&input).unwrap();
+        assert_eq!(out.selected.unwrap(), "e2");
+    }
+
+    #[test]
+    fn invariant_idempotent_recall() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "cue:t".to_string(), value: "10".to_string() },
+                Fact { key: "episode:e1:t".to_string(), value: "5".to_string() },
+                Fact { key: "episode:e2:t".to_string(), value: "8".to_string() },
+            ],
+            cases: vec![
+                Case {
+                    id: "e1".to_string(),
+                    intent: "".to_string(),
+                    architecture: "".to_string(),
+                    facts: vec![Fact { key: "A".to_string(), value: "1".to_string() }],
+                    outcome_score: 1.0,
+                },
+                Case {
+                    id: "e2".to_string(),
+                    intent: "".to_string(),
+                    architecture: "".to_string(),
+                    facts: vec![Fact { key: "B".to_string(), value: "1".to_string() }],
+                    outcome_score: 1.0,
+                },
+            ],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out1 = ep.run(&input).unwrap();
+        let out2 = ep.run(&input).unwrap();
+        assert_eq!(out1.selected, out2.selected);
+    }
+
+    /// Tulving 1983 paper fixture: ep-breakfast (t=9) vs ep-dinner (t=2), cue at t=10,
+    /// cue atom "place=kitchen". Equal Jaccard (0.5 each); temporal kernel decides.
+    /// score(breakfast) = 0.5 + 1/(1+1) = 1.0; score(dinner) = 0.5 + 1/(1+8) ≈ 0.6111.
+    /// If the temporal kernel is zeroed out, ep-dinner ties ep-breakfast and the
+    /// tie-breaking falls to lexicographic order ("ep-breakfast" < "ep-dinner"),
+    /// which would still select ep-breakfast — so the falsification uses the exact
+    /// score value to prove the kernel computed correctly.
+    #[test]
+    fn falsification_paper_temporal_kernel_exact_score() {
+        let ep = EpisodicMemory;
+        let input = BreedInput {
+            intent: "recall the most relevant kitchen episode".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "place".to_string(), value: "kitchen".to_string() },
+                Fact { key: "cue:t".to_string(), value: "10".to_string() },
+                Fact { key: "episode:ep-breakfast:t".to_string(), value: "9".to_string() },
+                Fact { key: "episode:ep-dinner:t".to_string(), value: "2".to_string() },
+            ],
+            cases: vec![
+                Case {
+                    id: "ep-breakfast".to_string(),
+                    intent: "morning meal".to_string(),
+                    architecture: "episode".to_string(),
+                    outcome_score: 0.5,
+                    facts: vec![
+                        Fact { key: "place".to_string(), value: "kitchen".to_string() },
+                        Fact { key: "meal".to_string(), value: "breakfast".to_string() },
+                    ],
+                },
+                Case {
+                    id: "ep-dinner".to_string(),
+                    intent: "evening meal".to_string(),
+                    architecture: "episode".to_string(),
+                    outcome_score: 0.5,
+                    facts: vec![
+                        Fact { key: "place".to_string(), value: "kitchen".to_string() },
+                        Fact { key: "meal".to_string(), value: "dinner".to_string() },
+                    ],
+                },
+            ],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ep.run(&input).unwrap();
+        // ep-breakfast must win
+        assert_eq!(out.selected.as_deref(), Some("ep-breakfast"),
+            "temporal kernel must select ep-breakfast; formula: jaccard + 1/(1+|dt|)");
+        // Exact score check: jaccard=0.5, dt=1, kernel=0.5, total=1.0
+        let score_fact = out.facts.iter().find(|f| f.key == "score:ep-breakfast")
+            .expect("score:ep-breakfast must be emitted");
+        let score: f64 = score_fact.value.parse().expect("score must be f64");
+        assert!((score - 1.0).abs() < 0.001,
+            "ep-breakfast score must be 1.0000 (jaccard=0.5 + kernel=0.5), got {}", score);
+    }
+}

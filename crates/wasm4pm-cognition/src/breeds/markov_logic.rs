@@ -395,6 +395,43 @@ mod tests {
         assert!(MarkovLogic.preconditions(&input(vec![])).is_err());
     }
 
+    /// Richardson & Domingos 2006, Table 1 / Fig. 1 — smokes/friends MLN.
+    /// Ground MLN for {anna, bob} with evidence smokes(anna) and friends(anna,bob):
+    /// MAP state satisfies every ground clause (cost 0), entails smokes_bob, cancer_anna, cancer_bob.
+    #[test]
+    fn richardson_domingos_2006_smokes_friends_map_cost_zero() {
+        let out = MarkovLogic
+            .run(&input(vec![
+                fact("mln:clause:smoke-cancer-a", "1.5|!smokes_anna,cancer_anna"),
+                fact("mln:clause:smoke-cancer-b", "1.5|!smokes_bob,cancer_bob"),
+                fact("mln:clause:friends-ab-1", "1.1|!friends_ab,!smokes_anna,smokes_bob"),
+                fact("mln:clause:friends-ab-2", "1.1|!friends_ab,!smokes_bob,smokes_anna"),
+                fact("evidence:smokes_anna", "true"),
+                fact("evidence:friends_ab", "true"),
+            ]))
+            .expect("run ok");
+
+        // MAP cost must be 0 (all clauses satisfied)
+        let cost = out.facts.iter().find(|f| f.key == "mln:cost").unwrap();
+        assert_eq!(cost.value, "0.000000",
+            "MAP state must satisfy all clauses (cost 0); Richardson & Domingos 2006");
+
+        // smokes_bob must be true in MAP state
+        let smokes_bob = out.facts.iter().find(|f| f.key == "mln:atom:smokes_bob").unwrap();
+        assert_eq!(smokes_bob.value, "true",
+            "smokes_bob must be true in MAP state (friends propagate smoking)");
+
+        // cancer_anna must be true
+        let cancer_anna = out.facts.iter().find(|f| f.key == "mln:atom:cancer_anna").unwrap();
+        assert_eq!(cancer_anna.value, "true",
+            "cancer_anna must be true in MAP state (smoker gets cancer)");
+
+        // cancer_bob must be true
+        let cancer_bob = out.facts.iter().find(|f| f.key == "mln:atom:cancer_bob").unwrap();
+        assert_eq!(cancer_bob.value, "true",
+            "cancer_bob must be true in MAP state (smoker gets cancer)");
+    }
+
     #[test]
     fn double_run_bit_identical() {
         let inp = input(vec![

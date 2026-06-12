@@ -255,3 +255,66 @@ impl CognitionBreed for HtnPlanning {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, CognitionBreed, Goal, Rule, StateAtom};
+
+    #[test]
+    fn refuses_missing_initial_task() {
+        let breed = HtnPlanning;
+        let input = BreedInput {
+            goals: vec![],
+            rules: vec![Rule { id: "op:do_nothing".to_string(), premise: vec![], conclusion: "".to_string(), certainty: 1.0 }],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_chronological_backtracking() {
+        let breed = HtnPlanning;
+        let input = BreedInput {
+            state: vec![StateAtom { predicate: "money".to_string(), value: "10".to_string() }],
+            goals: vec![Goal { id: "g1".to_string(), predicate: "".to_string(), value: "buy_item".to_string() }],
+            rules: vec![
+                Rule { id: "method:buy_item:credit".to_string(), premise: vec![], conclusion: "op:swipe_card".to_string(), certainty: 1.0 },
+                Rule { id: "method:buy_item:cash".to_string(), premise: vec!["money=10".to_string()], conclusion: "op:pay_cash".to_string(), certainty: 1.0 },
+                Rule { id: "op:swipe_card".to_string(), premise: vec!["credit=true".to_string()], conclusion: "".to_string(), certainty: 1.0 },
+                Rule { id: "op:pay_cash".to_string(), premise: vec!["money=10".to_string()], conclusion: "!money=10;item=true".to_string(), certainty: 1.0 },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).unwrap();
+        assert_eq!(out.selected.as_deref().unwrap(), "op:pay_cash");
+        let tq = TraceQuery::from_output(&out);
+        assert!(tq.has_kind("htn-backtrack"));
+    }
+
+    #[test]
+    fn invariant_plan_concatenation() {
+        let breed = HtnPlanning;
+        let input1 = BreedInput {
+            state: vec![StateAtom { predicate: "ready".to_string(), value: "true".to_string() }],
+            goals: vec![Goal { id: "g1".to_string(), predicate: "".to_string(), value: "op:act1".to_string() }],
+            rules: vec![
+                Rule { id: "op:act1".to_string(), premise: vec!["ready=true".to_string()], conclusion: "done1=true".to_string(), certainty: 1.0 },
+                Rule { id: "op:act2".to_string(), premise: vec!["ready=true".to_string()], conclusion: "done2=true".to_string(), certainty: 1.0 },
+            ],
+            ..Default::default()
+        };
+        let mut input2 = input1.clone();
+        input2.goals = vec![
+            Goal { id: "g1".to_string(), predicate: "".to_string(), value: "op:act1".to_string() },
+            Goal { id: "g2".to_string(), predicate: "".to_string(), value: "op:act2".to_string() },
+        ];
+
+        
+        let out1 = breed.run(&input1).unwrap();
+        let out2 = breed.run(&input2).unwrap();
+        
+        assert_eq!(out1.selected.unwrap(), "op:act1");
+        assert_eq!(out2.selected.unwrap(), "op:act1,op:act2");
+    }
+}

@@ -212,3 +212,126 @@ impl CognitionBreed for DefaultLogic {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact, Rule};
+
+    #[test]
+    fn refuses_no_rules_or_facts() {
+        let breed = DefaultLogic;
+        let input = BreedInput::default();
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn refuses_late_derived_violator() {
+        let breed = DefaultLogic;
+        let input = BreedInput {
+            facts: vec![Fact { key: "f".into(), value: "A".into() }],
+            rules: vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["A".into(), "unless:B".into()],
+                    conclusion: "C".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["C".into()],
+                    conclusion: "B".into(),
+                    certainty: 1.0,
+                },
+            ],
+            ..Default::default()
+        };
+        let res = breed.run(&input);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().message.contains("derived later"));
+    }
+
+
+    #[test]
+    fn falsification_tweety_penguin_reiter_1980() {
+        // Reiter 1980 Section 1.1 — canonical Tweety example.
+        // Tweety is a penguin; penguins are birds; birds fly by default UNLESS not_flies.
+        // The extension must contain {penguin, bird, not_flies} and must NOT contain flies.
+        // Verbatim from tests/fixtures/papers/default_logic.json.
+        let breed = DefaultLogic;
+        let input = BreedInput {
+            facts: vec![Fact { key: "obs:tweety".into(), value: "penguin".into() }],
+            rules: vec![
+                Rule {
+                    id: "r_isa".into(),
+                    premise: vec!["penguin".into()],
+                    conclusion: "bird".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r_penguin".into(),
+                    premise: vec!["penguin".into()],
+                    conclusion: "not_flies".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r_birds_fly".into(),
+                    premise: vec!["bird".into(), "unless:not_flies".into()],
+                    conclusion: "flies".into(),
+                    certainty: 0.9,
+                },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).expect("Tweety run must succeed");
+        let ext = out.selected.as_deref().unwrap_or("");
+        // Extension must contain these atoms.
+        for atom in &["bird", "not_flies", "penguin"] {
+            assert!(
+                ext.split(", ").any(|a| a == *atom),
+                "extension must contain '{}'; got: {}",
+                atom,
+                ext
+            );
+        }
+        // Extension must NOT contain 'flies' — the default is blocked by not_flies.
+        assert!(
+            !ext.split(", ").any(|a| a == "flies"),
+            "extension must NOT contain 'flies' (Tweety cannot fly); got: {}",
+            ext
+        );
+        // A block step must appear in the trace.
+        assert!(
+            out.inference_trace.iter().any(|t| t.kind == "default-block"),
+            "trace must include a default-block step for r_birds_fly"
+        );
+    }
+
+    #[test]
+    fn invariant_idempotency() {
+        let breed = DefaultLogic;
+        let input = BreedInput {
+            facts: vec![Fact { key: "f".into(), value: "A".into() }],
+            rules: vec![
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["A".into(), "unless:B".into()],
+                    conclusion: "C".into(),
+                    certainty: 1.0,
+                },
+            ],
+            ..Default::default()
+        };
+        let out1 = breed.run(&input).unwrap();
+        
+        let new_facts: Vec<Fact> = out1.facts.clone();
+        let input2 = BreedInput {
+            facts: new_facts,
+            rules: input.rules.clone(),
+            ..Default::default()
+        };
+        let out2 = breed.run(&input2).unwrap();
+        
+        assert_eq!(out1.selected, out2.selected);
+    }
+}

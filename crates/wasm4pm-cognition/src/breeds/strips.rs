@@ -466,6 +466,56 @@ mod tests {
         assert!(!out.inference_trace.iter().any(|t| t.kind == "try-action"));
     }
 
+    /// Falsification: Fikes & Nilsson 1971 room-navigation fixture.
+    /// Two-goal problem: turn-on-light then close-door1. The exact plan
+    /// must be ["turn-on-light", "close-door1"] in that order. If the
+    /// forward-search loop or goal ordering is wrong, a different sequence
+    /// or failure results.
+    #[test]
+    fn paper_fixture_fikes_nilsson_1971_two_step_plan() {
+        let input = BreedInput {
+            intent: "turn on the light and close door1".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "turn-on-light".into(),
+                    premise: vec!["light=off".into()],
+                    conclusion: "light=on;!light=off".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "close-door1".into(),
+                    premise: vec!["door1=open".into()],
+                    conclusion: "door1=closed;!door1=open".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![
+                Goal { id: "g1".into(), predicate: "light".into(), value: "on".into() },
+                Goal { id: "g2".into(), predicate: "door1".into(), value: "closed".into() },
+            ],
+            state: vec![
+                StateAtom { predicate: "light".into(), value: "off".into() },
+                StateAtom { predicate: "door1".into(), value: "open".into() },
+            ],
+        };
+        let out = Strips.run(&input).expect("should find a plan");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("turn-on-light,close-door1"),
+            "plan must be exactly [turn-on-light, close-door1] (Fikes & Nilsson 1971)"
+        );
+        // Verify via execute trace steps in correct order
+        let executed: Vec<String> = out.inference_trace.iter()
+            .filter(|t| t.kind == "execute")
+            .map(|t| t.detail.clone())
+            .collect();
+        assert_eq!(executed, vec!["turn-on-light", "close-door1"],
+            "execution trace must record exactly the 2 operators in order");
+    }
+
     /// Rank-2: a non-pre-satisfied, achievable goal must return a non-empty
     /// plan as `Some("act1,act2,...")` — verifies the positive (planned)
     /// branch still produces a comma-joined plan string.

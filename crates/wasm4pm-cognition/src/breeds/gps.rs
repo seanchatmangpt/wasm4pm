@@ -295,6 +295,50 @@ mod tests {
             .any(|t| t.kind == "check-presatisfied"));
     }
 
+    /// Newell & Shaw 1963 means-ends: GPS must select the operator whose effect
+    /// adds the unsatisfied goal atom. If a wrong operator fires or none fires,
+    /// `selected` will not equal `"op:move_right"` and the test fails.
+    #[test]
+    fn falsification_single_step_means_ends() {
+        let input = BreedInput {
+            intent: "reach goal".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "op:move_left".into(),
+                    premise: vec!["position=right".into()],
+                    conclusion: "position=left".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "op:move_right".into(),
+                    premise: vec!["position=left".into()],
+                    conclusion: "position=right".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "position".into(),
+                value: "right".into(),
+            }],
+            state: vec![StateAtom {
+                predicate: "position".into(),
+                value: "left".into(),
+            }],
+        };
+        let out = Gps.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("op:move_right"),
+            "GPS must apply op:move_right to close position=right gap (means-ends)"
+        );
+        assert!(out.inference_trace.iter().any(|t| t.kind == "apply-operator" && t.detail == "op:move_right"),
+            "apply-operator trace step for op:move_right must exist");
+    }
+
     /// Rank-2: with multiple goals, all pre-satisfied -> Some(""); planning
     /// remains short-circuited (no apply-operator steps).
     #[test]

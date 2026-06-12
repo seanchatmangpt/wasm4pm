@@ -16,7 +16,7 @@
 //! variable (a ground "learned rule" is memorization, not generalization).
 //!
 //! Input contract: facts are ground atoms in their keys (e.g.
-//! `has_handle(obj1)`); rules use `?var` arguments; goals[0] is the training
+//! `has_handle(box1)`); rules use `?var` arguments; goals[0] is the training
 //! example (`predicate` holds the goal atom when `value == "true"`).
 //!
 //! Trace kinds: `ebl-explain`(1,*) → `ebl-generalize`(1,*) →
@@ -343,5 +343,96 @@ impl CognitionBreed for Ebl {
         let tq = TraceQuery::from_output(output);
         tq.require_kinds(&["ebl-explain", "ebl-generalize", "ebl-operationalize"])?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Goal, Rule};
+
+    fn make_rule(id: &str, premise: Vec<&str>, conclusion: &str) -> Rule {
+        Rule {
+            id: id.to_string(),
+            premise: premise.iter().map(|s| s.to_string()).collect(),
+            conclusion: conclusion.to_string(),
+            certainty: 1.0,
+        }
+    }
+
+    fn make_goal(id: &str, predicate: &str, value: &str) -> Goal {
+        Goal {
+            id: id.to_string(),
+            predicate: predicate.to_string(),
+            value: value.to_string(),
+        }
+    }
+
+    /// Mitchell et al. 1986 SafeToStack example: training on (box1, box2) must
+    /// operationalize to a rule with variables — NOT the ground constants.
+    /// The learned rule must mention `weight(` and `safe_to_stack(` and must
+    /// NOT contain the training constants `box1` / `box2`.
+    #[test]
+    fn falsification_paper_safe_to_stack() {
+        let input = BreedInput {
+            intent: "learn safe_to_stack".to_string(),
+            facts: vec![
+                Fact { key: "weight(box1,light)".to_string(), value: "true".to_string() },
+                Fact { key: "weight(box2,heavy)".to_string(), value: "true".to_string() },
+            ],
+            rules: vec![
+                make_rule("r_safe", vec!["lighter(?x,?y)"], "safe_to_stack(?x,?y)"),
+                make_rule("r_lighter", vec!["weight(?x,light)", "weight(?y,heavy)"], "lighter(?x,?y)"),
+            ],
+            goals: vec![make_goal("g1", "safe_to_stack(box1,box2)", "true")],
+            candidates: vec![],
+            cases: vec![],
+            state: vec![],
+        };
+        let out = Ebl.run(&input).unwrap();
+        let rule_fact = out.facts.iter().find(|f| f.key == "ebl:rule")
+            .expect("ebl:rule fact must be emitted");
+        // Generalization proof: learned rule contains weight( and safe_to_stack(
+        assert!(rule_fact.value.contains("weight("), "learned rule must mention weight(");
+        assert!(rule_fact.value.contains("safe_to_stack("), "learned rule must mention safe_to_stack(");
+        // Anti-memorization: training constants must be replaced by variables
+        assert!(!rule_fact.value.contains("box1"), "box1 must not appear — that is memorization");
+        assert!(!rule_fact.value.contains("box2"), "box2 must not appear — that is memorization");
+        // Must contain at least one variable
+        assert!(rule_fact.value.contains('?'), "learned rule must contain a variable");
+    }
+
+    #[test]
+    fn refuses_unprovable_goal() {
+        let input = BreedInput {
+            intent: "learn".to_string(),
+            facts: vec![],
+            rules: vec![make_rule("r1", vec!["p(?x)"], "q(?x)")],
+            goals: vec![make_goal("g1", "q(a)", "true")],
+            candidates: vec![],
+            cases: vec![],
+            state: vec![],
+        };
+        let res = Ebl.run(&input);
+        assert!(res.is_err(), "unprovable goal must return Err");
+    }
+
+    #[test]
+    fn invariant_proof_depth_limit() {
+        let ebl = Ebl;
+        let input = BreedInput {
+            intent: "".to_string(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                make_rule("loop", vec!["p(?x)"], "p(?x)"),
+            ],
+            goals: vec![make_goal("g1", "p(a)", "true")],
+            state: vec![],
+        };
+        let res = ebl.run(&input);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().message, "ebl explain phase failed: could not prove goal");
     }
 }

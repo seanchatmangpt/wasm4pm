@@ -424,4 +424,71 @@ mod tests {
         let facts = vec![fact("bm:atoms", "a"), fact("bm:base:1", "a")];
         assert!(BeliefMerging.preconditions(&input(facts)).is_err());
     }
+
+    #[test]
+    fn refuses_domain_cap_violation() {
+        let facts = vec![
+            fact("bm:atoms", "a,b,c,d,e,f,g,h,i,j,k,l,m"), 
+            fact("bm:base:1", "a"), 
+            fact("bm:base:2", "a")
+        ];
+        assert!(BeliefMerging.custom_check(&input(facts)).is_some());
+    }
+
+    #[test]
+    fn falsification_gate_distance_tie_breaker() {
+        let facts_sum = vec![
+            fact("bm:atoms", "a,b"),
+            fact("bm:base:1", "a,b"),
+            fact("bm:base:2", "-a,-b"),
+            fact("bm:ic", "true"),
+            fact("bm:operator", "sum"),
+        ];
+        let out_sum = BeliefMerging.run(&input(facts_sum)).unwrap();
+        assert_eq!(out_sum.facts.iter().find(|f| f.key == "bm:model_count").unwrap().value, "4");
+
+        let facts_gmax = vec![
+            fact("bm:atoms", "a,b"),
+            fact("bm:base:1", "a,b"),
+            fact("bm:base:2", "-a,-b"),
+            fact("bm:ic", "true"),
+            fact("bm:operator", "gmax"),
+        ];
+        let out_gmax = BeliefMerging.run(&input(facts_gmax)).unwrap();
+        assert_eq!(out_gmax.facts.iter().find(|f| f.key == "bm:model_count").unwrap().value, "2");
+        let models: Vec<&str> = out_gmax
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("bm:model:"))
+            .map(|f| f.value.as_str())
+            .collect();
+        assert!(models.contains(&"a,-b"));
+        assert!(models.contains(&"-a,b"));
+    }
+
+    #[test]
+    fn invariant_symmetry_of_bases() {
+        let facts1 = vec![
+            fact("bm:atoms", "p,q"),
+            fact("bm:base:1", "p"),
+            fact("bm:base:2", "-p"),
+            fact("bm:ic", "q"),
+            fact("bm:operator", "sum"),
+        ];
+        let facts2 = vec![
+            fact("bm:atoms", "p,q"),
+            fact("bm:base:1", "-p"),
+            fact("bm:base:2", "p"),
+            fact("bm:ic", "q"),
+            fact("bm:operator", "sum"),
+        ];
+        let out1 = BeliefMerging.run(&input(facts1)).unwrap();
+        let out2 = BeliefMerging.run(&input(facts2)).unwrap();
+        
+        let mut models1: Vec<&str> = out1.facts.iter().filter(|f| f.key.starts_with("bm:model:")).map(|f| f.value.as_str()).collect();
+        let mut models2: Vec<&str> = out2.facts.iter().filter(|f| f.key.starts_with("bm:model:")).map(|f| f.value.as_str()).collect();
+        models1.sort();
+        models2.sort();
+        assert_eq!(models1, models2);
+    }
 }

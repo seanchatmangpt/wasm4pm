@@ -263,3 +263,108 @@ impl CognitionBreed for NaivePhysics {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact};
+
+    fn dummy_input() -> BreedInput {
+        BreedInput { ..Default::default() }
+    }
+
+    #[test]
+    fn refuses_cyclic_support() {
+        let breed = NaivePhysics;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "np:on:a".into(), value: "b".into() },
+            Fact { key: "np:on:b".into(), value: "c".into() },
+            Fact { key: "np:on:c".into(), value: "a".into() },
+        ];
+        let err = breed.preconditions(&input).unwrap_err();
+        assert!(err.contains("cyclic support"));
+    }
+
+    #[test]
+    fn falsification_gate_containment_transport() {
+        let breed = NaivePhysics;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "np:on:table".into(), value: "floor".into() },
+            Fact { key: "np:ground:floor".into(), value: "true".into() },
+            Fact { key: "np:on:cup".into(), value: "table".into() },
+            Fact { key: "np:in:water".into(), value: "cup".into() },
+            Fact { key: "np:liquid:water".into(), value: "cup".into() },
+            Fact { key: "np:remove:table".into(), value: "true".into() },
+        ];
+        let out = breed.run(&input).expect("should run");
+        
+        let mut falls = vec![];
+        let mut spills = vec![];
+        for f in &out.facts {
+            if f.key.starts_with("falls:") {
+                falls.push(f.key.replace("falls:", ""));
+            }
+            if f.key.starts_with("spills:") {
+                spills.push(f.key.replace("spills:", ""));
+            }
+        }
+        falls.sort();
+        spills.sort();
+        assert!(falls.contains(&"cup".to_string()));
+        assert!(falls.contains(&"water".to_string()));
+        assert!(spills.contains(&"water".to_string()));
+    }
+
+    /// Hayes 1979 / 1985 paper fixture (naive_physics.json):
+    /// cup falls when table is removed; water spills from cup; floor does NOT fall.
+    /// The fixture's expected.not_falls = ["floor","table"] — over-derivation is a defect.
+    #[test]
+    fn hayes_1985_cup_falls_water_spills_floor_stable() {
+        let breed = NaivePhysics;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "np:ground:floor".into(), value: "true".into() },
+            Fact { key: "np:on:table".into(), value: "floor".into() },
+            Fact { key: "np:on:cup".into(), value: "table".into() },
+            Fact { key: "np:liquid:water".into(), value: "cup".into() },
+            Fact { key: "np:remove:table".into(), value: "true".into() },
+        ];
+        let out = breed.run(&input).expect("should run");
+
+        // cup falls: its direct support (table) was removed — ax-unsupported-falls
+        assert!(out.facts.iter().any(|f| f.key == "falls:cup" && f.value == "true"),
+            "cup must fall when table is removed");
+        // water spills: its container (cup) fell — ax-liquid-spill
+        assert!(out.facts.iter().any(|f| f.key == "spills:water" && f.value == "true"),
+            "water must spill when cup falls");
+        // floor must NOT fall: it is ground (over-derivation is a defect per Hayes fixture)
+        assert!(!out.facts.iter().any(|f| f.key == "falls:floor"),
+            "floor must not fall — it is ground; over-derivation is a defect");
+        // table was removed (not fallen), must NOT appear in falls set
+        assert!(!out.facts.iter().any(|f| f.key == "falls:table"),
+            "table was removed, not fallen — must not appear in falls");
+    }
+
+    #[test]
+    fn invariant_monotonicity() {
+        let breed = NaivePhysics;
+        let mut input1 = dummy_input();
+        input1.facts = vec![
+            Fact { key: "np:on:b1".into(), value: "b2".into() },
+            Fact { key: "np:on:b2".into(), value: "floor".into() },
+            Fact { key: "np:ground:floor".into(), value: "true".into() },
+        ];
+        let out1 = breed.run(&input1).unwrap();
+        
+        let mut input2 = input1.clone();
+        input2.facts.push(Fact { key: "np:remove:floor".into(), value: "true".into() });
+        let out2 = breed.run(&input2).unwrap();
+        
+        let count1: usize = out1.selected.unwrap().replace("predictions:", "").parse().unwrap();
+        let count2: usize = out2.selected.unwrap().replace("predictions:", "").parse().unwrap();
+        
+        assert!(count2 >= count1, "Monotonicity invariant");
+    }
+}

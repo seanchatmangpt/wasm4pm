@@ -211,3 +211,114 @@ impl CognitionBreed for FramesInheritance {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn refuses_bad_intent() {
+        let f = FramesInheritance;
+        let input = BreedInput {
+            intent: "find slot".to_string(),
+            candidates: vec![],
+            facts: vec![Fact { key: "frame:a:isa".to_string(), value: "b".to_string() }],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(f.preconditions(&input).is_err());
+        assert!(f.run(&input).is_err());
+    }
+
+    #[test]
+    fn refuses_isa_cycle() {
+        let f = FramesInheritance;
+        let input = BreedInput {
+            intent: "resolve a slot".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "frame:a:isa".to_string(), value: "b".to_string() },
+                Fact { key: "frame:b:isa".to_string(), value: "a".to_string() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let res = f.run(&input);
+        assert!(res.is_err());
+        assert_eq!(res.unwrap_err().message, "isa cycle detected at a");
+    }
+
+    #[test]
+    fn falsification_gate_inferential_distance() {
+        let f = FramesInheritance;
+        let input = BreedInput {
+            intent: "resolve child color".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "frame:child:isa".to_string(), value: "parent".to_string() },
+                Fact { key: "frame:child:slot:color:default".to_string(), value: "blue".to_string() },
+                Fact { key: "frame:parent:slot:color".to_string(), value: "red".to_string() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = f.run(&input).unwrap();
+        assert_eq!(out.selected.unwrap(), "blue");
+    }
+
+    #[test]
+    fn invariant_own_beats_default() {
+        let f = FramesInheritance;
+        let input = BreedInput {
+            intent: "resolve a color".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "frame:a:slot:color:default".to_string(), value: "blue".to_string() },
+                Fact { key: "frame:a:slot:color".to_string(), value: "red".to_string() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = f.run(&input).unwrap();
+        assert_eq!(out.selected.unwrap(), "red");
+    }
+
+    /// Minsky 1974 paper fixture: my_chair isa chair isa furniture.
+    /// chair carries `legs:default=4`; my_chair has no own `legs` slot.
+    /// Resolution walks my_chair → chair and returns the inherited default "4".
+    /// If the isa-chain walk is broken, the slot is unresolved and the test fails.
+    #[test]
+    fn falsification_paper_minsky_chair_inheritance() {
+        let f = FramesInheritance;
+        let input = BreedInput {
+            intent: "resolve my_chair legs".to_string(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "frame:my_chair:isa".to_string(), value: "chair".to_string() },
+                Fact { key: "frame:chair:isa".to_string(), value: "furniture".to_string() },
+                Fact { key: "frame:chair:slot:legs:default".to_string(), value: "4".to_string() },
+                Fact { key: "frame:furniture:slot:movable:default".to_string(), value: "yes".to_string() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = f.run(&input).unwrap();
+        // Must inherit "4" from chair.legs:default (distance=1)
+        assert_eq!(out.selected.as_deref(), Some("4"),
+            "my_chair.legs must inherit default value 4 from chair frame (Minsky 1974)");
+        let resolved_fact = out.facts.iter()
+            .find(|fct| fct.key == "frame:resolved:my_chair:legs")
+            .expect("frame:resolved:my_chair:legs fact must be emitted");
+        assert_eq!(resolved_fact.value, "4");
+    }
+}

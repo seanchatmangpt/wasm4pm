@@ -270,3 +270,134 @@ impl CognitionBreed for DempsterShafer {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Goal, Rule};
+
+    #[test]
+    fn refuses_k_one_conflict() {
+        let breed = DempsterShafer;
+        let input = BreedInput {
+            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a".into() }],
+            rules: vec![
+                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 1.0 },
+                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 1.0 },
+            ],
+            ..Default::default()
+        };
+        let res = breed.run(&input);
+        assert!(res.is_err());
+        assert!(res.unwrap_err().message.contains("K=1 complete conflict"));
+    }
+
+    #[test]
+    fn refuses_invalid_mass() {
+        let breed = DempsterShafer;
+        let input = BreedInput {
+            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a".into() }],
+            rules: vec![
+                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 1.5 },
+            ],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_normalization() {
+        let breed = DempsterShafer;
+        let input = BreedInput {
+            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "b".into() }],
+            rules: vec![
+                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.5 },
+                Rule { id: "s1".into(), premise: vec![], conclusion: "b".into(), certainty: 0.5 },
+                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.5 },
+                Rule { id: "s2".into(), premise: vec![], conclusion: "c".into(), certainty: 0.5 },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).expect("should succeed");
+        // K conflict: a & b = 0 (0.25), a & c = 0 (0.25), b & c = 0 (0.25). Total K = 0.75.
+        // b & b = b (0.25).
+        // Normalized b = 0.25 / (1 - 0.75) = 1.0.
+        let selected = out.selected.unwrap();
+        assert!(selected.contains("Bel=1.0"));
+    }
+
+    #[test]
+    fn falsification_shafer_1976_two_witnesses() {
+        // Shafer 1976 Ch.1/Ch.4 — two independent witnesses each with reliability 0.9.
+        // m1(life)=0.9, m1({life,death})=0.1; same for witness2.
+        // No conflict (K=0). Combined Bel(life) = 0.99 exactly.
+        // Tolerance 1e-6 because 0.9 is not exactly representable in f32/f64.
+        // Verbatim from tests/fixtures/papers/dempster_shafer.json.
+        let breed = DempsterShafer;
+        let input = BreedInput {
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "life".into(),
+            }],
+            rules: vec![
+                Rule { id: "witness1".into(), premise: vec![], conclusion: "life".into(), certainty: 0.9 },
+                Rule { id: "witness1".into(), premise: vec![], conclusion: "life,death".into(), certainty: 0.1 },
+                Rule { id: "witness2".into(), premise: vec![], conclusion: "life".into(), certainty: 0.9 },
+                Rule { id: "witness2".into(), premise: vec![], conclusion: "life,death".into(), certainty: 0.1 },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).expect("two-witness run must succeed");
+        // Extract Bel from the belief: output fact.
+        let bel_fact = out
+            .facts
+            .iter()
+            .find(|f| f.key == "belief:life")
+            .expect("belief:life fact must be present");
+        let bel: f64 = bel_fact.value.parse().expect("belief value must be a float");
+        assert!(
+            (bel - 0.99_f64).abs() < 1e-6,
+            "Bel(life) must be 0.99 (Shafer 1976); got {}",
+            bel
+        );
+        // Plausibility must also be 0.99 (life is the only non-frame atom).
+        let pl_fact = out
+            .facts
+            .iter()
+            .find(|f| f.key == "plausibility:life")
+            .expect("plausibility:life fact must be present");
+        let pl: f64 = pl_fact.value.parse().expect("plausibility value must be a float");
+        assert!(
+            (pl - 1.0_f64).abs() < 1e-6,
+            "Pl(life) must be 1.0; got {}",
+            pl
+        );
+    }
+
+    #[test]
+    fn invariant_commutativity() {
+        let breed = DempsterShafer;
+        let input1 = BreedInput {
+            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a,b".into() }],
+            rules: vec![
+                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.3 },
+                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.4 },
+            ],
+            ..Default::default()
+        };
+        let out1 = breed.run(&input1).unwrap();
+
+        let input2 = BreedInput {
+            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a,b".into() }],
+            rules: vec![
+                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.4 },
+                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.3 },
+            ],
+            ..Default::default()
+        };
+        let out2 = breed.run(&input2).unwrap();
+
+        assert_eq!(out1.selected, out2.selected);
+    }
+}

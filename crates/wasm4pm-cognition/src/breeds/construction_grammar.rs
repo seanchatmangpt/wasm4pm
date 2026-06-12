@@ -443,4 +443,168 @@ mod tests {
         inp.facts.remove(0);
         assert!(ConstructionGrammar.preconditions(&inp).is_err());
     }
+
+    /// Fixture: Goldberg 1995 ditransitive "pat faxed bill the letter".
+    /// Fax is lexically transitive (arity 2), ditransitive construction demands arity 3 →
+    /// coercion must fire and slot assignments must be exact.
+    /// Falsifies if: construction matcher picks wrong frame, coercion logic ignores valence
+    /// arity mismatch, or slot binding swaps rec/theme.
+    #[test]
+    fn fixture_fax_ditransitive_coercion_slots() {
+        let mut facts = vec![Fact {
+            key: "cxg:utterance".into(),
+            value: "pat faxed bill the letter".into(),
+        }];
+        lex(&mut facts, "pat", "noun");
+        lex(&mut facts, "faxed", "verb");
+        lex(&mut facts, "bill", "noun");
+        lex(&mut facts, "the", "det");
+        lex(&mut facts, "letter", "noun");
+        facts.push(Fact {
+            key: "lex:faxed:valence".into(),
+            value: "transitive".into(),
+        });
+        let inp = BreedInput {
+            intent: "parse a ditransitive".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ConstructionGrammar.run(&inp).expect("run ok");
+
+        // construction must be ditransitive (not transitive)
+        assert_eq!(out.selected.as_deref(), Some("ditransitive"),
+            "ditransitive frame must win: NP NP post-verb pattern");
+
+        // fax is transitive (arity 2) but ditransitive demands arity 3 → coerced
+        let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
+        assert_eq!(coerced.value, "true",
+            "transitive verb in ditransitive frame must be coerced (Goldberg 1995 §1)");
+
+        // meaning frame must be CAUSE-RECEIVE
+        let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
+        assert!(meaning.value.starts_with("CAUSE-RECEIVE"),
+            "ditransitive frame supplies CAUSE-RECEIVE meaning; got: {}", meaning.value);
+
+        // slot rec = bill (first NP after verb = recipient)
+        let rec = out.facts.iter().find(|f| f.key == "cxg:slot:rec").unwrap();
+        assert_eq!(rec.value, "bill",
+            "recipient slot must be 'bill', not '{}'", rec.value);
+
+        // slot theme = the letter (second NP = theme)
+        let theme = out.facts.iter().find(|f| f.key == "cxg:slot:theme").unwrap();
+        assert_eq!(theme.value, "the letter",
+            "theme slot must be 'the letter', not '{}'", theme.value);
+    }
+
+    /// Falsification: if coercion check uses >= instead of <, an intransitive verb
+    /// in an intransitive frame would wrongly be marked coerced.
+    #[test]
+    fn no_coercion_when_valence_matches_construction() {
+        let mut facts = vec![Fact {
+            key: "cxg:utterance".into(),
+            value: "she runs".into(),
+        }];
+        lex(&mut facts, "she", "pron");
+        lex(&mut facts, "runs", "verb");
+        facts.push(Fact {
+            key: "lex:runs:valence".into(),
+            value: "intransitive".into(),
+        });
+        let inp = BreedInput {
+            intent: "parse".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = ConstructionGrammar.run(&inp).expect("run ok");
+        assert_eq!(out.selected.as_deref(), Some("intransitive"));
+        let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
+        assert_eq!(coerced.value, "false",
+            "intransitive verb in intransitive frame must NOT be coerced");
+    }
+
+    #[test]
+    fn refuses_utterance_too_long() {
+        let mut inp = sneeze_input();
+        inp.facts[0].value = (0..50).map(|_| "word").collect::<Vec<_>>().join(" ");
+        assert!(ConstructionGrammar.preconditions(&inp).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_longest_form_first() {
+        let mut facts = vec![Fact {
+            key: "cxg:utterance".into(),
+            value: "he gave the dog a bone".into(),
+        }];
+        lex(&mut facts, "he", "pron");
+        lex(&mut facts, "gave", "verb");
+        lex(&mut facts, "the", "det");
+        lex(&mut facts, "dog", "noun");
+        lex(&mut facts, "a", "det");
+        lex(&mut facts, "bone", "noun");
+        facts.push(Fact {
+            key: "lex:gave:valence".into(),
+            value: "ditransitive".into(),
+        });
+        
+        let inp = BreedInput {
+            intent: "parse".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        
+        let out = ConstructionGrammar.run(&inp).unwrap();
+        assert_eq!(out.selected.as_deref(), Some("ditransitive"));
+        let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
+        assert!(meaning.value.starts_with("CAUSE-RECEIVE"));
+    }
+
+    #[test]
+    fn invariant_meaning_coercion_stability() {
+        let mut build_input = |verb: &str, valence: &str| -> BreedInput {
+            let mut facts = vec![Fact {
+                key: "cxg:utterance".into(),
+                value: format!("he {} the ball into the box", verb),
+            }];
+            lex(&mut facts, "he", "pron");
+            lex(&mut facts, verb, "verb");
+            lex(&mut facts, "the", "det");
+            lex(&mut facts, "ball", "noun");
+            lex(&mut facts, "into", "prep");
+            lex(&mut facts, "box", "noun");
+            facts.push(Fact {
+                key: format!("lex:{}:valence", verb),
+                value: valence.into(),
+            });
+            BreedInput {
+                intent: "parse".into(),
+                candidates: vec![],
+                facts,
+                cases: vec![],
+                rules: vec![],
+                goals: vec![],
+                state: vec![],
+            }
+        };
+
+        let out_coerced = ConstructionGrammar.run(&build_input("sneezed", "intransitive")).unwrap();
+        let out_natural = ConstructionGrammar.run(&build_input("pushed", "ditransitive")).unwrap();
+
+        let meaning1 = out_coerced.facts.iter().find(|f| f.key == "cxg:meaning").unwrap().value.clone();
+        let meaning2 = out_natural.facts.iter().find(|f| f.key == "cxg:meaning").unwrap().value.clone();
+        
+        assert!(meaning1.starts_with("CAUSE-MOVE"));
+        assert!(meaning2.starts_with("CAUSE-MOVE"));
+    }
 }

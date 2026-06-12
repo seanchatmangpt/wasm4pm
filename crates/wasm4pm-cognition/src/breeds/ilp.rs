@@ -397,3 +397,108 @@ impl CognitionBreed for Ilp {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, CognitionBreed, Fact};
+
+    #[test]
+    fn refuses_exceed_cap() {
+        let breed = Ilp;
+        let mut facts = vec![];
+        for i in 0..40 {
+            facts.push(Fact { key: format!("pos:target({})", i), value: "".to_string() });
+        }
+        facts.push(Fact { key: "bg:foo(1)".to_string(), value: "".to_string() });
+        let input = BreedInput { facts, ..Default::default() };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_information_gain() {
+        let breed = Ilp;
+        let input = BreedInput {
+            facts: vec![
+                Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
+                Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
+                Fact { key: "pos:target(3)".to_string(), value: "".to_string() },
+                Fact { key: "neg:target(4)".to_string(), value: "".to_string() },
+                Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
+                Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
+                Fact { key: "bg:good(3)".to_string(), value: "".to_string() },
+                Fact { key: "bg:distractor(1)".to_string(), value: "".to_string() },
+                Fact { key: "bg:distractor(2)".to_string(), value: "".to_string() },
+                Fact { key: "bg:distractor(4)".to_string(), value: "".to_string() },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).unwrap();
+        assert_eq!(out.selected.unwrap(), "target(V0) :- good(V0)");
+    }
+
+    /// Quinlan 1990 (Machine Learning 5(3):239-266), Section 3 — FOIL daughter task:
+    /// From parent/2 and female/1 background, learn daughter(X,Y) :- female(X), parent(Y,X).
+    /// The learned clause body must equal {female(V0), parent(V1,V0)} as a set (Quinlan §3).
+    #[test]
+    fn quinlan_1990_daughter_clause_body_matches() {
+        let breed = Ilp;
+        let input = BreedInput {
+            facts: vec![
+                // Background
+                Fact { key: "bg:parent(ann,mary)".into(), value: "".into() },
+                Fact { key: "bg:parent(ann,tom)".into(), value: "".into() },
+                Fact { key: "bg:parent(tom,eve)".into(), value: "".into() },
+                Fact { key: "bg:parent(tom,ian)".into(), value: "".into() },
+                Fact { key: "bg:female(ann)".into(), value: "".into() },
+                Fact { key: "bg:female(mary)".into(), value: "".into() },
+                Fact { key: "bg:female(eve)".into(), value: "".into() },
+                // Positive examples
+                Fact { key: "pos:daughter(mary,ann)".into(), value: "".into() },
+                Fact { key: "pos:daughter(eve,tom)".into(), value: "".into() },
+                // Negative examples
+                Fact { key: "neg:daughter(tom,ann)".into(), value: "".into() },
+                Fact { key: "neg:daughter(eve,ann)".into(), value: "".into() },
+                Fact { key: "neg:daughter(ian,tom)".into(), value: "".into() },
+                Fact { key: "neg:daughter(ann,mary)".into(), value: "".into() },
+            ],
+            ..Default::default()
+        };
+        let out = breed.run(&input).expect("FOIL must succeed on daughter task");
+        let rule_text = out.selected.expect("must emit at least one rule");
+        // The head must be daughter(V0,V1)
+        assert!(rule_text.starts_with("daughter(V0,V1)"),
+            "head must be daughter(V0,V1), got: {}", rule_text);
+        // The body must contain female(V0) and parent(V1,V0) as a set
+        // (literal order may vary by information-gain ranking)
+        assert!(rule_text.contains("female(V0)"),
+            "body must contain female(V0) (Quinlan 1990 §3), got: {}", rule_text);
+        assert!(rule_text.contains("parent(V1,V0)"),
+            "body must contain parent(V1,V0) (Quinlan 1990 §3), got: {}", rule_text);
+        // Exactly one clause (the daughter relation is expressible in one Horn clause)
+        assert_eq!(out.facts.iter().filter(|f| f.key.starts_with("ilp:rule:")).count(), 1,
+            "fixture requires exactly 1 clause (Quinlan 1990)");
+    }
+
+    #[test]
+    fn invariant_example_order_independence() {
+        let breed = Ilp;
+        let facts1 = vec![
+            Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
+            Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
+            Fact { key: "neg:target(3)".to_string(), value: "".to_string() },
+            Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
+            Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
+        ];
+        let facts2 = vec![
+            Fact { key: "neg:target(3)".to_string(), value: "".to_string() },
+            Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
+            Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
+            Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
+            Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
+        ];
+        let out1 = breed.run(&BreedInput { facts: facts1, ..Default::default() }).unwrap();
+        let out2 = breed.run(&BreedInput { facts: facts2, ..Default::default() }).unwrap();
+        assert_eq!(out1.selected, out2.selected);
+    }
+}

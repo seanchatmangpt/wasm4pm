@@ -328,3 +328,113 @@ impl CognitionBreed for RlSymbolic {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_mdp(gamma: &str, start: &str, extras: Vec<(&str, &str)>) -> BreedInput {
+        let mut facts = vec![
+            Fact { key: "mdp:gamma".to_string(), value: gamma.to_string() },
+            Fact { key: "mdp:start".to_string(), value: start.to_string() },
+        ];
+        for (k, v) in extras {
+            facts.push(Fact { key: k.to_string(), value: v.to_string() });
+        }
+        BreedInput { facts, candidates: vec![], cases: vec![], rules: vec![], goals: vec![], intent: String::new(), state: vec![] }
+    }
+
+    #[test]
+    fn refuses_missing_gamma() {
+        let mut input = make_mdp("0.9", "s1", vec![("mdp:t:s1:a", "s2")]);
+        input.facts.retain(|f| f.key != "mdp:gamma");
+        let res = RlSymbolic.run(&input);
+        assert!(res.unwrap_err().message.contains("requires mdp:gamma"));
+    }
+
+    #[test]
+    fn refuses_missing_start() {
+        let mut input = make_mdp("0.9", "s1", vec![("mdp:t:s1:a", "s2")]);
+        input.facts.retain(|f| f.key != "mdp:start");
+        let res = RlSymbolic.run(&input);
+        assert!(res.unwrap_err().message.contains("requires mdp:start"));
+    }
+
+    #[test]
+    fn refuses_over_512_episodes() {
+        let input = make_mdp("0.9", "s1", vec![
+            ("mdp:t:s1:a", "s2"),
+            ("rl:episodes", "513")
+        ]);
+        let res = RlSymbolic.run(&input);
+        assert!(res.unwrap_err().message.contains("outside 1..=512"));
+    }
+
+    #[test]
+    fn refuses_bad_probabilities() {
+        let input = make_mdp("0.9", "s1", vec![
+            ("mdp:t:s1:a", "s2:0.5,s3:0.4")
+        ]);
+        let res = RlSymbolic.run(&input);
+        assert!(res.unwrap_err().message.contains("sum to 0.9"));
+    }
+
+    #[test]
+    fn falsification_gate_q_learning_optimal_path() {
+        let input = make_mdp("0.9", "s1", vec![
+            ("mdp:terminal:end", ""),
+            ("mdp:t:s1:a2", "s2"),
+            ("mdp:t:s1:a3", "s3"),
+            ("mdp:t:s2:go", "end"),
+            ("mdp:t:s3:go", "end"),
+            ("mdp:r:s2:go", "10"),
+            ("mdp:r:s3:go", "5"),
+        ]);
+        let out = RlSymbolic.run(&input).expect("should succeed");
+        let policy_s1 = out.facts.iter().find(|f| f.key == "policy:s1").expect("no policy for s1").value.clone();
+        assert_eq!(policy_s1, "a2");
+        assert_eq!(out.selected.unwrap(), "a2");
+    }
+
+    /// Falsification: Watkins & Dayan 1992 two-state task (Fig. fixture).
+    /// Bellman fixed point: Q*(s0,go) = 1.0, Q*(s0,stay) = γ * Q*(s0,go) = 0.9.
+    /// If the Q-update formula is wrong (e.g., α or γ misapplied), at least one
+    /// of these will fall outside tolerance=0.05.
+    #[test]
+    fn paper_fixture_q_values_converge_to_bellman_fixed_point() {
+        let input = make_mdp("0.9", "s0", vec![
+            ("mdp:terminal:goal", "true"),
+            ("mdp:t:s0:go", "goal"),
+            ("mdp:t:s0:stay", "s0"),
+            ("mdp:r:s0:go", "1.0"),
+            ("rl:episodes", "300"),
+        ]);
+        let out = RlSymbolic.run(&input).expect("should succeed");
+        // Policy must choose "go"
+        let policy_s0 = out.facts.iter().find(|f| f.key == "policy:s0")
+            .expect("no policy:s0 fact").value.clone();
+        assert_eq!(policy_s0, "go", "greedy policy must be 'go'");
+        // Q(s0,go) must converge near 1.0
+        let q_go: f64 = out.facts.iter().find(|f| f.key == "q:s0:go")
+            .expect("no q:s0:go fact").value.parse().unwrap();
+        assert!((q_go - 1.0).abs() < 0.05,
+            "Q*(s0,go) = 1.0 but got {:.4} (Watkins & Dayan 1992)", q_go);
+        // Q(s0,stay) must converge near 0.9
+        let q_stay: f64 = out.facts.iter().find(|f| f.key == "q:s0:stay")
+            .expect("no q:s0:stay fact").value.parse().unwrap();
+        assert!((q_stay - 0.9).abs() < 0.05,
+            "Q*(s0,stay) = 0.9 but got {:.4} (Watkins & Dayan 1992)", q_stay);
+    }
+
+    #[test]
+    fn invariant_zero_reward_lexicographic() {
+        let input = make_mdp("0.9", "s1", vec![
+            ("mdp:t:s1:z", "s2"),
+            ("mdp:t:s1:a", "s3"),
+        ]);
+        let out = RlSymbolic.run(&input).expect("should succeed");
+        let policy_s1 = out.facts.iter().find(|f| f.key == "policy:s1").expect("no policy for s1").value.clone();
+        assert_eq!(policy_s1, "a");
+    }
+}
+

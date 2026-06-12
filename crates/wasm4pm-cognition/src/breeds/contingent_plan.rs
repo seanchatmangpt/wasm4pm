@@ -447,4 +447,36 @@ mod tests {
         f[0].value = "a,b,c,d,e".into();
         assert!(ContingentPlan.preconditions(&input(f)).is_err());
     }
+
+    #[test]
+    fn refuses_malformed_action_part() {
+        let mut f = vacuum();
+        f.push(fact("cp:act:suck:invalid", "dirt"));
+        assert!(ContingentPlan.preconditions(&input(f)).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_must_reach_goal_in_all_branches() {
+        let f = vec![
+            fact("cp:unknown", "A"),
+            fact("cp:goal:G", "true"),
+            fact("cp:sense:check-A", "A"),
+            fact("cp:act:do-T:pre", "A"),
+            fact("cp:act:do-T:add", "G"),
+        ];
+        let out = ContingentPlan.run(&input(f));
+        assert!(out.is_err(), "Must refuse if else branch cannot reach goal");
+    }
+
+    #[test]
+    fn invariant_already_at_goal_yields_done() {
+        let f = vec![
+            fact("cp:init:A", "true"),
+            fact("cp:goal:A", "true"),
+            fact("cp:act:dummy:add", "B"),
+        ];
+        let out = ContingentPlan.run(&input(f)).unwrap();
+        let tree = out.facts.iter().find(|f| f.key == "plan:tree").unwrap();
+        assert_eq!(tree.value, "(done)");
+    }
 }

@@ -308,3 +308,61 @@ impl CognitionBreed for FuzzyLogic {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, CognitionBreed, Fact, Rule};
+
+    #[test]
+    fn refuses_no_rules() {
+        let breed = FuzzyLogic;
+        let input = BreedInput {
+            facts: vec![
+                Fact { key: "fuzzy:input:x".to_string(), value: "10".to_string() },
+                Fact { key: "fuzzy:x:a".to_string(), value: "tri:0,10,20".to_string() }
+            ],
+            rules: vec![],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_centroid_exactness() {
+        let breed = FuzzyLogic;
+        let input = BreedInput {
+            facts: vec![
+                Fact { key: "fuzzy:temp:hot".to_string(), value: "tri:0,50,100".to_string() },
+                Fact { key: "fuzzy:fan:fast".to_string(), value: "trap:10,20,30,40".to_string() },
+                Fact { key: "fuzzy:input:temp".to_string(), value: "25".to_string() },
+            ],
+            rules: vec![Rule { id: "r1".to_string(), premise: vec!["fuzzy:temp:hot".to_string()], conclusion: "fuzzy:fan:fast".to_string(), certainty: 1.0 }],
+            ..Default::default()
+        };
+        let out = breed.run(&input).unwrap();
+        let fan_out = out.facts.iter().find(|f| f.key == "fuzzy:output:fan").unwrap();
+        assert_eq!(fan_out.value, "25");
+    }
+
+    #[test]
+    fn invariant_shift_identity() {
+        let breed = FuzzyLogic;
+        let eval = |shift: f32| -> f32 {
+            let input = BreedInput {
+                facts: vec![
+                    Fact { key: "fuzzy:x:t1".to_string(), value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift) },
+                    Fact { key: "fuzzy:y:t2".to_string(), value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift) },
+                    Fact { key: "fuzzy:input:x".to_string(), value: (25.0 + shift).to_string() },
+                ],
+                rules: vec![Rule { id: "r1".to_string(), premise: vec!["fuzzy:x:t1".to_string()], conclusion: "fuzzy:y:t2".to_string(), certainty: 1.0 }],
+                ..Default::default()
+            };
+            let out = breed.run(&input).unwrap();
+            out.facts.iter().find(|f| f.key == "fuzzy:output:y").unwrap().value.parse().unwrap()
+        };
+        let base = eval(0.0);
+        let shifted = eval(10.0);
+        assert!((shifted - (base + 10.0)).abs() < 1e-4);
+    }
+}

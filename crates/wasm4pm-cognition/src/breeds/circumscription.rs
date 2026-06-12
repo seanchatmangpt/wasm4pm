@@ -291,3 +291,134 @@ impl CognitionBreed for Circumscription {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact, Goal, Rule};
+
+    /// Falsification gate — McCarthy 1980 bird/penguin circumscription fixture.
+    ///
+    /// Theory: bird_tweety and bird_opus are known; penguin_opus forces ab_bird_opus.
+    /// The unique ab-minimal model has S = {ab_bird_opus}.
+    /// In that model: flies_tweety is entailed (ab_bird_tweety stays false by minimization);
+    /// flies_opus is NOT entailed (ab_bird_opus blocks the flies rule for opus).
+    ///
+    /// A broken minimization would wrongly entail flies_opus or fail to entail flies_tweety.
+    #[test]
+    fn mccarthry_1980_bird_penguin_circumscription() {
+        let breed = Circumscription;
+        let input = BreedInput {
+            intent: "circumscribe abnormality over the bird/penguin theory".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "bird_tweety".into(), value: "true".into() },
+                Fact { key: "bird_opus".into(), value: "true".into() },
+                Fact { key: "penguin_opus".into(), value: "true".into() },
+            ],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "r-fly-tweety".into(),
+                    premise: vec!["bird_tweety".into(), "not_ab_bird_tweety".into()],
+                    conclusion: "flies_tweety".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r-fly-opus".into(),
+                    premise: vec!["bird_opus".into(), "not_ab_bird_opus".into()],
+                    conclusion: "flies_opus".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r-penguin-ab".into(),
+                    premise: vec!["penguin_opus".into()],
+                    conclusion: "ab_bird_opus".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![
+                Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_tweety".into() },
+                Goal { id: "g2".into(), predicate: "entail".into(), value: "flies_opus".into() },
+            ],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("circumscription run should succeed");
+
+        // flies_tweety must be cautiously entailed (true in all ab-minimal models).
+        let tweety_fact = out.facts.iter()
+            .find(|f| f.key == "entailed:flies_tweety")
+            .expect("entailed:flies_tweety fact must be present");
+        assert_eq!(
+            tweety_fact.value, "true",
+            "flies_tweety must be entailed: Tweety has no forced abnormality"
+        );
+
+        // flies_opus must NOT be cautiously entailed.
+        let opus_fact = out.facts.iter()
+            .find(|f| f.key == "entailed:flies_opus")
+            .expect("entailed:flies_opus fact must be present");
+        assert_eq!(
+            opus_fact.value, "false",
+            "flies_opus must NOT be entailed: ab_bird_opus is forced by penguin_opus"
+        );
+
+        // Exactly one minimal model.
+        assert!(
+            out.explanation.contains("1 minimal"),
+            "There is exactly one minimal ab-set {{ab_bird_opus}}; got: {}",
+            out.explanation
+        );
+    }
+
+    /// Refuses when there are no rules.
+    #[test]
+    fn refuses_no_rules() {
+        let breed = Circumscription;
+        let input = BreedInput {
+            facts: vec![Fact { key: "x".into(), value: "true".into() }],
+            goals: vec![Goal { id: "g".into(), predicate: "entail".into(), value: "x".into() }],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    /// Refuses when there are no goals.
+    #[test]
+    fn refuses_no_goals() {
+        let breed = Circumscription;
+        let input = BreedInput {
+            rules: vec![Rule {
+                id: "r".into(),
+                premise: vec!["x".into()],
+                conclusion: "y".into(),
+                certainty: 1.0,
+            }],
+            facts: vec![Fact { key: "x".into(), value: "true".into() }],
+            goals: vec![],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    /// Complexity cap: >12 ab-atoms must be refused.
+    #[test]
+    fn refuses_over_12_ab_atoms() {
+        let breed = Circumscription;
+        let rules: Vec<Rule> = (0..13)
+            .map(|i| Rule {
+                id: format!("r{}", i),
+                premise: vec![format!("ab_x{}", i)],
+                conclusion: format!("c{}", i),
+                certainty: 1.0,
+            })
+            .collect();
+        let input = BreedInput {
+            rules,
+            facts: vec![Fact { key: "f".into(), value: "true".into() }],
+            goals: vec![Goal { id: "g".into(), predicate: "entail".into(), value: "c0".into() }],
+            ..Default::default()
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+}

@@ -381,3 +381,104 @@ impl CognitionBreed for LtlMonitor {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact};
+
+    fn dummy_input() -> BreedInput {
+        BreedInput { ..Default::default() }
+    }
+
+    #[test]
+    fn refuses_oversized_formula() {
+        let breed = LtlMonitor;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "ltl:formula".into(), value: "a".repeat(300) },
+            Fact { key: "trace:0".into(), value: "a".into() },
+        ];
+        let err = breed.preconditions(&input).unwrap_err();
+        assert!(err.contains("formula exceeds 256 chars"));
+    }
+
+    #[test]
+    fn falsification_gate_good_prefix() {
+        let breed = LtlMonitor;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "ltl:formula".into(), value: "G p".into() },
+            Fact { key: "trace:0".into(), value: "p".into() },
+            Fact { key: "trace:1".into(), value: "p,q".into() },
+        ];
+        let out = breed.run(&input).expect("should run successfully");
+        assert_eq!(out.selected.as_deref(), Some("true"));
+        
+        input.facts[2] = Fact { key: "trace:1".into(), value: "q".into() };
+        let out_fail = breed.run(&input).expect("should run successfully");
+        assert_eq!(out_fail.selected.as_deref(), Some("false"));
+    }
+
+    /// Havelund & Rosu 2001 (ASE), Section 4 — traffic-light safety property fixture:
+    /// Formula G(red -> !green): red and green must never both hold simultaneously.
+    /// Conforming trace (red, green, red, green — each event is a single atom): verdict true.
+    /// Violating trace (red, "red,green", green): violation at step 1 where both hold → verdict false.
+    #[test]
+    fn havelund_rosu_2001_traffic_light_safety_fixture() {
+        let breed = LtlMonitor;
+
+        // Conforming trace: alternating single lights — G(red -> !green) holds
+        let conforming = BreedInput {
+            intent: "ltl test".into(),
+            facts: vec![
+                Fact { key: "ltl:formula".into(), value: "G (red -> !green)".into() },
+                Fact { key: "trace:0".into(), value: "red".into() },
+                Fact { key: "trace:1".into(), value: "green".into() },
+                Fact { key: "trace:2".into(), value: "red".into() },
+                Fact { key: "trace:3".into(), value: "green".into() },
+            ],
+            rules: vec![], cases: vec![], goals: vec![], candidates: vec![], state: vec![],
+        };
+        let out_ok = breed.run(&conforming).expect("conforming trace must run");
+        assert_eq!(out_ok.selected.as_deref(), Some("true"),
+            "G(red->!green) must be satisfied on conforming trace (Havelund&Rosu 2001)");
+        // 4 events → 4 ltl-progress steps
+        let prog_steps = out_ok.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+        assert_eq!(prog_steps, 4, "4 trace events must produce 4 ltl-progress steps");
+
+        // Violating trace: step 1 has both red and green → violation
+        let violating = BreedInput {
+            intent: "ltl test".into(),
+            facts: vec![
+                Fact { key: "ltl:formula".into(), value: "G (red -> !green)".into() },
+                Fact { key: "trace:0".into(), value: "red".into() },
+                Fact { key: "trace:1".into(), value: "red,green".into() },
+                Fact { key: "trace:2".into(), value: "green".into() },
+            ],
+            rules: vec![], cases: vec![], goals: vec![], candidates: vec![], state: vec![],
+        };
+        let out_fail = breed.run(&violating).expect("violating trace must run");
+        assert_eq!(out_fail.selected.as_deref(), Some("false"),
+            "G(red->!green) must be violated when red and green hold together (step 1)");
+        // Violation detected at step 1 (after processing trace:1) → 2 ltl-progress steps before false
+        let viol_prog = out_fail.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+        assert_eq!(viol_prog, 2,
+            "violation at trace:1 yields exactly 2 ltl-progress steps; got {}", viol_prog);
+    }
+
+    #[test]
+    fn invariant_determinism() {
+        let breed = LtlMonitor;
+        let mut input = dummy_input();
+        input.facts = vec![
+            Fact { key: "ltl:formula".into(), value: "F p".into() },
+            Fact { key: "trace:0".into(), value: "q".into() },
+            Fact { key: "trace:1".into(), value: "p".into() },
+        ];
+        let out1 = breed.run(&input).unwrap();
+        let out2 = breed.run(&input).unwrap();
+        assert_eq!(out1.selected, out2.selected, "Determinism invariant");
+        assert_eq!(out1.inference_trace.len(), out2.inference_trace.len());
+    }
+}

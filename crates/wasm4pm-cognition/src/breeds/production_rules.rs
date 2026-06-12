@@ -321,6 +321,62 @@ mod tests {
         );
     }
 
+    /// Shortliffe & Buchanan 1975, §11.2 (p.238) + §11.4 (p.247):
+    /// RULE050: gram-positive + coccus + chains → organism=streptococcus (CF 0.7)
+    /// RULE071: organism=streptococcus + allergy-penicillin=no → therapy=penicillin (CF 0.9)
+    /// Combined: organism_cf = 0.7 (direct rule); therapy_cf = 0.9 × 0.7 = 0.63
+    #[test]
+    fn shortliffe_1975_organism_cf_07_therapy_cf_063() {
+        use crate::breeds::support::certainty::combine_cf;
+        let input = make_input(
+            vec![
+                Fact { key: "gram-stain".into(), value: "gram-positive".into() },
+                Fact { key: "morphology".into(), value: "coccus".into() },
+                Fact { key: "growth-conformation".into(), value: "chains".into() },
+                Fact { key: "site".into(), value: "blood".into() },
+                Fact { key: "allergy-penicillin".into(), value: "no".into() },
+            ],
+            vec![
+                Rule {
+                    id: "RULE050-class".into(),
+                    premise: vec![
+                        "gram-positive".into(),
+                        "coccus".into(),
+                        "chains".into(),
+                    ],
+                    conclusion: "organism=streptococcus".into(),
+                    certainty: 0.7,
+                },
+                Rule {
+                    id: "RULE071-class".into(),
+                    premise: vec![
+                        "organism=streptococcus".into(),
+                        "allergy-penicillin=no".into(),
+                    ],
+                    conclusion: "therapy=penicillin".into(),
+                    certainty: 0.9,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("run ok");
+
+        // organism_cf = 0.7 (rule certainty * min premise CF = 0.7 * 1.0)
+        let organism_cf = output.inference_trace.iter()
+            .find(|t| t.kind == "fire-rule" && t.detail.contains("organism=streptococcus"))
+            .expect("RULE050 must fire");
+        assert!(organism_cf.detail.contains("0.700"), "organism CF must be 0.700, got: {}", organism_cf.detail);
+
+        // therapy_cf = 0.9 * 0.7 = 0.63 (rule certainty * premise CF)
+        let therapy_step = output.inference_trace.iter()
+            .find(|t| t.kind == "fire-rule" && t.detail.contains("therapy=penicillin"))
+            .expect("RULE071 must fire");
+        assert!(therapy_step.detail.contains("0.630"), "therapy CF must be 0.630, got: {}", therapy_step.detail);
+
+        // The terminal conclusion is therapy=penicillin (not the intermediate organism)
+        assert_eq!(output.selected.as_deref(), Some("therapy=penicillin"),
+            "terminal conclusion must be therapy=penicillin");
+    }
+
     // Cycle defence: A→B cycle terminates within 2*rules.len() iterations
     #[test]
     fn test_cycle_defence() {

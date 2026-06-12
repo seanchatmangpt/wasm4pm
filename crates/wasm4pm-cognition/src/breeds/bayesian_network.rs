@@ -431,6 +431,72 @@ impl CognitionBreed for BayesianNetwork {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Fact, Goal};
+
+    fn burglary_alarm_input() -> BreedInput {
+        // Pearl 1988 Ch.2 burglary/earthquake/alarm network (Russell & Norvig Fig 14.2).
+        // CPT index: FIRST listed parent = high bit; index 0 = all parents false.
+        // cpt:A|B,E values: P(A=t|B=f,E=f)=0.001, P(A=t|B=f,E=t)=0.29,
+        //                   P(A=t|B=t,E=f)=0.94, P(A=t|B=t,E=t)=0.95
+        BreedInput {
+            intent: "diagnose burglary from phone calls".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "cpt:B".into(), value: "0.001".into() },
+                Fact { key: "cpt:E".into(), value: "0.002".into() },
+                Fact { key: "cpt:A|B,E".into(), value: "0.001,0.29,0.94,0.95".into() },
+                Fact { key: "cpt:J|A".into(), value: "0.05,0.90".into() },
+                Fact { key: "cpt:M|A".into(), value: "0.01,0.70".into() },
+                Fact { key: "evidence:J".into(), value: "true".into() },
+                Fact { key: "evidence:M".into(), value: "true".into() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![Goal {
+                id: "g1".into(),
+                predicate: "query".into(),
+                value: "prob:B".into(),
+            }],
+            state: vec![],
+        }
+    }
+
+    /// Pearl 1988: exact posterior P(Burglary | JohnCalls=t, MaryCalls=t) = 0.284171835.
+    /// Tolerance 1e-6 (fixture-specified).
+    #[test]
+    fn paper_posterior_burglary_given_calls() {
+        let out = BayesianNetwork.run(&burglary_alarm_input()).expect("run ok");
+        let verdict = out.selected.as_deref().unwrap_or("");
+        // selected = "prob:B=<value>"
+        let prob_str = verdict
+            .strip_prefix("prob:B=")
+            .expect("selected must start with 'prob:B='");
+        let prob: f64 = prob_str.parse().expect("posterior must be a float");
+        assert!(
+            (prob - 0.284171835_f64).abs() < 1e-6,
+            "P(B|J=t,M=t) must equal 0.284171835 ±1e-6 (Pearl 1988); got {}",
+            prob
+        );
+    }
+
+    /// Monotonicity: more evidence for burglary raises the posterior above baseline.
+    /// P(B) = 0.001; P(B|J=t,M=t) ≈ 0.284 — a 284x increase.
+    #[test]
+    fn evidence_raises_posterior_above_prior() {
+        let out = BayesianNetwork.run(&burglary_alarm_input()).expect("run ok");
+        let verdict = out.selected.as_deref().unwrap_or("");
+        let prob_str = verdict.strip_prefix("prob:B=").expect("selected must start with 'prob:B='");
+        let prob: f64 = prob_str.parse().expect("posterior must be a float");
+        assert!(
+            prob > 0.001,
+            "posterior P(B|J,M)={} must exceed prior P(B)=0.001", prob
+        );
+    }
+}
+
 fn multiply_factors(f1: &Factor, f2: &Factor) -> Factor {
     let mut vars = f1.vars.clone();
     for &v in &f2.vars {
