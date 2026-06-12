@@ -1,210 +1,121 @@
-# Algorithm Registry — v26.6.9 (60 admitted)
+# Algorithm Registry
 
-All 60 algorithms are admitted in the release certificate (BLAKE3-bound to git commit).
+<!-- Generated from wasm4pm pi ontology — regenerate with: ggen sync -->
 
-> **Source of truth:** `artifacts/release/ALGORITHM_BEHAVIOR_MATRIX.v26.6.9.md`
-> Every algorithm passed positive, negative (structured refusal), and invariant (determinism) test cases.
+All 60 algorithms are registered in the current release.
 
----
 
-## Listing Algorithms
 
-```bash
-wpm algorithms
-wpm algorithms --tier fast          # fast (<30ms), balanced, quality, stream
-wpm algorithms --show-ratings        # Van der Aalst quality dimensions
-wpm algorithms --format json
-```
 
-## Alias Resolution
-
-`wpm run -a <name>` and `wpm compare` accept CLI aliases (e.g. `dfg`, `inductive`, `heuristic`) or full registry IDs (e.g. `heuristic_miner`). Resolution is handled by `resolveAlgorithmId()` in `@wasm4pm/contracts`.
-
-## Default Algorithm
-
-When no `-a` flag is given, `wpm run` uses:
-
-1. `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json` in the current directory
-2. Else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`)
-3. Else `heuristic_miner`
-
-The repo root ships `wasm4pm.toml` with `algorithm.name = "simd_streaming_dfg"`.
-
----
-
-## Discovery (20 algorithms)
-
-These algorithms accept XES event logs and exit 0 on well-formed input.
+## Agentic
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `a_star` | `astar` | A* shortest-path discovery over DFG | XES | admitted |
-| `aco` | `ant-colony` | Ant Colony Optimisation process discovery | XES | admitted |
-| `alpha_plus_plus` | `alpha` | Alpha++ miner — Petri net from directly-follows graph | XES | admitted |
-| `declare` | `declare` | Declarative constraint mining (LTL-based) | XES | admitted |
-| `dfg` | `dfg` | Directly-Follows Graph — fastest baseline discovery | XES | admitted |
-| `genetic_algorithm` | `genetic` | Genetic algorithm process model search | XES | admitted |
-| `heuristic_miner` | `heuristic` | Heuristics Miner with dependency thresholds | XES | admitted |
-| `hierarchical_dfg` | — | Hierarchical DFG with sub-process detection | XES | admitted |
-| `hill_climbing` | `hill-climbing` | Hill-climbing local search over process space | XES | admitted |
-| `ilp` | `ilp` | ILP Miner — integer linear programming Petri net | XES | admitted |
-| `inductive_miner` | `inductive` | Inductive Miner — sound process tree discovery | XES | admitted |
-| `log_to_trie` | `prefix-tree` | Prefix-tree (trie) representation of traces | XES | admitted |
-| `optimized_dfg` | `dfg-optimized` | DFG with arc-weight optimisation pass | XES | admitted |
-| `process_skeleton` | `skeleton` | Minimal skeleton DFG for fast overview | XES | admitted |
-| `pso` | `pso` | Particle Swarm Optimisation discovery | XES | admitted |
-| `simd_streaming_dfg` | `simd-dfg` | SIMD-accelerated streaming DFG (default algorithm) | XES | admitted |
-| `simulated_annealing` | `simulated-annealing` | Simulated Annealing stochastic search | XES | admitted |
-| `smart_engine` | — | Auto-selects best algorithm for input characteristics | XES | admitted |
-| `streaming_log` | — | Streaming event log ingestion and analytics | XES | admitted |
-| `transition_system` | `transition-system` | Transition system from event log | XES | admitted |
+| `agentic_pipeline` | — | Orchestrated multi-step agentic pipeline — chains discovery, conformance, and analytics algorithms in a reasoning loop, selecting next operation based on intermediate results. | XES | CERTIFIED |
 
----
 
-## Discovery Analytics (10 algorithms)
-
-These algorithms accept XES and exit 0; they produce analytics artifacts rather than process models.
+## Conformance
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `analyze_process_speedup` | — | Measures speedup potential across variants | XES | admitted |
-| `analyze_variant_complexity` | — | Complexity metrics per trace variant | XES | admitted |
-| `batches` | `batches` | Detects batch-execution patterns in the log | XES | admitted |
-| `causal_graph` | `causal-graph` | Causal dependency graph from event ordering | XES | admitted |
-| `compute_activity_transition_matrix` | — | Activity-to-activity transition probability matrix | XES | admitted |
-| `compute_trace_similarity_matrix` | — | Pairwise trace similarity matrix | XES | admitted |
-| `correlation_miner` | `correlation` | Correlation-based dependency miner | XES | admitted |
-| `handover_network` | — | Social network: handover-of-work between resources | XES | admitted |
-| `performance_spectrum` | `perf-spectrum` | Performance spectrum visualisation data | XES | admitted |
-| `working_together_network` | — | Social network: co-worker collaboration frequency | XES | admitted |
+| `alignments` | `alignment` | Alignment-based conformance checking — synchronously replays each trace on the Petri net, computing optimal alignment cost using A* over the synchronous product automaton. | XES | CERTIFIED |
+| `complexity_metrics` | `complexity` | Structural complexity metrics (size, CFC, depth) — computes Control Flow Complexity, model size, connector degree distribution, and depth without replaying the log. | XES | CERTIFIED |
+| `etconformance_precision` | `etconformance` | ETConformance precision — measures how much of the model's behaviour is actually observed in the log using escaping-edges token-based precision. | PETRI_NET_HANDLE | CERTIFIED |
+| `generalization` | `generalization` | Van der Aalst generalization score — measures how well the model generalises beyond the observed log by penalising infrequently visited transitions. | PETRI_NET_HANDLE | CERTIFIED |
 
----
 
-## Object-Centric (6 algorithms)
-
-> **Note:** OCEL algorithms require OCEL 2.0 JSON input, not XES. On XES input these algorithms exit 3 (execution error — wrong input format). Pass an OCEL 2.0 `.json` file via `wpm run -a <id> --source <file.json>`.
+## Discovery
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `ocel_dfg` | — | Object-centric DFG across all object types | OCEL 2.0 JSON | admitted |
-| `ocel_dfg_per_type` | — | Separate DFG per object type | OCEL 2.0 JSON | admitted |
-| `ocel_encode` | — | Encodes OCEL log to feature matrix | OCEL 2.0 JSON | admitted |
-| `ocel_oc_declare` | — | Object-centric Declare constraint discovery | OCEL 2.0 JSON | admitted |
-| `ocel_ocla` | — | Object-centric log abstraction analytics | OCEL 2.0 JSON | admitted |
-| `ocel_petri_net` | — | Per-type flattened Petri nets (one per object type; cross-type sync not modelled) | OCEL 2.0 JSON | admitted |
+| `a_star` | `astar` | A* shortest-path discovery over DFG — finds optimal path through the directly-follows graph using heuristic search, producing a Petri net model. | XES | CERTIFIED |
+| `aco` | `ant-colony` | Ant Colony Optimisation discovery — stochastic population-based search inspired by ant foraging, producing Petri net models with good fitness/precision balance. | XES | CERTIFIED |
+| `alpha_plus_plus` | `alpha` | Alpha++ miner — extends the original Alpha algorithm to handle length-one and length-two loops, producing a Petri net from the directly-follows footprint matrix. | XES | CERTIFIED |
+| `declare` | `declare` | Declarative constraint mining using LTL-based temporal logic — discovers existence, response, and precedence constraints rather than a procedural model. | XES | CERTIFIED |
+| `dfg` | `dfg` | Directly-Follows Graph — fastest baseline discovery, counting how often one activity directly follows another. Serves as input to most other discovery algorithms. | XES | CERTIFIED |
+| `genetic_algorithm` | `genetic` | Genetic algorithm process model search — evolves a population of candidate Petri nets using fitness, precision, generalization and simplicity as multi-objective fitness functions. | XES | CERTIFIED |
+| `heuristic_miner` | `heuristic` | Heuristics Miner — uses dependency measures to filter noise before constructing a causal net. Dependency threshold controls filtering aggressiveness. | XES | CERTIFIED |
+| `hierarchical_dfg` | — | Hierarchical DFG — extends the standard DFG with automatic detection and collapsing of recurring sub-process patterns. | XES | CERTIFIED |
+| `hill_climbing` | `hill-climbing` | Hill-climbing local search — iteratively improves a candidate model by applying local operators, terminating at a local optimum. | XES | CERTIFIED |
+| `ilp` | `ilp` | ILP Miner — solves an integer linear programming problem to find a Petri net fitting the directly-follows relations; produces high-precision sound models. | XES | CERTIFIED |
+| `inductive_miner` | `inductive` | Inductive Miner — recursively discovers a sound, block-structured process tree from the event log by detecting cut types (sequence, parallel, choice, loop). | XES | CERTIFIED |
+| `log_to_trie` | `prefix-tree` | Prefix-tree (trie) representation — inserts all traces into a trie where each path from root to leaf represents a unique trace variant. | XES | CERTIFIED |
+| `optimized_dfg` | `dfg-optimized` | DFG with arc-weight optimisation pass — builds a standard DFG then applies pruning to remove statistically insignificant arcs. | XES | CERTIFIED |
+| `process_skeleton` | `skeleton` | Minimal skeleton DFG — retains only the highest-frequency directly-follows arcs to produce a sparse backbone of the process. | XES | CERTIFIED |
+| `pso` | `pso` | Particle Swarm Optimisation discovery — maintains a swarm of candidate models whose positions evolve toward the global best according to social and cognitive acceleration. | XES | CERTIFIED |
+| `simd_streaming_dfg` | `simd-dfg` | SIMD-accelerated streaming DFG — processes the event log in a single pass using SIMD vector intrinsics for maximum throughput on large logs. | XES | CERTIFIED |
+| `simulated_annealing` | `simulated-annealing` | Simulated Annealing stochastic search — probabilistically accepts worse candidate models according to a cooling schedule to escape local optima. | XES | CERTIFIED |
+| `smart_engine` | — | Auto-selects the best algorithm for the input characteristics — inspects log size, variant count, and noise level, then dispatches to the most appropriate discovery algorithm. | XES | CERTIFIED |
+| `streaming_log` | — | Streaming event log ingestion — processes events in arrival order without materialising the full log in memory; emits running DFG statistics. | XES | CERTIFIED |
+| `transition_system` | `transition-system` | Transition system from event log — constructs a finite-state automaton where states are abstractions of trace history and arcs are activity labels. | XES | CERTIFIED |
 
----
 
-## ML & Analytics (8 algorithms)
-
-> **Note:** ML algorithms require labeled dataset params via CLI flags (`--values-json`, `--labels`, etc.). On XES-only input these algorithms exit 1 (config error — missing required parameters).
-
-| ID | Alias | Description | Required flags | Status |
-|----|-------|-------------|----------------|--------|
-| `automl_classify` | — | AutoML classification over process features | `--values-json` | admitted |
-| `automl_forecast` | — | AutoML time-series forecasting | `--values-json` | admitted |
-| `ml_anomaly` | `ml-anomaly` | Anomaly detection on feature vectors | `--values-json` | admitted |
-| `ml_classify` | `ml-classify` | Supervised classification | `--values-json` | admitted |
-| `ml_cluster` | `ml-cluster` | Unsupervised clustering | `--values-json` | admitted |
-| `ml_forecast` | `ml-forecast` | Time-series forecasting | `--values-json` | admitted |
-| `ml_pca` | `ml-pca` | Principal Component Analysis | `--values-json` | admitted |
-| `ml_regress` | `ml-regress` | Regression over numeric process features | `--values-json` | admitted |
-
----
-
-## Conformance (4 algorithms)
-
-> **Note:** `etconformance_precision` and `generalization` require a pre-discovered Petri net handle passed via `--petri-net-handle`. On XES-only input without a handle these algorithms exit 1 (config error — missing required parameter).
+## Discovery analytics
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `alignments` | `alignment` | Token-replay alignment-based conformance checking | XES | admitted |
-| `complexity_metrics` | `complexity` | Structural complexity metrics (size, CFC, depth) | XES | admitted |
-| `etconformance_precision` | `etconformance` | ETConformance precision measurement | XES + `--petri-net-handle` | admitted |
-| `generalization` | `generalization` | Van der Aalst generalization score | XES + `--petri-net-handle` | admitted |
+| `analyze_process_speedup` | — | Measures speedup potential across trace variants — identifies bottleneck activity pairs and quantifies theoretical throughput gain from parallelisation. | XES | CERTIFIED |
+| `analyze_variant_complexity` | — | Complexity metrics per trace variant — computes length distribution, unique activity count, loop density, and entropy for each distinct variant in the log. | XES | CERTIFIED |
+| `batches` | `batches` | Detects batch-execution patterns — identifies when a resource processes multiple cases simultaneously (sequential, concurrent, simultaneous, or interleaved batches). | XES | CERTIFIED |
+| `causal_graph` | `causal-graph` | Causal dependency graph — applies causal inference to distinguish spurious correlations in the DFG from genuine causal dependencies between activities. | XES | CERTIFIED |
+| `compute_activity_transition_matrix` | — | Activity-to-activity transition probability matrix — computes the n x n matrix of empirical transition probabilities between all activity pairs. | XES | CERTIFIED |
+| `compute_trace_similarity_matrix` | — | Pairwise trace similarity matrix — computes edit-distance or Jaccard similarity for all trace pairs; used as input to clustering and variant analysis. | XES | CERTIFIED |
+| `correlation_miner` | `correlation` | Correlation-based dependency miner — discovers dependencies from statistical correlation of activity occurrences without requiring case identifiers. | XES | CERTIFIED |
+| `handover_network` | — | Social network: handover-of-work between resources — nodes are resources, arcs represent how frequently one resource hands a case to another. | XES | CERTIFIED |
+| `performance_spectrum` | `perf-spectrum` | Performance spectrum — segments all arc traversals in the DFG by time, producing a time-sliced frequency matrix for flow rate visualisation. | XES | CERTIFIED |
+| `working_together_network` | — | Social network: co-worker collaboration — arcs represent how frequently two resources work on the same case, regardless of handover direction. | XES | CERTIFIED |
 
----
 
-## Simulation (2 algorithms)
-
-> **Note:** `playout` requires a Petri net handle and exits 1 without it. `monte_carlo_simulation` accepts XES and exits 0.
-
-| ID | Alias | Description | Input | Status |
-|----|-------|-------------|-------|--------|
-| `monte_carlo_simulation` | `montecarlo` | Monte Carlo simulation from discovered model | XES | admitted |
-| `playout` | `playout` | Stochastic playout from Petri net | Petri net handle | admitted |
-
----
-
-## Prediction (5 algorithms)
-
-These algorithms accept XES event logs and exit 0 on well-formed input.
+## Import export
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `compute_ewma` | — | Exponentially weighted moving average on case metrics | XES | admitted |
-| `detect_drift` | — | Concept drift detection over sliding window | XES | admitted |
-| `predict_next_activity` | — | Next-activity prediction from trace prefix | XES | admitted |
-| `predict_outcome` | — | Case outcome prediction | XES | admitted |
-| `predict_remaining_time` | — | Remaining time prediction from trace prefix | XES | admitted |
+| `bpmn_import` | `import-bpmn` | Import BPMN 2.0 XML to process tree — parses a BPMN 2.0 XML document and converts flow elements to a block-structured process tree. | BPMN | CERTIFIED |
+| `pnml_import` | `import-pnml` | Import PNML to Petri net — parses a PNML XML document and reconstructs the place-transition structure for use as a conformance reference model. | PNML | CERTIFIED |
+| `powl_to_process_tree` | `powl-to-tree` | Convert POWL model to process tree — translates a Partially Ordered Workflow Language model to a block-structured process tree. | ANY | CERTIFIED |
+| `yawl_export` | `export-yawl` | Export process model to YAWL format — serialises a discovered process model as a YAWL specification for import into YAWL-compatible workflow engines. | PETRI_NET_HANDLE | CERTIFIED |
 
----
 
-## Import / Export (4 algorithms)
-
-> **Note:** Import algorithms require their respective model format as input (not XES). They exit 3 on XES input. Export algorithms require a model handle via `--petri-net-handle` or equivalent.
+## Ml analytics
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `bpmn_import` | `import-bpmn` | Import BPMN 2.0 XML to process tree | BPMN XML | admitted |
-| `pnml_import` | `import-pnml` | Import PNML to Petri net | PNML XML | admitted |
-| `powl_to_process_tree` | `powl-to-tree` | Convert POWL model to process tree | POWL JSON | admitted |
-| `yawl_export` | `export-yawl` | Export process model to YAWL format | model handle | admitted |
+| `automl_classify` | — | AutoML classification — automatically selects and tunes a classifier (decision tree, random forest, gradient boosting) from process feature vectors. | ANY | CERTIFIED |
+| `automl_forecast` | — | AutoML time-series forecasting — automatically selects and tunes a forecasting model for process throughput or case duration prediction. | ANY | CERTIFIED |
+| `ml_anomaly` | `ml-anomaly` | Anomaly detection — applies isolation forest or one-class SVM to process feature vectors to flag statistically anomalous traces or events. | ANY | CERTIFIED |
+| `ml_classify` | `ml-classify` | Supervised classification — trains a classifier on labeled process feature vectors and predicts labels for unseen cases. | ANY | CERTIFIED |
+| `ml_cluster` | `ml-cluster` | Unsupervised clustering — applies k-means or DBSCAN to process feature vectors to discover natural groupings of cases or traces. | ANY | CERTIFIED |
+| `ml_forecast` | `ml-forecast` | Time-series forecasting — trains a forecasting model on historical process metrics and produces forward projections. | ANY | CERTIFIED |
+| `ml_pca` | `ml-pca` | Principal Component Analysis — reduces dimensionality of process feature vectors, revealing principal axes of variation. | ANY | CERTIFIED |
+| `ml_regress` | `ml-regress` | Regression — fits a regression model to predict a continuous target (e.g., case duration) from process feature vectors. | ANY | CERTIFIED |
 
----
 
-## Agentic (1 algorithm)
+## Object centric
 
 | ID | Alias | Description | Input | Status |
 |----|-------|-------------|-------|--------|
-| `agentic_pipeline` | — | Orchestrated multi-step agentic pipeline over event log | XES | admitted |
+| `ocel_dfg` | — | Object-centric DFG across all object types — flattens the OCEL log into a unified DFG weighted by event frequency regardless of type. | OCEL | CERTIFIED |
+| `ocel_dfg_per_type` | — | Separate DFG per object type — produces one DFG for each object type in the OCEL log, enabling per-type flow analysis without cross-type interference. | OCEL | CERTIFIED |
+| `ocel_encode` | — | Encodes OCEL log to feature matrix — transforms the object-centric log into a numeric feature matrix suitable for downstream ML algorithms. | OCEL | CERTIFIED |
+| `ocel_oc_declare` | — | Object-centric Declare constraint discovery — mines LTL-based temporal constraints from the OCEL log, relating events across different object types. | OCEL | CERTIFIED |
+| `ocel_ocla` | — | Object-centric log abstraction analytics — computes summary statistics: object interaction counts, event density, and type co-occurrence matrices. | OCEL | CERTIFIED |
+| `ocel_petri_net` | — | Per-type flattened Petri nets — applies the Inductive Miner to each object-type-flattened sub-log to produce a sound Petri net per type. | OCEL | CERTIFIED |
 
----
 
-## Evidence
+## Prediction
 
-Certificate: `artifacts/release/RELEASE_CERTIFICATE.v26.6.9.json`
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `compute_ewma` | — | Exponentially weighted moving average on case metrics — applies EWMA smoothing to process KPI time-series for trend-aware monitoring. | XES | CERTIFIED |
+| `detect_drift` | — | Concept drift detection — applies statistical change-point tests (ADWIN, Page-Hinkley) to a sliding window to detect when the underlying process has changed. | XES | CERTIFIED |
+| `predict_next_activity` | — | Next-activity prediction from trace prefix — encodes the trace prefix as a feature vector and predicts the most likely next activity. | XES | CERTIFIED |
+| `predict_outcome` | — | Case outcome prediction — predicts the final outcome of a running case from its prefix using a trained binary or multi-class classifier. | XES | CERTIFIED |
+| `predict_remaining_time` | — | Remaining time prediction from trace prefix — estimates time until case completion using a regression model trained on completed cases. | XES | CERTIFIED |
 
-All 60 algorithms pass three test case categories:
-- **Positive** — valid input produces structured output with non-empty receipt
-- **Negative** — invalid/empty input produces structured refusal (no panic, no unhandled error)
-- **Invariant** — determinism: same input produces bit-exact output across runs (seeded RNG, sorted HashMap iteration)
 
-BLAKE3 receipt chain is mandatory for every `wpm run` invocation. Exit codes: 0 ok, 1 config, 2 source, 3 execution, 4 partial, 5 system.
+## Simulation
 
----
-
-## Examples
-
-Runnable TypeScript examples for key algorithm domains:
-
-| Example | Domain | Quick run |
-|---------|--------|-----------|
-| `examples/01-discovery/01-basic-dfg.ts` | Process Discovery | `tsx examples/01-discovery/01-basic-dfg.ts` |
-| `examples/02-conformance/01-basic-fitness.ts` | Conformance | `tsx examples/02-conformance/01-basic-fitness.ts` |
-| `examples/06-scaling/01-streaming-dfg.ts` | Streaming / SIMD | `tsx examples/06-scaling/01-streaming-dfg.ts` |
-| `examples/08-advanced-discovery.ts` | Advanced Discovery | `tsx examples/08-advanced-discovery.ts data/small-example.xes` |
-| `examples/10-conformance-and-metrics.ts` | Conformance Metrics | `tsx examples/10-conformance-and-metrics.ts data/small-example.xes` |
-| `examples/11-matrix-and-networks.ts` | Social Network / Matrix | `tsx examples/11-matrix-and-networks.ts data/small-example.xes` |
-| `examples/14-ocel-process-mining.ts` | OCEL 2.0 | `tsx examples/14-ocel-process-mining.ts` |
-| `examples/15-powl-import-export.ts` | POWL | `tsx examples/15-powl-import-export.ts` |
-| `examples/ml-classify.ts` | ML: Classification | `tsx examples/ml-classify.ts data/small-example.xes` |
-| `examples/ml-cluster.ts` | ML: Clustering | `tsx examples/ml-cluster.ts data/small-example.xes 5` |
-| `examples/ml-forecast.ts` | ML: Time-series | `tsx examples/ml-forecast.ts data/small-example.xes` |
-| `examples/ml-anomaly.ts` | ML: Anomaly Detection | `tsx examples/ml-anomaly.ts data/small-example.xes 0.5` |
-| `examples/ml-regress.ts` | ML: Regression | `tsx examples/ml-regress.ts data/small-example.xes linear` |
-| `examples/ml-pca.ts` | ML: PCA | `tsx examples/ml-pca.ts data/small-example.xes 3` |
-| `examples/12-ml-automl-predict.ts` | AutoML + Predict | `tsx examples/12-ml-automl-predict.ts data/small-example.xes` |
-| `examples/13-streaming-and-agentic.ts` | Streaming + Agentic | `tsx examples/13-streaming-and-agentic.ts data/small-example.xes` |
-
-Full example catalog: [examples/README.md](../../examples/README.md)
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+| `monte_carlo_simulation` | `montecarlo` | Monte Carlo simulation from discovered model — samples synthetic traces from empirical transition probability distribution to estimate throughput time distributions. | XES | CERTIFIED |
+| `playout` | `playout` | Stochastic playout from Petri net — generates synthetic event logs by firing enabled transitions according to stochastic weights until all tokens reach the final marking. | PETRI_NET_HANDLE | CERTIFIED |
