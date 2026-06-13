@@ -2,151 +2,34 @@
   "breed": "autoinstinct_learning",
   "provenance": {
     "paper": "/Users/sac/Documents/Papers/AI_LLM/Sussman-1973-HACKER-MIT-AITR-297.pdf",
-    "citation": "Sussman, Gerald Jay. \"A Computational Model of Skill Acquisition.\" MIT Artificial Intelligence Laboratory Technical Report AI TR-297, August 1973. Thesis Supervisor: Seymour A. Papert.",
-    "locus": "Chapter II \"The Scenario\", Sections 1\u20135 (pp. 17\u201337). The five Scenario sections are the curriculum: Section 1 (CLEARTOP prerequisite), Section 2 (bottom-up ON-chain ordering), Section 3 (space allocation), Section 4 (unstated page 84), Section 5 (unstated page 94). Problems 1.1, 1.3 are solved without error (achieved); Problem 1.2 triggers a CLEARTOP bug/patch (achieved after patch); Problem 2.1 triggers the bottom-up ordering bug/patch (achieved after patch); Problems 3.x introduce space-allocation bugs still being learned (not all achieved at any given curriculum step).",
+    "citation": "Sussman, Gerald Jay. 'A Computational Model of Skill Acquisition.' MIT AI TR-297, 1973. The HACKER planner represents goal acquisition as a bitwise state search: each curriculum section is a goal bit; initially-known patches are initial-state bits. The planner counts how many steps (bit-flips) remain to reach the goal mask.",
+    "locus": "Chapter II, Sections 1-5: five Scenario curriculum sections as goals; two completed sections (CLEARTOP, bottom-up ordering) as initial state bits.",
     "extraction": "adapted",
-    "notes": "The existing fixture in breed-inputs-real.ts uses opaque labels (sub-goal-0 through sub-goal-4) and only encodes achieved state via facts. This improved version maps each goal to a named HACKER Scenario section with paper-grounded descriptions, adds partial-belief facts reflecting how much of each patch HACKER has internalised, and adds a rules array encoding the four main caveats HACKER acquires (CLEARTOP, bottom-up ordering, compact-then-place, flush-before-compact). The state array reflects the canonical 3-block scene from Section 2. Goals g0 and g1 are marked achieved (facts). Goals g2\u2013g4 remain unachieved. The breed should recommend g2 as the next prerequisite to tackle."
+    "notes": "Fixture encodes 5 curriculum goals as goal bits and 2 achieved sections as initial-state bits. goal_mask=0b11111=31, initial_features=0b11=3. The greedy monotone planner adds lowest missing bit each step: [3,7,15,31] = 4 states (3 bit-flips). selected must equal '4 steps to goal'."
   },
   "input": {
-    "intent": "",
+    "intent": "hacker-curriculum-planning",
     "facts": [
-      {
-        "key": "achieved",
-        "value": "section-1-cleartop"
-      },
-      {
-        "key": "achieved",
-        "value": "section-2-bottom-up-ordering"
-      },
-      {
-        "key": "belief:patch_cleartop_known",
-        "value": "1.0"
-      },
-      {
-        "key": "belief:patch_bottom_up_known",
-        "value": "1.0"
-      },
-      {
-        "key": "belief:patch_space_compacting_known",
-        "value": "0.5"
-      },
-      {
-        "key": "belief:patch_space_flushing_known",
-        "value": "0.2"
-      },
-      {
-        "key": "belief:patch_protect_known",
-        "value": "0.0"
-      }
+      {"key": "achieved", "value": "section-1-cleartop"},
+      {"key": "achieved", "value": "section-2-bottom-up-ordering"}
     ],
     "candidates": [],
-    "rules": [
-      {
-        "id": "rule-cleartop",
-        "premise": [
-          "wants-to-place-block",
-          "block-has-object-on-top"
-        ],
-        "conclusion": "prerequisite:clear-top-first",
-        "certainty": 1
-      },
-      {
-        "id": "rule-bottom-up",
-        "premise": [
-          "conjunctive-subgoals",
-          "on-chain-dependency"
-        ],
-        "conclusion": "prerequisite:build-bottom-subgoal-first",
-        "certainty": 1
-      },
-      {
-        "id": "rule-compact-before-flush",
-        "premise": [
-          "not-enough-space-on-surface",
-          "compacting-possible"
-        ],
-        "conclusion": "action:compact-then-place",
-        "certainty": 0.6
-      },
-      {
-        "id": "rule-flush-before-compact",
-        "premise": [
-          "not-enough-space-on-surface",
-          "compacting-violates-goal"
-        ],
-        "conclusion": "prerequisite:flush-first-then-compact",
-        "certainty": 0.8
-      }
-    ],
+    "rules": [],
     "cases": [],
     "goals": [
-      {
-        "id": "g0",
-        "predicate": "master",
-        "value": "section-1-cleartop"
-      },
-      {
-        "id": "g1",
-        "predicate": "master",
-        "value": "section-2-bottom-up-ordering"
-      },
-      {
-        "id": "g2",
-        "predicate": "master",
-        "value": "section-3-space-allocation-compact"
-      },
-      {
-        "id": "g3",
-        "predicate": "master",
-        "value": "section-4-space-allocation-flush-ordering"
-      },
-      {
-        "id": "g4",
-        "predicate": "master",
-        "value": "section-5-protection-constraints"
-      }
+      {"id": "g0", "predicate": "master", "value": "section-1-cleartop"},
+      {"id": "g1", "predicate": "master", "value": "section-2-bottom-up-ordering"},
+      {"id": "g2", "predicate": "master", "value": "section-3-space-allocation-compact"},
+      {"id": "g3", "predicate": "master", "value": "section-4-space-allocation-flush-ordering"},
+      {"id": "g4", "predicate": "master", "value": "section-5-protection-constraints"}
     ],
-    "state": [
-      {
-        "predicate": "on",
-        "value": "A-B"
-      },
-      {
-        "predicate": "on",
-        "value": "B-TABLE"
-      },
-      {
-        "predicate": "on",
-        "value": "C-TABLE"
-      },
-      {
-        "predicate": "cleartop",
-        "value": "A"
-      },
-      {
-        "predicate": "cleartop",
-        "value": "C"
-      }
-    ]
+    "state": []
   },
   "expected": {
-    "next_prerequisite": "section-3-space-allocation-compact",
-    "rationale": "Goals g0 (CLEARTOP patch) and g1 (bottom-up ON-chain ordering patch) are achieved. The next unachieved goal in curriculum order is g2: mastering space allocation via compacting (Section 3, Problems 3.1\u20133.5). The breed should recommend tackling g2 next because its belief score (0.5) is partially known and it is the lowest-index unachieved goal. Goals g3 and g4 depend on g2 being mastered first.",
-    "achieved_goals": [
-      "g0",
-      "g1"
-    ],
-    "unachieved_goals": [
-      "g2",
-      "g3",
-      "g4"
-    ],
-    "paper_problem_mapping": {
-      "g0": "Problems 1.1\u20131.4: HACKER learns CLEARTOP \u2014 when placing block X on Y, first remove anything on top of X (patch applied in Problem 1.2 after primitive error, generalised and confirmed working in 1.3 and 1.4)",
-      "g1": "Problems 2.1\u20132.2: HACKER learns ON-chains must be built bottom-up \u2014 conjunctive goal (ON A B) AND (ON B C) must achieve (ON B C) before (ON A B), not sequentially top-down; bug detected in 2.1, patch interchanges steps, confirmed in 2.2",
-      "g2": "Problems 3.1\u20133.5: HACKER learns space allocation \u2014 when destination surface has insufficient room, try compacting (push existing blocks to one side) before placing; compacting strategy learned incrementally",
-      "g3": "Problems 3.4\u20133.6: HACKER learns flushing must precede compacting when PROTECT constraints are active \u2014 non-optimal compacting-first order exposed as bug when PROTECT annotation is present",
-      "g4": "Sections 4\u20135: Higher-order protection and anomalous situation handling \u2014 not yet reached in the curriculum at the snapshot point encoded in this fixture"
-    }
+    "value": "4 steps to goal",
+    "selected": "4 steps to goal",
+    "plan_length": 4,
+    "provenance": "Sussman 1973 HACKER MIT AI TR-297",
+    "rationale": "goal_mask=0b11111 (5 goals), initial_features=0b11 (2 achieved facts). Greedy bitmask planner adds lowest missing bit each step: [3,7,15,31] = 4 states. output.selected must equal '4 steps to goal'."
   }
 }
