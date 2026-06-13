@@ -4,7 +4,7 @@ resolver = "2"
 members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/wasm4pm-lsp"]
 
 [workspace.package]
-version = "26.6.10"
+version = "26.6.12"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]

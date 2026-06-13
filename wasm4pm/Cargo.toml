@@ -1,6 +1,6 @@
 [package]
 name = "wasm4pm"
-version = "26.6.10"
+version = "26.6.12"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Sean Chatman"]
@@ -249,6 +249,9 @@ name = "scalability_report"
 
 [features]
 ocel = []
+
+# Gall Checkpoint Doctrine conformance (no extra deps — uses wasm4pm-compat types only)
+feature-gall = []
 # ─────────────────────────────────────────────────────────────────────────────
 # CANONICAL FEATURE FLAGS
 # These are the authoritative semantic features for API stability.
@@ -313,6 +316,7 @@ default = ["browser"]
 # Mobile profile (~500KB): Minimal features for mobile devices
 mobile = [
   "feature-conformance-basic",
+  "feature-gall",
   "feature-hand-rolled-stats",
   "conformance_basic",
   "bcinr"
@@ -321,6 +325,7 @@ mobile = [
 # IoT profile (~1MB): Minimal features for IoT devices
 iot = [
   "feature-conformance-basic",
+  "feature-gall",
   "feature-hand-rolled-stats",
   "discovery_basic",
   "conformance_basic",
@@ -331,6 +336,7 @@ iot = [
 edge = [
   "feature-conformance-basic",
   "feature-discovery-advanced",
+  "feature-gall",
   "feature-streaming-basic",
   "feature-hand-rolled-stats",
   "discovery_advanced",
@@ -342,6 +348,7 @@ edge = [
 fog = [
   "feature-conformance-full",
   "feature-discovery-advanced",
+  "feature-gall",
   "feature-ml",
   "feature-streaming-full",
   "feature-ocel",
@@ -359,6 +366,7 @@ fog = [
 browser = [
   "feature-conformance-full",
   "feature-discovery-advanced",
+  "feature-gall",
   "feature-ml",
   "feature-streaming-full",
   "feature-ocel",
