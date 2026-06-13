@@ -240,6 +240,7 @@ export function resolveAlgorithmId(
   if (registryIds.includes(trimmed)) return trimmed as AlgorithmId;
   const norm = normalizeToken(trimmed);
   for (const [alias, id] of Object.entries(ALGORITHM_CLI_ALIASES)) {
+    if (!id) continue;
     if (normalizeToken(alias) === norm || normalizeToken(id) === norm) {
       if (registryIds.includes(id)) return id;
     }
