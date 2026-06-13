@@ -1,0 +1,24 @@
+[
+{% for row in sparql_results %}  {
+    "algorithm_id": "{{ row.algorithm_id }}",
+    "algorithm_label": "{{ row.algorithm_label }}",
+    "description": {{ row.algorithm_doc | json_encode }},
+    "citation": {{ row.citation | json_encode }},
+    "output_type": "{{ row.output_type }}",
+    "category": "{{ row.category }}",
+    "speed_tier": {{ row.speed_tier }},
+    "quality_tier": {{ row.quality_tier }},
+    "wasm_export": "{{ row.wasm_export }}",
+    "cli_alias": {% if row.cli_alias is defined %}"{{ row.cli_alias }}"{% else %}null{% endif %},
+    "input_format": "{{ row.input_format }}",
+    "status": "{{ row.algorithm_status | default(value="UNSUPPORTED") }}",
+    "standing": "{% if row.pi_standing is defined %}{{ row.pi_standing }}{% elif row.algorithm_status is defined and row.algorithm_status == "CERTIFIED" %}REPLAYABLE{% else %}REGISTERED{% endif %}",
+    "vda": {
+      "fitness": {% if row.vda_fitness is defined %}"{{ row.vda_fitness }}"{% else %}null{% endif %},
+      "precision": {% if row.vda_precision is defined %}"{{ row.vda_precision }}"{% else %}null{% endif %},
+      "generalization": {% if row.vda_generalization is defined %}"{{ row.vda_generalization }}"{% else %}null{% endif %},
+      "simplicity": {% if row.vda_simplicity is defined %}"{{ row.vda_simplicity }}"{% else %}null{% endif %}
+    }
+  }{% if not loop.last %},{% endif %}
+
+{% endfor %}]

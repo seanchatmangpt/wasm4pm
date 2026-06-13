@@ -1,0 +1,1322 @@
+[
+  {
+    "algorithm_id": "agentic_pipeline",
+    "algorithm_label": "AgenticPipeline",
+    "description": "Orchestrated multi-step agentic pipeline — chains discovery, conformance, and analytics algorithms in a reasoning loop, selecting next operation based on intermediate results.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "model",
+    "category": "agentic",
+    "speed_tier": 80,
+    "quality_tier": 90,
+    "wasm_export": "run_agentic_pipeline",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "alignments",
+    "algorithm_label": "Alignments",
+    "description": "Alignment-based conformance checking — synchronously replays each trace on the Petri net, computing optimal alignment cost using A* over the synchronous product automaton.",
+    "citation": "van der Aalst, W.M.P., Adriansyah, A., & van Dongen, B.F. (2012). Replaying History on Process Models for Conformance Checking. WIREs DMKD, 2(2), 182-192.",
+    "output_type": "analytics",
+    "category": "conformance",
+    "speed_tier": 25,
+    "quality_tier": 95,
+    "wasm_export": "compute_alignments",
+    "cli_alias": "alignment",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "complexity_metrics",
+    "algorithm_label": "ComplexityMetrics",
+    "description": "Structural complexity metrics (size, CFC, depth) — computes Control Flow Complexity, model size, connector degree distribution, and depth without replaying the log.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "conformance",
+    "speed_tier": 15,
+    "quality_tier": 90,
+    "wasm_export": "compute_complexity_metrics",
+    "cli_alias": "complexity",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "etconformance_precision",
+    "algorithm_label": "EtconformancePrecision",
+    "description": "ETConformance precision — measures how much of the model's behaviour is actually observed in the log using escaping-edges token-based precision.",
+    "citation": "Munoz-Gama, J., & Carmona, J. (2010). A Fresh Look at Precision in Process Conformance. BPM 2010, LNCS 6336. Springer.",
+    "output_type": "analytics",
+    "category": "conformance",
+    "speed_tier": 20,
+    "quality_tier": 92,
+    "wasm_export": "compute_align_etconformance_precision",
+    "cli_alias": "etconformance",
+    "input_format": "petri_net_handle",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "generalization",
+    "algorithm_label": "Generalization",
+    "description": "Van der Aalst generalization score — measures how well the model generalises beyond the observed log by penalising infrequently visited transitions.",
+    "citation": "Buijs, J.C.A.M., van Dongen, B.F., & van der Aalst, W.M.P. (2012). On the Role of Fitness, Precision, Generalization and Simplicity in Process Discovery. CoopIS 2012, LNCS 7565. Springer.",
+    "output_type": "analytics",
+    "category": "conformance",
+    "speed_tier": 20,
+    "quality_tier": 90,
+    "wasm_export": "generalization",
+    "cli_alias": "generalization",
+    "input_format": "petri_net_handle",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "a_star",
+    "algorithm_label": "AStar",
+    "description": "A* shortest-path discovery over DFG — finds optimal path through the directly-follows graph using heuristic search, producing a Petri net model.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 30,
+    "quality_tier": 75,
+    "wasm_export": "discover_a_star",
+    "cli_alias": "astar",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "aco",
+    "algorithm_label": "Aco",
+    "description": "Ant Colony Optimisation discovery — stochastic population-based search inspired by ant foraging, producing Petri net models with good fitness/precision balance.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 50,
+    "quality_tier": 78,
+    "wasm_export": "discover_aco",
+    "cli_alias": "ant-colony",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "alpha_plus_plus",
+    "algorithm_label": "AlphaPlusPlus",
+    "description": "Alpha++ miner — extends the original Alpha algorithm to handle length-one and length-two loops, producing a Petri net from the directly-follows footprint matrix.",
+    "citation": "van der Aalst, W.M.P., Weijters, T., & Maruster, L. (2004). Workflow Mining: Discovering Process Models from Event Logs. IEEE TKDE, 16(9), 1128-1142.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 5,
+    "quality_tier": 50,
+    "wasm_export": "discover_alpha_plus_plus",
+    "cli_alias": "alpha",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "declare",
+    "algorithm_label": "Declare",
+    "description": "Declarative constraint mining using LTL-based temporal logic — discovers existence, response, and precedence constraints rather than a procedural model.",
+    "citation": "Pesic, M., & van der Aalst, W.M.P. (2006). A Declarative Approach for Flexible Business Processes. BPM 2006 Workshops, LNCS 4103. Springer.",
+    "output_type": "declare",
+    "category": "discovery",
+    "speed_tier": 20,
+    "quality_tier": 80,
+    "wasm_export": "discover_declare",
+    "cli_alias": "declare",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "dfg",
+    "algorithm_label": "Dfg",
+    "description": "Directly-Follows Graph — fastest baseline discovery, counting how often one activity directly follows another. Serves as input to most other discovery algorithms.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 1,
+    "quality_tier": 30,
+    "wasm_export": "discover_dfg",
+    "cli_alias": "dfg",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "genetic_algorithm",
+    "algorithm_label": "GeneticAlgorithm",
+    "description": "Genetic algorithm process model search — evolves a population of candidate Petri nets using fitness, precision, generalization and simplicity as multi-objective fitness functions.",
+    "citation": "van der Aalst, W.M.P., de Medeiros, A.K.A., & Weijters, A.J.M.M. (2005). Genetic process mining. Petri Nets 2005, LNCS 3536. Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 50,
+    "quality_tier": 80,
+    "wasm_export": "discover_genetic_algorithm",
+    "cli_alias": "genetic",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "heuristic_miner",
+    "algorithm_label": "HeuristicMiner",
+    "description": "Heuristics Miner — uses dependency measures to filter noise before constructing a causal net. Dependency threshold controls filtering aggressiveness.",
+    "citation": "Weijters, A.J.M.M., & van der Aalst, W.M.P. (2006). Process Mining with the HeuristicsMiner Algorithm. BETA Working Paper WP 166, Eindhoven University of Technology.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 8,
+    "quality_tier": 70,
+    "wasm_export": "discover_heuristic_miner",
+    "cli_alias": "heuristic",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "hierarchical_dfg",
+    "algorithm_label": "HierarchicalDfg",
+    "description": "Hierarchical DFG — extends the standard DFG with automatic detection and collapsing of recurring sub-process patterns.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 12,
+    "quality_tier": 55,
+    "wasm_export": "discover_hierarchical_dfg",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "hill_climbing",
+    "algorithm_label": "HillClimbing",
+    "description": "Hill-climbing local search — iteratively improves a candidate model by applying local operators, terminating at a local optimum.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 45,
+    "quality_tier": 75,
+    "wasm_export": "discover_hill_climbing",
+    "cli_alias": "hill-climbing",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ilp",
+    "algorithm_label": "Ilp",
+    "description": "ILP Miner — solves an integer linear programming problem to find a Petri net fitting the directly-follows relations; produces high-precision sound models.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 40,
+    "quality_tier": 90,
+    "wasm_export": "discover_ilp_petri_net",
+    "cli_alias": "ilp",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "inductive_miner",
+    "algorithm_label": "InductiveMiner",
+    "description": "Inductive Miner — recursively discovers a sound, block-structured process tree from the event log by detecting cut types (sequence, parallel, choice, loop).",
+    "citation": "Leemans, S.J.J., Fahland, D., & van der Aalst, W.M.P. (2013). Discovering Block-Structured Process Models from Event Logs. Petri Nets 2013, LNCS 7927. Springer.",
+    "output_type": "tree",
+    "category": "discovery",
+    "speed_tier": 10,
+    "quality_tier": 85,
+    "wasm_export": "discover_inductive_miner",
+    "cli_alias": "inductive",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "log_to_trie",
+    "algorithm_label": "LogToTrie",
+    "description": "Prefix-tree (trie) representation — inserts all traces into a trie where each path from root to leaf represents a unique trace variant.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "tree",
+    "category": "discovery",
+    "speed_tier": 3,
+    "quality_tier": 40,
+    "wasm_export": "discover_log_to_trie",
+    "cli_alias": "prefix-tree",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "optimized_dfg",
+    "algorithm_label": "OptimizedDfg",
+    "description": "DFG with arc-weight optimisation pass — builds a standard DFG then applies pruning to remove statistically insignificant arcs.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 2,
+    "quality_tier": 35,
+    "wasm_export": "discover_dfg",
+    "cli_alias": "dfg-optimized",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "process_skeleton",
+    "algorithm_label": "ProcessSkeleton",
+    "description": "Minimal skeleton DFG — retains only the highest-frequency directly-follows arcs to produce a sparse backbone of the process.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 2,
+    "quality_tier": 25,
+    "wasm_export": "discover_process_skeleton",
+    "cli_alias": "skeleton",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "pso",
+    "algorithm_label": "Pso",
+    "description": "Particle Swarm Optimisation discovery — maintains a swarm of candidate models whose positions evolve toward the global best according to social and cognitive acceleration.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 48,
+    "quality_tier": 77,
+    "wasm_export": "discover_pso",
+    "cli_alias": "pso",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "simd_streaming_dfg",
+    "algorithm_label": "SimdStreamingDfg",
+    "description": "SIMD-accelerated streaming DFG — processes the event log in a single pass using SIMD vector intrinsics for maximum throughput on large logs.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 1,
+    "quality_tier": 30,
+    "wasm_export": "discover_dfg_simd",
+    "cli_alias": "simd-dfg",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "simulated_annealing",
+    "algorithm_label": "SimulatedAnnealing",
+    "description": "Simulated Annealing stochastic search — probabilistically accepts worse candidate models according to a cooling schedule to escape local optima.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "discovery",
+    "speed_tier": 47,
+    "quality_tier": 76,
+    "wasm_export": "discover_simulated_annealing",
+    "cli_alias": "simulated-annealing",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "smart_engine",
+    "algorithm_label": "SmartEngine",
+    "description": "Auto-selects the best algorithm for the input characteristics — inspects log size, variant count, and noise level, then dispatches to the most appropriate discovery algorithm.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "model",
+    "category": "discovery",
+    "speed_tier": 15,
+    "quality_tier": 85,
+    "wasm_export": "discover_smart_engine",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "streaming_log",
+    "algorithm_label": "StreamingLog",
+    "description": "Streaming event log ingestion — processes events in arrival order without materialising the full log in memory; emits running DFG statistics.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "dfg",
+    "category": "discovery",
+    "speed_tier": 1,
+    "quality_tier": 28,
+    "wasm_export": "discover_dfg",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "transition_system",
+    "algorithm_label": "TransitionSystem",
+    "description": "Transition system from event log — constructs a finite-state automaton where states are abstractions of trace history and arcs are activity labels.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "model",
+    "category": "discovery",
+    "speed_tier": 18,
+    "quality_tier": 65,
+    "wasm_export": "discover_transition_system",
+    "cli_alias": "transition-system",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "analyze_process_speedup",
+    "algorithm_label": "AnalyzeProcessSpeedup",
+    "description": "Measures speedup potential across trace variants — identifies bottleneck activity pairs and quantifies theoretical throughput gain from parallelisation.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 20,
+    "quality_tier": 75,
+    "wasm_export": "analyze_process_speedup",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "analyze_variant_complexity",
+    "algorithm_label": "AnalyzeVariantComplexity",
+    "description": "Complexity metrics per trace variant — computes length distribution, unique activity count, loop density, and entropy for each distinct variant in the log.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 15,
+    "quality_tier": 70,
+    "wasm_export": "analyze_variant_complexity",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "batches",
+    "algorithm_label": "Batches",
+    "description": "Detects batch-execution patterns — identifies when a resource processes multiple cases simultaneously (sequential, concurrent, simultaneous, or interleaved batches).",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 22,
+    "quality_tier": 72,
+    "wasm_export": "analyze_batches",
+    "cli_alias": "batches",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "causal_graph",
+    "algorithm_label": "CausalGraph",
+    "description": "Causal dependency graph — applies causal inference to distinguish spurious correlations in the DFG from genuine causal dependencies between activities.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 28,
+    "quality_tier": 78,
+    "wasm_export": "compute_causal_graph",
+    "cli_alias": "causal-graph",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "compute_activity_transition_matrix",
+    "algorithm_label": "ComputeActivityTransitionMatrix",
+    "description": "Activity-to-activity transition probability matrix — computes the n x n matrix of empirical transition probabilities between all activity pairs.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 10,
+    "quality_tier": 80,
+    "wasm_export": "compute_activity_transition_matrix",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "compute_trace_similarity_matrix",
+    "algorithm_label": "ComputeTraceSimilarityMatrix",
+    "description": "Pairwise trace similarity matrix — computes edit-distance or Jaccard similarity for all trace pairs; used as input to clustering and variant analysis.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 35,
+    "quality_tier": 82,
+    "wasm_export": "compute_trace_similarity_matrix",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "correlation_miner",
+    "algorithm_label": "CorrelationMiner",
+    "description": "Correlation-based dependency miner — discovers dependencies from statistical correlation of activity occurrences without requiring case identifiers.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 25,
+    "quality_tier": 73,
+    "wasm_export": "compute_correlation_miner",
+    "cli_alias": "correlation",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "handover_network",
+    "algorithm_label": "HandoverNetwork",
+    "description": "Social network: handover-of-work between resources — nodes are resources, arcs represent how frequently one resource hands a case to another.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 12,
+    "quality_tier": 76,
+    "wasm_export": "compute_handover_network",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "performance_spectrum",
+    "algorithm_label": "PerformanceSpectrum",
+    "description": "Performance spectrum — segments all arc traversals in the DFG by time, producing a time-sliced frequency matrix for flow rate visualisation.",
+    "citation": "Denisov, V., Fahland, D., & van der Aalst, W.M.P. (2018). Unbiased description of processes performance from event data. BPM 2018, LNCS 11080. Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 18,
+    "quality_tier": 74,
+    "wasm_export": "compute_performance_spectrum",
+    "cli_alias": "perf-spectrum",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "working_together_network",
+    "algorithm_label": "WorkingTogetherNetwork",
+    "description": "Social network: co-worker collaboration — arcs represent how frequently two resources work on the same case, regardless of handover direction.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "discovery_analytics",
+    "speed_tier": 13,
+    "quality_tier": 74,
+    "wasm_export": "compute_working_together_network",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "bpmn_import",
+    "algorithm_label": "BpmnImport",
+    "description": "Import BPMN 2.0 XML to process tree — parses a BPMN 2.0 XML document and converts flow elements to a block-structured process tree.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "tree",
+    "category": "import_export",
+    "speed_tier": 10,
+    "quality_tier": 85,
+    "wasm_export": "read_bpmn",
+    "cli_alias": "import-bpmn",
+    "input_format": "bpmn",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "pnml_import",
+    "algorithm_label": "PnmlImport",
+    "description": "Import PNML to Petri net — parses a PNML XML document and reconstructs the place-transition structure for use as a conformance reference model.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "petrinet",
+    "category": "import_export",
+    "speed_tier": 8,
+    "quality_tier": 90,
+    "wasm_export": "from_pnml_wasm",
+    "cli_alias": "import-pnml",
+    "input_format": "pnml",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "powl_to_process_tree",
+    "algorithm_label": "PowlToProcessTree",
+    "description": "Convert POWL model to process tree — translates a Partially Ordered Workflow Language model to a block-structured process tree.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "tree",
+    "category": "import_export",
+    "speed_tier": 12,
+    "quality_tier": 80,
+    "wasm_export": "convert_powl_to_process_tree",
+    "cli_alias": "powl-to-tree",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "yawl_export",
+    "algorithm_label": "YawlExport",
+    "description": "Export process model to YAWL format — serialises a discovered process model as a YAWL specification for import into YAWL-compatible workflow engines.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "model",
+    "category": "import_export",
+    "speed_tier": 10,
+    "quality_tier": 85,
+    "wasm_export": "export_yawl",
+    "cli_alias": "export-yawl",
+    "input_format": "petri_net_handle",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "automl_classify",
+    "algorithm_label": "AutomlClassify",
+    "description": "AutoML classification — automatically selects and tunes a classifier (decision tree, random forest, gradient boosting) from process feature vectors.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 45,
+    "quality_tier": 82,
+    "wasm_export": "automl_classify",
+    "cli_alias": null,
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "automl_forecast",
+    "algorithm_label": "AutomlForecast",
+    "description": "AutoML time-series forecasting — automatically selects and tunes a forecasting model for process throughput or case duration prediction.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 50,
+    "quality_tier": 80,
+    "wasm_export": "automl_forecast",
+    "cli_alias": null,
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_anomaly",
+    "algorithm_label": "MlAnomaly",
+    "description": "Anomaly detection — applies isolation forest or one-class SVM to process feature vectors to flag statistically anomalous traces or events.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 30,
+    "quality_tier": 75,
+    "wasm_export": "ml_anomaly",
+    "cli_alias": "ml-anomaly",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_classify",
+    "algorithm_label": "MlClassify",
+    "description": "Supervised classification — trains a classifier on labeled process feature vectors and predicts labels for unseen cases.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 25,
+    "quality_tier": 80,
+    "wasm_export": "ml_classify",
+    "cli_alias": "ml-classify",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_cluster",
+    "algorithm_label": "MlCluster",
+    "description": "Unsupervised clustering — applies k-means or DBSCAN to process feature vectors to discover natural groupings of cases or traces.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 20,
+    "quality_tier": 72,
+    "wasm_export": "ml_cluster",
+    "cli_alias": "ml-cluster",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_forecast",
+    "algorithm_label": "MlForecast",
+    "description": "Time-series forecasting — trains a forecasting model on historical process metrics and produces forward projections.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 35,
+    "quality_tier": 76,
+    "wasm_export": "ml_forecast",
+    "cli_alias": "ml-forecast",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_pca",
+    "algorithm_label": "MlPca",
+    "description": "Principal Component Analysis — reduces dimensionality of process feature vectors, revealing principal axes of variation.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 20,
+    "quality_tier": 70,
+    "wasm_export": "ml_pca",
+    "cli_alias": "ml-pca",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ml_regress",
+    "algorithm_label": "MlRegress",
+    "description": "Regression — fits a regression model to predict a continuous target (e.g., case duration) from process feature vectors.",
+    "citation": "de Leoni, M., van der Aalst, W.M.P., & Dees, M. (2016). A General Process Mining Framework. Information Systems, 56, 235-257.",
+    "output_type": "ml_result",
+    "category": "ml_analytics",
+    "speed_tier": 22,
+    "quality_tier": 78,
+    "wasm_export": "ml_regress",
+    "cli_alias": "ml-regress",
+    "input_format": "any",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_dfg",
+    "algorithm_label": "OcelDfg",
+    "description": "Object-centric DFG across all object types — flattens the OCEL log into a unified DFG weighted by event frequency regardless of type.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "dfg",
+    "category": "object_centric",
+    "speed_tier": 5,
+    "quality_tier": 55,
+    "wasm_export": "discover_ocel_dfg",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_dfg_per_type",
+    "algorithm_label": "OcelDfgPerType",
+    "description": "Separate DFG per object type — produces one DFG for each object type in the OCEL log, enabling per-type flow analysis without cross-type interference.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "dfg",
+    "category": "object_centric",
+    "speed_tier": 8,
+    "quality_tier": 60,
+    "wasm_export": "discover_ocel_dfg_per_type",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_encode",
+    "algorithm_label": "OcelEncode",
+    "description": "Encodes OCEL log to feature matrix — transforms the object-centric log into a numeric feature matrix suitable for downstream ML algorithms.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "ml_result",
+    "category": "object_centric",
+    "speed_tier": 15,
+    "quality_tier": 70,
+    "wasm_export": "encode_ocel",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_oc_declare",
+    "algorithm_label": "OcelOcDeclare",
+    "description": "Object-centric Declare constraint discovery — mines LTL-based temporal constraints from the OCEL log, relating events across different object types.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "declare",
+    "category": "object_centric",
+    "speed_tier": 25,
+    "quality_tier": 72,
+    "wasm_export": "discover_ocel_oc_declare",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_ocla",
+    "algorithm_label": "OcelOcla",
+    "description": "Object-centric log abstraction analytics — computes summary statistics: object interaction counts, event density, and type co-occurrence matrices.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "analytics",
+    "category": "object_centric",
+    "speed_tier": 10,
+    "quality_tier": 65,
+    "wasm_export": "discover_ocel_ocla",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "ocel_petri_net",
+    "algorithm_label": "OcelPetriNet",
+    "description": "Per-type flattened Petri nets — applies the Inductive Miner to each object-type-flattened sub-log to produce a sound Petri net per type.",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining. ICSOC 2019, LNCS 11895. Springer.",
+    "output_type": "petrinet",
+    "category": "object_centric",
+    "speed_tier": 30,
+    "quality_tier": 78,
+    "wasm_export": "discover_ocel_petri_net",
+    "cli_alias": null,
+    "input_format": "ocel",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "compute_ewma",
+    "algorithm_label": "ComputeEwma",
+    "description": "Exponentially weighted moving average on case metrics — applies EWMA smoothing to process KPI time-series for trend-aware monitoring.",
+    "citation": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., & Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011, LNCS 6741. Springer.",
+    "output_type": "analytics",
+    "category": "prediction",
+    "speed_tier": 8,
+    "quality_tier": 75,
+    "wasm_export": "compute_ewma",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "detect_drift",
+    "algorithm_label": "DetectDrift",
+    "description": "Concept drift detection — applies statistical change-point tests (ADWIN, Page-Hinkley) to a sliding window to detect when the underlying process has changed.",
+    "citation": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., & Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011, LNCS 6741. Springer.",
+    "output_type": "analytics",
+    "category": "prediction",
+    "speed_tier": 25,
+    "quality_tier": 82,
+    "wasm_export": "detect_drift",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "predict_next_activity",
+    "algorithm_label": "PredictNextActivity",
+    "description": "Next-activity prediction from trace prefix — encodes the trace prefix as a feature vector and predicts the most likely next activity.",
+    "citation": "Teinemaa, I., Dumas, M., Rosa, M.L., & Maggi, F.M. (2019). Outcome-Oriented Predictive Process Monitoring. ACM TKDD, 13(2), Article 17.",
+    "output_type": "ml_result",
+    "category": "prediction",
+    "speed_tier": 30,
+    "quality_tier": 80,
+    "wasm_export": "predict_next_activity",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "predict_outcome",
+    "algorithm_label": "PredictOutcome",
+    "description": "Case outcome prediction — predicts the final outcome of a running case from its prefix using a trained binary or multi-class classifier.",
+    "citation": "Teinemaa, I., Dumas, M., Rosa, M.L., & Maggi, F.M. (2019). Outcome-Oriented Predictive Process Monitoring. ACM TKDD, 13(2), Article 17.",
+    "output_type": "ml_result",
+    "category": "prediction",
+    "speed_tier": 28,
+    "quality_tier": 82,
+    "wasm_export": "predict_outcome",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "predict_remaining_time",
+    "algorithm_label": "PredictRemainingTime",
+    "description": "Remaining time prediction from trace prefix — estimates time until case completion using a regression model trained on completed cases.",
+    "citation": "Teinemaa, I., Dumas, M., Rosa, M.L., & Maggi, F.M. (2019). Outcome-Oriented Predictive Process Monitoring. ACM TKDD, 13(2), Article 17.",
+    "output_type": "ml_result",
+    "category": "prediction",
+    "speed_tier": 32,
+    "quality_tier": 85,
+    "wasm_export": "predict_case_duration",
+    "cli_alias": null,
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "monte_carlo_simulation",
+    "algorithm_label": "MonteCarloSimulation",
+    "description": "Monte Carlo simulation from discovered model — samples synthetic traces from empirical transition probability distribution to estimate throughput time distributions.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "simulation",
+    "speed_tier": 35,
+    "quality_tier": 78,
+    "wasm_export": "monte_carlo_simulation",
+    "cli_alias": "montecarlo",
+    "input_format": "xes",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  },
+
+  {
+    "algorithm_id": "playout",
+    "algorithm_label": "Playout",
+    "description": "Stochastic playout from Petri net — generates synthetic event logs by firing enabled transitions according to stochastic weights until all tokens reach the final marking.",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action (2nd ed.). Springer.",
+    "output_type": "analytics",
+    "category": "simulation",
+    "speed_tier": 30,
+    "quality_tier": 80,
+    "wasm_export": "petri_net_playout",
+    "cli_alias": "playout",
+    "input_format": "petri_net_handle",
+    "status": "CERTIFIED",
+    "standing": "REPLAYABLE",
+    "vda": {
+      "fitness": null,
+      "precision": null,
+      "generalization": null,
+      "simplicity": null
+    }
+  }
+
+]
