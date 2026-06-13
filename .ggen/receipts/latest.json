@@ -1,6 +1,6 @@
 {
-  "operation_id": "ed8e2d10-3d05-4807-8876-69b3a63f661f",
-  "timestamp": "2026-06-11T23:52:35.612878Z",
+  "operation_id": "3e2863a3-0b2d-413b-91e0-822d72a971df",
+  "timestamp": "2026-06-13T04:26:26.763360Z",
   "input_hashes": [
     "actuator:ggen-sync@26.6.9",
     "ggen.toml:22936d0e8401428469889ed429f7fd0cdf88eea8019853a291ad8b56db0d6f5b",
@@ -21,6 +21,6 @@
     "./crates/wasm4pm-cognition/breeds/registry.json:37fa635b878fb689f642a4af664f93c53ffb503add2b25453a8a6596860e5836",
     "./packages/cognition/src/breed-ids.ts:0cae447da38256dd3bb1a784d6399481ad341f285e5124f71221640da221ab8a"
   ],
-  "signature": "a7dac0097b510e1181e690889f3d83075091a7f9287560c2197e480c2a18b650af427d3c0dfa8bf87f148e868deb178c90aa7588abb486f2b283f3eed879800a",
-  "previous_receipt_hash": "acb8873304fad5a1d6d54ab8647b29bcc2f472d2ec4af3824dba1093b96f5150"
+  "signature": "4a99ac8e915d70b04c803b801cdf617e360d8786563c67f35d0527284237f74545bdd3e803f691d21a91d25eb20d376b6a5788cb4de9eab3d8816157a0dc1302",
+  "previous_receipt_hash": "5abe12e415339453223e36934b2d8ceebc6f88438ef3f45b51ba5f3e5e7f42e7"
 }
