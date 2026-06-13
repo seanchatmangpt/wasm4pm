@@ -69,6 +69,7 @@ pub enum StoredObject {
     #[cfg(feature = "streaming_full")]
     StreamingPipeline(StreamingPipeline),
     /// A POWL model stored as (arena, root_index).
+    #[cfg(feature = "powl")]
     PowlModel {
         arena: crate::powl_arena::PowlArena,
         root: u32,
@@ -252,6 +253,7 @@ impl Clone for StoredObject {
             StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
             #[cfg(feature = "streaming_full")]
             StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),
+            #[cfg(feature = "powl")]
             StoredObject::PowlModel { arena, root } => StoredObject::PowlModel {
                 arena: arena.clone(),
                 root: *root,
