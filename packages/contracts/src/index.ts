@@ -128,7 +128,7 @@ export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRE
 export type { QualityThresholdProfile } from './quality-thresholds.js';
 
 // Algorithm registry utilities
-export { WASM_FUNCTION_NAMES, ALGORITHM_DEFAULT_PARAMS } from './algorithm-registry.js';
+export { WASM_FUNCTION_NAMES, ALGORITHM_DEFAULT_PARAMS, levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
 export { resolveAlgorithmId, ALGORITHM_IDS } from './templates/algorithm-registry.js';
 
 // Truex OCEL 2.0 canonical serialization (JCS-OCEL)

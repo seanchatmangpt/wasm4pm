@@ -210,6 +210,40 @@ function normalizeToken(value: string): string {
   return value.trim().toLowerCase().replace(/[+_]/g, '-');
 }
 
+export function levenshteinDistance(a: string, b: string): number {
+  const an = a.length;
+  const bn = b.length;
+  if (an === 0) return bn;
+  if (bn === 0) return an;
+  const dp: number[][] = [];
+  for (let i = 0; i <= an; i++) dp[i] = [i];
+  for (let j = 0; j <= bn; j++) dp[0][j] = j;
+  for (let i = 1; i <= an; i++) {
+    for (let j = 1; j <= bn; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+    }
+  }
+  return dp[an][bn];
+}
+
+export function findClosestMatch(
+  name: string,
+  candidates: string[],
+  maxDistance = 3,
+): string | null {
+  let best: string | null = null;
+  let bestDistance = maxDistance + 1;
+  for (const candidate of candidates) {
+    const distance = levenshteinDistance(name.toLowerCase(), candidate.toLowerCase());
+    if (distance < bestDistance) {
+      best = candidate;
+      bestDistance = distance;
+    }
+  }
+  return bestDistance <= maxDistance ? best : null;
+}
+
 /**
  * Resolve a user-provided algorithm name to a canonical registry ID.
  * Resolution order: exact match → CLI alias → normalized token match.
