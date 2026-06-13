@@ -17,6 +17,7 @@ import { withSpan, withWasmSpan } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import {
   saveCommandReceipt,
+  emitPiReceipt,
   blake3Hex,
   newReceipt,
   type CommandReceipt,
@@ -1480,6 +1481,15 @@ export const run = defineCommand({
                     },
                   };
                   saveCommandReceipt(receipt);
+                  try {
+                    emitPiReceipt(
+                      resolvedAlgoFinal ?? resolvedAlgo ?? 'unknown',
+                      inputBytes.toString('utf-8'),
+                      JSON.stringify(payload ?? {}),
+                    );
+                  } catch (_piReceiptErr) {
+                    // receipt write must never break the command
+                  }
                 } catch (receiptErr) {
                   // receipt write must never break the command, but MUST leave evidence
                   try {
@@ -1932,7 +1942,7 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
 
   const { WasmLoader } = await import('@wasm4pm/engine');
   const { exitWithFlush: exitFlush } = await import('../otel/exit.js');
-  const { saveCommandReceipt, blake3Hex, newReceipt } = await import('../receipts/_shared.js');
+  const { saveCommandReceipt, emitPiReceipt, blake3Hex, newReceipt } = await import('../receipts/_shared.js');
 
   // File existence
   try {
@@ -2233,6 +2243,15 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       },
     };
     saveCommandReceipt(receipt);
+    try {
+      emitPiReceipt(
+        discoveryAlgo ?? 'unknown',
+        inputBytes.toString('utf-8'),
+        JSON.stringify(semanticPayload ?? {}),
+      );
+    } catch (_piReceiptErr) {
+      // receipt write must never break the command
+    }
   }
 
   // Output

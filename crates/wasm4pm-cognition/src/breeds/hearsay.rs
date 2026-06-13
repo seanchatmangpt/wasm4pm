@@ -20,12 +20,12 @@
 //! Source Activation Record) priority queue. Rating = ks.certainty * trigger_cf.
 //! The agenda is sorted by (rating desc, ks.id asc, conclusion asc).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::BTreeMap;
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Hearsay-II breed.
 pub struct Hearsay;

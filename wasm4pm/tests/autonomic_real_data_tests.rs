@@ -638,7 +638,7 @@ fn circuit_breaker_opens_after_consecutive_failures() {
     // (allow_request may return false if Open, or true if transition to HalfOpen)
     // We verify the circuit has changed state by recording a success and checking it resets
     cb.record_success();
-    
+
     // After success in HalfOpen state, it transitions back to Closed
     // The key property: the circuit RESPONDED to the failures
     let allowed = cb.allow_request();

@@ -223,7 +223,11 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
         }
         let provides = match plan.steps[sid].as_str() {
             "__finish__" => false,
-            name => ctx.ops.get(name).map(|o| o.add.contains(&atom)).unwrap_or(false),
+            name => ctx
+                .ops
+                .get(name)
+                .map(|o| o.add.contains(&atom))
+                .unwrap_or(false),
         };
         if provides && can_order_before(&plan.orderings, sid, consumer) {
             choices.push((false, plan.steps[sid].clone(), sid));
@@ -255,14 +259,21 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
             sid
         };
         if !can_order_before(&next.orderings, producer, consumer) {
-            ctx.tr("pop-resolve", format!("'{}' cannot precede consumer", name), depth);
+            ctx.tr(
+                "pop-resolve",
+                format!("'{}' cannot precede consumer", name),
+                depth,
+            );
             continue;
         }
         next.orderings.insert((producer, consumer));
         next.links.push((producer, atom.clone(), consumer));
         ctx.tr(
             "pop-resolve",
-            format!("{} --{}--> {}", next.steps[producer], atom, next.steps[consumer]),
+            format!(
+                "{} --{}--> {}",
+                next.steps[producer], atom, next.steps[consumer]
+            ),
             depth,
         );
 
@@ -279,7 +290,11 @@ fn solve(ctx: &mut Ctx, plan: Plan, depth: u32) -> Result<Option<Plan>, String> 
             if let Some(done) = solve(ctx, r, depth + 1)? {
                 return Ok(Some(done));
             }
-            ctx.tr("pop-resolve", format!("dead end under producer '{}'", name), depth);
+            ctx.tr(
+                "pop-resolve",
+                format!("dead end under producer '{}'", name),
+                depth,
+            );
         }
     }
     Ok(None)

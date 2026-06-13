@@ -175,7 +175,9 @@ impl<'a> TraceQuery<'a> {
         if self.has_kind(kind) {
             Ok(())
         } else {
-            Err(TraceError::MissingKind { kind: kind.to_string() })
+            Err(TraceError::MissingKind {
+                kind: kind.to_string(),
+            })
         }
     }
 
@@ -193,7 +195,11 @@ impl<'a> TraceQuery<'a> {
         if found == expected {
             Ok(())
         } else {
-            Err(TraceError::WrongCount { kind: kind.to_string(), expected, found })
+            Err(TraceError::WrongCount {
+                kind: kind.to_string(),
+                expected,
+                found,
+            })
         }
     }
 
@@ -203,7 +209,11 @@ impl<'a> TraceQuery<'a> {
         if found >= min {
             Ok(())
         } else {
-            Err(TraceError::TooFew { kind: kind.to_string(), min, found })
+            Err(TraceError::TooFew {
+                kind: kind.to_string(),
+                min,
+                found,
+            })
         }
     }
 
@@ -300,7 +310,10 @@ mod tests {
     #[test]
     fn detail_of_delegates() {
         let steps = vec![step(0, "ltl-verdict")];
-        assert_eq!(tq(&steps).detail_of("ltl-verdict"), Some("detail-ltl-verdict"));
+        assert_eq!(
+            tq(&steps).detail_of("ltl-verdict"),
+            Some("detail-ltl-verdict")
+        );
         assert_eq!(tq(&steps).detail_of("missing"), None);
     }
 
@@ -355,7 +368,11 @@ mod tests {
         let steps = vec![step(0, "v")];
         assert!(matches!(
             tq(&steps).require_count("v", 2),
-            Err(TraceError::WrongCount { found: 1, expected: 2, .. })
+            Err(TraceError::WrongCount {
+                found: 1,
+                expected: 2,
+                ..
+            })
         ));
     }
 
@@ -370,7 +387,11 @@ mod tests {
         let steps = vec![step(0, "k")];
         assert!(matches!(
             tq(&steps).require_at_least("k", 3),
-            Err(TraceError::TooFew { found: 1, min: 3, .. })
+            Err(TraceError::TooFew {
+                found: 1,
+                min: 3,
+                ..
+            })
         ));
     }
 
@@ -397,7 +418,10 @@ mod tests {
 
     #[test]
     fn require_non_empty_with_kinds_empty_trace() {
-        assert_eq!(tq(&[]).require_non_empty_with_kinds(&["a"]), Err(TraceError::Empty));
+        assert_eq!(
+            tq(&[]).require_non_empty_with_kinds(&["a"]),
+            Err(TraceError::Empty)
+        );
     }
 
     #[test]
@@ -443,13 +467,17 @@ mod proptests {
     use proptest::prelude::*;
 
     fn arb_steps(kinds: Vec<String>) -> Vec<TraceStep> {
-        kinds.into_iter().enumerate().map(|(i, kind)| TraceStep {
-            step: i,
-            kind,
-            detail: String::new(),
-            depth: 0,
-            objects: vec![],
-        }).collect()
+        kinds
+            .into_iter()
+            .enumerate()
+            .map(|(i, kind)| TraceStep {
+                step: i,
+                kind,
+                detail: String::new(),
+                depth: 0,
+                objects: vec![],
+            })
+            .collect()
     }
 
     proptest! {

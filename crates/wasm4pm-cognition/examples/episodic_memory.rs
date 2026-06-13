@@ -3,10 +3,10 @@
 //! temporal kernel can flip the winner against pure content similarity.
 //! Run: cargo run --example episodic_memory
 
+use wasm4pm_cognition::breeds::episodic_memory::EpisodicMemory;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::episodic_memory::EpisodicMemory;
 
 fn main() {
     // Scenario: a software engineer recalls a past debugging session.
@@ -26,15 +26,36 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Episode encoding times (facts on the top-level BreedInput)
-            Fact { key: "episode:debug-2024-01:t".to_string(), value: "100".to_string() },
-            Fact { key: "episode:debug-2024-07:t".to_string(), value: "200".to_string() },
-            Fact { key: "episode:debug-2024-11:t".to_string(), value: "290".to_string() },
+            Fact {
+                key: "episode:debug-2024-01:t".to_string(),
+                value: "100".to_string(),
+            },
+            Fact {
+                key: "episode:debug-2024-07:t".to_string(),
+                value: "200".to_string(),
+            },
+            Fact {
+                key: "episode:debug-2024-11:t".to_string(),
+                value: "290".to_string(),
+            },
             // Retrieval cue atoms
-            Fact { key: "symptom".to_string(),  value: "memory-leak".to_string() },
-            Fact { key: "component".to_string(), value: "allocator".to_string() },
-            Fact { key: "tool".to_string(),      value: "valgrind".to_string() },
+            Fact {
+                key: "symptom".to_string(),
+                value: "memory-leak".to_string(),
+            },
+            Fact {
+                key: "component".to_string(),
+                value: "allocator".to_string(),
+            },
+            Fact {
+                key: "tool".to_string(),
+                value: "valgrind".to_string(),
+            },
             // Current time
-            Fact { key: "cue:t".to_string(), value: "300".to_string() },
+            Fact {
+                key: "cue:t".to_string(),
+                value: "300".to_string(),
+            },
         ],
         cases: vec![
             Case {
@@ -43,10 +64,22 @@ fn main() {
                 architecture: "valgrind-trace".to_string(),
                 outcome_score: 0.85,
                 facts: vec![
-                    Fact { key: "symptom".to_string(),   value: "memory-leak".to_string() },
-                    Fact { key: "component".to_string(),  value: "allocator".to_string() },
-                    Fact { key: "tool".to_string(),       value: "valgrind".to_string() },
-                    Fact { key: "resolution".to_string(), value: "free-missing-ptr".to_string() },
+                    Fact {
+                        key: "symptom".to_string(),
+                        value: "memory-leak".to_string(),
+                    },
+                    Fact {
+                        key: "component".to_string(),
+                        value: "allocator".to_string(),
+                    },
+                    Fact {
+                        key: "tool".to_string(),
+                        value: "valgrind".to_string(),
+                    },
+                    Fact {
+                        key: "resolution".to_string(),
+                        value: "free-missing-ptr".to_string(),
+                    },
                 ],
             },
             Case {
@@ -55,10 +88,22 @@ fn main() {
                 architecture: "heaptrack-trace".to_string(),
                 outcome_score: 0.92,
                 facts: vec![
-                    Fact { key: "symptom".to_string(),   value: "memory-leak".to_string() },
-                    Fact { key: "component".to_string(),  value: "allocator".to_string() },
-                    Fact { key: "tool".to_string(),       value: "heaptrack".to_string() },
-                    Fact { key: "resolution".to_string(), value: "arena-reset".to_string() },
+                    Fact {
+                        key: "symptom".to_string(),
+                        value: "memory-leak".to_string(),
+                    },
+                    Fact {
+                        key: "component".to_string(),
+                        value: "allocator".to_string(),
+                    },
+                    Fact {
+                        key: "tool".to_string(),
+                        value: "heaptrack".to_string(),
+                    },
+                    Fact {
+                        key: "resolution".to_string(),
+                        value: "arena-reset".to_string(),
+                    },
                 ],
             },
             Case {
@@ -67,10 +112,22 @@ fn main() {
                 architecture: "gdb-trace".to_string(),
                 outcome_score: 0.78,
                 facts: vec![
-                    Fact { key: "symptom".to_string(),   value: "null-pointer-crash".to_string() },
-                    Fact { key: "component".to_string(),  value: "parser".to_string() },
-                    Fact { key: "tool".to_string(),       value: "gdb".to_string() },
-                    Fact { key: "resolution".to_string(), value: "null-check-guard".to_string() },
+                    Fact {
+                        key: "symptom".to_string(),
+                        value: "null-pointer-crash".to_string(),
+                    },
+                    Fact {
+                        key: "component".to_string(),
+                        value: "parser".to_string(),
+                    },
+                    Fact {
+                        key: "tool".to_string(),
+                        value: "gdb".to_string(),
+                    },
+                    Fact {
+                        key: "resolution".to_string(),
+                        value: "null-check-guard".to_string(),
+                    },
                 ],
             },
         ],

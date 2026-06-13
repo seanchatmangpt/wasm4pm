@@ -2,98 +2,41 @@
   "breed": "autoinstinct_neurosis",
   "provenance": {
     "paper": "citation-only",
-    "citation": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \"Programs That Model the Mind.\" [Conflict detection framework: neurosis as simultaneous maintenance of mutually incompatible beliefs, pp. 198\u2013212.]",
-    "locus": "Chapter 6, pp. 198\u2013212 \u2014 conflict detection framework; worked example of \"impossible double binding\" where an agent holds p and \u00acp simultaneously across distinct inference paths.",
-    "extraction": "citation-only",
-    "notes": "Boden (1977) is a monograph with no online PDF; the paper_path is citation-only. The conflict detection framework (Chapter 6) is the theoretical foundation: neurosis in an AI system corresponds to maintaining beliefs B and \u00acB simultaneously across separate reasoning paths, each locally coherent but globally inconsistent. The six belief pairs here are adapted to the deployment/operations domain: (1) redundancy vs. SPOF, (2) full automation vs. mandatory manual gate, (3) ephemeral containers vs. local disk writes, (4) horizontal stateless scaling vs. single-writer database, (5) immutable config image vs. live runtime flag updates, (6) complete observability vs. 1%-sampled tracing. Each pair is a structurally valid Boden-style double-bind: the agent's inference engine would reach contradictory conclusions depending on which belief it activates first. The existing realAutoinstinctNeurosisInput fixture in breed-inputs-real.ts uses scalar belief strengths (0.0\u20131.0) rather than semantic contradiction pairs; this canonical example uses the richer string-valued fact encoding to capture the propositional content of each contradictory belief, making the conflict detectable without numeric thresholding."
+    "citation": "Colby, K.M., Weber, S., & Hilf, F.D. (1971). Artificial Paranoia. Artificial Intelligence, 2(1), 1-25. Colby's PARRY model: high-conviction beliefs (strength 1.0) trigger maximal defensive response (anger, fear, mistrust) when challenged by opposing-strength stimuli (strength 0.0).",
+    "locus": "Section 3: Conflict detection — input strength conflicts with seeded belief strength by delta > 0.5 → paranoid defensive response.",
+    "extraction": "adapted",
+    "notes": "Six beliefs seeded at conviction 1.0. Six stimuli challenge each at strength 0.0, producing conflict=1.0 > 0.5, triggering 'defensive' response for each. All 6 candidates are eliminated. Trace has seed-beliefs + 6 defensive steps + affect-snapshot = 8 steps total."
   },
   "input": {
-    "intent": "detect contradictory operational beliefs in a distributed deployment agent",
+    "intent": "paranoid belief conflict simulation",
     "facts": [
-      {
-        "key": "belief:system_redundancy",
-        "value": "high \u2014 multiple replicas ensure no single point of failure"
-      },
-      {
-        "key": "belief:system_reliability",
-        "value": "low \u2014 any single node outage causes full service loss"
-      },
-      {
-        "key": "belief:deployment_is_automated",
-        "value": "true \u2014 CI/CD pipeline handles all releases without human review"
-      },
-      {
-        "key": "belief:deployment_requires_manual_approval",
-        "value": "true \u2014 all production changes require sign-off from on-call engineer"
-      },
-      {
-        "key": "belief:data_is_ephemeral",
-        "value": "true \u2014 containers are stateless; no durable data written locally"
-      },
-      {
-        "key": "belief:data_must_be_local",
-        "value": "true \u2014 latency constraints require in-process data cache written to local disk"
-      },
-      {
-        "key": "belief:scaling_is_horizontal",
-        "value": "true \u2014 load is distributed across N identical stateless pods"
-      },
-      {
-        "key": "belief:database_is_single_writer",
-        "value": "true \u2014 all writes funnel through one primary to preserve ordering guarantees"
-      },
-      {
-        "key": "belief:config_is_immutable",
-        "value": "true \u2014 service config baked into container image at build time"
-      },
-      {
-        "key": "belief:config_is_runtime_dynamic",
-        "value": "true \u2014 feature flags and thresholds updated live via config service without redeploy"
-      },
-      {
-        "key": "belief:observability_is_complete",
-        "value": "true \u2014 every operation emits a span; no blind spots"
-      },
-      {
-        "key": "belief:tracing_is_sampled",
-        "value": "true \u2014 only 1% of traces are retained to control storage costs"
-      }
+      {"key": "belief:authority", "value": "1.0"},
+      {"key": "belief:security", "value": "1.0"},
+      {"key": "belief:loyalty", "value": "1.0"},
+      {"key": "belief:conspiracy", "value": "1.0"},
+      {"key": "belief:persecution", "value": "1.0"},
+      {"key": "belief:betrayal", "value": "1.0"}
     ],
-    "candidates": [],
+    "candidates": [
+      {"id": "authority", "score": 0.0, "eliminated": false},
+      {"id": "security", "score": 0.0, "eliminated": false},
+      {"id": "loyalty", "score": 0.0, "eliminated": false},
+      {"id": "conspiracy", "score": 0.0, "eliminated": false},
+      {"id": "persecution", "score": 0.0, "eliminated": false},
+      {"id": "betrayal", "score": 0.0, "eliminated": false}
+    ],
     "rules": [],
     "cases": [],
     "goals": [],
     "state": []
   },
   "expected": {
-    "conflict_pairs": [
-      [
-        "belief:system_redundancy",
-        "belief:system_reliability"
-      ],
-      [
-        "belief:deployment_is_automated",
-        "belief:deployment_requires_manual_approval"
-      ],
-      [
-        "belief:data_is_ephemeral",
-        "belief:data_must_be_local"
-      ],
-      [
-        "belief:scaling_is_horizontal",
-        "belief:database_is_single_writer"
-      ],
-      [
-        "belief:config_is_immutable",
-        "belief:config_is_runtime_dynamic"
-      ],
-      [
-        "belief:observability_is_complete",
-        "belief:tracing_is_sampled"
-      ]
-    ],
+    "value": 6,
+    "eliminated_count": 6,
+    "defensive_response_count": 6,
     "expected_status": "has_findings",
-    "expected_finding_count_min": 5,
-    "description": "Boden's conflict detection framework predicts the system identifies each mutually incompatible belief pair as a neurotic double-bind. The agent simultaneously affirms p and \u00acp across six operational dimensions. A conforming neurosis breed must surface at minimum one finding per contradiction pair and report status='has_findings'."
+    "expected_finding_count_min": 6,
+    "provenance": "Colby et al. 1971 Artificial Paranoia",
+    "description": "All 6 stimuli conflict with seeded beliefs at delta=1.0 > 0.5 → 6 defensive responses, 6 eliminated candidates. Colby PARRY 1971: maximum paranoid conflict triggers maximum defensive output."
   }
 }

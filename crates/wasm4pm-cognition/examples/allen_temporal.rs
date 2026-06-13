@@ -2,10 +2,10 @@
 //! Demonstrates OVERLAPS: task A starts before task B but they share a window.
 //! Run: cargo run --example allen_temporal
 
+use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
 
 fn main() {
     // Scenario: code-review (A) starts at t=0, ends at t=10.
@@ -15,20 +15,30 @@ fn main() {
         intent: "classify-interval-relation".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "interval:A:start".to_string(), value: "0".to_string() },
-            Fact { key: "interval:A:end".to_string(),   value: "10".to_string() },
-            Fact { key: "interval:B:start".to_string(), value: "7".to_string() },
-            Fact { key: "interval:B:end".to_string(),   value: "15".to_string() },
+            Fact {
+                key: "interval:A:start".to_string(),
+                value: "0".to_string(),
+            },
+            Fact {
+                key: "interval:A:end".to_string(),
+                value: "10".to_string(),
+            },
+            Fact {
+                key: "interval:B:start".to_string(),
+                value: "7".to_string(),
+            },
+            Fact {
+                key: "interval:B:end".to_string(),
+                value: "15".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
-        goals: vec![
-            Goal {
-                id: "g1".to_string(),
-                predicate: "relation".to_string(),
-                value: "A,B".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g1".to_string(),
+            predicate: "relation".to_string(),
+            value: "A,B".to_string(),
+        }],
         state: vec![],
     };
 

@@ -179,7 +179,10 @@ impl CognitionBreed for AbductiveLp {
                 tr(
                     &mut trace,
                     "explain-reject",
-                    format!("{} non-minimal (superset of accepted Δ)", render(mask, &abd)),
+                    format!(
+                        "{} non-minimal (superset of accepted Δ)",
+                        render(mask, &abd)
+                    ),
                     1,
                 );
                 continue;
@@ -212,7 +215,11 @@ impl CognitionBreed for AbductiveLp {
                 tr(
                     &mut trace,
                     "ic-check",
-                    format!("IC {}: {}", id, if violated { "violated" } else { "satisfied" }),
+                    format!(
+                        "IC {}: {}",
+                        id,
+                        if violated { "violated" } else { "satisfied" }
+                    ),
                     2,
                 );
                 if violated {
@@ -235,7 +242,11 @@ impl CognitionBreed for AbductiveLp {
                     format!(
                         "Δ={}: observation {}, ICs {}",
                         render(mask, &abd),
-                        if derives_obs { "derived" } else { "not derived" },
+                        if derives_obs {
+                            "derived"
+                        } else {
+                            "not derived"
+                        },
                         if ic_ok { "ok" } else { "violated" }
                     ),
                     1,
@@ -329,7 +340,10 @@ mod tests {
     fn minimality_excludes_supersets() {
         let out = AbductiveLp
             .run(&input(
-                vec![fact("alp:abducible:a", "true"), fact("alp:abducible:b", "true")],
+                vec![
+                    fact("alp:abducible:a", "true"),
+                    fact("alp:abducible:b", "true"),
+                ],
                 vec![rule("r1", vec!["a"], "obs")],
                 "obs",
             ))

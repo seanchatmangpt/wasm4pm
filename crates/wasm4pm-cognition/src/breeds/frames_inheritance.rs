@@ -15,11 +15,11 @@
 //! (the resolve step is emitted even when the slot is unresolved, with an
 //! `unresolved` detail, so the lifecycle is always complete).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Minsky frame-inheritance breed (module name avoids collision with
 /// `frame.rs`, which is ELIZA).
@@ -222,7 +222,10 @@ mod tests {
         let input = BreedInput {
             intent: "find slot".to_string(),
             candidates: vec![],
-            facts: vec![Fact { key: "frame:a:isa".to_string(), value: "b".to_string() }],
+            facts: vec![Fact {
+                key: "frame:a:isa".to_string(),
+                value: "b".to_string(),
+            }],
             cases: vec![],
             rules: vec![],
             goals: vec![],
@@ -239,8 +242,14 @@ mod tests {
             intent: "resolve a slot".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:a:isa".to_string(), value: "b".to_string() },
-                Fact { key: "frame:b:isa".to_string(), value: "a".to_string() },
+                Fact {
+                    key: "frame:a:isa".to_string(),
+                    value: "b".to_string(),
+                },
+                Fact {
+                    key: "frame:b:isa".to_string(),
+                    value: "a".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -259,9 +268,18 @@ mod tests {
             intent: "resolve child color".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:child:isa".to_string(), value: "parent".to_string() },
-                Fact { key: "frame:child:slot:color:default".to_string(), value: "blue".to_string() },
-                Fact { key: "frame:parent:slot:color".to_string(), value: "red".to_string() },
+                Fact {
+                    key: "frame:child:isa".to_string(),
+                    value: "parent".to_string(),
+                },
+                Fact {
+                    key: "frame:child:slot:color:default".to_string(),
+                    value: "blue".to_string(),
+                },
+                Fact {
+                    key: "frame:parent:slot:color".to_string(),
+                    value: "red".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -279,8 +297,14 @@ mod tests {
             intent: "resolve a color".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:a:slot:color:default".to_string(), value: "blue".to_string() },
-                Fact { key: "frame:a:slot:color".to_string(), value: "red".to_string() },
+                Fact {
+                    key: "frame:a:slot:color:default".to_string(),
+                    value: "blue".to_string(),
+                },
+                Fact {
+                    key: "frame:a:slot:color".to_string(),
+                    value: "red".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -302,10 +326,22 @@ mod tests {
             intent: "resolve my_chair legs".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "frame:my_chair:isa".to_string(), value: "chair".to_string() },
-                Fact { key: "frame:chair:isa".to_string(), value: "furniture".to_string() },
-                Fact { key: "frame:chair:slot:legs:default".to_string(), value: "4".to_string() },
-                Fact { key: "frame:furniture:slot:movable:default".to_string(), value: "yes".to_string() },
+                Fact {
+                    key: "frame:my_chair:isa".to_string(),
+                    value: "chair".to_string(),
+                },
+                Fact {
+                    key: "frame:chair:isa".to_string(),
+                    value: "furniture".to_string(),
+                },
+                Fact {
+                    key: "frame:chair:slot:legs:default".to_string(),
+                    value: "4".to_string(),
+                },
+                Fact {
+                    key: "frame:furniture:slot:movable:default".to_string(),
+                    value: "yes".to_string(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -314,9 +350,14 @@ mod tests {
         };
         let out = f.run(&input).unwrap();
         // Must inherit "4" from chair.legs:default (distance=1)
-        assert_eq!(out.selected.as_deref(), Some("4"),
-            "my_chair.legs must inherit default value 4 from chair frame (Minsky 1974)");
-        let resolved_fact = out.facts.iter()
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("4"),
+            "my_chair.legs must inherit default value 4 from chair frame (Minsky 1974)"
+        );
+        let resolved_fact = out
+            .facts
+            .iter()
             .find(|fct| fct.key == "frame:resolved:my_chair:legs")
             .expect("frame:resolved:my_chair:legs fact must be emitted");
         assert_eq!(resolved_fact.value, "4");

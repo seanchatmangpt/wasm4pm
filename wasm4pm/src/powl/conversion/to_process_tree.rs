@@ -53,7 +53,10 @@ impl Dag {
             }
         }
         if count != self.n {
-            return Err("Cycle detected in DAG; process trees cannot represent unstructured cycles.".to_string());
+            return Err(
+                "Cycle detected in DAG; process trees cannot represent unstructured cycles."
+                    .to_string(),
+            );
         }
         Ok(levels)
     }

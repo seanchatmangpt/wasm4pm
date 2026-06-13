@@ -1,6 +1,6 @@
 #![allow(missing_docs)]
-use std::collections::{HashMap, VecDeque};
 use std::collections::HashSet;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone)]
 pub struct CspVar {
@@ -41,11 +41,21 @@ impl CspSolver {
     }
 
     pub fn add_var(&mut self, name: &str, domain: Vec<String>) {
-        self.vars.insert(name.to_string(), CspVar { name: name.to_string(), domain });
+        self.vars.insert(
+            name.to_string(),
+            CspVar {
+                name: name.to_string(),
+                domain,
+            },
+        );
     }
 
     pub fn add_constraint(&mut self, var1: &str, var2: &str, op: &str) {
-        self.constraints.push(CspConstraint { var1: var1.to_string(), var2: var2.to_string(), op: op.to_string() });
+        self.constraints.push(CspConstraint {
+            var1: var1.to_string(),
+            var2: var2.to_string(),
+            op: op.to_string(),
+        });
     }
 
     fn neighbors(&self, x: &str) -> Vec<String> {
@@ -71,15 +81,17 @@ impl CspSolver {
     fn revise(&mut self, domains: &mut HashMap<String, Vec<String>>, x: &str, y: &str) -> bool {
         let mut revised = false;
         let mut pruned_count = 0;
-        
-        let op = self.constraints.iter()
+
+        let op = self
+            .constraints
+            .iter()
             .find(|c| (c.var1 == x && c.var2 == y) || (c.var1 == y && c.var2 == x))
             .map(|c| c.op.clone())
             .unwrap_or_else(|| "!=".to_string()); // Default or maybe no constraint
 
         let dx = domains.get(x).unwrap().clone();
         let dy = domains.get(y).unwrap().clone();
-        
+
         let mut new_dx = Vec::new();
         for vx in &dx {
             let mut satisfied = false;
@@ -101,7 +113,11 @@ impl CspSolver {
 
         if revised {
             domains.insert(x.to_string(), new_dx);
-            self.trace.push(TraceEvent::Revise { x: x.to_string(), y: y.to_string(), pruned: pruned_count });
+            self.trace.push(TraceEvent::Revise {
+                x: x.to_string(),
+                y: y.to_string(),
+                pruned: pruned_count,
+            });
         }
 
         revised
@@ -130,7 +146,11 @@ impl CspSolver {
     }
 
     // Minimum Remaining Values (MRV) with lexicographic tie-breaking
-    fn select_unassigned_var(&self, unassigned: &HashSet<String>, domains: &HashMap<String, Vec<String>>) -> String {
+    fn select_unassigned_var(
+        &self,
+        unassigned: &HashSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> String {
         let mut best_var: Option<&String> = None;
         let mut min_size = usize::MAX;
 
@@ -151,7 +171,12 @@ impl CspSolver {
         best_var.unwrap().clone()
     }
 
-    fn backtrack(&mut self, assignments: &mut HashMap<String, String>, unassigned: &mut HashSet<String>, domains: &HashMap<String, Vec<String>>) -> bool {
+    fn backtrack(
+        &mut self,
+        assignments: &mut HashMap<String, String>,
+        unassigned: &mut HashSet<String>,
+        domains: &HashMap<String, Vec<String>>,
+    ) -> bool {
         if unassigned.is_empty() {
             return true;
         }
@@ -182,18 +207,21 @@ impl CspSolver {
 
             if consistent {
                 assignments.insert(var.clone(), val.clone());
-                self.trace.push(TraceEvent::Assign { var: var.clone(), val: val.clone() });
-                
+                self.trace.push(TraceEvent::Assign {
+                    var: var.clone(),
+                    val: val.clone(),
+                });
+
                 // MAC (Maintaining Arc Consistency) - We do a deep copy of domains and run AC-3
                 let mut new_domains = domains.clone();
                 new_domains.insert(var.clone(), vec![val.clone()]);
-                
+
                 if self.ac3(&mut new_domains) {
                     if self.backtrack(assignments, unassigned, &new_domains) {
                         return true;
                     }
                 }
-                
+
                 // Backtrack
                 assignments.remove(&var);
                 self.trace.push(TraceEvent::Backtrack { var: var.clone() });
@@ -205,9 +233,14 @@ impl CspSolver {
     }
 
     pub fn solve(&mut self) -> Option<HashMap<String, String>> {
-        self.trace.push(TraceEvent::Init { vars: self.vars.len(), constraints: self.constraints.len() });
+        self.trace.push(TraceEvent::Init {
+            vars: self.vars.len(),
+            constraints: self.constraints.len(),
+        });
 
-        let mut domains: HashMap<String, Vec<String>> = self.vars.iter()
+        let mut domains: HashMap<String, Vec<String>> = self
+            .vars
+            .iter()
             .map(|(k, v)| (k.clone(), v.domain.clone()))
             .collect();
 

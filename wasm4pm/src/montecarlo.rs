@@ -187,9 +187,22 @@ pub fn run_monte_carlo_simulation(
 
     #[derive(Debug, Clone)]
     enum Event {
-        Arrival { case_idx: usize, time: f64 },
-        TaskStart { case_idx: usize, act_idx: usize, time: f64 },
-        TaskEnd { case_idx: usize, act_idx: usize, time: f64, wait_time: f64, service_time: f64 },
+        Arrival {
+            case_idx: usize,
+            time: f64,
+        },
+        TaskStart {
+            case_idx: usize,
+            act_idx: usize,
+            time: f64,
+        },
+        TaskEnd {
+            case_idx: usize,
+            act_idx: usize,
+            time: f64,
+            wait_time: f64,
+            service_time: f64,
+        },
     }
     impl PartialEq for Event {
         fn eq(&self, other: &Self) -> bool {
@@ -205,7 +218,10 @@ pub fn run_monte_carlo_simulation(
     impl Ord for Event {
         fn cmp(&self, other: &Self) -> std::cmp::Ordering {
             // Reverse ordering for min-heap
-            other.time().partial_cmp(&self.time()).unwrap_or(std::cmp::Ordering::Equal)
+            other
+                .time()
+                .partial_cmp(&self.time())
+                .unwrap_or(std::cmp::Ordering::Equal)
         }
     }
     impl Event {
@@ -224,16 +240,20 @@ pub fn run_monte_carlo_simulation(
 
     for case_idx in 0..completed_cases {
         if !traces[case_idx].is_empty() {
-            events.push(Event::Arrival { case_idx, time: case_arrival_time });
+            events.push(Event::Arrival {
+                case_idx,
+                time: case_arrival_time,
+            });
         }
         let u: f64 = rng.gen();
         let inter_arrival = -u.ln() / inter_arrival_lambda;
         case_arrival_time += inter_arrival;
     }
 
-    let mut waiting_queues: HashMap<String, std::collections::VecDeque<(usize, usize, f64)>> = HashMap::new();
+    let mut waiting_queues: HashMap<String, std::collections::VecDeque<(usize, usize, f64)>> =
+        HashMap::new();
     // Maps case_idx to (arrival_time, trace_wait_time, trace_service_time)
-    let mut case_stats: HashMap<usize, (f64, f64, f64)> = HashMap::new(); 
+    let mut case_stats: HashMap<usize, (f64, f64, f64)> = HashMap::new();
     let mut current_time_ms = 0.0;
 
     while let Some(event) = events.pop() {
@@ -249,54 +269,122 @@ pub fn run_monte_carlo_simulation(
         match event {
             Event::Arrival { case_idx, time } => {
                 case_stats.insert(case_idx, (time, 0.0, 0.0));
-                events.push(Event::TaskStart { case_idx, act_idx: 0, time });
+                events.push(Event::TaskStart {
+                    case_idx,
+                    act_idx: 0,
+                    time,
+                });
             }
-            Event::TaskStart { case_idx, act_idx, time } => {
+            Event::TaskStart {
+                case_idx,
+                act_idx,
+                time,
+            } => {
                 let activity = &traces[case_idx][act_idx];
                 let resource_key = format!("{}_resource", activity);
-                let pool = resource_pools.entry(resource_key.clone()).or_insert_with(|| {
-                    ResourcePool::new(*_config.resource_capacity.get(&resource_key).unwrap_or(&1000000))
-                });
-                
+                let pool = resource_pools
+                    .entry(resource_key.clone())
+                    .or_insert_with(|| {
+                        ResourcePool::new(
+                            *_config
+                                .resource_capacity
+                                .get(&resource_key)
+                                .unwrap_or(&1000000),
+                        )
+                    });
+
                 if !pool.acquire() {
-                    waiting_queues.entry(resource_key).or_default().push_back((case_idx, act_idx, time));
+                    waiting_queues
+                        .entry(resource_key)
+                        .or_default()
+                        .push_back((case_idx, act_idx, time));
                 } else {
-                    let service_params = _config.activity_service_time_ms.get(activity).cloned().unwrap_or(LogNormalParams { mean: 100.0, std_dev: 20.0 });
-                    let service_time_ms = sample_log_normal(&mut rng, service_params.mean, service_params.std_dev).unwrap_or(service_params.mean);
-                    events.push(Event::TaskEnd { case_idx, act_idx, time: time + service_time_ms, wait_time: 0.0, service_time: service_time_ms });
+                    let service_params = _config
+                        .activity_service_time_ms
+                        .get(activity)
+                        .cloned()
+                        .unwrap_or(LogNormalParams {
+                            mean: 100.0,
+                            std_dev: 20.0,
+                        });
+                    let service_time_ms =
+                        sample_log_normal(&mut rng, service_params.mean, service_params.std_dev)
+                            .unwrap_or(service_params.mean);
+                    events.push(Event::TaskEnd {
+                        case_idx,
+                        act_idx,
+                        time: time + service_time_ms,
+                        wait_time: 0.0,
+                        service_time: service_time_ms,
+                    });
                 }
             }
-            Event::TaskEnd { case_idx, act_idx, time, wait_time, service_time } => {
+            Event::TaskEnd {
+                case_idx,
+                act_idx,
+                time,
+                wait_time,
+                service_time,
+            } => {
                 let activity = &traces[case_idx][act_idx];
                 let resource_key = format!("{}_resource", activity);
-                
-                let stats = activity_stats.entry(activity.clone()).or_insert_with(|| ActivityStats {
-                    executions: 0, avg_service_time_ms: 0.0, avg_waiting_time_ms: 0.0, total_service_time_ms: 0.0, total_waiting_time_ms: 0.0,
-                });
+
+                let stats =
+                    activity_stats
+                        .entry(activity.clone())
+                        .or_insert_with(|| ActivityStats {
+                            executions: 0,
+                            avg_service_time_ms: 0.0,
+                            avg_waiting_time_ms: 0.0,
+                            total_service_time_ms: 0.0,
+                            total_waiting_time_ms: 0.0,
+                        });
                 stats.executions += 1;
                 stats.total_service_time_ms += service_time;
                 stats.total_waiting_time_ms += wait_time;
-                
+
                 if let Some(st) = case_stats.get_mut(&case_idx) {
                     st.1 += wait_time;
                     st.2 += service_time;
                 }
-                
+
                 if let Some(pool) = resource_pools.get_mut(&resource_key) {
                     pool.release();
                     if let Some(q) = waiting_queues.get_mut(&resource_key) {
                         if let Some((w_case, w_act, w_time)) = q.pop_front() {
                             pool.acquire();
                             let w_activity = &traces[w_case][w_act];
-                            let service_params = _config.activity_service_time_ms.get(w_activity).cloned().unwrap_or(LogNormalParams { mean: 100.0, std_dev: 20.0 });
-                            let service_time_ms = sample_log_normal(&mut rng, service_params.mean, service_params.std_dev).unwrap_or(service_params.mean);
-                            events.push(Event::TaskEnd { case_idx: w_case, act_idx: w_act, time: time + service_time_ms, wait_time: time - w_time, service_time: service_time_ms });
+                            let service_params = _config
+                                .activity_service_time_ms
+                                .get(w_activity)
+                                .cloned()
+                                .unwrap_or(LogNormalParams {
+                                    mean: 100.0,
+                                    std_dev: 20.0,
+                                });
+                            let service_time_ms = sample_log_normal(
+                                &mut rng,
+                                service_params.mean,
+                                service_params.std_dev,
+                            )
+                            .unwrap_or(service_params.mean);
+                            events.push(Event::TaskEnd {
+                                case_idx: w_case,
+                                act_idx: w_act,
+                                time: time + service_time_ms,
+                                wait_time: time - w_time,
+                                service_time: service_time_ms,
+                            });
                         }
                     }
                 }
-                
+
                 if act_idx + 1 < traces[case_idx].len() {
-                    events.push(Event::TaskStart { case_idx, act_idx: act_idx + 1, time });
+                    events.push(Event::TaskStart {
+                        case_idx,
+                        act_idx: act_idx + 1,
+                        time,
+                    });
                 } else {
                     if let Some((arr_time, t_wait, t_service)) = case_stats.get(&case_idx) {
                         let sojourn_time = time - arr_time;
@@ -310,7 +398,7 @@ pub fn run_monte_carlo_simulation(
             }
         }
     }
-    
+
     // Update completed cases if we stopped early due to simulation_time_ms
     let completed_cases = per_case_sojourn_ms.len();
 

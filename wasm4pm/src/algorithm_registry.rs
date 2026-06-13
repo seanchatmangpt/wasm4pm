@@ -129,7 +129,6 @@ pub enum ProcessIntelligenceAlgorithm {
     MonteCarloSimulation,
     /// Stochastic playout from Petri net — generates synthetic event logs by firing enabled transitions according to stochastic weights until all tokens reach the final marking.
     Playout,
-
 }
 
 impl ProcessIntelligenceAlgorithm {
@@ -196,7 +195,6 @@ impl ProcessIntelligenceAlgorithm {
             Self::PredictRemainingTime => "predict_remaining_time",
             Self::MonteCarloSimulation => "monte_carlo_simulation",
             Self::Playout => "playout",
-
         }
     }
 
@@ -263,7 +261,6 @@ impl ProcessIntelligenceAlgorithm {
             Self::PredictRemainingTime => "predict_case_duration",
             Self::MonteCarloSimulation => "monte_carlo_simulation",
             Self::Playout => "petri_net_playout",
-
         }
     }
 
@@ -330,7 +327,6 @@ impl ProcessIntelligenceAlgorithm {
             Self::PredictRemainingTime => "prediction",
             Self::MonteCarloSimulation => "simulation",
             Self::Playout => "simulation",
-
         }
     }
 

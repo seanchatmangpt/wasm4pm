@@ -8,18 +8,24 @@
 //!
 //! Run: cargo run --example problog
 
+use wasm4pm_cognition::breeds::problog::Problog;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::problog::Problog;
 
 fn main() {
     let input = BreedInput {
         intent: "diagnose-sick".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "pfact:cold".to_string(), value: "0.3".to_string() },
-            Fact { key: "pfact:flu".to_string(),  value: "0.1".to_string() },
+            Fact {
+                key: "pfact:cold".to_string(),
+                value: "0.3".to_string(),
+            },
+            Fact {
+                key: "pfact:flu".to_string(),
+                value: "0.1".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
@@ -36,13 +42,11 @@ fn main() {
                 certainty: 1.0,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "q1".to_string(),
-                predicate: "query".to_string(),
-                value: "sick".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "q1".to_string(),
+            predicate: "query".to_string(),
+            value: "sick".to_string(),
+        }],
         state: vec![],
     };
 

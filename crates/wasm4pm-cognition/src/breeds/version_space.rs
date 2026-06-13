@@ -40,9 +40,9 @@ fn covers(h: &Hyp, ex: &[String]) -> bool {
 
 /// h1 more-general-or-equal h2.
 fn more_general_eq(h1: &Hyp, h2: &Hyp) -> bool {
-    h1.iter().zip(h2.iter()).all(|(a, b)| {
-        a == "?" || (a != "0" && a == b) || b == "0"
-    })
+    h1.iter()
+        .zip(h2.iter())
+        .all(|(a, b)| a == "?" || (a != "0" && a == b) || b == "0")
 }
 
 fn render(h: &Hyp) -> String {
@@ -114,7 +114,11 @@ impl BoundedBreed for VersionSpace {
         if p.attrs.len() > MAX_ATTRS {
             return Some(CognitionError::ComplexityCap {
                 breed: self.breed_name(),
-                detail: format!("attribute count {} exceeds cap {}", p.attrs.len(), MAX_ATTRS),
+                detail: format!(
+                    "attribute count {} exceeds cap {}",
+                    p.attrs.len(),
+                    MAX_ATTRS
+                ),
             });
         }
         if p.examples.len() > MAX_EXAMPLES {
@@ -262,16 +266,16 @@ impl CognitionBreed for VersionSpace {
                 new_g.sort();
                 new_g.dedup();
                 let snapshot = new_g.clone();
-                new_g.retain(|h| {
-                    !snapshot
-                        .iter()
-                        .any(|h2| h2 != h && more_general_eq(h2, h))
-                });
+                new_g.retain(|h| !snapshot.iter().any(|h2| h2 != h && more_general_eq(h2, h)));
                 if new_g.len() != before {
                     tr(
                         &mut trace,
                         "vs-update",
-                        format!("G pruned {} -> {} (non-maximal / below S)", before, new_g.len()),
+                        format!(
+                            "G pruned {} -> {} (non-maximal / below S)",
+                            before,
+                            new_g.len()
+                        ),
                         2,
                     );
                 }
@@ -294,7 +298,12 @@ impl CognitionBreed for VersionSpace {
 
         let converged = g.len() == 1 && g[0] == s;
         if converged {
-            tr(&mut trace, "vs-verdict", format!("S == G == {}", render(&s)), 0);
+            tr(
+                &mut trace,
+                "vs-verdict",
+                format!("S == G == {}", render(&s)),
+                0,
+            );
         } else {
             tr(
                 &mut trace,

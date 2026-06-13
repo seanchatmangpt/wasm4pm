@@ -299,8 +299,8 @@ impl CognitionBreed for LtlMonitor {
             message,
         };
         let formula_str = extract_formula(input).map_err(&err)?;
-        let formula_ast = Formula::parse(&formula_str)
-            .map_err(|e| err(format!("formula parse error: {}", e)))?;
+        let formula_ast =
+            Formula::parse(&formula_str).map_err(|e| err(format!("formula parse error: {}", e)))?;
         let mut current_phi = Ltl::from_formula(&formula_ast).map_err(&err)?;
         let trace_events = extract_trace(input);
         if trace_events.is_empty() {
@@ -388,7 +388,9 @@ mod tests {
     use crate::breeds::{BreedInput, Fact};
 
     fn dummy_input() -> BreedInput {
-        BreedInput { ..Default::default() }
+        BreedInput {
+            ..Default::default()
+        }
     }
 
     #[test]
@@ -396,8 +398,14 @@ mod tests {
         let breed = LtlMonitor;
         let mut input = dummy_input();
         input.facts = vec![
-            Fact { key: "ltl:formula".into(), value: "a".repeat(300) },
-            Fact { key: "trace:0".into(), value: "a".into() },
+            Fact {
+                key: "ltl:formula".into(),
+                value: "a".repeat(300),
+            },
+            Fact {
+                key: "trace:0".into(),
+                value: "a".into(),
+            },
         ];
         let err = breed.preconditions(&input).unwrap_err();
         assert!(err.contains("formula exceeds 256 chars"));
@@ -408,14 +416,26 @@ mod tests {
         let breed = LtlMonitor;
         let mut input = dummy_input();
         input.facts = vec![
-            Fact { key: "ltl:formula".into(), value: "G p".into() },
-            Fact { key: "trace:0".into(), value: "p".into() },
-            Fact { key: "trace:1".into(), value: "p,q".into() },
+            Fact {
+                key: "ltl:formula".into(),
+                value: "G p".into(),
+            },
+            Fact {
+                key: "trace:0".into(),
+                value: "p".into(),
+            },
+            Fact {
+                key: "trace:1".into(),
+                value: "p,q".into(),
+            },
         ];
         let out = breed.run(&input).expect("should run successfully");
         assert_eq!(out.selected.as_deref(), Some("true"));
-        
-        input.facts[2] = Fact { key: "trace:1".into(), value: "q".into() };
+
+        input.facts[2] = Fact {
+            key: "trace:1".into(),
+            value: "q".into(),
+        };
         let out_fail = breed.run(&input).expect("should run successfully");
         assert_eq!(out_fail.selected.as_deref(), Some("false"));
     }
@@ -432,39 +452,94 @@ mod tests {
         let conforming = BreedInput {
             intent: "ltl test".into(),
             facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G (red -> !green)".into() },
-                Fact { key: "trace:0".into(), value: "red".into() },
-                Fact { key: "trace:1".into(), value: "green".into() },
-                Fact { key: "trace:2".into(), value: "red".into() },
-                Fact { key: "trace:3".into(), value: "green".into() },
+                Fact {
+                    key: "ltl:formula".into(),
+                    value: "G (red -> !green)".into(),
+                },
+                Fact {
+                    key: "trace:0".into(),
+                    value: "red".into(),
+                },
+                Fact {
+                    key: "trace:1".into(),
+                    value: "green".into(),
+                },
+                Fact {
+                    key: "trace:2".into(),
+                    value: "red".into(),
+                },
+                Fact {
+                    key: "trace:3".into(),
+                    value: "green".into(),
+                },
             ],
-            rules: vec![], cases: vec![], goals: vec![], candidates: vec![], state: vec![],
+            rules: vec![],
+            cases: vec![],
+            goals: vec![],
+            candidates: vec![],
+            state: vec![],
         };
         let out_ok = breed.run(&conforming).expect("conforming trace must run");
-        assert_eq!(out_ok.selected.as_deref(), Some("true"),
-            "G(red->!green) must be satisfied on conforming trace (Havelund&Rosu 2001)");
+        assert_eq!(
+            out_ok.selected.as_deref(),
+            Some("true"),
+            "G(red->!green) must be satisfied on conforming trace (Havelund&Rosu 2001)"
+        );
         // 4 events → 4 ltl-progress steps
-        let prog_steps = out_ok.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-        assert_eq!(prog_steps, 4, "4 trace events must produce 4 ltl-progress steps");
+        let prog_steps = out_ok
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-progress")
+            .count();
+        assert_eq!(
+            prog_steps, 4,
+            "4 trace events must produce 4 ltl-progress steps"
+        );
 
         // Violating trace: step 1 has both red and green → violation
         let violating = BreedInput {
             intent: "ltl test".into(),
             facts: vec![
-                Fact { key: "ltl:formula".into(), value: "G (red -> !green)".into() },
-                Fact { key: "trace:0".into(), value: "red".into() },
-                Fact { key: "trace:1".into(), value: "red,green".into() },
-                Fact { key: "trace:2".into(), value: "green".into() },
+                Fact {
+                    key: "ltl:formula".into(),
+                    value: "G (red -> !green)".into(),
+                },
+                Fact {
+                    key: "trace:0".into(),
+                    value: "red".into(),
+                },
+                Fact {
+                    key: "trace:1".into(),
+                    value: "red,green".into(),
+                },
+                Fact {
+                    key: "trace:2".into(),
+                    value: "green".into(),
+                },
             ],
-            rules: vec![], cases: vec![], goals: vec![], candidates: vec![], state: vec![],
+            rules: vec![],
+            cases: vec![],
+            goals: vec![],
+            candidates: vec![],
+            state: vec![],
         };
         let out_fail = breed.run(&violating).expect("violating trace must run");
-        assert_eq!(out_fail.selected.as_deref(), Some("false"),
-            "G(red->!green) must be violated when red and green hold together (step 1)");
+        assert_eq!(
+            out_fail.selected.as_deref(),
+            Some("false"),
+            "G(red->!green) must be violated when red and green hold together (step 1)"
+        );
         // Violation detected at step 1 (after processing trace:1) → 2 ltl-progress steps before false
-        let viol_prog = out_fail.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-        assert_eq!(viol_prog, 2,
-            "violation at trace:1 yields exactly 2 ltl-progress steps; got {}", viol_prog);
+        let viol_prog = out_fail
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "ltl-progress")
+            .count();
+        assert_eq!(
+            viol_prog, 2,
+            "violation at trace:1 yields exactly 2 ltl-progress steps; got {}",
+            viol_prog
+        );
     }
 
     #[test]
@@ -472,9 +547,18 @@ mod tests {
         let breed = LtlMonitor;
         let mut input = dummy_input();
         input.facts = vec![
-            Fact { key: "ltl:formula".into(), value: "F p".into() },
-            Fact { key: "trace:0".into(), value: "q".into() },
-            Fact { key: "trace:1".into(), value: "p".into() },
+            Fact {
+                key: "ltl:formula".into(),
+                value: "F p".into(),
+            },
+            Fact {
+                key: "trace:0".into(),
+                value: "q".into(),
+            },
+            Fact {
+                key: "trace:1".into(),
+                value: "p".into(),
+            },
         ];
         let out1 = breed.run(&input).unwrap();
         let out2 = breed.run(&input).unwrap();

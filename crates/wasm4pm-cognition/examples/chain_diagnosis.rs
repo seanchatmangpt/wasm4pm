@@ -32,18 +32,33 @@ fn main() {
         intent: "flu-probability".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "cpt:Flu".to_string(),          value: "0.05".to_string() },
-            Fact { key: "cpt:Fever|Flu".to_string(),    value: "0.9,0.1".to_string() },
-            Fact { key: "cpt:Cough|Flu".to_string(),    value: "0.8,0.2".to_string() },
-            Fact { key: "evidence:Fever".to_string(),   value: "true".to_string() },
-            Fact { key: "evidence:Cough".to_string(),   value: "true".to_string() },
+            Fact {
+                key: "cpt:Flu".to_string(),
+                value: "0.05".to_string(),
+            },
+            Fact {
+                key: "cpt:Fever|Flu".to_string(),
+                value: "0.9,0.1".to_string(),
+            },
+            Fact {
+                key: "cpt:Cough|Flu".to_string(),
+                value: "0.8,0.2".to_string(),
+            },
+            Fact {
+                key: "evidence:Fever".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "evidence:Cough".to_string(),
+                value: "true".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
         goals: vec![Goal {
-            id:        "q0".to_string(),
+            id: "q0".to_string(),
             predicate: "query".to_string(),
-            value:     "prob:Flu".to_string(),
+            value: "prob:Flu".to_string(),
         }],
         state: vec![],
     };
@@ -68,36 +83,61 @@ fn main() {
     let stage1_input = BreedInput {
         intent: "diagnose-illness".to_string(),
         candidates: vec![
-            Candidate { id: "flu".to_string(),         score: 0.0, eliminated: false, elimination_reason: None },
-            Candidate { id: "common-cold".to_string(), score: 0.0, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "flu".to_string(),
+                score: 0.0,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "common-cold".to_string(),
+                score: 0.0,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
             // Link to stage 0 — unforgeable: hash is derived from real BN output
-            Fact { key: "prior_hash".to_string(),          value: stage0_hash[..16].to_string() },
-            Fact { key: "evidence:fever".to_string(),      value: "true".to_string() },
-            Fact { key: "evidence:cough".to_string(),      value: "true".to_string() },
-            Fact { key: "evidence:cough-days".to_string(), value: "5".to_string() },
+            Fact {
+                key: "prior_hash".to_string(),
+                value: stage0_hash[..16].to_string(),
+            },
+            Fact {
+                key: "evidence:fever".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "evidence:cough".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "evidence:cough-days".to_string(),
+                value: "5".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
             Rule {
-                id:         "r-flu".to_string(),
+                id: "r-flu".to_string(),
                 // Mycin WM stores facts as "key=value" at CF=1.0
-                premise:    vec!["evidence:fever=true".to_string(), "evidence:cough=true".to_string()],
+                premise: vec![
+                    "evidence:fever=true".to_string(),
+                    "evidence:cough=true".to_string(),
+                ],
                 conclusion: "diagnosis:flu=confirmed".to_string(),
-                certainty:  0.72,
+                certainty: 0.72,
             },
             Rule {
-                id:         "r-cold".to_string(),
-                premise:    vec!["evidence:cough=true".to_string()],
+                id: "r-cold".to_string(),
+                premise: vec!["evidence:cough=true".to_string()],
                 conclusion: "diagnosis:common-cold=possible".to_string(),
-                certainty:  0.45,
+                certainty: 0.45,
             },
         ],
         goals: vec![Goal {
-            id:        "g-diagnose".to_string(),
+            id: "g-diagnose".to_string(),
             predicate: "diagnose".to_string(),
-            value:     "illness".to_string(),
+            value: "illness".to_string(),
         }],
         state: vec![],
     };
@@ -123,43 +163,67 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Unforgeable link to stage 1
-            Fact { key: "prior_hash".to_string(),          value: stage1_hash[..16].to_string() },
+            Fact {
+                key: "prior_hash".to_string(),
+                value: stage1_hash[..16].to_string(),
+            },
             // Membership functions for CF-score linguistic variable (0–100 scale)
-            Fact { key: "fuzzy:cf:low".to_string(),        value: "tri:0,0,40".to_string() },
-            Fact { key: "fuzzy:cf:moderate".to_string(),   value: "tri:30,55,75".to_string() },
-            Fact { key: "fuzzy:cf:high".to_string(),       value: "tri:65,100,100".to_string() },
+            Fact {
+                key: "fuzzy:cf:low".to_string(),
+                value: "tri:0,0,40".to_string(),
+            },
+            Fact {
+                key: "fuzzy:cf:moderate".to_string(),
+                value: "tri:30,55,75".to_string(),
+            },
+            Fact {
+                key: "fuzzy:cf:high".to_string(),
+                value: "tri:65,100,100".to_string(),
+            },
             // Membership functions for dosage output variable (mg)
-            Fact { key: "fuzzy:dose:mild".to_string(),     value: "tri:0,200,400".to_string() },
-            Fact { key: "fuzzy:dose:moderate".to_string(), value: "tri:300,500,700".to_string() },
-            Fact { key: "fuzzy:dose:severe".to_string(),   value: "tri:600,900,1000".to_string() },
+            Fact {
+                key: "fuzzy:dose:mild".to_string(),
+                value: "tri:0,200,400".to_string(),
+            },
+            Fact {
+                key: "fuzzy:dose:moderate".to_string(),
+                value: "tri:300,500,700".to_string(),
+            },
+            Fact {
+                key: "fuzzy:dose:severe".to_string(),
+                value: "tri:600,900,1000".to_string(),
+            },
             // Crisp input: CF score from Mycin stage (scaled to 0–100)
-            Fact { key: "fuzzy:input:cf".to_string(),      value: cf_score.to_string() },
+            Fact {
+                key: "fuzzy:input:cf".to_string(),
+                value: cf_score.to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
             Rule {
-                id:         "dose-low".to_string(),
-                premise:    vec!["fuzzy:cf:low".to_string()],
+                id: "dose-low".to_string(),
+                premise: vec!["fuzzy:cf:low".to_string()],
                 conclusion: "fuzzy:dose:mild".to_string(),
-                certainty:  1.0,
+                certainty: 1.0,
             },
             Rule {
-                id:         "dose-moderate".to_string(),
-                premise:    vec!["fuzzy:cf:moderate".to_string()],
+                id: "dose-moderate".to_string(),
+                premise: vec!["fuzzy:cf:moderate".to_string()],
                 conclusion: "fuzzy:dose:moderate".to_string(),
-                certainty:  1.0,
+                certainty: 1.0,
             },
             Rule {
-                id:         "dose-high".to_string(),
-                premise:    vec!["fuzzy:cf:high".to_string()],
+                id: "dose-high".to_string(),
+                premise: vec!["fuzzy:cf:high".to_string()],
                 conclusion: "fuzzy:dose:severe".to_string(),
-                certainty:  1.0,
+                certainty: 1.0,
             },
         ],
         goals: vec![Goal {
-            id:        "g-dose".to_string(),
+            id: "g-dose".to_string(),
             predicate: "defuzzify".to_string(),
-            value:     "dose".to_string(),
+            value: "dose".to_string(),
         }],
         state: vec![],
     };

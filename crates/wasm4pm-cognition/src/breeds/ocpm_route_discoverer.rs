@@ -1,6 +1,6 @@
 //! Object-Centric Process Mining (OCPM) Route Discoverer
 //! Discovers individual object lifecycles from object-centric event logs.
-//! 
+//!
 //! Algorithm:
 //! 1. Parse `input.facts` where key is `event` and value is `id=<id>|activity=<act>|objects=<obj1>,<obj2>`.
 //! 2. Build a timeline of activities for each object.
@@ -36,7 +36,7 @@ impl CognitionBreed for OcpmRouteDiscoverer {
         let mut trace = Vec::new();
         // Object -> Vec of activities
         let mut object_routes: BTreeMap<String, Vec<String>> = BTreeMap::new();
-        
+
         for fact in &input.facts {
             if fact.key == "event" {
                 let parts: Vec<&str> = fact.value.split('|').collect();
@@ -49,22 +49,28 @@ impl CognitionBreed for OcpmRouteDiscoverer {
                         objects = objs.split(',').map(|s| s.to_string()).collect();
                     }
                 }
-                
+
                 if !activity.is_empty() && !objects.is_empty() {
                     for obj in &objects {
-                        object_routes.entry(obj.clone()).or_default().push(activity.clone());
+                        object_routes
+                            .entry(obj.clone())
+                            .or_default()
+                            .push(activity.clone());
                     }
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "process-event".to_string(),
                         detail: format!("Event processed for objects: {:?}", objects),
                         depth: 0,
-                        objects: objects.into_iter().map(|o| ("object".to_string(), o)).collect(),
+                        objects: objects
+                            .into_iter()
+                            .map(|o| ("object".to_string(), o))
+                            .collect(),
                     });
                 }
             }
         }
-        
+
         let mut new_facts = Vec::new();
         for (obj, route) in &object_routes {
             let route_str = route.join("->");
@@ -80,12 +86,12 @@ impl CognitionBreed for OcpmRouteDiscoverer {
                 objects: vec![("object".to_string(), obj.clone())],
             });
         }
-        
+
         let selected = object_routes.keys().next().cloned();
         let explanation = format!("Discovered routes for {} objects", object_routes.len());
 
         if trace.is_empty() {
-             trace.push(TraceStep {
+            trace.push(TraceStep {
                 step: trace.len(),
                 kind: "discover-route-empty".to_string(),
                 detail: format!("No routes discovered"),
@@ -140,15 +146,33 @@ mod tests {
     fn test_ocpm_discovers_routes() {
         let input = make_input(
             vec![
-                Fact { key: "event".into(), value: "id=e1|activity=Create|objects=o1,i1".into() },
-                Fact { key: "event".into(), value: "id=e2|activity=Pay|objects=o1".into() },
-                Fact { key: "event".into(), value: "id=e3|activity=Ship|objects=i1".into() },
+                Fact {
+                    key: "event".into(),
+                    value: "id=e1|activity=Create|objects=o1,i1".into(),
+                },
+                Fact {
+                    key: "event".into(),
+                    value: "id=e2|activity=Pay|objects=o1".into(),
+                },
+                Fact {
+                    key: "event".into(),
+                    value: "id=e3|activity=Ship|objects=i1".into(),
+                },
             ],
             vec![],
         );
         let out = OcpmRouteDiscoverer.run(&input).unwrap();
-        assert!(out.facts.iter().any(|f| f.key == "route:o1" && f.value == "Create->Pay"));
-        assert!(out.facts.iter().any(|f| f.key == "route:i1" && f.value == "Create->Ship"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "discover-route"));
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "route:o1" && f.value == "Create->Pay"));
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "route:i1" && f.value == "Create->Ship"));
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "discover-route"));
     }
 }

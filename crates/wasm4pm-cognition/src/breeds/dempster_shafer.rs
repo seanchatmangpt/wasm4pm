@@ -13,11 +13,11 @@
 //!
 //! Trace kinds: `ds-load-bpa`(1,1) → `ds-combine`(0,*) → `ds-belief`(1,1).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Dempster–Shafer evidence-combination breed.
 pub struct DempsterShafer;
@@ -155,7 +155,10 @@ impl CognitionBreed for DempsterShafer {
         for rule in &input.rules {
             let subset = parse_subset(&rule.conclusion, &mapping);
             if subset == 0 {
-                return Err(err(format!("rule {} assigns mass to the empty set", rule.id)));
+                return Err(err(format!(
+                    "rule {} assigns mass to the empty set",
+                    rule.id
+                )));
             }
             let bpa = sources.entry(rule.id.clone()).or_default();
             *bpa.entry(subset).or_insert(0.0) += rule.certainty as f64;
@@ -280,10 +283,24 @@ mod tests {
     fn refuses_k_one_conflict() {
         let breed = DempsterShafer;
         let input = BreedInput {
-            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a".into() }],
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "a".into(),
+            }],
             rules: vec![
-                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 1.0 },
-                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 1.0 },
+                Rule {
+                    id: "s1".into(),
+                    premise: vec![],
+                    conclusion: "a".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "s2".into(),
+                    premise: vec![],
+                    conclusion: "b".into(),
+                    certainty: 1.0,
+                },
             ],
             ..Default::default()
         };
@@ -296,10 +313,17 @@ mod tests {
     fn refuses_invalid_mass() {
         let breed = DempsterShafer;
         let input = BreedInput {
-            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a".into() }],
-            rules: vec![
-                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 1.5 },
-            ],
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "a".into(),
+            }],
+            rules: vec![Rule {
+                id: "s1".into(),
+                premise: vec![],
+                conclusion: "a".into(),
+                certainty: 1.5,
+            }],
             ..Default::default()
         };
         assert!(breed.preconditions(&input).is_err());
@@ -309,12 +333,36 @@ mod tests {
     fn falsification_gate_normalization() {
         let breed = DempsterShafer;
         let input = BreedInput {
-            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "b".into() }],
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "b".into(),
+            }],
             rules: vec![
-                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.5 },
-                Rule { id: "s1".into(), premise: vec![], conclusion: "b".into(), certainty: 0.5 },
-                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.5 },
-                Rule { id: "s2".into(), premise: vec![], conclusion: "c".into(), certainty: 0.5 },
+                Rule {
+                    id: "s1".into(),
+                    premise: vec![],
+                    conclusion: "a".into(),
+                    certainty: 0.5,
+                },
+                Rule {
+                    id: "s1".into(),
+                    premise: vec![],
+                    conclusion: "b".into(),
+                    certainty: 0.5,
+                },
+                Rule {
+                    id: "s2".into(),
+                    premise: vec![],
+                    conclusion: "b".into(),
+                    certainty: 0.5,
+                },
+                Rule {
+                    id: "s2".into(),
+                    premise: vec![],
+                    conclusion: "c".into(),
+                    certainty: 0.5,
+                },
             ],
             ..Default::default()
         };
@@ -341,10 +389,30 @@ mod tests {
                 value: "life".into(),
             }],
             rules: vec![
-                Rule { id: "witness1".into(), premise: vec![], conclusion: "life".into(), certainty: 0.9 },
-                Rule { id: "witness1".into(), premise: vec![], conclusion: "life,death".into(), certainty: 0.1 },
-                Rule { id: "witness2".into(), premise: vec![], conclusion: "life".into(), certainty: 0.9 },
-                Rule { id: "witness2".into(), premise: vec![], conclusion: "life,death".into(), certainty: 0.1 },
+                Rule {
+                    id: "witness1".into(),
+                    premise: vec![],
+                    conclusion: "life".into(),
+                    certainty: 0.9,
+                },
+                Rule {
+                    id: "witness1".into(),
+                    premise: vec![],
+                    conclusion: "life,death".into(),
+                    certainty: 0.1,
+                },
+                Rule {
+                    id: "witness2".into(),
+                    premise: vec![],
+                    conclusion: "life".into(),
+                    certainty: 0.9,
+                },
+                Rule {
+                    id: "witness2".into(),
+                    premise: vec![],
+                    conclusion: "life,death".into(),
+                    certainty: 0.1,
+                },
             ],
             ..Default::default()
         };
@@ -355,7 +423,10 @@ mod tests {
             .iter()
             .find(|f| f.key == "belief:life")
             .expect("belief:life fact must be present");
-        let bel: f64 = bel_fact.value.parse().expect("belief value must be a float");
+        let bel: f64 = bel_fact
+            .value
+            .parse()
+            .expect("belief value must be a float");
         assert!(
             (bel - 0.99_f64).abs() < 1e-6,
             "Bel(life) must be 0.99 (Shafer 1976); got {}",
@@ -367,7 +438,10 @@ mod tests {
             .iter()
             .find(|f| f.key == "plausibility:life")
             .expect("plausibility:life fact must be present");
-        let pl: f64 = pl_fact.value.parse().expect("plausibility value must be a float");
+        let pl: f64 = pl_fact
+            .value
+            .parse()
+            .expect("plausibility value must be a float");
         assert!(
             (pl - 1.0_f64).abs() < 1e-6,
             "Pl(life) must be 1.0; got {}",
@@ -379,20 +453,48 @@ mod tests {
     fn invariant_commutativity() {
         let breed = DempsterShafer;
         let input1 = BreedInput {
-            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a,b".into() }],
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "a,b".into(),
+            }],
             rules: vec![
-                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.3 },
-                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.4 },
+                Rule {
+                    id: "s1".into(),
+                    premise: vec![],
+                    conclusion: "a".into(),
+                    certainty: 0.3,
+                },
+                Rule {
+                    id: "s2".into(),
+                    premise: vec![],
+                    conclusion: "b".into(),
+                    certainty: 0.4,
+                },
             ],
             ..Default::default()
         };
         let out1 = breed.run(&input1).unwrap();
 
         let input2 = BreedInput {
-            goals: vec![Goal { id: "query".into(), predicate: "query".into(), value: "a,b".into() }],
+            goals: vec![Goal {
+                id: "query".into(),
+                predicate: "query".into(),
+                value: "a,b".into(),
+            }],
             rules: vec![
-                Rule { id: "s2".into(), premise: vec![], conclusion: "b".into(), certainty: 0.4 },
-                Rule { id: "s1".into(), premise: vec![], conclusion: "a".into(), certainty: 0.3 },
+                Rule {
+                    id: "s2".into(),
+                    premise: vec![],
+                    conclusion: "b".into(),
+                    certainty: 0.4,
+                },
+                Rule {
+                    id: "s1".into(),
+                    premise: vec![],
+                    conclusion: "a".into(),
+                    certainty: 0.3,
+                },
             ],
             ..Default::default()
         };

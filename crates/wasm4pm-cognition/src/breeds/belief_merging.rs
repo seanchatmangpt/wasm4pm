@@ -70,8 +70,7 @@ fn parse_conj(spec: &str, atoms: &[String]) -> Result<Conj, String> {
 }
 
 fn satisfies(world: u32, conj: &Conj) -> bool {
-    conj.iter()
-        .all(|&(i, pos)| (world & (1 << i) != 0) == pos)
+    conj.iter().all(|&(i, pos)| (world & (1 << i) != 0) == pos)
 }
 
 /// Dalal distance from a world to a literal-conjunction base.
@@ -195,7 +194,12 @@ impl CognitionBreed for BeliefMerging {
         tr(
             &mut trace,
             "enumerate-worlds",
-            format!("{} atoms -> {} worlds, {} bases", n, 1u32 << n, p.bases.len()),
+            format!(
+                "{} atoms -> {} worlds, {} bases",
+                n,
+                1u32 << n,
+                p.bases.len()
+            ),
             0,
         );
 
@@ -428,9 +432,9 @@ mod tests {
     #[test]
     fn refuses_domain_cap_violation() {
         let facts = vec![
-            fact("bm:atoms", "a,b,c,d,e,f,g,h,i,j,k,l,m"), 
-            fact("bm:base:1", "a"), 
-            fact("bm:base:2", "a")
+            fact("bm:atoms", "a,b,c,d,e,f,g,h,i,j,k,l,m"),
+            fact("bm:base:1", "a"),
+            fact("bm:base:2", "a"),
         ];
         assert!(BeliefMerging.custom_check(&input(facts)).is_some());
     }
@@ -445,7 +449,15 @@ mod tests {
             fact("bm:operator", "sum"),
         ];
         let out_sum = BeliefMerging.run(&input(facts_sum)).unwrap();
-        assert_eq!(out_sum.facts.iter().find(|f| f.key == "bm:model_count").unwrap().value, "4");
+        assert_eq!(
+            out_sum
+                .facts
+                .iter()
+                .find(|f| f.key == "bm:model_count")
+                .unwrap()
+                .value,
+            "4"
+        );
 
         let facts_gmax = vec![
             fact("bm:atoms", "a,b"),
@@ -455,7 +467,15 @@ mod tests {
             fact("bm:operator", "gmax"),
         ];
         let out_gmax = BeliefMerging.run(&input(facts_gmax)).unwrap();
-        assert_eq!(out_gmax.facts.iter().find(|f| f.key == "bm:model_count").unwrap().value, "2");
+        assert_eq!(
+            out_gmax
+                .facts
+                .iter()
+                .find(|f| f.key == "bm:model_count")
+                .unwrap()
+                .value,
+            "2"
+        );
         let models: Vec<&str> = out_gmax
             .facts
             .iter()
@@ -484,9 +504,19 @@ mod tests {
         ];
         let out1 = BeliefMerging.run(&input(facts1)).unwrap();
         let out2 = BeliefMerging.run(&input(facts2)).unwrap();
-        
-        let mut models1: Vec<&str> = out1.facts.iter().filter(|f| f.key.starts_with("bm:model:")).map(|f| f.value.as_str()).collect();
-        let mut models2: Vec<&str> = out2.facts.iter().filter(|f| f.key.starts_with("bm:model:")).map(|f| f.value.as_str()).collect();
+
+        let mut models1: Vec<&str> = out1
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("bm:model:"))
+            .map(|f| f.value.as_str())
+            .collect();
+        let mut models2: Vec<&str> = out2
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("bm:model:"))
+            .map(|f| f.value.as_str())
+            .collect();
         models1.sort();
         models2.sort();
         assert_eq!(models1, models2);

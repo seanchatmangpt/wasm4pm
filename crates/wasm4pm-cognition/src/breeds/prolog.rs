@@ -119,9 +119,9 @@ fn forward_chain(
 fn match_premises(
     facts: &[(String, Vec<String>)],
     premises: &[(String, Vec<String>)],
-) -> Vec<std::collections::HashMap<usize, String>> {
-    let mut results: Vec<std::collections::HashMap<usize, String>> =
-        vec![std::collections::HashMap::new()];
+) -> Vec<std::collections::BTreeMap<usize, String>> {
+    let mut results: Vec<std::collections::BTreeMap<usize, String>> =
+        vec![std::collections::BTreeMap::new()];
     for (pred, args) in premises {
         let mut next_results = Vec::new();
         for bindings in &results {
@@ -831,18 +831,34 @@ mod tests {
             intent: "parent".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "parent".into(), value: "tom-bob".into() },
-                Fact { key: "parent".into(), value: "bob-ann".into() },
-                Fact { key: "parent".into(), value: "bob-pat".into() },
+                Fact {
+                    key: "parent".into(),
+                    value: "tom-bob".into(),
+                },
+                Fact {
+                    key: "parent".into(),
+                    value: "bob-ann".into(),
+                },
+                Fact {
+                    key: "parent".into(),
+                    value: "bob-pat".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
-            goals: vec![Goal { id: "g1".into(), predicate: "parent".into(), value: "bob-ann".into() }],
+            goals: vec![Goal {
+                id: "g1".into(),
+                predicate: "parent".into(),
+                value: "bob-ann".into(),
+            }],
             state: vec![],
         };
         let out = breed.run(&input).expect("run ok");
-        assert_eq!(out.selected.as_deref(), Some("bob-ann"),
-            "Prolog8 must resolve parent(bob-ann) to selected='bob-ann' (Kowalski 1974 Fig.2)");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("bob-ann"),
+            "Prolog8 must resolve parent(bob-ann) to selected='bob-ann' (Kowalski 1974 Fig.2)"
+        );
     }
 
     #[test]

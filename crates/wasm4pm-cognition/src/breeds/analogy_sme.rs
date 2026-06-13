@@ -18,7 +18,9 @@
 
 use crate::breeds::support::sexpr::Sexpr;
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::BTreeMap;
 
 /// SME greedy-merge structure mapper.
@@ -63,8 +65,10 @@ fn align(b: &Sexpr, t: &Sexpr) -> Option<(Vec<(String, String)>, u64)> {
 /// Check 1:1 consistency of a set of entity pairs (both directions).
 fn consistent(mapping: &BTreeMap<String, String>, pairs: &[(String, String)]) -> bool {
     let mut fwd = mapping.clone();
-    let mut rev: BTreeMap<String, String> =
-        mapping.iter().map(|(k, v)| (v.clone(), k.clone())).collect();
+    let mut rev: BTreeMap<String, String> = mapping
+        .iter()
+        .map(|(k, v)| (v.clone(), k.clone()))
+        .collect();
     for (b, t) in pairs {
         if let Some(existing) = fwd.get(b) {
             if existing != t {
@@ -117,7 +121,9 @@ impl CognitionBreed for AnalogySme {
         let base = collect(input, "base:")?;
         let target = collect(input, "target:")?;
         if base.is_empty() || target.is_empty() {
-            return Err("analogy_sme requires at least one base: and one target: expression".to_string());
+            return Err(
+                "analogy_sme requires at least one base: and one target: expression".to_string(),
+            );
         }
         if base.len() > 32 || target.len() > 32 {
             return Err(format!(
@@ -189,7 +195,9 @@ impl CognitionBreed for AnalogySme {
             }
         }
         if mhs.is_empty() {
-            return Err(err("no structurally consistent local match between base and target".to_string()));
+            return Err(err(
+                "no structurally consistent local match between base and target".to_string(),
+            ));
         }
 
         // Greedy merge in descending score order (lex tiebreak).
@@ -217,7 +225,10 @@ impl CognitionBreed for AnalogySme {
                 push(
                     &mut trace,
                     "merge-gmap",
-                    format!("merged {} <-> {} (gmap score now {})", mh.bkey, mh.tkey, gmap_score),
+                    format!(
+                        "merged {} <-> {} (gmap score now {})",
+                        mh.bkey, mh.tkey, gmap_score
+                    ),
                 );
             }
         }
@@ -297,7 +308,10 @@ mod tests {
     use super::*;
 
     fn fact(key: &str, value: &str) -> Fact {
-        Fact { key: key.into(), value: value.into() }
+        Fact {
+            key: key.into(),
+            value: value.into(),
+        }
     }
 
     fn solar_atom_input() -> BreedInput {
@@ -310,7 +324,10 @@ mod tests {
             facts: vec![
                 fact("base:0", "(greater (mass sun) (mass planet))"),
                 fact("base:1", "(revolve planet sun)"),
-                fact("base:2", "(cause (greater (mass sun) (mass planet)) (revolve planet sun))"),
+                fact(
+                    "base:2",
+                    "(cause (greater (mass sun) (mass planet)) (revolve planet sun))",
+                ),
                 fact("base:3", "(greater (temperature sun) (temperature planet))"),
                 fact("target:0", "(greater (mass nucleus) (mass electron))"),
                 fact("target:1", "(revolve electron nucleus)"),
@@ -330,12 +347,18 @@ mod tests {
         let out = AnalogySme.run(&solar_atom_input()).expect("run ok");
         // Winning mapping must include sun→nucleus and planet→electron.
         assert!(
-            out.facts.iter().any(|f| f.key == "map:sun" && f.value == "nucleus"),
-            "sun must map to nucleus; facts: {:?}", out.facts
+            out.facts
+                .iter()
+                .any(|f| f.key == "map:sun" && f.value == "nucleus"),
+            "sun must map to nucleus; facts: {:?}",
+            out.facts
         );
         assert!(
-            out.facts.iter().any(|f| f.key == "map:planet" && f.value == "electron"),
-            "planet must map to electron; facts: {:?}", out.facts
+            out.facts
+                .iter()
+                .any(|f| f.key == "map:planet" && f.value == "electron"),
+            "planet must map to electron; facts: {:?}",
+            out.facts
         );
     }
 
@@ -352,7 +375,9 @@ mod tests {
             .map(|f| f.value.as_str())
             .unwrap_or("");
         assert!(
-            inference.contains("cause") && inference.contains("nucleus") && inference.contains("electron"),
+            inference.contains("cause")
+                && inference.contains("nucleus")
+                && inference.contains("electron"),
             "candidate inference must carry over causal chain with substituted entities; got: {:?}",
             inference
         );

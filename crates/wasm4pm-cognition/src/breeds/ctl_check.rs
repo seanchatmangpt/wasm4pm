@@ -22,9 +22,11 @@
 
 use crate::breeds::support::breed_class::VerifierBreed;
 use crate::breeds::support::formula::Formula;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
-use std::collections::{BTreeMap, BTreeSet};
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Clarke–Emerson–Sistla CTL labeling checker.
 pub struct CtlCheck;
@@ -61,10 +63,12 @@ fn parse_ts(input: &BreedInput) -> Result<(Ts, String), String> {
             edges.entry(s.to_string()).or_default().extend(targets);
         } else if let Some(s) = f.key.strip_prefix("ts:label:") {
             names.insert(s.to_string());
-            labels
-                .entry(s.to_string())
-                .or_default()
-                .extend(f.value.split(',').map(|a| a.trim().to_string()).filter(|a| !a.is_empty()));
+            labels.entry(s.to_string()).or_default().extend(
+                f.value
+                    .split(',')
+                    .map(|a| a.trim().to_string())
+                    .filter(|a| !a.is_empty()),
+            );
         } else if f.key == "ctl:formula" {
             formula = Some(f.value.clone());
         }
@@ -291,12 +295,15 @@ impl<'a> Checker<'a> {
             | Formula::Until(_, _)
             | Formula::Release(_, _) => {
                 return Err(format!(
-                    "'{}' is a path formula — every temporal operator must be wrapped by A or E in CTL",
-                    f
-                ))
+                "'{}' is a path formula — every temporal operator must be wrapped by A or E in CTL",
+                f
+            ))
             }
         };
-        self.push("label-states", format!("[{}] holds in {} states", f, sat.len()));
+        self.push(
+            "label-states",
+            format!("[{}] holds in {} states", f, sat.len()),
+        );
         Ok(sat)
     }
 }
@@ -359,7 +366,8 @@ impl CognitionBreed for CtlCheck {
             message: m,
         };
         let (ts, formula_text) = parse_ts(input).map_err(&err)?;
-        let formula = Formula::parse(&formula_text).map_err(|e| err(format!("formula parse error: {}", e)))?;
+        let formula = Formula::parse(&formula_text)
+            .map_err(|e| err(format!("formula parse error: {}", e)))?;
 
         let mut checker = Checker {
             ts: &ts,
@@ -367,7 +375,12 @@ impl CognitionBreed for CtlCheck {
         };
         checker.push(
             "parse-formula",
-            format!("{} over {} states (init={})", formula, ts.states.len(), ts.states[ts.init]),
+            format!(
+                "{} over {} states (init={})",
+                formula,
+                ts.states.len(),
+                ts.states[ts.init]
+            ),
         );
         let sat = checker.eval(&formula).map_err(&err)?;
         let holds = sat.contains(&ts.init);
@@ -443,7 +456,11 @@ impl CognitionBreed for CtlCheck {
 
         let mut facts = vec![Fact {
             key: "ctl:verdict".to_string(),
-            value: if holds { "holds".to_string() } else { "fails".to_string() },
+            value: if holds {
+                "holds".to_string()
+            } else {
+                "fails".to_string()
+            },
         }];
         facts.extend(cex_facts);
 
@@ -452,7 +469,11 @@ impl CognitionBreed for CtlCheck {
             breed: self.id(),
             candidates: input.candidates.clone(),
             facts,
-            selected: Some(if holds { "holds".to_string() } else { "fails".to_string() }),
+            selected: Some(if holds {
+                "holds".to_string()
+            } else {
+                "fails".to_string()
+            }),
             explanation: format!(
                 "CTL labeling decided '{}' {} at '{}' over {} states",
                 formula,
@@ -484,8 +505,14 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s0".into() },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s0".into(),
+                },
             ],
             ..Default::default()
         };
@@ -495,11 +522,20 @@ mod tests {
     #[test]
     fn refuses_over_64_states() {
         let breed = CtlCheck;
-        let mut facts = vec![Fact { key: "ctl:formula".into(), value: "E F p".into() }];
+        let mut facts = vec![Fact {
+            key: "ctl:formula".into(),
+            value: "E F p".into(),
+        }];
         for i in 0..65 {
-            facts.push(Fact { key: format!("ts:edge:s{}", i), value: format!("s{}", i) });
+            facts.push(Fact {
+                key: format!("ts:edge:s{}", i),
+                value: format!("s{}", i),
+            });
         }
-        let input = BreedInput { facts, ..Default::default() };
+        let input = BreedInput {
+            facts,
+            ..Default::default()
+        };
         let res = breed.run(&input);
         assert!(res.is_err());
         assert!(res.unwrap_err().message.contains("64"));
@@ -510,8 +546,14 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "E F p".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "E F p".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
                 // s1 has no outgoing edge
             ],
             ..Default::default()
@@ -526,12 +568,30 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "A F q".into() },
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s1".into() },
-                Fact { key: "ts:label:s0".into(), value: "p".into() },
-                Fact { key: "ts:label:s1".into(), value: "q".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "A F q".into(),
+                },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:label:s0".into(),
+                    value: "p".into(),
+                },
+                Fact {
+                    key: "ts:label:s1".into(),
+                    value: "q".into(),
+                },
             ],
             ..Default::default()
         };
@@ -540,11 +600,26 @@ mod tests {
 
         let input_fail = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "A G p".into() },
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s1".into() },
-                Fact { key: "ts:label:s0".into(), value: "p".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "A G p".into(),
+                },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:label:s0".into(),
+                    value: "p".into(),
+                },
             ],
             ..Default::default()
         };
@@ -559,12 +634,30 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "A G p".into() },
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s0".into() },
-                Fact { key: "ts:label:s0".into(), value: "p".into() },
-                Fact { key: "ts:label:s1".into(), value: "p".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "A G p".into(),
+                },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:label:s0".into(),
+                    value: "p".into(),
+                },
+                Fact {
+                    key: "ts:label:s1".into(),
+                    value: "p".into(),
+                },
             ],
             ..Default::default()
         };
@@ -588,11 +681,26 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "A G p".into() },
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s1".into() },
-                Fact { key: "ts:label:s0".into(), value: "p".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "A G p".into(),
+                },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:label:s0".into(),
+                    value: "p".into(),
+                },
                 // s1 has NO p label
             ],
             ..Default::default()
@@ -610,7 +718,9 @@ mod tests {
         );
         // The counterexample must include the edge s0->s1.
         assert!(
-            out.facts.iter().any(|f| f.key.starts_with("cex:") && f.value.contains("s0")),
+            out.facts
+                .iter()
+                .any(|f| f.key.starts_with("cex:") && f.value.contains("s0")),
             "counterexample must start from initial state s0"
         );
     }
@@ -622,23 +732,74 @@ mod tests {
         let breed = CtlCheck;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1,s3".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s2,s5".into() },
-                Fact { key: "ts:edge:s2".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s3".into(), value: "s4,s5".into() },
-                Fact { key: "ts:edge:s4".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s5".into(), value: "s6,s7".into() },
-                Fact { key: "ts:edge:s6".into(), value: "s3".into() },
-                Fact { key: "ts:edge:s7".into(), value: "s1".into() },
-                Fact { key: "ts:label:s1".into(), value: "t1".into() },
-                Fact { key: "ts:label:s2".into(), value: "c1".into() },
-                Fact { key: "ts:label:s3".into(), value: "t2".into() },
-                Fact { key: "ts:label:s4".into(), value: "c2".into() },
-                Fact { key: "ts:label:s5".into(), value: "t1,t2".into() },
-                Fact { key: "ts:label:s6".into(), value: "c1,t2".into() },
-                Fact { key: "ts:label:s7".into(), value: "t1,c2".into() },
-                Fact { key: "ctl:formula".into(), value: "A G !(c1 & c2)".into() },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1,s3".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s2,s5".into(),
+                },
+                Fact {
+                    key: "ts:edge:s2".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s3".into(),
+                    value: "s4,s5".into(),
+                },
+                Fact {
+                    key: "ts:edge:s4".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s5".into(),
+                    value: "s6,s7".into(),
+                },
+                Fact {
+                    key: "ts:edge:s6".into(),
+                    value: "s3".into(),
+                },
+                Fact {
+                    key: "ts:edge:s7".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:label:s1".into(),
+                    value: "t1".into(),
+                },
+                Fact {
+                    key: "ts:label:s2".into(),
+                    value: "c1".into(),
+                },
+                Fact {
+                    key: "ts:label:s3".into(),
+                    value: "t2".into(),
+                },
+                Fact {
+                    key: "ts:label:s4".into(),
+                    value: "c2".into(),
+                },
+                Fact {
+                    key: "ts:label:s5".into(),
+                    value: "t1,t2".into(),
+                },
+                Fact {
+                    key: "ts:label:s6".into(),
+                    value: "c1,t2".into(),
+                },
+                Fact {
+                    key: "ts:label:s7".into(),
+                    value: "t1,c2".into(),
+                },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "A G !(c1 & c2)".into(),
+                },
             ],
             ..Default::default()
         };
@@ -656,18 +817,36 @@ mod tests {
         // Adding duplicate edges shouldn't change the evaluation outcome.
         let mut input1 = BreedInput {
             facts: vec![
-                Fact { key: "ctl:formula".into(), value: "E F q".into() },
-                Fact { key: "ts:init".into(), value: "s0".into() },
-                Fact { key: "ts:edge:s0".into(), value: "s1".into() },
-                Fact { key: "ts:edge:s1".into(), value: "s1".into() },
-                Fact { key: "ts:label:s1".into(), value: "q".into() },
+                Fact {
+                    key: "ctl:formula".into(),
+                    value: "E F q".into(),
+                },
+                Fact {
+                    key: "ts:init".into(),
+                    value: "s0".into(),
+                },
+                Fact {
+                    key: "ts:edge:s0".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:edge:s1".into(),
+                    value: "s1".into(),
+                },
+                Fact {
+                    key: "ts:label:s1".into(),
+                    value: "q".into(),
+                },
             ],
             ..Default::default()
         };
         let out1 = breed.run(&input1).unwrap();
 
         let mut input2 = input1.clone();
-        input2.facts.push(Fact { key: "ts:edge:s0".into(), value: "s1".into() }); // Duplicate edge
+        input2.facts.push(Fact {
+            key: "ts:edge:s0".into(),
+            value: "s1".into(),
+        }); // Duplicate edge
         let out2 = breed.run(&input2).unwrap();
 
         assert_eq!(out1.selected, out2.selected);

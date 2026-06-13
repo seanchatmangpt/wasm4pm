@@ -18,11 +18,11 @@
 //! Trace kinds: `default-load`(1,1) → {`default-fire`,`default-block`}(1,*)
 //! → `default-extension`(1,1).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Reiter default-logic breed.
 pub struct DefaultLogic;
@@ -65,14 +65,17 @@ impl CognitionBreed for DefaultLogic {
             objects: vec![],
         });
 
-        let mut extension: BTreeSet<String> =
-            input.facts.iter().map(|f| f.value.clone()).collect();
+        let mut extension: BTreeSet<String> = input.facts.iter().map(|f| f.value.clone()).collect();
 
         let mut rules = input.rules.clone();
         // Specificity order: REAL prerequisite count desc (justifications
         // excluded), certainty desc, lex id asc.
-        let prereq_count =
-            |r: &crate::breeds::Rule| r.premise.iter().filter(|p| !p.starts_with("unless:")).count();
+        let prereq_count = |r: &crate::breeds::Rule| {
+            r.premise
+                .iter()
+                .filter(|p| !p.starts_with("unless:"))
+                .count()
+        };
         rules.sort_by(|a, b| {
             prereq_count(b)
                 .cmp(&prereq_count(a))
@@ -207,7 +210,9 @@ impl CognitionBreed for DefaultLogic {
             .iter()
             .any(|t| t.kind == "default-fire" || t.kind == "default-block")
         {
-            return Err("trace must contain at least one default-fire or default-block".to_string());
+            return Err(
+                "trace must contain at least one default-fire or default-block".to_string(),
+            );
         }
         Ok(())
     }
@@ -229,7 +234,10 @@ mod tests {
     fn refuses_late_derived_violator() {
         let breed = DefaultLogic;
         let input = BreedInput {
-            facts: vec![Fact { key: "f".into(), value: "A".into() }],
+            facts: vec![Fact {
+                key: "f".into(),
+                value: "A".into(),
+            }],
             rules: vec![
                 Rule {
                     id: "r1".into(),
@@ -251,7 +259,6 @@ mod tests {
         assert!(res.unwrap_err().message.contains("derived later"));
     }
 
-
     #[test]
     fn falsification_tweety_penguin_reiter_1980() {
         // Reiter 1980 Section 1.1 — canonical Tweety example.
@@ -260,7 +267,10 @@ mod tests {
         // Verbatim from tests/fixtures/papers/default_logic.json.
         let breed = DefaultLogic;
         let input = BreedInput {
-            facts: vec![Fact { key: "obs:tweety".into(), value: "penguin".into() }],
+            facts: vec![Fact {
+                key: "obs:tweety".into(),
+                value: "penguin".into(),
+            }],
             rules: vec![
                 Rule {
                     id: "r_isa".into(),
@@ -302,7 +312,9 @@ mod tests {
         );
         // A block step must appear in the trace.
         assert!(
-            out.inference_trace.iter().any(|t| t.kind == "default-block"),
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "default-block"),
             "trace must include a default-block step for r_birds_fly"
         );
     }
@@ -311,19 +323,20 @@ mod tests {
     fn invariant_idempotency() {
         let breed = DefaultLogic;
         let input = BreedInput {
-            facts: vec![Fact { key: "f".into(), value: "A".into() }],
-            rules: vec![
-                Rule {
-                    id: "r1".into(),
-                    premise: vec!["A".into(), "unless:B".into()],
-                    conclusion: "C".into(),
-                    certainty: 1.0,
-                },
-            ],
+            facts: vec![Fact {
+                key: "f".into(),
+                value: "A".into(),
+            }],
+            rules: vec![Rule {
+                id: "r1".into(),
+                premise: vec!["A".into(), "unless:B".into()],
+                conclusion: "C".into(),
+                certainty: 1.0,
+            }],
             ..Default::default()
         };
         let out1 = breed.run(&input).unwrap();
-        
+
         let new_facts: Vec<Fact> = out1.facts.clone();
         let input2 = BreedInput {
             facts: new_facts,
@@ -331,7 +344,7 @@ mod tests {
             ..Default::default()
         };
         let out2 = breed.run(&input2).unwrap();
-        
+
         assert_eq!(out1.selected, out2.selected);
     }
 }

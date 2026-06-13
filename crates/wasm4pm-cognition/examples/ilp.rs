@@ -2,10 +2,10 @@
 //! Demonstrates learning a `grandparent/2` rule from family relationship facts.
 //! Run: cargo run --example ilp
 
+use wasm4pm_cognition::breeds::ilp::Ilp;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::ilp::Ilp;
 
 fn main() {
     // Domain: family relationships.
@@ -27,18 +27,48 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Positive examples (target relation to learn)
-            Fact { key: "pos:grandparent(ann,carol)".to_string(), value: "1".to_string() },
-            Fact { key: "pos:grandparent(ann,dave)".to_string(),  value: "1".to_string() },
-            Fact { key: "pos:grandparent(tom,carol)".to_string(), value: "1".to_string() },
+            Fact {
+                key: "pos:grandparent(ann,carol)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "pos:grandparent(ann,dave)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "pos:grandparent(tom,carol)".to_string(),
+                value: "1".to_string(),
+            },
             // Negative examples
-            Fact { key: "neg:grandparent(bob,ann)".to_string(),   value: "1".to_string() },
-            Fact { key: "neg:grandparent(liz,tom)".to_string(),   value: "1".to_string() },
+            Fact {
+                key: "neg:grandparent(bob,ann)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "neg:grandparent(liz,tom)".to_string(),
+                value: "1".to_string(),
+            },
             // Background knowledge: parent/2 facts
-            Fact { key: "bg:parent(ann,bob)".to_string(), value: "1".to_string() },
-            Fact { key: "bg:parent(bob,carol)".to_string(), value: "1".to_string() },
-            Fact { key: "bg:parent(bob,dave)".to_string(), value: "1".to_string() },
-            Fact { key: "bg:parent(tom,liz)".to_string(), value: "1".to_string() },
-            Fact { key: "bg:parent(liz,carol)".to_string(), value: "1".to_string() },
+            Fact {
+                key: "bg:parent(ann,bob)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "bg:parent(bob,carol)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "bg:parent(bob,dave)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "bg:parent(tom,liz)".to_string(),
+                value: "1".to_string(),
+            },
+            Fact {
+                key: "bg:parent(liz,carol)".to_string(),
+                value: "1".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

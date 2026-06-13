@@ -57,7 +57,10 @@ fn main() {
             println!();
             // Print each envisioned state and the equilibrium verdict
             for f in &output.facts {
-                if f.key.starts_with("qr:state:") || f.key == "qr:equilibrium" || f.key == "qr:state_count" {
+                if f.key.starts_with("qr:state:")
+                    || f.key == "qr:equilibrium"
+                    || f.key == "qr:state_count"
+                {
                     println!("  {} = {}", f.key, f.value);
                 }
             }

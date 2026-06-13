@@ -141,7 +141,9 @@ impl CognitionBreed for ConstructionGrammar {
         }
         let (pos, _) = Self::lexicon(input);
         if pos.is_empty() {
-            return Err("lexicon is empty: at least one 'lex:<word>:pos' fact required".to_string());
+            return Err(
+                "lexicon is empty: at least one 'lex:<word>:pos' fact required".to_string(),
+            );
         }
         Ok(())
     }
@@ -218,7 +220,9 @@ impl CognitionBreed for ConstructionGrammar {
             let (w, p) = &tagged[i];
             if p == "verb" {
                 if verb.is_some() {
-                    return Err(err("multiple verbs: only single-clause utterances supported".to_string()));
+                    return Err(err(
+                        "multiple verbs: only single-clause utterances supported".to_string(),
+                    ));
                 }
                 verb = Some(w.clone());
                 verb_index_in_chunks = Some(chunks.len());
@@ -271,8 +275,9 @@ impl CognitionBreed for ConstructionGrammar {
                 break;
             }
         }
-        let cons = matched
-            .ok_or_else(|| err("no construction matches the post-verbal chunk sequence".to_string()))?;
+        let cons = matched.ok_or_else(|| {
+            err("no construction matches the post-verbal chunk sequence".to_string())
+        })?;
 
         // 5. Bind slots.
         let mut slots: Vec<(String, String)> = vec![("subj".to_string(), subject.clone())];
@@ -283,7 +288,11 @@ impl CognitionBreed for ConstructionGrammar {
                 Chunk::Np(s) => {
                     np_count += 1;
                     let slot = if cons.name == "ditransitive" {
-                        if np_count == 1 { "rec" } else { "theme" }
+                        if np_count == 1 {
+                            "rec"
+                        } else {
+                            "theme"
+                        }
                     } else {
                         "obj"
                     };
@@ -291,7 +300,11 @@ impl CognitionBreed for ConstructionGrammar {
                 }
                 Chunk::Pp(s) => ("obl".to_string(), s.clone()),
             };
-            push("bind-slot", format!("{} <- {} (arg {})", slot, text, pi + 1), &mut trace);
+            push(
+                "bind-slot",
+                format!("{} <- {} (arg {})", slot, text, pi + 1),
+                &mut trace,
+            );
             slots.push((slot, text));
         }
 
@@ -417,7 +430,10 @@ mod tests {
         let out = ConstructionGrammar.run(&sneeze_input()).expect("run ok");
         assert_eq!(out.selected.as_deref(), Some("caused-motion"));
         let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
-        assert_eq!(coerced.value, "true", "intransitive verb in caused-motion frame must be coerced");
+        assert_eq!(
+            coerced.value, "true",
+            "intransitive verb in caused-motion frame must be coerced"
+        );
         let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
         assert!(meaning.value.starts_with("CAUSE-MOVE"));
     }
@@ -476,28 +492,46 @@ mod tests {
         let out = ConstructionGrammar.run(&inp).expect("run ok");
 
         // construction must be ditransitive (not transitive)
-        assert_eq!(out.selected.as_deref(), Some("ditransitive"),
-            "ditransitive frame must win: NP NP post-verb pattern");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("ditransitive"),
+            "ditransitive frame must win: NP NP post-verb pattern"
+        );
 
         // fax is transitive (arity 2) but ditransitive demands arity 3 → coerced
         let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
-        assert_eq!(coerced.value, "true",
-            "transitive verb in ditransitive frame must be coerced (Goldberg 1995 §1)");
+        assert_eq!(
+            coerced.value, "true",
+            "transitive verb in ditransitive frame must be coerced (Goldberg 1995 §1)"
+        );
 
         // meaning frame must be CAUSE-RECEIVE
         let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
-        assert!(meaning.value.starts_with("CAUSE-RECEIVE"),
-            "ditransitive frame supplies CAUSE-RECEIVE meaning; got: {}", meaning.value);
+        assert!(
+            meaning.value.starts_with("CAUSE-RECEIVE"),
+            "ditransitive frame supplies CAUSE-RECEIVE meaning; got: {}",
+            meaning.value
+        );
 
         // slot rec = bill (first NP after verb = recipient)
         let rec = out.facts.iter().find(|f| f.key == "cxg:slot:rec").unwrap();
-        assert_eq!(rec.value, "bill",
-            "recipient slot must be 'bill', not '{}'", rec.value);
+        assert_eq!(
+            rec.value, "bill",
+            "recipient slot must be 'bill', not '{}'",
+            rec.value
+        );
 
         // slot theme = the letter (second NP = theme)
-        let theme = out.facts.iter().find(|f| f.key == "cxg:slot:theme").unwrap();
-        assert_eq!(theme.value, "the letter",
-            "theme slot must be 'the letter', not '{}'", theme.value);
+        let theme = out
+            .facts
+            .iter()
+            .find(|f| f.key == "cxg:slot:theme")
+            .unwrap();
+        assert_eq!(
+            theme.value, "the letter",
+            "theme slot must be 'the letter', not '{}'",
+            theme.value
+        );
     }
 
     /// Falsification: if coercion check uses >= instead of <, an intransitive verb
@@ -526,8 +560,10 @@ mod tests {
         let out = ConstructionGrammar.run(&inp).expect("run ok");
         assert_eq!(out.selected.as_deref(), Some("intransitive"));
         let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
-        assert_eq!(coerced.value, "false",
-            "intransitive verb in intransitive frame must NOT be coerced");
+        assert_eq!(
+            coerced.value, "false",
+            "intransitive verb in intransitive frame must NOT be coerced"
+        );
     }
 
     #[test]
@@ -553,7 +589,7 @@ mod tests {
             key: "lex:gave:valence".into(),
             value: "ditransitive".into(),
         });
-        
+
         let inp = BreedInput {
             intent: "parse".into(),
             candidates: vec![],
@@ -563,7 +599,7 @@ mod tests {
             goals: vec![],
             state: vec![],
         };
-        
+
         let out = ConstructionGrammar.run(&inp).unwrap();
         assert_eq!(out.selected.as_deref(), Some("ditransitive"));
         let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
@@ -598,12 +634,28 @@ mod tests {
             }
         };
 
-        let out_coerced = ConstructionGrammar.run(&build_input("sneezed", "intransitive")).unwrap();
-        let out_natural = ConstructionGrammar.run(&build_input("pushed", "ditransitive")).unwrap();
+        let out_coerced = ConstructionGrammar
+            .run(&build_input("sneezed", "intransitive"))
+            .unwrap();
+        let out_natural = ConstructionGrammar
+            .run(&build_input("pushed", "ditransitive"))
+            .unwrap();
 
-        let meaning1 = out_coerced.facts.iter().find(|f| f.key == "cxg:meaning").unwrap().value.clone();
-        let meaning2 = out_natural.facts.iter().find(|f| f.key == "cxg:meaning").unwrap().value.clone();
-        
+        let meaning1 = out_coerced
+            .facts
+            .iter()
+            .find(|f| f.key == "cxg:meaning")
+            .unwrap()
+            .value
+            .clone();
+        let meaning2 = out_natural
+            .facts
+            .iter()
+            .find(|f| f.key == "cxg:meaning")
+            .unwrap()
+            .value
+            .clone();
+
         assert!(meaning1.starts_with("CAUSE-MOVE"));
         assert!(meaning2.starts_with("CAUSE-MOVE"));
     }

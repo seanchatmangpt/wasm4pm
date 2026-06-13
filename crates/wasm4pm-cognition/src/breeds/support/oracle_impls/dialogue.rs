@@ -82,7 +82,10 @@ impl BreedOracle for Eliza {
             .detail_of("bind-slot")
             .ok_or_else(|| "missing bind-slot detail".to_string())?;
         if !slot.contains("uo_flustrated") {
-            return Err(format!("first slot must capture uo_flustrated, got '{}'", slot));
+            return Err(format!(
+                "first slot must capture uo_flustrated, got '{}'",
+                slot
+            ));
         }
         Ok(())
     }
@@ -96,11 +99,15 @@ impl BreedOracle for Eliza {
                 tq.count_of("bind-slot")
             ));
         }
-        let s1 = tq.detail_kth("bind-slot", 0).ok_or("missing bind-slot[0]")?;
+        let s1 = tq
+            .detail_kth("bind-slot", 0)
+            .ok_or("missing bind-slot[0]")?;
         if s1 != "${1}=uo_flustrated" {
             return Err(format!("slot 1 must bind uo_flustrated, got '{}'", s1));
         }
-        let s2 = tq.detail_kth("bind-slot", 1).ok_or("missing bind-slot[1]")?;
+        let s2 = tq
+            .detail_kth("bind-slot", 1)
+            .ok_or("missing bind-slot[1]")?;
         if s2 != "${2}=uo_grindle hums at me" {
             return Err(format!(
                 "slot 2 must reflect captured wildcard 'uo_grindle hums at me', got '{}'",
@@ -108,9 +115,14 @@ impl BreedOracle for Eliza {
             ));
         }
         // The matched pattern is the most specific (longest-first ordering).
-        let matched = tq.detail_of("match-pattern").ok_or("missing match-pattern")?;
+        let matched = tq
+            .detail_of("match-pattern")
+            .ok_or("missing match-pattern")?;
         if matched != "i am * because *" {
-            return Err(format!("matched pattern must be 'i am * because *', got '{}'", matched));
+            return Err(format!(
+                "matched pattern must be 'i am * because *', got '{}'",
+                matched
+            ));
         }
         Ok(())
     }
@@ -173,7 +185,10 @@ impl BreedOracle for Dendral {
             .detail_of("eliminate")
             .ok_or_else(|| "missing eliminate detail".to_string())?;
         if !eliminated.contains("uo_pylor") {
-            return Err(format!("uo_pylor must be eliminated by forbid, got '{}'", eliminated));
+            return Err(format!(
+                "uo_pylor must be eliminated by forbid, got '{}'",
+                eliminated
+            ));
         }
         let survivor = trace
             .detail_of("survive")
@@ -282,10 +297,7 @@ impl BreedOracle for Hearsay {
             .detail_of("post-hypothesis")
             .ok_or_else(|| "missing post-hypothesis detail".to_string())?;
         if !posted.contains("uo_word:UO_THRENT") {
-            return Err(format!(
-                "KS must post uo_word:UO_THRENT, got '{}'",
-                posted
-            ));
+            return Err(format!("KS must post uo_word:UO_THRENT, got '{}'", posted));
         }
         Ok(())
     }
@@ -308,7 +320,9 @@ impl BreedOracle for Hearsay {
                 enq
             ));
         }
-        let posted = tq.detail_of("post-hypothesis").ok_or("missing post-hypothesis")?;
+        let posted = tq
+            .detail_of("post-hypothesis")
+            .ok_or("missing post-hypothesis")?;
         if posted != "uo_ks_word ⇒ uo_word:UO_THRENT (rating=0.800)" {
             return Err(format!(
                 "post-hypothesis must show uo_ks_word posting uo_word:UO_THRENT at rating 0.800, got '{}'",
@@ -317,7 +331,10 @@ impl BreedOracle for Hearsay {
         }
         let seed = tq.detail_of("seed").ok_or("missing seed")?;
         if seed != "uo_phone:UO_T" {
-            return Err(format!("blackboard seed must be uo_phone:UO_T, got '{}'", seed));
+            return Err(format!(
+                "blackboard seed must be uo_phone:UO_T, got '{}'",
+                seed
+            ));
         }
         Ok(())
     }
@@ -361,7 +378,10 @@ impl BreedOracle for ConstructionGrammar {
 
     fn novel_input() -> BreedInput {
         let mut input = base("uo_parse_utterance");
-        input.facts = vec![fact("cxg:utterance", "the uo_vrang uo_flarbed the uo_scroll")];
+        input.facts = vec![fact(
+            "cxg:utterance",
+            "the uo_vrang uo_flarbed the uo_scroll",
+        )];
         cxg_lexicon(&mut input);
         input
     }
@@ -369,7 +389,10 @@ impl BreedOracle for ConstructionGrammar {
     fn boundary_pair() -> (BreedInput, BreedInput) {
         // NP post-verb → transitive; NP PP post-verb → caused-motion.
         let mut a = base("uo_parse_utterance");
-        a.facts = vec![fact("cxg:utterance", "the uo_vrang uo_flarbed the uo_scroll")];
+        a.facts = vec![fact(
+            "cxg:utterance",
+            "the uo_vrang uo_flarbed the uo_scroll",
+        )];
         cxg_lexicon(&mut a);
         let mut b = base("uo_parse_utterance");
         b.facts = vec![fact(
@@ -407,7 +430,10 @@ impl BreedOracle for ConstructionGrammar {
             ));
         }
         if !meaning.contains("transitive") {
-            return Err(format!("expected the transitive construction, got '{}'", meaning));
+            return Err(format!(
+                "expected the transitive construction, got '{}'",
+                meaning
+            ));
         }
         Ok(())
     }
@@ -418,25 +444,41 @@ impl BreedOracle for ConstructionGrammar {
         // of the transitive frame with the actual NP fillers.
         let tok = tq.detail_of("tokenize").ok_or("missing tokenize")?;
         if tok != "the uo_vrang uo_flarbed the uo_scroll" {
-            return Err(format!("tokenize must reproduce the utterance, got '{}'", tok));
+            return Err(format!(
+                "tokenize must reproduce the utterance, got '{}'",
+                tok
+            ));
         }
         if tq.count_of("pos-tag") != 5 {
-            return Err(format!("expected 5 pos-tag steps, got {}", tq.count_of("pos-tag")));
+            return Err(format!(
+                "expected 5 pos-tag steps, got {}",
+                tq.count_of("pos-tag")
+            ));
         }
         let vtag = tq.detail_kth("pos-tag", 2).ok_or("missing pos-tag[2]")?;
         if vtag != "uo_flarbed/verb" {
-            return Err(format!("novel verb must tag as uo_flarbed/verb, got '{}'", vtag));
+            return Err(format!(
+                "novel verb must tag as uo_flarbed/verb, got '{}'",
+                vtag
+            ));
         }
-        let matched = tq.last_of("match-construction").ok_or("missing match-construction")?;
+        let matched = tq
+            .last_of("match-construction")
+            .ok_or("missing match-construction")?;
         if matched.detail != "transitive: match" {
             return Err(format!(
                 "transitive construction must match the NP post-verb shape, got '{}'",
                 matched.detail
             ));
         }
-        let subj = tq.detail_kth("bind-slot", 0).ok_or("missing bind-slot[0]")?;
+        let subj = tq
+            .detail_kth("bind-slot", 0)
+            .ok_or("missing bind-slot[0]")?;
         if subj != "subj <- the uo_vrang" {
-            return Err(format!("subject slot must bind 'the uo_vrang', got '{}'", subj));
+            return Err(format!(
+                "subject slot must bind 'the uo_vrang', got '{}'",
+                subj
+            ));
         }
         let meaning = tq.detail_of("fuse-meaning").ok_or("missing fuse-meaning")?;
         if !meaning.contains("verb=uo_flarbed") || !meaning.contains("the uo_scroll") {
@@ -469,7 +511,10 @@ impl BreedAdversary for CheatConstructionGrammar {
                 ("match-construction", "transitive: match"),
                 ("bind-slot", "subj <- the cat"),
                 ("bind-slot", "obj <- the mouse (arg 1)"),
-                ("fuse-meaning", "ACT-ON(the cat, the mouse; verb=chased) via transitive"),
+                (
+                    "fuse-meaning",
+                    "ACT-ON(the cat, the mouse; verb=chased) via transitive",
+                ),
             ],
         )
     }
@@ -537,18 +582,27 @@ impl BreedOracle for AutoinstinctLearning {
                 tq.count_of("plan-step")
             ));
         }
-        let first = tq.detail_kth("plan-step", 0).ok_or("missing plan-step[0]")?;
+        let first = tq
+            .detail_kth("plan-step", 0)
+            .ok_or("missing plan-step[0]")?;
         if !first.contains("state=0b00000000") || !first.contains("distance=2") {
             return Err(format!(
                 "initial plan-step must be empty state at distance=2, got '{}'",
                 first
             ));
         }
-        let mid = tq.detail_kth("plan-step", 1).ok_or("missing plan-step[1]")?;
+        let mid = tq
+            .detail_kth("plan-step", 1)
+            .ok_or("missing plan-step[1]")?;
         if !mid.contains("distance=1") {
-            return Err(format!("middle plan-step must be at distance=1, got '{}'", mid));
+            return Err(format!(
+                "middle plan-step must be at distance=1, got '{}'",
+                mid
+            ));
         }
-        let last = tq.detail_kth("plan-step", 2).ok_or("missing plan-step[2]")?;
+        let last = tq
+            .detail_kth("plan-step", 2)
+            .ok_or("missing plan-step[2]")?;
         if !last.contains("state=0b00000011") || !last.contains("distance=0") {
             return Err(format!(
                 "final plan-step must reach goal state 0b00000011 at distance=0, got '{}'",
@@ -569,9 +623,18 @@ impl BreedAdversary for CheatAutoinstinctLearning {
         cheat_output(
             BreedId::AutoinstinctLearning,
             &[
-                ("plan-step", "state=0b00000011 distance=0 action toward goal: flip next missing bit"),
-                ("plan-step", "state=0b00000011 distance=0 action toward goal: flip next missing bit"),
-                ("plan-step", "state=0b00000011 distance=0 action toward goal: flip next missing bit"),
+                (
+                    "plan-step",
+                    "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+                ),
+                (
+                    "plan-step",
+                    "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+                ),
+                (
+                    "plan-step",
+                    "state=0b00000011 distance=0 action toward goal: flip next missing bit",
+                ),
             ],
         )
     }
@@ -636,13 +699,21 @@ impl BreedOracle for AutoinstinctSemantics {
                 act
             ));
         }
-        let rec = tq.detail_of("extract-recipient").ok_or("missing extract-recipient")?;
+        let rec = tq
+            .detail_of("extract-recipient")
+            .ok_or("missing extract-recipient")?;
         if rec != "to=Uo_plomb" {
-            return Err(format!("extract-recipient must be to=Uo_plomb, got '{}'", rec));
+            return Err(format!(
+                "extract-recipient must be to=Uo_plomb, got '{}'",
+                rec
+            ));
         }
         let init = tq.detail_of("init-parser").ok_or("missing init-parser")?;
         if !init.contains("Uo_vrang give uo_scroll to Uo_plomb") {
-            return Err(format!("init-parser must echo the parsed intent, got '{}'", init));
+            return Err(format!(
+                "init-parser must echo the parsed intent, got '{}'",
+                init
+            ));
         }
         Ok(())
     }
@@ -704,7 +775,10 @@ impl BreedOracle for AutoinstinctNeurosis {
             .detail_of("seed-beliefs")
             .ok_or_else(|| "missing seed-beliefs detail".to_string())?;
         if !seeded.contains("seeded 1 beliefs") {
-            return Err(format!("must seed exactly 1 belief from facts, got '{}'", seeded));
+            return Err(format!(
+                "must seed exactly 1 belief from facts, got '{}'",
+                seeded
+            ));
         }
         // The default_stimulus is a novel concept → "curious" response and a
         // second belief node alongside the seeded uo_thrum conviction.
@@ -713,7 +787,10 @@ impl BreedOracle for AutoinstinctNeurosis {
             .detail_of("affect-snapshot")
             .ok_or_else(|| "missing affect-snapshot detail".to_string())?;
         if !snapshot.contains("beliefs=2") {
-            return Err(format!("final snapshot must report beliefs=2, got '{}'", snapshot));
+            return Err(format!(
+                "final snapshot must report beliefs=2, got '{}'",
+                snapshot
+            ));
         }
         Ok(())
     }
@@ -729,7 +806,9 @@ impl BreedOracle for AutoinstinctNeurosis {
                 seeded
             ));
         }
-        let curious = tq.detail_of("curious").ok_or("missing curious response step")?;
+        let curious = tq
+            .detail_of("curious")
+            .ok_or("missing curious response step")?;
         if !curious.contains("stimulus=\"default_stimulus\"")
             || !curious.contains("strength=0.500")
             || !curious.contains("Δfear=")
@@ -739,7 +818,9 @@ impl BreedOracle for AutoinstinctNeurosis {
                 curious
             ));
         }
-        let snap = tq.detail_of("affect-snapshot").ok_or("missing affect-snapshot")?;
+        let snap = tq
+            .detail_of("affect-snapshot")
+            .ok_or("missing affect-snapshot")?;
         if !snap.contains("beliefs=2") || !snap.contains("fear=") || !snap.contains("mistrust=") {
             return Err(format!(
                 "affect-snapshot must carry final fear/mistrust values and beliefs=2, got '{}'",
@@ -761,7 +842,10 @@ impl BreedAdversary for CheatAutoinstinctNeurosis {
             &[
                 ("seed-beliefs", "seeded 0 beliefs from facts"),
                 ("calm", "all stimuli nominal"),
-                ("affect-snapshot", "fear=0.000 anger=0.000 mistrust=0.000 beliefs=0"),
+                (
+                    "affect-snapshot",
+                    "fear=0.000 anger=0.000 mistrust=0.000 beliefs=0",
+                ),
             ],
         )
     }
@@ -823,7 +907,10 @@ impl BreedOracle for AutoinstinctVision {
             .detail_of("find-clear-object")
             .ok_or_else(|| "missing find-clear-object detail".to_string())?;
         if !clear.contains("UO_B") {
-            return Err(format!("clear object must be UO_B (top of stack), got '{}'", clear));
+            return Err(format!(
+                "clear object must be UO_B (top of stack), got '{}'",
+                clear
+            ));
         }
         Ok(())
     }
@@ -832,23 +919,32 @@ impl BreedOracle for AutoinstinctVision {
         // Core computation values: both scene objects observed with their
         // shapes AND support structure, and the clear-object search must
         // return the top of the stack (run() detail formats).
-        let o1 = tq.detail_kth("observe-object", 0).ok_or("missing observe-object[0]")?;
+        let o1 = tq
+            .detail_kth("observe-object", 0)
+            .ok_or("missing observe-object[0]")?;
         if o1 != "observed UO_A as uo_cube (on table)" {
             return Err(format!(
                 "first observation must be UO_A as uo_cube on the table, got '{}'",
                 o1
             ));
         }
-        let o2 = tq.detail_kth("observe-object", 1).ok_or("missing observe-object[1]")?;
+        let o2 = tq
+            .detail_kth("observe-object", 1)
+            .ok_or("missing observe-object[1]")?;
         if o2 != "observed UO_B as uo_prism (supported_by=UO_A)" {
             return Err(format!(
                 "second observation must be UO_B as uo_prism supported by UO_A, got '{}'",
                 o2
             ));
         }
-        let clear = tq.detail_of("find-clear-object").ok_or("missing find-clear-object")?;
+        let clear = tq
+            .detail_of("find-clear-object")
+            .ok_or("missing find-clear-object")?;
         if clear != "clear object found: UO_B" {
-            return Err(format!("clear object must be exactly UO_B, got '{}'", clear));
+            return Err(format!(
+                "clear object must be exactly UO_B, got '{}'",
+                clear
+            ));
         }
         Ok(())
     }
@@ -884,7 +980,11 @@ mod tests {
             .unwrap_or_else(|e| panic!("{:?} novel_input failed: {}", B::breed_id(), e));
         let tq = TraceQuery::new(&output.inference_trace);
         if let Err(e) = B::assert_trace_values(&tq) {
-            panic!("{:?} assert_trace_values rejected the real trace: {}", B::breed_id(), e);
+            panic!(
+                "{:?} assert_trace_values rejected the real trace: {}",
+                B::breed_id(),
+                e
+            );
         }
     }
 

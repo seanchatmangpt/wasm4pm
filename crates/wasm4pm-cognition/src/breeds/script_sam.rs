@@ -39,7 +39,13 @@ const SCRIPTS: &[Script] = &[
     Script {
         name: "airport",
         scenes: &["checkin", "security", "board", "fly", "land"],
-        roles: &["passenger", "passenger", "passenger", "passenger", "passenger"],
+        roles: &[
+            "passenger",
+            "passenger",
+            "passenger",
+            "passenger",
+            "passenger",
+        ],
     },
     Script {
         name: "restaurant",
@@ -85,13 +91,15 @@ impl CognitionBreed for ScriptSam {
             return Err("script_sam requires at least one sam:event:* fact".to_string());
         }
         if events.len() > MAX_EVENTS {
-            return Err(format!("event count {} exceeds cap {}", events.len(), MAX_EVENTS));
+            return Err(format!(
+                "event count {} exceeds cap {}",
+                events.len(),
+                MAX_EVENTS
+            ));
         }
-        let any_known = events.iter().any(|(s, _)| {
-            SCRIPTS
-                .iter()
-                .any(|sc| sc.scenes.contains(&s.as_str()))
-        });
+        let any_known = events
+            .iter()
+            .any(|(s, _)| SCRIPTS.iter().any(|sc| sc.scenes.contains(&s.as_str())));
         if !any_known {
             return Err("no observed event matches any known script vocabulary".to_string());
         }
@@ -142,7 +150,12 @@ impl CognitionBreed for ScriptSam {
         tr(
             &mut trace,
             "select-script",
-            format!("'{}' (overlap {}/{} events)", script.name, overlap, events.len()),
+            format!(
+                "'{}' (overlap {}/{} events)",
+                script.name,
+                overlap,
+                events.len()
+            ),
             0,
         );
 
@@ -151,10 +164,7 @@ impl CognitionBreed for ScriptSam {
         let mut matched: Vec<usize> = Vec::new(); // scene indices, ascending
         let mut scene_cursor = 0usize;
         for (s, actor) in &events {
-            if let Some(pos) = script.scenes[scene_cursor..]
-                .iter()
-                .position(|sc| sc == s)
-            {
+            if let Some(pos) = script.scenes[scene_cursor..].iter().position(|sc| sc == s) {
                 let scene_idx = scene_cursor + pos;
                 tr(
                     &mut trace,
@@ -229,7 +239,9 @@ impl CognitionBreed for ScriptSam {
         for s in &inferred {
             facts.push(Fact {
                 key: format!("sam:inferred:{}", s),
-                value: default_actor.clone().unwrap_or_else(|| "unbound".to_string()),
+                value: default_actor
+                    .clone()
+                    .unwrap_or_else(|| "unbound".to_string()),
             });
         }
         for (role, actor) in &bindings {

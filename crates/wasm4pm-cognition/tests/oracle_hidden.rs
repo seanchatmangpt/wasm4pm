@@ -1387,10 +1387,25 @@ fn ltl_monitor_hidden_g_zorp_violated_at_step_3() {
         fact("trace:4", "zorp"),
     ];
     let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
-    assert_eq!(out.selected.as_deref(), Some("false"), "G zorp must be violated");
-    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-    assert_eq!(progress, 4, "violation detected exactly at step 3 (4 progressions)");
-    let init = out.inference_trace.iter().filter(|t| t.kind == "ltl-init").count();
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("false"),
+        "G zorp must be violated"
+    );
+    let progress = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-progress")
+        .count();
+    assert_eq!(
+        progress, 4,
+        "violation detected exactly at step 3 (4 progressions)"
+    );
+    let init = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-init")
+        .count();
     assert_eq!(init, 1, "exactly 1 ltl-init");
     assert!(!out.inference_trace.is_empty()); // A3
 }
@@ -1413,7 +1428,11 @@ fn ltl_monitor_hidden_g_zorp_fully_conforming_is_satisfied() {
         Some("true"),
         "G p over a conforming finite trace is a good prefix and must be satisfied"
     );
-    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    let progress = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-progress")
+        .count();
     assert_eq!(progress, 4, "all 4 events progressed (no early verdict)");
 }
 
@@ -1432,7 +1451,11 @@ fn ltl_monitor_hidden_until_satisfied_at_step_2() {
     ];
     let out = dispatch_breed_test("ltl_monitor", &input).expect("ltl run");
     assert_eq!(out.selected.as_deref(), Some("true"));
-    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    let progress = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-progress")
+        .count();
     assert_eq!(progress, 3, "satisfied exactly at step 2 (3 progressions)");
     assert!(!out.inference_trace.is_empty()); // A3
 }
@@ -1461,9 +1484,20 @@ fn allen_temporal_hidden_before_compose_meets() {
             .value
             .clone()
     };
-    assert_eq!(derived("derived:gamma,eps"), "p", "before∘meets must be exactly before");
-    assert_eq!(derived("derived:eps,gamma"), "pi", "inverse must be exactly after");
-    assert!(out.inference_trace.iter().any(|t| t.kind == "allen-compose"));
+    assert_eq!(
+        derived("derived:gamma,eps"),
+        "p",
+        "before∘meets must be exactly before"
+    );
+    assert_eq!(
+        derived("derived:eps,gamma"),
+        "pi",
+        "inverse must be exactly after"
+    );
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "allen-compose"));
     assert!(!out.inference_trace.is_empty()); // A3
 }
 
@@ -1495,7 +1529,10 @@ fn allen_temporal_hidden_cyclic_before_inconsistent() {
         fact("relation", "florp,flim,p"),
     ];
     let res = dispatch_breed_test("allen_temporal", &input);
-    assert!(res.is_err(), "cyclic strict precedence must be inconsistent");
+    assert!(
+        res.is_err(),
+        "cyclic strict precedence must be inconsistent"
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -1542,14 +1579,24 @@ fn fuzzy_logic_hidden_t_norm_boundaries() {
     let mut input = base("fuzzy");
     input.facts = vec![
         fact("fuzzy:zlorp:mid", "tri:2,5,8"),
-        fact("fuzzy:zlorp:peak", "tri:0,3.7,8"),  // mu(3.7)=1.0
+        fact("fuzzy:zlorp:peak", "tri:0,3.7,8"), // mu(3.7)=1.0
         fact("fuzzy:zlorp:far", "tri:10,12,14"), // mu(3.7)=0.0
         fact("fuzzy:gwib:out", "tri:0,50,100"),
         fact("fuzzy:input:zlorp", "3.7"),
     ];
     input.rules = vec![
-        rule("r_one", vec!["fuzzy:zlorp:peak", "fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0),
-        rule("r_zero", vec!["fuzzy:zlorp:far", "fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0),
+        rule(
+            "r_one",
+            vec!["fuzzy:zlorp:peak", "fuzzy:zlorp:mid"],
+            "fuzzy:gwib:out",
+            1.0,
+        ),
+        rule(
+            "r_zero",
+            vec!["fuzzy:zlorp:far", "fuzzy:zlorp:mid"],
+            "fuzzy:gwib:out",
+            1.0,
+        ),
     ];
     let out = dispatch_breed_test("fuzzy_logic", &input).expect("fuzzy run");
     let strength_of = |id: &str| -> f32 {
@@ -1564,7 +1611,10 @@ fn fuzzy_logic_hidden_t_norm_boundaries() {
             .parse()
             .unwrap()
     };
-    assert!((strength_of("r_one") - 0.56667).abs() < 1e-5, "min(1,mu)=mu");
+    assert!(
+        (strength_of("r_one") - 0.56667).abs() < 1e-5,
+        "min(1,mu)=mu"
+    );
     assert_eq!(strength_of("r_zero"), 0.0, "min(0,mu)=0");
 }
 
@@ -1710,12 +1760,21 @@ fn default_logic_hidden_specificity_block() {
     input.rules = vec![
         rule("r_isa", vec!["gronk"], "wibble", 1.0),
         rule("r_dark", vec!["gronk"], "dark_wibble", 1.0),
-        rule("r_default", vec!["wibble", "unless:dark_wibble"], "glows", 0.9),
+        rule(
+            "r_default",
+            vec!["wibble", "unless:dark_wibble"],
+            "glows",
+            0.9,
+        ),
         rule("r_specific", vec!["dark_wibble"], "not_glows", 1.0),
     ];
     let out = dispatch_breed_test("default_logic", &input).expect("dl run");
     let ext = out.selected.expect("extension");
-    assert!(ext.contains("not_glows"), "extension must contain not_glows: {}", ext);
+    assert!(
+        ext.contains("not_glows"),
+        "extension must contain not_glows: {}",
+        ext
+    );
     assert!(
         !ext.split(", ").any(|a| a == "glows"),
         "blocked default must NOT add glows: {}",
@@ -1737,12 +1796,21 @@ fn default_logic_hidden_default_fires_without_dark() {
     input.facts = vec![fact("obs:gronk", "gronk")];
     input.rules = vec![
         rule("r_isa", vec!["gronk"], "wibble", 1.0),
-        rule("r_default", vec!["wibble", "unless:dark_wibble"], "glows", 0.9),
+        rule(
+            "r_default",
+            vec!["wibble", "unless:dark_wibble"],
+            "glows",
+            0.9,
+        ),
         rule("r_specific", vec!["dark_wibble"], "not_glows", 1.0),
     ];
     let out = dispatch_breed_test("default_logic", &input).expect("dl run");
     let ext = out.selected.expect("extension");
-    assert!(ext.split(", ").any(|a| a == "glows"), "default must fire: {}", ext);
+    assert!(
+        ext.split(", ").any(|a| a == "glows"),
+        "default must fire: {}",
+        ext
+    );
     assert!(!ext.contains("not_glows"));
 }
 
@@ -1756,26 +1824,42 @@ fn default_logic_hidden_default_fires_without_dark() {
 #[test]
 fn htn_planning_hidden_forced_backtrack() {
     let mut input = base("travel");
-    input.state = vec![
-        state_atom("at", "shire"),
-        state_atom("cash", "low"),
-    ];
+    input.state = vec![state_atom("at", "shire"), state_atom("cash", "low")];
     input.goals = vec![goal("g1", "task", "journey")];
     input.rules = vec![
-        rule("method:journey:coach", vec!["at=shire"], "op:hail_coach;op:pay_coach", 1.0),
+        rule(
+            "method:journey:coach",
+            vec!["at=shire"],
+            "op:hail_coach;op:pay_coach",
+            1.0,
+        ),
         rule("method:journey:walk", vec!["at=shire"], "op:walk_road", 1.0),
         rule("op:hail_coach", vec![], "in=coach", 1.0),
-        rule("op:pay_coach", vec!["in=coach", "cash=high"], "!in=coach;at=bree", 1.0),
+        rule(
+            "op:pay_coach",
+            vec!["in=coach", "cash=high"],
+            "!in=coach;at=bree",
+            1.0,
+        ),
         rule("op:walk_road", vec![], "!at=shire;at=bree", 1.0),
     ];
     let out = dispatch_breed_test("htn_planning", &input).expect("htn run");
-    assert_eq!(out.selected.as_deref(), Some("op:walk_road"), "must backtrack to walk");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("op:walk_road"),
+        "must backtrack to walk"
+    );
     assert!(
-        out.inference_trace.iter().any(|t| t.kind == "htn-backtrack"),
+        out.inference_trace
+            .iter()
+            .any(|t| t.kind == "htn-backtrack"),
         "htn-backtrack step required"
     );
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "htn-plan").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "htn-plan")
+            .count(),
         1
     );
     assert!(!out.inference_trace.is_empty()); // A3
@@ -1812,8 +1896,14 @@ fn dempster_shafer_hidden_subadditive_belief() {
             .unwrap()
     };
     let sum = bel("flim") + bel("flam");
-    assert!((sum - 0.5).abs() < 1e-9, "Bel(flim)+Bel(flam) must be exactly 0.5");
-    assert!(sum < 1.0, "belief is subadditive (not a probability measure)");
+    assert!(
+        (sum - 0.5).abs() < 1e-9,
+        "Bel(flim)+Bel(flam) must be exactly 0.5"
+    );
+    assert!(
+        sum < 1.0,
+        "belief is subadditive (not a probability measure)"
+    );
 }
 
 /// Two-source Dempster combination to 1e-9. Hand arithmetic with exactly
@@ -1877,8 +1967,16 @@ fn frames_inheritance_hidden_override_and_walk_length() {
         fact("frame:welp:slot:color", "red"),
     ];
     let out = dispatch_breed_test("frames_inheritance", &input).expect("frames run");
-    assert_eq!(out.selected.as_deref(), Some("red"), "welp override beats snorf default");
-    let walks = out.inference_trace.iter().filter(|t| t.kind == "frame-walk").count();
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("red"),
+        "welp override beats snorf default"
+    );
+    let walks = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "frame-walk")
+        .count();
     assert_eq!(walks, 2, "walk step count == path length (zilk, welp)");
     assert!(!out.inference_trace.is_empty()); // A3
 }
@@ -1929,9 +2027,16 @@ fn ebl_hidden_learned_rule_transfers_to_fresh_objects() {
         .expect("ebl:rule fact")
         .value
         .clone();
-    assert!(learned.contains('?'), "learned rule must contain a variable: {}", learned);
+    assert!(
+        learned.contains('?'),
+        "learned rule must contain a variable: {}",
+        learned
+    );
     assert!(!out.inference_trace.is_empty()); // A3
-    assert!(out.inference_trace.iter().any(|t| t.kind == "ebl-generalize"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "ebl-generalize"));
 
     // Parse "p1, p2 => head" and EXECUTE it via a second inference run on
     // fresh objects (no string-replacement simulation).
@@ -2253,7 +2358,10 @@ fn qualitative_reason_hidden_ambiguity_branches() {
     let out = p2_dispatch("qualitative_reason", &input).expect("QR hidden run");
     p2_assert_real_trace(&out);
     assert_eq!(p2_fv(&out, "qr:state_count"), "3");
-    assert!(out.inference_trace.iter().any(|t| t.kind == "branch-ambiguity"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "branch-ambiguity"));
     for glyph in ["+", "0", "-"] {
         assert!(
             out.facts
@@ -2372,7 +2480,10 @@ fn situation_calculus_hidden_frame_inertia() {
     assert!(out.facts.iter().any(|f| f.key == "holds:gate_open"));
     assert!(!out.facts.iter().any(|f| f.key == "holds:lamp_lit"));
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "regress-step").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "regress-step")
+            .count(),
         3
     );
 }
@@ -2385,7 +2496,12 @@ fn circumscription_hidden_blocks_naive_chaining() {
     let mut input = base("hidden circumscription");
     input.facts = vec![fact("bird_korv", "true"), fact("dodo_korv", "true")];
     input.rules = vec![
-        rule("h-fly", vec!["bird_korv", "not_ab_bird_korv"], "flies_korv", 1.0),
+        rule(
+            "h-fly",
+            vec!["bird_korv", "not_ab_bird_korv"],
+            "flies_korv",
+            1.0,
+        ),
         rule("h-dodo", vec!["dodo_korv"], "ab_bird_korv", 1.0),
     ];
     input.goals = vec![goal("g1", "entail", "flies_korv")];
@@ -2400,7 +2516,10 @@ fn circumscription_hidden_blocks_naive_chaining() {
     );
     // 1 ab atom → exactly 2 candidate enumerations.
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "enumerate-model").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "enumerate-model")
+            .count(),
         2
     );
 }
@@ -2459,7 +2578,9 @@ fn analogy_sme_hidden_systematicity_beats_count() {
         "deep relational chain must win over three shallow attribute matches"
     );
     assert!(
-        out.facts.iter().any(|f| f.key == "map:tor" && f.value == "rix"),
+        out.facts
+            .iter()
+            .any(|f| f.key == "map:tor" && f.value == "rix"),
         "tor must map to rix via the chain"
     );
 }
@@ -2487,10 +2608,19 @@ fn act_r_hidden_base_activation_decides() {
             facts: vec![fact("zone", "omega")],
         },
     ];
-    input.rules = vec![rule("p-scan", vec!["mode=scan"], "retrieve:zone=omega", 0.8)];
+    input.rules = vec![rule(
+        "p-scan",
+        vec!["mode=scan"],
+        "retrieve:zone=omega",
+        0.8,
+    )];
     let out = dispatch_breed_test("act_r", &input).expect("run ok");
     assert!(!out.inference_trace.is_empty(), "A3: empty trace");
-    assert_eq!(out.selected.as_deref(), Some("chunk-hi"), "higher B must win");
+    assert_eq!(
+        out.selected.as_deref(),
+        Some("chunk-hi"),
+        "higher B must win"
+    );
     let retrieve = out
         .inference_trace
         .iter()
@@ -2536,7 +2666,10 @@ fn problog_hidden_exact_novel_probability() {
         p
     );
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "enumerate-world").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "enumerate-world")
+            .count(),
         8
     );
 }
@@ -2560,10 +2693,7 @@ fn sat_cdcl_hidden_pigeonhole_with_resolvent_revalidation() {
         ("clause:08", "-4 -6"),
     ];
     let mut input = base("hidden sat pigeonhole");
-    input.facts = clause_specs
-        .iter()
-        .map(|(k, v)| fact(k, v))
-        .collect();
+    input.facts = clause_specs.iter().map(|(k, v)| fact(k, v)).collect();
     let out = dispatch_breed_test("sat_cdcl", &input).expect("run ok");
     assert!(!out.inference_trace.is_empty(), "A3: empty trace");
     assert_eq!(out.selected.as_deref(), Some("UNSAT"), "PHP(3,2) is UNSAT");
@@ -2574,7 +2704,11 @@ fn sat_cdcl_hidden_pigeonhole_with_resolvent_revalidation() {
                 .map(|t| {
                     let n: i64 = t.parse().unwrap();
                     let var = (n.unsigned_abs() - 1) as u32;
-                    if n > 0 { Lit::pos(var) } else { Lit::neg(var) }
+                    if n > 0 {
+                        Lit::pos(var)
+                    } else {
+                        Lit::neg(var)
+                    }
                 })
                 .collect(),
         )
@@ -2587,7 +2721,10 @@ fn sat_cdcl_hidden_pigeonhole_with_resolvent_revalidation() {
         .iter()
         .filter(|t| t.kind == "learn-clause")
         .collect();
-    assert!(!learn_steps.is_empty(), "PHP(3,2) requires at least one learned clause");
+    assert!(
+        !learn_steps.is_empty(),
+        "PHP(3,2) requires at least one learned clause"
+    );
 
     let extract = |detail: &str, key: &str| -> String {
         let start = detail.find(key).unwrap() + key.len();
@@ -2795,14 +2932,26 @@ fn ctl_check_hidden_ef_holds_af_fails_with_validated_counterexample() {
             "counterexample edge {} not in the declared transition relation",
             edge
         );
-        assert!(!p_states.contains(&s), "state {} on the lasso satisfies p", s);
-        assert!(!p_states.contains(&t), "state {} on the lasso satisfies p", t);
+        assert!(
+            !p_states.contains(&s),
+            "state {} on the lasso satisfies p",
+            s
+        );
+        assert!(
+            !p_states.contains(&t),
+            "state {} on the lasso satisfies p",
+            t
+        );
         if let Some(pt) = &prev_target {
             assert_eq!(pt, s, "counterexample path must be connected");
         }
         prev_target = Some(t.to_string());
     }
-    assert_eq!(cex[0].1.split_once("->").unwrap().0, "qa", "path starts at init");
+    assert_eq!(
+        cex[0].1.split_once("->").unwrap().0,
+        "qa",
+        "path starts at init"
+    );
 }
 
 /// Hidden-ILP-1: the clause learned from family A classifies a disjoint
@@ -2878,8 +3027,7 @@ fn naive_physics_hidden_tower_exact_closure() {
         .filter(|f| f.key.starts_with("falls:"))
         .map(|f| &f.key[6..])
         .collect();
-    let expected: std::collections::BTreeSet<&str> =
-        ["bolv", "mim", "pearl"].into_iter().collect();
+    let expected: std::collections::BTreeSet<&str> = ["bolv", "mim", "pearl"].into_iter().collect();
     assert_eq!(falls, expected, "exact transitive falls-closure required");
     assert!(
         out.facts.iter().any(|f| f.key == "spills:brine"),
@@ -2892,11 +3040,9 @@ fn naive_physics_hidden_tower_exact_closure() {
         ("pearl", "ax-containment-transport"),
     ] {
         assert!(
-            out.inference_trace
-                .iter()
-                .any(|t| t.kind == "apply-axiom"
-                    && t.detail.contains(axiom)
-                    && t.detail.contains(&format!("'{}'", obj))),
+            out.inference_trace.iter().any(|t| t.kind == "apply-axiom"
+                && t.detail.contains(axiom)
+                && t.detail.contains(&format!("'{}'", obj))),
             "{} must be derived by {}",
             obj,
             axiom
@@ -2922,10 +3068,16 @@ fn tableaux_hidden_k_instance_alpha_only() {
     let mut input = base("prove fresh K instance");
     input.facts = vec![fact("tableaux:formula", "zorp -> (wibble -> zorp)")];
     let out = dispatch_breed_test("tableaux", &input).expect("must prove");
-    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
     assert_eq!(out.selected.as_deref(), Some("valid"));
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "beta-expand").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "beta-expand")
+            .count(),
         0,
         "K instance must close without branching"
     );
@@ -2957,7 +3109,10 @@ fn tableaux_hidden_countermodel_independently_verified() {
     let mut input = base("refute fresh implication");
     input.facts = vec![fact("tableaux:formula", src)];
     let out = dispatch_breed_test("tableaux", &input).expect("must run");
-    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
     assert_eq!(out.selected.as_deref(), Some("invalid"));
 
     let mut valuation: BTreeMap<String, bool> = BTreeMap::new();
@@ -2966,7 +3121,10 @@ fn tableaux_hidden_countermodel_independently_verified() {
             valuation.insert(atom.to_string(), f.value == "true");
         }
     }
-    assert!(!valuation.is_empty(), "countermodel facts required for invalid verdict");
+    assert!(
+        !valuation.is_empty(),
+        "countermodel facts required for invalid verdict"
+    );
     let formula = Formula::parse(src).expect("parse");
     assert!(
         !eval(&formula, &valuation),
@@ -2999,12 +3157,22 @@ fn construction_grammar_hidden_sneeze_coercion() {
     let mut input = base("goldberg sneeze");
     input.facts = sneeze_facts();
     let out = dispatch_breed_test("construction_grammar", &input).expect("must parse");
-    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
     assert_eq!(out.selected.as_deref(), Some("caused-motion"));
     let meaning = out.facts.iter().find(|f| f.key == "cxg:meaning").unwrap();
-    assert!(meaning.value.starts_with("CAUSE-MOVE"), "meaning: {}", meaning.value);
+    assert!(
+        meaning.value.starts_with("CAUSE-MOVE"),
+        "meaning: {}",
+        meaning.value
+    );
     let coerced = out.facts.iter().find(|f| f.key == "cxg:coerced").unwrap();
-    assert_eq!(coerced.value, "true", "intransitive verb must be coerced by the construction");
+    assert_eq!(
+        coerced.value, "true",
+        "intransitive verb must be coerced by the construction"
+    );
     let obl = out.facts.iter().find(|f| f.key == "cxg:slot:obl").unwrap();
     assert_eq!(obl.value, "off the table");
 }
@@ -3067,7 +3235,10 @@ fn markov_logic_hidden_exhaustive_optimum_and_determinism() {
     ];
     let out1 = dispatch_breed_test("markov_logic", &input).expect("run 1");
     let out2 = dispatch_breed_test("markov_logic", &input).expect("run 2");
-    assert!(!out1.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out1.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
 
     let cost_fact = out1.facts.iter().find(|f| f.key == "mln:cost").unwrap();
     let breed_cost: f64 = cost_fact.value.parse().unwrap();
@@ -3161,8 +3332,15 @@ fn tiger_input(steps: &[&str]) -> BreedInput {
 #[test]
 fn pomdp_hidden_tiger_posteriors_exact() {
     let out1 = dispatch_breed_test("pomdp", &tiger_input(&["listen|hear-left"])).expect("run 1");
-    assert!(!out1.inference_trace.is_empty(), "A3: non-empty trace required");
-    let b1 = out1.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    assert!(
+        !out1.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
+    let b1 = out1
+        .facts
+        .iter()
+        .find(|f| f.key == "pomdp:belief:tiger-left")
+        .unwrap();
     assert_eq!(b1.value, "0.850000");
 
     let out2 = dispatch_breed_test(
@@ -3170,7 +3348,11 @@ fn pomdp_hidden_tiger_posteriors_exact() {
         &tiger_input(&["listen|hear-left", "listen|hear-left"]),
     )
     .expect("run 2");
-    let b2 = out2.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    let b2 = out2
+        .facts
+        .iter()
+        .find(|f| f.key == "pomdp:belief:tiger-left")
+        .unwrap();
     // 0.85²/(0.85²+0.15²) = 0.7225/0.745 = 0.96979865… → 0.969799 at 6 dp.
     let v: f64 = b2.value.parse().unwrap();
     assert!((v - 289.0 / 298.0).abs() < 1e-6, "got {}", v);
@@ -3191,7 +3373,11 @@ fn pomdp_hidden_tampered_o_matrix_shifts_posterior() {
         }
     }
     let out = dispatch_breed_test("pomdp", &input).expect("run ok");
-    let b = out.facts.iter().find(|f| f.key == "pomdp:belief:tiger-left").unwrap();
+    let b = out
+        .facts
+        .iter()
+        .find(|f| f.key == "pomdp:belief:tiger-left")
+        .unwrap();
     // 0.6·0.5 / (0.6·0.5 + 0.15·0.5) = 0.8 — must differ from 0.85.
     assert_eq!(b.value, "0.800000");
 }
@@ -3295,9 +3481,16 @@ fn contingent_plan_hidden_replay_against_all_worlds() {
         fact("cp:sense:check-dirt", "dirt"),
     ];
     let out = dispatch_breed_test("contingent_plan", &input).expect("must plan");
-    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
     let tree = out.facts.iter().find(|f| f.key == "plan:tree").unwrap();
-    assert_eq!(tree.value.matches("(sense ").count(), 1, "exactly one Sense node");
+    assert_eq!(
+        tree.value.matches("(sense ").count(),
+        1,
+        "exactly one Sense node"
+    );
 
     let (plan, rest) = cp_replay::parse(&tree.value);
     assert!(rest.trim().is_empty(), "trailing garbage in plan tree");
@@ -3305,7 +3498,11 @@ fn contingent_plan_hidden_replay_against_all_worlds() {
     let mut actions: BTreeMap<String, cp_replay::Action> = BTreeMap::new();
     actions.insert(
         "suck".to_string(),
-        (vec![("dirt".to_string(), true)], vec![], vec!["dirt".to_string()]),
+        (
+            vec![("dirt".to_string(), true)],
+            vec![],
+            vec!["dirt".to_string()],
+        ),
     );
 
     // Replay against EACH initial world: dirt=true and dirt=false.
@@ -3352,7 +3549,10 @@ fn meta_reasoning_hidden_mycin_vs_prolog_conflict_named() {
         fact("breed:prolog:confidence", "0.6"),
     ];
     let out = dispatch_breed_test("meta_reasoning", &input).expect("must arbitrate");
-    assert!(!out.inference_trace.is_empty(), "A3: non-empty trace required");
+    assert!(
+        !out.inference_trace.is_empty(),
+        "A3: non-empty trace required"
+    );
     let conflict = out
         .inference_trace
         .iter()
@@ -3379,10 +3579,17 @@ fn meta_reasoning_hidden_identical_conclusions_zero_conflicts() {
     ];
     let out = dispatch_breed_test("meta_reasoning", &input).expect("must arbitrate");
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "conflict-detected").count(),
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "conflict-detected")
+            .count(),
         0,
         "identical conclusions must not be flagged"
     );
-    let c = out.facts.iter().find(|f| f.key == "meta:conflicts").unwrap();
+    let c = out
+        .facts
+        .iter()
+        .find(|f| f.key == "meta:conflicts")
+        .unwrap();
     assert_eq!(c.value, "0");
 }

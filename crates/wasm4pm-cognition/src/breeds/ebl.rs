@@ -22,11 +22,11 @@
 //! Trace kinds: `ebl-explain`(1,*) → `ebl-generalize`(1,*) →
 //! `ebl-operationalize`(1,1).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Explanation-based learning breed.
 pub struct Ebl;
@@ -223,7 +223,13 @@ fn generalize_proof(
                 let premise_term =
                     rename_vars(&Term::parse(&rule.premise[i]), &format!("_g{}", depth));
                 let gen_subgoal = apply_subst_term(&premise_term, gen_subst);
-                leaves.extend(generalize_proof(child, &gen_subgoal, gen_subst, trace, depth + 1));
+                leaves.extend(generalize_proof(
+                    child,
+                    &gen_subgoal,
+                    gen_subst,
+                    trace,
+                    depth + 1,
+                ));
             }
             leaves
         }
@@ -377,12 +383,22 @@ mod tests {
         let input = BreedInput {
             intent: "learn safe_to_stack".to_string(),
             facts: vec![
-                Fact { key: "weight(box1,light)".to_string(), value: "true".to_string() },
-                Fact { key: "weight(box2,heavy)".to_string(), value: "true".to_string() },
+                Fact {
+                    key: "weight(box1,light)".to_string(),
+                    value: "true".to_string(),
+                },
+                Fact {
+                    key: "weight(box2,heavy)".to_string(),
+                    value: "true".to_string(),
+                },
             ],
             rules: vec![
                 make_rule("r_safe", vec!["lighter(?x,?y)"], "safe_to_stack(?x,?y)"),
-                make_rule("r_lighter", vec!["weight(?x,light)", "weight(?y,heavy)"], "lighter(?x,?y)"),
+                make_rule(
+                    "r_lighter",
+                    vec!["weight(?x,light)", "weight(?y,heavy)"],
+                    "lighter(?x,?y)",
+                ),
             ],
             goals: vec![make_goal("g1", "safe_to_stack(box1,box2)", "true")],
             candidates: vec![],
@@ -390,16 +406,34 @@ mod tests {
             state: vec![],
         };
         let out = Ebl.run(&input).unwrap();
-        let rule_fact = out.facts.iter().find(|f| f.key == "ebl:rule")
+        let rule_fact = out
+            .facts
+            .iter()
+            .find(|f| f.key == "ebl:rule")
             .expect("ebl:rule fact must be emitted");
         // Generalization proof: learned rule contains weight( and safe_to_stack(
-        assert!(rule_fact.value.contains("weight("), "learned rule must mention weight(");
-        assert!(rule_fact.value.contains("safe_to_stack("), "learned rule must mention safe_to_stack(");
+        assert!(
+            rule_fact.value.contains("weight("),
+            "learned rule must mention weight("
+        );
+        assert!(
+            rule_fact.value.contains("safe_to_stack("),
+            "learned rule must mention safe_to_stack("
+        );
         // Anti-memorization: training constants must be replaced by variables
-        assert!(!rule_fact.value.contains("box1"), "box1 must not appear — that is memorization");
-        assert!(!rule_fact.value.contains("box2"), "box2 must not appear — that is memorization");
+        assert!(
+            !rule_fact.value.contains("box1"),
+            "box1 must not appear — that is memorization"
+        );
+        assert!(
+            !rule_fact.value.contains("box2"),
+            "box2 must not appear — that is memorization"
+        );
         // Must contain at least one variable
-        assert!(rule_fact.value.contains('?'), "learned rule must contain a variable");
+        assert!(
+            rule_fact.value.contains('?'),
+            "learned rule must contain a variable"
+        );
     }
 
     #[test]
@@ -425,14 +459,15 @@ mod tests {
             candidates: vec![],
             facts: vec![],
             cases: vec![],
-            rules: vec![
-                make_rule("loop", vec!["p(?x)"], "p(?x)"),
-            ],
+            rules: vec![make_rule("loop", vec!["p(?x)"], "p(?x)")],
             goals: vec![make_goal("g1", "p(a)", "true")],
             state: vec![],
         };
         let res = ebl.run(&input);
         assert!(res.is_err());
-        assert_eq!(res.unwrap_err().message, "ebl explain phase failed: could not prove goal");
+        assert_eq!(
+            res.unwrap_err().message,
+            "ebl explain phase failed: could not prove goal"
+        );
     }
 }

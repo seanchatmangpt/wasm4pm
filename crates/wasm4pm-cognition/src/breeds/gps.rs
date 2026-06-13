@@ -11,12 +11,12 @@
 //! `rule.conclusion` is `;`-separated effects, atoms are `pred=val`.
 //! `input.goals` and `input.state` carry the planning problem.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
 use std::collections::HashSet;
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// GPS planner.
 pub struct Gps;
@@ -335,8 +335,12 @@ mod tests {
             Some("op:move_right"),
             "GPS must apply op:move_right to close position=right gap (means-ends)"
         );
-        assert!(out.inference_trace.iter().any(|t| t.kind == "apply-operator" && t.detail == "op:move_right"),
-            "apply-operator trace step for op:move_right must exist");
+        assert!(
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "apply-operator" && t.detail == "op:move_right"),
+            "apply-operator trace step for op:move_right must exist"
+        );
     }
 
     /// Rank-2: with multiple goals, all pre-satisfied -> Some(""); planning

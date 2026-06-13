@@ -136,7 +136,9 @@ impl BreedOracle for Cbr {
                 best_sim
             ));
         }
-        let reuse = tq.detail_of("reuse-adapt").ok_or("uo: missing reuse-adapt step")?;
+        let reuse = tq
+            .detail_of("reuse-adapt")
+            .ok_or("uo: missing reuse-adapt step")?;
         if !reuse.starts_with(best_id) {
             return Err(format!(
                 "uo: reused case '{}' is not the max-similarity case '{}'",
@@ -156,7 +158,10 @@ impl BreedAdversary for CheatCbr {
             BreedId::Cbr,
             &[
                 ("build-index", "index built for 2 cases"),
-                ("retrieve-candidates", "retrieved 2 candidates from 2 total cases"),
+                (
+                    "retrieve-candidates",
+                    "retrieved 2 candidates from 2 total cases",
+                ),
                 ("score-case", "uo_case_loam sim=0.100 score=0.090"),
                 ("score-case", "uo_case_clay sim=0.900 score=0.720"),
                 // Greedy: reuse the first case even though clay scored higher.
@@ -215,16 +220,29 @@ impl BreedOracle for Ilp {
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
         // Distinguishing assertion: the learned clause contains VARIABLES
         // (V0, V1, ...), not the training constants uo_ax / uo_bx.
-        let d = tq.detail_of("emit-clause").ok_or("uo: missing emit-clause step")?;
+        let d = tq
+            .detail_of("emit-clause")
+            .ok_or("uo: missing emit-clause step")?;
         if !d.contains("uo_glim(V") || !d.contains(":-") {
-            return Err(format!("uo: emit-clause is not a variabilized clause: '{}'", d));
+            return Err(format!(
+                "uo: emit-clause is not a variabilized clause: '{}'",
+                d
+            ));
         }
         if d.contains("uo_ax") || d.contains("uo_bx") {
-            return Err(format!("uo: learned clause memorizes training constants: '{}'", d));
+            return Err(format!(
+                "uo: learned clause memorizes training constants: '{}'",
+                d
+            ));
         }
-        let g = tq.detail_of("score-gain").ok_or("uo: missing score-gain step")?;
+        let g = tq
+            .detail_of("score-gain")
+            .ok_or("uo: missing score-gain step")?;
         if uo_num_after(g, "gain=").is_none() {
-            return Err(format!("uo: score-gain has no numeric gain= value: '{}'", g));
+            return Err(format!(
+                "uo: score-gain has no numeric gain= value: '{}'",
+                g
+            ));
         }
         Ok(())
     }
@@ -305,14 +323,25 @@ impl BreedOracle for Ebl {
             .detail_of("ebl-operationalize")
             .ok_or("uo: missing ebl-operationalize step")?;
         if !d.contains("=>") || !d.contains("uo_grip(?") || !d.contains("uo_liftable(?") {
-            return Err(format!("uo: operationalized rule is not variabilized: '{}'", d));
+            return Err(format!(
+                "uo: operationalized rule is not variabilized: '{}'",
+                d
+            ));
         }
         if d.contains("uo_tool7") {
-            return Err(format!("uo: rule retains the training constant uo_tool7: '{}'", d));
+            return Err(format!(
+                "uo: rule retains the training constant uo_tool7: '{}'",
+                d
+            ));
         }
-        let e = tq.detail_of("ebl-explain").ok_or("uo: missing ebl-explain step")?;
+        let e = tq
+            .detail_of("ebl-explain")
+            .ok_or("uo: missing ebl-explain step")?;
         if !e.contains("uo_grip(uo_tool7)") && !e.contains("rule: uo_r1") {
-            return Err(format!("uo: explanation does not ground the proof: '{}'", e));
+            return Err(format!(
+                "uo: explanation does not ground the proof: '{}'",
+                e
+            ));
         }
         Ok(())
     }
@@ -330,7 +359,10 @@ impl BreedAdversary for CheatEbl {
                 ("ebl-explain", "fact: uo_grip(uo_tool7)"),
                 ("ebl-generalize", "rule: uo_r1"),
                 // Table lookup: rule still names the training constant.
-                ("ebl-operationalize", "uo_grip(uo_tool7) => uo_liftable(uo_tool7)"),
+                (
+                    "ebl-operationalize",
+                    "uo_grip(uo_tool7) => uo_liftable(uo_tool7)",
+                ),
             ],
         )
     }
@@ -385,7 +417,9 @@ impl BreedOracle for VersionSpace {
         let mut s_updated = false;
         let mut g_specialized = false;
         for i in 0..n {
-            let d = tq.detail_kth("vs-update", i).ok_or("uo: missing vs-update detail")?;
+            let d = tq
+                .detail_kth("vs-update", i)
+                .ok_or("uo: missing vs-update detail")?;
             if d.contains("S := <uo_red,uo_big>") {
                 s_updated = true;
             }
@@ -399,9 +433,14 @@ impl BreedOracle for VersionSpace {
         if !g_specialized {
             return Err("uo: no G-boundary specialization '-> <uo_red,?>' recorded".to_string());
         }
-        let v = tq.detail_of("vs-verdict").ok_or("uo: missing vs-verdict step")?;
+        let v = tq
+            .detail_of("vs-verdict")
+            .ok_or("uo: missing vs-verdict step")?;
         if !v.contains("<uo_red,uo_big>") || !v.contains("G={<uo_red,?>}") {
-            return Err(format!("uo: verdict does not carry final boundaries: '{}'", v));
+            return Err(format!(
+                "uo: verdict does not carry final boundaries: '{}'",
+                v
+            ));
         }
         Ok(())
     }
@@ -434,11 +473,17 @@ impl BreedAdversary for CheatVersionSpace {
 fn sme_input(target_hub: &str) -> BreedInput {
     let mut input = base("uo_map_flow_analogy");
     input.facts = vec![
-        fact("base:0", "(uo_cause (uo_press uo_pump uo_pipe) (uo_flow uo_pipe))"),
+        fact(
+            "base:0",
+            "(uo_cause (uo_press uo_pump uo_pipe) (uo_flow uo_pipe))",
+        ),
         fact("base:1", "(uo_hum uo_pump)"),
         fact(
             "target:0",
-            &format!("(uo_cause (uo_press uo_fan {h}) (uo_flow {h}))", h = target_hub),
+            &format!(
+                "(uo_cause (uo_press uo_fan {h}) (uo_flow {h}))",
+                h = target_hub
+            ),
         ),
     ];
     input
@@ -495,9 +540,14 @@ impl BreedOracle for AnalogySme {
         if !found {
             return Err("uo: no local-match for base:0 <-> target:0 recorded".to_string());
         }
-        let m = tq.detail_of("merge-gmap").ok_or("uo: missing merge-gmap step")?;
+        let m = tq
+            .detail_of("merge-gmap")
+            .ok_or("uo: missing merge-gmap step")?;
         if !m.contains("base:0 <-> target:0") {
-            return Err(format!("uo: gmap did not merge the structural match: '{}'", m));
+            return Err(format!(
+                "uo: gmap did not merge the structural match: '{}'",
+                m
+            ));
         }
         Ok(())
     }
@@ -516,7 +566,10 @@ impl BreedAdversary for CheatAnalogySme {
                 ("parse-expr", "target:0 = (uo_cause ...)"),
                 // Partial: only a flat depth-1 attribute match.
                 ("local-match", "base:1 <-> target:0 (systematicity=1)"),
-                ("merge-gmap", "merged base:1 <-> target:0 (gmap score now 1)"),
+                (
+                    "merge-gmap",
+                    "merged base:1 <-> target:0 (gmap score now 1)",
+                ),
             ],
         )
     }
@@ -530,8 +583,20 @@ impl BreedAdversary for CheatAnalogySme {
 fn episodic_input(cue_t: i64, dawn_scent: &str, dusk_scent: &str) -> BreedInput {
     let mut input = base("uo_recall_walk");
     input.cases = vec![
-        case("uo_ep_dawn", "uo_walk", "uo_arch_mem", 0.7, vec![fact("uo_scent", dawn_scent)]),
-        case("uo_ep_dusk", "uo_walk", "uo_arch_mem", 0.7, vec![fact("uo_scent", dusk_scent)]),
+        case(
+            "uo_ep_dawn",
+            "uo_walk",
+            "uo_arch_mem",
+            0.7,
+            vec![fact("uo_scent", dawn_scent)],
+        ),
+        case(
+            "uo_ep_dusk",
+            "uo_walk",
+            "uo_arch_mem",
+            0.7,
+            vec![fact("uo_scent", dusk_scent)],
+        ),
     ];
     input.facts = vec![
         fact("episode:uo_ep_dawn:t", "10"),
@@ -583,7 +648,10 @@ impl BreedOracle for EpisodicMemory {
         // arithmetically consistent with its components (not recency-only).
         let n = tq.count_of("score-episode");
         if n < 2 {
-            return Err(format!("uo: expected >= 2 score-episode steps, found {}", n));
+            return Err(format!(
+                "uo: expected >= 2 score-episode steps, found {}",
+                n
+            ));
         }
         let mut best: Option<(f64, String)> = None;
         for i in 0..n {
@@ -628,11 +696,23 @@ impl BreedAdversary for CheatEpisodicMemory {
         uo_cheat_out(
             BreedId::EpisodicMemory,
             &[
-                ("encode-episode", "'uo_ep_dawn' t=10 (1 atoms, salience=0.70)"),
-                ("encode-episode", "'uo_ep_dusk' t=50 (1 atoms, salience=0.70)"),
+                (
+                    "encode-episode",
+                    "'uo_ep_dawn' t=10 (1 atoms, salience=0.70)",
+                ),
+                (
+                    "encode-episode",
+                    "'uo_ep_dusk' t=50 (1 atoms, salience=0.70)",
+                ),
                 ("present-cue", "cue t=48 with 1 atoms"),
-                ("score-episode", "'uo_ep_dawn' jaccard=0.8000 temporal=0.1000 score=0.9000"),
-                ("score-episode", "'uo_ep_dusk' jaccard=0.1000 temporal=0.3333 score=0.4333"),
+                (
+                    "score-episode",
+                    "'uo_ep_dawn' jaccard=0.8000 temporal=0.1000 score=0.9000",
+                ),
+                (
+                    "score-episode",
+                    "'uo_ep_dusk' jaccard=0.1000 temporal=0.3333 score=0.4333",
+                ),
                 // Greedy: picks the most recent episode, ignoring the scores.
                 ("recall", "recalled 'uo_ep_dusk' (score=0.4333)"),
                 ("decision", "episode 'uo_ep_dusk' wins over 2 candidates"),
@@ -690,24 +770,32 @@ impl BreedOracle for ScriptSam {
         // Distinguishing assertion: the airport script is selected on real
         // overlap, the gap scenes between checkin and fly are inferred with
         // the bound actor, and the summary counts agree.
-        let s = tq.detail_of("select-script").ok_or("uo: missing select-script step")?;
+        let s = tq
+            .detail_of("select-script")
+            .ok_or("uo: missing select-script step")?;
         if !s.contains("'airport' (overlap 2/2") {
             return Err(format!("uo: wrong script or overlap: '{}'", s));
         }
         let gaps = tq.count_of("infer-gap");
         if gaps != 2 {
-            return Err(format!("uo: expected 2 inferred gap scenes, found {}", gaps));
+            return Err(format!(
+                "uo: expected 2 inferred gap scenes, found {}",
+                gaps
+            ));
         }
         for scene in ["security", "board"] {
             let want = format!("scene '{}' inferred (filler: uo_pia)", scene);
             let ok = (0..gaps).any(|i| {
-                tq.detail_kth("infer-gap", i).is_some_and(|d| d.contains(&want))
+                tq.detail_kth("infer-gap", i)
+                    .is_some_and(|d| d.contains(&want))
             });
             if !ok {
                 return Err(format!("uo: missing inferred gap '{}'", want));
             }
         }
-        let b = tq.detail_of("bind-role").ok_or("uo: missing bind-role step")?;
+        let b = tq
+            .detail_of("bind-role")
+            .ok_or("uo: missing bind-role step")?;
         if !b.contains("passenger := uo_pia") {
             return Err(format!("uo: wrong role binding: '{}'", b));
         }
@@ -734,7 +822,10 @@ impl BreedAdversary for CheatScriptSam {
                 ("align-event", "'pay' -> scene 3 of 'restaurant'"),
                 ("infer-gap", "scene 'order' inferred (filler: uo_pia)"),
                 ("infer-gap", "scene 'eat' inferred (filler: uo_pia)"),
-                ("summary", "script 'restaurant': 2 aligned, 2 inferred, 1 role binding(s)"),
+                (
+                    "summary",
+                    "script 'restaurant': 2 aligned, 2 inferred, 1 role binding(s)",
+                ),
             ],
         )
     }
@@ -814,7 +905,10 @@ impl BreedOracle for QualitativeReason {
                 .detail_kth("envision-state", i)
                 .ok_or("uo: missing envision-state detail")?;
             if !d.contains("uo_dlev:") {
-                return Err(format!("uo: state omits the branched variable uo_dlev: '{}'", d));
+                return Err(format!(
+                    "uo: state omits the branched variable uo_dlev: '{}'",
+                    d
+                ));
             }
         }
         Ok(())
@@ -895,7 +989,9 @@ impl BreedOracle for NaivePhysics {
         let mut saw_cup = false;
         let mut saw_brew = false;
         for i in 0..n {
-            let d = tq.detail_kth("predict", i).ok_or("uo: missing predict detail")?;
+            let d = tq
+                .detail_kth("predict", i)
+                .ok_or("uo: missing predict detail")?;
             if d.starts_with("falls:") {
                 falls += 1;
                 saw_cup |= d == "falls:uo_cup";
@@ -911,7 +1007,9 @@ impl BreedOracle for NaivePhysics {
         if !saw_brew {
             return Err("uo: missing prediction 'spills:uo_brew' from the falling cup".to_string());
         }
-        let dec = tq.detail_of("decision").ok_or("uo: missing decision step")?;
+        let dec = tq
+            .detail_of("decision")
+            .ok_or("uo: missing decision step")?;
         let want = format!("{} objects fall, {} liquids spill", falls, spills);
         if dec != want {
             return Err(format!(
@@ -939,7 +1037,10 @@ impl BreedAdversary for CheatNaivePhysics {
         uo_cheat_out(
             BreedId::NaivePhysics,
             &[
-                ("load-scene", "3 objects, 2 support relations, 1 liquids, removed: {uo_shelf}"),
+                (
+                    "load-scene",
+                    "3 objects, 2 support relations, 1 liquids, removed: {uo_shelf}",
+                ),
                 ("apply-axiom", "ax-support: 'uo_cup' is stable"),
                 // Table answer: nothing falls, nothing spills.
                 ("predict", "none"),
@@ -1008,7 +1109,10 @@ impl BreedOracle for MetaReasoning {
             .detail_of("conflict-detected")
             .ok_or("uo: missing conflict-detected step")?;
         if !c.contains("uo_alpha vs uo_beta on 'uo_route'") || !c.contains("differing values") {
-            return Err(format!("uo: conflict not attributed to the report pair: '{}'", c));
+            return Err(format!(
+                "uo: conflict not attributed to the report pair: '{}'",
+                c
+            ));
         }
         let v = tq.detail_of("vote").ok_or("uo: missing vote step")?;
         if !v.contains("uo_north=0.800000")
@@ -1019,7 +1123,10 @@ impl BreedOracle for MetaReasoning {
         }
         let r = tq.detail_of("resolve").ok_or("uo: missing resolve step")?;
         if !r.contains("selected uo_route=uo_north") {
-            return Err(format!("uo: resolution does not select uo_route=uo_north: '{}'", r));
+            return Err(format!(
+                "uo: resolution does not select uo_route=uo_north: '{}'",
+                r
+            ));
         }
         Ok(())
     }
@@ -1033,12 +1140,21 @@ impl BreedAdversary for CheatMetaReasoning {
         uo_cheat_out(
             BreedId::MetaReasoning,
             &[
-                ("ingest-report", "uo_alpha: uo_route=uo_north (confidence 0.800000)"),
-                ("ingest-report", "uo_beta: uo_route=uo_south (confidence 0.550000)"),
+                (
+                    "ingest-report",
+                    "uo_alpha: uo_route=uo_north (confidence 0.800000)",
+                ),
+                (
+                    "ingest-report",
+                    "uo_beta: uo_route=uo_south (confidence 0.550000)",
+                ),
                 // Always the same verdict, no real conflict analysis or vote.
                 ("conflict-detected", "none"),
                 ("vote", "key 'uo_route': unanimous"),
-                ("resolve", "0 conflict(s); 1 decision key(s); selected uo_route=uo_north"),
+                (
+                    "resolve",
+                    "0 conflict(s); 1 decision key(s); selected uo_route=uo_north",
+                ),
             ],
         )
     }

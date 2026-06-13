@@ -6,9 +6,9 @@
 //! the v2 chain and adds a `PhantomData` tag so cross-breed substitution is a
 //! compile error.
 
-use std::marker::PhantomData;
 use crate::autosystems::receipt::{ActorSigner, ReceiptChain};
 use crate::breeds::{BreedId, CognitionBreed, Receipt};
+use std::marker::PhantomData;
 
 /// A compile-time-typed wrapper around the v2 `ReceiptChain`.
 ///
@@ -99,15 +99,25 @@ impl<B: CognitionBreed> TypedReceiptChain<B> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{BreedId, CognitionBreed, BreedInput, BreedOutput, BreedError, Receipt};
+    use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Receipt};
 
     struct MockBreed;
     impl CognitionBreed for MockBreed {
-        fn id(&self) -> BreedId { BreedId::LtlMonitor }
-        fn capabilities(&self) -> Vec<String> { vec![] }
-        fn preconditions(&self, _: &BreedInput) -> Result<(), String> { Ok(()) }
-        fn run(&self, _: &BreedInput) -> Result<BreedOutput, BreedError> { unimplemented!() }
-        fn postconditions(&self, _: &BreedInput, _: &BreedOutput) -> Result<(), String> { Ok(()) }
+        fn id(&self) -> BreedId {
+            BreedId::LtlMonitor
+        }
+        fn capabilities(&self) -> Vec<String> {
+            vec![]
+        }
+        fn preconditions(&self, _: &BreedInput) -> Result<(), String> {
+            Ok(())
+        }
+        fn run(&self, _: &BreedInput) -> Result<BreedOutput, BreedError> {
+            unimplemented!()
+        }
+        fn postconditions(&self, _: &BreedInput, _: &BreedOutput) -> Result<(), String> {
+            Ok(())
+        }
     }
 
     #[test]
@@ -117,8 +127,16 @@ mod tests {
             got: BreedId::NaivePhysics,
         };
         let err_str = err.to_string();
-        assert!(err_str.contains("expected ltl_monitor") || err_str.contains("expected LtlMonitor") || err_str.contains("expected"));
-        assert!(err_str.contains("got naive_physics") || err_str.contains("got NaivePhysics") || err_str.contains("got"));
+        assert!(
+            err_str.contains("expected ltl_monitor")
+                || err_str.contains("expected LtlMonitor")
+                || err_str.contains("expected")
+        );
+        assert!(
+            err_str.contains("got naive_physics")
+                || err_str.contains("got NaivePhysics")
+                || err_str.contains("got")
+        );
     }
 
     #[test]
@@ -136,7 +154,11 @@ mod tests {
     fn invariant_chain_length() {
         let breed = MockBreed;
         let chain = TypedReceiptChain::new(&breed);
-        assert_eq!(chain.len() == 0, chain.is_empty(), "Length matches is_empty invariant");
+        assert_eq!(
+            chain.len() == 0,
+            chain.is_empty(),
+            "Length matches is_empty invariant"
+        );
     }
 
     #[cfg(feature = "actor-ed25519")]

@@ -36,6 +36,6 @@
     "state": []
   },
   "expected": {
-    "principles": "40,26"
+    "principles": "principles=40,26"
   }
 }

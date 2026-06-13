@@ -16,10 +16,10 @@ use std::collections::BTreeSet;
 
 use crate::breeds::support::closure::{forward_close, HornRule};
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Maximum number of distinct atoms (2^12 = 4096 candidate sets).
 const MAX_ATOMS: usize = 12;
@@ -267,11 +267,7 @@ impl CognitionBreed for Asp {
         {
             return Err("final step must be 'answer-set'".to_string());
         }
-        if !output
-            .facts
-            .iter()
-            .any(|f| f.key == "asp:answer_set_count")
-        {
+        if !output.facts.iter().any(|f| f.key == "asp:answer_set_count") {
             return Err("missing asp:answer_set_count fact".to_string());
         }
         Ok(())
@@ -331,7 +327,9 @@ mod tests {
     /// Odd loop {a :- not a.} has zero stable models.
     #[test]
     fn odd_loop_zero_stable_models() {
-        let out = Asp.run(&input(vec![rule("r1", vec!["not a"], "a")])).unwrap();
+        let out = Asp
+            .run(&input(vec![rule("r1", vec!["not a"], "a")]))
+            .unwrap();
         let count = out
             .facts
             .iter()
@@ -371,13 +369,17 @@ mod tests {
 
     #[test]
     fn refuses_oversized_universe() {
-        let rules: Vec<Rule> = (0..13).map(|i| rule(&format!("f{}", i), vec![], &format!("a{}", i))).collect();
+        let rules: Vec<Rule> = (0..13)
+            .map(|i| rule(&format!("f{}", i), vec![], &format!("a{}", i)))
+            .collect();
         assert!(Asp.preconditions(&input(rules)).is_err());
     }
 
     #[test]
     fn refuses_naf_in_head() {
-        assert!(Asp.preconditions(&input(vec![rule("r1", vec!["a"], "not b")])).is_err());
+        assert!(Asp
+            .preconditions(&input(vec![rule("r1", vec!["a"], "not b")]))
+            .is_err());
     }
 
     #[test]
@@ -393,11 +395,15 @@ mod tests {
         // M={a} should be a stable model.
         // M={a,b} should not be, because reduct P^{a,b} drops r1, least model is {a} != {a,b}.
         // If the reduct logic incorrectly keeps r1 when 'not a' fails, we'd get {a,b} as stable.
-        let out = Asp.run(&input(vec![
-            rule("f1", vec![], "a"),
-            rule("r1", vec!["not a"], "b"),
-        ])).unwrap();
-        let sets: Vec<&str> = out.facts.iter()
+        let out = Asp
+            .run(&input(vec![
+                rule("f1", vec![], "a"),
+                rule("r1", vec!["not a"], "b"),
+            ]))
+            .unwrap();
+        let sets: Vec<&str> = out
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("asp:answer_set:"))
             .map(|f| f.value.as_str())
             .collect();
@@ -409,22 +415,26 @@ mod tests {
         // The stable models of P should be invariant to the permutation of its rules.
         let r1 = rule("r1", vec!["not b"], "a");
         let r2 = rule("r2", vec!["not a"], "b");
-        
+
         let out1 = Asp.run(&input(vec![r1.clone(), r2.clone()])).unwrap();
         let out2 = Asp.run(&input(vec![r2, r1])).unwrap();
-        
-        let mut sets1: Vec<&str> = out1.facts.iter()
+
+        let mut sets1: Vec<&str> = out1
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("asp:answer_set:"))
             .map(|f| f.value.as_str())
             .collect();
-        let mut sets2: Vec<&str> = out2.facts.iter()
+        let mut sets2: Vec<&str> = out2
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("asp:answer_set:"))
             .map(|f| f.value.as_str())
             .collect();
-        
+
         sets1.sort();
         sets2.sort();
-        
+
         assert_eq!(sets1, sets2);
     }
 }

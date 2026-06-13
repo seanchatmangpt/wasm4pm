@@ -23,7 +23,9 @@
 use crate::breeds::support::breed_class::OptimizerBreed;
 use crate::breeds::support::rng::seeded_rng;
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use rand::Rng;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -49,7 +51,11 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
     let mut episodes = 200usize;
     for f in &input.facts {
         if f.key == "mdp:gamma" {
-            gamma = Some(f.value.parse().map_err(|_| "mdp:gamma is not a number".to_string())?);
+            gamma = Some(
+                f.value
+                    .parse()
+                    .map_err(|_| "mdp:gamma is not a number".to_string())?,
+            );
         } else if f.key == "mdp:start" {
             start = Some(f.value.clone());
         } else if let Some(s) = f.key.strip_prefix("mdp:terminal:") {
@@ -71,7 +77,10 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
             }
             let sum: f64 = nexts.iter().map(|(_, p)| p).sum();
             if (sum - 1.0).abs() > 1e-6 {
-                return Err(format!("transition probabilities for '{}' sum to {}", f.key, sum));
+                return Err(format!(
+                    "transition probabilities for '{}' sum to {}",
+                    f.key, sum
+                ));
             }
             transitions.insert((s.to_string(), a.to_string()), nexts);
         } else if let Some(rest) = f.key.strip_prefix("mdp:r:") {
@@ -80,10 +89,15 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
                 .ok_or_else(|| format!("malformed reward key '{}'", f.key))?;
             rewards.insert(
                 (s.to_string(), a.to_string()),
-                f.value.parse().map_err(|_| format!("bad reward '{}' in '{}'", f.value, f.key))?,
+                f.value
+                    .parse()
+                    .map_err(|_| format!("bad reward '{}' in '{}'", f.value, f.key))?,
             );
         } else if f.key == "rl:episodes" {
-            episodes = f.value.parse().map_err(|_| "rl:episodes is not an integer".to_string())?;
+            episodes = f
+                .value
+                .parse()
+                .map_err(|_| "rl:episodes is not an integer".to_string())?;
         }
     }
     let gamma = gamma.ok_or("rl_symbolic requires mdp:gamma")?;
@@ -157,7 +171,13 @@ impl CognitionBreed for RlSymbolic {
             .transitions
             .keys()
             .map(|(s, _)| s.clone())
-            .chain(model.transitions.values().flatten().map(|(ns, _)| ns.clone()))
+            .chain(
+                model
+                    .transitions
+                    .values()
+                    .flatten()
+                    .map(|(ns, _)| ns.clone()),
+            )
             .collect();
         push(
             &mut trace,
@@ -247,7 +267,15 @@ impl CognitionBreed for RlSymbolic {
                     push(
                         &mut trace,
                         "q-update",
-                        format!("Q({},{}) {:.4} -> {:.4} (r={}, s'={})", s, a, old, old + delta, r, ns),
+                        format!(
+                            "Q({},{}) {:.4} -> {:.4} (r={}, s'={})",
+                            s,
+                            a,
+                            old,
+                            old + delta,
+                            r,
+                            ns
+                        ),
                     );
                 }
                 s = ns;
@@ -280,7 +308,11 @@ impl CognitionBreed for RlSymbolic {
                     best = a.clone();
                 }
             }
-            push(&mut trace, "extract-policy", format!("pi({}) = {} (Q={:.4})", s, best, best_q));
+            push(
+                &mut trace,
+                "extract-policy",
+                format!("pi({}) = {} (Q={:.4})", s, best, best_q),
+            );
             facts.push(Fact {
                 key: format!("policy:{}", s),
                 value: best.clone(),
@@ -335,13 +367,30 @@ mod tests {
 
     fn make_mdp(gamma: &str, start: &str, extras: Vec<(&str, &str)>) -> BreedInput {
         let mut facts = vec![
-            Fact { key: "mdp:gamma".to_string(), value: gamma.to_string() },
-            Fact { key: "mdp:start".to_string(), value: start.to_string() },
+            Fact {
+                key: "mdp:gamma".to_string(),
+                value: gamma.to_string(),
+            },
+            Fact {
+                key: "mdp:start".to_string(),
+                value: start.to_string(),
+            },
         ];
         for (k, v) in extras {
-            facts.push(Fact { key: k.to_string(), value: v.to_string() });
+            facts.push(Fact {
+                key: k.to_string(),
+                value: v.to_string(),
+            });
         }
-        BreedInput { facts, candidates: vec![], cases: vec![], rules: vec![], goals: vec![], intent: String::new(), state: vec![] }
+        BreedInput {
+            facts,
+            candidates: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            intent: String::new(),
+            state: vec![],
+        }
     }
 
     #[test]
@@ -362,36 +411,45 @@ mod tests {
 
     #[test]
     fn refuses_over_512_episodes() {
-        let input = make_mdp("0.9", "s1", vec![
-            ("mdp:t:s1:a", "s2"),
-            ("rl:episodes", "513")
-        ]);
+        let input = make_mdp(
+            "0.9",
+            "s1",
+            vec![("mdp:t:s1:a", "s2"), ("rl:episodes", "513")],
+        );
         let res = RlSymbolic.run(&input);
         assert!(res.unwrap_err().message.contains("outside 1..=512"));
     }
 
     #[test]
     fn refuses_bad_probabilities() {
-        let input = make_mdp("0.9", "s1", vec![
-            ("mdp:t:s1:a", "s2:0.5,s3:0.4")
-        ]);
+        let input = make_mdp("0.9", "s1", vec![("mdp:t:s1:a", "s2:0.5,s3:0.4")]);
         let res = RlSymbolic.run(&input);
         assert!(res.unwrap_err().message.contains("sum to 0.9"));
     }
 
     #[test]
     fn falsification_gate_q_learning_optimal_path() {
-        let input = make_mdp("0.9", "s1", vec![
-            ("mdp:terminal:end", ""),
-            ("mdp:t:s1:a2", "s2"),
-            ("mdp:t:s1:a3", "s3"),
-            ("mdp:t:s2:go", "end"),
-            ("mdp:t:s3:go", "end"),
-            ("mdp:r:s2:go", "10"),
-            ("mdp:r:s3:go", "5"),
-        ]);
+        let input = make_mdp(
+            "0.9",
+            "s1",
+            vec![
+                ("mdp:terminal:end", ""),
+                ("mdp:t:s1:a2", "s2"),
+                ("mdp:t:s1:a3", "s3"),
+                ("mdp:t:s2:go", "end"),
+                ("mdp:t:s3:go", "end"),
+                ("mdp:r:s2:go", "10"),
+                ("mdp:r:s3:go", "5"),
+            ],
+        );
         let out = RlSymbolic.run(&input).expect("should succeed");
-        let policy_s1 = out.facts.iter().find(|f| f.key == "policy:s1").expect("no policy for s1").value.clone();
+        let policy_s1 = out
+            .facts
+            .iter()
+            .find(|f| f.key == "policy:s1")
+            .expect("no policy for s1")
+            .value
+            .clone();
         assert_eq!(policy_s1, "a2");
         assert_eq!(out.selected.unwrap(), "a2");
     }
@@ -402,39 +460,72 @@ mod tests {
     /// of these will fall outside tolerance=0.05.
     #[test]
     fn paper_fixture_q_values_converge_to_bellman_fixed_point() {
-        let input = make_mdp("0.9", "s0", vec![
-            ("mdp:terminal:goal", "true"),
-            ("mdp:t:s0:go", "goal"),
-            ("mdp:t:s0:stay", "s0"),
-            ("mdp:r:s0:go", "1.0"),
-            ("rl:episodes", "300"),
-        ]);
+        let input = make_mdp(
+            "0.9",
+            "s0",
+            vec![
+                ("mdp:terminal:goal", "true"),
+                ("mdp:t:s0:go", "goal"),
+                ("mdp:t:s0:stay", "s0"),
+                ("mdp:r:s0:go", "1.0"),
+                ("rl:episodes", "300"),
+            ],
+        );
         let out = RlSymbolic.run(&input).expect("should succeed");
         // Policy must choose "go"
-        let policy_s0 = out.facts.iter().find(|f| f.key == "policy:s0")
-            .expect("no policy:s0 fact").value.clone();
+        let policy_s0 = out
+            .facts
+            .iter()
+            .find(|f| f.key == "policy:s0")
+            .expect("no policy:s0 fact")
+            .value
+            .clone();
         assert_eq!(policy_s0, "go", "greedy policy must be 'go'");
         // Q(s0,go) must converge near 1.0
-        let q_go: f64 = out.facts.iter().find(|f| f.key == "q:s0:go")
-            .expect("no q:s0:go fact").value.parse().unwrap();
-        assert!((q_go - 1.0).abs() < 0.05,
-            "Q*(s0,go) = 1.0 but got {:.4} (Watkins & Dayan 1992)", q_go);
+        let q_go: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == "q:s0:go")
+            .expect("no q:s0:go fact")
+            .value
+            .parse()
+            .unwrap();
+        assert!(
+            (q_go - 1.0).abs() < 0.05,
+            "Q*(s0,go) = 1.0 but got {:.4} (Watkins & Dayan 1992)",
+            q_go
+        );
         // Q(s0,stay) must converge near 0.9
-        let q_stay: f64 = out.facts.iter().find(|f| f.key == "q:s0:stay")
-            .expect("no q:s0:stay fact").value.parse().unwrap();
-        assert!((q_stay - 0.9).abs() < 0.05,
-            "Q*(s0,stay) = 0.9 but got {:.4} (Watkins & Dayan 1992)", q_stay);
+        let q_stay: f64 = out
+            .facts
+            .iter()
+            .find(|f| f.key == "q:s0:stay")
+            .expect("no q:s0:stay fact")
+            .value
+            .parse()
+            .unwrap();
+        assert!(
+            (q_stay - 0.9).abs() < 0.05,
+            "Q*(s0,stay) = 0.9 but got {:.4} (Watkins & Dayan 1992)",
+            q_stay
+        );
     }
 
     #[test]
     fn invariant_zero_reward_lexicographic() {
-        let input = make_mdp("0.9", "s1", vec![
-            ("mdp:t:s1:z", "s2"),
-            ("mdp:t:s1:a", "s3"),
-        ]);
+        let input = make_mdp(
+            "0.9",
+            "s1",
+            vec![("mdp:t:s1:z", "s2"), ("mdp:t:s1:a", "s3")],
+        );
         let out = RlSymbolic.run(&input).expect("should succeed");
-        let policy_s1 = out.facts.iter().find(|f| f.key == "policy:s1").expect("no policy for s1").value.clone();
+        let policy_s1 = out
+            .facts
+            .iter()
+            .find(|f| f.key == "policy:s1")
+            .expect("no policy for s1")
+            .value
+            .clone();
         assert_eq!(policy_s1, "a");
     }
 }
-

@@ -50,7 +50,13 @@ pub static DESCRIPTION_LOGIC_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
         LifecyclePhase {
             name: "completion",
-            kinds: &["apply-cr1", "apply-cr2", "apply-cr3", "apply-cr4", "fixpoint"],
+            kinds: &[
+                "apply-cr1",
+                "apply-cr2",
+                "apply-cr3",
+                "apply-cr4",
+                "fixpoint",
+            ],
             min_occurrences: 1,
             max_occurrences: usize::MAX,
         },

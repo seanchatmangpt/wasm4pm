@@ -7,83 +7,83 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-pub mod allen_temporal;
 /// Inference to the best explanation (Harman 1965; Thagard 1978).
 pub mod abductive_ibe;
 /// Abductive logic programming (Kakas, Kowalski & Toni 1992).
 pub mod abductive_lp;
+pub mod act_r;
+pub mod allen_temporal;
+pub mod analogy_sme;
 /// Answer set programming (Gelfond & Lifschitz 1988).
 pub mod asp;
-pub mod act_r;
-pub mod analogy_sme;
 pub mod autoinstinct_learning;
-/// Breed dispatch: explicit string-match routing (greppable, audit-friendly).
-pub mod dispatch;
-/// Combinator core: shared, fully-validated algebraic machinery (Stage C1).
-pub mod support;
 pub mod autoinstinct_neurosis;
 pub mod autoinstinct_semantics;
 pub mod autoinstinct_vision;
 pub mod bayesian_network;
-pub mod cbr;
-pub mod csp_ac3;
-pub mod default_logic;
-pub mod dempster_shafer;
-pub mod construction_grammar;
-pub mod contingent_plan;
-pub mod dendral;
-pub mod ebl;
 /// Distance-based belief merging (Konieczny & Pino Pérez 2002).
 pub mod belief_merging;
+pub mod cbr;
+pub mod circumscription;
 /// Constraint logic programming over finite domains (Jaffar & Lassez 1987).
 pub mod clp;
+pub mod construction_grammar;
+pub mod contingent_plan;
+pub mod csp_ac3;
+pub mod ctl_check;
+pub mod default_logic;
+pub mod dempster_shafer;
+pub mod dendral;
 /// EL description-logic classification (Baader, Brandt & Lutz 2005).
 pub mod description_logic;
+/// Breed dispatch: explicit string-match routing (greppable, audit-friendly).
+pub mod dispatch;
+pub mod ebl;
+pub mod episodic_memory;
 /// Discrete event calculus (Kowalski & Sergot 1986).
 pub mod event_calculus;
-pub mod circumscription;
-pub mod ctl_check;
-pub mod episodic_memory;
 pub mod frame;
 pub mod frames_inheritance;
 pub mod fuzzy_logic;
 pub mod gps;
 pub mod hearsay;
 pub mod htn_planning;
+pub mod ilp;
 pub mod ltl_monitor;
+pub mod markov_logic;
 /// MDP value iteration (Bellman 1957).
 pub mod mdp;
+pub mod meta_reasoning;
+pub mod morphological;
+pub mod naive_physics;
+pub mod ocpm_route_discoverer;
 /// SNLP partial-order planning (McAllester & Rosenblitt 1991).
 pub mod partial_order_plan;
-pub mod markov_logic;
-pub mod meta_reasoning;
-pub mod triz;
-pub mod ocpm_route_discoverer;
-pub mod morphological;
 pub mod pomdp;
+pub mod problog;
 pub mod production_rules;
 pub mod prolog;
 /// Confluence-based qualitative reasoning (de Kleer & Brown 1984).
 pub mod qualitative_reason;
-/// SAM script application (Schank & Abelson 1977).
-pub mod script_sam;
-pub mod soar;
-pub mod strips;
-/// Version-space candidate elimination (Mitchell 1982).
-pub mod version_space;
-pub mod ilp;
-pub mod naive_physics;
-pub mod problog;
 pub mod rl_symbolic;
 pub mod sat_cdcl;
+/// SAM script application (Schank & Abelson 1977).
+pub mod script_sam;
 pub mod situation_calculus;
+pub mod soar;
+pub mod strips;
+/// Combinator core: shared, fully-validated algebraic machinery (Stage C1).
+pub mod support;
+pub mod triz;
+/// Version-space candidate elimination (Mitchell 1982).
+pub mod version_space;
 
 pub use dispatch::{dispatch_breed, run_breed};
-pub mod tableaux;
-/// Ten-rung certification ladder for cognition breeds.
-pub mod standing;
 /// Phantom-typed receipt chain for the oracle/audit layer.
 pub mod oracle_chain;
+/// Ten-rung certification ladder for cognition breeds.
+pub mod standing;
+pub mod tableaux;
 
 /// Declarative breed registration: one entry per line, string id literal
 /// verbatim (greppable; integrator unions entries alphabetically per tier,
@@ -462,8 +462,6 @@ pub trait CognitionBreed: Send + Sync {
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     dispatch::dispatch_breed_test(breed, input)
 }
-
-
 
 #[cfg(test)]
 mod registration_tests {

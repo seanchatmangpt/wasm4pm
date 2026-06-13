@@ -435,7 +435,10 @@ fn ltl_monitor_oversized_formula_refused() {
     use wasm4pm_cognition::breeds::CognitionBreed;
     let mut input = empty_base();
     input.facts = vec![
-        fact("ltl:formula", &"a & ".repeat(65).trim_end_matches(" & ").to_string()),
+        fact(
+            "ltl:formula",
+            &"a & ".repeat(65).trim_end_matches(" & ").to_string(),
+        ),
         fact("trace:0", "a"),
     ];
     // 65 * 4 - 3 = 257 chars
@@ -449,7 +452,9 @@ fn allen_temporal_empty_facts_refused() {
     use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
     use wasm4pm_cognition::breeds::CognitionBreed;
     let input = empty_base();
-    let err = AllenTemporal.preconditions(&input).expect_err("must refuse");
+    let err = AllenTemporal
+        .preconditions(&input)
+        .expect_err("must refuse");
     assert!(err.contains("relation") || err.contains("interval"));
 }
 
@@ -472,7 +477,9 @@ fn bayesian_network_missing_query_refused() {
     use wasm4pm_cognition::breeds::CognitionBreed;
     let mut input = empty_base();
     input.facts = vec![fact("cpt:Q", "0.3")];
-    let err = BayesianNetwork.preconditions(&input).expect_err("must refuse");
+    let err = BayesianNetwork
+        .preconditions(&input)
+        .expect_err("must refuse");
     assert!(err.contains("query"));
 }
 
@@ -519,7 +526,9 @@ fn dempster_shafer_empty_rules_refused() {
     use wasm4pm_cognition::breeds::CognitionBreed;
     let mut input = empty_base();
     input.goals = vec![goal("query", "query", "flim")];
-    let err = DempsterShafer.preconditions(&input).expect_err("must refuse");
+    let err = DempsterShafer
+        .preconditions(&input)
+        .expect_err("must refuse");
     assert!(err.contains("probability assignments"));
 }
 
@@ -531,7 +540,9 @@ fn frames_inheritance_malformed_intent_refused() {
     let mut input = empty_base();
     input.intent = "what color is zilk".into();
     input.facts = vec![fact("frame:zilk:isa", "welp")];
-    let err = FramesInheritance.preconditions(&input).expect_err("must refuse");
+    let err = FramesInheritance
+        .preconditions(&input)
+        .expect_err("must refuse");
     assert!(err.contains("resolve"));
 }
 
@@ -616,10 +627,7 @@ fn event_calculus_refuses_malformed_query() {
 #[test]
 fn mdp_refuses_non_normalized_probabilities() {
     let mut input = empty_base();
-    input.facts = vec![
-        fact("mdp:gamma", "0.5"),
-        fact("mdp:trans:s1:a", "s1:0.4"),
-    ];
+    input.facts = vec![fact("mdp:gamma", "0.5"), fact("mdp:trans:s1:a", "s1:0.4")];
     let err = p2_dispatch("mdp", &input).unwrap_err();
     assert!(err.contains("sum"), "got: {}", err);
 }
@@ -628,10 +636,7 @@ fn mdp_refuses_non_normalized_probabilities() {
 #[test]
 fn version_space_refuses_without_positive_example() {
     let mut input = empty_base();
-    input.facts = vec![
-        fact("vs:attrs", "a,b"),
-        fact("vs:example:1", "x,y:-"),
-    ];
+    input.facts = vec![fact("vs:attrs", "a,b"), fact("vs:example:1", "x,y:-")];
     let err = p2_dispatch("version_space", &input).unwrap_err();
     assert!(err.contains("positive"), "got: {}", err);
 }
@@ -649,10 +654,7 @@ fn belief_merging_refuses_single_base() {
 #[test]
 fn qualitative_reason_refuses_unknown_sign_variable() {
     let mut input = empty_base();
-    input.facts = vec![
-        fact("qr:confluence:c1", "+x,-y"),
-        fact("qr:sign:zz", "+"),
-    ];
+    input.facts = vec![fact("qr:confluence:c1", "+x,-y"), fact("qr:sign:zz", "+")];
     let err = p2_dispatch("qualitative_reason", &input).unwrap_err();
     assert!(err.contains("zz"), "got: {}", err);
 }
@@ -781,7 +783,10 @@ fn episodic_memory_refuses_missing_time() {
         facts: vec![p3_fact("k", "v")],
     }];
     let result = dispatch_breed_test("episodic_memory", &input);
-    assert!(result.is_err(), "must refuse an episode without episode:<id>:t");
+    assert!(
+        result.is_err(),
+        "must refuse an episode without episode:<id>:t"
+    );
 }
 
 /// rl_symbolic refuses gamma >= 1 (divergent discounting).
@@ -824,10 +829,7 @@ fn ilp_refuses_no_background() {
 #[test]
 fn naive_physics_refuses_cyclic_support() {
     let mut input = empty_base();
-    input.facts = vec![
-        p3_fact("np:on:a", "b"),
-        p3_fact("np:on:b", "a"),
-    ];
+    input.facts = vec![p3_fact("np:on:a", "b"), p3_fact("np:on:b", "a")];
     let result = dispatch_breed_test("naive_physics", &input);
     assert!(result.is_err(), "must refuse a support cycle");
     assert!(result.unwrap_err().contains("cyclic"));

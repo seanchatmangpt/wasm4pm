@@ -39,7 +39,11 @@ impl BoundedBreed for BayesianNetwork {
     }
 
     fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
-        let node_count = input.facts.iter().filter(|f| f.key.starts_with("cpt:")).count();
+        let node_count = input
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("cpt:"))
+            .count();
         if node_count > 16 {
             return Some(CognitionError::ComplexityCap {
                 breed: self.breed_name(),
@@ -70,7 +74,11 @@ impl CognitionBreed for BayesianNetwork {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let node_count = input.facts.iter().filter(|f| f.key.starts_with("cpt:")).count();
+        let node_count = input
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("cpt:"))
+            .count();
         if node_count == 0 {
             return Err("bayesian_network requires at least one cpt: fact".to_string());
         }
@@ -208,7 +216,10 @@ impl CognitionBreed for BayesianNetwork {
                     table[idx_f] = 1.0 - p_val;
                     table[idx_f | 1] = p_val;
                 }
-                factors.push(Factor { vars: f_vars, table });
+                factors.push(Factor {
+                    vars: f_vars,
+                    table,
+                });
             }
 
             // Evidence reduction (BTreeMap order — deterministic).
@@ -234,8 +245,7 @@ impl CognitionBreed for BayesianNetwork {
                 }
             }
             let mut topo = Vec::new();
-            let mut zero_in: Vec<usize> =
-                (0..nodes.len()).filter(|&u| in_degree[u] == 0).collect();
+            let mut zero_in: Vec<usize> = (0..nodes.len()).filter(|&u| in_degree[u] == 0).collect();
             while !zero_in.is_empty() {
                 zero_in.sort_by(|a, b| nodes[*a].cmp(&nodes[*b]));
                 let u = zero_in.remove(0);
@@ -445,13 +455,34 @@ mod tests {
             intent: "diagnose burglary from phone calls".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "cpt:B".into(), value: "0.001".into() },
-                Fact { key: "cpt:E".into(), value: "0.002".into() },
-                Fact { key: "cpt:A|B,E".into(), value: "0.001,0.29,0.94,0.95".into() },
-                Fact { key: "cpt:J|A".into(), value: "0.05,0.90".into() },
-                Fact { key: "cpt:M|A".into(), value: "0.01,0.70".into() },
-                Fact { key: "evidence:J".into(), value: "true".into() },
-                Fact { key: "evidence:M".into(), value: "true".into() },
+                Fact {
+                    key: "cpt:B".into(),
+                    value: "0.001".into(),
+                },
+                Fact {
+                    key: "cpt:E".into(),
+                    value: "0.002".into(),
+                },
+                Fact {
+                    key: "cpt:A|B,E".into(),
+                    value: "0.001,0.29,0.94,0.95".into(),
+                },
+                Fact {
+                    key: "cpt:J|A".into(),
+                    value: "0.05,0.90".into(),
+                },
+                Fact {
+                    key: "cpt:M|A".into(),
+                    value: "0.01,0.70".into(),
+                },
+                Fact {
+                    key: "evidence:J".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "evidence:M".into(),
+                    value: "true".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -468,7 +499,9 @@ mod tests {
     /// Tolerance 1e-6 (fixture-specified).
     #[test]
     fn paper_posterior_burglary_given_calls() {
-        let out = BayesianNetwork.run(&burglary_alarm_input()).expect("run ok");
+        let out = BayesianNetwork
+            .run(&burglary_alarm_input())
+            .expect("run ok");
         let verdict = out.selected.as_deref().unwrap_or("");
         // selected = "prob:B=<value>"
         let prob_str = verdict
@@ -486,13 +519,18 @@ mod tests {
     /// P(B) = 0.001; P(B|J=t,M=t) ≈ 0.284 — a 284x increase.
     #[test]
     fn evidence_raises_posterior_above_prior() {
-        let out = BayesianNetwork.run(&burglary_alarm_input()).expect("run ok");
+        let out = BayesianNetwork
+            .run(&burglary_alarm_input())
+            .expect("run ok");
         let verdict = out.selected.as_deref().unwrap_or("");
-        let prob_str = verdict.strip_prefix("prob:B=").expect("selected must start with 'prob:B='");
+        let prob_str = verdict
+            .strip_prefix("prob:B=")
+            .expect("selected must start with 'prob:B='");
         let prob: f64 = prob_str.parse().expect("posterior must be a float");
         assert!(
             prob > 0.001,
-            "posterior P(B|J,M)={} must exceed prior P(B)=0.001", prob
+            "posterior P(B|J,M)={} must exceed prior P(B)=0.001",
+            prob
         );
     }
 }

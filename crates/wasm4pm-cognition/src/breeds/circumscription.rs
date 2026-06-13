@@ -130,7 +130,9 @@ impl CognitionBreed for Circumscription {
             return Err("circumscription requires at least one rule".to_string());
         }
         if input.goals.is_empty() {
-            return Err("circumscription requires at least one goal atom to test entailment".to_string());
+            return Err(
+                "circumscription requires at least one goal atom to test entailment".to_string(),
+            );
         }
         self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         for r in &input.rules {
@@ -170,7 +172,11 @@ impl CognitionBreed for Circumscription {
         push(
             &mut trace,
             "load-defaults",
-            format!("{} rules; abnormality atoms: {{{}}}", input.rules.len(), abs.join(",")),
+            format!(
+                "{} rules; abnormality atoms: {{{}}}",
+                input.rules.len(),
+                abs.join(",")
+            ),
         );
 
         // Enumerate all candidate abnormality sets in bitmask order.
@@ -186,8 +192,11 @@ impl CognitionBreed for Circumscription {
                 breed: self.id(),
                 message: m,
             })?;
-            let derived_abs: BTreeSet<String> =
-                closed.iter().filter(|a| abs.contains(*a)).cloned().collect();
+            let derived_abs: BTreeSet<String> = closed
+                .iter()
+                .filter(|a| abs.contains(*a))
+                .cloned()
+                .collect();
             let consistent = derived_abs == s && !closed.contains("false");
             push(
                 &mut trace,
@@ -213,9 +222,7 @@ impl CognitionBreed for Circumscription {
         // Keep subset-minimal abnormality sets; record each pruned model.
         let mut minimal: Vec<(BTreeSet<String>, BTreeSet<String>)> = Vec::new();
         for (s, closed) in &models {
-            let dominated = models
-                .iter()
-                .any(|(s2, _)| s2 != s && s2.is_subset(s));
+            let dominated = models.iter().any(|(s2, _)| s2 != s && s2.is_subset(s));
             if dominated {
                 push(
                     &mut trace,
@@ -312,9 +319,18 @@ mod tests {
             intent: "circumscribe abnormality over the bird/penguin theory".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "bird_tweety".into(), value: "true".into() },
-                Fact { key: "bird_opus".into(), value: "true".into() },
-                Fact { key: "penguin_opus".into(), value: "true".into() },
+                Fact {
+                    key: "bird_tweety".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "bird_opus".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "penguin_opus".into(),
+                    value: "true".into(),
+                },
             ],
             cases: vec![],
             rules: vec![
@@ -338,15 +354,27 @@ mod tests {
                 },
             ],
             goals: vec![
-                Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_tweety".into() },
-                Goal { id: "g2".into(), predicate: "entail".into(), value: "flies_opus".into() },
+                Goal {
+                    id: "g1".into(),
+                    predicate: "entail".into(),
+                    value: "flies_tweety".into(),
+                },
+                Goal {
+                    id: "g2".into(),
+                    predicate: "entail".into(),
+                    value: "flies_opus".into(),
+                },
             ],
             state: vec![],
         };
-        let out = breed.run(&input).expect("circumscription run should succeed");
+        let out = breed
+            .run(&input)
+            .expect("circumscription run should succeed");
 
         // flies_tweety must be cautiously entailed (true in all ab-minimal models).
-        let tweety_fact = out.facts.iter()
+        let tweety_fact = out
+            .facts
+            .iter()
             .find(|f| f.key == "entailed:flies_tweety")
             .expect("entailed:flies_tweety fact must be present");
         assert_eq!(
@@ -355,7 +383,9 @@ mod tests {
         );
 
         // flies_opus must NOT be cautiously entailed.
-        let opus_fact = out.facts.iter()
+        let opus_fact = out
+            .facts
+            .iter()
             .find(|f| f.key == "entailed:flies_opus")
             .expect("entailed:flies_opus fact must be present");
         assert_eq!(
@@ -376,8 +406,15 @@ mod tests {
     fn refuses_no_rules() {
         let breed = Circumscription;
         let input = BreedInput {
-            facts: vec![Fact { key: "x".into(), value: "true".into() }],
-            goals: vec![Goal { id: "g".into(), predicate: "entail".into(), value: "x".into() }],
+            facts: vec![Fact {
+                key: "x".into(),
+                value: "true".into(),
+            }],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "entail".into(),
+                value: "x".into(),
+            }],
             ..Default::default()
         };
         assert!(breed.preconditions(&input).is_err());
@@ -394,7 +431,10 @@ mod tests {
                 conclusion: "y".into(),
                 certainty: 1.0,
             }],
-            facts: vec![Fact { key: "x".into(), value: "true".into() }],
+            facts: vec![Fact {
+                key: "x".into(),
+                value: "true".into(),
+            }],
             goals: vec![],
             ..Default::default()
         };
@@ -415,8 +455,15 @@ mod tests {
             .collect();
         let input = BreedInput {
             rules,
-            facts: vec![Fact { key: "f".into(), value: "true".into() }],
-            goals: vec![Goal { id: "g".into(), predicate: "entail".into(), value: "c0".into() }],
+            facts: vec![Fact {
+                key: "f".into(),
+                value: "true".into(),
+            }],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "entail".into(),
+                value: "c0".into(),
+            }],
             ..Default::default()
         };
         assert!(breed.preconditions(&input).is_err());

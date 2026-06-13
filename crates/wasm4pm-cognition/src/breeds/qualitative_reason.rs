@@ -99,7 +99,10 @@ fn parse(input: &BreedInput) -> Result<Model, String> {
             for raw in f.value.split(',').map(str::trim).filter(|s| !s.is_empty()) {
                 let (pos, name) = match raw.strip_prefix('-') {
                     Some(n) => (false, n.trim().to_string()),
-                    None => (true, raw.strip_prefix('+').unwrap_or(raw).trim().to_string()),
+                    None => (
+                        true,
+                        raw.strip_prefix('+').unwrap_or(raw).trim().to_string(),
+                    ),
                 };
                 if name.is_empty() {
                     return Err(format!("malformed confluence term '{}'", raw));
@@ -172,14 +175,27 @@ impl CognitionBreed for QualitativeReason {
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         let m = parse(input)?;
         if m.confluences.is_empty() {
-            return Err("qualitative_reason requires at least one qr:confluence:* fact".to_string());
+            return Err(
+                "qualitative_reason requires at least one qr:confluence:* fact".to_string(),
+            );
         }
         if m.vars.len() > MAX_VARS {
-            return Err(format!("variable count {} exceeds cap {}", m.vars.len(), MAX_VARS));
+            return Err(format!(
+                "variable count {} exceeds cap {}",
+                m.vars.len(),
+                MAX_VARS
+            ));
         }
         for (v, _) in &m.known {
-            if !m.confluences.iter().any(|c| c.terms.iter().any(|(_, t)| t == v)) {
-                return Err(format!("qr:sign:{} names a variable not in any confluence", v));
+            if !m
+                .confluences
+                .iter()
+                .any(|c| c.terms.iter().any(|(_, t)| t == v))
+            {
+                return Err(format!(
+                    "qr:sign:{} names a variable not in any confluence",
+                    v
+                ));
             }
         }
         Ok(())
@@ -304,13 +320,18 @@ impl CognitionBreed for QualitativeReason {
         if states.len() > MAX_STATES {
             return Err(BreedError {
                 breed: BreedId::QualitativeReason,
-                message: format!("envisionment produced {} states (cap {})", states.len(), MAX_STATES),
+                message: format!(
+                    "envisionment produced {} states (cap {})",
+                    states.len(),
+                    MAX_STATES
+                ),
             });
         }
         if states.is_empty() {
             return Err(BreedError {
                 breed: BreedId::QualitativeReason,
-                message: "no consistent qualitative state (over-constrained confluences)".to_string(),
+                message: "no consistent qualitative state (over-constrained confluences)"
+                    .to_string(),
             });
         }
 
@@ -323,7 +344,12 @@ impl CognitionBreed for QualitativeReason {
                 .map(|v| format!("{}:{}", v, st[v].glyph()))
                 .collect::<Vec<_>>()
                 .join(",");
-            tr(&mut trace, "envision-state", format!("S{}: {}", i, rendered), 1);
+            tr(
+                &mut trace,
+                "envision-state",
+                format!("S{}: {}", i, rendered),
+                1,
+            );
             let moving: Vec<&String> = m.vars.iter().filter(|v| st[*v] != Sign::Zero).collect();
             tr(
                 &mut trace,

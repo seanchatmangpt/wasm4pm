@@ -1,6 +1,6 @@
+use std::fs;
 use wasm4pm_cognition::breeds::dispatch::dispatch_breed_test_id;
 use wasm4pm_cognition::breeds::{BreedId, BreedInput, Fact};
-use std::fs;
 
 /// Meta Reasoning ensemble test.
 ///

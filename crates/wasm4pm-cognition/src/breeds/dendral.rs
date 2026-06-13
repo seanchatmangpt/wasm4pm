@@ -20,11 +20,11 @@
 //!    survivor is selected.
 //! 4. Elimination is monotonic: once eliminated, never restored.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// DENDRAL constraint-based candidate enumerator.
 pub struct Dendral;
@@ -334,7 +334,8 @@ mod tests {
         // The highest-scoring survivor must be ketone-F1-C2H5-C2H5 (score=0.91).
         // Verbatim from tests/fixtures/papers/dendral.json.
         let input = BreedInput {
-            intent: "identify molecular structure from mass-spectrometry fragmentation constraints".into(),
+            intent: "identify molecular structure from mass-spectrometry fragmentation constraints"
+                .into(),
             candidates: vec![
                 cand("ketone-F1-C2H5-C2H5", 0.91),
                 cand("ketone-F2-CH3-C3H7", 0.84),
@@ -346,17 +347,50 @@ mod tests {
                 cand("ketone-F8-CH3-CH3-C2H4", 0.55),
             ],
             facts: vec![
-                Fact { key: "molecular-formula".into(), value: "C5H10O".into() },
-                Fact { key: "molecular-weight".into(), value: "86".into() },
-                Fact { key: "constraint".into(), value: "forbid:ether-F5-C2H5-O-C2H5".into() },
-                Fact { key: "constraint".into(), value: "forbid:amine-F6-C2H5-NH-C2H5".into() },
-                Fact { key: "constraint".into(), value: "forbid:ketone-F7-C4H9-CH3-iso".into() },
-                Fact { key: "constraint".into(), value: "forbid:ketone-F8-CH3-CH3-C2H4".into() },
-                Fact { key: "spectral-line".into(), value: "57".into() },
-                Fact { key: "spectral-line".into(), value: "29".into() },
-                Fact { key: "spectral-line".into(), value: "86".into() },
-                Fact { key: "spectral-line".into(), value: "71".into() },
-                Fact { key: "spectral-line".into(), value: "43".into() },
+                Fact {
+                    key: "molecular-formula".into(),
+                    value: "C5H10O".into(),
+                },
+                Fact {
+                    key: "molecular-weight".into(),
+                    value: "86".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ether-F5-C2H5-O-C2H5".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:amine-F6-C2H5-NH-C2H5".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ketone-F7-C4H9-CH3-iso".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ketone-F8-CH3-CH3-C2H4".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "57".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "29".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "86".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "71".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "43".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -379,7 +413,10 @@ mod tests {
             "ketone-F7-C4H9-CH3-iso",
             "ketone-F8-CH3-CH3-C2H4",
         ] {
-            let c = out.candidates.iter().find(|c| c.id == *forbidden)
+            let c = out
+                .candidates
+                .iter()
+                .find(|c| c.id == *forbidden)
                 .unwrap_or_else(|| panic!("candidate {} must be present", forbidden));
             assert!(c.eliminated, "candidate {} must be eliminated", forbidden);
         }
@@ -391,7 +428,10 @@ mod tests {
             "ketone-F3-CH3-C3H7-branched",
             "ketone-F4-C4H9-CH3",
         ] {
-            let c = out.candidates.iter().find(|c| c.id == *survivor)
+            let c = out
+                .candidates
+                .iter()
+                .find(|c| c.id == *survivor)
                 .unwrap_or_else(|| panic!("candidate {} must be present", survivor));
             assert!(!c.eliminated, "candidate {} must survive", survivor);
         }
@@ -402,10 +442,10 @@ mod tests {
         let cands = vec![cand("A", 1.0), cand("B", 1.0), cand("C", 1.0)];
         let in1 = input_with(cands.clone(), vec!["forbid:A"]);
         let in2 = input_with(cands, vec!["forbid:A", "forbid:B"]);
-        
+
         let out1 = Dendral.run(&in1).unwrap();
         let out2 = Dendral.run(&in2).unwrap();
-        
+
         let s1 = out1.candidates.iter().filter(|c| !c.eliminated).count();
         let s2 = out2.candidates.iter().filter(|c| !c.eliminated).count();
         assert!(s2 <= s1, "Adding constraints cannot increase survivors");

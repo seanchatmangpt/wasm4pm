@@ -79,11 +79,10 @@ fn parse(input: &BreedInput) -> Result<(BTreeSet<String>, BTreeMap<String, Hypot
                     entry.covers.insert(o.to_string());
                 }
             } else if let Some(h) = rest.strip_suffix(":cost") {
-                let cost: f32 = f
-                    .value
-                    .trim()
-                    .parse()
-                    .map_err(|_| format!("malformed cost '{}' for hypothesis {}", f.value, h))?;
+                let cost: f32 =
+                    f.value.trim().parse().map_err(|_| {
+                        format!("malformed cost '{}' for hypothesis {}", f.value, h)
+                    })?;
                 if cost < 0.0 {
                     return Err(format!("negative cost {} for hypothesis {}", cost, h));
                 }
@@ -189,11 +188,7 @@ impl CognitionBreed for AbductiveIbe {
         let mut scored: Vec<(String, f32)> = Vec::with_capacity(candidates.len());
         for set in &candidates {
             let s = score(set, &hyps, &obs);
-            let name = set
-                .iter()
-                .map(|h| h.as_str())
-                .collect::<Vec<_>>()
-                .join("+");
+            let name = set.iter().map(|h| h.as_str()).collect::<Vec<_>>().join("+");
             scored.push((name.clone(), s));
             tr(
                 &mut trace,

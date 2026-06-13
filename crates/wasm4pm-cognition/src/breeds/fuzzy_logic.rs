@@ -109,7 +109,10 @@ impl CognitionBreed for FuzzyLogic {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
-        let has_input = input.facts.iter().any(|f| f.key.starts_with("fuzzy:input:"));
+        let has_input = input
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("fuzzy:input:"));
         if !has_input {
             return Err("fuzzy_logic requires at least one fuzzy:input:<var> fact".to_string());
         }
@@ -184,7 +187,11 @@ impl CognitionBreed for FuzzyLogic {
                 if let Some(&val) = inputs.get(var) {
                     let mu = mf.eval(val);
                     fuzzified.insert(term_key.clone(), mu);
-                    add_trace(&mut trace, "fuzzy-fuzzify", format!("{} = {}", term_key, mu));
+                    add_trace(
+                        &mut trace,
+                        "fuzzy-fuzzify",
+                        format!("{} = {}", term_key, mu),
+                    );
                 } else {
                     out_vars
                         .entry(var.to_string())
@@ -264,7 +271,11 @@ impl CognitionBreed for FuzzyLogic {
             }
             if sum_mu > 0.0 {
                 let centroid = ((sum_x_mu / sum_mu) * 1e5).round() / 1e5;
-                add_trace(&mut trace, "fuzzy-defuzz", format!("{} = {}", out_var, centroid));
+                add_trace(
+                    &mut trace,
+                    "fuzzy-defuzz",
+                    format!("{} = {}", out_var, centroid),
+                );
                 out_facts.push(Fact {
                     key: format!("fuzzy:output:{}", out_var),
                     value: centroid.to_string(),
@@ -288,7 +299,9 @@ impl CognitionBreed for FuzzyLogic {
                 f
             },
             selected: None,
-            explanation: "Mamdani fuzzy inference: min t-norm firing, max aggregation, 101-point centroid".to_string(),
+            explanation:
+                "Mamdani fuzzy inference: min t-norm firing, max aggregation, 101-point centroid"
+                    .to_string(),
             inference_trace: trace,
             ocel_log: None,
             retained_cases: vec![],
@@ -302,7 +315,11 @@ impl CognitionBreed for FuzzyLogic {
             "fuzzy-aggregate",
             "fuzzy-defuzz",
         ])?;
-        if !output.facts.iter().any(|f| f.key.starts_with("fuzzy:output:")) {
+        if !output
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("fuzzy:output:"))
+        {
             return Err("missing fuzzy:output: fact".to_string());
         }
         Ok(())
@@ -319,8 +336,14 @@ mod tests {
         let breed = FuzzyLogic;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "fuzzy:input:x".to_string(), value: "10".to_string() },
-                Fact { key: "fuzzy:x:a".to_string(), value: "tri:0,10,20".to_string() }
+                Fact {
+                    key: "fuzzy:input:x".to_string(),
+                    value: "10".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:x:a".to_string(),
+                    value: "tri:0,10,20".to_string(),
+                },
             ],
             rules: vec![],
             ..Default::default()
@@ -333,15 +356,33 @@ mod tests {
         let breed = FuzzyLogic;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "fuzzy:temp:hot".to_string(), value: "tri:0,50,100".to_string() },
-                Fact { key: "fuzzy:fan:fast".to_string(), value: "trap:10,20,30,40".to_string() },
-                Fact { key: "fuzzy:input:temp".to_string(), value: "25".to_string() },
+                Fact {
+                    key: "fuzzy:temp:hot".to_string(),
+                    value: "tri:0,50,100".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:fan:fast".to_string(),
+                    value: "trap:10,20,30,40".to_string(),
+                },
+                Fact {
+                    key: "fuzzy:input:temp".to_string(),
+                    value: "25".to_string(),
+                },
             ],
-            rules: vec![Rule { id: "r1".to_string(), premise: vec!["fuzzy:temp:hot".to_string()], conclusion: "fuzzy:fan:fast".to_string(), certainty: 1.0 }],
+            rules: vec![Rule {
+                id: "r1".to_string(),
+                premise: vec!["fuzzy:temp:hot".to_string()],
+                conclusion: "fuzzy:fan:fast".to_string(),
+                certainty: 1.0,
+            }],
             ..Default::default()
         };
         let out = breed.run(&input).unwrap();
-        let fan_out = out.facts.iter().find(|f| f.key == "fuzzy:output:fan").unwrap();
+        let fan_out = out
+            .facts
+            .iter()
+            .find(|f| f.key == "fuzzy:output:fan")
+            .unwrap();
         assert_eq!(fan_out.value, "25");
     }
 
@@ -351,15 +392,35 @@ mod tests {
         let eval = |shift: f32| -> f32 {
             let input = BreedInput {
                 facts: vec![
-                    Fact { key: "fuzzy:x:t1".to_string(), value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift) },
-                    Fact { key: "fuzzy:y:t2".to_string(), value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift) },
-                    Fact { key: "fuzzy:input:x".to_string(), value: (25.0 + shift).to_string() },
+                    Fact {
+                        key: "fuzzy:x:t1".to_string(),
+                        value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift),
+                    },
+                    Fact {
+                        key: "fuzzy:y:t2".to_string(),
+                        value: format!("tri:{},{},{}", 0.0 + shift, 50.0 + shift, 100.0 + shift),
+                    },
+                    Fact {
+                        key: "fuzzy:input:x".to_string(),
+                        value: (25.0 + shift).to_string(),
+                    },
                 ],
-                rules: vec![Rule { id: "r1".to_string(), premise: vec!["fuzzy:x:t1".to_string()], conclusion: "fuzzy:y:t2".to_string(), certainty: 1.0 }],
+                rules: vec![Rule {
+                    id: "r1".to_string(),
+                    premise: vec!["fuzzy:x:t1".to_string()],
+                    conclusion: "fuzzy:y:t2".to_string(),
+                    certainty: 1.0,
+                }],
                 ..Default::default()
             };
             let out = breed.run(&input).unwrap();
-            out.facts.iter().find(|f| f.key == "fuzzy:output:y").unwrap().value.parse().unwrap()
+            out.facts
+                .iter()
+                .find(|f| f.key == "fuzzy:output:y")
+                .unwrap()
+                .value
+                .parse()
+                .unwrap()
         };
         let base = eval(0.0);
         let shifted = eval(10.0);

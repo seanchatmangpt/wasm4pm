@@ -7,10 +7,10 @@
 //!
 //! Run: cargo run --example circumscription
 
+use wasm4pm_cognition::breeds::circumscription::Circumscription;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::circumscription::Circumscription;
 
 fn main() {
     let input = BreedInput {
@@ -18,9 +18,18 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Tweety is a bird, Opus is a penguin (and therefore a bird).
-            Fact { key: "bird_tweety".to_string(), value: "true".to_string() },
-            Fact { key: "penguin_opus".to_string(), value: "true".to_string() },
-            Fact { key: "bird_opus".to_string(), value: "true".to_string() },
+            Fact {
+                key: "bird_tweety".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "penguin_opus".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "bird_opus".to_string(),
+                value: "true".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
@@ -46,8 +55,16 @@ fn main() {
             },
         ],
         goals: vec![
-            Goal { id: "g1".to_string(), predicate: "entail".to_string(), value: "flies_tweety".to_string() },
-            Goal { id: "g2".to_string(), predicate: "entail".to_string(), value: "flies_opus".to_string() },
+            Goal {
+                id: "g1".to_string(),
+                predicate: "entail".to_string(),
+                value: "flies_tweety".to_string(),
+            },
+            Goal {
+                id: "g2".to_string(),
+                predicate: "entail".to_string(),
+                value: "flies_opus".to_string(),
+            },
         ],
         state: vec![],
     };
@@ -57,7 +74,11 @@ fn main() {
         Ok(output) => {
             let output_json = serde_json::to_string(&output).expect("serialize output");
             let output_hash = blake3::hash(output_json.as_bytes()).to_hex().to_string();
-            println!("circumscription ok — selected={:?}  hash={}", output.selected, &output_hash[..16]);
+            println!(
+                "circumscription ok — selected={:?}  hash={}",
+                output.selected,
+                &output_hash[..16]
+            );
             println!("  {}", output.explanation);
             for f in &output.facts {
                 println!("  {} = {}", f.key, f.value);

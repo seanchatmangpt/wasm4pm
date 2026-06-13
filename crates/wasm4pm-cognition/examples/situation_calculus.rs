@@ -17,51 +17,97 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Initial situation S0
-            Fact { key: "fluent:arm_empty".to_string(),    value: "true".to_string() },
-            Fact { key: "fluent:block_A_on_table".to_string(), value: "true".to_string() },
-            Fact { key: "fluent:block_B_on_table".to_string(), value: "true".to_string() },
-
+            Fact {
+                key: "fluent:arm_empty".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "fluent:block_A_on_table".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "fluent:block_B_on_table".to_string(),
+                value: "true".to_string(),
+            },
             // Action: pick_A
             //   pre: arm must be empty AND block A must be on the table
-            Fact { key: "action:pick_A:pre".to_string(), value: "arm_empty".to_string() },
-            Fact { key: "action:pick_A:pre".to_string(), value: "block_A_on_table".to_string() },
-            Fact { key: "action:pick_A:add".to_string(), value: "holding_A".to_string() },
-            Fact { key: "action:pick_A:del".to_string(), value: "arm_empty".to_string() },
-            Fact { key: "action:pick_A:del".to_string(), value: "block_A_on_table".to_string() },
-
+            Fact {
+                key: "action:pick_A:pre".to_string(),
+                value: "arm_empty".to_string(),
+            },
+            Fact {
+                key: "action:pick_A:pre".to_string(),
+                value: "block_A_on_table".to_string(),
+            },
+            Fact {
+                key: "action:pick_A:add".to_string(),
+                value: "holding_A".to_string(),
+            },
+            Fact {
+                key: "action:pick_A:del".to_string(),
+                value: "arm_empty".to_string(),
+            },
+            Fact {
+                key: "action:pick_A:del".to_string(),
+                value: "block_A_on_table".to_string(),
+            },
             // Action: stack_A_on_B
             //   pre: must be holding A AND block B must be on the table
-            Fact { key: "action:stack_A_on_B:pre".to_string(), value: "holding_A".to_string() },
-            Fact { key: "action:stack_A_on_B:pre".to_string(), value: "block_B_on_table".to_string() },
-            Fact { key: "action:stack_A_on_B:add".to_string(), value: "arm_empty".to_string() },
-            Fact { key: "action:stack_A_on_B:add".to_string(), value: "A_on_B".to_string() },
-            Fact { key: "action:stack_A_on_B:del".to_string(), value: "holding_A".to_string() },
-
+            Fact {
+                key: "action:stack_A_on_B:pre".to_string(),
+                value: "holding_A".to_string(),
+            },
+            Fact {
+                key: "action:stack_A_on_B:pre".to_string(),
+                value: "block_B_on_table".to_string(),
+            },
+            Fact {
+                key: "action:stack_A_on_B:add".to_string(),
+                value: "arm_empty".to_string(),
+            },
+            Fact {
+                key: "action:stack_A_on_B:add".to_string(),
+                value: "A_on_B".to_string(),
+            },
+            Fact {
+                key: "action:stack_A_on_B:del".to_string(),
+                value: "holding_A".to_string(),
+            },
             // Action: inspect
             //   pre: arm must be empty (idle state check)
-            Fact { key: "action:inspect:pre".to_string(),  value: "arm_empty".to_string() },
-            Fact { key: "action:inspect:add".to_string(),  value: "inspected".to_string() },
-
+            Fact {
+                key: "action:inspect:pre".to_string(),
+                value: "arm_empty".to_string(),
+            },
+            Fact {
+                key: "action:inspect:add".to_string(),
+                value: "inspected".to_string(),
+            },
             // do: sequence — three steps
-            Fact { key: "do:0".to_string(), value: "pick_A".to_string() },
-            Fact { key: "do:1".to_string(), value: "stack_A_on_B".to_string() },
-            Fact { key: "do:2".to_string(), value: "inspect".to_string() },
+            Fact {
+                key: "do:0".to_string(),
+                value: "pick_A".to_string(),
+            },
+            Fact {
+                key: "do:1".to_string(),
+                value: "stack_A_on_B".to_string(),
+            },
+            Fact {
+                key: "do:2".to_string(),
+                value: "inspect".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
-        goals: vec![
-            Goal {
-                id: "goal_stack".to_string(),
-                predicate: "holds".to_string(),
-                value: "A_on_B".to_string(),
-            },
-        ],
-        state: vec![
-            StateAtom {
-                predicate: "domain".to_string(),
-                value: "blocks-world".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "goal_stack".to_string(),
+            predicate: "holds".to_string(),
+            value: "A_on_B".to_string(),
+        }],
+        state: vec![StateAtom {
+            predicate: "domain".to_string(),
+            value: "blocks-world".to_string(),
+        }],
     };
 
     let breed = SituationCalculus;

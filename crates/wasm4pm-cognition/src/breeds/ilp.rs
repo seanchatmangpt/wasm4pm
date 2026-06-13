@@ -15,7 +15,9 @@
 //! ≤32 examples, body length ≤4, ≤256 candidate literals per step.
 
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Quinlan FOIL induction engine.
@@ -147,10 +149,16 @@ impl CognitionBreed for Ilp {
             return Err("ilp requires background knowledge (bg:<atom> facts)".to_string());
         }
         if bg > 64 {
-            return Err(format!("complexity cap exceeded: {} bg facts > 64 (refusal)", bg));
+            return Err(format!(
+                "complexity cap exceeded: {} bg facts > 64 (refusal)",
+                bg
+            ));
         }
         if pos + neg > 32 {
-            return Err(format!("complexity cap exceeded: {} examples > 32 (refusal)", pos + neg));
+            return Err(format!(
+                "complexity cap exceeded: {} examples > 32 (refusal)",
+                pos + neg
+            ));
         }
         Ok(())
     }
@@ -197,10 +205,18 @@ impl CognitionBreed for Ilp {
             });
         };
         for e in &pos_examples {
-            push(&mut trace, "load-example", format!("+{}({})", target, e.join(",")));
+            push(
+                &mut trace,
+                "load-example",
+                format!("+{}({})", target, e.join(",")),
+            );
         }
         for e in &neg_examples {
-            push(&mut trace, "load-example", format!("-{}({})", target, e.join(",")));
+            push(
+                &mut trace,
+                "load-example",
+                format!("-{}({})", target, e.join(",")),
+            );
         }
 
         // Background predicate signatures.
@@ -220,7 +236,9 @@ impl CognitionBreed for Ilp {
 
         while !remaining.is_empty() {
             if clauses.len() >= 8 {
-                return Err(err("clause budget (8) exhausted without covering all positives".to_string()));
+                return Err(err(
+                    "clause budget (8) exhausted without covering all positives".to_string(),
+                ));
             }
             // Initial bindings: head variables bound to example tuples.
             let mut pos_b: Vec<(usize, Binding)> = remaining
@@ -285,7 +303,13 @@ impl CognitionBreed for Ilp {
                 let p0 = pos_b.len() as f64;
                 let n0 = neg_b.len() as f64;
                 let base_info = (p0 / (p0 + n0)).log2();
-                let mut best: Option<(f64, Literal, Vec<(usize, Binding)>, Vec<(usize, Binding)>, bool)> = None;
+                let mut best: Option<(
+                    f64,
+                    Literal,
+                    Vec<(usize, Binding)>,
+                    Vec<(usize, Binding)>,
+                    bool,
+                )> = None;
                 for lit in &candidates {
                     let uses_new = lit.args.contains(&nvars);
                     let nv = if uses_new { nvars + 1 } else { nvars };
@@ -303,7 +327,14 @@ impl CognitionBreed for Ilp {
                     push(
                         &mut trace,
                         "score-gain",
-                        format!("{}: t={} p1={} n1={} gain={:.4}", render(lit), t, p1, n1, gain),
+                        format!(
+                            "{}: t={} p1={} n1={} gain={:.4}",
+                            render(lit),
+                            t,
+                            p1,
+                            n1,
+                            gain
+                        ),
                     );
                     let better = match &best {
                         None => true,
@@ -317,7 +348,10 @@ impl CognitionBreed for Ilp {
                     }
                 }
                 let (gain, lit, p_ext, n_ext, uses_new) = best.ok_or_else(|| {
-                    err("no candidate literal retains any positive binding — cannot separate".to_string())
+                    err(
+                        "no candidate literal retains any positive binding — cannot separate"
+                            .to_string(),
+                    )
                 })?;
                 push(
                     &mut trace,
@@ -335,7 +369,9 @@ impl CognitionBreed for Ilp {
             // Clause complete: covered positives = those with surviving bindings.
             let covered: BTreeSet<usize> = pos_b.iter().map(|(e, _)| *e).collect();
             if covered.is_empty() {
-                return Err(err("completed clause covers no positive example".to_string()));
+                return Err(err(
+                    "completed clause covers no positive example".to_string()
+                ));
             }
             for c in &covered {
                 push(
@@ -391,8 +427,14 @@ impl CognitionBreed for Ilp {
         let tq = TraceQuery::from_output(output);
         tq.require_non_empty_with_kinds(&["emit-clause"])?;
         // Fraud guard: a learned clause must contain at least one variable.
-        if !output.facts.iter().any(|f| f.key.starts_with("ilp:rule:") && f.value.contains('V')) {
-            return Err("learned rule contains no variables — ground rule is a fraud signal".to_string());
+        if !output
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("ilp:rule:") && f.value.contains('V'))
+        {
+            return Err(
+                "learned rule contains no variables — ground rule is a fraud signal".to_string(),
+            );
         }
         Ok(())
     }
@@ -408,10 +450,19 @@ mod tests {
         let breed = Ilp;
         let mut facts = vec![];
         for i in 0..40 {
-            facts.push(Fact { key: format!("pos:target({})", i), value: "".to_string() });
+            facts.push(Fact {
+                key: format!("pos:target({})", i),
+                value: "".to_string(),
+            });
         }
-        facts.push(Fact { key: "bg:foo(1)".to_string(), value: "".to_string() });
-        let input = BreedInput { facts, ..Default::default() };
+        facts.push(Fact {
+            key: "bg:foo(1)".to_string(),
+            value: "".to_string(),
+        });
+        let input = BreedInput {
+            facts,
+            ..Default::default()
+        };
         assert!(breed.preconditions(&input).is_err());
     }
 
@@ -420,16 +471,46 @@ mod tests {
         let breed = Ilp;
         let input = BreedInput {
             facts: vec![
-                Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
-                Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
-                Fact { key: "pos:target(3)".to_string(), value: "".to_string() },
-                Fact { key: "neg:target(4)".to_string(), value: "".to_string() },
-                Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
-                Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
-                Fact { key: "bg:good(3)".to_string(), value: "".to_string() },
-                Fact { key: "bg:distractor(1)".to_string(), value: "".to_string() },
-                Fact { key: "bg:distractor(2)".to_string(), value: "".to_string() },
-                Fact { key: "bg:distractor(4)".to_string(), value: "".to_string() },
+                Fact {
+                    key: "pos:target(1)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "pos:target(2)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "pos:target(3)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "neg:target(4)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:good(1)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:good(2)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:good(3)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:distractor(1)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:distractor(2)".to_string(),
+                    value: "".to_string(),
+                },
+                Fact {
+                    key: "bg:distractor(4)".to_string(),
+                    value: "".to_string(),
+                },
             ],
             ..Default::default()
         };
@@ -446,59 +527,155 @@ mod tests {
         let input = BreedInput {
             facts: vec![
                 // Background
-                Fact { key: "bg:parent(ann,mary)".into(), value: "".into() },
-                Fact { key: "bg:parent(ann,tom)".into(), value: "".into() },
-                Fact { key: "bg:parent(tom,eve)".into(), value: "".into() },
-                Fact { key: "bg:parent(tom,ian)".into(), value: "".into() },
-                Fact { key: "bg:female(ann)".into(), value: "".into() },
-                Fact { key: "bg:female(mary)".into(), value: "".into() },
-                Fact { key: "bg:female(eve)".into(), value: "".into() },
+                Fact {
+                    key: "bg:parent(ann,mary)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:parent(ann,tom)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:parent(tom,eve)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:parent(tom,ian)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:female(ann)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:female(mary)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "bg:female(eve)".into(),
+                    value: "".into(),
+                },
                 // Positive examples
-                Fact { key: "pos:daughter(mary,ann)".into(), value: "".into() },
-                Fact { key: "pos:daughter(eve,tom)".into(), value: "".into() },
+                Fact {
+                    key: "pos:daughter(mary,ann)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "pos:daughter(eve,tom)".into(),
+                    value: "".into(),
+                },
                 // Negative examples
-                Fact { key: "neg:daughter(tom,ann)".into(), value: "".into() },
-                Fact { key: "neg:daughter(eve,ann)".into(), value: "".into() },
-                Fact { key: "neg:daughter(ian,tom)".into(), value: "".into() },
-                Fact { key: "neg:daughter(ann,mary)".into(), value: "".into() },
+                Fact {
+                    key: "neg:daughter(tom,ann)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "neg:daughter(eve,ann)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "neg:daughter(ian,tom)".into(),
+                    value: "".into(),
+                },
+                Fact {
+                    key: "neg:daughter(ann,mary)".into(),
+                    value: "".into(),
+                },
             ],
             ..Default::default()
         };
-        let out = breed.run(&input).expect("FOIL must succeed on daughter task");
+        let out = breed
+            .run(&input)
+            .expect("FOIL must succeed on daughter task");
         let rule_text = out.selected.expect("must emit at least one rule");
         // The head must be daughter(V0,V1)
-        assert!(rule_text.starts_with("daughter(V0,V1)"),
-            "head must be daughter(V0,V1), got: {}", rule_text);
+        assert!(
+            rule_text.starts_with("daughter(V0,V1)"),
+            "head must be daughter(V0,V1), got: {}",
+            rule_text
+        );
         // The body must contain female(V0) and parent(V1,V0) as a set
         // (literal order may vary by information-gain ranking)
-        assert!(rule_text.contains("female(V0)"),
-            "body must contain female(V0) (Quinlan 1990 §3), got: {}", rule_text);
-        assert!(rule_text.contains("parent(V1,V0)"),
-            "body must contain parent(V1,V0) (Quinlan 1990 §3), got: {}", rule_text);
+        assert!(
+            rule_text.contains("female(V0)"),
+            "body must contain female(V0) (Quinlan 1990 §3), got: {}",
+            rule_text
+        );
+        assert!(
+            rule_text.contains("parent(V1,V0)"),
+            "body must contain parent(V1,V0) (Quinlan 1990 §3), got: {}",
+            rule_text
+        );
         // Exactly one clause (the daughter relation is expressible in one Horn clause)
-        assert_eq!(out.facts.iter().filter(|f| f.key.starts_with("ilp:rule:")).count(), 1,
-            "fixture requires exactly 1 clause (Quinlan 1990)");
+        assert_eq!(
+            out.facts
+                .iter()
+                .filter(|f| f.key.starts_with("ilp:rule:"))
+                .count(),
+            1,
+            "fixture requires exactly 1 clause (Quinlan 1990)"
+        );
     }
 
     #[test]
     fn invariant_example_order_independence() {
         let breed = Ilp;
         let facts1 = vec![
-            Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
-            Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
-            Fact { key: "neg:target(3)".to_string(), value: "".to_string() },
-            Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
-            Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
+            Fact {
+                key: "pos:target(1)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "pos:target(2)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "neg:target(3)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "bg:good(1)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "bg:good(2)".to_string(),
+                value: "".to_string(),
+            },
         ];
         let facts2 = vec![
-            Fact { key: "neg:target(3)".to_string(), value: "".to_string() },
-            Fact { key: "pos:target(2)".to_string(), value: "".to_string() },
-            Fact { key: "bg:good(2)".to_string(), value: "".to_string() },
-            Fact { key: "pos:target(1)".to_string(), value: "".to_string() },
-            Fact { key: "bg:good(1)".to_string(), value: "".to_string() },
+            Fact {
+                key: "neg:target(3)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "pos:target(2)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "bg:good(2)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "pos:target(1)".to_string(),
+                value: "".to_string(),
+            },
+            Fact {
+                key: "bg:good(1)".to_string(),
+                value: "".to_string(),
+            },
         ];
-        let out1 = breed.run(&BreedInput { facts: facts1, ..Default::default() }).unwrap();
-        let out2 = breed.run(&BreedInput { facts: facts2, ..Default::default() }).unwrap();
+        let out1 = breed
+            .run(&BreedInput {
+                facts: facts1,
+                ..Default::default()
+            })
+            .unwrap();
+        let out2 = breed
+            .run(&BreedInput {
+                facts: facts2,
+                ..Default::default()
+            })
+            .unwrap();
         assert_eq!(out1.selected, out2.selected);
     }
 }

@@ -112,7 +112,9 @@ impl CognitionBreed for EventCalculus {
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         let n = parse_narrative(input)?;
         if n.happens.is_empty() && n.initially.is_empty() {
-            return Err("event_calculus requires a narrative (ec:happens/ec:initially facts)".to_string());
+            return Err(
+                "event_calculus requires a narrative (ec:happens/ec:initially facts)".to_string(),
+            );
         }
         if n.happens.len() > MAX_EVENTS {
             return Err(format!(
@@ -230,7 +232,10 @@ impl CognitionBreed for EventCalculus {
                             tr(
                                 &mut trace,
                                 "ec-infer",
-                                format!("Clipped({},{},{}) = true (by '{}'@{})", e, fluent, t, ca, ce),
+                                format!(
+                                    "Clipped({},{},{}) = true (by '{}'@{})",
+                                    e, fluent, t, ca, ce
+                                ),
                                 2,
                             );
                         }
@@ -251,7 +256,12 @@ impl CognitionBreed for EventCalculus {
             verdicts.push(format!("{}@{}={}", fluent, t, holds));
         }
 
-        tr(&mut trace, "ec-model", format!("{} verdict(s)", verdicts.len()), 0);
+        tr(
+            &mut trace,
+            "ec-model",
+            format!("{} verdict(s)", verdicts.len()),
+            0,
+        );
 
         Ok(BreedOutput {
             breed: BreedId::EventCalculus,
@@ -274,7 +284,11 @@ impl CognitionBreed for EventCalculus {
         tq.require_non_empty()?;
         tq.require_first("ec-load")?;
         tq.require_last("ec-model")?;
-        if !output.facts.iter().any(|f| f.key.starts_with("ec:verdict:")) {
+        if !output
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("ec:verdict:"))
+        {
             return Err("missing ec:verdict fact".to_string());
         }
         Ok(())

@@ -3,10 +3,10 @@
 //! (hypothetical syllogism), which is a classical tautology.
 //! Run: cargo run --example tableaux
 
+use wasm4pm_cognition::breeds::tableaux::Tableaux;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::tableaux::Tableaux;
 
 fn main() {
     // Prove hypothetical syllogism: ((p -> q) & (q -> r)) -> (p -> r)
@@ -15,21 +15,17 @@ fn main() {
     let input = BreedInput {
         intent: "prove-hypothetical-syllogism".to_string(),
         candidates: vec![],
-        facts: vec![
-            Fact {
-                key: "formula:phi".to_string(),
-                value: "((p -> q) & (q -> r)) -> (p -> r)".to_string(),
-            },
-        ],
+        facts: vec![Fact {
+            key: "formula:phi".to_string(),
+            value: "((p -> q) & (q -> r)) -> (p -> r)".to_string(),
+        }],
         cases: vec![],
         rules: vec![],
-        goals: vec![
-            Goal {
-                id: "g1".to_string(),
-                predicate: "prove".to_string(),
-                value: "((p -> q) & (q -> r)) -> (p -> r)".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g1".to_string(),
+            predicate: "prove".to_string(),
+            value: "((p -> q) & (q -> r)) -> (p -> r)".to_string(),
+        }],
         state: vec![],
     };
 

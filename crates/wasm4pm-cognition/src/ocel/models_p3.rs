@@ -162,7 +162,13 @@ pub static SAT_CDCL_MODEL: BreedLifecycleModel = BreedLifecycleModel {
         },
         LifecyclePhase {
             name: "search",
-            kinds: &["decide", "propagate", "conflict", "learn-clause", "backjump"],
+            kinds: &[
+                "decide",
+                "propagate",
+                "conflict",
+                "learn-clause",
+                "backjump",
+            ],
             min_occurrences: 1,
             max_occurrences: usize::MAX,
         },

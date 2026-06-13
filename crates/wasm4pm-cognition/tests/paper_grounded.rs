@@ -18,10 +18,16 @@ use wasm4pm_cognition::breeds::*;
 #[test]
 fn mycin_paper_grounded() {
     let path = "tests/fixtures/papers/mycin.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -114,10 +120,10 @@ fn mycin_paper_grounded() {
                 .get("organism")
                 .and_then(|v| v.as_str())
                 .expect("fixture must declare expected.organism");
-            let organism_cf = exp
-                .get("organism_cf")
-                .and_then(|v| v.as_f64())
-                .expect("fixture must declare expected.organism_cf") as f32;
+            let organism_cf =
+                exp.get("organism_cf")
+                    .and_then(|v| v.as_f64())
+                    .expect("fixture must declare expected.organism_cf") as f32;
             let organism_detail = output
                 .inference_trace
                 .iter()
@@ -162,10 +168,16 @@ fn parse_cf(detail: &str) -> f32 {
 #[test]
 fn cbr_paper_grounded() {
     let path = "tests/fixtures/papers/cbr.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -287,10 +299,16 @@ fn cbr_paper_grounded() {
 #[test]
 fn gps_paper_grounded() {
     let path = "tests/fixtures/papers/gps.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -401,10 +419,16 @@ fn gps_paper_grounded() {
 #[test]
 fn soar_paper_grounded() {
     let path = "tests/fixtures/papers/soar.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -493,10 +517,16 @@ fn soar_paper_grounded() {
 #[test]
 fn strips_paper_grounded() {
     let path = "tests/fixtures/papers/strips.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -623,10 +653,16 @@ fn strips_paper_grounded() {
 #[test]
 fn hearsay_paper_grounded() {
     let path = "tests/fixtures/papers/hearsay.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -748,10 +784,16 @@ fn hearsay_paper_grounded() {
 #[test]
 fn prolog_paper_grounded() {
     let path = "tests/fixtures/papers/prolog.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -891,10 +933,16 @@ fn prolog_paper_grounded() {
 #[test]
 fn dendral_paper_grounded() {
     let path = "tests/fixtures/papers/dendral.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -1009,10 +1057,16 @@ fn dendral_paper_grounded() {
 #[test]
 fn eliza_paper_grounded() {
     let path = "tests/fixtures/papers/eliza.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let intent = inp
@@ -1082,10 +1136,16 @@ fn eliza_paper_grounded() {
 #[test]
 fn autoinstinct_learning_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_learning.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1163,19 +1223,14 @@ fn autoinstinct_learning_paper_grounded() {
                 "AutoinstinctLearning must emit plan-step trace events"
             );
 
-            // Paper-expected: goals g0 and g1 are achieved (2 facts true), g2..g4 unachieved
+            // Paper-expected: bitmask plan length must match fixture expected.selected
             let exp = &json["expected"];
-            if let Some(achieved) = exp.get("achieved_goals").and_then(|v| v.as_array()) {
-                let selected_str = output.selected.as_deref().unwrap_or("");
-                // step count = total goals - achieved; extract from "N steps to goal"
-                let achieved_count = achieved.len();
-                let total_goals = output
-                    .inference_trace
-                    .iter()
-                    .filter(|t| t.kind == "plan-step")
-                    .count();
-                // At minimum, the plan should have fewer steps than if zero goals were achieved
-                let _ = (achieved_count, total_goals, selected_str); // used for context
+            if let Some(expected_selected) = exp.get("selected").and_then(|v| v.as_str()) {
+                assert_eq!(
+                    output.selected.as_deref(),
+                    Some(expected_selected),
+                    "AutoinstinctLearning: selected must match fixture expected.selected (Sussman 1973 HACKER bitmask plan length)"
+                );
             }
         }
     }
@@ -1188,10 +1243,16 @@ fn autoinstinct_learning_paper_grounded() {
 #[test]
 fn autoinstinct_neurosis_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_neurosis.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1265,7 +1326,7 @@ fn autoinstinct_neurosis_paper_grounded() {
                 .get("expected_finding_count_min")
                 .and_then(|v| v.as_u64())
             {
-                // The trace should contain at least min_findings defensive or accepting response steps
+                // The trace should contain at least min_findings defensive response steps
                 let response_steps = output
                     .inference_trace
                     .iter()
@@ -1274,10 +1335,16 @@ fn autoinstinct_neurosis_paper_grounded() {
                     })
                     .count();
                 assert!(
-                    response_steps >= 1,
-                    "AutoinstinctNeurosis must emit response steps for conflict pairs; \
-                     paper expects at least {} findings (Boden 1977)",
+                    response_steps >= min_findings as usize,
+                    "AutoinstinctNeurosis must emit at least {} defensive/accepting response steps for conflict pairs; \
+                     Colby PARRY 1971 expects full paranoid conflict",
                     min_findings
+                );
+                let eliminated = output.candidates.iter().filter(|c| c.eliminated).count();
+                assert!(
+                    eliminated >= 6,
+                    "AutoinstinctNeurosis: all 6 high-conflict stimuli must produce eliminated candidates; got {}",
+                    eliminated
                 );
             }
         }
@@ -1291,10 +1358,16 @@ fn autoinstinct_neurosis_paper_grounded() {
 #[test]
 fn autoinstinct_vision_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_vision.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1365,6 +1438,13 @@ fn autoinstinct_vision_paper_grounded() {
                     algo_outcome
                 );
             }
+            if let Some(expected_id) = exp.get("selected").and_then(|v| v.as_str()) {
+                assert_eq!(
+                    output.selected.as_deref(),
+                    Some(expected_id),
+                    "AutoinstinctVision must select the correct clear object from the blocks-world scene"
+                );
+            }
         }
     }
 }
@@ -1376,10 +1456,16 @@ fn autoinstinct_vision_paper_grounded() {
 #[test]
 fn autoinstinct_semantics_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_semantics.json";
-    let content = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("MISSING FIXTURE: {} — paper-grounded tests must not skip", path)); {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
         let json = serde_json::from_str::<serde_json::Value>(&content)
-            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e)); {
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let intent = inp
@@ -1489,7 +1575,10 @@ fn parse_breed_input(inp: &serde_json::Value) -> BreedInput {
                 f.get("key").and_then(|v| v.as_str()),
                 f.get("value").and_then(|v| v.as_str()),
             ) {
-                facts.push(Fact { key: k.to_string(), value: v.to_string() });
+                facts.push(Fact {
+                    key: k.to_string(),
+                    value: v.to_string(),
+                });
             }
         }
     }
@@ -1504,7 +1593,11 @@ fn parse_breed_input(inp: &serde_json::Value) -> BreedInput {
                 let premise = r
                     .get("premise")
                     .and_then(|v| v.as_array())
-                    .map(|a| a.iter().filter_map(|p| p.as_str().map(String::from)).collect())
+                    .map(|a| {
+                        a.iter()
+                            .filter_map(|p| p.as_str().map(String::from))
+                            .collect()
+                    })
                     .unwrap_or_default();
                 rules.push(Rule {
                     id: id.to_string(),
@@ -1538,12 +1631,19 @@ fn parse_breed_input(inp: &serde_json::Value) -> BreedInput {
                 s.get("predicate").and_then(|v| v.as_str()),
                 s.get("value").and_then(|v| v.as_str()),
             ) {
-                state.push(StateAtom { predicate: pred.to_string(), value: val.to_string() });
+                state.push(StateAtom {
+                    predicate: pred.to_string(),
+                    value: val.to_string(),
+                });
             }
         }
     }
     BreedInput {
-        intent: inp.get("intent").and_then(|v| v.as_str()).unwrap_or("test").to_string(),
+        intent: inp
+            .get("intent")
+            .and_then(|v| v.as_str())
+            .unwrap_or("test")
+            .to_string(),
         candidates: vec![],
         facts,
         cases: vec![],
@@ -1571,17 +1671,32 @@ fn ltl_monitor_paper_grounded() {
     let exp = &json["expected"];
     assert_eq!(
         out.selected.as_deref(),
-        Some(if exp["verdict"].as_bool().unwrap() { "true" } else { "false" }),
+        Some(if exp["verdict"].as_bool().unwrap() {
+            "true"
+        } else {
+            "false"
+        }),
         "Havelund-Rosu 2001: conforming trace must satisfy G (red -> !green)"
     );
-    let progress = out.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
+    let progress = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-progress")
+        .count();
     assert_eq!(progress as u64, exp["progress_steps"].as_u64().unwrap());
 
     let bad = parse_breed_input(&json["violating_input"]);
     let out_bad = dispatch_breed_test("ltl_monitor", &bad).expect("ltl run");
     assert_eq!(out_bad.selected.as_deref(), Some("false"));
-    let progress_bad = out_bad.inference_trace.iter().filter(|t| t.kind == "ltl-progress").count();
-    assert_eq!(progress_bad as u64, exp["violating_progress_steps"].as_u64().unwrap());
+    let progress_bad = out_bad
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "ltl-progress")
+        .count();
+    assert_eq!(
+        progress_bad as u64,
+        exp["violating_progress_steps"].as_u64().unwrap()
+    );
 }
 
 /// Allen 1983 Table 1 — m∘d = (o s d): published transitivity-table entry.
@@ -1614,8 +1729,8 @@ fn allen_temporal_paper_grounded() {
 /// Load a P2 fixture and deserialize its "input" object into a BreedInput.
 fn p2_load(breed: &str) -> (BreedInput, serde_json::Value) {
     let path = format!("tests/fixtures/papers/{}.json", breed);
-    let content = fs::read_to_string(&path)
-        .unwrap_or_else(|e| panic!("fixture {} must exist: {}", path, e));
+    let content =
+        fs::read_to_string(&path).unwrap_or_else(|e| panic!("fixture {} must exist: {}", path, e));
     let json: serde_json::Value =
         serde_json::from_str(&content).unwrap_or_else(|e| panic!("fixture {} parse: {}", path, e));
     let input: BreedInput = serde_json::from_value(json["input"].clone())
@@ -1814,7 +1929,10 @@ fn csp_ac3_paper_grounded() {
     let json = load_fixture("csp_ac3");
     let input = parse_breed_input(&json["input"]);
     let out = dispatch_breed_test("csp_ac3", &input).expect("csp run");
-    assert_eq!(out.explanation, json["expected"]["explanation"].as_str().unwrap());
+    assert_eq!(
+        out.explanation,
+        json["expected"]["explanation"].as_str().unwrap()
+    );
     assert!(out.inference_trace.iter().any(|t| t.kind == "csp-assign"));
 }
 
@@ -1842,7 +1960,10 @@ fn default_logic_paper_grounded() {
             ext
         );
     }
-    assert!(out.inference_trace.iter().any(|t| t.kind == "default-block"));
+    assert!(out
+        .inference_trace
+        .iter()
+        .any(|t| t.kind == "default-block"));
 }
 
 /// Nau et al. 2003 — SHOP2 total-order decomposition: exact delivery plan.
@@ -1891,8 +2012,15 @@ fn frames_inheritance_paper_grounded() {
         out.selected.as_deref(),
         Some(json["expected"]["selected"].as_str().unwrap())
     );
-    let walks = out.inference_trace.iter().filter(|t| t.kind == "frame-walk").count();
-    assert_eq!(walks as u64, json["expected"]["walk_steps"].as_u64().unwrap());
+    let walks = out
+        .inference_trace
+        .iter()
+        .filter(|t| t.kind == "frame-walk")
+        .count();
+    assert_eq!(
+        walks as u64,
+        json["expected"]["walk_steps"].as_u64().unwrap()
+    );
 }
 
 /// Mitchell et al. 1986 — SafeToStack EBG: the learned operational rule is
@@ -1911,7 +2039,12 @@ fn ebl_paper_grounded() {
         .clone();
     let exp = &json["expected"];
     for s in exp["rule_contains"].as_array().unwrap() {
-        assert!(learned.contains(s.as_str().unwrap()), "rule must contain {}: {}", s, learned);
+        assert!(
+            learned.contains(s.as_str().unwrap()),
+            "rule must contain {}: {}",
+            s,
+            learned
+        );
     }
     for s in exp["rule_excludes"].as_array().unwrap() {
         assert!(
@@ -1921,7 +2054,10 @@ fn ebl_paper_grounded() {
             learned
         );
     }
-    assert!(learned.contains('?'), "Mitchell 1986 EBG must produce a variablized rule");
+    assert!(
+        learned.contains('?'),
+        "Mitchell 1986 EBG must produce a variablized rule"
+    );
 }
 
 /// Mitchell 1982: EnjoySport — S4 = <Sunny,Warm,?,Strong,?,?>, |G3| = 3, |G4| = 2.
@@ -1996,7 +2132,10 @@ fn belief_merging_paper_grounded() {
     for m in expected_gmax {
         assert!(gmax_models.contains(&m), "missing GMax model {}", m);
     }
-    assert_ne!(sum_models, gmax_models, "Σ and GMax must disagree on this profile");
+    assert_ne!(
+        sum_models, gmax_models,
+        "Σ and GMax must disagree on this profile"
+    );
 }
 
 /// de Kleer & Brown 1984: pressure-regulator valve ambiguity — 3 states.
@@ -2011,16 +2150,20 @@ fn qualitative_reason_paper_grounded() {
     for q in json["expected"]["q_values"].as_array().unwrap() {
         let glyph = q.as_str().unwrap();
         assert!(
-            out.facts
-                .iter()
-                .any(|f| f.key.starts_with("qr:state:") && f.value.contains(&format!("q:{}", glyph))),
+            out.facts.iter().any(
+                |f| f.key.starts_with("qr:state:") && f.value.contains(&format!("q:{}", glyph))
+            ),
             "missing q={} branch",
             glyph
         );
     }
     for kind in json["expected"]["required_trace_kinds"].as_array().unwrap() {
         let k = kind.as_str().unwrap();
-        assert!(out.inference_trace.iter().any(|t| t.kind == k), "missing '{}'", k);
+        assert!(
+            out.inference_trace.iter().any(|t| t.kind == k),
+            "missing '{}'",
+            k
+        );
     }
 }
 
@@ -2069,7 +2212,9 @@ pub fn assert_paper_grounded(json: &serde_json::Value) {
     if json.get("expected").and_then(|e| e.get("value")).is_none() {
         panic!("A12 Violation: Fixture missing `expected.value`");
     }
-    let prov = json.get("provenance").expect("A12 Violation: Fixture missing `provenance` block");
+    let prov = json
+        .get("provenance")
+        .expect("A12 Violation: Fixture missing `provenance` block");
     if prov.get("paper").is_none() {
         panic!("A12 Violation: Fixture missing `provenance.paper`");
     }
@@ -2087,9 +2232,10 @@ pub fn assert_paper_grounded(json: &serde_json::Value) {
 fn p3_load_full(breed: &str) -> Option<(BreedInput, serde_json::Value, serde_json::Value)> {
     let path = format!("tests/fixtures/papers/{}.json", breed);
     let content = fs::read_to_string(&path).ok()?;
-    let json: serde_json::Value = serde_json::from_str(&content).expect("fixture must be valid JSON");
-    let input: BreedInput =
-        serde_json::from_value(json["input"].clone()).expect("fixture input must parse as BreedInput");
+    let json: serde_json::Value =
+        serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let input: BreedInput = serde_json::from_value(json["input"].clone())
+        .expect("fixture input must parse as BreedInput");
     let expected = json["expected"].clone();
     Some((input, expected, json))
 }
@@ -2097,9 +2243,10 @@ fn p3_load_full(breed: &str) -> Option<(BreedInput, serde_json::Value, serde_jso
 fn p3_load(breed: &str) -> Option<(BreedInput, serde_json::Value)> {
     let path = format!("tests/fixtures/papers/{}.json", breed);
     let content = fs::read_to_string(&path).ok()?;
-    let json: serde_json::Value = serde_json::from_str(&content).expect("fixture must be valid JSON");
-    let input: BreedInput =
-        serde_json::from_value(json["input"].clone()).expect("fixture input must parse as BreedInput");
+    let json: serde_json::Value =
+        serde_json::from_str(&content).expect("fixture must be valid JSON");
+    let input: BreedInput = serde_json::from_value(json["input"].clone())
+        .expect("fixture input must parse as BreedInput");
     let expected = json["expected"].clone();
     Some((input, expected))
 }
@@ -2107,7 +2254,9 @@ fn p3_load(breed: &str) -> Option<(BreedInput, serde_json::Value)> {
 /// Reiter 1991 — blocks-world successor-state axioms with frame inertia.
 #[test]
 fn situation_calculus_paper_grounded() {
-    let Some((input, expected)) = p3_load("situation_calculus") else { return };
+    let Some((input, expected)) = p3_load("situation_calculus") else {
+        return;
+    };
     let out = dispatch_breed_test("situation_calculus", &input).expect("run ok");
     for f in expected["holds_final"].as_array().unwrap() {
         let key = format!("holds:{}", f.as_str().unwrap());
@@ -2128,7 +2277,10 @@ fn situation_calculus_paper_grounded() {
         );
     }
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "regress-step").count() as u64,
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "regress-step")
+            .count() as u64,
         expected["regress_steps"].as_u64().unwrap()
     );
 }
@@ -2136,7 +2288,9 @@ fn situation_calculus_paper_grounded() {
 /// McCarthy 1980 — bird/penguin abnormality minimization.
 #[test]
 fn circumscription_paper_grounded() {
-    let Some((input, expected)) = p3_load("circumscription") else { return };
+    let Some((input, expected)) = p3_load("circumscription") else {
+        return;
+    };
     let out = dispatch_breed_test("circumscription", &input).expect("run ok");
     for (atom, val) in expected["entailed"].as_object().unwrap() {
         let want = val.as_bool().unwrap().to_string();
@@ -2155,7 +2309,9 @@ fn circumscription_paper_grounded() {
 /// Falkenhainer, Forbus & Gentner 1989 — solar-system/atom mapping.
 #[test]
 fn analogy_sme_paper_grounded() {
-    let Some((input, expected)) = p3_load("analogy_sme") else { return };
+    let Some((input, expected)) = p3_load("analogy_sme") else {
+        return;
+    };
     let out = dispatch_breed_test("analogy_sme", &input).expect("run ok");
     for (b, t) in expected["mapping"].as_object().unwrap() {
         let want = t.as_str().unwrap();
@@ -2180,7 +2336,9 @@ fn analogy_sme_paper_grounded() {
 /// Anderson & Lebiere 1998 — addition-fact retrieval by activation.
 #[test]
 fn act_r_paper_grounded() {
-    let Some((input, expected)) = p3_load("act_r") else { return };
+    let Some((input, expected)) = p3_load("act_r") else {
+        return;
+    };
     let out = dispatch_breed_test("act_r", &input).expect("run ok");
     assert_eq!(
         out.selected.as_deref(),
@@ -2189,8 +2347,10 @@ fn act_r_paper_grounded() {
     );
     let sum = &expected["sum_fact"];
     assert!(
-        out.facts.iter().any(|f| f.key == sum["key"].as_str().unwrap()
-            && f.value == sum["value"].as_str().unwrap()),
+        out.facts
+            .iter()
+            .any(|f| f.key == sum["key"].as_str().unwrap()
+                && f.value == sum["value"].as_str().unwrap()),
         "the retrieved chunk's sum slot must reach working memory"
     );
     // Activation A = B + ΣW·S asserted from the trace detail.
@@ -2204,13 +2364,20 @@ fn act_r_paper_grounded() {
     let i = retrieve.detail.find("A=").unwrap() + 2;
     let j = retrieve.detail[i..].find(' ').unwrap() + i;
     let a: f64 = retrieve.detail[i..j].parse().unwrap();
-    assert!((a - a_expect).abs() < tol, "activation {} vs {}", a, a_expect);
+    assert!(
+        (a - a_expect).abs() < tol,
+        "activation {} vs {}",
+        a,
+        a_expect
+    );
 }
 
 /// De Raedt, Kimmig & Toivonen 2007 — P(wet) = 0.552 exact to 1e-6.
 #[test]
 fn problog_paper_grounded() {
-    let Some((input, expected)) = p3_load("problog") else { return };
+    let Some((input, expected)) = p3_load("problog") else {
+        return;
+    };
     let out = dispatch_breed_test("problog", &input).expect("run ok");
     let p: f64 = out
         .facts
@@ -2224,7 +2391,10 @@ fn problog_paper_grounded() {
     let tol = expected["tolerance"].as_f64().unwrap();
     assert!((p - want).abs() < tol, "P(wet) = {} must equal {}", p, want);
     assert_eq!(
-        out.inference_trace.iter().filter(|t| t.kind == "enumerate-world").count() as u64,
+        out.inference_trace
+            .iter()
+            .filter(|t| t.kind == "enumerate-world")
+            .count() as u64,
         expected["worlds"].as_u64().unwrap()
     );
 }
@@ -2232,7 +2402,9 @@ fn problog_paper_grounded() {
 /// Marques-Silva & Sakallah 1999 — GRASP conflict learning on PHP(3,2).
 #[test]
 fn sat_cdcl_paper_grounded() {
-    let Some((input, expected)) = p3_load("sat_cdcl") else { return };
+    let Some((input, expected)) = p3_load("sat_cdcl") else {
+        return;
+    };
     let out = dispatch_breed_test("sat_cdcl", &input).expect("run ok");
     assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
     let learned = out
@@ -2249,11 +2421,16 @@ fn sat_cdcl_paper_grounded() {
 /// Tulving 1983 / Nuxoll & Laird 2007 — temporal organisation of recall.
 #[test]
 fn episodic_memory_paper_grounded() {
-    let Some((input, expected)) = p3_load("episodic_memory") else { return };
+    let Some((input, expected)) = p3_load("episodic_memory") else {
+        return;
+    };
     let out = dispatch_breed_test("episodic_memory", &input).expect("run ok");
     assert_eq!(out.selected.as_deref(), expected["recalled"].as_str());
     let tol = expected["tolerance"].as_f64().unwrap();
-    for (id, key) in [("ep-breakfast", "score_breakfast"), ("ep-dinner", "score_dinner")] {
+    for (id, key) in [
+        ("ep-breakfast", "score_breakfast"),
+        ("ep-dinner", "score_dinner"),
+    ] {
         let got: f64 = out
             .facts
             .iter()
@@ -2270,7 +2447,9 @@ fn episodic_memory_paper_grounded() {
 /// Watkins & Dayan 1992 — Q-learning convergence to the Bellman fixed point.
 #[test]
 fn rl_symbolic_paper_grounded() {
-    let Some((input, expected, full_json)) = p3_load_full("rl_symbolic") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("rl_symbolic") else {
+        return;
+    };
     assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("rl_symbolic", &input).expect("run ok");
     assert_eq!(
@@ -2299,12 +2478,16 @@ fn rl_symbolic_paper_grounded() {
 /// Clarke, Emerson & Sistla 1986 — mutual exclusion safety AG !(c1 & c2).
 #[test]
 fn ctl_check_paper_grounded() {
-    let Some((input, expected, full_json)) = p3_load_full("ctl_check") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("ctl_check") else {
+        return;
+    };
     assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("ctl_check", &input).expect("run ok");
     assert_eq!(out.selected.as_deref(), expected["verdict"].as_str());
     assert!(
-        !out.inference_trace.iter().any(|t| t.kind == "counterexample-step"),
+        !out.inference_trace
+            .iter()
+            .any(|t| t.kind == "counterexample-step"),
         "a holding safety property must have no counterexample"
     );
 }
@@ -2312,7 +2495,9 @@ fn ctl_check_paper_grounded() {
 /// Quinlan 1990 — FOIL daughter/parent: body == {parent(V1,V0), female(V0)}.
 #[test]
 fn ilp_paper_grounded() {
-    let Some((input, expected, full_json)) = p3_load_full("ilp") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("ilp") else {
+        return;
+    };
     assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("ilp", &input).expect("run ok");
     let rules: Vec<&str> = out
@@ -2321,7 +2506,10 @@ fn ilp_paper_grounded() {
         .filter(|f| f.key.starts_with("ilp:rule:"))
         .map(|f| f.value.as_str())
         .collect();
-    assert_eq!(rules.len() as u64, expected["clause_count"].as_u64().unwrap());
+    assert_eq!(
+        rules.len() as u64,
+        expected["clause_count"].as_u64().unwrap()
+    );
     let rule = rules[0];
     let (head, body) = rule.split_once(" :- ").expect("clause shape");
     assert_eq!(head, expected["head"].as_str().unwrap());
@@ -2332,13 +2520,18 @@ fn ilp_paper_grounded() {
         .iter()
         .map(|v| v.as_str().unwrap())
         .collect();
-    assert_eq!(body_set, want_set, "learned body must equal the paper's definition as a set");
+    assert_eq!(
+        body_set, want_set,
+        "learned body must equal the paper's definition as a set"
+    );
 }
 
 /// Hayes 1979/1985 — the cup of water: cup falls, water spills, floor stays.
 #[test]
 fn naive_physics_paper_grounded() {
-    let Some((input, expected, full_json)) = p3_load_full("naive_physics") else { return };
+    let Some((input, expected, full_json)) = p3_load_full("naive_physics") else {
+        return;
+    };
     assert_paper_grounded(&full_json);
     let out = dispatch_breed_test("naive_physics", &input).expect("run ok");
     for f in expected["falls"].as_array().unwrap() {
@@ -2351,7 +2544,11 @@ fn naive_physics_paper_grounded() {
     }
     for f in expected["not_falls"].as_array().unwrap() {
         let key = format!("falls:{}", f.as_str().unwrap());
-        assert!(!out.facts.iter().any(|x| x.key == key), "over-derivation: {}", key);
+        assert!(
+            !out.facts.iter().any(|x| x.key == key),
+            "over-derivation: {}",
+            key
+        );
     }
 }
 
@@ -2388,8 +2585,7 @@ fn p4_fixture_input(path: &str) -> Option<(BreedInput, serde_json::Value)> {
 }
 
 fn fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
-    &out
-        .facts
+    &out.facts
         .iter()
         .find(|f| f.key == key)
         .unwrap_or_else(|| panic!("missing fact '{}'", key))
@@ -2401,9 +2597,15 @@ fn fact_value<'a>(out: &'a BreedOutput, key: &str) -> &'a str {
 fn tableaux_paper_grounded() {
     if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/tableaux.json") {
         let out = dispatch_breed_test("tableaux", &input).expect("run ok");
-        assert_eq!(fact_value(&out, "tableaux:verdict"), exp["verdict"].as_str().unwrap());
         assert_eq!(
-            out.inference_trace.iter().filter(|t| t.kind == "beta-expand").count() as u64,
+            fact_value(&out, "tableaux:verdict"),
+            exp["verdict"].as_str().unwrap()
+        );
+        assert_eq!(
+            out.inference_trace
+                .iter()
+                .filter(|t| t.kind == "beta-expand")
+                .count() as u64,
             exp["beta_expansions"].as_u64().unwrap(),
             "Smullyan K-axiom proof must use zero beta expansions"
         );
@@ -2415,15 +2617,26 @@ fn tableaux_paper_grounded() {
 /// construction; transitive 'fax' is coerced.
 #[test]
 fn construction_grammar_paper_grounded() {
-    if let Some((input, exp)) =
-        p4_fixture_input("tests/fixtures/papers/construction_grammar.json")
+    if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/construction_grammar.json")
     {
         let out = dispatch_breed_test("construction_grammar", &input).expect("run ok");
-        assert_eq!(fact_value(&out, "cxg:construction"), exp["construction"].as_str().unwrap());
-        assert_eq!(fact_value(&out, "cxg:coerced"), exp["coerced"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "cxg:construction"),
+            exp["construction"].as_str().unwrap()
+        );
+        assert_eq!(
+            fact_value(&out, "cxg:coerced"),
+            exp["coerced"].as_str().unwrap()
+        );
         assert!(fact_value(&out, "cxg:meaning").starts_with(exp["meaning_frame"].as_str().unwrap()));
-        assert_eq!(fact_value(&out, "cxg:slot:rec"), exp["slot_rec"].as_str().unwrap());
-        assert_eq!(fact_value(&out, "cxg:slot:theme"), exp["slot_theme"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "cxg:slot:rec"),
+            exp["slot_rec"].as_str().unwrap()
+        );
+        assert_eq!(
+            fact_value(&out, "cxg:slot:theme"),
+            exp["slot_theme"].as_str().unwrap()
+        );
     }
 }
 
@@ -2433,9 +2646,18 @@ fn markov_logic_paper_grounded() {
     if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/markov_logic.json") {
         let out = dispatch_breed_test("markov_logic", &input).expect("run ok");
         assert_eq!(fact_value(&out, "mln:cost"), exp["cost"].as_str().unwrap());
-        assert_eq!(fact_value(&out, "mln:atom:smokes_bob"), exp["smokes_bob"].as_str().unwrap());
-        assert_eq!(fact_value(&out, "mln:atom:cancer_anna"), exp["cancer_anna"].as_str().unwrap());
-        assert_eq!(fact_value(&out, "mln:atom:cancer_bob"), exp["cancer_bob"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "mln:atom:smokes_bob"),
+            exp["smokes_bob"].as_str().unwrap()
+        );
+        assert_eq!(
+            fact_value(&out, "mln:atom:cancer_anna"),
+            exp["cancer_anna"].as_str().unwrap()
+        );
+        assert_eq!(
+            fact_value(&out, "mln:atom:cancer_bob"),
+            exp["cancer_bob"].as_str().unwrap()
+        );
     }
 }
 
@@ -2457,7 +2679,10 @@ fn pomdp_paper_grounded() {
 fn contingent_plan_paper_grounded() {
     if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/contingent_plan.json") {
         let out = dispatch_breed_test("contingent_plan", &input).expect("run ok");
-        assert_eq!(fact_value(&out, "plan:tree"), exp["plan_tree"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "plan:tree"),
+            exp["plan_tree"].as_str().unwrap()
+        );
         assert_eq!(
             fact_value(&out, "plan:tree").matches("(sense ").count() as u64,
             exp["sense_nodes"].as_u64().unwrap()
@@ -2470,7 +2695,10 @@ fn contingent_plan_paper_grounded() {
 fn meta_reasoning_paper_grounded() {
     if let Some((input, exp)) = p4_fixture_input("tests/fixtures/papers/meta_reasoning.json") {
         let out = dispatch_breed_test("meta_reasoning", &input).expect("run ok");
-        assert_eq!(fact_value(&out, "meta:conflicts"), exp["conflicts"].as_str().unwrap());
+        assert_eq!(
+            fact_value(&out, "meta:conflicts"),
+            exp["conflicts"].as_str().unwrap()
+        );
         assert_eq!(
             fact_value(&out, "meta:decision:therapy"),
             exp["decision_therapy"].as_str().unwrap()

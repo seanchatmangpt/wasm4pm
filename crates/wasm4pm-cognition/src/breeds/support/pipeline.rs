@@ -35,7 +35,12 @@ pub struct BreedPipeline<S> {
 impl<S> BreedPipeline<S> {
     /// Create a new pipeline for `breed` with initial state.
     pub fn new(breed: BreedId, state: S) -> Self {
-        Self { breed, state, trace: Vec::new(), step: 0 }
+        Self {
+            breed,
+            state,
+            trace: Vec::new(),
+            step: 0,
+        }
     }
 
     /// Execute one named stage.
@@ -109,9 +114,15 @@ mod tests {
     #[test]
     fn stages_emit_trace_steps() {
         let output = BreedPipeline::new(BreedId::LtlMonitor, CountState::default())
-            .stage("step-a", |s| { s.count += 1; Ok("a".into()) })
+            .stage("step-a", |s| {
+                s.count += 1;
+                Ok("a".into())
+            })
             .unwrap()
-            .stage("step-b", |s| { s.count += 1; Ok("b".into()) })
+            .stage("step-b", |s| {
+                s.count += 1;
+                Ok("b".into())
+            })
             .unwrap()
             .finish(|_| empty_output())
             .unwrap();
@@ -124,10 +135,16 @@ mod tests {
     #[test]
     fn stage_error_stops_pipeline() {
         let err = BreedPipeline::new(BreedId::LtlMonitor, CountState::default())
-            .stage("good", |s| { s.count += 1; Ok("ok".into()) })
+            .stage("good", |s| {
+                s.count += 1;
+                Ok("ok".into())
+            })
             .unwrap()
             .stage("bad", |_| {
-                Err(BreedError { breed: BreedId::LtlMonitor, message: "fail".to_string() })
+                Err(BreedError {
+                    breed: BreedId::LtlMonitor,
+                    message: "fail".to_string(),
+                })
             });
         assert!(err.is_err());
     }
@@ -136,7 +153,11 @@ mod tests {
     fn finish_overwrites_trace() {
         let mut pre_output = empty_output();
         pre_output.inference_trace.push(TraceStep {
-            step: 0, kind: "stale".to_string(), detail: "x".to_string(), depth: 0, objects: vec![],
+            step: 0,
+            kind: "stale".to_string(),
+            detail: "x".to_string(),
+            depth: 0,
+            objects: vec![],
         });
         let output = BreedPipeline::new(BreedId::LtlMonitor, CountState::default())
             .stage("real", |_| Ok("y".into()))

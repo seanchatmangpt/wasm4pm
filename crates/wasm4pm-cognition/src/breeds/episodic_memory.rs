@@ -18,7 +18,9 @@
 
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Tulving-style episodic recall engine.
@@ -74,7 +76,10 @@ impl CognitionBreed for EpisodicMemory {
         let times = episode_times(input)?;
         for c in &input.cases {
             if !times.contains_key(&c.id) {
-                return Err(format!("episode '{}' is missing its episode:{}:t time fact", c.id, c.id));
+                return Err(format!(
+                    "episode '{}' is missing its episode:{}:t time fact",
+                    c.id, c.id
+                ));
             }
         }
         if !input.facts.iter().any(|f| f.key == "cue:t") {
@@ -126,7 +131,13 @@ impl CognitionBreed for EpisodicMemory {
             push(
                 &mut trace,
                 "encode-episode",
-                format!("'{}' t={} ({} atoms, salience={:.2})", c.id, times[&c.id], c.facts.len(), c.outcome_score),
+                format!(
+                    "'{}' t={} ({} atoms, salience={:.2})",
+                    c.id,
+                    times[&c.id],
+                    c.facts.len(),
+                    c.outcome_score
+                ),
             );
         }
         push(
@@ -163,7 +174,9 @@ impl CognitionBreed for EpisodicMemory {
             });
             let better = match &best {
                 None => true,
-                Some((bs, bid)) => score > *bs + 1e-12 || ((score - *bs).abs() <= 1e-12 && c.id < *bid),
+                Some((bs, bid)) => {
+                    score > *bs + 1e-12 || ((score - *bs).abs() <= 1e-12 && c.id < *bid)
+                }
             };
             if better {
                 best = Some((score, c.id.clone()));
@@ -179,7 +192,11 @@ impl CognitionBreed for EpisodicMemory {
         push(
             &mut trace,
             "decision",
-            format!("episode '{}' wins over {} candidates", best_id, episodes.len()),
+            format!(
+                "episode '{}' wins over {} candidates",
+                best_id,
+                episodes.len()
+            ),
         );
         facts.push(Fact {
             key: format!("recalled:{}", best_id),
@@ -222,7 +239,10 @@ mod tests {
         let input = BreedInput {
             intent: "".to_string(),
             candidates: vec![],
-            facts: vec![Fact { key: "cue:t".to_string(), value: "10".to_string() }],
+            facts: vec![Fact {
+                key: "cue:t".to_string(),
+                value: "10".to_string(),
+            }],
             cases: vec![],
             rules: vec![],
             goals: vec![],
@@ -238,7 +258,10 @@ mod tests {
         let input = BreedInput {
             intent: "".to_string(),
             candidates: vec![],
-            facts: vec![Fact { key: "episode:e1:t".to_string(), value: "5".to_string() }],
+            facts: vec![Fact {
+                key: "episode:e1:t".to_string(),
+                value: "5".to_string(),
+            }],
             cases: vec![Case {
                 id: "e1".to_string(),
                 intent: "".to_string(),
@@ -260,7 +283,10 @@ mod tests {
         let input = BreedInput {
             intent: "".to_string(),
             candidates: vec![],
-            facts: vec![Fact { key: "cue:t".to_string(), value: "10".to_string() }],
+            facts: vec![Fact {
+                key: "cue:t".to_string(),
+                value: "10".to_string(),
+            }],
             cases: vec![Case {
                 id: "e1".to_string(),
                 intent: "".to_string(),
@@ -283,18 +309,36 @@ mod tests {
             intent: "".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "cue:t".to_string(), value: "10".to_string() },
-                Fact { key: "A".to_string(), value: "1".to_string() },
-                Fact { key: "B".to_string(), value: "1".to_string() },
-                Fact { key: "episode:e1:t".to_string(), value: "0".to_string() },
-                Fact { key: "episode:e2:t".to_string(), value: "10".to_string() },
+                Fact {
+                    key: "cue:t".to_string(),
+                    value: "10".to_string(),
+                },
+                Fact {
+                    key: "A".to_string(),
+                    value: "1".to_string(),
+                },
+                Fact {
+                    key: "B".to_string(),
+                    value: "1".to_string(),
+                },
+                Fact {
+                    key: "episode:e1:t".to_string(),
+                    value: "0".to_string(),
+                },
+                Fact {
+                    key: "episode:e2:t".to_string(),
+                    value: "10".to_string(),
+                },
             ],
             cases: vec![
                 Case {
                     id: "e1".to_string(),
                     intent: "".to_string(),
                     architecture: "".to_string(),
-                    facts: vec![Fact { key: "A".to_string(), value: "1".to_string() }],
+                    facts: vec![Fact {
+                        key: "A".to_string(),
+                        value: "1".to_string(),
+                    }],
                     outcome_score: 1.0,
                 },
                 Case {
@@ -320,23 +364,38 @@ mod tests {
             intent: "".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "cue:t".to_string(), value: "10".to_string() },
-                Fact { key: "episode:e1:t".to_string(), value: "5".to_string() },
-                Fact { key: "episode:e2:t".to_string(), value: "8".to_string() },
+                Fact {
+                    key: "cue:t".to_string(),
+                    value: "10".to_string(),
+                },
+                Fact {
+                    key: "episode:e1:t".to_string(),
+                    value: "5".to_string(),
+                },
+                Fact {
+                    key: "episode:e2:t".to_string(),
+                    value: "8".to_string(),
+                },
             ],
             cases: vec![
                 Case {
                     id: "e1".to_string(),
                     intent: "".to_string(),
                     architecture: "".to_string(),
-                    facts: vec![Fact { key: "A".to_string(), value: "1".to_string() }],
+                    facts: vec![Fact {
+                        key: "A".to_string(),
+                        value: "1".to_string(),
+                    }],
                     outcome_score: 1.0,
                 },
                 Case {
                     id: "e2".to_string(),
                     intent: "".to_string(),
                     architecture: "".to_string(),
-                    facts: vec![Fact { key: "B".to_string(), value: "1".to_string() }],
+                    facts: vec![Fact {
+                        key: "B".to_string(),
+                        value: "1".to_string(),
+                    }],
                     outcome_score: 1.0,
                 },
             ],
@@ -363,10 +422,22 @@ mod tests {
             intent: "recall the most relevant kitchen episode".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "place".to_string(), value: "kitchen".to_string() },
-                Fact { key: "cue:t".to_string(), value: "10".to_string() },
-                Fact { key: "episode:ep-breakfast:t".to_string(), value: "9".to_string() },
-                Fact { key: "episode:ep-dinner:t".to_string(), value: "2".to_string() },
+                Fact {
+                    key: "place".to_string(),
+                    value: "kitchen".to_string(),
+                },
+                Fact {
+                    key: "cue:t".to_string(),
+                    value: "10".to_string(),
+                },
+                Fact {
+                    key: "episode:ep-breakfast:t".to_string(),
+                    value: "9".to_string(),
+                },
+                Fact {
+                    key: "episode:ep-dinner:t".to_string(),
+                    value: "2".to_string(),
+                },
             ],
             cases: vec![
                 Case {
@@ -375,8 +446,14 @@ mod tests {
                     architecture: "episode".to_string(),
                     outcome_score: 0.5,
                     facts: vec![
-                        Fact { key: "place".to_string(), value: "kitchen".to_string() },
-                        Fact { key: "meal".to_string(), value: "breakfast".to_string() },
+                        Fact {
+                            key: "place".to_string(),
+                            value: "kitchen".to_string(),
+                        },
+                        Fact {
+                            key: "meal".to_string(),
+                            value: "breakfast".to_string(),
+                        },
                     ],
                 },
                 Case {
@@ -385,8 +462,14 @@ mod tests {
                     architecture: "episode".to_string(),
                     outcome_score: 0.5,
                     facts: vec![
-                        Fact { key: "place".to_string(), value: "kitchen".to_string() },
-                        Fact { key: "meal".to_string(), value: "dinner".to_string() },
+                        Fact {
+                            key: "place".to_string(),
+                            value: "kitchen".to_string(),
+                        },
+                        Fact {
+                            key: "meal".to_string(),
+                            value: "dinner".to_string(),
+                        },
                     ],
                 },
             ],
@@ -396,13 +479,22 @@ mod tests {
         };
         let out = ep.run(&input).unwrap();
         // ep-breakfast must win
-        assert_eq!(out.selected.as_deref(), Some("ep-breakfast"),
-            "temporal kernel must select ep-breakfast; formula: jaccard + 1/(1+|dt|)");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("ep-breakfast"),
+            "temporal kernel must select ep-breakfast; formula: jaccard + 1/(1+|dt|)"
+        );
         // Exact score check: jaccard=0.5, dt=1, kernel=0.5, total=1.0
-        let score_fact = out.facts.iter().find(|f| f.key == "score:ep-breakfast")
+        let score_fact = out
+            .facts
+            .iter()
+            .find(|f| f.key == "score:ep-breakfast")
             .expect("score:ep-breakfast must be emitted");
         let score: f64 = score_fact.value.parse().expect("score must be f64");
-        assert!((score - 1.0).abs() < 0.001,
-            "ep-breakfast score must be 1.0000 (jaccard=0.5 + kernel=0.5), got {}", score);
+        assert!(
+            (score - 1.0).abs() < 0.001,
+            "ep-breakfast score must be 1.0000 (jaccard=0.5 + kernel=0.5), got {}",
+            score
+        );
     }
 }

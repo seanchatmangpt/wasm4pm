@@ -8,10 +8,10 @@
 //!
 //! Run: cargo run --example default_logic
 
+use wasm4pm_cognition::breeds::default_logic::DefaultLogic;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::default_logic::DefaultLogic;
 
 fn main() {
     let input = BreedInput {
@@ -19,10 +19,22 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Known facts: Tweety is a penguin; Opus is a bird
-            Fact { key: "fact".to_string(), value: "penguin".to_string() },
-            Fact { key: "fact".to_string(), value: "Tweety".to_string() },
-            Fact { key: "fact".to_string(), value: "bird".to_string() },
-            Fact { key: "fact".to_string(), value: "Opus".to_string() },
+            Fact {
+                key: "fact".to_string(),
+                value: "penguin".to_string(),
+            },
+            Fact {
+                key: "fact".to_string(),
+                value: "Tweety".to_string(),
+            },
+            Fact {
+                key: "fact".to_string(),
+                value: "bird".to_string(),
+            },
+            Fact {
+                key: "fact".to_string(),
+                value: "Opus".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
@@ -36,10 +48,7 @@ fn main() {
             // Default: birds fly — unless the subject is a penguin
             Rule {
                 id: "birds-fly-tweety".to_string(),
-                premise: vec![
-                    "Tweety-is-bird".to_string(),
-                    "unless:penguin".to_string(),
-                ],
+                premise: vec!["Tweety-is-bird".to_string(), "unless:penguin".to_string()],
                 conclusion: "Tweety-flies".to_string(),
                 certainty: 0.9,
             },
@@ -51,13 +60,11 @@ fn main() {
                 certainty: 0.9,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "g1".to_string(),
-                predicate: "infer".to_string(),
-                value: "Opus-flies".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g1".to_string(),
+            predicate: "infer".to_string(),
+            value: "Opus-flies".to_string(),
+        }],
         state: vec![],
     };
 

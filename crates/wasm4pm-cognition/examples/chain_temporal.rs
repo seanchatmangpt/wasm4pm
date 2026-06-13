@@ -1,3 +1,6 @@
+use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
+use wasm4pm_cognition::breeds::event_calculus::EventCalculus;
+use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
 /// chain_temporal — 3-stage cognition chain: AllenTemporal → EventCalculus → LtlMonitor
 ///
 /// Stage 0: Compute Allen relations between acquire/critical/release intervals.
@@ -8,9 +11,6 @@
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::allen_temporal::AllenTemporal;
-use wasm4pm_cognition::breeds::event_calculus::EventCalculus;
-use wasm4pm_cognition::breeds::ltl_monitor::LtlMonitor;
 
 fn hash_output(output: &wasm4pm_cognition::breeds::BreedOutput) -> String {
     let json = serde_json::to_string(output).expect("output serialization");
@@ -30,15 +30,25 @@ fn empty_input(intent: &str) -> BreedInput {
 }
 
 fn fact(key: &str, value: &str) -> Fact {
-    Fact { key: key.to_string(), value: value.to_string() }
+    Fact {
+        key: key.to_string(),
+        value: value.to_string(),
+    }
 }
 
 fn goal(predicate: &str, value: &str) -> Goal {
-    Goal { id: format!("{}-{}", predicate, value), predicate: predicate.to_string(), value: value.to_string() }
+    Goal {
+        id: format!("{}-{}", predicate, value),
+        predicate: predicate.to_string(),
+        value: value.to_string(),
+    }
 }
 
 fn state(predicate: &str, value: &str) -> StateAtom {
-    StateAtom { predicate: predicate.to_string(), value: value.to_string() }
+    StateAtom {
+        predicate: predicate.to_string(),
+        value: value.to_string(),
+    }
 }
 
 fn main() {

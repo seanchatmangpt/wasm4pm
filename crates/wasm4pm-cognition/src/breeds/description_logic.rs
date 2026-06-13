@@ -21,10 +21,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Maximum number of distinct concept names.
 const MAX_CONCEPTS: usize = 32;
@@ -65,7 +65,8 @@ fn parse_tbox(input: &BreedInput) -> Result<Tbox, String> {
             t.concepts.insert(a1.to_string());
             t.concepts.insert(a2.to_string());
             t.concepts.insert(f.value.clone());
-            t.conj.push((a1.to_string(), a2.to_string(), f.value.clone()));
+            t.conj
+                .push((a1.to_string(), a2.to_string(), f.value.clone()));
         } else if let Some(a) = f.key.strip_prefix("dl:exists_rhs:") {
             let (r, b) = f
                 .value
@@ -103,7 +104,10 @@ impl CognitionBreed for DescriptionLogic {
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
         let t = parse_tbox(input)?;
-        if t.subclass.is_empty() && t.conj.is_empty() && t.exists_rhs.is_empty() && t.exists_lhs.is_empty()
+        if t.subclass.is_empty()
+            && t.conj.is_empty()
+            && t.exists_rhs.is_empty()
+            && t.exists_lhs.is_empty()
         {
             return Err("description_logic requires at least one dl:* TBox axiom fact".to_string());
         }
@@ -115,11 +119,16 @@ impl CognitionBreed for DescriptionLogic {
             ));
         }
         if !input.goals.iter().any(|g| g.predicate == "dl:subsumes") {
-            return Err("description_logic requires at least one dl:subsumes query goal".to_string());
+            return Err(
+                "description_logic requires at least one dl:subsumes query goal".to_string(),
+            );
         }
         for g in input.goals.iter().filter(|g| g.predicate == "dl:subsumes") {
             if !g.value.contains(':') {
-                return Err(format!("malformed dl:subsumes goal '{}' (need A:B)", g.value));
+                return Err(format!(
+                    "malformed dl:subsumes goal '{}' (need A:B)",
+                    g.value
+                ));
             }
         }
         Ok(())
@@ -176,7 +185,12 @@ impl CognitionBreed for DescriptionLogic {
                     for (x, b) in &t.subclass {
                         if x == ap && !s[a].contains(b) {
                             s.get_mut(a).unwrap().insert(b.clone());
-                            tr(&mut trace, "apply-cr1", format!("{} ⊑ {} (via {} ⊑ {})", a, b, ap, b), 1);
+                            tr(
+                                &mut trace,
+                                "apply-cr1",
+                                format!("{} ⊑ {} (via {} ⊑ {})", a, b, ap, b),
+                                1,
+                            );
                             changed = true;
                         }
                     }
@@ -187,7 +201,12 @@ impl CognitionBreed for DescriptionLogic {
                 for (a1, a2, b) in &t.conj {
                     if s[a].contains(a1) && s[a].contains(a2) && !s[a].contains(b) {
                         s.get_mut(a).unwrap().insert(b.clone());
-                        tr(&mut trace, "apply-cr2", format!("{} ⊑ {} (via {} ⊓ {})", a, b, a1, a2), 1);
+                        tr(
+                            &mut trace,
+                            "apply-cr2",
+                            format!("{} ⊑ {} (via {} ⊓ {})", a, b, a1, a2),
+                            1,
+                        );
                         changed = true;
                     }
                 }
@@ -200,7 +219,12 @@ impl CognitionBreed for DescriptionLogic {
                         if x == ap {
                             let edge = (r.clone(), a.clone(), b.clone());
                             if !r_edges.contains(&edge) {
-                                tr(&mut trace, "apply-cr3", format!("({},{}) ∈ R({})", a, b, r), 1);
+                                tr(
+                                    &mut trace,
+                                    "apply-cr3",
+                                    format!("({},{}) ∈ R({})", a, b, r),
+                                    1,
+                                );
                                 r_edges.insert(edge);
                                 changed = true;
                             }
@@ -216,7 +240,12 @@ impl CognitionBreed for DescriptionLogic {
                     for (r2, x, c) in &t.exists_lhs {
                         if r2 == r && x == bp && !s[a].contains(c) {
                             s.get_mut(a).unwrap().insert(c.clone());
-                            tr(&mut trace, "apply-cr4", format!("{} ⊑ {} (via ∃{}.{})", a, c, r, bp), 1);
+                            tr(
+                                &mut trace,
+                                "apply-cr4",
+                                format!("{} ⊑ {} (via ∃{}.{})", a, c, r, bp),
+                                1,
+                            );
                             changed = true;
                         }
                     }
@@ -232,7 +261,11 @@ impl CognitionBreed for DescriptionLogic {
         tr(
             &mut trace,
             "fixpoint",
-            format!("saturated: {} subsumptions, {} role edges", total, r_edges.len()),
+            format!(
+                "saturated: {} subsumptions, {} role edges",
+                total,
+                r_edges.len()
+            ),
             0,
         );
 
@@ -273,7 +306,11 @@ impl CognitionBreed for DescriptionLogic {
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         let tq = TraceQuery::from_output(output);
         tq.require_non_empty_with_kinds(&["fixpoint", "classify-verdict"])?;
-        if !output.facts.iter().any(|f| f.key.starts_with("dl:verdict:")) {
+        if !output
+            .facts
+            .iter()
+            .any(|f| f.key.starts_with("dl:verdict:"))
+        {
             return Err("missing dl:verdict fact".to_string());
         }
         Ok(())

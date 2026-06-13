@@ -31,17 +31,35 @@ fn main() {
         intent: "incident-root-cause".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "bm:atoms".to_string(),   value: "o,r,d".to_string() },
+            Fact {
+                key: "bm:atoms".to_string(),
+                value: "o,r,d".to_string(),
+            },
             // Agent 1 — NOC: outage + router fault
-            Fact { key: "bm:base:1".to_string(),  value: "o,r,-d".to_string() },
+            Fact {
+                key: "bm:base:1".to_string(),
+                value: "o,r,-d".to_string(),
+            },
             // Agent 2 — DevOps: outage + DNS fault
-            Fact { key: "bm:base:2".to_string(),  value: "o,-r,d".to_string() },
+            Fact {
+                key: "bm:base:2".to_string(),
+                value: "o,-r,d".to_string(),
+            },
             // Agent 3 — Security: no outage, no fault
-            Fact { key: "bm:base:3".to_string(),  value: "-o,-r,-d".to_string() },
+            Fact {
+                key: "bm:base:3".to_string(),
+                value: "-o,-r,-d".to_string(),
+            },
             // IC: tautology — no external constraint (all worlds are IC-worlds)
-            Fact { key: "bm:ic".to_string(),      value: "true".to_string() },
+            Fact {
+                key: "bm:ic".to_string(),
+                value: "true".to_string(),
+            },
             // Σ (sum) aggregation — majoritarian
-            Fact { key: "bm:operator".to_string(), value: "sum".to_string() },
+            Fact {
+                key: "bm:operator".to_string(),
+                value: "sum".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -54,9 +72,17 @@ fn main() {
         Ok(output) => {
             let output_json = serde_json::to_string(&output).expect("serialize output");
             let output_hash = blake3::hash(output_json.as_bytes()).to_hex().to_string();
-            println!("belief_merging ok — selected={:?}  hash={}", output.selected, &output_hash[..16]);
+            println!(
+                "belief_merging ok — selected={:?}  hash={}",
+                output.selected,
+                &output_hash[..16]
+            );
             println!("  {}", output.explanation);
-            for f in output.facts.iter().filter(|f| f.key.starts_with("bm:model")) {
+            for f in output
+                .facts
+                .iter()
+                .filter(|f| f.key.starts_with("bm:model"))
+            {
                 println!("  {} = {}", f.key, f.value);
             }
         }

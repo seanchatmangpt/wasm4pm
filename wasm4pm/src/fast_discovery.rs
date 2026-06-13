@@ -256,7 +256,7 @@ pub fn discover_astar_from_log(
                 // Incremental fitness calculation
                 let new_covered_pairs = current_covered_pairs + freq;
                 let new_edge_count = current_edge_count + 1;
-                
+
                 let coverage = if total_pairs == 0 {
                     1.0
                 } else {

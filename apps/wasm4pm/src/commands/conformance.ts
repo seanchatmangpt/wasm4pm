@@ -44,6 +44,7 @@ import {
   saveCommandReceipt,
   blake3Hex,
   newReceipt,
+  emitCrownReceipt,
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -822,6 +823,11 @@ export const conformance = defineCommand({
                     },
                   };
                   saveCommandReceipt(receipt);
+                  emitCrownReceipt(
+                    payload.method ?? 'conformance',
+                    JSON.stringify({ input_hash: receipt.input_hash }),
+                    JSON.stringify(payload),
+                  );
                 } catch {
                   /* receipt write must never break the command */
                 }

@@ -15,9 +15,9 @@
 //! and `value == "<pattern>||<template>"` (delimited by `||`). If no
 //! patterns are supplied, a built-in Rogerian script is used.
 
-use std::collections::BTreeMap;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
+use std::collections::BTreeMap;
 
 /// Frame / ELIZA breed.
 pub struct Eliza;
@@ -199,7 +199,10 @@ fn parse_decomp(s: &str) -> Vec<DecompComp> {
         } else if t.starts_with("(*") || t.starts_with("(/") {
             // Inline word set: (*WORD1 WORD2 ...) — may span multiple tokens
             let mut words: Vec<String> = Vec::new();
-            let mut fragment = t.trim_start_matches("(*").trim_start_matches("(/").to_string();
+            let mut fragment = t
+                .trim_start_matches("(*")
+                .trim_start_matches("(/")
+                .to_string();
             loop {
                 let closed = fragment.ends_with(')');
                 let word = fragment.trim_end_matches(')').to_uppercase();
@@ -306,11 +309,7 @@ fn apply_reassembly(template: &str, slots: &[String]) -> String {
 /// MY→YOUR, ME→YOU, I→YOU, ARE→AM. Operates word-by-word; preserves
 /// punctuation attached to tokens.
 fn substitute_input(text: &str) -> String {
-    let pairs: &[(&str, &str)] = &[
-        ("MY", "YOUR"),
-        ("ME", "YOU"),
-        ("AM", "ARE"),
-    ];
+    let pairs: &[(&str, &str)] = &[("MY", "YOUR"), ("ME", "YOU"), ("AM", "ARE")];
     text.split_whitespace()
         .map(|w| {
             let stripped = w.trim_matches(|c: char| matches!(c, ',' | '.' | '?' | '!' | ';'));
@@ -321,7 +320,10 @@ fn substitute_input(text: &str) -> String {
                     let prefix = &w[..w.len() - w.trim_start_matches(stripped).len()];
                     let suffix = &w[w.find(stripped).unwrap_or(0) + stripped.len()..];
                     let _ = (prefix, suffix); // not needed — stripped is already w without punct
-                    let punct: String = w.chars().filter(|c| matches!(*c, ',' | '.' | '?' | '!' | ';')).collect();
+                    let punct: String = w
+                        .chars()
+                        .filter(|c| matches!(*c, ',' | '.' | '?' | '!' | ';'))
+                        .collect();
                     return format!("{}{}", to, punct);
                 }
             }
@@ -331,14 +333,16 @@ fn substitute_input(text: &str) -> String {
         .join(" ")
 }
 
-fn run_keyword_engine(
-    input: &BreedInput,
-    trace: &mut Vec<TraceStep>,
-) -> Option<(String, String)> {
+fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<(String, String)> {
     // Build keyword table: keyword(uppercase) → rules in order
     let mut table: BTreeMap<String, Vec<(Vec<DecompComp>, String)>> = BTreeMap::new();
     for rule in &input.rules {
-        let keyword = rule.premise.first().cloned().unwrap_or_default().to_uppercase();
+        let keyword = rule
+            .premise
+            .first()
+            .cloned()
+            .unwrap_or_default()
+            .to_uppercase();
         let decomp_str = rule
             .premise
             .get(1)
@@ -356,11 +360,7 @@ fn run_keyword_engine(
     let tokens: Vec<String> = subst.split_whitespace().map(String::from).collect();
 
     // Scan original tokens for first matching keyword
-    let orig_tokens: Vec<String> = input
-        .intent
-        .split_whitespace()
-        .map(String::from)
-        .collect();
+    let orig_tokens: Vec<String> = input.intent.split_whitespace().map(String::from).collect();
     let mut found_keyword: Option<String> = None;
     'scan: for tok in &orig_tokens {
         let clean = tok
@@ -812,8 +812,11 @@ mod tests {
             state: vec![],
         };
         let output = breed.run(&input).expect("run ok");
-        assert_eq!(output.explanation, "IN WHAT WAY",
-            "ALIKE→=DIT→IN WHAT WAY; got: {}", output.explanation);
+        assert_eq!(
+            output.explanation, "IN WHAT WAY",
+            "ALIKE→=DIT→IN WHAT WAY; got: {}",
+            output.explanation
+        );
         assert_eq!(output.selected.as_deref(), Some("DIT"));
     }
 
@@ -826,13 +829,19 @@ mod tests {
             candidates: vec![],
             facts: vec![],
             cases: vec![],
-            rules: vec![make_rule(&["ALWAYS", "(0)"], "CAN YOU THINK OF A SPECIFIC EXAMPLE")],
+            rules: vec![make_rule(
+                &["ALWAYS", "(0)"],
+                "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+            )],
             goals: vec![],
             state: vec![],
         };
         let output = breed.run(&input).expect("run ok");
-        assert_eq!(output.explanation, "CAN YOU THINK OF A SPECIFIC EXAMPLE",
-            "got: {}", output.explanation);
+        assert_eq!(
+            output.explanation, "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+            "got: {}",
+            output.explanation
+        );
     }
 
     /// Weizenbaum 1966, p. 36, turn 3: MY→YOUR substitution + slot ref in reassembly.
@@ -854,7 +863,8 @@ mod tests {
         // Reassembly "YOUR 3" → "YOUR boyfriend made YOU come here."
         assert!(
             output.explanation.starts_with("YOUR boyfriend"),
-            "Expected 'YOUR boyfriend ...'; got: {}", output.explanation
+            "Expected 'YOUR boyfriend ...'; got: {}",
+            output.explanation
         );
     }
 

@@ -847,7 +847,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1374,7 +1374,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -1601,12 +1601,16 @@ dependencies = [
  "lsp-max-runtime",
  "lsp-types-max",
  "memchr",
+ "parking_lot",
+ "regex",
+ "rustc-hash 2.1.2",
  "serde",
  "serde_json",
  "tokio",
  "tokio-util",
  "tower",
  "tracing",
+ "tree-sitter",
  "url",
  "windows-sys 0.52.0",
 ]
@@ -1770,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.6.10"
+version = "26.6.12"
 dependencies = [
  "base64 0.21.7",
  "bincode",
@@ -1864,7 +1868,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -1913,7 +1917,7 @@ checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
 name = "ocpq"
-version = "26.6.10"
+version = "26.6.12"
 dependencies = [
  "chrono",
  "serde",
@@ -2569,7 +2573,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3080,7 +3084,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -3332,7 +3336,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tps-metrics"
-version = "26.6.10"
+version = "26.6.12"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3733,7 +3737,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.6.10"
+version = "26.6.12"
 dependencies = [
  "bcinr",
  "blake3",
@@ -3782,7 +3786,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.6.10"
+version = "26.6.12"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -3924,7 +3928,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]

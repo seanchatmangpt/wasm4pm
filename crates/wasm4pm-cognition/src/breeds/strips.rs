@@ -493,12 +493,26 @@ mod tests {
                 },
             ],
             goals: vec![
-                Goal { id: "g1".into(), predicate: "light".into(), value: "on".into() },
-                Goal { id: "g2".into(), predicate: "door1".into(), value: "closed".into() },
+                Goal {
+                    id: "g1".into(),
+                    predicate: "light".into(),
+                    value: "on".into(),
+                },
+                Goal {
+                    id: "g2".into(),
+                    predicate: "door1".into(),
+                    value: "closed".into(),
+                },
             ],
             state: vec![
-                StateAtom { predicate: "light".into(), value: "off".into() },
-                StateAtom { predicate: "door1".into(), value: "open".into() },
+                StateAtom {
+                    predicate: "light".into(),
+                    value: "off".into(),
+                },
+                StateAtom {
+                    predicate: "door1".into(),
+                    value: "open".into(),
+                },
             ],
         };
         let out = Strips.run(&input).expect("should find a plan");
@@ -508,12 +522,17 @@ mod tests {
             "plan must be exactly [turn-on-light, close-door1] (Fikes & Nilsson 1971)"
         );
         // Verify via execute trace steps in correct order
-        let executed: Vec<String> = out.inference_trace.iter()
+        let executed: Vec<String> = out
+            .inference_trace
+            .iter()
             .filter(|t| t.kind == "execute")
             .map(|t| t.detail.clone())
             .collect();
-        assert_eq!(executed, vec!["turn-on-light", "close-door1"],
-            "execution trace must record exactly the 2 operators in order");
+        assert_eq!(
+            executed,
+            vec!["turn-on-light", "close-door1"],
+            "execution trace must record exactly the 2 operators in order"
+        );
     }
 
     /// Rank-2: a non-pre-satisfied, achievable goal must return a non-empty

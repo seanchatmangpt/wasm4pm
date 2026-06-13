@@ -85,14 +85,22 @@ type Domains = BTreeMap<String, Vec<i64>>;
 fn parse_domain(spec: &str) -> Result<Vec<i64>, String> {
     let spec = spec.trim();
     if let Some((lo, hi)) = spec.split_once("..") {
-        let lo: i64 = lo.trim().parse().map_err(|_| format!("malformed domain '{}'", spec))?;
-        let hi: i64 = hi.trim().parse().map_err(|_| format!("malformed domain '{}'", spec))?;
+        let lo: i64 = lo
+            .trim()
+            .parse()
+            .map_err(|_| format!("malformed domain '{}'", spec))?;
+        let hi: i64 = hi
+            .trim()
+            .parse()
+            .map_err(|_| format!("malformed domain '{}'", spec))?;
         if lo > hi {
             return Err(format!("empty domain '{}'", spec));
         }
         Ok((lo..=hi).collect())
     } else {
-        let v: i64 = spec.parse().map_err(|_| format!("malformed domain '{}'", spec))?;
+        let v: i64 = spec
+            .parse()
+            .map_err(|_| format!("malformed domain '{}'", spec))?;
         Ok(vec![v])
     }
 }
@@ -137,7 +145,10 @@ fn parse_constraint(spec: &str, vars: &Domains) -> Result<Constraint, String> {
             if op == "=" {
                 if let Some((y, c)) = rhs.split_once('+') {
                     let y = y.trim().to_string();
-                    let c: i64 = c.trim().parse().map_err(|_| format!("malformed offset in '{}'", s))?;
+                    let c: i64 = c
+                        .trim()
+                        .parse()
+                        .map_err(|_| format!("malformed offset in '{}'", s))?;
                     if !vars.contains_key(&y) {
                         return Err(format!("unknown variable '{}' in '{}'", y, s));
                     }
@@ -162,7 +173,10 @@ fn parse_constraint(spec: &str, vars: &Domains) -> Result<Constraint, String> {
 fn render_domain(d: &[i64]) -> String {
     format!(
         "{{{}}}",
-        d.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")
+        d.iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>()
+            .join(",")
     )
 }
 
@@ -263,16 +277,17 @@ fn propagate(ctx: &mut Ctx, domains: &mut Domains, constraints: &[Constraint], d
                         let new: Vec<i64> = old
                             .iter()
                             .copied()
-                            .filter(|v| {
-                                !singles
-                                    .iter()
-                                    .any(|(sn, sv)| sn != n && sv == v)
-                            })
+                            .filter(|v| !singles.iter().any(|(sn, sv)| sn != n && sv == v))
                             .collect();
                         if new.len() != old.len() {
                             ctx.tr(
                                 "propagate",
-                                format!("{}: {} -> {} (alldiff)", n, render_domain(&old), render_domain(&new)),
+                                format!(
+                                    "{}: {} -> {} (alldiff)",
+                                    n,
+                                    render_domain(&old),
+                                    render_domain(&new)
+                                ),
                                 depth,
                             );
                             domains.insert(n.clone(), new.clone());
@@ -300,7 +315,10 @@ fn label(
 ) -> Result<Option<Domains>, String> {
     ctx.expansions += 1;
     if ctx.expansions > MAX_EXPANSIONS {
-        return Err(format!("labeling expansion cap {} exceeded", MAX_EXPANSIONS));
+        return Err(format!(
+            "labeling expansion cap {} exceeded",
+            MAX_EXPANSIONS
+        ));
     }
     // First-fail: smallest domain > 1, lex tiebreak.
     let pick = domains
@@ -483,11 +501,7 @@ impl CognitionBreed for Clp {
             }
         }
 
-        let backtracks = ctx
-            .trace
-            .iter()
-            .filter(|t| t.kind == "backtrack")
-            .count();
+        let backtracks = ctx.trace.iter().filter(|t| t.kind == "backtrack").count();
         facts.push(Fact {
             key: "clp:backtracks".to_string(),
             value: backtracks.to_string(),
@@ -573,10 +587,9 @@ mod tests {
             .inference_trace
             .iter()
             .any(|t| t.kind == "propagate" && t.detail == "z: {3,4,5} -> {3}"));
-        assert!(out
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "propagate" && t.detail.starts_with("x:") && t.detail.ends_with("{1}")));
+        assert!(out.inference_trace.iter().any(|t| t.kind == "propagate"
+            && t.detail.starts_with("x:")
+            && t.detail.ends_with("{1}")));
         assert!(out.inference_trace.iter().all(|t| t.kind != "backtrack"));
     }
 
@@ -639,7 +652,7 @@ mod tests {
     fn refuses_domain_too_large() {
         let inp = input(vec![
             fact("clp:var:x", "1..100"),
-            fact("clp:constraint:c1", "x=1")
+            fact("clp:constraint:c1", "x=1"),
         ]);
         assert!(Clp.custom_check(&inp).is_some());
     }
@@ -648,7 +661,7 @@ mod tests {
     fn refuses_malformed_constraint() {
         let inp = input(vec![
             fact("clp:var:x", "1..5"),
-            fact("clp:constraint:c1", "x<<<y")
+            fact("clp:constraint:c1", "x<<<y"),
         ]);
         assert!(Clp.preconditions(&inp).is_err());
     }
@@ -665,7 +678,10 @@ mod tests {
             ]))
             .unwrap();
         assert_eq!(out.selected.as_deref(), Some("a=1,b=2,c=3"));
-        assert!(out.facts.iter().any(|f| f.key == "clp:backtracks" && f.value == "0"));
+        assert!(out
+            .facts
+            .iter()
+            .any(|f| f.key == "clp:backtracks" && f.value == "0"));
     }
 
     #[test]
@@ -686,7 +702,7 @@ mod tests {
         ];
         let out1 = Clp.run(&input(facts1)).unwrap();
         let out2 = Clp.run(&input(facts2)).unwrap();
-        
+
         let sol1 = out1.selected.unwrap();
         let sol2 = out2.selected.unwrap();
         assert_eq!(sol1, "x=1,y=2,z=3");

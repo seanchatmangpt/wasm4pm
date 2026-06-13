@@ -898,16 +898,16 @@ pub fn extract_process_skeleton(
             let directly_follows_vec = log.get_directly_follows(activity_key);
 
             let mut dfg = DFG::new();
-            
+
             // Calculate activity frequencies and start/end activities
             let mut activity_freqs = rustc_hash::FxHashMap::default();
             let mut start_counts = rustc_hash::FxHashMap::default();
             let mut end_counts = rustc_hash::FxHashMap::default();
-            
+
             for trace in &log.traces {
                 let mut first = true;
                 let mut last_event: Option<&String> = None;
-                
+
                 for event in &trace.events {
                     if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
                         *activity_freqs.entry(act.clone()).or_insert(0) += 1;
@@ -918,7 +918,7 @@ pub fn extract_process_skeleton(
                         last_event = Some(act);
                     }
                 }
-                
+
                 if let Some(act) = last_event {
                     *end_counts.entry(act.clone()).or_insert(0) += 1;
                 }
@@ -951,7 +951,7 @@ pub fn extract_process_skeleton(
                     });
                 }
             }
-            
+
             // Populate start and end activities for the DFG skeleton
             for (act, count) in start_counts {
                 if nodes_with_edges.contains(act.as_str()) {

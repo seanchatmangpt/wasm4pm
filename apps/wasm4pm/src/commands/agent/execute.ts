@@ -4,6 +4,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentOrchestrator } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { emitCrownReceipt } from '../../receipts/_shared.js';
 
 export interface AgentExecuteOptions {
   format?: 'human' | 'json';
@@ -70,6 +71,17 @@ export const execute = defineCommand({
 
       const exitCode = agentResult.passed ? EXIT_CODES.success : 1;
       const result = makeResult('agent execute', agentResult, performance.now() - t0, exitCode);
+
+      try {
+        emitCrownReceipt(
+          'agentic_pipeline',
+          JSON.stringify({ agent: agentName, input: ctx.args.input ?? null }),
+          JSON.stringify(agentResult ?? {}),
+        );
+      } catch (_receiptErr) {
+        // receipt write must never break the command
+      }
+
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const r = res.payload as typeof agentResult;
         projection.log('');

@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
+  emitCrownReceipt,
   blake3Hex,
   newReceipt,
   type CommandReceipt,
@@ -459,6 +460,11 @@ export const simulate = defineCommand({
                   },
                 };
                 saveCommandReceipt(receipt);
+                emitCrownReceipt(
+                  'simulate',
+                  JSON.stringify(inputBytes),
+                  JSON.stringify(payload),
+                );
               }
 
               return await exitWithFlush(result.exit_code);

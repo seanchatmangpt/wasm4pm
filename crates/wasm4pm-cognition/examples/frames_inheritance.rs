@@ -7,10 +7,10 @@
 //!
 //! Run: cargo run --example frames_inheritance
 
+use wasm4pm_cognition::breeds::frames_inheritance::FramesInheritance;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::frames_inheritance::FramesInheritance;
 
 fn main() {
     // intent = "resolve <frame> <slot>"
@@ -19,20 +19,41 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // isa chain: Penguin -> Bird -> Animal
-            Fact { key: "frame:Penguin:isa".to_string(),  value: "Bird".to_string() },
-            Fact { key: "frame:Bird:isa".to_string(),     value: "Animal".to_string() },
-
+            Fact {
+                key: "frame:Penguin:isa".to_string(),
+                value: "Bird".to_string(),
+            },
+            Fact {
+                key: "frame:Bird:isa".to_string(),
+                value: "Animal".to_string(),
+            },
             // Animal default slots
-            Fact { key: "frame:Animal:slot:locomotion:default".to_string(), value: "walk".to_string() },
-            Fact { key: "frame:Animal:slot:warm_blooded:default".to_string(), value: "true".to_string() },
-
+            Fact {
+                key: "frame:Animal:slot:locomotion:default".to_string(),
+                value: "walk".to_string(),
+            },
+            Fact {
+                key: "frame:Animal:slot:warm_blooded:default".to_string(),
+                value: "true".to_string(),
+            },
             // Bird overrides locomotion default; adds own slot
-            Fact { key: "frame:Bird:slot:locomotion:default".to_string(), value: "fly".to_string() },
-            Fact { key: "frame:Bird:slot:has_wings".to_string(),          value: "true".to_string() },
-
+            Fact {
+                key: "frame:Bird:slot:locomotion:default".to_string(),
+                value: "fly".to_string(),
+            },
+            Fact {
+                key: "frame:Bird:slot:has_wings".to_string(),
+                value: "true".to_string(),
+            },
             // Penguin own-slot overrides Bird's default — penguins swim, not fly
-            Fact { key: "frame:Penguin:slot:locomotion".to_string(), value: "swim".to_string() },
-            Fact { key: "frame:Penguin:slot:can_fly".to_string(),    value: "false".to_string() },
+            Fact {
+                key: "frame:Penguin:slot:locomotion".to_string(),
+                value: "swim".to_string(),
+            },
+            Fact {
+                key: "frame:Penguin:slot:can_fly".to_string(),
+                value: "false".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

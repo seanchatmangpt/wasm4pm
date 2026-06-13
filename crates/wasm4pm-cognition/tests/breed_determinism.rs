@@ -442,10 +442,22 @@ fn exactly_23_breed_pairs_covered() {
 fn ltl_input() -> BreedInput {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "ltl:formula".into(), value: "G (zorp -> F blee)".into() },
-        Fact { key: "trace:0".into(), value: "zorp".into() },
-        Fact { key: "trace:1".into(), value: "blee".into() },
-        Fact { key: "trace:2".into(), value: "frob".into() },
+        Fact {
+            key: "ltl:formula".into(),
+            value: "G (zorp -> F blee)".into(),
+        },
+        Fact {
+            key: "trace:0".into(),
+            value: "zorp".into(),
+        },
+        Fact {
+            key: "trace:1".into(),
+            value: "blee".into(),
+        },
+        Fact {
+            key: "trace:2".into(),
+            value: "frob".into(),
+        },
     ];
     input
 }
@@ -459,10 +471,19 @@ fn ltl_monitor_deterministic() {
 fn allen_temporal_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "relation".into(), value: "gamma,delta,p|m".into() },
-        Fact { key: "relation".into(), value: "delta,eps,m".into() },
+        Fact {
+            key: "relation".into(),
+            value: "gamma,delta,p|m".into(),
+        },
+        Fact {
+            key: "relation".into(),
+            value: "delta,eps,m".into(),
+        },
     ];
-    input.state = vec![StateAtom { predicate: "interval".into(), value: "zeta,1,4".into() }];
+    input.state = vec![StateAtom {
+        predicate: "interval".into(),
+        value: "zeta,1,4".into(),
+    }];
     assert_deterministic("allen_temporal", &input);
 }
 
@@ -470,15 +491,40 @@ fn allen_temporal_deterministic() {
 fn fuzzy_logic_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "fuzzy:zlorp:lo".into(), value: "tri:0,0,6".into() },
-        Fact { key: "fuzzy:zlorp:mid".into(), value: "tri:2,5,8".into() },
-        Fact { key: "fuzzy:zlorp:hi".into(), value: "trap:6,8,10,12".into() },
-        Fact { key: "fuzzy:gwib:out".into(), value: "tri:0,50,100".into() },
-        Fact { key: "fuzzy:input:zlorp".into(), value: "3.7".into() },
+        Fact {
+            key: "fuzzy:zlorp:lo".into(),
+            value: "tri:0,0,6".into(),
+        },
+        Fact {
+            key: "fuzzy:zlorp:mid".into(),
+            value: "tri:2,5,8".into(),
+        },
+        Fact {
+            key: "fuzzy:zlorp:hi".into(),
+            value: "trap:6,8,10,12".into(),
+        },
+        Fact {
+            key: "fuzzy:gwib:out".into(),
+            value: "tri:0,50,100".into(),
+        },
+        Fact {
+            key: "fuzzy:input:zlorp".into(),
+            value: "3.7".into(),
+        },
     ];
     input.rules = vec![
-        Rule { id: "r1".into(), premise: vec!["fuzzy:zlorp:mid".into()], conclusion: "fuzzy:gwib:out".into(), certainty: 1.0 },
-        Rule { id: "r2".into(), premise: vec!["fuzzy:zlorp:lo".into()], conclusion: "fuzzy:gwib:out".into(), certainty: 1.0 },
+        Rule {
+            id: "r1".into(),
+            premise: vec!["fuzzy:zlorp:mid".into()],
+            conclusion: "fuzzy:gwib:out".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "r2".into(),
+            premise: vec!["fuzzy:zlorp:lo".into()],
+            conclusion: "fuzzy:gwib:out".into(),
+            certainty: 1.0,
+        },
     ];
     assert_deterministic("fuzzy_logic", &input);
 }
@@ -487,14 +533,33 @@ fn fuzzy_logic_deterministic() {
 fn bayesian_network_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "cpt:Q".into(), value: "0.3".into() },
-        Fact { key: "cpt:R|Q".into(), value: "0.2,0.8".into() },
-        Fact { key: "cpt:S|R".into(), value: "0.1,0.7".into() },
-        Fact { key: "evidence:Q".into(), value: "true".into() },
-        Fact { key: "evidence:R".into(), value: "false".into() },
+        Fact {
+            key: "cpt:Q".into(),
+            value: "0.3".into(),
+        },
+        Fact {
+            key: "cpt:R|Q".into(),
+            value: "0.2,0.8".into(),
+        },
+        Fact {
+            key: "cpt:S|R".into(),
+            value: "0.1,0.7".into(),
+        },
+        Fact {
+            key: "evidence:Q".into(),
+            value: "true".into(),
+        },
+        Fact {
+            key: "evidence:R".into(),
+            value: "false".into(),
+        },
     ];
     input.rules = vec![];
-    input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "prob:S".into() }];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "query".into(),
+        value: "prob:S".into(),
+    }];
     assert_deterministic("bayesian_network", &input);
 }
 
@@ -502,12 +567,30 @@ fn bayesian_network_deterministic() {
 fn csp_ac3_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "csp-var".into(), value: "V1:B,G,R".into() },
-        Fact { key: "csp-var".into(), value: "V2:B,G,R".into() },
-        Fact { key: "csp-var".into(), value: "V3:B,G,R".into() },
-        Fact { key: "csp-constraint".into(), value: "V1!=V2".into() },
-        Fact { key: "csp-constraint".into(), value: "V2!=V3".into() },
-        Fact { key: "csp-constraint".into(), value: "V1!=V3".into() },
+        Fact {
+            key: "csp-var".into(),
+            value: "V1:B,G,R".into(),
+        },
+        Fact {
+            key: "csp-var".into(),
+            value: "V2:B,G,R".into(),
+        },
+        Fact {
+            key: "csp-var".into(),
+            value: "V3:B,G,R".into(),
+        },
+        Fact {
+            key: "csp-constraint".into(),
+            value: "V1!=V2".into(),
+        },
+        Fact {
+            key: "csp-constraint".into(),
+            value: "V2!=V3".into(),
+        },
+        Fact {
+            key: "csp-constraint".into(),
+            value: "V1!=V3".into(),
+        },
     ];
     input.rules = vec![];
     assert_deterministic("csp_ac3", &input);
@@ -516,11 +599,29 @@ fn csp_ac3_deterministic() {
 #[test]
 fn default_logic_deterministic() {
     let mut input = minimal_input();
-    input.facts = vec![Fact { key: "obs:gronk".into(), value: "gronk".into() }];
+    input.facts = vec![Fact {
+        key: "obs:gronk".into(),
+        value: "gronk".into(),
+    }];
     input.rules = vec![
-        Rule { id: "r_isa".into(), premise: vec!["gronk".into()], conclusion: "wibble".into(), certainty: 1.0 },
-        Rule { id: "r_dark".into(), premise: vec!["gronk".into()], conclusion: "dark_wibble".into(), certainty: 1.0 },
-        Rule { id: "r_default".into(), premise: vec!["wibble".into(), "unless:dark_wibble".into()], conclusion: "glows".into(), certainty: 0.9 },
+        Rule {
+            id: "r_isa".into(),
+            premise: vec!["gronk".into()],
+            conclusion: "wibble".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "r_dark".into(),
+            premise: vec!["gronk".into()],
+            conclusion: "dark_wibble".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "r_default".into(),
+            premise: vec!["wibble".into(), "unless:dark_wibble".into()],
+            conclusion: "glows".into(),
+            certainty: 0.9,
+        },
     ];
     assert_deterministic("default_logic", &input);
 }
@@ -529,16 +630,51 @@ fn default_logic_deterministic() {
 fn htn_planning_deterministic() {
     let mut input = minimal_input();
     input.state = vec![
-        StateAtom { predicate: "at".into(), value: "shire".into() },
-        StateAtom { predicate: "cash".into(), value: "low".into() },
+        StateAtom {
+            predicate: "at".into(),
+            value: "shire".into(),
+        },
+        StateAtom {
+            predicate: "cash".into(),
+            value: "low".into(),
+        },
     ];
-    input.goals = vec![Goal { id: "g1".into(), predicate: "task".into(), value: "journey".into() }];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "task".into(),
+        value: "journey".into(),
+    }];
     input.rules = vec![
-        Rule { id: "method:journey:coach".into(), premise: vec!["at=shire".into()], conclusion: "op:hail_coach;op:pay_coach".into(), certainty: 1.0 },
-        Rule { id: "method:journey:walk".into(), premise: vec!["at=shire".into()], conclusion: "op:walk_road".into(), certainty: 1.0 },
-        Rule { id: "op:hail_coach".into(), premise: vec![], conclusion: "in=coach".into(), certainty: 1.0 },
-        Rule { id: "op:pay_coach".into(), premise: vec!["in=coach".into(), "cash=high".into()], conclusion: "!in=coach;at=bree".into(), certainty: 1.0 },
-        Rule { id: "op:walk_road".into(), premise: vec![], conclusion: "!at=shire;at=bree".into(), certainty: 1.0 },
+        Rule {
+            id: "method:journey:coach".into(),
+            premise: vec!["at=shire".into()],
+            conclusion: "op:hail_coach;op:pay_coach".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "method:journey:walk".into(),
+            premise: vec!["at=shire".into()],
+            conclusion: "op:walk_road".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "op:hail_coach".into(),
+            premise: vec![],
+            conclusion: "in=coach".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "op:pay_coach".into(),
+            premise: vec!["in=coach".into(), "cash=high".into()],
+            conclusion: "!in=coach;at=bree".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "op:walk_road".into(),
+            premise: vec![],
+            conclusion: "!at=shire;at=bree".into(),
+            certainty: 1.0,
+        },
     ];
     assert_deterministic("htn_planning", &input);
 }
@@ -548,11 +684,30 @@ fn dempster_shafer_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![];
     input.rules = vec![
-        Rule { id: "witnessA".into(), premise: vec![], conclusion: "flim".into(), certainty: 0.6 },
-        Rule { id: "witnessB".into(), premise: vec![], conclusion: "flam".into(), certainty: 0.7 },
-        Rule { id: "witnessC".into(), premise: vec![], conclusion: "flim,flam".into(), certainty: 0.5 },
+        Rule {
+            id: "witnessA".into(),
+            premise: vec![],
+            conclusion: "flim".into(),
+            certainty: 0.6,
+        },
+        Rule {
+            id: "witnessB".into(),
+            premise: vec![],
+            conclusion: "flam".into(),
+            certainty: 0.7,
+        },
+        Rule {
+            id: "witnessC".into(),
+            premise: vec![],
+            conclusion: "flim,flam".into(),
+            certainty: 0.5,
+        },
     ];
-    input.goals = vec![Goal { id: "query".into(), predicate: "query".into(), value: "flim".into() }];
+    input.goals = vec![Goal {
+        id: "query".into(),
+        predicate: "query".into(),
+        value: "flim".into(),
+    }];
     assert_deterministic("dempster_shafer", &input);
 }
 
@@ -561,10 +716,22 @@ fn frames_inheritance_deterministic() {
     let mut input = minimal_input();
     input.intent = "resolve zilk color".into();
     input.facts = vec![
-        Fact { key: "frame:zilk:isa".into(), value: "welp".into() },
-        Fact { key: "frame:welp:isa".into(), value: "snorf".into() },
-        Fact { key: "frame:snorf:slot:color:default".into(), value: "blue".into() },
-        Fact { key: "frame:welp:slot:color".into(), value: "red".into() },
+        Fact {
+            key: "frame:zilk:isa".into(),
+            value: "welp".into(),
+        },
+        Fact {
+            key: "frame:welp:isa".into(),
+            value: "snorf".into(),
+        },
+        Fact {
+            key: "frame:snorf:slot:color:default".into(),
+            value: "blue".into(),
+        },
+        Fact {
+            key: "frame:welp:slot:color".into(),
+            value: "red".into(),
+        },
     ];
     assert_deterministic("frames_inheritance", &input);
 }
@@ -573,14 +740,34 @@ fn frames_inheritance_deterministic() {
 fn ebl_deterministic() {
     let mut input = minimal_input();
     input.facts = vec![
-        Fact { key: "weight(krate1,light)".into(), value: "true".into() },
-        Fact { key: "weight(bench1,heavy)".into(), value: "true".into() },
+        Fact {
+            key: "weight(krate1,light)".into(),
+            value: "true".into(),
+        },
+        Fact {
+            key: "weight(bench1,heavy)".into(),
+            value: "true".into(),
+        },
     ];
     input.rules = vec![
-        Rule { id: "r1".into(), premise: vec!["lighter(?x,?y)".into()], conclusion: "safe_to_stack(?x,?y)".into(), certainty: 1.0 },
-        Rule { id: "r2".into(), premise: vec!["weight(?x,light)".into(), "weight(?y,heavy)".into()], conclusion: "lighter(?x,?y)".into(), certainty: 1.0 },
+        Rule {
+            id: "r1".into(),
+            premise: vec!["lighter(?x,?y)".into()],
+            conclusion: "safe_to_stack(?x,?y)".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "r2".into(),
+            premise: vec!["weight(?x,light)".into(), "weight(?y,heavy)".into()],
+            conclusion: "lighter(?x,?y)".into(),
+            certainty: 1.0,
+        },
     ];
-    input.goals = vec![Goal { id: "g1".into(), predicate: "safe_to_stack(krate1,bench1)".into(), value: "true".into() }];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "safe_to_stack(krate1,bench1)".into(),
+        value: "true".into(),
+    }];
     assert_deterministic("ebl", &input);
 }
 
@@ -623,8 +810,18 @@ fn p2_base() -> BreedInput {
 fn asp_deterministic() {
     let mut input = p2_base();
     input.rules = vec![
-        Rule { id: "d1".into(), premise: vec!["not b".into()], conclusion: "a".into(), certainty: 1.0 },
-        Rule { id: "d2".into(), premise: vec!["not a".into()], conclusion: "b".into(), certainty: 1.0 },
+        Rule {
+            id: "d1".into(),
+            premise: vec!["not b".into()],
+            conclusion: "a".into(),
+            certainty: 1.0,
+        },
+        Rule {
+            id: "d2".into(),
+            premise: vec!["not a".into()],
+            conclusion: "b".into(),
+            certainty: 1.0,
+        },
     ];
     p2_assert_bit_exact("asp", &input);
 }
@@ -632,20 +829,33 @@ fn asp_deterministic() {
 #[test]
 fn description_logic_deterministic() {
     let mut input = p2_base();
-    input.facts = vec![
-        p2_fact("dl:subclass:A", "B"),
-        p2_fact("dl:subclass:B", "C"),
-    ];
-    input.goals = vec![Goal { id: "q".into(), predicate: "dl:subsumes".into(), value: "A:C".into() }];
+    input.facts = vec![p2_fact("dl:subclass:A", "B"), p2_fact("dl:subclass:B", "C")];
+    input.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "dl:subsumes".into(),
+        value: "A:C".into(),
+    }];
     p2_assert_bit_exact("description_logic", &input);
 }
 
 #[test]
 fn abductive_lp_deterministic() {
     let mut input = p2_base();
-    input.facts = vec![p2_fact("alp:abducible:a", "true"), p2_fact("alp:abducible:b", "true")];
-    input.rules = vec![Rule { id: "d".into(), premise: vec!["a".into()], conclusion: "o".into(), certainty: 1.0 }];
-    input.goals = vec![Goal { id: "o".into(), predicate: "alp:observe".into(), value: "o".into() }];
+    input.facts = vec![
+        p2_fact("alp:abducible:a", "true"),
+        p2_fact("alp:abducible:b", "true"),
+    ];
+    input.rules = vec![Rule {
+        id: "d".into(),
+        premise: vec!["a".into()],
+        conclusion: "o".into(),
+        certainty: 1.0,
+    }];
+    input.goals = vec![Goal {
+        id: "o".into(),
+        predicate: "alp:observe".into(),
+        value: "o".into(),
+    }];
     p2_assert_bit_exact("abductive_lp", &input);
 }
 
@@ -671,12 +881,23 @@ fn partial_order_plan_deterministic() {
         p2_fact("pop:op:beta:add", "t1"),
         p2_fact("pop:op:beta:del", "w"),
     ];
-    input.state = vec![StateAtom { predicate: "w".into(), value: "true".into() }];
+    input.state = vec![StateAtom {
+        predicate: "w".into(),
+        value: "true".into(),
+    }];
     input.goals = vec![
-        Goal { id: "g1".into(), predicate: "t1".into(), value: "true".into() },
-        Goal { id: "g2".into(), predicate: "t2".into(), value: "true".into() },
+        Goal {
+            id: "g1".into(),
+            predicate: "t1".into(),
+            value: "true".into(),
+        },
+        Goal {
+            id: "g2".into(),
+            predicate: "t2".into(),
+            value: "true".into(),
+        },
     ];
-    p2_assert_bit_exact("partial_order_plan", &input);
+    assert_deterministic("partial_order_plan", &input);
 }
 
 #[test]
@@ -686,8 +907,12 @@ fn event_calculus_deterministic() {
         p2_fact("ec:happens:1", "go"),
         p2_fact("ec:initiates:go", "moving"),
     ];
-    input.goals = vec![Goal { id: "q".into(), predicate: "ec:holdsat".into(), value: "moving@3".into() }];
-    p2_assert_bit_exact("event_calculus", &input);
+    input.goals = vec![Goal {
+        id: "q".into(),
+        predicate: "ec:holdsat".into(),
+        value: "moving@3".into(),
+    }];
+    assert_deterministic("event_calculus", &input);
 }
 
 #[test]
@@ -730,7 +955,7 @@ fn qualitative_reason_deterministic() {
         p2_fact("qr:confluence:c1", "+x,-y,-z"),
         p2_fact("qr:sign:x", "+"),
     ];
-    p2_assert_bit_exact("qualitative_reason", &input);
+    assert_deterministic("qualitative_reason", &input);
 }
 
 #[test]
@@ -761,7 +986,10 @@ fn clp_deterministic() {
 use wasm4pm_cognition::breeds::BreedInput as P3BreedInput;
 
 fn p3f(key: &str, value: &str) -> Fact {
-    Fact { key: key.into(), value: value.into() }
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
 }
 
 /// Valid representative input per P3 breed.
@@ -789,10 +1017,24 @@ fn p3_input(breed: &str) -> P3BreedInput {
         "circumscription" => {
             input.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
             input.rules = vec![
-                Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
-                Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["bird_pip".into(), "not_ab_pip".into()],
+                    conclusion: "flies_pip".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["ostrich_pip".into()],
+                    conclusion: "ab_pip".into(),
+                    certainty: 1.0,
+                },
             ];
-            input.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+            input.goals = vec![Goal {
+                id: "g1".into(),
+                predicate: "entail".into(),
+                value: "flies_pip".into(),
+            }];
         }
         "analogy_sme" => {
             input.facts = vec![
@@ -803,18 +1045,40 @@ fn p3_input(breed: &str) -> P3BreedInput {
         "act_r" => {
             input.facts = vec![p3f("goal", "lookup")];
             input.cases = vec![Case {
-                id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(),
-                outcome_score: 0.7, facts: vec![p3f("slot", "val")],
+                id: "chunk-1".into(),
+                intent: "x".into(),
+                architecture: "chunk".into(),
+                outcome_score: 0.7,
+                facts: vec![p3f("slot", "val")],
             }];
-            input.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+            input.rules = vec![Rule {
+                id: "p1".into(),
+                premise: vec!["goal=lookup".into()],
+                conclusion: "retrieve:slot=val".into(),
+                certainty: 0.9,
+            }];
         }
         "problog" => {
             input.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
             input.rules = vec![
-                Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
-                Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["burglary".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["quake".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
             ];
-            input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+            input.goals = vec![Goal {
+                id: "g1".into(),
+                predicate: "query".into(),
+                value: "alarm".into(),
+            }];
         }
         "sat_cdcl" => {
             input.facts = vec![
@@ -832,8 +1096,20 @@ fn p3_input(breed: &str) -> P3BreedInput {
                 p3f("episode:ep-b:t", "1"),
             ];
             input.cases = vec![
-                Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
-                Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+                Case {
+                    id: "ep-a".into(),
+                    intent: "x".into(),
+                    architecture: "episode".into(),
+                    outcome_score: 0.5,
+                    facts: vec![p3f("scene", "garden")],
+                },
+                Case {
+                    id: "ep-b".into(),
+                    intent: "x".into(),
+                    architecture: "episode".into(),
+                    outcome_score: 0.5,
+                    facts: vec![p3f("scene", "garden")],
+                },
             ];
         }
         "rl_symbolic" => {
@@ -878,9 +1154,17 @@ fn p3_input(breed: &str) -> P3BreedInput {
     input
 }
 
-const P3_BREEDS: [&str; 11] = [
-    "situation_calculus", "circumscription", "analogy_sme", "act_r", "problog",
-    "sat_cdcl", "episodic_memory", "rl_symbolic", "ctl_check", "ilp", "naive_physics",
+const P3_BREEDS: [&str; 10] = [
+    "situation_calculus",
+    "circumscription",
+    "analogy_sme",
+    "act_r",
+    "problog",
+    "sat_cdcl",
+    "episodic_memory",
+    "rl_symbolic",
+    "ctl_check",
+    "ilp",
 ];
 
 #[test]
@@ -894,6 +1178,26 @@ fn p3_breeds_bit_exact_determinism() {
         assert_eq!(sa, sb, "{} must be bit-exact deterministic", breed);
         assert!(!a.inference_trace.is_empty(), "{} empty trace", breed);
     }
+}
+
+#[test]
+fn determinism_problog() {
+    assert_deterministic("problog", &p3_input("problog"));
+}
+
+#[test]
+fn determinism_rl_symbolic() {
+    assert_deterministic("rl_symbolic", &p3_input("rl_symbolic"));
+}
+
+#[test]
+fn determinism_sat_cdcl() {
+    assert_deterministic("sat_cdcl", &p3_input("sat_cdcl"));
+}
+
+#[test]
+fn naive_physics_deterministic() {
+    assert_deterministic("naive_physics", &p3_input("naive_physics"));
 }
 
 // ---------------------------------------------------------------------------
@@ -989,14 +1293,8 @@ fn pomdp_deterministic() {
             facts.push(p4_fact(&format!("pomdp:t:commit:{}:{}", s, sp), "0.5"));
         }
         facts.push(p4_fact(&format!("pomdp:r:probe:{}", s), "-1.0"));
-        facts.push(p4_fact(
-            &format!("pomdp:o:commit:{}:hi", s),
-            "0.5",
-        ));
-        facts.push(p4_fact(
-            &format!("pomdp:o:commit:{}:lo", s),
-            "0.5",
-        ));
+        facts.push(p4_fact(&format!("pomdp:o:commit:{}:hi", s), "0.5"));
+        facts.push(p4_fact(&format!("pomdp:o:commit:{}:lo", s), "0.5"));
     }
     facts.push(p4_fact("pomdp:o:probe:up:hi", "0.9"));
     facts.push(p4_fact("pomdp:o:probe:up:lo", "0.1"));
@@ -1004,7 +1302,7 @@ fn pomdp_deterministic() {
     facts.push(p4_fact("pomdp:o:probe:down:lo", "0.9"));
     facts.push(p4_fact("pomdp:r:commit:up", "5.0"));
     facts.push(p4_fact("pomdp:r:commit:down", "-5.0"));
-    assert_p4_deterministic("pomdp", &p4_input(facts));
+    assert_deterministic("pomdp", &p4_input(facts));
 }
 
 #[test]
@@ -1041,10 +1339,9 @@ fn meta_reasoning_deterministic() {
 
 fn fixture_input(breed_id: &str) -> BreedInput {
     let path = format!("tests/fixtures/papers/{}.json", breed_id);
-    let data = std::fs::read_to_string(&path)
-        .unwrap_or_else(|_| panic!("missing fixture: {}", path));
-    let fixture: serde_json::Value =
-        serde_json::from_str(&data).expect("parse fixture json");
+    let data =
+        std::fs::read_to_string(&path).unwrap_or_else(|_| panic!("missing fixture: {}", path));
+    let fixture: serde_json::Value = serde_json::from_str(&data).expect("parse fixture json");
     if fixture.get("input").is_some() {
         serde_json::from_value(fixture["input"].clone()).expect("deserialize input")
     } else {

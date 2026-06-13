@@ -6,10 +6,10 @@
 //!
 //! Run: cargo run --example rl_symbolic
 
+use wasm4pm_cognition::breeds::rl_symbolic::RlSymbolic;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::rl_symbolic::RlSymbolic;
 
 fn main() {
     let input = BreedInput {
@@ -17,36 +17,65 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // MDP parameters
-            Fact { key: "mdp:gamma".to_string(),          value: "0.9".to_string() },
-            Fact { key: "mdp:start".to_string(),          value: "s0".to_string() },
-            Fact { key: "rl:episodes".to_string(),        value: "300".to_string() },
-
+            Fact {
+                key: "mdp:gamma".to_string(),
+                value: "0.9".to_string(),
+            },
+            Fact {
+                key: "mdp:start".to_string(),
+                value: "s0".to_string(),
+            },
+            Fact {
+                key: "rl:episodes".to_string(),
+                value: "300".to_string(),
+            },
             // Terminal state (episode ends here)
-            Fact { key: "mdp:terminal:goal".to_string(),  value: "goal".to_string() },
-
+            Fact {
+                key: "mdp:terminal:goal".to_string(),
+                value: "goal".to_string(),
+            },
             // Transitions: mdp:t:<state>:<action> = "<next_state>" (deterministic)
-            Fact { key: "mdp:t:s0:right".to_string(),     value: "s1".to_string() },
-            Fact { key: "mdp:t:s0:down".to_string(),      value: "s3".to_string() },
-            Fact { key: "mdp:t:s1:right".to_string(),     value: "s2".to_string() },
-            Fact { key: "mdp:t:s2:down".to_string(),      value: "goal".to_string() },
-            Fact { key: "mdp:t:s3:right".to_string(),     value: "goal".to_string() },
-
+            Fact {
+                key: "mdp:t:s0:right".to_string(),
+                value: "s1".to_string(),
+            },
+            Fact {
+                key: "mdp:t:s0:down".to_string(),
+                value: "s3".to_string(),
+            },
+            Fact {
+                key: "mdp:t:s1:right".to_string(),
+                value: "s2".to_string(),
+            },
+            Fact {
+                key: "mdp:t:s2:down".to_string(),
+                value: "goal".to_string(),
+            },
+            Fact {
+                key: "mdp:t:s3:right".to_string(),
+                value: "goal".to_string(),
+            },
             // Rewards: reaching goal from any action that enters it
-            Fact { key: "mdp:r:s2:down".to_string(),      value: "1.0".to_string() },
-            Fact { key: "mdp:r:s3:right".to_string(),     value: "1.0".to_string() },
+            Fact {
+                key: "mdp:r:s2:down".to_string(),
+                value: "1.0".to_string(),
+            },
+            Fact {
+                key: "mdp:r:s3:right".to_string(),
+                value: "1.0".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
-        goals: vec![
-            Goal {
-                id: "reach-goal".to_string(),
-                predicate: "policy".to_string(),
-                value: "s0".to_string(),
-            },
-        ],
-        state: vec![
-            StateAtom { predicate: "position".to_string(), value: "s0".to_string() },
-        ],
+        goals: vec![Goal {
+            id: "reach-goal".to_string(),
+            predicate: "policy".to_string(),
+            value: "s0".to_string(),
+        }],
+        state: vec![StateAtom {
+            predicate: "position".to_string(),
+            value: "s0".to_string(),
+        }],
     };
 
     let breed = RlSymbolic;

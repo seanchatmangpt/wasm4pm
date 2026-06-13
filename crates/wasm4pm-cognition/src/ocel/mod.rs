@@ -70,6 +70,8 @@ pub struct LifecyclePhase {
     pub max_occurrences: usize,
 }
 
+/// `include_str!` sources for hand-authored OCPN model JSON files.
+pub mod model_sources;
 /// Static per-breed lifecycle models (P0 tier: the 13 founding breeds).
 pub mod models_p0;
 /// Static per-breed lifecycle models (P1 tier).
@@ -82,8 +84,6 @@ pub mod models_p3;
 pub mod models_p4;
 /// Static per-breed lifecycle models (P5 tier).
 pub mod models_p5;
-/// `include_str!` sources for hand-authored OCPN model JSON files.
-pub mod model_sources;
 
 /// Get the lifecycle model for a breed by id.
 pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
@@ -148,7 +148,7 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
 }
 
 /// Deprecated alias for [`lifecycle_model_for`].
-#[deprecated(note="Use lifecycle_model_for")]
+#[deprecated(note = "Use lifecycle_model_for")]
 pub fn get_model(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
     lifecycle_model_for(breed_id)
 }

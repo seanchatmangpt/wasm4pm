@@ -21,6 +21,13 @@ import * as os from 'os';
 import type { Kernel } from 'wasm4pm';
 import { WasmLoader } from '@wasm4pm/engine';
 import { ObservabilityLayer } from '@wasm4pm/observability';
+import {
+  WASM_FUNCTION_NAMES,
+  ALGORITHM_OUTPUT_TYPES,
+  ALGORITHM_DEFAULT_PARAMS,
+  ALGORITHM_IDS,
+  resolveAlgorithmId,
+} from '@wasm4pm/contracts';
 
 /** Configuration for the WASM server */
 export interface WasmServerConfig {
@@ -340,38 +347,27 @@ export class WasmServer {
         const activityKey = (params?.activity_key as string) ?? 'concept:name';
         const t0 = performance.now();
 
-        // Dispatch to the correct WASM function
-        let result: any;
-        switch (algorithmName) {
-          case 'dfg':
-            result = wasmModule.discover_dfg(eventLogHandle, activityKey);
-            break;
-          case 'alpha':
-            result = wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey, 0.0);
-            break;
-          case 'heuristic':
-            result = wasmModule.discover_heuristic_miner(eventLogHandle, activityKey, 0.5);
-            break;
-          case 'inductive':
-            result = wasmModule.discover_inductive_miner(eventLogHandle, activityKey);
-            break;
-          case 'genetic':
-            result = wasmModule.discover_genetic_algorithm(
-              eventLogHandle,
-              activityKey,
-              20,
-              20
-            );
-            break;
-          default:
-            throw new Error(`Unsupported algorithm: ${algorithmName}`);
+        // Dispatch to the correct WASM function via registry
+        const algoId = resolveAlgorithmId(algorithmName, ALGORITHM_IDS);
+        if (!algoId) {
+          throw new Error(`Unknown algorithm: ${algorithmName}`);
         }
+        const fnName = WASM_FUNCTION_NAMES[algoId as keyof typeof WASM_FUNCTION_NAMES];
+        if (!fnName) {
+          throw new Error(`No WASM function registered for algorithm: ${algoId}`);
+        }
+        const wasmFn = (wasmModule as Record<string, unknown>)[fnName];
+        if (typeof wasmFn !== 'function') {
+          throw new Error(`WASM export not found: ${fnName}`);
+        }
+        const extras: readonly unknown[] = ALGORITHM_DEFAULT_PARAMS[algoId as keyof typeof ALGORITHM_DEFAULT_PARAMS] ?? [];
+        let result: any = (wasmFn as (...a: unknown[]) => unknown)(eventLogHandle, activityKey, ...extras);
 
         const duration = performance.now() - t0;
         return {
           handle: result.handle,
           algorithm: algorithmName,
-          outputType: 'dfg',
+          outputType: ALGORITHM_OUTPUT_TYPES[algoId as keyof typeof ALGORITHM_OUTPUT_TYPES] ?? 'unknown',
           durationMs: duration,
           execution_ms: duration,
           params: params ?? {},

@@ -21,9 +21,11 @@
 //! (HEARSAY_MODEL precedent). Caps: ≤32 cycles, ≤64 chunks (refusals).
 
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
-use std::collections::BTreeSet;
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+use std::collections::BTreeSet;
 
 /// ACT-R production/retrieval cycle.
 pub struct ActR;
@@ -97,7 +99,12 @@ impl CognitionBreed for ActR {
             push(
                 &mut trace,
                 "load-chunk",
-                format!("chunk '{}' B={:.3} ({} slots)", c.id, c.outcome_score, c.facts.len()),
+                format!(
+                    "chunk '{}' B={:.3} ({} slots)",
+                    c.id,
+                    c.outcome_score,
+                    c.facts.len()
+                ),
             );
         }
 
@@ -125,12 +132,25 @@ impl CognitionBreed for ActR {
             push(
                 &mut trace,
                 "match-production",
-                format!("'{}' matched (utility={:.3}, {} competitors)", rule.id, rule.certainty, applicable.len() - 1),
+                format!(
+                    "'{}' matched (utility={:.3}, {} competitors)",
+                    rule.id,
+                    rule.certainty,
+                    applicable.len() - 1
+                ),
             );
-            push(&mut trace, "fire-production", format!("fired '{}'", rule.id));
+            push(
+                &mut trace,
+                "fire-production",
+                format!("fired '{}'", rule.id),
+            );
 
             if let Some(pattern) = rule.conclusion.strip_prefix("retrieve:") {
-                push(&mut trace, "retrieval-request", format!("pattern {}", pattern));
+                push(
+                    &mut trace,
+                    "retrieval-request",
+                    format!("pattern {}", pattern),
+                );
                 let (pk, pv) = match pattern.split_once('=') {
                     Some(kv) => kv,
                     None => {
@@ -265,7 +285,9 @@ mod tests {
         };
         let result = breed.preconditions(&input);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("requires at least one production rule"));
+        assert!(result
+            .unwrap_err()
+            .contains("requires at least one production rule"));
     }
 
     #[test]
@@ -276,7 +298,10 @@ mod tests {
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 0.5,
-            facts: vec![Fact { key: "slot".into(), value: "v1".into() }],
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v1".into(),
+            }],
         };
         let r1 = Rule {
             id: "r1".into(),
@@ -287,14 +312,20 @@ mod tests {
         let input = BreedInput {
             intent: "test".into(),
             candidates: vec![],
-            facts: vec![Fact { key: "actr:threshold".into(), value: "1.0".into() }],
+            facts: vec![Fact {
+                key: "actr:threshold".into(),
+                value: "1.0".into(),
+            }],
             cases: vec![c1],
             rules: vec![r1],
             goals: vec![],
             state: vec![],
         };
         let output = breed.run(&input).expect("run ok");
-        assert!(output.inference_trace.iter().any(|t| t.kind == "retrieval-failure"));
+        assert!(output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "retrieval-failure"));
         assert!(output.selected.is_none());
     }
 
@@ -306,14 +337,20 @@ mod tests {
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 0.9,
-            facts: vec![Fact { key: "slot".into(), value: "v".into() }],
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v".into(),
+            }],
         };
         let c2 = Case {
             id: "c2_low".into(),
             intent: "".into(),
             architecture: "".into(),
             outcome_score: 0.1,
-            facts: vec![Fact { key: "slot".into(), value: "v".into() }],
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v".into(),
+            }],
         };
         let r1 = Rule {
             id: "r1".into(),
@@ -359,9 +396,18 @@ mod tests {
             intent: "retrieve 3+4".into(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "goal".into(), value: "add".into() },
-                Fact { key: "addend1".into(), value: "3".into() },
-                Fact { key: "addend2".into(), value: "4".into() },
+                Fact {
+                    key: "goal".into(),
+                    value: "add".into(),
+                },
+                Fact {
+                    key: "addend1".into(),
+                    value: "3".into(),
+                },
+                Fact {
+                    key: "addend2".into(),
+                    value: "4".into(),
+                },
             ],
             cases: vec![
                 Case {
@@ -370,9 +416,18 @@ mod tests {
                     architecture: "declarative-chunk".into(),
                     outcome_score: 0.5,
                     facts: vec![
-                        Fact { key: "addend1".into(), value: "3".into() },
-                        Fact { key: "addend2".into(), value: "4".into() },
-                        Fact { key: "sum".into(), value: "7".into() },
+                        Fact {
+                            key: "addend1".into(),
+                            value: "3".into(),
+                        },
+                        Fact {
+                            key: "addend2".into(),
+                            value: "4".into(),
+                        },
+                        Fact {
+                            key: "sum".into(),
+                            value: "7".into(),
+                        },
                     ],
                 },
                 Case {
@@ -381,9 +436,18 @@ mod tests {
                     architecture: "declarative-chunk".into(),
                     outcome_score: 0.3,
                     facts: vec![
-                        Fact { key: "addend1".into(), value: "3".into() },
-                        Fact { key: "addend2".into(), value: "5".into() },
-                        Fact { key: "sum".into(), value: "8".into() },
+                        Fact {
+                            key: "addend1".into(),
+                            value: "3".into(),
+                        },
+                        Fact {
+                            key: "addend2".into(),
+                            value: "5".into(),
+                        },
+                        Fact {
+                            key: "sum".into(),
+                            value: "8".into(),
+                        },
                     ],
                 },
             ],

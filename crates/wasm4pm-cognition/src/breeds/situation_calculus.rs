@@ -20,7 +20,9 @@
 //! Caps (refusals, never silent truncation): ≤64 fluents, ≤32 steps.
 
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Reiter successor-state-axiom progression engine.
@@ -46,11 +48,13 @@ fn parse_domain(
             let (name, slot) = rest
                 .rsplit_once(':')
                 .ok_or_else(|| format!("malformed action fact key '{}'", f.key))?;
-            let def = actions.entry(name.to_string()).or_insert_with(|| ActionDef {
-                pre: BTreeSet::new(),
-                add: BTreeSet::new(),
-                del: BTreeSet::new(),
-            });
+            let def = actions
+                .entry(name.to_string())
+                .or_insert_with(|| ActionDef {
+                    pre: BTreeSet::new(),
+                    add: BTreeSet::new(),
+                    del: BTreeSet::new(),
+                });
             match slot {
                 "pre" => {
                     def.pre.insert(f.value.clone());
@@ -208,7 +212,11 @@ impl CognitionBreed for SituationCalculus {
                 push(
                     &mut trace,
                     "frame-persist",
-                    format!("fluent '{}' persists by inertia across {} steps", f, sequence.len()),
+                    format!(
+                        "fluent '{}' persists by inertia across {} steps",
+                        f,
+                        sequence.len()
+                    ),
                 );
             }
         }
@@ -255,13 +263,19 @@ impl CognitionBreed for SituationCalculus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{Fact, BreedInput};
+    use crate::breeds::{BreedInput, Fact};
 
     #[test]
     fn refuses_oversized_fluent_universe() {
-        let mut facts = vec![Fact { key: "do:0".to_string(), value: "a1".to_string() }];
+        let mut facts = vec![Fact {
+            key: "do:0".to_string(),
+            value: "a1".to_string(),
+        }];
         for i in 0..65 {
-            facts.push(Fact { key: "action:a1:add".to_string(), value: format!("f{}", i) });
+            facts.push(Fact {
+                key: "action:a1:add".to_string(),
+                value: format!("f{}", i),
+            });
         }
         let input = BreedInput {
             intent: "sitcalc".to_string(),
@@ -282,8 +296,14 @@ mod tests {
             intent: "sitcalc".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "action:a1:pre".into(), value: "f1".into() },
-                Fact { key: "do:0".into(), value: "a1".into() },
+                Fact {
+                    key: "action:a1:pre".into(),
+                    value: "f1".into(),
+                },
+                Fact {
+                    key: "do:0".into(),
+                    value: "a1".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -304,26 +324,86 @@ mod tests {
             intent: "blocks world".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "fluent:on_a_b".into(), value: "true".into() },
-                Fact { key: "fluent:on_b_table".into(), value: "true".into() },
-                Fact { key: "fluent:clear_a".into(), value: "true".into() },
-                Fact { key: "fluent:handempty".into(), value: "true".into() },
-                Fact { key: "fluent:color_b_red".into(), value: "true".into() },
-                Fact { key: "action:pickup_a:pre".into(), value: "clear_a".into() },
-                Fact { key: "action:pickup_a:pre".into(), value: "handempty".into() },
-                Fact { key: "action:pickup_a:pre".into(), value: "on_a_b".into() },
-                Fact { key: "action:pickup_a:add".into(), value: "holding_a".into() },
-                Fact { key: "action:pickup_a:add".into(), value: "clear_b".into() },
-                Fact { key: "action:pickup_a:del".into(), value: "on_a_b".into() },
-                Fact { key: "action:pickup_a:del".into(), value: "handempty".into() },
-                Fact { key: "action:pickup_a:del".into(), value: "clear_a".into() },
-                Fact { key: "action:putdown_a:pre".into(), value: "holding_a".into() },
-                Fact { key: "action:putdown_a:add".into(), value: "on_a_table".into() },
-                Fact { key: "action:putdown_a:add".into(), value: "handempty".into() },
-                Fact { key: "action:putdown_a:add".into(), value: "clear_a".into() },
-                Fact { key: "action:putdown_a:del".into(), value: "holding_a".into() },
-                Fact { key: "do:0".into(), value: "pickup_a".into() },
-                Fact { key: "do:1".into(), value: "putdown_a".into() },
+                Fact {
+                    key: "fluent:on_a_b".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "fluent:on_b_table".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "fluent:clear_a".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "fluent:handempty".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "fluent:color_b_red".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:pre".into(),
+                    value: "clear_a".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:pre".into(),
+                    value: "handempty".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:pre".into(),
+                    value: "on_a_b".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:add".into(),
+                    value: "holding_a".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:add".into(),
+                    value: "clear_b".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:del".into(),
+                    value: "on_a_b".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:del".into(),
+                    value: "handempty".into(),
+                },
+                Fact {
+                    key: "action:pickup_a:del".into(),
+                    value: "clear_a".into(),
+                },
+                Fact {
+                    key: "action:putdown_a:pre".into(),
+                    value: "holding_a".into(),
+                },
+                Fact {
+                    key: "action:putdown_a:add".into(),
+                    value: "on_a_table".into(),
+                },
+                Fact {
+                    key: "action:putdown_a:add".into(),
+                    value: "handempty".into(),
+                },
+                Fact {
+                    key: "action:putdown_a:add".into(),
+                    value: "clear_a".into(),
+                },
+                Fact {
+                    key: "action:putdown_a:del".into(),
+                    value: "holding_a".into(),
+                },
+                Fact {
+                    key: "do:0".into(),
+                    value: "pickup_a".into(),
+                },
+                Fact {
+                    key: "do:1".into(),
+                    value: "putdown_a".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -331,30 +411,59 @@ mod tests {
             state: vec![],
         };
         let out = SituationCalculus.run(&input).unwrap();
-        assert_eq!(out.selected.as_deref(), Some("s2"), "must end in situation s2");
-        let holds: Vec<String> = out.facts.iter()
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("s2"),
+            "must end in situation s2"
+        );
+        let holds: Vec<String> = out
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("holds:"))
             .map(|f| f.key["holds:".len()..].to_string())
             .collect();
         // Must hold after sequence (Reiter 1991 expected)
-        for f in &["on_a_table", "on_b_table", "clear_a", "clear_b", "handempty", "color_b_red"] {
-            assert!(holds.contains(&f.to_string()),
-                "fluent '{}' must hold in final situation (Reiter 1991)", f);
+        for f in &[
+            "on_a_table",
+            "on_b_table",
+            "clear_a",
+            "clear_b",
+            "handempty",
+            "color_b_red",
+        ] {
+            assert!(
+                holds.contains(&f.to_string()),
+                "fluent '{}' must hold in final situation (Reiter 1991)",
+                f
+            );
         }
         // Must NOT hold
         for f in &["on_a_b", "holding_a"] {
-            assert!(!holds.contains(&f.to_string()),
-                "fluent '{}' must NOT hold in final situation (Reiter 1991)", f);
+            assert!(
+                !holds.contains(&f.to_string()),
+                "fluent '{}' must NOT hold in final situation (Reiter 1991)",
+                f
+            );
         }
         // Frame inertia: on_b_table and color_b_red persist untouched
-        let frame_persist_details: Vec<String> = out.inference_trace.iter()
+        let frame_persist_details: Vec<String> = out
+            .inference_trace
+            .iter()
             .filter(|t| t.kind == "frame-persist")
             .map(|t| t.detail.clone())
             .collect();
-        assert!(frame_persist_details.iter().any(|d| d.contains("on_b_table")),
-            "on_b_table must appear in a frame-persist step (Reiter 1991 inertia)");
-        assert!(frame_persist_details.iter().any(|d| d.contains("color_b_red")),
-            "color_b_red must appear in a frame-persist step (Reiter 1991 inertia)");
+        assert!(
+            frame_persist_details
+                .iter()
+                .any(|d| d.contains("on_b_table")),
+            "on_b_table must appear in a frame-persist step (Reiter 1991 inertia)"
+        );
+        assert!(
+            frame_persist_details
+                .iter()
+                .any(|d| d.contains("color_b_red")),
+            "color_b_red must appear in a frame-persist step (Reiter 1991 inertia)"
+        );
     }
 
     #[test]
@@ -363,19 +472,52 @@ mod tests {
             intent: "sitcalc".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "fluent:f1".into(), value: "true".into() },
-                Fact { key: "fluent:f2".into(), value: "true".into() },
+                Fact {
+                    key: "fluent:f1".into(),
+                    value: "true".into(),
+                },
+                Fact {
+                    key: "fluent:f2".into(),
+                    value: "true".into(),
+                },
                 // a1 requires f1, adds f3, deletes f1
-                Fact { key: "action:a1:pre".into(), value: "f1".into() },
-                Fact { key: "action:a1:add".into(), value: "f3".into() },
-                Fact { key: "action:a1:del".into(), value: "f1".into() },
+                Fact {
+                    key: "action:a1:pre".into(),
+                    value: "f1".into(),
+                },
+                Fact {
+                    key: "action:a1:add".into(),
+                    value: "f3".into(),
+                },
+                Fact {
+                    key: "action:a1:del".into(),
+                    value: "f1".into(),
+                },
                 // a2 requires f2 and f3, adds f4, deletes f2
-                Fact { key: "action:a2:pre".into(), value: "f2".into() },
-                Fact { key: "action:a2:pre".into(), value: "f3".into() },
-                Fact { key: "action:a2:add".into(), value: "f4".into() },
-                Fact { key: "action:a2:del".into(), value: "f2".into() },
-                Fact { key: "do:0".into(), value: "a1".into() },
-                Fact { key: "do:1".into(), value: "a2".into() },
+                Fact {
+                    key: "action:a2:pre".into(),
+                    value: "f2".into(),
+                },
+                Fact {
+                    key: "action:a2:pre".into(),
+                    value: "f3".into(),
+                },
+                Fact {
+                    key: "action:a2:add".into(),
+                    value: "f4".into(),
+                },
+                Fact {
+                    key: "action:a2:del".into(),
+                    value: "f2".into(),
+                },
+                Fact {
+                    key: "do:0".into(),
+                    value: "a1".into(),
+                },
+                Fact {
+                    key: "do:1".into(),
+                    value: "a2".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -384,7 +526,9 @@ mod tests {
         };
         let out = SituationCalculus.run(&input).unwrap();
         assert_eq!(out.selected.as_deref(), Some("s2"));
-        let mut final_fluents: Vec<String> = out.facts.iter()
+        let mut final_fluents: Vec<String> = out
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("holds:"))
             .map(|f| f.key.trim_start_matches("holds:").to_string())
             .collect();
@@ -398,11 +542,23 @@ mod tests {
             intent: "sitcalc".to_string(),
             candidates: vec![],
             facts: vec![
-                Fact { key: "fluent:f1".into(), value: "true".into() },
+                Fact {
+                    key: "fluent:f1".into(),
+                    value: "true".into(),
+                },
                 // Action 'nop' has no adds or dels, just a precondition
-                Fact { key: "action:nop:pre".into(), value: "f1".into() },
-                Fact { key: "do:0".into(), value: "nop".into() },
-                Fact { key: "do:1".into(), value: "nop".into() },
+                Fact {
+                    key: "action:nop:pre".into(),
+                    value: "f1".into(),
+                },
+                Fact {
+                    key: "do:0".into(),
+                    value: "nop".into(),
+                },
+                Fact {
+                    key: "do:1".into(),
+                    value: "nop".into(),
+                },
             ],
             cases: vec![],
             rules: vec![],
@@ -410,13 +566,19 @@ mod tests {
             state: vec![],
         };
         let out = SituationCalculus.run(&input).unwrap();
-        let final_fluents: Vec<String> = out.facts.iter()
+        let final_fluents: Vec<String> = out
+            .facts
+            .iter()
             .filter(|f| f.key.starts_with("holds:"))
             .map(|f| f.key.trim_start_matches("holds:").to_string())
             .collect();
         assert_eq!(final_fluents, vec!["f1"]);
-        
-        let persists = out.inference_trace.iter().filter(|t| t.kind == "frame-persist").count();
+
+        let persists = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "frame-persist")
+            .count();
         assert_eq!(persists, 1);
     }
 }

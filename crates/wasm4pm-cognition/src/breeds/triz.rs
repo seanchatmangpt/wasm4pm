@@ -34,7 +34,9 @@ impl CognitionBreed for Triz {
         let has_improving = input.facts.iter().any(|f| f.key == "improving");
         let has_worsening = input.facts.iter().any(|f| f.key == "worsening");
         if !has_improving || !has_worsening {
-            return Err("TRIZ requires at least one 'improving' fact and one 'worsening' fact".to_string());
+            return Err(
+                "TRIZ requires at least one 'improving' fact and one 'worsening' fact".to_string(),
+            );
         }
         Ok(())
     }
@@ -44,8 +46,16 @@ impl CognitionBreed for Triz {
         let mut selected_principles = Vec::new();
         let mut new_facts = Vec::new();
 
-        let improving_facts: Vec<_> = input.facts.iter().filter(|f| f.key == "improving").collect();
-        let worsening_facts: Vec<_> = input.facts.iter().filter(|f| f.key == "worsening").collect();
+        let improving_facts: Vec<_> = input
+            .facts
+            .iter()
+            .filter(|f| f.key == "improving")
+            .collect();
+        let worsening_facts: Vec<_> = input
+            .facts
+            .iter()
+            .filter(|f| f.key == "worsening")
+            .collect();
 
         // Evaluate all pairs of contradictions
         for imp in &improving_facts {
@@ -73,16 +83,28 @@ impl CognitionBreed for Triz {
                     trace.push(TraceStep {
                         step: trace.len(),
                         kind: "physical-contradiction".to_string(),
-                        detail: format!("improving={} and worsening={} identical -> {}", x, y, conclusion),
+                        detail: format!(
+                            "improving={} and worsening={} identical -> {}",
+                            x, y, conclusion
+                        ),
                         depth: 0,
-                        objects: sep_principles.iter().map(|s| ("principle".to_string(), s.to_string())).collect(),
+                        objects: sep_principles
+                            .iter()
+                            .map(|s| ("principle".to_string(), s.to_string()))
+                            .collect(),
                     });
                 } else {
                     // Technical contradiction, look up matrix (input.rules)
                     let mut found = false;
                     for rule in &input.rules {
-                        let has_imp = rule.premise.iter().any(|p| p == &format!("improving={}", x));
-                        let has_wor = rule.premise.iter().any(|p| p == &format!("worsening={}", y));
+                        let has_imp = rule
+                            .premise
+                            .iter()
+                            .any(|p| p == &format!("improving={}", x));
+                        let has_wor = rule
+                            .premise
+                            .iter()
+                            .any(|p| p == &format!("worsening={}", y));
                         if has_imp && has_wor {
                             found = true;
                             selected_principles.push(rule.conclusion.clone());
@@ -94,7 +116,10 @@ impl CognitionBreed for Triz {
                             trace.push(TraceStep {
                                 step: trace.len(),
                                 kind: "technical-contradiction".to_string(),
-                                detail: format!("matrix lookup: {} vs {} -> {}", x, y, rule.conclusion),
+                                detail: format!(
+                                    "matrix lookup: {} vs {} -> {}",
+                                    x, y, rule.conclusion
+                                ),
                                 depth: 0,
                                 objects: vec![("principle".to_string(), rule.conclusion.clone())],
                             });
@@ -165,40 +190,62 @@ mod tests {
     fn test_triz_physical_contradiction() {
         let input = make_input(
             vec![
-                Fact { key: "improving".into(), value: "weight".into() },
-                Fact { key: "worsening".into(), value: "weight".into() },
+                Fact {
+                    key: "improving".into(),
+                    value: "weight".into(),
+                },
+                Fact {
+                    key: "worsening".into(),
+                    value: "weight".into(),
+                },
             ],
             vec![],
         );
         let out = Triz.run(&input).unwrap();
         assert!(out.explanation.contains("Selected principles: Some(\"principles=separation_in_space,separation_in_time,separation_upon_condition,separation_between_parts_and_whole\")"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "physical-contradiction"));
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "physical-contradiction"));
     }
 
     #[test]
     fn test_triz_technical_contradiction() {
         let input = make_input(
             vec![
-                Fact { key: "improving".into(), value: "weight".into() },
-                Fact { key: "worsening".into(), value: "strength".into() },
+                Fact {
+                    key: "improving".into(),
+                    value: "weight".into(),
+                },
+                Fact {
+                    key: "worsening".into(),
+                    value: "strength".into(),
+                },
             ],
-            vec![
-                Rule {
-                    id: "m1".into(),
-                    premise: vec!["improving=weight".into(), "worsening=strength".into()],
-                    conclusion: "principles=40,26".into(),
-                    certainty: 1.0,
-                }
-            ],
+            vec![Rule {
+                id: "m1".into(),
+                premise: vec!["improving=weight".into(), "worsening=strength".into()],
+                conclusion: "principles=40,26".into(),
+                certainty: 1.0,
+            }],
         );
         let out = Triz.run(&input).unwrap();
         assert_eq!(out.selected.as_deref(), Some("principles=40,26"));
-        assert!(out.inference_trace.iter().any(|t| t.kind == "technical-contradiction"));
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "technical-contradiction"));
     }
 
     #[test]
     fn test_triz_precondition_failure() {
-        let input = make_input(vec![Fact { key: "improving".into(), value: "weight".into() }], vec![]);
+        let input = make_input(
+            vec![Fact {
+                key: "improving".into(),
+                value: "weight".into(),
+            }],
+            vec![],
+        );
         let err = Triz.preconditions(&input).unwrap_err();
         assert!(err.contains("requires at least one"));
     }

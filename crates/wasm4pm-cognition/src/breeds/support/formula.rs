@@ -183,7 +183,12 @@ fn tokenize(input: &str) -> Result<Vec<Token>, String> {
                     _ => Token::Ident(word),
                 });
             }
-            other => return Err(format!("unexpected character '{}' at position {}", other, i)),
+            other => {
+                return Err(format!(
+                    "unexpected character '{}' at position {}",
+                    other, i
+                ))
+            }
         }
     }
     Ok(tokens)
@@ -364,7 +369,10 @@ mod tests {
         // !a & b  ==  (!a) & b
         assert_eq!(
             Formula::parse("!a & b").unwrap(),
-            Formula::And(Box::new(Formula::Not(Box::new(atom("a")))), Box::new(atom("b")))
+            Formula::And(
+                Box::new(Formula::Not(Box::new(atom("a")))),
+                Box::new(atom("b"))
+            )
         );
     }
 

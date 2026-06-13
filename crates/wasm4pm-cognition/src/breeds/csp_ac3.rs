@@ -207,7 +207,8 @@ impl CognitionBreed for CspAc3 {
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         self.assert_verdict_valid(output)?;
-        TraceQuery::from_output(output).require_non_empty_with_kinds(&["csp-init", "csp-verdict"])?;
+        TraceQuery::from_output(output)
+            .require_non_empty_with_kinds(&["csp-init", "csp-verdict"])?;
         Ok(())
     }
 }
@@ -217,11 +218,17 @@ mod tests {
     use super::*;
 
     fn var(name: &str, vals: &str) -> Fact {
-        Fact { key: "csp-var".into(), value: format!("{}:{}", name, vals) }
+        Fact {
+            key: "csp-var".into(),
+            value: format!("{}:{}", name, vals),
+        }
     }
 
     fn con(c: &str) -> Fact {
-        Fact { key: "csp-constraint".into(), value: c.into() }
+        Fact {
+            key: "csp-constraint".into(),
+            value: c.into(),
+        }
     }
 
     fn input(facts: Vec<Fact>) -> BreedInput {
@@ -240,54 +247,87 @@ mod tests {
     /// If the constraint evaluator confuses != with ==, explanation becomes "SAT: X=B,Y=B,Z=B".
     #[test]
     fn triangle_lex_least_coloring() {
-        let out = CspAc3.run(&input(vec![
-            var("X", "B,G,R"), var("Y", "B,G,R"), var("Z", "B,G,R"),
-            con("X!=Y"), con("Y!=Z"), con("X!=Z"),
-        ])).expect("run ok");
-        assert_eq!(out.explanation, "SAT: X=B, Y=G, Z=R",
-            "lex-least coloring must be X=B,Y=G,Z=R under MRV+lex-value ordering");
+        let out = CspAc3
+            .run(&input(vec![
+                var("X", "B,G,R"),
+                var("Y", "B,G,R"),
+                var("Z", "B,G,R"),
+                con("X!=Y"),
+                con("Y!=Z"),
+                con("X!=Z"),
+            ]))
+            .expect("run ok");
+        assert_eq!(
+            out.explanation, "SAT: X=B, Y=G, Z=R",
+            "lex-least coloring must be X=B,Y=G,Z=R under MRV+lex-value ordering"
+        );
     }
 
     /// A 2-node binary graph with only 1 value per domain and != must be UNSAT.
     /// If AC-3 doesn't prune or backtracking doesn't detect failure, verdict is wrong.
     #[test]
     fn unsat_single_value_domains_with_neq() {
-        let out = CspAc3.run(&input(vec![
-            var("A", "red"), var("B", "red"),
-            con("A!=B"),
-        ])).expect("run ok");
-        assert_eq!(out.selected.as_deref(), Some("unsat"),
-            "A=red B=red with A!=B is unsatisfiable");
+        let out = CspAc3
+            .run(&input(vec![var("A", "red"), var("B", "red"), con("A!=B")]))
+            .expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("unsat"),
+            "A=red B=red with A!=B is unsatisfiable"
+        );
     }
 
     /// == constraint: two vars must have the same value; [1,2] domains → A=1,B=1 (lex).
     #[test]
     fn eq_constraint_selects_lex_first() {
-        let out = CspAc3.run(&input(vec![
-            var("A", "1,2"), var("B", "1,2"),
-            con("A==B"),
-        ])).expect("run ok");
-        assert_eq!(out.explanation, "SAT: A=1, B=1",
-            "== constraint with lex-ordered domains must assign A=1,B=1");
+        let out = CspAc3
+            .run(&input(vec![var("A", "1,2"), var("B", "1,2"), con("A==B")]))
+            .expect("run ok");
+        assert_eq!(
+            out.explanation, "SAT: A=1, B=1",
+            "== constraint with lex-ordered domains must assign A=1,B=1"
+        );
     }
 
     #[test]
     fn refuses_malformed_var() {
-        assert!(CspAc3.preconditions(&input(vec![var("X", "1"), Fact { key: "csp-var".into(), value: "Nocolon".into() }])).is_err());
+        assert!(CspAc3
+            .preconditions(&input(vec![
+                var("X", "1"),
+                Fact {
+                    key: "csp-var".into(),
+                    value: "Nocolon".into()
+                }
+            ]))
+            .is_err());
     }
 
     #[test]
     fn refuses_malformed_constraint() {
-        assert!(CspAc3.preconditions(&input(vec![var("X", "1"), Fact { key: "csp-constraint".into(), value: "X>Y".into() }])).is_err());
+        assert!(CspAc3
+            .preconditions(&input(vec![
+                var("X", "1"),
+                Fact {
+                    key: "csp-constraint".into(),
+                    value: "X>Y".into()
+                }
+            ]))
+            .is_err());
     }
 
     #[test]
     fn falsification_gate_clique_exceeds_domain_size() {
         // A, B, C must all be different, but domains only have 2 values. Pigeonhole principle.
-        let out = CspAc3.run(&input(vec![
-            var("A", "1,2"), var("B", "1,2"), var("C", "1,2"),
-            con("A!=B"), con("B!=C"), con("A!=C"),
-        ])).unwrap();
+        let out = CspAc3
+            .run(&input(vec![
+                var("A", "1,2"),
+                var("B", "1,2"),
+                var("C", "1,2"),
+                con("A!=B"),
+                con("B!=C"),
+                con("A!=C"),
+            ]))
+            .unwrap();
         assert_eq!(out.selected.as_deref(), Some("unsat"));
     }
 

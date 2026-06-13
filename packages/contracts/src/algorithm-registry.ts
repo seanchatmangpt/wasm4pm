@@ -214,6 +214,23 @@ function normalizeToken(value: string): string {
  * Resolve a user-provided algorithm name to a canonical registry ID.
  * Resolution order: exact match → CLI alias → normalized token match.
  */
+// NOT YET ONTOLOGY-BACKED — extra positional args for WASM functions beyond (handle, activityKey).
+// Source of truth for wasm-server.ts dispatch. To add new entries: verify Rust signature in wasm4pm/src/lib.rs.
+export const ALGORITHM_DEFAULT_PARAMS: Partial<Record<AlgorithmId, readonly unknown[]>> = {
+  // discover_alpha_plus_plus(handle, activity_key, min_support: f64)
+  "alpha_plus_plus": [0.0],
+  // discover_heuristic_miner(handle, activity_key, dependency_threshold: f64)
+  "heuristic_miner": [0.5],
+  // discover_genetic_algorithm(handle, activity_key, population_size: usize, generations: usize)
+  "genetic_algorithm": [20, 20],
+  // discover_pso_algorithm(handle, activity_key, swarm_size: usize, iterations: usize)
+  "pso": [20, 20],
+  // discover_aco_algorithm(handle, activity_key, ant_count: usize, iterations: usize)
+  "aco": [20, 20],
+  // discover_simulated_annealing(handle, activity_key, temperature: f64, cooling_rate: f64)
+  "simulated_annealing": [1.0, 0.95],
+};
+
 export function resolveAlgorithmId(
   input: string,
   registryIds: readonly string[] = ALGORITHM_IDS

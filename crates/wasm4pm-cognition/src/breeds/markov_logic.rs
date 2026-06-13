@@ -56,7 +56,12 @@ fn parse_clauses(
             let v = match f.value.as_str() {
                 "true" => true,
                 "false" => false,
-                other => return Err(format!("evidence '{}' must be true/false, got '{}'", atom, other)),
+                other => {
+                    return Err(format!(
+                        "evidence '{}' must be true/false, got '{}'",
+                        atom, other
+                    ))
+                }
             };
             evidence.insert(atom.to_string(), v);
             atom_set.insert(atom.to_string());
@@ -224,8 +229,12 @@ impl CognitionBreed for MarkovLogic {
                 break; // all unsatisfied clauses fully clamped: no move possible
             }
             let c = unsat[rng.gen_range(0..unsat.len())];
-            let mut flippable: Vec<usize> =
-                c.lits.iter().map(|&(v, _)| v).filter(|&v| !clamped[v]).collect();
+            let mut flippable: Vec<usize> = c
+                .lits
+                .iter()
+                .map(|&(v, _)| v)
+                .filter(|&v| !clamped[v])
+                .collect();
             flippable.sort_unstable();
             flippable.dedup();
             let var = if rng.gen_range(0..100) < NOISE_PCT {
@@ -404,8 +413,14 @@ mod tests {
             .run(&input(vec![
                 fact("mln:clause:smoke-cancer-a", "1.5|!smokes_anna,cancer_anna"),
                 fact("mln:clause:smoke-cancer-b", "1.5|!smokes_bob,cancer_bob"),
-                fact("mln:clause:friends-ab-1", "1.1|!friends_ab,!smokes_anna,smokes_bob"),
-                fact("mln:clause:friends-ab-2", "1.1|!friends_ab,!smokes_bob,smokes_anna"),
+                fact(
+                    "mln:clause:friends-ab-1",
+                    "1.1|!friends_ab,!smokes_anna,smokes_bob",
+                ),
+                fact(
+                    "mln:clause:friends-ab-2",
+                    "1.1|!friends_ab,!smokes_bob,smokes_anna",
+                ),
                 fact("evidence:smokes_anna", "true"),
                 fact("evidence:friends_ab", "true"),
             ]))
@@ -413,23 +428,43 @@ mod tests {
 
         // MAP cost must be 0 (all clauses satisfied)
         let cost = out.facts.iter().find(|f| f.key == "mln:cost").unwrap();
-        assert_eq!(cost.value, "0.000000",
-            "MAP state must satisfy all clauses (cost 0); Richardson & Domingos 2006");
+        assert_eq!(
+            cost.value, "0.000000",
+            "MAP state must satisfy all clauses (cost 0); Richardson & Domingos 2006"
+        );
 
         // smokes_bob must be true in MAP state
-        let smokes_bob = out.facts.iter().find(|f| f.key == "mln:atom:smokes_bob").unwrap();
-        assert_eq!(smokes_bob.value, "true",
-            "smokes_bob must be true in MAP state (friends propagate smoking)");
+        let smokes_bob = out
+            .facts
+            .iter()
+            .find(|f| f.key == "mln:atom:smokes_bob")
+            .unwrap();
+        assert_eq!(
+            smokes_bob.value, "true",
+            "smokes_bob must be true in MAP state (friends propagate smoking)"
+        );
 
         // cancer_anna must be true
-        let cancer_anna = out.facts.iter().find(|f| f.key == "mln:atom:cancer_anna").unwrap();
-        assert_eq!(cancer_anna.value, "true",
-            "cancer_anna must be true in MAP state (smoker gets cancer)");
+        let cancer_anna = out
+            .facts
+            .iter()
+            .find(|f| f.key == "mln:atom:cancer_anna")
+            .unwrap();
+        assert_eq!(
+            cancer_anna.value, "true",
+            "cancer_anna must be true in MAP state (smoker gets cancer)"
+        );
 
         // cancer_bob must be true
-        let cancer_bob = out.facts.iter().find(|f| f.key == "mln:atom:cancer_bob").unwrap();
-        assert_eq!(cancer_bob.value, "true",
-            "cancer_bob must be true in MAP state (smoker gets cancer)");
+        let cancer_bob = out
+            .facts
+            .iter()
+            .find(|f| f.key == "mln:atom:cancer_bob")
+            .unwrap();
+        assert_eq!(
+            cancer_bob.value, "true",
+            "cancer_bob must be true in MAP state (smoker gets cancer)"
+        );
     }
 
     #[test]

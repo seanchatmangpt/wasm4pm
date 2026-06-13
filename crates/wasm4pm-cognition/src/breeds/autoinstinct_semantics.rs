@@ -9,11 +9,11 @@
 //! 6. Return `BreedOutput` with candidates listing each extracted act.
 
 use crate::autoinstinct::semantics::{PrimitiveAct, SemanticParser};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoInstinct Semantics breed: NLU, semantic frame extraction, Schank CD primitives.
 pub struct AutoinstinctSemantics;

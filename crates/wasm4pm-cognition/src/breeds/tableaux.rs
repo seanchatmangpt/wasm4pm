@@ -22,8 +22,8 @@
 //!   β: F(A&B)→{FA|FB}   T(A|B)→{TA|TB}   T(A->B)→{FA|TB}
 
 use crate::breeds::support::breed_class::VerifierBreed;
-use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::support::formula::Formula;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -190,12 +190,7 @@ impl CognitionBreed for Tableaux {
             });
         };
         push("parse-formula", format!("{}", formula), 0, &mut trace);
-        push(
-            "sign-root",
-            format!("F {}", formula),
-            0,
-            &mut trace,
-        );
+        push("sign-root", format!("F {}", formula), 0, &mut trace);
 
         let mut atoms = std::collections::BTreeSet::new();
         collect_atoms(&formula, &mut atoms);
@@ -382,11 +377,7 @@ impl CognitionBreed for Tableaux {
         self.assert_verdict_valid(output)?;
         let tq = TraceQuery::from_output(output);
         tq.require_non_empty_with_kinds(&["verdict"])?;
-        if !output
-            .facts
-            .iter()
-            .any(|f| f.key == "tableaux:verdict")
-        {
+        if !output.facts.iter().any(|f| f.key == "tableaux:verdict") {
             return Err("missing tableaux:verdict fact".to_string());
         }
         Ok(())
@@ -455,7 +446,9 @@ mod tests {
     #[test]
     fn pierce_law_valid_uses_beta() {
         // ((a -> b) -> a) -> a is valid and requires beta branching.
-        let out = Tableaux.run(&input("((a -> b) -> a) -> a")).expect("run ok");
+        let out = Tableaux
+            .run(&input("((a -> b) -> a) -> a"))
+            .expect("run ok");
         assert_eq!(out.selected.as_deref(), Some("valid"));
         assert!(
             out.inference_trace.iter().any(|t| t.kind == "beta-expand"),

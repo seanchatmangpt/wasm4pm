@@ -74,7 +74,10 @@ pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue
     let exists = ocel.object_types.iter().any(|ot| ot.name == object_type)
         || ocel.objects.iter().any(|o| o.object_type == object_type);
     if !exists {
-        return Err(js_val(&format!("Object type '{}' not found in the log", object_type)));
+        return Err(js_val(&format!(
+            "Object type '{}' not found in the log",
+            object_type
+        )));
     }
 
     let mut cases = Vec::new();
@@ -92,7 +95,10 @@ pub fn flatten_ocel_v2(json: &str, object_type: &str) -> Result<JsValue, JsValue
             .collect();
         events_for_obj.sort_by(|a, b| a.time.cmp(&b.time));
 
-        let trace: Vec<String> = events_for_obj.iter().map(|e| e.event_type.clone()).collect();
+        let trace: Vec<String> = events_for_obj
+            .iter()
+            .map(|e| e.event_type.clone())
+            .collect();
         let event_ids: Vec<String> = events_for_obj.iter().map(|e| e.id.clone()).collect();
 
         cases.push(serde_json::json!({

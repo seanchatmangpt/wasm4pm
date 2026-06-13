@@ -14,14 +14,19 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
         return issues;
     }
 
-    let has_contract_call = content.contains("cognition_run(") || content.contains("cognition_verify(");
+    let has_contract_call =
+        content.contains("cognition_run(") || content.contains("cognition_verify(");
 
     // A2: WasmLoader used without reset between tests
-    if content.contains("WasmLoader") && !content.contains("WasmLoader.reset()") && content.contains("describe(") {
+    if content.contains("WasmLoader")
+        && !content.contains("WasmLoader.reset()")
+        && content.contains("describe(")
+    {
         issues.push(ConformanceIssue {
             severity: "WARNING".to_string(),
             code: "WASM4PM-TS-A2".to_string(),
-            message: "WasmLoader is a singleton — call WasmLoader.reset() between test suites".to_string(),
+            message: "WasmLoader is a singleton — call WasmLoader.reset() between test suites"
+                .to_string(),
         });
     }
 
@@ -54,7 +59,9 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     // Context-gated: common property names only flagged near a contract call
     if has_contract_call {
         let lines: Vec<&str> = content.lines().collect();
-        let call_lines: Vec<usize> = lines.iter().enumerate()
+        let call_lines: Vec<usize> = lines
+            .iter()
+            .enumerate()
             .filter(|(_, l)| l.contains("cognition_run(") || l.contains("cognition_verify("))
             .map(|(i, _)| i)
             .collect();
@@ -95,13 +102,15 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
         issues.push(ConformanceIssue {
             severity: "WARNING".to_string(),
             code: "WASM4PM-TS-A6".to_string(),
-            message: "cognition_verify never emits status 'rejected' — check for 'has_findings' instead".to_string(),
+            message:
+                "cognition_verify never emits status 'rejected' — check for 'has_findings' instead"
+                    .to_string(),
         });
     }
 
     // LLM Cheat Detectors for TypeScript
     let is_test = content.contains("describe(") || content.contains("it(");
-    
+
     // R1: Math.random() in production code
     if !is_test && content.contains("Math.random()") && !content.contains("@lint-allow-random") {
         issues.push(ConformanceIssue {
@@ -114,7 +123,20 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     // R2: Short hashes
     // Basic heuristic: searching for `hash: "short"`
     // Using Regex in Rust would be better, but we do simple sub-string checks
-    let short_hash_markers = ["hash: \"", "hash: '", "hash: `", "fingerprint: \"", "fingerprint: '", "fingerprint: `", "signature: \"", "signature: '", "signature: `", "_id: \"", "_id: '", "_id: `"];
+    let short_hash_markers = [
+        "hash: \"",
+        "hash: '",
+        "hash: `",
+        "fingerprint: \"",
+        "fingerprint: '",
+        "fingerprint: `",
+        "signature: \"",
+        "signature: '",
+        "signature: `",
+        "_id: \"",
+        "_id: '",
+        "_id: `",
+    ];
     for marker in short_hash_markers.iter() {
         if let Some(idx) = content.find(marker) {
             let remainder = &content[idx + marker.len()..];
@@ -133,8 +155,20 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // R3: Boolean Lies
-    let bool_lies = ["optimal: true", "exact: true", "verified: true", "canonical: true"];
-    let qualifies = ["simplified", "doesn't guarantee", "doesn\\'t guarantee", "approximat", "stub", "not optimal"];
+    let bool_lies = [
+        "optimal: true",
+        "exact: true",
+        "verified: true",
+        "canonical: true",
+    ];
+    let qualifies = [
+        "simplified",
+        "doesn't guarantee",
+        "doesn\\'t guarantee",
+        "approximat",
+        "stub",
+        "not optimal",
+    ];
     for lie in bool_lies.iter() {
         if content.contains(lie) {
             let lower_content = content.to_lowercase();
@@ -153,7 +187,12 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
 
     // R4: Stub Metrics
     let metrics = ["fitness:", "precision:", "generalization:", "simplicity:"];
-    let stubs = ["fallback", "stub result", "not supported", "stub implementation"];
+    let stubs = [
+        "fallback",
+        "stub result",
+        "not supported",
+        "stub implementation",
+    ];
     if !is_test {
         for metric in metrics.iter() {
             if content.contains(metric) {
@@ -173,19 +212,39 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // Stub Markers in TS
-    let ts_cheat_markers = ["TODO", "FIXME", "HACK", "STUB", "PLACEHOLDER", "XXX", "not implemented", "REMOVEME", "NOCOMMIT", "coming soon", "work in progress"];
+    let ts_cheat_markers = [
+        "TODO",
+        "FIXME",
+        "HACK",
+        "STUB",
+        "PLACEHOLDER",
+        "XXX",
+        "not implemented",
+        "REMOVEME",
+        "NOCOMMIT",
+        "coming soon",
+        "work in progress",
+    ];
     for marker in ts_cheat_markers.iter() {
         if content.contains(marker) {
             issues.push(ConformanceIssue {
                 severity: "ERROR".to_string(),
                 code: "STRUCTURAL-FAKERY-TS-MARKER".to_string(),
-                message: format!("Forbidden placeholder token '{}' detected in TypeScript source.", marker),
+                message: format!(
+                    "Forbidden placeholder token '{}' detected in TypeScript source.",
+                    marker
+                ),
             });
         }
     }
 
     // B2: Empty returns (return {}; return []; return { status: 'ok' })
-    if !is_test && (content.contains("return {}") || content.contains("return []") || content.contains("return { status: 'ok' }") || content.contains("return { status: \"ok\" }")) {
+    if !is_test
+        && (content.contains("return {}")
+            || content.contains("return []")
+            || content.contains("return { status: 'ok' }")
+            || content.contains("return { status: \"ok\" }"))
+    {
         issues.push(ConformanceIssue {
             severity: "ERROR".to_string(),
             code: "STRUCTURAL-FAKERY-B2".to_string(),
@@ -194,7 +253,13 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // C2: Skipped TS tests
-    if is_test && (content.contains(".skip(") || content.contains(".todo(") || content.contains("xit(") || content.contains("xdescribe(") || content.contains("xtest(")) {
+    if is_test
+        && (content.contains(".skip(")
+            || content.contains(".todo(")
+            || content.contains("xit(")
+            || content.contains("xdescribe(")
+            || content.contains("xtest("))
+    {
         issues.push(ConformanceIssue {
             severity: "ERROR".to_string(),
             code: "STRUCTURAL-FAKERY-C2".to_string(),
@@ -203,11 +268,19 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // D1/D2: Silent failure swallowing
-    if !is_test && (content.contains("catch {}") || content.contains("catch (e) {}") || content.contains("catch(e) {}") || content.contains(".catch(() => undefined)") || content.contains(".catch(() => null)") || content.contains(".catch(() => {})")) {
+    if !is_test
+        && (content.contains("catch {}")
+            || content.contains("catch (e) {}")
+            || content.contains("catch(e) {}")
+            || content.contains(".catch(() => undefined)")
+            || content.contains(".catch(() => null)")
+            || content.contains(".catch(() => {})"))
+    {
         issues.push(ConformanceIssue {
             severity: "ERROR".to_string(),
             code: "STRUCTURAL-FAKERY-D1".to_string(),
-            message: "Empty catch blocks or silent .catch() swallowing detected. Handle the error.".to_string(),
+            message: "Empty catch blocks or silent .catch() swallowing detected. Handle the error."
+                .to_string(),
         });
     }
 
@@ -216,21 +289,31 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
         issues.push(ConformanceIssue {
             severity: "WARNING".to_string(),
             code: "STRUCTURAL-FAKERY-D5".to_string(),
-            message: "Suspicious `|| {}` or `|| []` fallback detected. May silently mask failures.".to_string(),
+            message: "Suspicious `|| {}` or `|| []` fallback detected. May silently mask failures."
+                .to_string(),
         });
     }
 
     // E3: Structural output lies
-    if !is_test && (content.contains(r#"nodes: []"#) || content.contains(r#"edges: []"#) || content.contains(r#"traces: []"#)) {
+    if !is_test
+        && (content.contains(r#"nodes: []"#)
+            || content.contains(r#"edges: []"#)
+            || content.contains(r#"traces: []"#))
+    {
         issues.push(ConformanceIssue {
             severity: "ERROR".to_string(),
             code: "STRUCTURAL-FAKERY-E3".to_string(),
-            message: "Hardcoded empty arrays in TypeScript output logic. Compute actual structure.".to_string(),
+            message: "Hardcoded empty arrays in TypeScript output logic. Compute actual structure."
+                .to_string(),
         });
     }
 
     // G1: Undefined field accesses
-    if !is_test && (content.contains(".decision") || content.contains(".receipt_chain") || content.contains(".hash ")) {
+    if !is_test
+        && (content.contains(".decision")
+            || content.contains(".receipt_chain")
+            || content.contains(".hash "))
+    {
         issues.push(ConformanceIssue {
             severity: "ERROR".to_string(),
             code: "STRUCTURAL-FAKERY-G1".to_string(),
@@ -248,9 +331,14 @@ pub fn analyze_ts(content: &str) -> Vec<ConformanceIssue> {
     }
 
     // D2: TS command returns ok without calling kernel
-    let is_command = content.contains("export async function main") || content.contains("export default async function") || content.contains("export const");
+    let is_command = content.contains("export async function main")
+        || content.contains("export default async function")
+        || content.contains("export const");
     if is_command && (content.contains("status: 'ok'") || content.contains("status: \"ok\"")) {
-        let calls_kernel = content.contains("kernel.") || content.contains("wasm.") || content.contains("runAlgorithm") || content.contains(".run(");
+        let calls_kernel = content.contains("kernel.")
+            || content.contains("wasm.")
+            || content.contains("runAlgorithm")
+            || content.contains(".run(");
         if !calls_kernel {
             issues.push(ConformanceIssue {
                 severity: "ERROR".to_string(),
@@ -305,7 +393,17 @@ pub fn extract_ts_symbols(content: &str) -> Vec<(String, u32)> {
         {
             let parts: Vec<&str> = trimmed.split_whitespace().collect();
             let name_idx = parts.iter().position(|w| {
-                !matches!(*w, "export" | "async" | "default" | "const" | "function" | "class" | "type" | "interface")
+                !matches!(
+                    *w,
+                    "export"
+                        | "async"
+                        | "default"
+                        | "const"
+                        | "function"
+                        | "class"
+                        | "type"
+                        | "interface"
+                )
             });
             if let Some(ni) = name_idx {
                 let raw = parts[ni];

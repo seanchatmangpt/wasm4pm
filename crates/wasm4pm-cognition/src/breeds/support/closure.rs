@@ -90,10 +90,7 @@ mod tests {
 
     fn arb_rules() -> impl Strategy<Value = Vec<HornRule>> {
         proptest::collection::vec(
-            (
-                proptest::collection::vec(arb_atom(), 0..3),
-                arb_atom(),
-            ),
+            (proptest::collection::vec(arb_atom(), 0..3), arb_atom()),
             0..8,
         )
         .prop_map(|rs| {

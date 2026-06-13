@@ -67,7 +67,12 @@ fn every_alive_breed_dispatches() {
 fn every_alive_breed_has_ocpn_and_measured_report() {
     for id in alive_ids() {
         let model = format!("../../ocel/models/l1/{}.ocpn.json", id);
-        assert!(Path::new(&model).exists(), "{} missing OCPN model {}", id, model);
+        assert!(
+            Path::new(&model).exists(),
+            "{} missing OCPN model {}",
+            id,
+            model
+        );
 
         let report_path = format!("../../ocel/reports/{}.json", id);
         let raw = std::fs::read_to_string(&report_path)
@@ -88,8 +93,16 @@ fn every_alive_breed_has_ocpn_and_measured_report() {
 fn every_alive_breed_has_both_fixtures() {
     for id in alive_ids() {
         let rust = format!("tests/fixtures/papers/{}.json", id);
-        let ts = format!("../../packages/cognition/src/__tests__/fixtures/papers/{}.json", id);
-        assert!(Path::new(&rust).exists(), "{} missing Rust fixture {}", id, rust);
+        let ts = format!(
+            "../../packages/cognition/src/__tests__/fixtures/papers/{}.json",
+            id
+        );
+        assert!(
+            Path::new(&rust).exists(),
+            "{} missing Rust fixture {}",
+            id,
+            rust
+        );
         assert!(Path::new(&ts).exists(), "{} missing TS fixture {}", id, ts);
     }
 }
@@ -142,8 +155,18 @@ fn all_const_and_ts_schema_mirror_registry() {
 #[test]
 fn fresh_oracle_names_absent_from_production_sources() {
     let fresh = [
-        "zorp", "quux", "blee", "gronk", "dark_wibble", "zilk", "welp", "snorf", "korv",
-        "flim", "flam", "bolv",
+        "zorp",
+        "quux",
+        "blee",
+        "gronk",
+        "dark_wibble",
+        "zilk",
+        "welp",
+        "snorf",
+        "korv",
+        "flim",
+        "flam",
+        "bolv",
     ];
     for entry in std::fs::read_dir("src/breeds").expect("src/breeds") {
         let path = entry.expect("dir entry").path();
@@ -178,7 +201,11 @@ fn every_entry_has_lawful_standing() {
     let mut seen = BTreeSet::new();
     for entry in entries {
         let id = entry["breed_id"].as_str().expect("breed_id");
-        assert!(seen.insert(id.to_string()), "duplicate registry entry: {}", id);
+        assert!(
+            seen.insert(id.to_string()),
+            "duplicate registry entry: {}",
+            id
+        );
 
         let raw = entry["standing"]
             .as_str()
@@ -205,7 +232,9 @@ fn every_entry_has_lawful_standing() {
 
         if standing >= BreedStanding::Bounded {
             assert!(
-                entry.get("complexity_caps").map_or(false, |c| c.is_object()),
+                entry
+                    .get("complexity_caps")
+                    .map_or(false, |c| c.is_object()),
                 "{} claims {:?} without complexity_caps (BOUNDED unearned)",
                 id,
                 standing
@@ -243,12 +272,10 @@ fn uo_oracle_names_absent_from_breed_sources() {
         }
     }
 
-    let support_mod =
-        std::fs::read_to_string("src/breeds/support/mod.rs").expect("support/mod.rs");
+    let support_mod = std::fs::read_to_string("src/breeds/support/mod.rs").expect("support/mod.rs");
     assert!(
-        support_mod.contains(
-            "#[cfg(all(not(target_arch = \"wasm32\"), feature = \"breed-oracles\"))]"
-        ),
+        support_mod
+            .contains("#[cfg(all(not(target_arch = \"wasm32\"), feature = \"breed-oracles\"))]"),
         "oracle_impls must remain gated behind the breed-oracles feature"
     );
 }
@@ -267,7 +294,11 @@ fn vendored_ocpn_models_match_canonical() {
         let entry = entry.unwrap();
         let name = entry.file_name();
         let canon = canonical.join(&name);
-        assert!(canon.exists(), "{:?} vendored but missing canonically", name);
+        assert!(
+            canon.exists(),
+            "{:?} vendored but missing canonically",
+            name
+        );
         assert_eq!(
             std::fs::read(entry.path()).unwrap(),
             std::fs::read(&canon).unwrap(),
@@ -284,7 +315,10 @@ fn vendored_ocpn_models_match_canonical() {
 /// this gate plus every_alive_breed_has_ocpn_and_measured_report close it.
 #[test]
 fn consumer_ontology_never_asserts_breed_status() {
-    for path in ["../../ggen/ontology/breeds.ttl", "../../ocel/reports/evidence.ttl"] {
+    for path in [
+        "../../ggen/ontology/breeds.ttl",
+        "../../ocel/reports/evidence.ttl",
+    ] {
         let ttl = std::fs::read_to_string(path)
             .unwrap_or_else(|_| panic!("consumer ontology {} must exist", path));
         let asserts_status = ttl

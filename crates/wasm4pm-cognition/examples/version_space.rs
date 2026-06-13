@@ -6,10 +6,10 @@
 //!
 //! Run: cargo run --example version_space
 
+use wasm4pm_cognition::breeds::version_space::VersionSpace;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::version_space::VersionSpace;
 
 fn main() {
     // Mitchell's EnjoySport: 6 attributes, 4 labelled examples.
@@ -18,14 +18,29 @@ fn main() {
         intent: "learn-enjoysport-concept".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "vs:attrs".to_string(),     value: "sky,airtemp,humidity,wind,water,forecast".to_string() },
+            Fact {
+                key: "vs:attrs".to_string(),
+                value: "sky,airtemp,humidity,wind,water,forecast".to_string(),
+            },
             // Positive examples
-            Fact { key: "vs:example:1".to_string(), value: "Sunny,Warm,Normal,Strong,Warm,Same:+".to_string() },
-            Fact { key: "vs:example:2".to_string(), value: "Sunny,Warm,High,Strong,Warm,Same:+".to_string() },
+            Fact {
+                key: "vs:example:1".to_string(),
+                value: "Sunny,Warm,Normal,Strong,Warm,Same:+".to_string(),
+            },
+            Fact {
+                key: "vs:example:2".to_string(),
+                value: "Sunny,Warm,High,Strong,Warm,Same:+".to_string(),
+            },
             // Negative example — forces G specialisation
-            Fact { key: "vs:example:3".to_string(), value: "Rainy,Cold,High,Strong,Warm,Change:-".to_string() },
+            Fact {
+                key: "vs:example:3".to_string(),
+                value: "Rainy,Cold,High,Strong,Warm,Change:-".to_string(),
+            },
             // Another positive example — finalises S
-            Fact { key: "vs:example:4".to_string(), value: "Sunny,Warm,High,Strong,Cool,Change:+".to_string() },
+            Fact {
+                key: "vs:example:4".to_string(),
+                value: "Sunny,Warm,High,Strong,Cool,Change:+".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

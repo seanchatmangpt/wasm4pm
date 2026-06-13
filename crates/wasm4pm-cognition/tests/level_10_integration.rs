@@ -116,7 +116,9 @@ fn level_10_mycin_production_scale() {
             .count()
             > 50
     );
-    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
+    assert!(breed
+        .postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output)
+        .is_ok());
 }
 
 #[test]
@@ -176,7 +178,9 @@ fn level_10_cbr_case_scale() {
     let output = breed.run(&input).expect("CBR case scale run");
     assert_eq!(output.breed, BreedId::Cbr);
     assert!(output.selected.is_some() || !output.explanation.is_empty());
-    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
+    assert!(breed
+        .postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output)
+        .is_ok());
 }
 
 // =============================================================================
@@ -240,7 +244,9 @@ fn level_10_mycin_meningitis_original_paper() {
         .inference_trace
         .iter()
         .any(|t| t.detail.contains("meningitis")));
-    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
+    assert!(breed
+        .postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output)
+        .is_ok());
 }
 
 #[test]
@@ -270,7 +276,9 @@ fn level_10_eliza_rogerian_original_script() {
     let output = breed.run(&input).expect("ELIZA Rogerian dialogue");
     assert_eq!(output.breed, BreedId::Eliza);
     assert!(!output.facts.is_empty() || !output.explanation.is_empty());
-    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
+    assert!(breed
+        .postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output)
+        .is_ok());
 }
 
 // =============================================================================
@@ -318,7 +326,9 @@ fn level_10_mycin_belief_update_semantics() {
             .count()
             >= 2
     );
-    assert!(breed.postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output).is_ok());
+    assert!(breed
+        .postconditions(&wasm4pm_cognition::breeds::BreedInput::default(), &output)
+        .is_ok());
 }
 
 #[test]
