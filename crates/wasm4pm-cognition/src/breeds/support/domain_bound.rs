@@ -148,7 +148,10 @@ mod tests {
             self.check_domain_bounds(input).map_err(|e| e.to_string())
         }
         fn run(&self, _input: &BreedInput) -> Result<BreedOutput, BreedError> {
-            unimplemented!()
+            Err(BreedError {
+                breed: BreedId::Mycin,
+                message: "TinyBreed::run is a test stub — not intended to be called".to_string(),
+            })
         }
         fn postconditions(&self, _i: &BreedInput, _o: &BreedOutput) -> Result<(), String> {
             Ok(())

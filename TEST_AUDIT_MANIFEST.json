@@ -1,0 +1,4190 @@
+[
+  {
+    "file": "./convert_test.rs",
+    "type": "rust",
+    "loc": 0,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/index.test.ts",
+    "type": "typescript",
+    "loc": 8,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/context/context.test.js",
+    "type": "typescript",
+    "loc": 49,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/proxy/create-proxy.test.js",
+    "type": "typescript",
+    "loc": 147,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/proxy/traps.test.js",
+    "type": "typescript",
+    "loc": 94,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/proxy/define.test.js",
+    "type": "typescript",
+    "loc": 171,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/virtualization/virtual-context.test.js",
+    "type": "typescript",
+    "loc": 1044,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/security/capability-acl.test.js",
+    "type": "typescript",
+    "loc": 739,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/security/access-control.test.js",
+    "type": "typescript",
+    "loc": 500,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/security/sandbox.test.js",
+    "type": "typescript",
+    "loc": 599,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/integration/all-capabilities.test.js",
+    "type": "typescript",
+    "loc": 609,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/contracts/contract-context.test.js",
+    "type": "typescript",
+    "loc": 1164,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/simulation/simulation-context.test.js",
+    "type": "typescript",
+    "loc": 912,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/invariants/invariant-context.test.js",
+    "type": "typescript",
+    "loc": 1067,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/utils/performance.test.js",
+    "type": "typescript",
+    "loc": 34,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/utils/helpers.test.js",
+    "type": "typescript",
+    "loc": 26,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/utils/logging.test.js",
+    "type": "typescript",
+    "loc": 54,
+    "forbidden_found": [
+      "mock",
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/observability/audit-logger.test.js",
+    "type": "typescript",
+    "loc": 877,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./vendors/proxyable/test/transactions/transaction-context.test.js",
+    "type": "typescript",
+    "loc": 612,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/multitenancy/tenant-context.test.js",
+    "type": "typescript",
+    "loc": 924,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/sandbox/sandbox-context.test.js",
+    "type": "typescript",
+    "loc": 993,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/replay/replay-context.test.js",
+    "type": "typescript",
+    "loc": 656,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/test/ocel2/membrane.test.js",
+    "type": "typescript",
+    "loc": 109,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/signature-proof.test.ts",
+    "type": "typescript",
+    "loc": 45,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/replay-proof.test.ts",
+    "type": "typescript",
+    "loc": 44,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/receipt-proof.test.ts",
+    "type": "typescript",
+    "loc": 58,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/hash-proof.test.ts",
+    "type": "typescript",
+    "loc": 45,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/engine-proof.test.ts",
+    "type": "typescript",
+    "loc": 55,
+    "forbidden_found": []
+  },
+  {
+    "file": "./vendors/proxyable/src/lib/gall-truex/__tests__/sqlite-proof.test.ts",
+    "type": "typescript",
+    "loc": 88,
+    "forbidden_found": []
+  },
+  {
+    "file": "./crates/wasm4pm-cognition/tests/ghf_fleet_sentinel_test.rs",
+    "type": "rust",
+    "loc": 20,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/declare_conformance_integration_test.rs",
+    "type": "rust",
+    "loc": 363,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/trace_duration_test.rs",
+    "type": "rust",
+    "loc": 162,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/boundary_safety_test.rs",
+    "type": "rust",
+    "loc": 982,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/gpu_wgsl_validation_test.rs",
+    "type": "rust",
+    "loc": 248,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/declare_all_constraints_test.rs",
+    "type": "rust",
+    "loc": 393,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/autonomic_otel_instrumentation_test.rs",
+    "type": "rust",
+    "loc": 405,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/regression_detector_test.rs",
+    "type": "rust",
+    "loc": 1732,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/tests/minedg_choice_graph_test.rs",
+    "type": "rust",
+    "loc": 182,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/parity.test.ts",
+    "type": "typescript",
+    "loc": 629,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/analysis.test.ts",
+    "type": "typescript",
+    "loc": 372,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/mcp_integration.test.ts",
+    "type": "typescript",
+    "loc": 216,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/watch.test.ts",
+    "type": "typescript",
+    "loc": 533,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/real-data-validation.test.ts",
+    "type": "typescript",
+    "loc": 477,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/basic.test.ts",
+    "type": "typescript",
+    "loc": 61,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/unit/browser-mocks.test.ts",
+    "type": "typescript",
+    "loc": 396,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/types/types.test.ts",
+    "type": "typescript",
+    "loc": 65,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/integration/websocket.test.ts",
+    "type": "typescript",
+    "loc": 273,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/integration/phase3-e2e.test.ts",
+    "type": "typescript",
+    "loc": 1115,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./wasm4pm/__tests__/integration/nodejs.test.ts",
+    "type": "typescript",
+    "loc": 159,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/integration/phase3-determinism-scale.test.ts",
+    "type": "typescript",
+    "loc": 666,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/prediction/additions.test.ts",
+    "type": "typescript",
+    "loc": 292,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/prediction/bench.test.ts",
+    "type": "typescript",
+    "loc": 985,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/io/io.test.ts",
+    "type": "typescript",
+    "loc": 51,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/discovery/discovery.test.ts",
+    "type": "typescript",
+    "loc": 42,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/state/state.test.ts",
+    "type": "typescript",
+    "loc": 91,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/benchmarks/browser.test.ts",
+    "type": "typescript",
+    "loc": 335,
+    "forbidden_found": []
+  },
+  {
+    "file": "./wasm4pm/__tests__/workflow/workflow.test.ts",
+    "type": "typescript",
+    "loc": 143,
+    "forbidden_found": []
+  },
+  {
+    "file": "./playground/scenarios/31-autoprocess-persistence.test.ts",
+    "type": "typescript",
+    "loc": 307,
+    "forbidden_found": []
+  },
+  {
+    "file": "./playground/scenarios/30-autoprocess-e2e.test.ts",
+    "type": "typescript",
+    "loc": 354,
+    "forbidden_found": []
+  },
+  {
+    "file": "./playground/scenarios/99-speed-recalibration.test.ts",
+    "type": "typescript",
+    "loc": 221,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/browser.test.ts",
+    "type": "typescript",
+    "loc": 412,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./lab/tests/algorithm-coverage.test.ts",
+    "type": "typescript",
+    "loc": 355,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/receipt-and-remaining-gaps.test.ts",
+    "type": "typescript",
+    "loc": 872,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./lab/tests/commands.test.ts",
+    "type": "typescript",
+    "loc": 544,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./lab/tests/wasm-binary-size.test.ts",
+    "type": "typescript",
+    "loc": 166,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./lab/tests/quality-conformance-validate.test.ts",
+    "type": "typescript",
+    "loc": 710,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/conformance.test.ts",
+    "type": "typescript",
+    "loc": 496,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/nodejs.test.ts",
+    "type": "typescript",
+    "loc": 924,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/extended-commands.test.ts",
+    "type": "typescript",
+    "loc": 573,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./lab/tests/predict-drift.test.ts",
+    "type": "typescript",
+    "loc": 521,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./lab/tests/release-validation.test.ts",
+    "type": "typescript",
+    "loc": 341,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/jtbd.test.ts",
+    "type": "typescript",
+    "loc": 335,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/wpm.test.ts",
+    "type": "typescript",
+    "loc": 361,
+    "forbidden_found": []
+  },
+  {
+    "file": "./lab/tests/analysis-commands.test.ts",
+    "type": "typescript",
+    "loc": 576,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/results-autoprocess-gaps.test.ts",
+    "type": "typescript",
+    "loc": 466,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/cognition-agent-excellence.test.ts",
+    "type": "typescript",
+    "loc": 495,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/ml-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 451,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/config-excellence.test.ts",
+    "type": "typescript",
+    "loc": 306,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/trace-conform-gaps.test.ts",
+    "type": "typescript",
+    "loc": 1085,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/doctor-status-gaps.test.ts",
+    "type": "typescript",
+    "loc": 358,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/ml-quality-gaps.test.ts",
+    "type": "typescript",
+    "loc": 356,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/validate-gaps.test.ts",
+    "type": "typescript",
+    "loc": 746,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/predict-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 398,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/cli-ux-audit.test.ts",
+    "type": "typescript",
+    "loc": 236,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/powl-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 873,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/predict-gaps.test.ts",
+    "type": "typescript",
+    "loc": 789,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/cell-membrane-excellence.test.ts",
+    "type": "typescript",
+    "loc": 255,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/drift-social-temporal-gaps.test.ts",
+    "type": "typescript",
+    "loc": 721,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/quality-gaps.test.ts",
+    "type": "typescript",
+    "loc": 652,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/dx-improvements-iteration19.test.ts",
+    "type": "typescript",
+    "loc": 224,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/compare-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 292,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/autoprocess-gaps.test.ts",
+    "type": "typescript",
+    "loc": 732,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/temporal-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 371,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/prolog8-gaps.test.ts",
+    "type": "typescript",
+    "loc": 690,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/autoprocess-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 328,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/temporal-gaps.test.ts",
+    "type": "typescript",
+    "loc": 839,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/ml-excellence.test.ts",
+    "type": "typescript",
+    "loc": 260,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/run-watch-gaps.test.ts",
+    "type": "typescript",
+    "loc": 510,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/compare-gaps.test.ts",
+    "type": "typescript",
+    "loc": 383,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/feedback-claude-excellence.test.ts",
+    "type": "typescript",
+    "loc": 416,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/social-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 432,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/drift-watch-gaps.test.ts",
+    "type": "typescript",
+    "loc": 751,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/run-results-gaps.test.ts",
+    "type": "typescript",
+    "loc": 338,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/explain-gaps.test.ts",
+    "type": "typescript",
+    "loc": 335,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/simulate-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 402,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/ml-forecast-anomaly-gaps.test.ts",
+    "type": "typescript",
+    "loc": 363,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/powl-init-validation-gaps.test.ts",
+    "type": "typescript",
+    "loc": 507,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/results-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 191,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/cli-ux-improvements.test.ts",
+    "type": "typescript",
+    "loc": 202,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/truex-supabase-excellence.test.ts",
+    "type": "typescript",
+    "loc": 546,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/ux-gap-fixes.test.ts",
+    "type": "typescript",
+    "loc": 521,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/results-gaps.test.ts",
+    "type": "typescript",
+    "loc": 561,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/social-gaps.test.ts",
+    "type": "typescript",
+    "loc": 1059,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/drift-watch-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 321,
+    "forbidden_found": []
+  },
+  {
+    "file": "./tests/archive/pre-reset/apps-wasm4pm/explain-jtbd.test.ts",
+    "type": "typescript",
+    "loc": 102,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/precedence-gaps.test.ts",
+    "type": "typescript",
+    "loc": 238,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/resolver-env-priority.test.ts",
+    "type": "typescript",
+    "loc": 612,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/postgresql-sink.test.ts",
+    "type": "typescript",
+    "loc": 315,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/automl-instincts.test.ts",
+    "type": "typescript",
+    "loc": 430,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/schema.test.ts",
+    "type": "typescript",
+    "loc": 452,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/env-vars.test.ts",
+    "type": "typescript",
+    "loc": 521,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/gcs-storage.test.ts",
+    "type": "typescript",
+    "loc": 435,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/config-gap-fixes.test.ts",
+    "type": "typescript",
+    "loc": 222,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/provenance-audit.test.ts",
+    "type": "typescript",
+    "loc": 307,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/ml-rl-config.test.ts",
+    "type": "typescript",
+    "loc": 333,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/env-empty-string-gaps.test.ts",
+    "type": "typescript",
+    "loc": 276,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/edge-cases-completeness.test.ts",
+    "type": "typescript",
+    "loc": 1130,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/resolution.test.ts",
+    "type": "typescript",
+    "loc": 405,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/resolver-nan-errors.test.ts",
+    "type": "typescript",
+    "loc": 356,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/automl.test.ts",
+    "type": "typescript",
+    "loc": 496,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/s3-storage.test.ts",
+    "type": "typescript",
+    "loc": 224,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/integration-external-sinks.test.ts",
+    "type": "typescript",
+    "loc": 346,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/mcpp-bridge.test.ts",
+    "type": "typescript",
+    "loc": 746,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/grafana-sink.test.ts",
+    "type": "typescript",
+    "loc": 343,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/config/src/__tests__/status-provenance.test.ts",
+    "type": "typescript",
+    "loc": 136,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/automl-instincts-gaps.test.ts",
+    "type": "typescript",
+    "loc": 476,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/presets.test.ts",
+    "type": "typescript",
+    "loc": 227,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/validation.test.ts",
+    "type": "typescript",
+    "loc": 545,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/provenance.test.ts",
+    "type": "typescript",
+    "loc": 152,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/config-validation.test.ts",
+    "type": "typescript",
+    "loc": 201,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/config/src/__tests__/config-audit.test.ts",
+    "type": "typescript",
+    "loc": 334,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/system-shape-validation.unit.test.ts",
+    "type": "typescript",
+    "loc": 128,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/bvc.test.ts",
+    "type": "typescript",
+    "loc": 77,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-paper-data.integration.test.ts",
+    "type": "typescript",
+    "loc": 415,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/contract-wrappers.unit.test.ts",
+    "type": "typescript",
+    "loc": 205,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-real-data.integration.test.ts",
+    "type": "typescript",
+    "loc": 216,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/contract-guard.test.ts",
+    "type": "typescript",
+    "loc": 134,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds.integration.test.ts",
+    "type": "typescript",
+    "loc": 786,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-periodic-4.integration.test.ts",
+    "type": "typescript",
+    "loc": 359,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-periodic-2.integration.test.ts",
+    "type": "typescript",
+    "loc": 484,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-periodic-3.integration.test.ts",
+    "type": "typescript",
+    "loc": 483,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-breeds-periodic-1.integration.test.ts",
+    "type": "typescript",
+    "loc": 398,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/chain-show-guards.unit.test.ts",
+    "type": "typescript",
+    "loc": 142,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-wasm.integration.test.ts",
+    "type": "typescript",
+    "loc": 37,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/receipt-chain.test.ts",
+    "type": "typescript",
+    "loc": 72,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/contract-run.unit.test.ts",
+    "type": "typescript",
+    "loc": 145,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/field-contracts.test.ts",
+    "type": "typescript",
+    "loc": 428,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/track-c2-quality-science.test.ts",
+    "type": "typescript",
+    "loc": 125,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/cognition-errors.test.ts",
+    "type": "typescript",
+    "loc": 64,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/adversarial-catalogue.test.ts",
+    "type": "typescript",
+    "loc": 63,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/unit/field-contract.test.ts",
+    "type": "typescript",
+    "loc": 535,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/cognition/src/__tests__/unit/field-contract-sentinel.integration.test.ts",
+    "type": "typescript",
+    "loc": 57,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/planner/__tests__/explain.test.ts",
+    "type": "typescript",
+    "loc": 388,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/__tests__/planner.test.ts",
+    "type": "typescript",
+    "loc": 633,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/__tests__/parity.test.ts",
+    "type": "typescript",
+    "loc": 300,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/__tests__/dag.test.ts",
+    "type": "typescript",
+    "loc": 344,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/__tests__/planning.test.ts",
+    "type": "typescript",
+    "loc": 173,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/__tests__/validation.test.ts",
+    "type": "typescript",
+    "loc": 147,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/planner-edge-cases.test.ts",
+    "type": "typescript",
+    "loc": 288,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/audit-fixes.test.ts",
+    "type": "typescript",
+    "loc": 330,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/profile-policy.test.ts",
+    "type": "typescript",
+    "loc": 755,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/gaps-2025-05.test.ts",
+    "type": "typescript",
+    "loc": 294,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/benchmark-costs.test.ts",
+    "type": "typescript",
+    "loc": 119,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/receipt-reader.test.ts",
+    "type": "typescript",
+    "loc": 120,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/planner-enhanced.test.ts",
+    "type": "typescript",
+    "loc": 317,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/cost-drift.test.ts",
+    "type": "typescript",
+    "loc": 44,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/meta-learner.test.ts",
+    "type": "typescript",
+    "loc": 37,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/plan-validation.test.ts",
+    "type": "typescript",
+    "loc": 217,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/regression-duplicate-ml-steps.test.ts",
+    "type": "typescript",
+    "loc": 90,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/parity-exhaustive.test.ts",
+    "type": "typescript",
+    "loc": 891,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/planner-contract.test.ts",
+    "type": "typescript",
+    "loc": 379,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/explain-parity.test.ts",
+    "type": "typescript",
+    "loc": 218,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/planner/src/__tests__/quality-efficiency.test.ts",
+    "type": "typescript",
+    "loc": 28,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/schema.test.ts",
+    "type": "typescript",
+    "loc": 343,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/hash.test.ts",
+    "type": "typescript",
+    "loc": 215,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/receipt-builder.test.ts",
+    "type": "typescript",
+    "loc": 406,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/sinks.test.ts",
+    "type": "typescript",
+    "loc": 192,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/contracts/__tests__/receipt.test.ts",
+    "type": "typescript",
+    "loc": 288,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/connectors.test.ts",
+    "type": "typescript",
+    "loc": 193,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/contracts/__tests__/determinism.test.ts",
+    "type": "typescript",
+    "loc": 146,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/__tests__/validation.test.ts",
+    "type": "typescript",
+    "loc": 172,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/atomvm-bridge-task.test.ts",
+    "type": "typescript",
+    "loc": 886,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/result-guards.test.ts",
+    "type": "typescript",
+    "loc": 328,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/contracts-types.test.ts",
+    "type": "typescript",
+    "loc": 417,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/ocel-bridge.test.ts",
+    "type": "typescript",
+    "loc": 542,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/cross-system-receipt.test.ts",
+    "type": "typescript",
+    "loc": 565,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/errors.test.ts",
+    "type": "typescript",
+    "loc": 385,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/erlang-bridge.test.ts",
+    "type": "typescript",
+    "loc": 357,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/enterprise-integration.test.ts",
+    "type": "typescript",
+    "loc": 1447,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/andon-bridge.test.ts",
+    "type": "typescript",
+    "loc": 674,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/atomvm-bridge.test.ts",
+    "type": "typescript",
+    "loc": 475,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/atomvm-pipeline-gaps.test.ts",
+    "type": "typescript",
+    "loc": 615,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/marketplace-bridge.test.ts",
+    "type": "typescript",
+    "loc": 525,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/truex-canonical.test.ts",
+    "type": "typescript",
+    "loc": 55,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/mcpp-rust-ffi.test.ts",
+    "type": "typescript",
+    "loc": 365,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/errors-exhaustive.test.ts",
+    "type": "typescript",
+    "loc": 392,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/error-boundaries.test.ts",
+    "type": "typescript",
+    "loc": 502,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/mcpp-ocel-roundtrip.test.ts",
+    "type": "typescript",
+    "loc": 571,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/shared-schema.test.ts",
+    "type": "typescript",
+    "loc": 390,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/mcpp-receipt-bridge-live.test.ts",
+    "type": "typescript",
+    "loc": 943,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/resolve-algorithm-id.test.ts",
+    "type": "typescript",
+    "loc": 40,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/plan-dag.test.ts",
+    "type": "typescript",
+    "loc": 722,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/receipt-chain.test.ts",
+    "type": "typescript",
+    "loc": 582,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/result.test.ts",
+    "type": "typescript",
+    "loc": 214,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/hash-invariants.test.ts",
+    "type": "typescript",
+    "loc": 273,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/prolog8-compiler.test.ts",
+    "type": "typescript",
+    "loc": 626,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/span-ocel-bridge.test.ts",
+    "type": "typescript",
+    "loc": 173,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/integration.test.ts",
+    "type": "typescript",
+    "loc": 264,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/erlang-trace-to-ocel.test.ts",
+    "type": "typescript",
+    "loc": 371,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/validation.test.ts",
+    "type": "typescript",
+    "loc": 250,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/contracts/src/__tests__/atomvm-to-ocel-log.test.ts",
+    "type": "typescript",
+    "loc": 296,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+    "type": "typescript",
+    "loc": 169,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/rule8-bridge.test.ts",
+    "type": "typescript",
+    "loc": 299,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/otel-span-coverage.test.ts",
+    "type": "typescript",
+    "loc": 289,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/agent-violation-semantics.test.ts",
+    "type": "typescript",
+    "loc": 432,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/orchestration-contracts.test.ts",
+    "type": "typescript",
+    "loc": 143,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/agents/src/__tests__/monitor-plan-phases.test.ts",
+    "type": "typescript",
+    "loc": 356,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+    "type": "typescript",
+    "loc": 706,
+    "forbidden_found": [
+      "mock",
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/registry-contract.test.ts",
+    "type": "typescript",
+    "loc": 297,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/execute-learn-contracts.test.ts",
+    "type": "typescript",
+    "loc": 802,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/orchestration-empty-ocel.test.ts",
+    "type": "typescript",
+    "loc": 79,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/agents/src/__tests__/learn-feedback-loop.test.ts",
+    "type": "typescript",
+    "loc": 346,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+    "type": "typescript",
+    "loc": 586,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/mcpp-bridge.test.ts",
+    "type": "typescript",
+    "loc": 475,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+    "type": "typescript",
+    "loc": 1160,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/observability.test.ts",
+    "type": "typescript",
+    "loc": 282,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/otel-exporter.test.ts",
+    "type": "typescript",
+    "loc": 257,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/fields.test.ts",
+    "type": "typescript",
+    "loc": 183,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/disabled.test.ts",
+    "type": "typescript",
+    "loc": 92,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/enabled.test.ts",
+    "type": "typescript",
+    "loc": 203,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/failure.test.ts",
+    "type": "typescript",
+    "loc": 181,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/observability/__tests__/json-writer.test.ts",
+    "type": "typescript",
+    "loc": 205,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/src/secret-redaction.test.ts",
+    "type": "typescript",
+    "loc": 157,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/instrumentation.test.ts",
+    "type": "typescript",
+    "loc": 490,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/observability-wrapper.test.ts",
+    "type": "typescript",
+    "loc": 357,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/result-dedup.test.ts",
+    "type": "typescript",
+    "loc": 382,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/secret-redaction.test.ts",
+    "type": "typescript",
+    "loc": 384,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/spans-and-instrumentation.test.ts",
+    "type": "typescript",
+    "loc": 519,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/otel-real-collector.test.ts",
+    "type": "typescript",
+    "loc": 53,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/relay-bridge.test.ts",
+    "type": "typescript",
+    "loc": 112,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/event-factory.test.ts",
+    "type": "typescript",
+    "loc": 600,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/conformance-cache.test.ts",
+    "type": "typescript",
+    "loc": 379,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/span-lifecycle.test.ts",
+    "type": "typescript",
+    "loc": 748,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/src/__tests__/observability-gaps.test.ts",
+    "type": "typescript",
+    "loc": 490,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/model-cache.test.ts",
+    "type": "typescript",
+    "loc": 373,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/root-cause.test.ts",
+    "type": "typescript",
+    "loc": 462,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/observability-audit.test.ts",
+    "type": "typescript",
+    "loc": 421,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/src/__tests__/atomvm-bridge.test.ts",
+    "type": "typescript",
+    "loc": 78,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/timing-verification.test.ts",
+    "type": "typescript",
+    "loc": 343,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/algorithm-ranking.unit.test.ts",
+    "type": "typescript",
+    "loc": 610,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/observability/src/__tests__/cache-invalidation.test.ts",
+    "type": "typescript",
+    "loc": 485,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/feedback-diagnosis-integration.test.ts",
+    "type": "typescript",
+    "loc": 303,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/type-safety.test.ts",
+    "type": "typescript",
+    "loc": 546,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/agent-coordination-log.test.ts",
+    "type": "typescript",
+    "loc": 244,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/healthcare-bridge.test.ts",
+    "type": "typescript",
+    "loc": 83,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/discovery-cache.test.ts",
+    "type": "typescript",
+    "loc": 395,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/argr-spine-integration.test.ts",
+    "type": "typescript",
+    "loc": 228,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/model-complexity.test.ts",
+    "type": "typescript",
+    "loc": 342,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/otel-audit.test.ts",
+    "type": "typescript",
+    "loc": 421,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/command-spans.test.ts",
+    "type": "typescript",
+    "loc": 185,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/conformance-cache-gaps.test.ts",
+    "type": "typescript",
+    "loc": 362,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/spine-bridge.test.ts",
+    "type": "typescript",
+    "loc": 329,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/feedback-loop.test.ts",
+    "type": "typescript",
+    "loc": 352,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/observability/src/__tests__/unit/flush-summary.unit.test.ts",
+    "type": "typescript",
+    "loc": 241,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/supabase/src/__tests__/supabase.integration.test.ts",
+    "type": "typescript",
+    "loc": 250,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/integration.test.ts",
+    "type": "typescript",
+    "loc": 1495,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/algorithm-baselines.test.ts",
+    "type": "typescript",
+    "loc": 331,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/fixtures.test.ts",
+    "type": "typescript",
+    "loc": 323,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/certification-exhaustive.test.ts",
+    "type": "typescript",
+    "loc": 609,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/cli-helpers.test.ts",
+    "type": "typescript",
+    "loc": 129,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/trace-utils.test.ts",
+    "type": "typescript",
+    "loc": 355,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/footprint-utils.test.ts",
+    "type": "typescript",
+    "loc": 198,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/certification.test.ts",
+    "type": "typescript",
+    "loc": 156,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/testing-gaps.test.ts",
+    "type": "typescript",
+    "loc": 456,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/parity.test.ts",
+    "type": "typescript",
+    "loc": 100,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/bpmn-utils.test.ts",
+    "type": "typescript",
+    "loc": 168,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/receipt-validator.test.ts",
+    "type": "typescript",
+    "loc": 403,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/dfg-utils.test.ts",
+    "type": "typescript",
+    "loc": 287,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/harness-contracts.test.ts",
+    "type": "typescript",
+    "loc": 610,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/event-log-validators.test.ts",
+    "type": "typescript",
+    "loc": 269,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/verifiers.test.ts",
+    "type": "typescript",
+    "loc": 210,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/harness-self.test.ts",
+    "type": "typescript",
+    "loc": 368,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/mocks.test.ts",
+    "type": "typescript",
+    "loc": 326,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/otel-capture.test.ts",
+    "type": "typescript",
+    "loc": 236,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/token-replay.test.ts",
+    "type": "typescript",
+    "loc": 215,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/unit/determinism.test.ts",
+    "type": "typescript",
+    "loc": 111,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/integration/e2e-status.test.ts",
+    "type": "typescript",
+    "loc": 835,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/integration/e2e-watch.test.ts",
+    "type": "typescript",
+    "loc": 658,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/integration/e2e-run.test.ts",
+    "type": "typescript",
+    "loc": 578,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/__tests__/integration/e2e-explain.test.ts",
+    "type": "typescript",
+    "loc": 678,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/__tests__/integration/e2e-error-handling.test.ts",
+    "type": "typescript",
+    "loc": 642,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-3-conformance-checker.test.ts",
+    "type": "typescript",
+    "loc": 486,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-2-algorithm-discovery.test.ts",
+    "type": "typescript",
+    "loc": 247,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-1-ocel-harvester.test.ts",
+    "type": "typescript",
+    "loc": 281,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/perf-baseline.test.ts",
+    "type": "typescript",
+    "loc": 214,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-7-drift-monitor.test.ts",
+    "type": "typescript",
+    "loc": 451,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-5-performance-analyzer.test.ts",
+    "type": "typescript",
+    "loc": 463,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-6-cost-profiler.test.ts",
+    "type": "typescript",
+    "loc": 240,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/baseline-capture.test.ts",
+    "type": "typescript",
+    "loc": 446,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-4-soundness-verifier.test.ts",
+    "type": "typescript",
+    "loc": 342,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-federation-voting.test.ts",
+    "type": "typescript",
+    "loc": 139,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/testing/src/__tests__/agent-orchestrator-integration.test.ts",
+    "type": "typescript",
+    "loc": 369,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/ml/src/__tests__/algorithm-selection-with-scaling.test.ts",
+    "type": "typescript",
+    "loc": 536,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/bridge-invariants.test.ts",
+    "type": "typescript",
+    "loc": 373,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/parameter-suggestions-enhanced.test.ts",
+    "type": "typescript",
+    "loc": 341,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/index.test.ts",
+    "type": "typescript",
+    "loc": 241,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/ml-gaps.test.ts",
+    "type": "typescript",
+    "loc": 496,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/coverage_gaps.test.ts",
+    "type": "typescript",
+    "loc": 439,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/feature-importance.test.ts",
+    "type": "typescript",
+    "loc": 236,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/marshaling.test.ts",
+    "type": "typescript",
+    "loc": 214,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/anomaly-oracles.test.ts",
+    "type": "typescript",
+    "loc": 485,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/ensemble-voting.test.ts",
+    "type": "typescript",
+    "loc": 275,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/preprocessing-guards.test.ts",
+    "type": "typescript",
+    "loc": 369,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/feature-scaling.test.ts",
+    "type": "typescript",
+    "loc": 496,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/bridge.test.ts",
+    "type": "typescript",
+    "loc": 274,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/hyperparameter-search.test.ts",
+    "type": "typescript",
+    "loc": 427,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/ml/src/__tests__/cv-framework.test.ts",
+    "type": "typescript",
+    "loc": 466,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/cross-validation.test.ts",
+    "type": "typescript",
+    "loc": 352,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/drift-integration.test.ts",
+    "type": "typescript",
+    "loc": 191,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/audit-ml-state.test.ts",
+    "type": "typescript",
+    "loc": 191,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/forecasting.test.ts",
+    "type": "typescript",
+    "loc": 484,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/algorithm-selector.test.ts",
+    "type": "typescript",
+    "loc": 420,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/cycle40-edge-cases.test.ts",
+    "type": "typescript",
+    "loc": 491,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/cycle43-gap-validation.test.ts",
+    "type": "typescript",
+    "loc": 308,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/classifiers.test.ts",
+    "type": "typescript",
+    "loc": 610,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/algorithm-selection.test.ts",
+    "type": "typescript",
+    "loc": 359,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/regression.test.ts",
+    "type": "typescript",
+    "loc": 413,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/feature-quality.test.ts",
+    "type": "typescript",
+    "loc": 107,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/clustering.test.ts",
+    "type": "typescript",
+    "loc": 432,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/reduction.test.ts",
+    "type": "typescript",
+    "loc": 365,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/parameter-suggestions-adaptive.test.ts",
+    "type": "typescript",
+    "loc": 179,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/encoding-gaps.test.ts",
+    "type": "typescript",
+    "loc": 322,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/parameter-boundary-validation.test.ts",
+    "type": "typescript",
+    "loc": 556,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/empty-input-warnings.test.ts",
+    "type": "typescript",
+    "loc": 134,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/feature-selection-simple.test.ts",
+    "type": "typescript",
+    "loc": 133,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/features-remaining-time.test.ts",
+    "type": "typescript",
+    "loc": 342,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/anomaly.test.ts",
+    "type": "typescript",
+    "loc": 440,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/overfitting-detector.test.ts",
+    "type": "typescript",
+    "loc": 476,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/ml/src/__tests__/clustering-advanced.test.ts",
+    "type": "typescript",
+    "loc": 99,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/clustering-oracles.test.ts",
+    "type": "typescript",
+    "loc": 459,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/parameter-suggestions.test.ts",
+    "type": "typescript",
+    "loc": 138,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/gradient-boosting.test.ts",
+    "type": "typescript",
+    "loc": 226,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/forecast-oracles.test.ts",
+    "type": "typescript",
+    "loc": 638,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/grid-search.test.ts",
+    "type": "typescript",
+    "loc": 557,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/ml/src/__tests__/benchmarks.test.ts",
+    "type": "typescript",
+    "loc": 386,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/__tests__/execution.test.ts",
+    "type": "typescript",
+    "loc": 1343,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/__tests__/transitions.test.ts",
+    "type": "typescript",
+    "loc": 268,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/__tests__/state_machine.test.ts",
+    "type": "typescript",
+    "loc": 341,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/checkpoint-integration.test.ts",
+    "type": "typescript",
+    "loc": 397,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/engine.test.ts",
+    "type": "typescript",
+    "loc": 889,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/checkpoint-gc.test.ts",
+    "type": "typescript",
+    "loc": 706,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/autonomous-recovery-loop.test.ts",
+    "type": "typescript",
+    "loc": 313,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/engine-observability.test.ts",
+    "type": "typescript",
+    "loc": 519,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/wasm-loader.test.ts",
+    "type": "typescript",
+    "loc": 166,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/state-machine-coverage.test.ts",
+    "type": "typescript",
+    "loc": 404,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/wasm-load-errors.test.ts",
+    "type": "typescript",
+    "loc": 109,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/history-cap.test.ts",
+    "type": "typescript",
+    "loc": 140,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/recovery-paths.test.ts",
+    "type": "typescript",
+    "loc": 145,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/regression-exit-codes.test.ts",
+    "type": "typescript",
+    "loc": 61,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/type-safety.test.ts",
+    "type": "typescript",
+    "loc": 308,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/execution-default-handler.test.ts",
+    "type": "typescript",
+    "loc": 77,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/mttr-transition-domain-contracts.test.ts",
+    "type": "typescript",
+    "loc": 361,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/engine-health.test.ts",
+    "type": "typescript",
+    "loc": 252,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/state-machine-rank1.test.ts",
+    "type": "typescript",
+    "loc": 168,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/autonomic-system.test.ts",
+    "type": "typescript",
+    "loc": 399,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/recovery-stress.test.ts",
+    "type": "typescript",
+    "loc": 528,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/recovery-mttr-gaps.test.ts",
+    "type": "typescript",
+    "loc": 553,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/lifecycle-contracts.test.ts",
+    "type": "typescript",
+    "loc": 545,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/mttr.test.ts",
+    "type": "typescript",
+    "loc": 533,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/wasm-loader-gaps.test.ts",
+    "type": "typescript",
+    "loc": 456,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/bootstrap-error-codes-contract.test.ts",
+    "type": "typescript",
+    "loc": 102,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/mttr-engine-timing.test.ts",
+    "type": "typescript",
+    "loc": 239,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/engine-recovery.test.ts",
+    "type": "typescript",
+    "loc": 460,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/transitions-exhaustive.test.ts",
+    "type": "typescript",
+    "loc": 508,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/bootstrap-contracts.test.ts",
+    "type": "typescript",
+    "loc": 462,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/engine/src/__tests__/unit/degrade-reason-history.test.ts",
+    "type": "typescript",
+    "loc": 184,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/__tests__/eventlog-ir-converter.test.ts",
+    "type": "typescript",
+    "loc": 364,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/errors.test.ts",
+    "type": "typescript",
+    "loc": 163,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/hashing.test.ts",
+    "type": "typescript",
+    "loc": 143,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/backend-registry.test.ts",
+    "type": "typescript",
+    "loc": 264,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/model-ir-converter.test.ts",
+    "type": "typescript",
+    "loc": 316,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/algorithms-error-handling.test.ts",
+    "type": "typescript",
+    "loc": 346,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/feature-gating.test.ts",
+    "type": "typescript",
+    "loc": 334,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/drift.test.ts",
+    "type": "typescript",
+    "loc": 147,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/registry.test.ts",
+    "type": "typescript",
+    "loc": 308,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/step-dispatcher.test.ts",
+    "type": "typescript",
+    "loc": 90,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/kernel/__tests__/deployment-profiles.test.ts",
+    "type": "typescript",
+    "loc": 142,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/gap-fixes.test.ts",
+    "type": "typescript",
+    "loc": 397,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/__tests__/prediction/dispatcher.test.ts",
+    "type": "typescript",
+    "loc": 157,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/__tests__/prediction/registry.test.ts",
+    "type": "typescript",
+    "loc": 87,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/__tests__/prediction/integration.test.ts",
+    "type": "typescript",
+    "loc": 239,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/introspection/__tests__/introspection.test.ts",
+    "type": "typescript",
+    "loc": 261,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/prediction-oracles.test.ts",
+    "type": "typescript",
+    "loc": 753,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/algorithm-parity.test.ts",
+    "type": "typescript",
+    "loc": 349,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/wasm-backend-quality.test.ts",
+    "type": "typescript",
+    "loc": 84,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/accuracy-oracles.test.ts",
+    "type": "typescript",
+    "loc": 588,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/ocel-kernel-bridge.test.ts",
+    "type": "typescript",
+    "loc": 668,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/regression-fm1.test.ts",
+    "type": "typescript",
+    "loc": 201,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/e2e-prediction.test.ts",
+    "type": "typescript",
+    "loc": 257,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/adaptive-timeout.test.ts",
+    "type": "typescript",
+    "loc": 333,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/server-client.test.ts",
+    "type": "typescript",
+    "loc": 460,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/find-closest-match.test.ts",
+    "type": "typescript",
+    "loc": 62,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/registry-export-unit.test.ts",
+    "type": "typescript",
+    "loc": 393,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/profile-constraints.test.ts",
+    "type": "typescript",
+    "loc": 343,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/manifest-bridge.test.ts",
+    "type": "typescript",
+    "loc": 537,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/prediction-benchmarks.test.ts",
+    "type": "typescript",
+    "loc": 848,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/kernel-recommendations.test.ts",
+    "type": "typescript",
+    "loc": 265,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/registry-handlers-iter13.test.ts",
+    "type": "typescript",
+    "loc": 119,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/model-registry.test.ts",
+    "type": "typescript",
+    "loc": 310,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/batch-runner.test.ts",
+    "type": "typescript",
+    "loc": 148,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/kpi.test.ts",
+    "type": "typescript",
+    "loc": 114,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/validation-opt-out.test.ts",
+    "type": "typescript",
+    "loc": 37,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/log-fingerprint.test.ts",
+    "type": "typescript",
+    "loc": 149,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/algorithm-selection.test.ts",
+    "type": "typescript",
+    "loc": 145,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/discovery-otel-spans.test.ts",
+    "type": "typescript",
+    "loc": 558,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/feature-gates.test.ts",
+    "type": "typescript",
+    "loc": 346,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/deployment-profiles.test.ts",
+    "type": "typescript",
+    "loc": 582,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/algorithm-oracles.test.ts",
+    "type": "typescript",
+    "loc": 432,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/validation.test.ts",
+    "type": "typescript",
+    "loc": 90,
+    "forbidden_found": []
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/performance-baseline.test.ts",
+    "type": "typescript",
+    "loc": 412,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/run-contracts.test.ts",
+    "type": "typescript",
+    "loc": 619,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./packages/kernel/src/__tests__/wasm-backend-stub-fallback.unit.test.ts",
+    "type": "typescript",
+    "loc": 190,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/errors.test.ts",
+    "type": "typescript",
+    "loc": 132,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/init.test.ts",
+    "type": "typescript",
+    "loc": 73,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/config-resolution.test.ts",
+    "type": "typescript",
+    "loc": 171,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/receipts-race.test.ts",
+    "type": "typescript",
+    "loc": 30,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/config-loader.test.ts",
+    "type": "typescript",
+    "loc": 186,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/cli-integration.test.ts",
+    "type": "typescript",
+    "loc": 177,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/output.test.ts",
+    "type": "typescript",
+    "loc": 10,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/doctor.test.ts",
+    "type": "typescript",
+    "loc": 211,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/exit-codes.test.ts",
+    "type": "typescript",
+    "loc": 134,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/__tests__/ml-runner.test.ts",
+    "type": "typescript",
+    "loc": 68,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otp-supervisor-route.test.ts",
+    "type": "typescript",
+    "loc": 366,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/supabase-sync.test.ts",
+    "type": "typescript",
+    "loc": 46,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/param-validators.test.ts",
+    "type": "typescript",
+    "loc": 132,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-span-verification.test.ts",
+    "type": "typescript",
+    "loc": 88,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/powl-freq-analysis.test.ts",
+    "type": "typescript",
+    "loc": 423,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/batch-results-prod.test.ts",
+    "type": "typescript",
+    "loc": 375,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/input-validation-audit.test.ts",
+    "type": "typescript",
+    "loc": 301,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/trace-cli.test.ts",
+    "type": "typescript",
+    "loc": 862,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-precision-modes.test.ts",
+    "type": "typescript",
+    "loc": 301,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/compare-cli.test.ts",
+    "type": "typescript",
+    "loc": 838,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cognition-doctor.test.ts",
+    "type": "typescript",
+    "loc": 254,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/integration-discovery-ml-quality.test.ts",
+    "type": "typescript",
+    "loc": 451,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/timeout-cli.test.ts",
+    "type": "typescript",
+    "loc": 352,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/watch-autopilot.test.ts",
+    "type": "typescript",
+    "loc": 218,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-trace-audit.test.ts",
+    "type": "typescript",
+    "loc": 528,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/erlang-trace-ingest.test.ts",
+    "type": "typescript",
+    "loc": 838,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/self-conformance.test.ts",
+    "type": "typescript",
+    "loc": 127,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/feedback-integration.test.ts",
+    "type": "typescript",
+    "loc": 259,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/jtbd-error-states.test.ts",
+    "type": "typescript",
+    "loc": 742,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/truex-cli.test.ts",
+    "type": "typescript",
+    "loc": 225,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/error-span-scenarios.test.ts",
+    "type": "typescript",
+    "loc": 450,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/query.test.ts",
+    "type": "typescript",
+    "loc": 27,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ml-config-precedence.test.ts",
+    "type": "typescript",
+    "loc": 160,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/enterprise-kpi.test.ts",
+    "type": "typescript",
+    "loc": 262,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/powl-error-contracts.test.ts",
+    "type": "typescript",
+    "loc": 689,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/simulate-cli.test.ts",
+    "type": "typescript",
+    "loc": 853,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-negative-tests.test.ts",
+    "type": "typescript",
+    "loc": 452,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/benchmark-gate.test.ts",
+    "type": "typescript",
+    "loc": 237,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/models-cli.test.ts",
+    "type": "typescript",
+    "loc": 415,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ux-audit-improvements.test.ts",
+    "type": "typescript",
+    "loc": 122,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-span-attributes-audit.test.ts",
+    "type": "typescript",
+    "loc": 160,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/marketplace-conformance.test.ts",
+    "type": "typescript",
+    "loc": 401,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/degenerate-conformance.test.ts",
+    "type": "typescript",
+    "loc": 455,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/run-cli.test.ts",
+    "type": "typescript",
+    "loc": 490,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/results-diff-verify.test.ts",
+    "type": "typescript",
+    "loc": 527,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/registry-export.test.ts",
+    "type": "typescript",
+    "loc": 336,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-cli.test.ts",
+    "type": "typescript",
+    "loc": 401,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cli-error-message-quality.test.ts",
+    "type": "typescript",
+    "loc": 142,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-mape-k.test.ts",
+    "type": "typescript",
+    "loc": 475,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/status-autoprocess-json.test.ts",
+    "type": "typescript",
+    "loc": 184,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/results-path.test.ts",
+    "type": "typescript",
+    "loc": 40,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/fault-injection.test.ts",
+    "type": "typescript",
+    "loc": 158,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/status-cli.test.ts",
+    "type": "typescript",
+    "loc": 328,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/temporal-analysis.test.ts",
+    "type": "typescript",
+    "loc": 450,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/results-cli.test.ts",
+    "type": "typescript",
+    "loc": 619,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithms-cli.test.ts",
+    "type": "typescript",
+    "loc": 235,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ocel-algorithms.test.ts",
+    "type": "typescript",
+    "loc": 617,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-cycles-guard.test.ts",
+    "type": "typescript",
+    "loc": 391,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ml-cli.test.ts",
+    "type": "typescript",
+    "loc": 211,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/completions-cli.test.ts",
+    "type": "typescript",
+    "loc": 309,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/simulate-monte-carlo.test.ts",
+    "type": "typescript",
+    "loc": 745,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-instrumentation.test.ts",
+    "type": "typescript",
+    "loc": 230,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/temporal-cli.test.ts",
+    "type": "typescript",
+    "loc": 539,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/suggest-cli.test.ts",
+    "type": "typescript",
+    "loc": 299,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/error-recovery-suggestions.test.ts",
+    "type": "typescript",
+    "loc": 108,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/prolog8-cli.test.ts",
+    "type": "typescript",
+    "loc": 823,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cognition-watch.test.ts",
+    "type": "typescript",
+    "loc": 292,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-cli-spans.test.ts",
+    "type": "typescript",
+    "loc": 53,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/repl-cli.test.ts",
+    "type": "typescript",
+    "loc": 345,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/real-fixtures.test.ts",
+    "type": "typescript",
+    "loc": 73,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ml-algorithm-selection.test.ts",
+    "type": "typescript",
+    "loc": 377,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/powl-cli.test.ts",
+    "type": "typescript",
+    "loc": 377,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/action-history-observability.test.ts",
+    "type": "typescript",
+    "loc": 143,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/interpret-rootcause.test.ts",
+    "type": "typescript",
+    "loc": 420,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/agent-cli.test.ts",
+    "type": "typescript",
+    "loc": 43,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cognition-shared.test.ts",
+    "type": "typescript",
+    "loc": 274,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/simulate-temporal-cli.test.ts",
+    "type": "typescript",
+    "loc": 433,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/error-message-clarity-audit.test.ts",
+    "type": "typescript",
+    "loc": 303,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/powl-subcommands.test.ts",
+    "type": "typescript",
+    "loc": 829,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-enhancements.test.ts",
+    "type": "typescript",
+    "loc": 244,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/profile-selection-determinism.test.ts",
+    "type": "typescript",
+    "loc": 319,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/config-check-cli.test.ts",
+    "type": "typescript",
+    "loc": 89,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/pipeline-workflow.test.ts",
+    "type": "typescript",
+    "loc": 413,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/verbose-flag-parser.test.ts",
+    "type": "typescript",
+    "loc": 74,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/security-audit.test.ts",
+    "type": "typescript",
+    "loc": 422,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/config-export-cli.test.ts",
+    "type": "typescript",
+    "loc": 158,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ml-validation.test.ts",
+    "type": "typescript",
+    "loc": 182,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/results-qol.test.ts",
+    "type": "typescript",
+    "loc": 564,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/trace-conformance.test.ts",
+    "type": "typescript",
+    "loc": 562,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/trace-ingest-cli.test.ts",
+    "type": "typescript",
+    "loc": 893,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithm-quality-metrics-per-algo.test.ts",
+    "type": "typescript",
+    "loc": 366,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/prolog8-audit-chain.test.ts",
+    "type": "typescript",
+    "loc": 1017,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/output-json-quiet.test.ts",
+    "type": "typescript",
+    "loc": 45,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/discriminator.test.ts",
+    "type": "typescript",
+    "loc": 162,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/predict-cli.test.ts",
+    "type": "typescript",
+    "loc": 1488,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/explain-cli.test.ts",
+    "type": "typescript",
+    "loc": 520,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/drift-watch-streaming.test.ts",
+    "type": "typescript",
+    "loc": 452,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithm-alias-resolution.test.ts",
+    "type": "typescript",
+    "loc": 86,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/error-recovery.test.ts",
+    "type": "typescript",
+    "loc": 352,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/discovery-shape-contract.test.ts",
+    "type": "typescript",
+    "loc": 49,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/diff-deep.test.ts",
+    "type": "typescript",
+    "loc": 497,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/output-span-attributes.test.ts",
+    "type": "typescript",
+    "loc": 427,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/explain-education.test.ts",
+    "type": "typescript",
+    "loc": 295,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ocel-receipt-cli.test.ts",
+    "type": "typescript",
+    "loc": 98,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithm-coverage-comprehensive.test.ts",
+    "type": "typescript",
+    "loc": 347,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/doctor-expanded.test.ts",
+    "type": "typescript",
+    "loc": 254,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/first-run-ux.test.ts",
+    "type": "typescript",
+    "loc": 284,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-instrumentation-audit.test.ts",
+    "type": "typescript",
+    "loc": 412,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithm-selector.test.ts",
+    "type": "typescript",
+    "loc": 232,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/fm5-detection.test.ts",
+    "type": "typescript",
+    "loc": 167,
+    "forbidden_found": [
+      "mock",
+      "stub",
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/new-commands.test.ts",
+    "type": "typescript",
+    "loc": 96,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/outcome-classify.test.ts",
+    "type": "typescript",
+    "loc": 412,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/prolog8-mcpp-replay.test.ts",
+    "type": "typescript",
+    "loc": 821,
+    "forbidden_found": [
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/adversarial-metamorphic-ef.test.ts",
+    "type": "typescript",
+    "loc": 844,
+    "forbidden_found": [
+      "mock",
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/deduplicate-cli.test.ts",
+    "type": "typescript",
+    "loc": 365,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/mcpp-route-conformance.test.ts",
+    "type": "typescript",
+    "loc": 987,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ml-span-attributes.test.ts",
+    "type": "typescript",
+    "loc": 163,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-state-migration.test.ts",
+    "type": "typescript",
+    "loc": 260,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/dx-error-messages.test.ts",
+    "type": "typescript",
+    "loc": 441,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/untested-cli-commands.test.ts",
+    "type": "typescript",
+    "loc": 524,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/exit-codes-documentation.test.ts",
+    "type": "typescript",
+    "loc": 68,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/repl-interactive.test.ts",
+    "type": "typescript",
+    "loc": 435,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cache-cli.test.ts",
+    "type": "typescript",
+    "loc": 574,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/prolog8-smoke.test.ts",
+    "type": "typescript",
+    "loc": 189,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/self-conformance.integration.test.ts",
+    "type": "typescript",
+    "loc": 191,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/drift-watch-cli.test.ts",
+    "type": "typescript",
+    "loc": 586,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/diff-cli.test.ts",
+    "type": "typescript",
+    "loc": 679,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/social-cli.test.ts",
+    "type": "typescript",
+    "loc": 564,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/config-precedence-cli.test.ts",
+    "type": "typescript",
+    "loc": 610,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/qve-gap-validation.test.ts",
+    "type": "typescript",
+    "loc": 481,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/exit-codes-coverage.test.ts",
+    "type": "typescript",
+    "loc": 270,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/validate-cli.test.ts",
+    "type": "typescript",
+    "loc": 895,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/suggest-models-cache.test.ts",
+    "type": "typescript",
+    "loc": 434,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/simulate-edge-cases.test.ts",
+    "type": "typescript",
+    "loc": 601,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/streaming-determinism.test.ts",
+    "type": "typescript",
+    "loc": 484,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/receipt-chain-e2e.test.ts",
+    "type": "typescript",
+    "loc": 378,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/batch-cli.test.ts",
+    "type": "typescript",
+    "loc": 425,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/social-network-oracles.test.ts",
+    "type": "typescript",
+    "loc": 618,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/compile-command.test.ts",
+    "type": "typescript",
+    "loc": 128,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/feedback-command.test.ts",
+    "type": "typescript",
+    "loc": 231,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/exit-code-contract.test.ts",
+    "type": "typescript",
+    "loc": 225,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/streaming-high-volume.test.ts",
+    "type": "typescript",
+    "loc": 217,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/social-network-analysis.test.ts",
+    "type": "typescript",
+    "loc": 377,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/compare-diff-cli.test.ts",
+    "type": "typescript",
+    "loc": 763,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cognition-smoke.test.ts",
+    "type": "typescript",
+    "loc": 252,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/doctor-verbs.test.ts",
+    "type": "typescript",
+    "loc": 133,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/benchmark-cli.test.ts",
+    "type": "typescript",
+    "loc": 662,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/proof-cli.test.ts",
+    "type": "typescript",
+    "loc": 251,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ocel-streaming-conformance.test.ts",
+    "type": "typescript",
+    "loc": 427,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/watch-cli.test.ts",
+    "type": "typescript",
+    "loc": 493,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/command-integration-untested.test.ts",
+    "type": "typescript",
+    "loc": 185,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/social-enhanced.test.ts",
+    "type": "typescript",
+    "loc": 260,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/quality-dimensions.test.ts",
+    "type": "typescript",
+    "loc": 681,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cli-param-validation.test.ts",
+    "type": "typescript",
+    "loc": 336,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/adversarial-counterfactual.test.ts",
+    "type": "typescript",
+    "loc": 436,
+    "forbidden_found": [
+      "mock",
+      "stub",
+      "placeholder"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/security-ssrf-path-traversal.test.ts",
+    "type": "typescript",
+    "loc": 259,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/membrane-trace-cli.test.ts",
+    "type": "typescript",
+    "loc": 1038,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/config-verify-cli.test.ts",
+    "type": "typescript",
+    "loc": 96,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/doctor-cli.test.ts",
+    "type": "typescript",
+    "loc": 208,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cognition-verbs.test.ts",
+    "type": "typescript",
+    "loc": 289,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-e2e.test.ts",
+    "type": "typescript",
+    "loc": 953,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/cli-validator.test.ts",
+    "type": "typescript",
+    "loc": 124,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/process-law-e2e.test.ts",
+    "type": "typescript",
+    "loc": 484,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/otel-integration.test.ts",
+    "type": "typescript",
+    "loc": 261,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/revops-pipeline.test.ts",
+    "type": "typescript",
+    "loc": 201,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/watch-contract.integration.test.ts",
+    "type": "typescript",
+    "loc": 164,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/completions.test.ts",
+    "type": "typescript",
+    "loc": 269,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/init-cli.test.ts",
+    "type": "typescript",
+    "loc": 213,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/ocel-csv.integration.test.ts",
+    "type": "typescript",
+    "loc": 77,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/qol-improvements.test.ts",
+    "type": "typescript",
+    "loc": 236,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-chain.test.ts",
+    "type": "typescript",
+    "loc": 49,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/adversary-cli.test.ts",
+    "type": "typescript",
+    "loc": 165,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithm-selection-hints.test.ts",
+    "type": "typescript",
+    "loc": 89,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/algorithms-discovery.test.ts",
+    "type": "typescript",
+    "loc": 121,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/drift-watch-validation.test.ts",
+    "type": "typescript",
+    "loc": 203,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/untested-command-branches.test.ts",
+    "type": "typescript",
+    "loc": 155,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/conformance-full-quality.test.ts",
+    "type": "typescript",
+    "loc": 502,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/remaining-time-regress.test.ts",
+    "type": "typescript",
+    "loc": 217,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/profile-guide.test.ts",
+    "type": "typescript",
+    "loc": 249,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/simulate-temporal-enhancements.test.ts",
+    "type": "typescript",
+    "loc": 264,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/wasm-loader-graceful-degradation.test.ts",
+    "type": "typescript",
+    "loc": 247,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/config-show-cli.test.ts",
+    "type": "typescript",
+    "loc": 112,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/e2e-user-workflows.test.ts",
+    "type": "typescript",
+    "loc": 449,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/wasm-server.test.ts",
+    "type": "typescript",
+    "loc": 375,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/autoprocess-format-mape.test.ts",
+    "type": "typescript",
+    "loc": 497,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/mcpp-admission-gate.test.ts",
+    "type": "typescript",
+    "loc": 962,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/powl-load.integration.test.ts",
+    "type": "typescript",
+    "loc": 44,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/wasm4pm/src/__tests__/jtbd-all-commands.test.ts",
+    "type": "typescript",
+    "loc": 633,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/unit/useWasm.test.ts",
+    "type": "typescript",
+    "loc": 178,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/unit/useReceipt.test.ts",
+    "type": "typescript",
+    "loc": 151,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/unit/AlgorithmTable.component.test.ts",
+    "type": "typescript",
+    "loc": 65,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/unit/useWasmWorker.test.ts",
+    "type": "typescript",
+    "loc": 146,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/integration/wasm-algorithms.integration.test.ts",
+    "type": "typescript",
+    "loc": 109,
+    "forbidden_found": [
+      "mock"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/component/QualityBadge.test.ts",
+    "type": "typescript",
+    "loc": 132,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/playground-web/tests/component/ReceiptViewer.test.ts",
+    "type": "typescript",
+    "loc": 102,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/component/ConformanceExplainer.test.ts",
+    "type": "typescript",
+    "loc": 44,
+    "forbidden_found": []
+  },
+  {
+    "file": "./apps/playground-web/tests/component/ProcessGraph.test.ts",
+    "type": "typescript",
+    "loc": 221,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/component/CognitionDemo.test.ts",
+    "type": "typescript",
+    "loc": 121,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/component/XesEditor.test.ts",
+    "type": "typescript",
+    "loc": 77,
+    "forbidden_found": [
+      "stub"
+    ]
+  },
+  {
+    "file": "./apps/playground-web/tests/component/AlgorithmDemo.test.ts",
+    "type": "typescript",
+    "loc": 123,
+    "forbidden_found": [
+      "mock",
+      "stub"
+    ]
+  }
+]

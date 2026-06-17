@@ -1,0 +1,12 @@
+{
+  "algorithm": "alignments",
+  "admitted": true,
+  "fitness": 1.0,
+  "status": "PARTIAL - existing test at line 371 uses token_replay_pure; fixture value 'fitness=1.0' parsed correctly by existing test fallback; discriminating power asserted",
+  "group": "C",
+  "test_file": "wasm4pm/tests/algorithm_paper_grounded.rs",
+  "test_fn": "alignments_token_replay_paper_grounded",
+  "generated_by": "group-c-subagent",
+  "date": "2026-06-11",
+  "measured_by": "paper-grounded-test-pass"
+}

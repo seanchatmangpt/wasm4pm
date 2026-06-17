@@ -1,0 +1,16 @@
+{
+  "algorithm": "compute_trace_similarity_matrix",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4, trace similarity.",
+    "locus": "Chapter 4, trace similarity computation section",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "size=6x6",
+    "description": "The similarity matrix has dimensions 6x6 (one entry per trace variant pair); diagonal entries are 1.0 (a trace is identical to itself)"
+  }
+}

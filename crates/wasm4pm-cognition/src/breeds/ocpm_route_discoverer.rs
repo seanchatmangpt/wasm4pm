@@ -37,41 +37,53 @@ impl CognitionBreed for OcpmRouteDiscoverer {
         // Object -> Vec of activities
         let mut object_routes: BTreeMap<String, Vec<String>> = BTreeMap::new();
 
+        // Collect events with optional timestamps for ordering
+        let mut events: Vec<(Option<i64>, String, Vec<String>)> = Vec::new();
         for fact in &input.facts {
             if fact.key == "event" {
                 let parts: Vec<&str> = fact.value.split('|').collect();
                 let mut activity = String::new();
                 let mut objects = Vec::new();
+                let mut timestamp: Option<i64> = None;
                 for part in parts {
                     if let Some(act) = part.strip_prefix("activity=") {
                         activity = act.to_string();
                     } else if let Some(objs) = part.strip_prefix("objects=") {
                         objects = objs.split(',').map(|s| s.to_string()).collect();
+                    } else if let Some(ts) = part.strip_prefix("timestamp=") {
+                        timestamp = ts.parse::<i64>().ok();
                     }
                 }
-
                 if !activity.is_empty() && !objects.is_empty() {
-                    for obj in &objects {
-                        object_routes
-                            .entry(obj.clone())
-                            .or_default()
-                            .push(activity.clone());
-                    }
-                    trace.push(TraceStep {
-                        step: trace.len(),
-                        kind: "process-event".to_string(),
-                        detail: format!("Event processed for objects: {:?}", objects),
-                        depth: 0,
-                        objects: objects
-                            .into_iter()
-                            .map(|o| ("object".to_string(), o))
-                            .collect(),
-                    });
+                    events.push((timestamp, activity, objects));
                 }
             }
         }
+        // Sort by timestamp when available; stable sort preserves input order for ties/missing timestamps
+        events.sort_by_key(|(ts, _, _)| *ts);
+
+        for (_, activity, objects) in events {
+            for obj in &objects {
+                object_routes
+                    .entry(obj.clone())
+                    .or_default()
+                    .push(activity.clone());
+            }
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "process-event".to_string(),
+                detail: format!("Event processed for objects: {:?}", objects),
+                depth: 0,
+                objects: objects
+                    .into_iter()
+                    .map(|o| ("object".to_string(), o))
+                    .collect(),
+            });
+        }
 
         let mut new_facts = Vec::new();
+        // Build DFG edge counts per object type (variant: single object per route)
+        let mut dfg_edges: BTreeMap<String, u32> = BTreeMap::new();
         for (obj, route) in &object_routes {
             let route_str = route.join("->");
             new_facts.push(Fact {
@@ -84,6 +96,24 @@ impl CognitionBreed for OcpmRouteDiscoverer {
                 detail: format!("Discovered route for {}: {}", obj, route_str),
                 depth: 0,
                 objects: vec![("object".to_string(), obj.clone())],
+            });
+            // Emit DFG edge-count facts: dfg:<obj_type>:<A>-><B>=<count>
+            // obj_type inferred as the alphabetic prefix (letters only) of the object id
+            let obj_type: String = obj.chars().take_while(|c| c.is_alphabetic()).collect();
+            let obj_type = if obj_type.is_empty() {
+                "object".to_string()
+            } else {
+                obj_type
+            };
+            for window in route.windows(2) {
+                let edge_key = format!("dfg:{}:{}->{}", obj_type, window[0], window[1]);
+                *dfg_edges.entry(edge_key).or_insert(0) += 1;
+            }
+        }
+        for (edge_key, count) in &dfg_edges {
+            new_facts.push(Fact {
+                key: edge_key.clone(),
+                value: count.to_string(),
             });
         }
 

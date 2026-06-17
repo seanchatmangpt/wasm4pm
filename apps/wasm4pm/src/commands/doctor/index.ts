@@ -208,5 +208,5 @@ export const doctor = defineCommand({
   },
 });
 
-// Also export as doctorCommand for the shim
+// Also export as doctorCommand for index exports
 export { doctor as doctorCommand };

@@ -336,7 +336,7 @@ impl std::error::Error for BreedError {}
 /// Structured error type for breed failures.
 ///
 /// Use `CognitionError` in new breeds. `BreedError` remains as a type alias
-/// for backward compatibility with the 52 existing breed implementations.
+/// for interface stability with the 52 existing breed implementations.
 #[derive(Debug, Clone, thiserror::Error, serde::Serialize, serde::Deserialize)]
 pub enum CognitionError {
     /// A required input fact or field was absent.

@@ -1,0 +1,12 @@
+{
+  "algorithm": "working_together",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Reijers, H.A., Song, M. (2005). Discovering Social Networks from Event Logs. CSCW 14(6).",
+    "locus": "Table 3, working-together metric",
+    "extraction": "verbatim"
+  },
+  "expected": {
+    "value": "resources=6",
+    "rationale": "The working-together co-worker collaboration network spans 6 unique resources in the running-example.xes log."
+  }
+}

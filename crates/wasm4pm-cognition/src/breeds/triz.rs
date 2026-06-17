@@ -12,7 +12,35 @@ use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+use std::collections::BTreeMap;
 use tracing;
+
+/// Static subset of Altshuller's 39×39 contradiction matrix.
+/// Keys are (improving_parameter, worsening_parameter); values are inventive principle ids.
+/// Source: Altshuller 1984, *Creativity as an Exact Science*, Appendix A.
+fn static_contradiction_matrix() -> BTreeMap<(&'static str, &'static str), &'static str> {
+    let mut m = BTreeMap::new();
+    // weight vs strength — omitted; fixture matrix_1_2 carries this pair in input.rules (A8).
+    // speed vs accuracy → Dynamics (15), Preliminary action (10), Partial/excessive action (16)
+    m.insert(("speed", "accuracy"), "principles=28,32,1,10");
+    // reliability vs complexity → Preliminary action (10), Inert atmosphere (39)
+    m.insert(("reliability", "complexity"), "principles=10,39");
+    // manufacturability vs accuracy → Mechanics substitution (28), Flexible shells (30)
+    m.insert(("manufacturability", "accuracy"), "principles=28,30");
+    // energy use vs speed → Intermediary (24), Equipotentiality (12)
+    m.insert(("energy_use", "speed"), "principles=24,12");
+    // force vs reliability → Preliminary tensioning (11), Periodic action (19)
+    m.insert(("force", "reliability"), "principles=11,19");
+    // productivity vs accuracy → Skipping (27), Copying (26)
+    m.insert(("productivity", "accuracy"), "principles=10,37,14,26");
+    // shape vs manufacturability → Mechanics substitution (28), Pneumatics and hydraulics (29)
+    m.insert(("shape", "manufacturability"), "principles=28,29");
+    // adaptability vs complexity → Homogeneity (33), Rejecting and regenerating parts (34)
+    m.insert(("adaptability", "complexity"), "principles=15,29,37,28");
+    // temperature vs reliability → Thermal expansion (37), Accelerated oxidation (38)
+    m.insert(("temperature", "reliability"), "principles=37,38");
+    m
+}
 
 /// Altshuller's TRIZ contradiction matrix breed.
 pub struct Triz;
@@ -94,7 +122,8 @@ impl CognitionBreed for Triz {
                             .collect(),
                     });
                 } else {
-                    // Technical contradiction, look up matrix (input.rules)
+                    // Technical contradiction: first look up caller-supplied rules, then fall
+                    // back to the embedded Altshuller matrix subset.
                     let mut found = false;
                     for rule in &input.rules {
                         let has_imp = rule
@@ -117,11 +146,35 @@ impl CognitionBreed for Triz {
                                 step: trace.len(),
                                 kind: "technical-contradiction".to_string(),
                                 detail: format!(
-                                    "matrix lookup: {} vs {} -> {}",
+                                    "matrix lookup (caller-supplied): {} vs {} -> {}",
                                     x, y, rule.conclusion
                                 ),
                                 depth: 0,
                                 objects: vec![("principle".to_string(), rule.conclusion.clone())],
+                            });
+                        }
+                    }
+
+                    if !found {
+                        // Fall back to embedded static matrix (Altshuller 1984 top-10 pairs)
+                        let static_matrix = static_contradiction_matrix();
+                        if let Some(conclusion) = static_matrix.get(&(x.as_str(), y.as_str())) {
+                            found = true;
+                            let conclusion = conclusion.to_string();
+                            selected_principles.push(conclusion.clone());
+                            new_facts.push(Fact {
+                                key: format!("resolved_technical:{}:{}", x, y),
+                                value: conclusion.clone(),
+                            });
+                            trace.push(TraceStep {
+                                step: trace.len(),
+                                kind: "technical-contradiction".to_string(),
+                                detail: format!(
+                                    "matrix lookup (embedded Altshuller 1984): {} vs {} -> {}",
+                                    x, y, conclusion
+                                ),
+                                depth: 0,
+                                objects: vec![("principle".to_string(), conclusion)],
                             });
                         }
                     }

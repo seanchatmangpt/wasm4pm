@@ -1,0 +1,16 @@
+{
+  "algorithm": "simd_streaming_dfg",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Directly-Follows Graph; SIMD streaming variant produces identical topology to standard DFG",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8,edges=16",
+    "description": "SIMD streaming DFG on running-example has 8 activity nodes and 16 directly-follows edges; SIMD path is a throughput optimisation only; running-example has 16 distinct directly-follows pairs including the reinitiate request loop"
+  }
+}

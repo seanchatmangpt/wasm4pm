@@ -42,8 +42,17 @@ use crate::models::AttributeValue;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 
-// OTEL instrumentation
-use std::time::Instant;
+// Timing — Instant::now() panics on wasm32-unknown-unknown (no system clock).
+// Use a cfg-gated helper: native returns real elapsed ms; wasm32 returns 0.0.
+#[cfg(not(target_arch = "wasm32"))]
+fn now_ms() -> (std::time::Instant, impl Fn() -> f64) {
+    let t = std::time::Instant::now();
+    (t, move || t.elapsed().as_secs_f64() * 1000.0)
+}
+#[cfg(target_arch = "wasm32")]
+fn now_ms() -> ((), impl Fn() -> f64) {
+    ((), || 0.0_f64)
+}
 
 // ---------------------------------------------------------------------------
 // Core domain types
@@ -772,7 +781,7 @@ fn evaluate_time_layer_with_envelope(motion: &RequestMotion, handle: Option<&str
 /// and any other crate-internal caller that already holds a `RequestMotion`
 /// struct reference.
 pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
-    let t0 = Instant::now();
+    let (_t0, get_elapsed) = now_ms();
     let timestamp_ms = motion.timestamp_ms.unwrap_or(0.0);
 
     let layer_verdicts = vec![
@@ -811,7 +820,7 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
     receipt.explanation = render_explanation(&receipt);
 
     // OTEL: Emit membrane classification span
-    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let elapsed_ms = get_elapsed();
     tracing::info_span!(
         "autonomic.membrane_classify_motion",
         request_id = motion.request_id.as_str(),
@@ -858,7 +867,7 @@ pub fn classify_motion_internal_with_envelopes(
     motion: &RequestMotion,
     envelopes: &EnvelopeHandles,
 ) -> VerdictReceipt {
-    let t0 = Instant::now();
+    let (_t0, get_elapsed) = now_ms();
     let timestamp_ms = motion.timestamp_ms.unwrap_or(0.0);
 
     let layer_verdicts = vec![
@@ -909,7 +918,7 @@ pub fn classify_motion_internal_with_envelopes(
     receipt.explanation = render_explanation(&receipt);
 
     // OTEL: Emit envelope-based membrane classification span
-    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let elapsed_ms = get_elapsed();
     tracing::info_span!(
         "autonomic.membrane_classify_with_envelopes",
         request_id = motion.request_id.as_str(),
@@ -960,9 +969,9 @@ pub fn classify_motion_internal_with_envelopes(
 /// not conform to the `RequestMotion` schema.
 #[wasm_bindgen]
 pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
-    let t0 = Instant::now();
+    let (_t0, get_elapsed) = now_ms();
     let motion: RequestMotion = serde_json::from_str(motion_json).map_err(|e| {
-        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        let elapsed_ms = get_elapsed();
         tracing::warn!(
             event = "wasm_motion_parse_error",
             error = format!("classify_motion: invalid RequestMotion JSON: {e}").as_str(),
@@ -994,7 +1003,7 @@ pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
     motion_with_ts.timestamp_ms = Some(ts_resolved);
 
     let receipt = classify_motion_internal(&motion_with_ts);
-    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let elapsed_ms = get_elapsed();
 
     // OTEL: Emit WASM entry point span
     tracing::info_span!(
@@ -1060,12 +1069,12 @@ pub fn build_motion_from_log_trace(
     activity_key: &str,
     actor_key: &str,
 ) -> Result<JsValue, JsValue> {
-    let t0 = Instant::now();
+    let (_t0, get_elapsed) = now_ms();
     get_or_init_state().with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(log)) => log,
             Some(_) => {
-                let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+                let elapsed_ms = get_elapsed();
                 tracing::warn!(
                     event = "membrane_motion_build_invalid_handle",
                     log_handle = log_handle,
@@ -1081,7 +1090,7 @@ pub fn build_motion_from_log_trace(
                 ));
             }
             None => {
-                let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+                let elapsed_ms = get_elapsed();
                 tracing::warn!(
                     event = "membrane_motion_build_missing_log",
                     log_handle = log_handle,
@@ -1097,7 +1106,7 @@ pub fn build_motion_from_log_trace(
         };
 
         let trace = log.traces.get(trace_index).ok_or_else(|| {
-            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            let elapsed_ms = get_elapsed();
             tracing::warn!(
                 event = "membrane_motion_build_trace_index_oor",
                 log_handle = log_handle,
@@ -1118,7 +1127,7 @@ pub fn build_motion_from_log_trace(
 
         // Use the last event as the "current motion" in the running case
         let last_event = trace.events.last().ok_or_else(|| {
-            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            let elapsed_ms = get_elapsed();
             tracing::warn!(
                 event = "membrane_motion_build_empty_trace",
                 log_handle = log_handle,
@@ -1190,7 +1199,7 @@ pub fn build_motion_from_log_trace(
             deployment_profile: None,
         };
 
-        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        let elapsed_ms = get_elapsed();
 
         // OTEL: Emit motion building span
         tracing::info_span!(
@@ -1229,9 +1238,9 @@ pub fn classify_motion_with_envelopes(
     motion_json: &str,
     envelope_handles_json: &str,
 ) -> Result<JsValue, JsValue> {
-    let t0 = Instant::now();
+    let (_t0, get_elapsed) = now_ms();
     let motion: RequestMotion = serde_json::from_str(motion_json).map_err(|e| {
-        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        let elapsed_ms = get_elapsed();
         tracing::warn!(
             event = "wasm_motion_parse_error_with_envelopes",
             error =
@@ -1247,7 +1256,7 @@ pub fn classify_motion_with_envelopes(
     })?;
 
     let envelopes: EnvelopeHandles = serde_json::from_str(envelope_handles_json).map_err(|e| {
-        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        let elapsed_ms = get_elapsed();
         tracing::warn!(
             event = "wasm_envelope_parse_error",
             error = format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}")
@@ -1278,7 +1287,7 @@ pub fn classify_motion_with_envelopes(
     motion_with_ts.timestamp_ms = Some(ts_resolved);
 
     let receipt = classify_motion_internal_with_envelopes(&motion_with_ts, &envelopes);
-    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    let elapsed_ms = get_elapsed();
 
     // OTEL: Emit WASM entry point span with envelopes
     tracing::info_span!(

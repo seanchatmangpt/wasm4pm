@@ -1,0 +1,16 @@
+{
+  "algorithm": "alpha_sharp",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 6 — Alpha+++ (Alpha#) extension handling length-one and length-two loops.",
+    "locus": "Chapter 6 — Alpha# miner; structural extension of Alpha++ for short loops",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "transitions_nonneg",
+    "min": 1,
+    "rationale": "Alpha# discovers at least one transition from the running-example log. Not imported; structural assertion only."
+  }
+}

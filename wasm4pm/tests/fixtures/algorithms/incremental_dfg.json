@@ -1,0 +1,12 @@
+{
+  "algorithm": "incremental_dfg",
+  "provenance": {
+    "paper": "van Zelst, S.J., van Dongen, B.F., van der Aalst, W.M.P. (2018). Online Process Discovery: The Concept Drift Problem. ATAED 2018.",
+    "locus": "Section 3, incremental DFG with snapshot capability",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "snapshot_nonnull",
+    "rationale": "An incremental DFG handle created via new_streaming_dfg must yield a non-empty snapshot string."
+  }
+}

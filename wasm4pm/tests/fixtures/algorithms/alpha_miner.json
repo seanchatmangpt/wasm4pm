@@ -1,0 +1,16 @@
+{
+  "algorithm": "alpha_miner",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Weijters, T., Maruster, L. (2004). Workflow Mining: Discovering Process Models from Event Logs. IEEE TKDE 16(9):1128-1142.",
+    "locus": "Section IV — Alpha algorithm running example; 5 activities {a,b,c,d,e}",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "transitions_nonneg",
+    "min": 1,
+    "rationale": "Alpha algorithm discovers at least one transition from the running-example log (van der Aalst et al. 2004 §IV). Exact structure is footprint-derived."
+  }
+}

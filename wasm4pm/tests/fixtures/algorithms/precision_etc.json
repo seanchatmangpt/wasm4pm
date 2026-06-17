@@ -1,0 +1,12 @@
+{
+  "algorithm": "precision_etc",
+  "provenance": {
+    "paper": "Munoz-Gama, J., Carmona, J. (2010). A Fresh Look at Precision in Process Conformance. BPM 2010, LNCS 6336.",
+    "locus": "§4 ETC precision — perfectly fitting log yields precision in (0, 1]",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "precision_positive",
+    "rationale": "ETC precision on the van der Aalst running-example log against a net discovered by alpha++ must be strictly positive (> 0)."
+  }
+}

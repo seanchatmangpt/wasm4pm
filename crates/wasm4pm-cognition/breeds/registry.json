@@ -44,14 +44,14 @@
   {
     "breed_id": "autoinstinct_learning",
     "breed_name": "AutoinstinctLearning",
-    "historical_ancestor": "Sussman, Gerald Jay. \\",
+    "historical_ancestor": "Sussman, Gerald Jay. \\\\",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "autoinstinct_neurosis",
     "breed_name": "AutoinstinctNeurosis",
-    "historical_ancestor": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \\",
+    "historical_ancestor": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \\\\",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -205,7 +205,7 @@
   {
     "breed_id": "gps",
     "breed_name": "Gps",
-    "historical_ancestor": "A. Newell and H. A. Simon, \\",
+    "historical_ancestor": "A. Newell and H. A. Simon, \\\\",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },

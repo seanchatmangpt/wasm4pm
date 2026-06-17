@@ -1,0 +1,17 @@
+{
+  "algorithm": "pso",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 10.",
+    "locus": "Chapter 10 — Particle Swarm Optimisation metaheuristic for process discovery",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "fitness_nonneg",
+    "min": 0.0,
+    "description": "PSO with fixed seed produces a non-negative fitness score; exact value is seed-dependent (metaheuristic)"
+  }
+}

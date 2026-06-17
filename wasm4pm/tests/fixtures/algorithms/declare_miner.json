@@ -1,0 +1,16 @@
+{
+  "algorithm": "declare_miner",
+  "provenance": {
+    "paper": "Pesic, M., Schonenberg, H., van der Aalst, W.M.P. (2007). DECLARE: Full Support for Loosely-Structured Processes. EDOC 2007. IEEE.",
+    "locus": "Section III — Declare constraint model discovery from event log",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "constraints_nonneg",
+    "min": 0,
+    "rationale": "Declare miner discovers constraint rules from the log; not in existing imports so structural assertion only (Pesic et al. 2007 §III)."
+  }
+}

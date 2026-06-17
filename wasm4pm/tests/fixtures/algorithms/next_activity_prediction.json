@@ -1,0 +1,12 @@
+{
+  "algorithm": "next_activity_prediction",
+  "provenance": {
+    "paper": "Tax et al. (2017) Predictive Business Process Monitoring with LSTM Neural Networks — Proc. CAiSE; n-gram baseline for next-activity prediction",
+    "locus": "§2 — n-gram predictor baseline; prefix [a] → most likely next is b or c",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "prediction_nonempty",
+    "rationale": "After training on running-example log, prefix [a] must yield at least one predicted next activity (b or c, both follow a)."
+  }
+}

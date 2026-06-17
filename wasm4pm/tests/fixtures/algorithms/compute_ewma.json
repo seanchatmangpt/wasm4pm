@@ -1,0 +1,16 @@
+{
+  "algorithm": "compute_ewma",
+  "provenance": {
+    "paper": "The Exponentially Weighted Moving Average",
+    "citation": "Hunter, J.S. (1986). The Exponentially Weighted Moving Average. Journal of Quality Technology 18(4).",
+    "locus": "Eq. 1, EWMA formula z_t = λx_t + (1-λ)z_{t-1}",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "ewma_produced",
+    "description": "EWMA smoothing applied to case durations in running example produces a time-series output with one value per time step"
+  }
+}

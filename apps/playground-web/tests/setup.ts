@@ -32,6 +32,6 @@ vi.stubGlobal('localStorage', {
   clear: () => { _lsStore.clear() }
 })
 
-// $fetch global — network boundary shim; no real server in vitest.
+// $fetch global — network boundary helper; no real server in vitest.
 // Tests override per-suite with vi.stubGlobal('$fetch', ...).
 vi.stubGlobal('$fetch', vi.fn().mockResolvedValue(''))

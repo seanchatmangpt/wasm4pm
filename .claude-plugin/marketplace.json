@@ -1,0 +1,70 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "wasm4pm",
+  "description": "wasm4pm plugins for Claude Code — process mining intelligence for OCEL logs, receipts, breed admission, and conformance surfaces.",
+  "owner": {
+    "name": "Sean Chatman",
+    "email": "xpointsh@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "anti-llm-cheat-lsp",
+      "description": "Anti-LLM admissibility language server: live WASM4PM-CHEAT-C* diagnostics for cognition breed sources. Detects seeded RNG, hardcoded metrics, oracle violations, and FM-5 patterns in .rs, .ts, .tsx, .json files.",
+      "version": "26.6.9",
+      "author": {
+        "name": "Sean Chatman",
+        "email": "xpointsh@gmail.com"
+      },
+      "source": "/Users/sac/lsp-max/target/release/anti-llm-cheat-lsp",
+      "category": "development",
+      "strict": false,
+      "lspServers": {
+        "anti-llm-cheat": {
+          "command": "/Users/sac/lsp-max/target/release/anti-llm-cheat-lsp",
+          "args": ["serve", "--stdio"],
+          "extensionToLanguage": {
+            ".rs": "rust",
+            ".ts": "typescript",
+            ".tsx": "typescriptreact",
+            ".json": "json",
+            ".jsonl": "jsonl",
+            ".md": "markdown"
+          },
+          "compositorHints": {
+            "primary_extensions": [".rs", ".ts", ".tsx", ".json", ".jsonl", ".md"],
+            "secondary_extensions": [],
+            "priority": "diagnostics-only"
+          }
+        }
+      }
+    },
+    {
+      "name": "wasm4pm-lsp",
+      "description": "wasm4pm language server: live diagnostics, hover, completion, and document symbols for OCEL event logs, BLAKE3 receipts, breed registry, and TypeScript process-mining consumers. Surfaces Lambda admission vectors (Λ = F∧R∧C∧P) and anti-cheat conformance signals.",
+      "version": "26.6.9",
+      "author": {
+        "name": "Sean Chatman",
+        "email": "xpointsh@gmail.com"
+      },
+      "source": "./plugins/wasm4pm-lsp",
+      "category": "development",
+      "strict": false,
+      "lspServers": {
+        "wasm4pm": {
+          "command": "wasm4pm-lsp",
+          "extensionToLanguage": {
+            ".ocel.json": "ocel",
+            ".receipt.json": "receipt",
+            ".ocel.jsonl": "ocel",
+            ".json": "json"
+          },
+          "compositorHints": {
+            "primary_extensions": [".ocel.json", ".receipt.json", ".ocel.jsonl"],
+            "secondary_extensions": [".rs", ".ts", ".json"],
+            "priority": "diagnostics-only"
+          }
+        }
+      }
+    }
+  ]
+}

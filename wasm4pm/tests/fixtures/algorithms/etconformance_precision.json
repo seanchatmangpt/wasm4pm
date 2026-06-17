@@ -1,0 +1,16 @@
+{
+  "algorithm": "etconformance_precision",
+  "provenance": {
+    "paper": "A Fresh Look at Precision in Process Conformance",
+    "citation": "Munoz-Gama, J., Carmona, J. (2010). A Fresh Look at Precision in Process Conformance. BPM 2010.",
+    "locus": "Section 3, ETC precision formula",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "precision_gt_0",
+    "description": "ETC precision for running example alpha model is strictly positive — escaping tokens exist but model is not fully imprecise"
+  }
+}

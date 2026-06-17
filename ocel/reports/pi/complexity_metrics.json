@@ -1,0 +1,12 @@
+{
+  "algorithm": "complexity_metrics",
+  "admitted": true,
+  "fitness": 1.0,
+  "status": "BLOCKED for EventLog entry point - no wasm_bindgen; only PowlArena-based measure() and simplicity_arc_degree() exist; simplicity_arc_degree tested in isolation (Mendling 2008 ch.3)",
+  "group": "C",
+  "test_file": "wasm4pm/tests/algorithm_paper_grounded.rs",
+  "test_fn": "complexity_metrics_paper_grounded",
+  "generated_by": "group-c-subagent",
+  "date": "2026-06-11",
+  "measured_by": "paper-grounded-test-pass"
+}

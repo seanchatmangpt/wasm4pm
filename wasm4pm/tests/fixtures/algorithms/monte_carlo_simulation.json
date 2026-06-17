@@ -1,0 +1,16 @@
+{
+  "algorithm": "monte_carlo_simulation",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 12, simulation.",
+    "locus": "Section 12.3, stochastic simulation",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "simulated_traces_gt_0",
+    "description": "Monte Carlo simulation driven by running example stochastic model produces at least 1 simulated trace"
+  }
+}

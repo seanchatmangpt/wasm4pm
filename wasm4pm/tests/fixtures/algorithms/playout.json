@@ -1,0 +1,16 @@
+{
+  "algorithm": "playout",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 12, playout.",
+    "locus": "Section 12.2, Petri net playout",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8",
+    "description": "Petri net playout from running example model covers the same 8 activities as the original log"
+  }
+}

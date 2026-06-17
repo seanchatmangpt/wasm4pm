@@ -218,8 +218,8 @@ export const explain = defineCommand({
           if (ctx.args.model) {
             const result = makeErrorResult(
               'explain',
-              'Model-file explanation is not implemented yet',
-              EXIT_CODES.config_error,
+              'Model-file explanation (--model) is not yet implemented in this build',
+              EXIT_CODES.execution_error,
               'NOT_IMPLEMENTED',
               'Use wpm explain <algorithm> for algorithm guidance, or wpm interpret for metric help'
             );

@@ -1,0 +1,15 @@
+{
+  "algorithm": "powl_miner",
+  "provenance": {
+    "paper": "Kourani, H., van der Aalst, W.M.P. (2023). POWL: Partially Ordered Workflow Language. BPM 2023. Springer LNCS 14321.",
+    "locus": "Section 3 — POWL discovery from event log via inductive mining backbone",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "model_nonnull",
+    "rationale": "POWL miner produces a non-null partially ordered workflow model from the running-example log (Kourani & van der Aalst 2023 §3). Not in existing imports; structural assertion only."
+  }
+}

@@ -349,6 +349,177 @@ fn anti_fraud_gate_naive_physics() {
     );
 }
 
+#[test]
+fn anti_fraud_gate_autoinstinct_learning() {
+    assert_no_fraud(
+        "src/breeds/autoinstinct_learning.rs",
+        &["oracle_secret_zorp", "oracle_secret_blee"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_autoinstinct_neurosis() {
+    assert_no_fraud(
+        "src/breeds/autoinstinct_neurosis.rs",
+        &["oracle_secret_zorp", "oracle_secret_blee"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_autoinstinct_vision() {
+    assert_no_fraud(
+        "src/breeds/autoinstinct_vision.rs",
+        &["oracle_secret_zorp", "oracle_secret_blee"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_autoinstinct_semantics() {
+    assert_no_fraud(
+        "src/breeds/autoinstinct_semantics.rs",
+        &["oracle_secret_zorp", "oracle_secret_blee"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_cbr() {
+    assert_no_fraud(
+        "src/breeds/cbr.rs",
+        &["oracle_secret_case", "oracle_secret_solution"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_dendral() {
+    assert_no_fraud(
+        "src/breeds/dendral.rs",
+        &["oracle_secret_hypothesis", "oracle_secret_mass"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_gps() {
+    assert_no_fraud(
+        "src/breeds/gps.rs",
+        &["oracle_secret_goal", "oracle_secret_operator"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_hearsay() {
+    assert_no_fraud(
+        "src/breeds/hearsay.rs",
+        &["oracle_secret_hypothesis", "oracle_secret_blackboard"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_pomdp() {
+    assert_no_fraud(
+        "src/breeds/pomdp.rs",
+        &["oracle_secret_state", "oracle_secret_obs"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_prolog() {
+    assert_no_fraud(
+        "src/breeds/prolog.rs",
+        &["oracle_secret_functor", "oracle_secret_clause"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_soar() {
+    assert_no_fraud(
+        "src/breeds/soar.rs",
+        &["oracle_secret_operator", "oracle_secret_chunk"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_strips() {
+    assert_no_fraud(
+        "src/breeds/strips.rs",
+        &["oracle_secret_action", "oracle_secret_precond"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_construction_grammar() {
+    assert_no_fraud(
+        "src/breeds/construction_grammar.rs",
+        &["oracle_secret_construct", "oracle_secret_form"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_contingent_plan() {
+    assert_no_fraud(
+        "src/breeds/contingent_plan.rs",
+        &["oracle_secret_branch", "oracle_secret_condition"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_markov_logic() {
+    assert_no_fraud(
+        "src/breeds/markov_logic.rs",
+        &["oracle_secret_formula", "oracle_secret_weight"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_eliza() {
+    assert_no_fraud(
+        "src/breeds/frame.rs",
+        &[
+            "oracle_secret_eliza_pattern",
+            "oracle_secret_eliza_response",
+        ],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_meta_reasoning() {
+    assert_no_fraud(
+        "src/breeds/meta_reasoning.rs",
+        &["oracle_secret_meta_goal", "oracle_secret_meta_strategy"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_tableaux() {
+    assert_no_fraud(
+        "src/breeds/tableaux.rs",
+        &["oracle_secret_node", "oracle_secret_branch"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_morphological() {
+    assert_no_fraud(
+        "src/breeds/morphological.rs",
+        &["oracle_secret_dimension", "oracle_secret_variant"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_triz() {
+    assert_no_fraud(
+        "src/breeds/triz.rs",
+        &["oracle_secret_contradiction", "oracle_secret_principle"],
+    );
+}
+
+#[test]
+fn anti_fraud_gate_ocpm_route_discoverer() {
+    assert_no_fraud(
+        "src/breeds/ocpm_route_discoverer.rs",
+        &["oracle_secret_route", "oracle_secret_object"],
+    );
+}
+
 /// A8 universal sweep: every breed module file is checked against the UNION of
 /// all fresh-oracle identifiers used anywhere in this gate. Per-breed tests
 /// above give precise attribution; this sweep guarantees 55/55 coverage so a

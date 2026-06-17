@@ -1,0 +1,16 @@
+{
+  "algorithm": "generalization",
+  "provenance": {
+    "paper": "On the Role of Fitness, Precision, Generalization and Simplicity in Process Discovery",
+    "citation": "Buijs, J.C.A.M., van Dongen, B.F., van der Aalst, W.M.P. (2012). On the Role of Fitness, Precision, Generalization and Simplicity in Process Discovery. CoopIS 2012.",
+    "locus": "Section 3, generalization formula",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "generalization_in_range",
+    "description": "Generalization metric for running example model is in [0,1]; measures model's ability to generalize beyond observed traces"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "algorithm": "predict_next_activity",
+  "provenance": {
+    "paper": "Predicting Process Behaviour Using Deep Learning",
+    "citation": "Evermann, J., Rehse, J.-R., Fettke, P. (2017). Predicting Process Behaviour Using Deep Learning. Decision Support Systems 100.",
+    "locus": "Section 3, sequence prediction model",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities_predictable=8",
+    "description": "All 8 activities from running example are included in next-activity prediction vocabulary"
+  }
+}

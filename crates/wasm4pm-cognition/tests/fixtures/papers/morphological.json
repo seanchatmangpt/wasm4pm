@@ -46,6 +46,6 @@
     "state": []
   },
   "expected": {
-    "selected": "chemical-reactions=self-contained,operating-mode=continuous,propellant-state=gaseous,reactivity=external-ignition,thrust-augmentation-1=translatory-motion,thrust-augmentation-2=no-augmentation"
+    "selected": "chemical-reactions=self-contained;operating-mode=continuous;propellant-state=gaseous;reactivity=self-igniting;thrust-augmentation-1=translatory-motion;thrust-augmentation-2=no-augmentation"
   }
 }

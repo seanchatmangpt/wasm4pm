@@ -1,0 +1,16 @@
+{
+  "algorithm": "batches",
+  "provenance": {
+    "paper": "The Use of Process Mining in Business Process Simulation Model Construction",
+    "citation": "Martin, N., Depaire, B., Caris, A. (2016). The Use of Process Mining in Business Process Simulation Model Construction. Business & Information Systems Engineering 58(1).",
+    "locus": "Batch detection criteria, Section 3",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "batches=0",
+    "description": "The running example has no timestamp batching — all event timestamps are unique, so no batch execution patterns are detected"
+  }
+}

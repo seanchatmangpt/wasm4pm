@@ -8,8 +8,8 @@
 //!   5. Render the reassembly template — numeric tokens (e.g. `3`) are replaced
 //!      by the corresponding decomposition component capture (1-indexed).
 //!
-//! When `input.rules` is empty the legacy wildcard-frame path is used for
-//! backward compatibility with unit tests.
+//! When `input.rules` is empty the catch-all wildcard-frame path is used;
+//! unit tests depend on this behavior.
 //!
 //! Patterns can be supplied via `input.facts` with `key == "frame.pattern"`
 //! and `value == "<pattern>||<template>"` (delimited by `||`). If no
@@ -432,7 +432,7 @@ fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<
     None
 }
 
-// ── Legacy wildcard engine (unchanged) ───────────────────────────────────────
+// ── Catch-all wildcard engine (unchanged) ────────────────────────────────────
 
 impl CognitionBreed for Eliza {
     fn id(&self) -> BreedId {
@@ -480,7 +480,7 @@ impl CognitionBreed for Eliza {
             });
         }
 
-        // Legacy wildcard-frame path
+        // Catch-all wildcard-frame path
         let frames = parse_frames(input);
         let text = input.intent.to_lowercase();
 

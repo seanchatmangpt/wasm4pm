@@ -1,0 +1,15 @@
+# Algorithm Registry
+
+<!-- Generated from wasm4pm pi ontology — regenerate with: ggen sync -->
+
+All {{ sparql_results | length }} algorithms are registered in the current release.
+
+{% set_global current_category = "" %}
+{% for row in sparql_results %}{% if row.category != current_category %}{% set_global current_category = row.category %}
+
+## {{ row.category | replace(from="_", to=" ") | capitalize }}
+
+| ID | Alias | Description | Input | Status |
+|----|-------|-------------|-------|--------|
+{% endif %}| `{{ row.algorithm_id }}` | {% if row.cli_alias is defined %}`{{ row.cli_alias }}`{% else %}—{% endif %} | {{ row.algorithm_doc }} | {{ row.input_format | upper }} | {{ row.algorithm_status | default(value="UNSUPPORTED") }} |
+{% endfor %}

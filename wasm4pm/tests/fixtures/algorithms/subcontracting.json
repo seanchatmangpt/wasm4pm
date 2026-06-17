@@ -1,0 +1,12 @@
+{
+  "algorithm": "subcontracting",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Reijers, H.A., Song, M. (2005). Discovering Social Networks from Event Logs. CSCW 14(6).",
+    "locus": "§3.3 Subcontracting metric — structural: compute_network_metrics returns non-empty JSON",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "structural_nonnull",
+    "rationale": "compute_network_metrics uses handle-based WASM API; structural test confirms the direct social-network functions return non-empty results."
+  }
+}

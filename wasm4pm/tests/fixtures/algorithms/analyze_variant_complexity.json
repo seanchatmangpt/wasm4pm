@@ -1,0 +1,16 @@
+{
+  "algorithm": "analyze_variant_complexity",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 3, variant analysis.",
+    "locus": "Chapter 3, variant analysis section",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "variants=6",
+    "description": "The running example contains exactly 6 distinct trace variants"
+  }
+}

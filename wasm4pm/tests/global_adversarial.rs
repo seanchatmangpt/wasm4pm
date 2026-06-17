@@ -2,9 +2,7 @@ use fake::Fake;
 use proptest::prelude::*;
 use wasm4pm::autoprocess::{AutoProcessAgent, CircuitState};
 use wasm4pm::state::{get_or_init_state, StoredObject};
-// TODO: wasm4pm_compat needs wasm4pm_compat::event_log::AttributeValue, wasm4pm_compat::event_log::Event, wasm4pm_compat::event_log::EventLog, wasm4pm_compat::event_log::Trace, wasm4pm_compat::event_log::XESEditableAttribute
-// use wasm4pm_compat::event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
-use wasm4pm_compat::event_log::{Event, EventLog, Trace};
+use wasm4pm_compat::event_log::{AttributeValue, Event, EventLog, Trace, XESEditableAttribute};
 
 #[cfg(test)]
 mod global_adversarial {
@@ -88,16 +86,23 @@ mod global_adversarial {
 
     proptest! {
         /// Contract: Global registry handles arbitrary object sizes without corruption.
+        /// Also exercises AttributeValue and XESEditableAttribute — both stable in v26.6.10.
         #[test]
         fn test_registry_stress_contract(
             log_size in 0..500usize
         ) {
             let state = get_or_init_state();
             let mut events = Vec::new();
-            for _ in 0..log_size {
-                events.push(Event::new(Vec::new()));
+            for i in 0..log_size {
+                let mut attrs: Vec<wasm4pm_compat::event_log::Attribute> = Vec::new();
+                attrs.add_to_attributes(
+                    format!("concept:name"),
+                    AttributeValue::String(format!("activity_{}", i)),
+                );
+                events.push(Event::new(attrs));
             }
-            let log = EventLog::new(vec![Trace::new("case".to_string(), events)], Vec::new());
+            let trace = Trace::new("case".to_string(), events);
+            let log = EventLog::new(vec![trace], Vec::new());
             let wasm4pm_log: wasm4pm::models::EventLog = log.into();
             let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
             assert!(state.get_object(&handle).unwrap().is_some());

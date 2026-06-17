@@ -1,0 +1,16 @@
+{
+  "algorithm": "declare",
+  "provenance": {
+    "paper": "A Declarative Approach for Flexible Business Processes Management",
+    "citation": "Pesic, M., van der Aalst, W.M.P. (2006). A Declarative Approach for Flexible Business Processes Management. BPM 2006 Workshops. Lecture Notes in Computer Science 4103.",
+    "locus": "Section 3 — DECLARE constraint templates; Init and End constraint mining",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "constraints=1",
+    "description": "DECLARE mining on running-example yields 1 mandatory Init boundary constraint: Init(register request) appears first in all 6 traces. No single End activity is mandatory across all 6 traces (pay compensation ends 3, reject request ends 3)."
+  }
+}

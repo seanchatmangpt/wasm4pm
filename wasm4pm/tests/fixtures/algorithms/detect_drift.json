@@ -1,0 +1,16 @@
+{
+  "algorithm": "detect_drift",
+  "provenance": {
+    "paper": "Handling Concept Drift in Process Mining",
+    "citation": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011.",
+    "locus": "Section 3, drift detection algorithm",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "drift_points=0",
+    "description": "Clean running example log with uniform behavior yields no concept drift change points"
+  }
+}

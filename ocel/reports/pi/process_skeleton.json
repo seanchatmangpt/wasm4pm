@@ -1,0 +1,9 @@
+{
+  "algorithm": "process_skeleton",
+  "admitted": true,
+  "fitness": 1.0,
+  "evidence": "wasm4pm/tests/algorithm_paper_grounded.rs::process_skeleton_paper_grounded",
+  "fixture": "wasm4pm/tests/fixtures/algorithms/process_skeleton.json",
+  "reference_log": "wasm4pm/tests/fixtures/running-example.xes",
+  "generated": "2026-06-11"
+}

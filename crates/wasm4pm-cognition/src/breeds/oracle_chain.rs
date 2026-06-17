@@ -113,7 +113,10 @@ mod tests {
             Ok(())
         }
         fn run(&self, _: &BreedInput) -> Result<BreedOutput, BreedError> {
-            unimplemented!()
+            Err(BreedError {
+                breed: BreedId::LtlMonitor,
+                message: "MockBreed::run is a test stub — not intended to be called".to_string(),
+            })
         }
         fn postconditions(&self, _: &BreedInput, _: &BreedOutput) -> Result<(), String> {
             Ok(())

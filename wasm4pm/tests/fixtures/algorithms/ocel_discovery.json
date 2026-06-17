@@ -1,0 +1,12 @@
+{
+  "algorithm": "ocel_discovery",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019.",
+    "locus": "Section 4, per-type OC Petri net discovery",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "petri_nets=1",
+    "rationale": "The minimal OCEL with 1 object type yields exactly 1 per-type Petri net."
+  }
+}

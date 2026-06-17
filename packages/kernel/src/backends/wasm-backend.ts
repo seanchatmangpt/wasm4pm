@@ -32,29 +32,17 @@ const SUPPORTED_ALGORITHM_IDS = [
   'heuristic_miner',
   'inductive_miner',
   'genetic_algorithm',
-  'pso',
   'a_star',
-  'hill_climbing',
   'ilp',
-  'aco',
-  'simulated_annealing',
   'declare',
   'optimized_dfg',
-  'simd_streaming_dfg',
-  'hierarchical_dfg',
   'smart_engine',
 
   // ML Analysis algorithms are handled by MlBackend, not WasmBackend.
   // They are listed separately in ml-backend.ts's SUPPORTED_ALGORITHM_IDS.
 
   // Analysis & Utilities
-  'transition_system',
-  'causal_graph',
-  'performance_spectrum',
   'variants',
-  'generalization',
-  'petri_net_reduction',
-  'complexity_metrics',
   'analyze_statistics',
   'detect_bottlenecks',
   'detect_drift',
@@ -162,7 +150,7 @@ export class WasmBackend implements MiningBackend {
   async discover(
     log: EventLogIR,
     algorithmId: string,
-    budget: BudgetEnvelope
+    _budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ModelIR>> {
     const startMs = Date.now();
 
@@ -274,7 +262,7 @@ export class WasmBackend implements MiningBackend {
   async conformance(
     log: EventLogIR,
     model: ModelIR,
-    budget: BudgetEnvelope
+    _budget: BudgetEnvelope
   ): Promise<ResultEnvelope<ConformanceResult>> {
     const startMs = Date.now();
 
@@ -322,7 +310,7 @@ export class WasmBackend implements MiningBackend {
   async analyze(
     log: EventLogIR,
     task: AnalysisTask,
-    budget: BudgetEnvelope
+    _budget: BudgetEnvelope
   ): Promise<ResultEnvelope<unknown>> {
     const startMs = Date.now();
 
@@ -349,6 +337,13 @@ export class WasmBackend implements MiningBackend {
         case 'variants':
           resultRaw = wasm.analyze_trace_variants(logHandle, 'concept:name');
           break;
+        case 'transition_system':
+        case 'causal_graph':
+        case 'performance_spectrum':
+        case 'generalization':
+        case 'petri_net_reduction':
+        case 'complexity_metrics':
+          throw new Error(`Algorithm ${task.task_type} is not yet implemented in this WASM build`);
         default:
           throw new Error(`Analysis task ${task.task_type} not implemented in WASM backend bridge`);
       }
@@ -398,7 +393,7 @@ export class WasmBackend implements MiningBackend {
     return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`; // @lint-allow-fakery — UUID fallback when crypto.randomUUID unavailable
   }
 
-  private createProvenance(algorithmId: string, operationType: string): ProvenanceChain {
+  private createProvenance(algorithmId: string, _operationType: string): ProvenanceChain {
     return {
       input_hash: `hash-input-${algorithmId}`,
       config_hash: `hash-config-${algorithmId}`,

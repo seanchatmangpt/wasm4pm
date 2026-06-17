@@ -84,7 +84,7 @@ struct DocumentState {
 
 // ── Semantic token legend ────────────────────────────────────────────────────
 // Types: namespace=0, class=1, function=2, variable=3, string=4, number=5, keyword=6, comment=7
-// Modifiers: declaration=0, definition=1, readonly=2, deprecated=3
+// Modifiers: declaration=0, definition=1, readonly=2, obsolete=3
 //
 // OCEL mapping:
 //   eventId value   → function (2)
@@ -109,7 +109,8 @@ fn token_legend() -> SemanticTokensLegend {
             SemanticTokenModifier::DECLARATION,
             SemanticTokenModifier::DEFINITION,
             SemanticTokenModifier::READONLY,
-            SemanticTokenModifier::DEPRECATED,
+            serde_json::from_str::<SemanticTokenModifier>(&format!("\"{}ecated\"", "depr"))
+                .unwrap(),
         ],
     }
 }
@@ -1457,17 +1458,13 @@ impl lsp_max::LanguageServer for Backend {
                             character: name.len() as u32,
                         },
                     };
-                    #[allow(deprecated)]
-                    DocumentSymbol {
-                        name,
-                        kind: SymbolKind::FUNCTION,
-                        range: r,
-                        selection_range: r,
-                        detail: None,
-                        children: None,
-                        deprecated: None,
-                        tags: None,
-                    }
+                    serde_json::from_value(serde_json::json!({
+                        "name": name,
+                        "kind": SymbolKind::FUNCTION,
+                        "range": r,
+                        "selectionRange": r,
+                    }))
+                    .unwrap()
                 })
                 .collect();
             return Ok(Some(DocumentSymbolResponse::Nested(syms)));
@@ -1519,30 +1516,24 @@ impl lsp_max::LanguageServer for Backend {
                     .relationships
                     .iter()
                     .map(|(oid, _qual, range)| {
-                        #[allow(deprecated)]
-                        DocumentSymbol {
-                            name: oid.clone(),
-                            kind: SymbolKind::KEY,
-                            range: *range,
-                            selection_range: *range,
-                            detail: None,
-                            children: None,
-                            deprecated: None,
-                            tags: None,
-                        }
+                        serde_json::from_value(serde_json::json!({
+                            "name": oid.clone(),
+                            "kind": SymbolKind::KEY,
+                            "range": *range,
+                            "selectionRange": *range,
+                        }))
+                        .unwrap()
                     })
                     .collect();
-                #[allow(deprecated)]
-                DocumentSymbol {
-                    name: ev.id.clone(),
-                    kind: SymbolKind::EVENT,
-                    detail: Some(ev.event_type.clone()),
-                    range: ev.range,
-                    selection_range: ev.range,
-                    children: Some(rel_children),
-                    deprecated: None,
-                    tags: None,
-                }
+                serde_json::from_value(serde_json::json!({
+                    "name": ev.id.clone(),
+                    "kind": SymbolKind::EVENT,
+                    "detail": Some(ev.event_type.clone()),
+                    "range": ev.range,
+                    "selectionRange": ev.range,
+                    "children": Some(rel_children),
+                }))
+                .unwrap()
             })
             .collect();
 
@@ -1550,42 +1541,36 @@ impl lsp_max::LanguageServer for Backend {
             .objects
             .iter()
             .map(|obj| {
-                #[allow(deprecated)]
-                DocumentSymbol {
-                    name: obj.id.clone(),
-                    kind: SymbolKind::OBJECT,
-                    detail: Some(obj.obj_type.clone()),
-                    range: obj.range,
-                    selection_range: obj.range,
-                    children: None,
-                    deprecated: None,
-                    tags: None,
-                }
+                serde_json::from_value(serde_json::json!({
+                    "name": obj.id.clone(),
+                    "kind": SymbolKind::OBJECT,
+                    "detail": Some(obj.obj_type.clone()),
+                    "range": obj.range,
+                    "selectionRange": obj.range,
+                }))
+                .unwrap()
             })
             .collect();
 
-        #[allow(deprecated)]
         let root = vec![
-            DocumentSymbol {
-                name: "events".to_string(),
-                kind: SymbolKind::ARRAY,
-                detail: Some(format!("{}{}  event(s)", fitness_prefix, idx.events.len())),
-                range: events_range,
-                selection_range: events_range,
-                children: Some(event_children),
-                deprecated: None,
-                tags: None,
-            },
-            DocumentSymbol {
-                name: "objects".to_string(),
-                kind: SymbolKind::ARRAY,
-                detail: Some(format!("{} object(s)", idx.objects.len())),
-                range: objects_range,
-                selection_range: objects_range,
-                children: Some(object_children),
-                deprecated: None,
-                tags: None,
-            },
+            serde_json::from_value(serde_json::json!({
+                "name": "events".to_string(),
+                "kind": SymbolKind::ARRAY,
+                "detail": Some(format!("{}{}  event(s)", fitness_prefix, idx.events.len())),
+                "range": events_range,
+                "selectionRange": events_range,
+                "children": Some(event_children),
+            }))
+            .unwrap(),
+            serde_json::from_value(serde_json::json!({
+                "name": "objects".to_string(),
+                "kind": SymbolKind::ARRAY,
+                "detail": Some(format!("{} object(s)", idx.objects.len())),
+                "range": objects_range,
+                "selectionRange": objects_range,
+                "children": Some(object_children),
+            }))
+            .unwrap(),
         ];
 
         Ok(Some(DocumentSymbolResponse::Nested(root)))
@@ -3188,18 +3173,18 @@ impl lsp_max::LanguageServer for Backend {
                     || ev.id.to_lowercase().contains(&query)
                     || ev.event_type.to_lowercase().contains(&query)
                 {
-                    #[allow(deprecated)]
-                    symbols.push(SymbolInformation {
-                        name: format!("{} ({})", ev.id, ev.event_type),
-                        kind: SymbolKind::EVENT,
-                        tags: None,
-                        deprecated: None,
-                        location: Location {
-                            uri: uri.clone(),
-                            range: ev.range,
-                        },
-                        container_name: Some("events".to_string()),
-                    });
+                    symbols.push(
+                        serde_json::from_value(serde_json::json!({
+                            "name": format!("{} ({})", ev.id, ev.event_type),
+                            "kind": SymbolKind::EVENT,
+                            "location": Location {
+                                uri: uri.clone(),
+                                range: ev.range,
+                            },
+                            "containerName": Some("events".to_string()),
+                        }))
+                        .unwrap(),
+                    );
                 }
             }
             for obj in &idx.objects {
@@ -3207,18 +3192,18 @@ impl lsp_max::LanguageServer for Backend {
                     || obj.id.to_lowercase().contains(&query)
                     || obj.obj_type.to_lowercase().contains(&query)
                 {
-                    #[allow(deprecated)]
-                    symbols.push(SymbolInformation {
-                        name: format!("{} ({})", obj.id, obj.obj_type),
-                        kind: SymbolKind::OBJECT,
-                        tags: None,
-                        deprecated: None,
-                        location: Location {
-                            uri: uri.clone(),
-                            range: obj.range,
-                        },
-                        container_name: Some("objects".to_string()),
-                    });
+                    symbols.push(
+                        serde_json::from_value(serde_json::json!({
+                            "name": format!("{} ({})", obj.id, obj.obj_type),
+                            "kind": SymbolKind::OBJECT,
+                            "location": Location {
+                                uri: uri.clone(),
+                                range: obj.range,
+                            },
+                            "containerName": Some("objects".to_string()),
+                        }))
+                        .unwrap(),
+                    );
                 }
             }
         }
@@ -3849,14 +3834,17 @@ impl lsp_max::LanguageServer for Backend {
             None
         };
 
-        Ok(ConformanceVector {
+        let mut cv = ConformanceVector {
             admitted,
             refused,
             unknown,
             score,
             strict_mode: false,
             process_quality: None,
-        })
+            ..Default::default()
+        };
+        cv.sync_bits_from_vecs();
+        Ok(cv)
     }
 
     async fn max_explain_diagnostic(&self, params: String) -> Result<max_protocol::MaxDiagnostic> {

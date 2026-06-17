@@ -1,0 +1,16 @@
+{
+  "algorithm": "complexity_metrics",
+  "provenance": {
+    "paper": "Metrics for Process Models: Empirical Foundations of Verification, Error Prediction, and Guidelines for Correctness",
+    "citation": "Mendling, J. (2008). Metrics for Process Models: Empirical Foundations of Verification, Error Prediction, and Guidelines for Correctness. Springer.",
+    "locus": "Chapter 3, complexity metric definitions",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8",
+    "description": "Running example contains 8 unique activities; complexity metrics computed over discovered model with 8 nodes"
+  }
+}

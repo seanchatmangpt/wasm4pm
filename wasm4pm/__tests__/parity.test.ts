@@ -192,7 +192,28 @@ function isValidPetriNet(output: unknown): output is Record<string, unknown> {
 // Discovery functions now return summary handles ({arcs: N, places: N, ...}),
 // not full content. The parity assertions need to be rewritten against the
 // new shape (or a dedicated "expand handle" helper).
-describe.skip('Cross-Algorithm Parity: DFG Variants', () => {
+describe('Cross-Algorithm Parity: DFG Variants', () => {
+  function expandDfg(raw: unknown): unknown {
+    if (typeof raw === 'string') {
+      try {
+        const parsed = JSON.parse(raw);
+        // If it looks like a handle object, expand via export_dfg_to_json
+        if (parsed && typeof parsed === 'object' && 'handle' in parsed) {
+          return JSON.parse(wasmModule!.export_dfg_to_json((parsed as { handle: string }).handle));
+        }
+        return parsed;
+      } catch {
+        return raw;
+      }
+    }
+    // Handle-mode object returned directly
+    if (raw && typeof raw === 'object' && 'handle' in raw) {
+      const json = wasmModule!.export_dfg_to_json((raw as { handle: string }).handle);
+      return JSON.parse(json);
+    }
+    return raw;
+  }
+
   it('should discover compatible activity sets between basic and optimized DFG', () => {
     if (!wasmModule) {
       return;
@@ -202,20 +223,18 @@ describe.skip('Cross-Algorithm Parity: DFG Variants', () => {
 
     try {
       // Discover basic DFG
-      const basicRaw = wasmModule.discover_dfg(logHandle, 'concept:name');
-      const basic = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
+      const basic = expandDfg(wasmModule.discover_dfg(logHandle, 'concept:name'));
 
-      // Discover optimized DFG
-      const optimizedRaw = wasmModule.discover_optimized_dfg(logHandle, 'concept:name');
-      const optimized = typeof optimizedRaw === 'string' ? JSON.parse(optimizedRaw) : optimizedRaw;
+      // Discover optimized DFG — requires fitness_weight and simplicity_weight
+      const optimized = expandDfg(wasmModule.discover_optimized_dfg(logHandle, 'concept:name', 0.5, 0.5));
 
       // Both should be valid DFGs
       expect(isValidDFG(basic)).toBe(true);
       expect(isValidDFG(optimized)).toBe(true);
 
       // Extract activity sets
-      const basicActivities = extractActivities(basic);
-      const optimizedActivities = extractActivities(optimized);
+      const basicActivities = extractActivities(basic as Record<string, unknown>);
+      const optimizedActivities = extractActivities(optimized as Record<string, unknown>);
 
       // Activity sets should be identical (same set of activities)
       expect(basicActivities.size).toBe(optimizedActivities.size);
@@ -244,14 +263,11 @@ describe.skip('Cross-Algorithm Parity: DFG Variants', () => {
     const logHandle = wasmModule.load_eventlog_from_xes(TEST_XES);
 
     try {
-      const basicRaw = wasmModule.discover_dfg(logHandle, 'concept:name');
-      const basic = typeof basicRaw === 'string' ? JSON.parse(basicRaw) : basicRaw;
+      const basic = expandDfg(wasmModule.discover_dfg(logHandle, 'concept:name'));
+      const optimized = expandDfg(wasmModule.discover_optimized_dfg(logHandle, 'concept:name', 0.5, 0.5));
 
-      const optimizedRaw = wasmModule.discover_optimized_dfg(logHandle, 'concept:name');
-      const optimized = typeof optimizedRaw === 'string' ? JSON.parse(optimizedRaw) : optimizedRaw;
-
-      const basicEdges = extractEdges(basic);
-      const optimizedEdges = extractEdges(optimized);
+      const basicEdges = extractEdges(basic as Record<string, unknown>);
+      const optimizedEdges = extractEdges(optimized as Record<string, unknown>);
 
       // Edge sets should be compatible (same direct follows)
       expect(basicEdges.length).toBeGreaterThan(0);

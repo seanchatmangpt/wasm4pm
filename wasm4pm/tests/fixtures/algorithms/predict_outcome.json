@@ -1,0 +1,16 @@
+{
+  "algorithm": "predict_outcome",
+  "provenance": {
+    "paper": "Outcome-Oriented Predictive Process Monitoring: Review and Benchmark",
+    "citation": "Teinemaa, I., Dumas, M., La Rosa, M., Maggi, F.M. (2019). Outcome-Oriented Predictive Process Monitoring: Review and Benchmark. ACM TKDD 13(2).",
+    "locus": "Section 2, outcome prediction definition",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "outcomes=2",
+    "description": "Running example has 2 distinct case outcomes: reject request and pay compensation"
+  }
+}

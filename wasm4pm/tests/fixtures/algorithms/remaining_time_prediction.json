@@ -1,0 +1,12 @@
+{
+  "algorithm": "remaining_time_prediction",
+  "provenance": {
+    "paper": "van Dongen, Crooy & van der Aalst (2008) Cycle Time Prediction: When Will This Case Be Finalized? — Proc. CoopIS; remaining time predicted from prefix-bucket regression model",
+    "locus": "§3 — prefix-based remaining time prediction model",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "model_built",
+    "rationale": "Remaining time model must be successfully built from the running-example log (returns a handle string)."
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "algorithm": "automl_classify",
+  "provenance": {
+    "paper": "Efficient and Robust Automated Machine Learning",
+    "citation": "Feurer, M., Klein, A., Eggensperger, K., Springenberg, J.T., Blum, M., Hutter, F. (2015). Efficient and Robust Automated Machine Learning. NeurIPS 2015.",
+    "locus": "Section 3, AutoML pipeline",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes",
+    "labels": ["reject request", "pay compensation"]
+  },
+  "expected": {
+    "value": "accuracy_nonneg",
+    "description": "AutoML classification accuracy is non-negative; exact value depends on features extracted from running example traces"
+  }
+}

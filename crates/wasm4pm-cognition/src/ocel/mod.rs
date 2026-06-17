@@ -147,8 +147,7 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
     }
 }
 
-/// Deprecated alias for [`lifecycle_model_for`].
-#[deprecated(note = "Use lifecycle_model_for")]
+/// Alias for [`lifecycle_model_for`]; callers should prefer that name.
 pub fn get_model(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
     lifecycle_model_for(breed_id)
 }

@@ -1,0 +1,16 @@
+{
+  "algorithm": "inductive_miner",
+  "provenance": {
+    "paper": "Discovering Block-Structured Process Models from Event Logs Containing Infrequent Behaviour",
+    "citation": "Leemans, S.J.J., Fahland, D., van der Aalst, W.M.P. (2013). Discovering Block-Structured Process Models from Event Logs Containing Infrequent Behaviour. BPM 2013 Workshops. Lecture Notes in Business Information Processing 171.",
+    "locus": "Section 4 — IMi algorithm; process tree output on running-example log (Figure 5)",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "->( 'register request', *( ->( +( 'check ticket', X( 'examine thoroughly', 'examine casually' ) ), 'decide' ), 'reinitiate request' ), X( 'reject request', 'pay compensation' ) )",
+    "description": "Inductive Miner process tree on running-example: sequence of register request, a loop body with parallel check/examine and decide, reinitiate request in loop redo, and exclusive choice at end"
+  }
+}

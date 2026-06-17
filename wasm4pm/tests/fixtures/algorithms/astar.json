@@ -1,0 +1,12 @@
+{
+  "algorithm": "astar",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 10. — A* heuristic search for DFG discovery",
+    "locus": "Chapter 10 — A* as a best-first search-based process discovery heuristic",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "nodes_nonneg",
+    "rationale": "A* discovery on the running-example log produces a DFG with non-negative node count"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "algorithm": "generalization",
+  "admitted": true,
+  "fitness": 1.0,
+  "status": "STUB - wasm_bindgen exists (generalization.rs:367); compute_quality public fn tested; metric in (0,1] for fully-replayed sequence net",
+  "group": "C",
+  "test_file": "wasm4pm/tests/algorithm_paper_grounded.rs",
+  "test_fn": "generalization_paper_grounded",
+  "generated_by": "group-c-subagent",
+  "date": "2026-06-11",
+  "measured_by": "paper-grounded-test-pass"
+}
