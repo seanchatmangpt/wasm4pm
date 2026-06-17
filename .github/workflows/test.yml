@@ -177,7 +177,7 @@ jobs:
       # Upload coverage to Codecov
       - name: Upload coverage to Codecov
         if: runner.os == 'Linux' && matrix.node-version == '20'
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v7
         with:
           files: ./packages/*/coverage/coverage-final.json,./wasm4pm/coverage/coverage-final.json
           flags: unittests
