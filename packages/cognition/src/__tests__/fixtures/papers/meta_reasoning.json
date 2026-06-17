@@ -1,0 +1,24 @@
+{
+  "paper": {
+    "authors": "Michael T. Cox and Anita Raja (eds.)",
+    "title": "Metareasoning: Thinking about Thinking",
+    "venue": "MIT Press",
+    "year": 2011,
+    "section": "Ch. 1 — the meta-level monitors object-level reasoners, detects conflicts among their conclusions, and arbitrates control",
+    "claim": "Given two object-level reasoners producing contradictory conclusions on the same decision key, the meta-level must detect the conflict (naming both reasoners) and resolve via confidence-weighted arbitration."
+  },
+  "input": {
+    "intent": "arbitrate mycin vs prolog",
+    "facts": [
+      { "key": "breed:mycin:conclusion", "value": "therapy=gentamicin" },
+      { "key": "breed:mycin:confidence", "value": "0.8" },
+      { "key": "breed:prolog:conclusion", "value": "therapy=none" },
+      { "key": "breed:prolog:confidence", "value": "0.6" }
+    ]
+  },
+  "expected": {
+    "conflicts": "1",
+    "decision_therapy": "gentamicin",
+    "selected": "therapy=gentamicin"
+  }
+}

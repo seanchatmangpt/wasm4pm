@@ -323,3 +323,168 @@ fn all_admitted_breeds_ocel_conforming() {
         }
     }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// P4 tier OCEL conformance: measured fitness must be exactly 1.0 per breed,
+// and the full dispatch path (which embeds the conformance gate) must pass.
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn p4c_fact(key: &str, value: &str) -> Fact {
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
+}
+
+fn p4c_input(facts: Vec<Fact>) -> BreedInput {
+    BreedInput {
+        intent: "conformance".into(),
+        candidates: vec![],
+        facts,
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
+fn assert_p4_fitness_one(breed: &str, input: &BreedInput) {
+    use wasm4pm_cognition::breeds::dispatch_breed;
+    use wasm4pm_cognition::ocel::lifecycle_model_for;
+
+    // Full gated path (refuses on non-conformance).
+    let out = dispatch_breed(breed, input)
+        .unwrap_or_else(|e| panic!("{} must pass the OCEL gate: {}", breed, e));
+    assert!(out.ocel_log.is_some(), "{} must attach an OCEL log", breed);
+
+    // Independent fitness measurement.
+    let log = derive_ocel(breed, "fitness-check-run", &out.inference_trace);
+    let model = lifecycle_model_for(breed).expect("lifecycle model registered");
+    let result = validate_ocel_alignment(&log, model);
+    assert_eq!(result.fitness, 1.0, "{} fitness: {:?}", breed, result.refusals);
+    assert!(result.is_conforming);
+
+    // Negative injection (van der Aalst constitution): a reversed trace must
+    // NOT conform when the model has ordered phases.
+    if out.inference_trace.len() > 2 {
+        let mut shuffled = out.inference_trace.clone();
+        shuffled.reverse();
+        for (i, s) in shuffled.iter_mut().enumerate() {
+            s.step = i;
+        }
+        let bad_log = derive_ocel(breed, "shuffled-run", &shuffled);
+        let bad = validate_ocel_alignment(&bad_log, model);
+        assert!(
+            !bad.is_conforming,
+            "{}: reversed trace must not conform",
+            breed
+        );
+    }
+}
+
+#[test]
+fn tableaux_ocel_fitness_one() {
+    assert_p4_fitness_one(
+        "tableaux",
+        &p4c_input(vec![p4c_fact("tableaux:formula", "((a -> b) -> a) -> a")]),
+    );
+}
+
+#[test]
+fn construction_grammar_ocel_fitness_one() {
+    assert_p4_fitness_one(
+        "construction_grammar",
+        &p4c_input(vec![
+            p4c_fact("cxg:utterance", "he sneezed the napkin off the table"),
+            p4c_fact("lex:he:pos", "pron"),
+            p4c_fact("lex:sneezed:pos", "verb"),
+            p4c_fact("lex:sneezed:valence", "intransitive"),
+            p4c_fact("lex:the:pos", "det"),
+            p4c_fact("lex:napkin:pos", "noun"),
+            p4c_fact("lex:off:pos", "prep"),
+            p4c_fact("lex:table:pos", "noun"),
+        ]),
+    );
+}
+
+#[test]
+fn markov_logic_ocel_fitness_one() {
+    assert_p4_fitness_one(
+        "markov_logic",
+        &p4c_input(vec![
+            p4c_fact("mln:clause:c1", "1.5|!smokes_anna,cancer_anna"),
+            p4c_fact("mln:clause:c2", "1.1|!friends_ab,!smokes_anna,smokes_bob"),
+            p4c_fact("evidence:smokes_anna", "true"),
+            p4c_fact("evidence:friends_ab", "true"),
+        ]),
+    );
+}
+
+#[test]
+fn pomdp_ocel_fitness_one() {
+    let mut facts = vec![
+        p4c_fact("pomdp:states", "tiger-left,tiger-right"),
+        p4c_fact("pomdp:actions", "listen,open-left,open-right"),
+        p4c_fact("pomdp:observations", "hear-left,hear-right"),
+        p4c_fact("pomdp:gamma", "0.95"),
+        p4c_fact("pomdp:horizon", "3"),
+        p4c_fact("pomdp:b0:tiger-left", "0.5"),
+        p4c_fact("pomdp:b0:tiger-right", "0.5"),
+        p4c_fact("pomdp:o:listen:tiger-left:hear-left", "0.85"),
+        p4c_fact("pomdp:o:listen:tiger-left:hear-right", "0.15"),
+        p4c_fact("pomdp:o:listen:tiger-right:hear-left", "0.15"),
+        p4c_fact("pomdp:o:listen:tiger-right:hear-right", "0.85"),
+        p4c_fact("pomdp:step:0", "listen|hear-left"),
+    ];
+    for s in ["tiger-left", "tiger-right"] {
+        for sp in ["tiger-left", "tiger-right"] {
+            facts.push(p4c_fact(
+                &format!("pomdp:t:listen:{}:{}", s, sp),
+                if s == sp { "1.0" } else { "0.0" },
+            ));
+        }
+        facts.push(p4c_fact(&format!("pomdp:r:listen:{}", s), "-1.0"));
+    }
+    for a in ["open-left", "open-right"] {
+        for s in ["tiger-left", "tiger-right"] {
+            for sp in ["tiger-left", "tiger-right"] {
+                facts.push(p4c_fact(&format!("pomdp:t:{}:{}:{}", a, s, sp), "0.5"));
+            }
+            for ob in ["hear-left", "hear-right"] {
+                facts.push(p4c_fact(&format!("pomdp:o:{}:{}:{}", a, s, ob), "0.5"));
+            }
+        }
+    }
+    facts.push(p4c_fact("pomdp:r:open-left:tiger-left", "-100.0"));
+    facts.push(p4c_fact("pomdp:r:open-left:tiger-right", "10.0"));
+    facts.push(p4c_fact("pomdp:r:open-right:tiger-left", "10.0"));
+    facts.push(p4c_fact("pomdp:r:open-right:tiger-right", "-100.0"));
+    assert_p4_fitness_one("pomdp", &p4c_input(facts));
+}
+
+#[test]
+fn contingent_plan_ocel_fitness_one() {
+    assert_p4_fitness_one(
+        "contingent_plan",
+        &p4c_input(vec![
+            p4c_fact("cp:unknown", "dirt"),
+            p4c_fact("cp:goal:dirt", "false"),
+            p4c_fact("cp:act:suck:pre", "dirt"),
+            p4c_fact("cp:act:suck:del", "dirt"),
+            p4c_fact("cp:sense:check-dirt", "dirt"),
+        ]),
+    );
+}
+
+#[test]
+fn meta_reasoning_ocel_fitness_one() {
+    assert_p4_fitness_one(
+        "meta_reasoning",
+        &p4c_input(vec![
+            p4c_fact("breed:mycin:conclusion", "therapy=gentamicin"),
+            p4c_fact("breed:mycin:confidence", "0.8"),
+            p4c_fact("breed:prolog:conclusion", "therapy=none"),
+            p4c_fact("breed:prolog:confidence", "0.6"),
+        ]),
+    );
+}
