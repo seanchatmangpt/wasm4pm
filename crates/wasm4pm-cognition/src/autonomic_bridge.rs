@@ -1,10 +1,10 @@
 //! Autonomic bridge: connects RL health/SPC/circuit state to breed selection.
 //!
-//! The cognition registry holds 56 breeds (9 BreedId-implemented + 47
-//! string-dispatch stubs). This module maps the RL orchestrator's health,
-//! SPC, and circuit-breaker state onto a [`DegradationMode`] and the set of
-//! breeds that should be dispatched, and computes RL reward signals from
-//! breed outputs (including FM-5 fraud detection on empty inference traces).
+//! The cognition registry holds 9 real breed implementations (each a dispatched
+//! algorithm, no stubs). This module maps the RL orchestrator's health, SPC, and
+//! circuit-breaker state onto a [`DegradationMode`] and the set of breeds that
+//! should be dispatched, and computes RL reward signals from breed outputs
+//! (including FM-5 fraud detection on empty inference traces).
 
 use crate::breeds::{BreedId, BreedInput, BreedOutput, Fact};
 use crate::degradation::{
@@ -130,9 +130,9 @@ pub struct DispatchPriority {
 
 /// Prioritize breeds based on autonomic context.
 ///
-/// The registry holds 56 breeds (9 BreedId-implemented + 47 string-dispatch
-/// stubs). Health, SPC, and circuit state are mapped onto a degradation mode
-/// and the corresponding active breed set:
+/// The registry holds 9 real breed implementations. Health, SPC, and circuit
+/// state are mapped onto a degradation mode and the corresponding active breed
+/// set:
 /// - circuit OPEN → Emergency (eliza only)
 /// - otherwise, health (bumped by SPC ≥ 2) selects the mode
 pub fn prioritize_breeds(ctx: &AutonomicContext) -> DispatchPriority {
@@ -182,8 +182,7 @@ pub fn aggregate_rewards(signals: &[BreedRewardSignal]) -> f32 {
 
 /// Convert a breed string name to a [`BreedId`] variant (case-insensitive).
 ///
-/// Only the 9 BreedId-implemented breeds are recognized; the 47 string-dispatch
-/// stubs in the registry have no enum variant and return `None`.
+/// All 9 implemented breeds are recognized; any other name returns `None`.
 pub fn breed_id_from_str(s: &str) -> Option<BreedId> {
     match s.to_lowercase().as_str() {
         "eliza" => Some(BreedId::Eliza),

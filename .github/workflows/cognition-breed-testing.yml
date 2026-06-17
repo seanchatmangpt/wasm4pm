@@ -63,4 +63,4 @@ jobs:
       - name: Check CHANGELOG.md exists
         run: test -f crates/wasm4pm-cognition/CHANGELOG.md
       - name: Verify breed registry documentation
-        run: grep -q "56 breeds" crates/wasm4pm-cognition/BREED_COVERAGE.md
+        run: grep -q "9 (all real implementations" crates/wasm4pm-cognition/BREED_COVERAGE.md

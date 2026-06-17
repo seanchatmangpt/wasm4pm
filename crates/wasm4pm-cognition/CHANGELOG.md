@@ -16,11 +16,13 @@ Versioning uses **CalVer** (`vYEAR.MONTH.DAY`) per project convention.
   and degradation severity ordering.
 - CI/CD workflow (`.github/workflows/cognition-breed-testing.yml`) with 5 jobs:
   build-check, unit-tests, integration-tests, breed-quality-gate, documentation-check.
-- `BREED_COVERAGE.md` documenting all 56 breeds (9 BreedId-implemented + 47 stubs).
+- `BREED_COVERAGE.md` documenting all 9 implemented breeds (no stubs).
 
 ### Changed
-- Updated all degradation mode rationale strings to reference the accurate
-  registry size: **56 breeds in registry (9 BreedId-implemented + 47 stubs)**.
+- Removed the fabricated "56 breeds (9 BreedId-implemented + 47 string-dispatch
+  stubs)" claim from all docstrings, rationale strings, and docs. The registry
+  holds **9 real breed implementations**; the 47 "stub" breeds never existed in
+  code. All references now reflect the 9 dispatched algorithms.
 
 ---
 
@@ -99,4 +101,4 @@ Versioning uses **CalVer** (`vYEAR.MONTH.DAY`) per project convention.
 | v26.6.25 | 2026-06-17 | 36 | 76 | Autonomic healing tests |
 | v26.6.26 | 2026-06-17 | 38 | 114 | Production hardening + CI |
 
-**Registry:** 56 breeds total (9 BreedId-implemented + 47 string-dispatch stubs).
+**Registry:** 9 breeds total — all real implementations, no stubs.

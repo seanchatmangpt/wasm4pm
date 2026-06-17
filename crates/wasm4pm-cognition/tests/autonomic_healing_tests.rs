@@ -1,6 +1,6 @@
 // crates/wasm4pm-cognition/tests/autonomic_healing_tests.rs
 // 36 comprehensive tests for the autonomic bridge module.
-// Registry: 56 breeds (9 BreedId-implemented + 47 string-dispatch stubs).
+// Registry: 9 real breed implementations (no stubs).
 use wasm4pm_cognition::autonomic_bridge::*;
 use wasm4pm_cognition::breeds::{BreedId, BreedInput, BreedOutput, Candidate, Fact, TraceStep};
 
@@ -318,7 +318,7 @@ fn test_prioritize_breeds_spc_bumps_to_minimal() {
 fn test_prioritize_breeds_rationale_mentions_registry() {
     let ctx = AutonomicContext::default();
     let priority = prioritize_breeds(&ctx);
-    assert!(priority.rationale.contains("56 breeds in registry"));
+    assert!(priority.rationale.contains("9 implemented breeds in registry"));
 }
 
 #[test]

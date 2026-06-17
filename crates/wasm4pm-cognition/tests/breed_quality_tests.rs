@@ -1,6 +1,6 @@
 //! Breed output quality validation tests
 //! Validates BreedOutput structure, FM-5 fraud detection, trace monotonicity.
-//! Tests 56 breeds (9 BreedId-implemented + 47 string-dispatch stubs) output compliance.
+//! Tests all 9 real breed implementations for output compliance.
 
 use wasm4pm_cognition::breeds::{BreedId, BreedInput, BreedOutput, Candidate, Fact, TraceStep};
 

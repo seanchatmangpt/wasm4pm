@@ -278,9 +278,7 @@ fn test_mode_rationale_full() {
     let trigger = DegradationTrigger::healthy();
     let rationale = mode_rationale(&trigger, DegradationMode::Full);
     assert!(rationale.contains("Full"));
-    assert!(rationale.contains("56 breeds in registry"));
-    assert!(rationale.contains("9 BreedId-implemented"));
-    assert!(rationale.contains("47 stubs"));
+    assert!(rationale.contains("9 implemented breeds in registry"));
 }
 
 #[test]
@@ -294,7 +292,7 @@ fn test_mode_rationale_reduced() {
     let rationale = mode_rationale(&trigger, DegradationMode::Reduced);
     assert!(rationale.contains("Reduced"));
     assert!(rationale.contains("5 breeds"));
-    assert!(rationale.contains("56 breeds in registry"));
+    assert!(rationale.contains("9 implemented breeds in registry"));
 }
 
 #[test]
@@ -309,7 +307,7 @@ fn test_mode_rationale_minimal() {
     assert!(rationale.contains("Minimal"));
     assert!(rationale.contains("3 breeds"));
     assert!(rationale.contains("memory pressure"));
-    assert!(rationale.contains("56 breeds in registry"));
+    assert!(rationale.contains("9 implemented breeds in registry"));
 }
 
 #[test]
@@ -324,7 +322,7 @@ fn test_mode_rationale_emergency() {
     assert!(rationale.contains("Emergency"));
     assert!(rationale.contains("eliza only"));
     assert!(rationale.contains("health=4"));
-    assert!(rationale.contains("56 breeds in registry"));
+    assert!(rationale.contains("9 implemented breeds in registry"));
 }
 
 #[test]

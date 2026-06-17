@@ -1,13 +1,14 @@
 //! Graceful degradation modes for the cognition layer.
-//! Full mode supports 56 breeds (9 BreedId-implemented + 47 string-dispatch stubs).
+//! Full mode supports all 9 implemented breeds.
 
 /// Operational mode determining which breeds are active.
 ///
-/// The registry holds 56 breeds total (9 BreedId-implemented + 47 string-dispatch stubs).
-/// Degradation reduces the active set when resources are constrained or health is critical.
+/// The registry holds 9 real breed implementations — each a dispatched algorithm
+/// (no stubs). Degradation reduces the active set when resources are constrained
+/// or health is critical.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum DegradationMode {
-    /// All 9 BreedId-implemented breeds active (56 total in registry including 47 stubs).
+    /// All 9 implemented breeds active.
     Full,
     /// 5 breeds active (reduced resource usage).
     Reduced,
@@ -85,7 +86,7 @@ impl Default for DegradationTrigger {
 /// - `health_level >= 3` → Emergency (single breed)
 /// - `memory_pressure || health_level == 2 || error_rate >= 0.6` → Minimal (3 breeds)
 /// - `response_time_exceeded || error_rate >= 0.3 || health_level == 1` → Reduced (5 breeds)
-/// - otherwise → Full (all 9 BreedId breeds active)
+/// - otherwise → Full (all 9 breeds active)
 pub fn select_degradation_mode(trigger: &DegradationTrigger) -> DegradationMode {
     let t = trigger.clamped();
 
@@ -106,8 +107,8 @@ pub fn select_degradation_mode(trigger: &DegradationTrigger) -> DegradationMode 
 
 /// Return the ordered list of breed names active in a given mode.
 ///
-/// The registry holds 56 breeds; only the 9 BreedId-implemented ones are listed here.
-/// String-dispatch stubs (47) are available in Full mode but not surfaced separately.
+/// Full mode lists all 9 implemented breeds; tighter modes list the subset that
+/// stays active under resource or health pressure.
 pub fn breeds_for_mode(mode: DegradationMode) -> Vec<String> {
     match mode {
         DegradationMode::Full => vec![
@@ -149,9 +150,9 @@ pub fn breed_active_in_mode(breed: &str, mode: DegradationMode) -> bool {
 
 /// Human-readable rationale string for the selected mode.
 ///
-/// All rationale strings reference the full 56-breed registry count.
+/// All rationale strings reference the registry's 9 implemented breeds.
 pub fn mode_rationale(trigger: &DegradationTrigger, mode: DegradationMode) -> String {
-    let registry_note = "56 breeds in registry: 9 BreedId-implemented + 47 stubs";
+    let registry_note = "9 implemented breeds in registry";
     match mode {
         DegradationMode::Full => format!(
             "Full: system nominal ({registry_note})"
