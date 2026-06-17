@@ -3,16 +3,13 @@ use crate::breeds::{
     allen_temporal::AllenTemporal, analogy_sme::AnalogySme, asp::Asp,
     autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
     autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr, clp::Clp, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
-    production_rules::Mycin, prolog::Prolog, soar::Soar, strips::Strips,
-    ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, default_logic::DefaultLogic,
-    dempster_shafer::DempsterShafer, frames_inheritance::FramesInheritance,
-    htn_planning::HtnPlanning,
-    asp::Asp, description_logic::DescriptionLogic,
-    abductive_lp::AbductiveLp, abductive_ibe::AbductiveIbe,
-    partial_order_plan::PartialOrderPlan, event_calculus::EventCalculus,
-    mdp::Mdp, version_space::VersionSpace, qualitative_reason::QualitativeReason,
+    bayesian_network::BayesianNetwork, cbr::Cbr, clp::Clp, csp_ac3::CspAc3,
+    default_logic::DefaultLogic, dempster_shafer::DempsterShafer, dendral::Dendral,
+    description_logic::DescriptionLogic, ebl::Ebl, event_calculus::EventCalculus,
+    frame::Eliza, frames_inheritance::FramesInheritance, fuzzy_logic::FuzzyLogic, gps::Gps,
+    hearsay::Hearsay, htn_planning::HtnPlanning, ltl_monitor::LtlMonitor, mdp::Mdp,
+    partial_order_plan::PartialOrderPlan, production_rules::Mycin, prolog::Prolog,
+    qualitative_reason::QualitativeReason, soar::Soar, strips::Strips, version_space::VersionSpace,
     BreedInput, BreedOutput, CognitionBreed,
 };
 
@@ -181,4 +178,11 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
         "ocpm_route_discoverer" => Err("unsupported breed: ocpm_route_discoverer".to_string()),
         other => Err(format!("unknown breed: {}", other)),
     }
+}
+
+/// Dispatch to the correct breed using a `BreedId` enum value.
+///
+/// Converts the `BreedId` to its string representation and calls `dispatch_breed`.
+pub fn dispatch_breed_id(breed_id: crate::breeds::BreedId, input: &BreedInput) -> Result<BreedOutput, String> {
+    dispatch_breed(&breed_id.to_string(), input)
 }

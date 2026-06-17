@@ -29,8 +29,6 @@ pub mod default_logic;
 pub mod clp;
 /// Module for csp_ac3
 pub mod csp_ac3;
-/// Module for clp
-pub mod clp;
 /// Module for dendral
 pub mod dendral;
 /// Module for frame
@@ -56,12 +54,6 @@ pub mod bayesian_network;
 pub mod dempster_shafer;
 /// Module for frames_inheritance
 pub mod frames_inheritance;
-/// Module for asp
-pub mod asp;
-/// Module for description_logic
-pub mod description_logic;
-/// Module for abductive_lp
-pub mod abductive_lp;
 /// Module for abductive_ibe
 pub mod abductive_ibe;
 /// Module for partial_order_plan
@@ -76,13 +68,6 @@ pub mod version_space;
 pub mod qualitative_reason;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
-/// Shared combinator-core support library (parsers, solvers, fixpoint engines).
-/// Abductive IBE module.
-pub mod abductive_ibe;
-/// Event Calculus module.
-pub mod event_calculus;
-/// Partial Order Plan module.
-pub mod partial_order_plan;
 
 pub mod support;
 
@@ -325,40 +310,71 @@ impl fmt::Display for BreedId {
             BreedId::Triz => write!(f, "triz"),
             BreedId::OcpmRouteDiscoverer => write!(f, "ocpm_route_discoverer"),
         }
+    }
 
-        impl fmt::Display for BreedId {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                match self {
-                    $( BreedId::$variant => f.write_str($id), )+
-                }
-            }
+    /// Parse a breed id string into its enum variant. Returns None for
+    /// unknown or not-yet-implemented ids (e.g. "ocpm_route_discoverer"
+    /// is registered but unimplemented).
+    pub fn from_str_id(s: &str) -> Option<Self> {
+        match s {
+            "eliza" => Some(Self::Eliza),
+            "cbr" => Some(Self::Cbr),
+            "dendral" => Some(Self::Dendral),
+            "strips" => Some(Self::Strips),
+            "prolog" => Some(Self::Prolog),
+            "mycin" => Some(Self::Mycin),
+            "gps" => Some(Self::Gps),
+            "soar" => Some(Self::Soar),
+            "hearsay" => Some(Self::Hearsay),
+            "autoinstinct_learning" => Some(Self::AutoinstinctLearning),
+            "autoinstinct_semantics" => Some(Self::AutoinstinctSemantics),
+            "autoinstinct_neurosis" => Some(Self::AutoinstinctNeurosis),
+            "autoinstinct_vision" => Some(Self::AutoinstinctVision),
+            "bayesian_network" => Some(Self::BayesianNetwork),
+            "fuzzy_logic" => Some(Self::FuzzyLogic),
+            "dempster_shafer" => Some(Self::DempsterShafer),
+            "abductive_lp" => Some(Self::AbductiveLp),
+            "ilp" => Some(Self::Ilp),
+            "allen_temporal" => Some(Self::AllenTemporal),
+            "description_logic" => Some(Self::DescriptionLogic),
+            "csp_ac3" => Some(Self::CspAc3),
+            "analogy_sme" => Some(Self::AnalogySme),
+            "ltl_monitor" => Some(Self::LtlMonitor),
+            "default_logic" => Some(Self::DefaultLogic),
+            "htn_planning" => Some(Self::HtnPlanning),
+            "frames_inheritance" => Some(Self::FramesInheritance),
+            "ebl" => Some(Self::Ebl),
+            "asp" => Some(Self::Asp),
+            "abductive_ibe" => Some(Self::AbductiveIbe),
+            "partial_order_plan" => Some(Self::PartialOrderPlan),
+            "event_calculus" => Some(Self::EventCalculus),
+            "mdp" => Some(Self::Mdp),
+            "version_space" => Some(Self::VersionSpace),
+            "belief_merging" => Some(Self::BeliefMerging),
+            "qualitative_reason" => Some(Self::QualitativeReason),
+            "script_sam" => Some(Self::ScriptSam),
+            "clp" => Some(Self::Clp),
+            "situation_calculus" => Some(Self::SituationCalculus),
+            "circumscription" => Some(Self::Circumscription),
+            "act_r" => Some(Self::ActR),
+            "problog" => Some(Self::Problog),
+            "sat_cdcl" => Some(Self::SatCdcl),
+            "episodic_memory" => Some(Self::EpisodicMemory),
+            "rl_symbolic" => Some(Self::RlSymbolic),
+            "ctl_check" => Some(Self::CtlCheck),
+            "naive_physics" => Some(Self::NaivePhysics),
+            "pomdp" => Some(Self::Pomdp),
+            "markov_logic" => Some(Self::MarkovLogic),
+            "meta_reasoning" => Some(Self::MetaReasoning),
+            "construction_grammar" => Some(Self::ConstructionGrammar),
+            "contingent_plan" => Some(Self::ContingentPlan),
+            "tableaux" => Some(Self::Tableaux),
+            "morphological" => Some(Self::Morphological),
+            "triz" => Some(Self::Triz),
+            "ocpm_route_discoverer" => Some(Self::OcpmRouteDiscoverer),
+            _ => None,
         }
-
-        impl BreedId {
-            /// Parse a breed id string into its enum variant. Returns None for
-            /// unknown or not-yet-implemented ids (e.g. "ocpm_route_discoverer"
-            /// is registered but unimplemented).
-            pub fn from_str_id(s: &str) -> Option<Self> {
-                match s {
-                    $( $id => Some(Self::$variant), )+
-                    _ => None,
-                }
-            }
-
-            /// Number of registered (dispatchable) breeds — may exceed
-            /// `ALL.len()` while a breed awaits registry admission.
-            pub const REGISTERED_COUNT: usize = [$( $id ),+].len();
-        }
-
-        /// Static instance table: the single routing surface both
-        /// `dispatch_breed_id` and `dispatch_breed_test_id` consume.
-        /// Exhaustiveness is compiler-enforced by the match over `BreedId`.
-        pub fn breed_instance(id: BreedId) -> &'static dyn CognitionBreed {
-            match id {
-                $( BreedId::$variant => &$path, )+
-            }
-        }
-    };
+    }
 }
 
 include!("registration.rs");
