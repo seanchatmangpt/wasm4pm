@@ -159,7 +159,7 @@ pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutpu
         "belief_merging" => Err("unsupported breed: belief_merging".to_string()),
         "qualitative_reason" => Err("unsupported breed: qualitative_reason".to_string()),
         "script_sam" => Err("unsupported breed: script_sam".to_string()),
-        "clp" => Err("unsupported breed: clp".to_string()),
+        "clp" => run_breed(&Clp, input),
         "situation_calculus" => Err("unsupported breed: situation_calculus".to_string()),
         "circumscription" => Err("unsupported breed: circumscription".to_string()),
         "act_r" => Err("unsupported breed: act_r".to_string()),

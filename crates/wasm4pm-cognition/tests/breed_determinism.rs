@@ -4,6 +4,7 @@
 //! asserts serialized output is identical. Also validates order-independence
 //! for MYCIN and Hearsay (reversed fact order produces same `selected`).
 
+use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
     dispatch_breed_test, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
@@ -948,4 +949,14 @@ fn meta_reasoning_deterministic() {
             p4_fact("breed:prolog:confidence", "0.6"),
         ]),
     );
+}
+
+#[test]
+fn test_clp_determinism() {
+    let input: BreedInput = serde_json::from_str(include_str!("fixtures/papers/clp.json")).unwrap();
+    let breed = wasm4pm_cognition::breeds::clp::Clp;
+    let out1 = breed.run(&input).unwrap();
+    let out2 = breed.run(&input).unwrap();
+    assert_eq!(out1.inference_trace, out2.inference_trace);
+    assert_eq!(out1.facts, out2.facts);
 }

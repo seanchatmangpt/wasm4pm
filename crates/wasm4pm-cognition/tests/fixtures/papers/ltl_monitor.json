@@ -3,7 +3,7 @@
   "provenance": {
     "paper": "Havelund-2001-LTL-monitoring.pdf",
     "citation": "K. Havelund, G. Rosu (2001). Monitoring Programs using LTL. Electronic Notes in Theoretical Computer Science, Vol. 55, No. 2.",
-    "locus": "§3 Illustrative monitoring example",
+    "locus": "\u00a73 Illustrative monitoring example",
     "extraction": "grounded"
   },
   "input": {
@@ -17,7 +17,10 @@
         "architecture": "",
         "outcome_score": 1.0,
         "facts": [
-          {"key": "req", "value": "true"}
+          {
+            "key": "req",
+            "value": "true"
+          }
         ]
       },
       {
@@ -33,7 +36,10 @@
         "architecture": "",
         "outcome_score": 1.0,
         "facts": [
-          {"key": "res", "value": "true"}
+          {
+            "key": "res",
+            "value": "true"
+          }
         ]
       }
     ],

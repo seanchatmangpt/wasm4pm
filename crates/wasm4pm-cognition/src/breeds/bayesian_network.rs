@@ -50,7 +50,7 @@ impl CognitionBreed for BayesianNetwork {
         let mut step_count = 0;
         
         let mut cpts = Vec::new();
-        let mut evidence = HashMap::new();
+        let mut evidence = std::collections::BTreeMap::new();
         let mut query = None;
         
         for goal in &input.goals {

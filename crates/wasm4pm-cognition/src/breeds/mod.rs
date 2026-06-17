@@ -25,6 +25,8 @@ pub mod default_logic;
 pub mod clp;
 /// Module for csp_ac3
 pub mod csp_ac3;
+/// Module for clp
+pub mod clp;
 /// Module for dendral
 pub mod dendral;
 /// Module for frame
