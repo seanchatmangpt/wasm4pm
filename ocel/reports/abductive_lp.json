@@ -21,8 +21,10 @@
     "coverage_note": "All 3 declared L1 steps appear in accepted trace corpus. Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
   },
   "l0_fitness": 1.0,
-  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate.",
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch\u2192execute\u2192verify\u2192commit) enforced structurally by the BVC admission gate.",
   "status": "ADMITTED",
   "admitted": true,
-  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "tests/ocel_conformance.rs (cargo test -p wasm4pm-cognition, fitness measured by validate_ocel_alignment replay)",
+  "measured_on": "2026-06-10"
 }

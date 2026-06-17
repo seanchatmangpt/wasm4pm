@@ -193,3 +193,7 @@ Every feature follows Red-Green-Refactor:
 3. **REFACTOR**: Clean code (no behavior change)
 
 See `.claude/rules/_core/absolute.md` (doctrine + Andon rules); verified audit status in `docs/audit-history.md`.
+
+## Cognition Breeds (Full Periodic Table, v26.6.10)
+
+52 breeds are PARTIAL_ALIVE in `crates/wasm4pm-cognition/breeds/registry.json` (13 original + 39 periodic-table symbolic breeds). Per-breed gates: refusal test (`tests/oracle_negative.rs`), hidden adversary oracles (`tests/oracle_hidden.rs`, fresh names enforced absent from production by `tests/registry_admission.rs`), paper-grounded fixture with provenance (`tests/paper_grounded.rs`), bit-exact determinism (`tests/breed_determinism.rs`), OCEL lifecycle fitness 1.0 (`tests/ocel_conformance.rs`, incl. shuffled-trace negative injection), and criterion latency (`benches/breed_latency.rs`). The registry ratchet (`tests/registry_admission.rs`) makes PARTIAL_ALIVE earned, not asserted.

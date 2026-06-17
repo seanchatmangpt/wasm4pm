@@ -7,14 +7,36 @@
   "fitness": 1.0,
   "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay) in tests/ocel_conformance.rs::p2_conformance::p2_fitness_is_one_for_every_breed on the McAllester-Rosenblitt 1991 Sussman-anomaly fixture. Conformance gate enforced in breeds::dispatch::run_breed().",
   "trace_coverage": {
-    "declared_steps": ["init-plan", "open-condition", "add-link", "add-step", "detect-threat", "promote", "demote", "backtrack", "plan-complete"],
-    "observed_in_traces": ["init-plan", "open-condition", "add-link", "add-step", "detect-threat", "promote", "demote", "backtrack", "plan-complete"],
+    "declared_steps": [
+      "init-plan",
+      "open-condition",
+      "add-link",
+      "add-step",
+      "detect-threat",
+      "promote",
+      "demote",
+      "backtrack",
+      "plan-complete"
+    ],
+    "observed_in_traces": [
+      "init-plan",
+      "open-condition",
+      "add-link",
+      "add-step",
+      "detect-threat",
+      "promote",
+      "demote",
+      "backtrack",
+      "plan-complete"
+    ],
     "coverage": 1.0,
     "coverage_note": "All 9 declared L1 steps appear in the accepted trace corpus (Sussman anomaly exercises threat resolution; backtrack exercised by producer dead ends). Step ordering verified by validate_ocel_alignment() (fitness=1.0)."
   },
   "l0_fitness": 1.0,
-  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate.",
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch\u2192execute\u2192verify\u2192commit) enforced structurally by the BVC admission gate.",
   "status": "ADMITTED",
   "admitted": true,
-  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "tests/ocel_conformance.rs (cargo test -p wasm4pm-cognition, fitness measured by validate_ocel_alignment replay)",
+  "measured_on": "2026-06-10"
 }

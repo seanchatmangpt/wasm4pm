@@ -306,7 +306,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "ltl_monitor",
@@ -558,7 +558,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "problog",
@@ -572,7 +572,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "sat_cdcl",
@@ -586,7 +586,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "episodic_memory",
@@ -600,7 +600,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "rl_symbolic",
@@ -614,7 +614,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "ctl_check",
