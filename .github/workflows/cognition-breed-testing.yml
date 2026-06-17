@@ -1,0 +1,66 @@
+name: Cognition Breed Testing
+
+on:
+  push:
+    branches:
+      - main
+      - claude/**
+    paths:
+      - 'crates/wasm4pm-cognition/**'
+      - '.github/workflows/cognition-breed-testing.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'crates/wasm4pm-cognition/**'
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  build-check:
+    name: Cargo Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo check -p wasm4pm-cognition
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --lib -p wasm4pm-cognition --verbose
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --test '*' -p wasm4pm-cognition --verbose
+
+  breed-quality-gate:
+    name: Breed Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --test breed_quality_tests -p wasm4pm-cognition --verbose
+      - run: cargo test --test production_hardening_tests -p wasm4pm-cognition --verbose
+      - run: cargo test --test autonomic_healing_tests -p wasm4pm-cognition --verbose
+
+  documentation-check:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check BREED_COVERAGE.md exists
+        run: test -f crates/wasm4pm-cognition/BREED_COVERAGE.md
+      - name: Check CHANGELOG.md exists
+        run: test -f crates/wasm4pm-cognition/CHANGELOG.md
+      - name: Verify breed registry documentation
+        run: grep -q "56 breeds" crates/wasm4pm-cognition/BREED_COVERAGE.md

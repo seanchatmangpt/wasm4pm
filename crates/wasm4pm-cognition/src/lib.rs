@@ -34,8 +34,10 @@
 
 pub mod authority;
 pub mod autoinstinct;
+pub mod autonomic_bridge;
 pub mod autosystems;
 pub mod breeds;
+pub mod degradation;
 pub mod evidence;
 pub mod ghf;
 pub mod log_adapter;
