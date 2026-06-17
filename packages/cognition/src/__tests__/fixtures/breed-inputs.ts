@@ -304,6 +304,336 @@ export function minimalHearsayInput(): BreedInput {
 }
 
 // ---------------------------------------------------------------------------
+// AUTOINSTINCT NEUROSIS — neurosis.rs. Requires ≥1 fact. "belief:CONCEPT" key format.
+// ---------------------------------------------------------------------------
+export function autoinstinctNeurosisInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_neurosis',
+    contract: {
+      intent: '',
+      facts: [
+        { key: 'belief:safety', value: '0.8' },
+        { key: 'belief:control', value: '0.3' },
+      ],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT VISION — vision.rs. Requires ≥1 fact. key=shape, value=object_id.
+// "supported_by:<OBJ>" key records support relationships.
+// ---------------------------------------------------------------------------
+export function autoinstinctVisionInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_vision',
+    contract: {
+      intent: '',
+      facts: [
+        { key: 'cube', value: 'A' },
+        { key: 'pyramid', value: 'B' },
+        { key: 'supported_by:B', value: 'A' },
+      ],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT SEMANTICS — semantics.rs. Requires non-empty intent sentence.
+// Parses intent using Schank CD primitives; facts/tokens not used.
+// ---------------------------------------------------------------------------
+export function autoinstinctSemanticsInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_semantics',
+    contract: {
+      intent: 'John give book to Mary',
+      candidates: [],
+      facts: [],
+      rules: [],
+      cases: [],
+      goals: [],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AUTOINSTINCT LEARNING — learning.rs. Requires ≥1 goal. Goals form goal bitmask;
+// facts form initial state bitmask. 0 initial facts → planner must flip all goal bits.
+// ---------------------------------------------------------------------------
+export function autoinstinctLearningInput(): { breed: string; contract: BreedInput } {
+  return {
+    breed: 'autoinstinct_learning',
+    contract: {
+      intent: '',
+      facts: [],
+      candidates: [],
+      rules: [],
+      cases: [],
+      goals: [
+        { id: 'g0', predicate: 'achieve', value: 'sub-goal-0' },
+        { id: 'g1', predicate: 'achieve', value: 'sub-goal-1' },
+        { id: 'g2', predicate: 'achieve', value: 'sub-goal-2' },
+      ],
+      state: [],
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// HTN PLANNING — htn_planning.rs. Shop2-style total order decomposition.
+// ---------------------------------------------------------------------------
+export function minimalHtnPlanningInput(): BreedInput {
+  return {
+    intent: 'travel',
+    candidates: [],
+    facts: [],
+    cases: [],
+    state: [
+      { predicate: 'at', value: 'home' },
+      { predicate: 'cash', value: 'high' }
+    ],
+    goals: [
+      { id: 'g1', predicate: 'task', value: 'travel' }
+    ],
+    rules: [
+      {
+        id: 'method:travel:taxi',
+        premise: ['at=home'],
+        conclusion: 'op:hail_taxi;op:pay_taxi',
+        certainty: 1.0
+      },
+      {
+        id: 'op:hail_taxi',
+        premise: [],
+        conclusion: 'in=taxi',
+        certainty: 1.0
+      },
+      {
+        id: 'op:pay_taxi',
+        premise: ['in=taxi', 'cash=high'],
+        conclusion: '!in=taxi;at=dest',
+        certainty: 1.0
+      }
+    ]
+  };
+}
+
+// ---------------------------------------------------------------------------
+// CSP AC-3 — csp_ac3.rs. Finite-domain Constraint Satisfaction via AC-3.
+// ---------------------------------------------------------------------------
+export function minimalCspAc3Input(): BreedInput {
+  return {
+    intent: 'solve coloring',
+    candidates: [],
+    facts: [
+      { key: 'csp-var', value: 'V1:R,G,B' },
+      { key: 'csp-var', value: 'V2:R,G,B' },
+      { key: 'csp-constraint', value: 'V1!=V2' }
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DEFAULT LOGIC — default_logic.rs. Reiter normal defaults.
+// ---------------------------------------------------------------------------
+export function minimalDefaultLogicInput(): BreedInput {
+  return {
+    intent: 'solve default rules',
+    candidates: [],
+    facts: [
+      { key: 'bird', value: 'tweety' }
+    ],
+    cases: [],
+    rules: [
+      {
+        id: 'r_default',
+        premise: ['tweety', 'unless:non_flying'],
+        conclusion: 'flies',
+        certainty: 1.0
+      }
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DEMPSTER-SHAFER — dempster_shafer.rs. Dempster combination.
+// ---------------------------------------------------------------------------
+export function minimalDempsterShaferInput(): BreedInput {
+  return {
+    intent: 'evaluate belief',
+    candidates: [],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'source1', premise: [], conclusion: 'flim', certainty: 0.6 },
+      { id: 'source2', premise: [], conclusion: 'flam', certainty: 0.7 }
+    ],
+    goals: [
+      { id: 'query', predicate: 'query', value: 'flim' }
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// FRAMES INHERITANCE — frames_inheritance.rs. Multiple inheritance with overrides.
+// ---------------------------------------------------------------------------
+export function minimalFramesInheritanceInput(): BreedInput {
+  return {
+    intent: 'resolve widget_a weight',
+    candidates: [],
+    facts: [
+      { key: 'frame:widget_a:isa', value: 'widget' },
+      { key: 'frame:widget:slot:weight:default', value: '10kg' },
+      { key: 'frame:widget_a:slot:weight', value: '5kg' }
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// EBL — ebl.rs. Explanation-Based Learning.
+// ---------------------------------------------------------------------------
+export function minimalEblInput(): BreedInput {
+  return {
+    intent: 'learn',
+    candidates: [],
+    facts: [
+      { key: 'has_handle(obj1)', value: 'true' },
+      { key: 'concave(obj1)', value: 'true' }
+    ],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['cup(?x)'], conclusion: 'drinkable(?x)', certainty: 1.0 },
+      { id: 'r2', premise: ['has_handle(?y)', 'concave(?y)'], conclusion: 'cup(?y)', certainty: 1.0 }
+    ],
+    goals: [
+      { id: 'g1', predicate: 'drinkable(obj1)', value: 'true' }
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ASP — asp.rs. Stable Models.
+// ---------------------------------------------------------------------------
+export function minimalAspInput(): BreedInput {
+  return {
+    intent: 'solve',
+    candidates: [
+      { id: 'a', score: 0.5, eliminated: false },
+      { id: 'b', score: 0.5, eliminated: false },
+    ],
+    facts: [],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['not b'], conclusion: 'a', certainty: 1.0 },
+      { id: 'r2', premise: ['not a'], conclusion: 'b', certainty: 1.0 },
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DESCRIPTION LOGIC — description_logic.rs. Ontological subsumption & consistency.
+// ---------------------------------------------------------------------------
+export function minimalDescriptionLogicInput(): BreedInput {
+  return {
+    intent: 'classify',
+    candidates: [
+      { id: 'x', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'subclass', value: 'A,B' },
+      { key: 'subclass', value: 'B,C' },
+      { key: 'class', value: 'x,A' },
+      { key: 'disjoint', value: 'C,D' },
+    ],
+    cases: [],
+    rules: [],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ABDUCTIVE LP — abductive_lp.rs. Abductive Logic Programming.
+// ---------------------------------------------------------------------------
+export function minimalAbductiveLpInput(): BreedInput {
+  return {
+    intent: 'abduce',
+    candidates: [
+      { id: 'c', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'abducible', value: 'a' },
+      { key: 'abducible', value: 'b' },
+      { key: 'abducible', value: 'c' },
+      { key: 'abducible', value: 'd' },
+      { key: 'context', value: 'd' },
+    ],
+    cases: [],
+    rules: [
+      { id: 'r1', premise: ['a', 'b'], conclusion: 'g', certainty: 1.0 },
+      { id: 'r2', premise: ['c'], conclusion: 'g', certainty: 1.0 },
+      { id: 'r_ic', premise: ['a', 'd'], conclusion: 'false', certainty: 1.0 },
+    ],
+    goals: [
+      { id: 'g1', predicate: 'goal', value: 'g' },
+    ],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// ABDUCTIVE IBE — abductive_ibe.rs. Thagard ECHO coherence model.
+// ---------------------------------------------------------------------------
+export function minimalAbductiveIbeInput(): BreedInput {
+  return {
+    intent: 'coherence',
+    candidates: [
+      { id: 'H1', score: 0.5, eliminated: false },
+      { id: 'H2', score: 0.5, eliminated: false },
+    ],
+    facts: [
+      { key: 'evidence', value: 'E1' },
+      { key: 'evidence', value: 'E2' },
+      { key: 'hypothesis', value: 'H1' },
+      { key: 'hypothesis', value: 'H2' },
+      { key: 'contradicts', value: 'H1,H2' },
+    ],
+    cases: [],
+    rules: [
+      { id: 'expl1', premise: ['H1'], conclusion: 'E1', certainty: 1.0 },
+      { id: 'expl2', premise: ['H1'], conclusion: 'E2', certainty: 1.0 },
+      { id: 'expl3', premise: ['H2'], conclusion: 'E1', certainty: 1.0 },
+    ],
+    goals: [],
+    state: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // runBreed — call into the real WASM kernel (no mocks; FM-5 compliant).
 // ---------------------------------------------------------------------------
 export async function runBreed(

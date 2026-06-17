@@ -8,6 +8,39 @@ import type { BreedInput, TraceStep } from '@wasm4pm/cognition';
 import { parseInputJson, saveReceipt, mapWasmError } from './_shared.js';
 import { exitWithFlush } from '../../otel/exit.js';
 import { withSpanRaw } from '../_otel.js';
+import { getGlobalSpanSink } from '../../otel/sink.js';
+import { toOcelJsonl } from '@wasm4pm/contracts';
+import type { OcelEvent } from '@wasm4pm/contracts';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
+/** Append cognition trace as OCEL events to the per-breed corpus file. */
+function appendOcelCorpus(breed: string, runId: string, steps: TraceStep[]): void {
+  try {
+    const dir = path.join('.wasm4pm', 'ocel', 'cognition');
+    fs.mkdirSync(dir, { recursive: true });
+    const corpusPath = path.join(dir, `${breed}.jsonl`);
+    const events: OcelEvent[] = steps.map((s, idx) => ({
+      'ocel:eid': `${runId}-${idx}`,
+      'ocel:activity': s.kind,
+      'ocel:timestamp': '1970-01-01T00:00:00Z',
+      'ocel:omap': [runId],
+      'ocel:vmap': {
+        case_id: runId,
+        logical_step: s.step,
+        step: s.step,
+        depth: s.depth,
+        detail: s.detail,
+      },
+    }));
+    if (events.length > 0) {
+      const jsonl = toOcelJsonl(events);
+      fs.appendFileSync(corpusPath, jsonl + '\n', 'utf8');
+    }
+  } catch {
+    // corpus append is best-effort; never fail the run
+  }
+}
 
 /** Render the inference trace steps in a tree-like format for human consumption. */
 function renderTrace(steps: TraceStep[], maxLines = 12): string[] {
@@ -62,7 +95,7 @@ export const run = defineCommand({
         try {
           const input = parseInputJson<BreedInput>(ctx.args.input as string);
           const breed = contract;
-          const cresult = await runContract(breed, input);
+          const cresult = await runContract(breed, input, { spanSink: getGlobalSpanSink() });
           // Rust `cognition_run` emits `status: "ok"` on success. There is no
           // `exit_code`, `receipt_chain`, or top-level `findings` field.
           const exitCode =
@@ -77,6 +110,11 @@ export const run = defineCommand({
           const explanation = cresult.output?.explanation ?? '';
           const factsCount = (input.facts ?? []).length;
           const casesCount = (input.cases ?? []).length;
+
+          // Append trace as OCEL events to corpus for process quality analysis
+          if (cresult.status === 'ok' && cresult.run_id) {
+            appendOcelCorpus(cresult.breed ?? contract, cresult.run_id, inferenceTrace);
+          }
 
           let savedPath: string | undefined;
           if (!ctx.args['no-save'] && cresult.status === 'ok') {

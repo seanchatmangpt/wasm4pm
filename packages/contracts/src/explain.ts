@@ -7,91 +7,69 @@
  * exactly, adding provenance and timing information.
  */
 
+import { z } from 'zod';
+import { ReceiptSchema } from './receipt.js';
 import type { Receipt } from './receipt.js';
 import type { Plan } from './plan.js';
+import { StatusSchema } from './status.js';
 import type { Status } from './status.js';
+
+export const PhaseTimingSchema = z.object({
+  phase: z.string(),
+  start: z.string(),
+  end: z.string(),
+  duration_ms: z.number().min(0),
+});
 
 /**
  * Timing breakdown for each phase of execution
  */
-export interface PhaseTiming {
-  /** Phase name */
-  phase: string;
+export type PhaseTiming = z.infer<typeof PhaseTimingSchema>;
 
-  /** ISO 8601 start time */
-  start: string;
-
-  /** ISO 8601 end time */
-  end: string;
-
-  /** Duration in milliseconds */
-  duration_ms: number;
-}
+export const ResourceUsageSchema = z.object({
+  peak_memory_bytes: z.number().int().min(0),
+  events_processed: z.number().int().min(0),
+  algorithm_invocations: z.number().int().min(0),
+});
 
 /**
  * Resource usage during execution
  */
-export interface ResourceUsage {
-  /** Peak WASM memory in bytes */
-  peak_memory_bytes: number;
+export type ResourceUsage = z.infer<typeof ResourceUsageSchema>;
 
-  /** Total events processed */
-  events_processed: number;
-
-  /** Number of algorithm invocations */
-  algorithm_invocations: number;
-}
+export const ExplainExecutionProfileSchema = z.object({
+  phases: z.array(PhaseTimingSchema),
+  resources: ResourceUsageSchema,
+  total_duration_ms: z.number().min(0),
+});
 
 /**
  * Execution profile — detailed performance breakdown
  */
-export interface ExecutionProfile {
-  /** Per-phase timing breakdown */
-  phases: PhaseTiming[];
+export type ExecutionProfile = z.infer<typeof ExplainExecutionProfileSchema>;
 
-  /** Resource usage summary */
-  resources: ResourceUsage;
-
-  /** Total wall-clock time in ms */
-  total_duration_ms: number;
-}
+export const ExplainSnapshotSchema = z.object({
+  schema_version: z.literal('1.0'),
+  receipt: ReceiptSchema,
+  plan: z.record(z.string(), z.unknown()),
+  status: StatusSchema,
+  execution_profile: ExplainExecutionProfileSchema,
+  output_hash: z.string(),
+  captured_at: z.string(),
+  environment: z.object({
+    platform: z.string(),
+    runtime_version: z.string(),
+    package_version: z.string(),
+  }),
+});
 
 /**
  * Explain snapshot — identical structure to execution result,
  * capturing everything needed to reproduce or debug a run
  */
-export interface ExplainSnapshot {
-  /** Schema version for forward compatibility */
-  schema_version: '1.0';
-
-  /** The receipt from this execution */
-  receipt: Receipt;
-
-  /** The plan that was executed */
+export type ExplainSnapshot = z.infer<typeof ExplainSnapshotSchema> & {
   plan: Plan;
-
-  /** Runtime status at completion */
-  status: Status;
-
-  /** Detailed execution profile */
-  execution_profile: ExecutionProfile;
-
-  /** BLAKE3 hash of the output artifacts */
-  output_hash: string;
-
-  /** ISO 8601 timestamp of snapshot creation */
-  captured_at: string;
-
-  /** Environment info for reproducibility */
-  environment: {
-    /** Node.js / browser / WASI */
-    platform: string;
-    /** Runtime version */
-    runtime_version: string;
-    /** wasm4pm package version */
-    package_version: string;
-  };
-}
+};
 
 /**
  * Type guard for ExplainSnapshot objects

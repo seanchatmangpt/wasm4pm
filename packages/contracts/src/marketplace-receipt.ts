@@ -14,12 +14,24 @@
  * in mcpp's process miner without ambiguity.
  */
 
+import { z } from 'zod';
+import { ReceiptSchema } from './receipt.js';
 import type { Receipt } from './receipt.js';
 import type { OcelEvent } from './ocel-bridge.js';
 
 // ---------------------------------------------------------------------------
 // MarketplaceReceipt
 // ---------------------------------------------------------------------------
+
+export const MarketplaceReceiptSchema = z.object({
+  ...ReceiptSchema.partial().shape,
+  domain: z.literal('marketplace'),
+  event_types: z.array(z.string()),
+  object_types: z.array(z.string()),
+  order_count: z.number().int().min(0),
+  listing_count: z.number().int().min(0),
+  user_count: z.number().int().min(0),
+});
 
 /**
  * A wasm4pm execution receipt extended with marketplace domain telemetry.
@@ -34,25 +46,7 @@ import type { OcelEvent } from './ocel-bridge.js';
  * - `user_count`    — number of unique user identifiers seen
  *                      (union of seller_id and buyer_id values)
  */
-export interface MarketplaceReceipt extends Partial<Receipt> {
-  /** Fixed discriminant for this receipt family */
-  domain: 'marketplace';
-
-  /** Sorted unique `ocel:activity` values observed in the event batch */
-  event_types: string[];
-
-  /** Sorted unique object type names inferred from id fields (e.g. "orders", "users") */
-  object_types: string[];
-
-  /** Number of unique order_id values in the event batch */
-  order_count: number;
-
-  /** Number of unique listing_id values in the event batch */
-  listing_count: number;
-
-  /** Number of unique user identifiers (union of seller_id + buyer_id + user_id) */
-  user_count: number;
-}
+export type MarketplaceReceipt = z.infer<typeof MarketplaceReceiptSchema>;
 
 // ---------------------------------------------------------------------------
 // isMarketplaceReceipt

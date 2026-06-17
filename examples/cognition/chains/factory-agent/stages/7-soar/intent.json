@@ -1,0 +1,188 @@
+{
+  "intent": "Resolve competing intervention strategies via SOAR preference resolution; subgoal on tie",
+  "candidates": [
+    {
+      "id": "strategy_immediate_shutdown",
+      "score": 0.75,
+      "eliminated": false
+    },
+    {
+      "id": "strategy_graceful_degraded_run",
+      "score": 0.75,
+      "eliminated": false
+    },
+    {
+      "id": "strategy_parallel_coolant_repair",
+      "score": 0.8,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "0.6",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "0.9",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "43units/hr",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "45",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "60units/hr",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "8.2bar",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "92C",
+      "value": "cf=1.000"
+    },
+    {
+      "key": "combined_cf ",
+      "value": " cf1 + cf2*(1-cf1)"
+    },
+    {
+      "key": "dx_coolant_failure CF",
+      "value": "0.85"
+    },
+    {
+      "key": "current_temp",
+      "value": "92C"
+    },
+    {
+      "key": "target_temp",
+      "value": "75C"
+    },
+    {
+      "key": "diagnosis",
+      "value": "dx_coolant_failure"
+    },
+    {
+      "key": "current_throughput",
+      "value": "43units/hr"
+    },
+    {
+      "key": "target_throughput",
+      "value": "60units/hr"
+    },
+    {
+      "key": "machine_1_state",
+      "value": "running"
+    },
+    {
+      "key": "coolant_system_state",
+      "value": "failed"
+    },
+    {
+      "key": "feed_rate",
+      "value": "100pct"
+    },
+    {
+      "key": "goal_bitmask",
+      "value": "0b1111"
+    },
+    {
+      "key": "achieved_bitmask",
+      "value": "0b0000"
+    },
+    {
+      "key": "safety_constraint_met",
+      "value": "true"
+    },
+    {
+      "key": "best_plan",
+      "value": "plan_B_partial_stop_flush"
+    },
+    {
+      "key": "operator_preference",
+      "value": "minimize_downtime"
+    },
+    {
+      "key": "batch_A_in_progress",
+      "value": "true"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_soar_prefer",
+      "premise": [
+        "strategy_parallel_coolant_repair",
+        "operator_preference=minimize_downtime"
+      ],
+      "conclusion": "prefer strategy_A",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_soar_tie",
+      "premise": [
+        "operator_preference=minimize_downtime",
+        "batch_A_in_progress=true"
+      ],
+      "conclusion": "create_subgoal_resolve_tie",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_soar_subgoal",
+      "premise": [
+        "operator_preference=minimize_downtime",
+        "batch_A_in_progress=true"
+      ],
+      "conclusion": "prefer_graceful_degraded_run",
+      "certainty": 0.8
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "single_strategy_selected",
+      "value": "true"
+    },
+    {
+      "id": "g2",
+      "predicate": "tie_resolved",
+      "value": "true"
+    },
+    {
+      "id": "g3",
+      "predicate": "batch_A_continuity",
+      "value": "preserved"
+    }
+  ],
+  "cases": [
+    {
+      "id": "c_soar_1",
+      "intent": "graceful degraded selected",
+      "architecture": "rule-based",
+      "outcome_score": 0.8,
+      "facts": [
+        {
+          "key": "tie_score",
+          "value": "0.75"
+        },
+        {
+          "key": "preference",
+          "value": "minimize_downtime"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "preference_resolution",
+      "value": "pending"
+    },
+    {
+      "predicate": "subgoal_active",
+      "value": "false"
+    }
+  ]
+}

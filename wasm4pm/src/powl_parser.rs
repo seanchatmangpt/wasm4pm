@@ -613,7 +613,10 @@ pub fn load_powl_from_string(powl_str: &str) -> Result<JsValue, JsValue> {
     let node_count = arena.len();
     let repr = arena.to_repr(root_idx);
     let handle = get_or_init_state()
-        .store_object(StoredObject::PowlModel { arena, root: root_idx })
+        .store_object(StoredObject::PowlModel {
+            arena,
+            root: root_idx,
+        })
         .map_err(|_| crate::error::js_val("Failed to store POWL model"))?;
     to_js_str(&serde_json::json!({
         "handle": handle,
@@ -632,7 +635,10 @@ pub fn load_powl_v2_from_string(dsl: &str) -> Result<JsValue, JsValue> {
     let node_count = arena.len();
     let repr = arena.to_repr(root_idx);
     let handle = get_or_init_state()
-        .store_object(StoredObject::PowlModel { arena, root: root_idx })
+        .store_object(StoredObject::PowlModel {
+            arena,
+            root: root_idx,
+        })
         .map_err(|_| crate::error::js_val("Failed to store POWL v2 model"))?;
     to_js_str(&serde_json::json!({
         "handle": handle,
@@ -686,7 +692,9 @@ fn parse_v2_activity(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError
     // Split by comma at depth 0 to get positional/named args.
     let parts = v2_split_depth0(inner);
     // First part is the id (ignored for storage), second optional is quoted label.
-    let label: Option<String> = parts.get(1).and_then(|p| v2_extract_quoted_string(p.trim()));
+    let label: Option<String> = parts
+        .get(1)
+        .and_then(|p| v2_extract_quoted_string(p.trim()));
     // Check for silent flag: any part that is exactly "true" or "silent: true"
     let is_silent = parts.iter().any(|p| {
         let t = p.trim();
@@ -702,18 +710,16 @@ fn parse_v2_activity(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError
 /// Parse: PartialOrder(id) { nodes: [...], edges: [(a,b),...] }
 fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
     // Find the `{` block
-    let brace_start = s.find('{').ok_or_else(|| {
-        Wasm4pmError::Parse(format!("PartialOrder missing '{{': '{}'", s))
-    })?;
+    let brace_start = s
+        .find('{')
+        .ok_or_else(|| Wasm4pmError::Parse(format!("PartialOrder missing '{{': '{}'", s)))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("PartialOrder: unmatched braces".to_string()))?;
 
     // Extract nodes: [...]
-    let nodes_list = v2_extract_bracket_field(block, "nodes")
-        .unwrap_or("");
+    let nodes_list = v2_extract_bracket_field(block, "nodes").unwrap_or("");
     // Extract edges: [(a,b),...]
-    let edges_list = v2_extract_bracket_field(block, "edges")
-        .unwrap_or("");
+    let edges_list = v2_extract_bracket_field(block, "edges").unwrap_or("");
 
     // Parse node IDs and build child nodes (each id → transition)
     let node_ids: Vec<String> = if nodes_list.trim().is_empty() {
@@ -729,8 +735,10 @@ fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pm
     let mut id_to_arena: Vec<(String, u32)> = Vec::new();
     for nid in &node_ids {
         // Each node in PartialOrder nodes list is either an inline construct or a bare id.
-        let arena_idx = if nid.starts_with("Activity(") || nid.starts_with("PartialOrder(")
-            || nid.starts_with("ChoiceGraph(") || nid.starts_with("Loop(")
+        let arena_idx = if nid.starts_with("Activity(")
+            || nid.starts_with("PartialOrder(")
+            || nid.starts_with("ChoiceGraph(")
+            || nid.starts_with("Loop(")
         {
             parse_powl_v2_string(nid, arena)?
         } else {
@@ -769,16 +777,22 @@ fn parse_v2_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pm
 
 /// Parse: ChoiceGraph(id) { nodes: [...], edges: [...], start: id1, end: id2 }
 fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
-    let brace_start = s.find('{').ok_or_else(|| {
-        Wasm4pmError::Parse(format!("ChoiceGraph missing '{{': '{}'", s))
-    })?;
+    let brace_start = s
+        .find('{')
+        .ok_or_else(|| Wasm4pmError::Parse(format!("ChoiceGraph missing '{{': '{}'", s)))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("ChoiceGraph: unmatched braces".to_string()))?;
 
     let nodes_list = v2_extract_bracket_field(block, "nodes").unwrap_or("");
     let edges_list = v2_extract_bracket_field(block, "edges").unwrap_or("");
-    let start_id = v2_extract_scalar_field(block, "start").unwrap_or("").trim().to_string();
-    let end_id = v2_extract_scalar_field(block, "end").unwrap_or("").trim().to_string();
+    let start_id = v2_extract_scalar_field(block, "start")
+        .unwrap_or("")
+        .trim()
+        .to_string();
+    let end_id = v2_extract_scalar_field(block, "end")
+        .unwrap_or("")
+        .trim()
+        .to_string();
 
     let node_ids: Vec<String> = if nodes_list.trim().is_empty() {
         vec![]
@@ -800,8 +814,10 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
         } else if nid == "End" || nid == &end_id {
             wasm4pm_compat::powl::ChoiceGraphNode::End
         } else {
-            let sub_idx = if nid.starts_with("Activity(") || nid.starts_with("PartialOrder(")
-                || nid.starts_with("ChoiceGraph(") || nid.starts_with("Loop(")
+            let sub_idx = if nid.starts_with("Activity(")
+                || nid.starts_with("PartialOrder(")
+                || nid.starts_with("ChoiceGraph(")
+                || nid.starts_with("Loop(")
             {
                 parse_powl_v2_string(nid, arena)?
             } else {
@@ -861,9 +877,9 @@ fn parse_v2_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmE
 
 /// Parse: Loop(id) { do: ..., redo: ... }
 fn parse_v2_loop(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
-    let brace_start = s.find('{').ok_or_else(|| {
-        Wasm4pmError::Parse(format!("Loop missing '{{': '{}'", s))
-    })?;
+    let brace_start = s
+        .find('{')
+        .ok_or_else(|| Wasm4pmError::Parse(format!("Loop missing '{{': '{}'", s)))?;
     let block = v2_extract_brace_block(&s[brace_start..])
         .ok_or_else(|| Wasm4pmError::Parse("Loop: unmatched braces".to_string()))?;
 
@@ -901,18 +917,30 @@ fn v2_split_depth0(s: &str) -> Vec<String> {
     let mut depth = 0usize;
     for ch in s.chars() {
         match ch {
-            '(' | '{' | '[' => { depth += 1; cur.push(ch); }
-            ')' | '}' | ']' => { depth = depth.saturating_sub(1); cur.push(ch); }
+            '(' | '{' | '[' => {
+                depth += 1;
+                cur.push(ch);
+            }
+            ')' | '}' | ']' => {
+                depth = depth.saturating_sub(1);
+                cur.push(ch);
+            }
             ',' if depth == 0 => {
                 let tok = cur.trim().to_string();
-                if !tok.is_empty() { parts.push(tok); }
+                if !tok.is_empty() {
+                    parts.push(tok);
+                }
                 cur.clear();
             }
-            _ => { cur.push(ch); }
+            _ => {
+                cur.push(ch);
+            }
         }
     }
     let tok = cur.trim().to_string();
-    if !tok.is_empty() { parts.push(tok); }
+    if !tok.is_empty() {
+        parts.push(tok);
+    }
     parts
 }
 

@@ -1,0 +1,25 @@
+{
+  "breed": "frames_inheritance",
+  "provenance": {
+    "paper": "Minsky-1974-Framework-for-Representing-Knowledge.pdf",
+    "citation": "M. Minsky (1974). A Framework for Representing Knowledge. MIT-AI Laboratory Memo 306.",
+    "locus": "§1 Frame-systems and Defaults",
+    "extraction": "grounded"
+  },
+  "input": {
+    "intent": "resolve widget_a weight",
+    "candidates": [],
+    "facts": [
+      {"key": "frame:widget_a:isa", "value": "widget"},
+      {"key": "frame:widget:slot:weight:default", "value": "10kg"},
+      {"key": "frame:widget_a:slot:weight", "value": "5kg"}
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "resolved_value": "5kg"
+  }
+}

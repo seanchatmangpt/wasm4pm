@@ -5,73 +5,83 @@
  * These provide typed alternatives to the `unknown` artifact parameter in SinkAdapter.write().
  */
 
-import type { ArtifactType } from '@wasm4pm/contracts';
+import { z } from 'zod';
 
 /**
  * Receipt artifact — proof of execution
  */
-export interface ReceiptArtifact {
-  run_id: string;
-  timestamp: string;
-  algorithm: string;
-  input_file?: string;
-  status: 'success' | 'failed' | 'partial';
-  event_count?: number;
-  trace_count?: number;
-  duration_ms?: number;
-  error?: string;
-  schema_version?: string;
-  hashes?: {
-    config?: string;
-    input?: string;
-    plan?: string;
-  };
-}
+export const ReceiptArtifactSchema = z.object({
+  run_id: z.string(),
+  timestamp: z.string(),
+  algorithm: z.string(),
+  input_file: z.string().optional(),
+  status: z.enum(['success', 'failed', 'partial']),
+  event_count: z.number().optional(),
+  trace_count: z.number().optional(),
+  duration_ms: z.number().optional(),
+  error: z.string().optional(),
+  schema_version: z.string().optional(),
+  hashes: z.object({
+    config: z.string().optional(),
+    input: z.string().optional(),
+    plan: z.string().optional(),
+  }).optional(),
+});
+
+export type ReceiptArtifact = z.infer<typeof ReceiptArtifactSchema>;
 
 /**
  * Model artifact — discovered process model
  */
-export interface ModelArtifact {
-  name: string;
-  type?: 'dfg' | 'petri_net' | 'declare' | 'tree';
-  petriNet?: boolean;
-  nodes?: Array<{ id: string; label?: string }>;
-  edges?: Array<{ source: string; target: string; weight?: number }>;
-  places?: Array<{ id: string; tokens?: number }>;
-  transitions?: Array<{ id: string; label?: string }>;
-  metadata?: Record<string, unknown>;
-}
+export const ModelArtifactSchema = z.object({
+  name: z.string(),
+  type: z.enum(['dfg', 'petri_net', 'declare', 'tree']).optional(),
+  petriNet: z.boolean().optional(),
+  nodes: z.array(z.object({ id: z.string(), label: z.string().optional() })).optional(),
+  edges: z.array(z.object({ source: z.string(), target: z.string(), weight: z.number().optional() })).optional(),
+  places: z.array(z.object({ id: z.string(), tokens: z.number().optional() })).optional(),
+  transitions: z.array(z.object({ id: z.string(), label: z.string().optional() })).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type ModelArtifact = z.infer<typeof ModelArtifactSchema>;
 
 /**
  * Report artifact — HTML or Markdown analysis output
  */
-export interface ReportArtifact {
-  name: string;
-  format: 'html' | 'markdown' | 'json';
-  content: string;
-  metadata?: Record<string, unknown>;
-}
+export const ReportArtifactSchema = z.object({
+  name: z.string(),
+  format: z.enum(['html', 'markdown', 'json']),
+  content: z.string(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type ReportArtifact = z.infer<typeof ReportArtifactSchema>;
 
 /**
  * Explain snapshot — captures plan reasoning at a point in time
  */
-export interface ExplainSnapshotArtifact {
-  timestamp: string;
-  step?: number;
-  explanation: string;
-  state?: Record<string, unknown>;
-}
+export const ExplainSnapshotArtifactSchema = z.object({
+  timestamp: z.string(),
+  step: z.number().optional(),
+  explanation: z.string(),
+  state: z.record(z.string(), z.unknown()).optional(),
+});
+
+export type ExplainSnapshotArtifact = z.infer<typeof ExplainSnapshotArtifactSchema>;
 
 /**
  * Status snapshot — captures execution state at a point in time
  */
-export interface StatusSnapshotArtifact {
-  timestamp: string;
-  state: string;
-  progress?: number;
-  message?: string;
-  errors?: Array<{ code: string; message: string }>;
-}
+export const StatusSnapshotArtifactSchema = z.object({
+  timestamp: z.string(),
+  state: z.string(),
+  progress: z.number().optional(),
+  message: z.string().optional(),
+  errors: z.array(z.object({ code: z.string(), message: z.string() })).optional(),
+});
+
+export type StatusSnapshotArtifact = z.infer<typeof StatusSnapshotArtifactSchema>;
 
 /**
  * Union of all typed artifacts

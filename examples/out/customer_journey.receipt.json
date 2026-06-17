@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "ee5a37f2db7fd0a7162f63d6ea19219fb7d3b7ee",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "customer_journey",
+  "input": {
+    "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "compute_trace_similarity_matrix",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a",
+      "duration_ms": 40.426,
+      "expected_path": {
+        "route_id": "wpm.example.customer_journey.compute_trace_similarity_matrix.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a",
+                "duration_ms": 40.426
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_trace_similarity_matrix",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_trace_similarity_matrix_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "d92bfa96a32ca3733ce6831fec7853f99cf22a01d6c80fd727fc751eef0a727f"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:36.448Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:37.665Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:38.475Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:37.297Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:38.735Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a",
+                "duration_ms": 40.426
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:41.622Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:39.185Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:42.798Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_trace_similarity_matrix",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:41.075Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_compute_trace_similarity_matrix_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:40.786Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_trace_similarity_matrix_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_trace_similarity_matrix",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_trace_similarity_matrix_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "c9fc584261f1fd071ef09757e43c847a2d51d80d7c15fe509a97d2ed79fe533d",
+        "observed_result_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
+        "output_artifact_hash": "b41bd0441d52c9e8975bf32314552dc48a971f348f217f9ae5c90122bab34d6a",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "automl_classify",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28",
+      "duration_ms": 53.912,
+      "expected_path": {
+        "route_id": "wpm.example.customer_journey.automl_classify.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_automl_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28",
+                "duration_ms": 53.912
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_automl_classify",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_automl_classify_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "415c30bef7c72aac80248e53588a24fa5c4bf1c607aef64d9ba2a9016e53fa55"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_automl_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:38.119Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:38.207Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:36.475Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:37.645Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:40.804Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28",
+                "duration_ms": 53.912
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:41.042Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:39.177Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:38.458Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_automl_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:41.160Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:39.477Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_classify_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_automl_classify",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_automl_classify_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "e11c15c9618405699a4c43272abf8be0ff125a5562512cba40adb14b97420a8c",
+        "observed_result_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
+        "output_artifact_hash": "e8be0fc8807a43ecab6437ddf7b3f24598b462a405856f6883fefd21b98daa28",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "automl_forecast",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139",
+      "duration_ms": 22.088,
+      "expected_path": {
+        "route_id": "wpm.example.customer_journey.automl_forecast.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_automl_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139",
+                "duration_ms": 22.088
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_automl_forecast",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_automl_forecast_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "7dd5eddf6e49c0a0c9fa1f9fe34474bff7858b5afe66bad7969ba9d342afba7d"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_automl_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:39.129Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:35.676Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:35.720Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:36.156Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:38.422Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139",
+                "duration_ms": 22.088
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:39.590Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:39.443Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:39.170Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_automl_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:39.800Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_automl_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.288Z",
+              "relationships": [
+                {
+                  "objectId": "result_automl_forecast_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_automl_forecast",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_automl_forecast_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "df5f62ffa0d555f1dd7a53cce1e0064e744b08379e9f8f22391b183e013529bb",
+        "observed_result_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
+        "output_artifact_hash": "63efb5615411918e2e711e7e63e9b1cd8d074d392f700cfda49d7f46353d3139",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "agentic_pipeline",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b",
+      "duration_ms": 42.954,
+      "expected_path": {
+        "route_id": "wpm.example.customer_journey.agentic_pipeline.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_agentic_pipeline_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b",
+                "duration_ms": 42.954
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_agentic_pipeline",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_agentic_pipeline_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "acecb65dac88d0d5ad5b4716a1e089c38f47bea23f6620db1cccac796bb722ae"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_customer_journey_agentic_pipeline_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:34.749Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:38.084Z",
+              "relationships": [
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:38.895Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:40.434Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:39.339Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b",
+                "duration_ms": 42.954
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:37.990Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:40.463Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:38.592Z",
+              "relationships": [
+                {
+                  "objectId": "example_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_agentic_pipeline",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:43.409Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_customer_journey_agentic_pipeline_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.481Z",
+              "relationships": [
+                {
+                  "objectId": "result_agentic_pipeline_customer_journey",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_customer_journey",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_customer_journey",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_customer_journey",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_agentic_pipeline",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_agentic_pipeline_customer_journey",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_customer_journey",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "2018a59c4c751db93fc8c61f28706e7b8c600d0fe2d6e6e825635adf9e83a476",
+        "observed_result_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "86452be034c0b9fd0f1c04519f9b867ca035014b776e2608e4e08cf8337eee7c",
+        "output_artifact_hash": "391097a341a68ade68f58f4c97d03d1d194dbe62f77fee0e02f14e8777807c3b",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T23:56:34.606Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "620bc87ce4d887b5914851caa833c0dd6acc42294b7497d02df4eb7896796d82"
+}

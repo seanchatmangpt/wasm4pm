@@ -1,0 +1,44 @@
+{
+  "breed": "prolog",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Kowalski, R. A. (1974). Predicate logic as programming language. IFIP Congress 74, Stockholm, pp. 569–574.",
+    "locus": "Section 9 (\"Database and Information Retrieval\"), Figure 2 — parent/ancestor Horn-clause program and resolution trace.",
+    "extraction": "grounded-encoding",
+    "notes": "Kowalski 1974 Fig. 2 defines parent/ancestor relationships used to illustrate predicate logic as a programming language. This fixture exercises the Prolog8 catalog path (no ?N variable rules) using a direct parent-fact query. Facts encode parent relations; the goal queries whether bob is the parent of ann. The Prolog8 kernel loads the facts, emits a kernel-query event (required by the OCEL process conformance model), and returns Allow with selected='bob-ann'."
+  },
+  "input": {
+    "intent": "prove parent(bob, ann) from the family fact base (Kowalski 1974)",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "parent",
+        "value": "tom-bob"
+      },
+      {
+        "key": "parent",
+        "value": "bob-ann"
+      },
+      {
+        "key": "parent",
+        "value": "bob-pat"
+      }
+    ],
+    "rules": [],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "parent",
+        "value": "bob-ann"
+      }
+    ],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "resolved_bindings": [
+      "ann"
+    ],
+    "note": "Direct fact lookup: parent(bob-ann) is in the fact base. Prolog8 kernel admits the query and returns Allow. selected = 'bob-ann' which contains 'ann', satisfying the binding check."
+  }
+}

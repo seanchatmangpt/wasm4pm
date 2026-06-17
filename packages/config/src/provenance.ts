@@ -3,20 +3,25 @@
  * Every resolved config value records where it came from.
  */
 
-export type ProvenanceSource = 'cli' | 'toml' | 'json' | 'env' | 'default';
+import { z } from 'zod';
 
-export interface Provenance {
-  value: unknown;
-  source: ProvenanceSource;
-  path?: string; // file path when source is 'toml' or 'json'
-  timestamp?: number; // Time of resolution
-}
+export const provenanceSourceSchema = z.enum(['cli', 'toml', 'json', 'env', 'default']);
+export type ProvenanceSource = z.infer<typeof provenanceSourceSchema>;
+
+export const provenanceSchema = z.object({
+  value: z.unknown(),
+  source: provenanceSourceSchema,
+  path: z.string().optional(), // file path when source is 'toml' or 'json'
+  timestamp: z.number().optional(), // Time of resolution
+});
+export type Provenance = z.infer<typeof provenanceSchema>;
 
 /**
  * Provenance map: dot-separated config path → provenance record.
  * Example: "algorithm.name" → { value: "alpha", source: "toml", path: "./wasm4pm.toml" }
  */
-export type ProvenanceMap = Record<string, Provenance>;
+export const provenanceMapSchema = z.record(z.string(), provenanceSchema);
+export type ProvenanceMap = z.infer<typeof provenanceMapSchema>;
 
 /**
  * Create a provenance map from a flat or nested config object,

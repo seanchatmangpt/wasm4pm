@@ -1,0 +1,147 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "hearsay",
+    "breed": "hearsay",
+    "status": "ok",
+    "output": {
+      "breed": "hearsay",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "phone",
+          "value": "AX"
+        },
+        {
+          "key": "phone",
+          "value": "H"
+        },
+        {
+          "key": "phone",
+          "value": "T"
+        },
+        {
+          "key": "phrase",
+          "value": "THE_UTTERANCE"
+        },
+        {
+          "key": "syllable",
+          "value": "THE"
+        },
+        {
+          "key": "word",
+          "value": "THE"
+        }
+      ],
+      "selected": "word:THE",
+      "explanation": "Hearsay posted 6 hypotheses; selected Some(\"word:THE\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed",
+          "detail": "phone:T",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "seed",
+          "detail": "phone:H",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "seed",
+          "detail": "phone:AX",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "enqueue-ksar",
+          "detail": "ks=syllable-ks trigger=phone:T rating=0.800",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "enqueue-ksar",
+          "detail": "ks=alt-syllable-ks trigger=phone:AX rating=0.600",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "post-hypothesis",
+          "detail": "syllable-ks ⇒ syllable:THE (rating=0.800)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "enqueue-ksar",
+          "detail": "ks=word-ks trigger=syllable:THE rating=0.720",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "post-hypothesis",
+          "detail": "word-ks ⇒ word:THE (rating=0.720)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "enqueue-ksar",
+          "detail": "ks=phrase-ks trigger=word:THE rating=0.612",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "post-hypothesis",
+          "detail": "phrase-ks ⇒ phrase:THE_UTTERANCE (rating=0.612)",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "post-hypothesis",
+          "detail": "alt-syllable-ks ⇒ syllable:THE (rating=0.600)",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "enqueue-ksar",
+          "detail": "ks=word-ks trigger=syllable:THE rating=0.828",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "post-hypothesis",
+          "detail": "word-ks ⇒ word:THE (rating=0.828)",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "enqueue-ksar",
+          "detail": "ks=phrase-ks trigger=word:THE rating=0.809",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "post-hypothesis",
+          "detail": "phrase-ks ⇒ phrase:THE_UTTERANCE (rating=0.809)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "ce0bc33caa5e8a48f9c7761d7f4a35236ac52944c0013d393a032e6324df91c5",
+    "output_hash": "a28c2c75c4c6c2a2ba86aa39ba655734e2871cc498851aaaafea2d23a1b90ee0",
+    "replay_pointer": "a28c2c75c4c6c2a2",
+    "inference_step_count": 15,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/ce0bc33caa5e8a48f9c7761d7f4a35236ac52944c0013d393a032e6324df91c5.json"
+  },
+  "meta": {
+    "run_id": "bdfd78d9-1a35-4ece-ba62-65f9359471d9",
+    "timestamp": "2026-06-10T15:46:40.425Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

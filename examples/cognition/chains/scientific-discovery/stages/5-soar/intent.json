@@ -1,0 +1,183 @@
+{
+  "intent": "Resolve competing experimental approach preferences for cyclohexanol validation via SOAR preference resolution \u2014 select canonical experiment sequence and emit justified operator preference trace",
+  "candidates": [
+    {
+      "id": "approach_NMR_COSY_first",
+      "score": 0.87,
+      "eliminated": false
+    },
+    {
+      "id": "approach_GCMS_first",
+      "score": 0.79,
+      "eliminated": false
+    },
+    {
+      "id": "approach_MSMS_first",
+      "score": 0.74,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "experiment_plan_from_learning",
+      "value": "NMR_COSY_then_GCMS_then_MSMS"
+    },
+    {
+      "key": "top_structure",
+      "value": "cyclohexanol"
+    },
+    {
+      "key": "ambiguity_remaining",
+      "value": "conformation_only"
+    },
+    {
+      "key": "budget_hours_remaining",
+      "value": "8"
+    },
+    {
+      "key": "sample_quantity_limited",
+      "value": "true"
+    },
+    {
+      "key": "lab_availability_NMR",
+      "value": "immediately"
+    },
+    {
+      "key": "lab_availability_GCMS",
+      "value": "2_hour_wait"
+    },
+    {
+      "key": "lab_availability_MSMS",
+      "value": "next_day"
+    },
+    {
+      "key": "soar_architecture",
+      "value": "preference_resolution_tie_impasse"
+    },
+    {
+      "key": "decision_cycle_count",
+      "value": "0"
+    },
+    {
+      "key": "impasse_type_expected",
+      "value": "tie_between_NMR_and_GCMS"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_prefer_immediate_availability",
+      "premise": [
+        "lab_available_now"
+      ],
+      "conclusion": "best preference: prefer immediately available technique",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_prefer_nondestructive",
+      "premise": [
+        "sample_quantity_limited == true"
+      ],
+      "conclusion": "better preference: prefer non-destructive technique first",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_tie_impasse_subgoal",
+      "premise": [
+        "two_operators_tied_in_preference"
+      ],
+      "conclusion": "create subgoal to evaluate secondary criterion",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_reject_destructive_first",
+      "premise": [
+        "sample_limited",
+        "technique_is_destructive"
+      ],
+      "conclusion": "reject operator: destructive before NMR",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_soar_learning_chunk",
+      "premise": [
+        "subgoal_resolved_successfully"
+      ],
+      "conclusion": "chunk: IF conformation_only AND NMR_available THEN prefer_NMR_first",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_resolve_tie_impasse",
+      "predicate": "tie_impasse_resolved",
+      "value": "true"
+    },
+    {
+      "id": "g_select_final_approach",
+      "predicate": "canonical_experiment_sequence_selected",
+      "value": "true"
+    },
+    {
+      "id": "g_emit_preference_trace",
+      "predicate": "operator_preference_trace_emitted",
+      "value": "true"
+    },
+    {
+      "id": "g_chunk_learned",
+      "predicate": "soar_chunk_acquired",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_soar_lab_scheduling",
+      "intent": "SOAR preference resolution for cyclohexanol lab scheduling",
+      "architecture": "NMR_COSY_selected_as_first_step",
+      "outcome_score": 0.91,
+      "facts": [
+        {
+          "key": "ambiguity",
+          "value": "conformation_only"
+        },
+        {
+          "key": "top_structure",
+          "value": "cyclohexanol"
+        },
+        {
+          "key": "constraint",
+          "value": "availability_and_nondestructive"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "pipeline_stage",
+      "value": "6_soar_preference_resolution"
+    },
+    {
+      "predicate": "learning_plan",
+      "value": "NMR_COSY_then_GCMS_then_MSMS"
+    },
+    {
+      "predicate": "soar_decision_cycle",
+      "value": "0"
+    },
+    {
+      "predicate": "impasse_active",
+      "value": "false"
+    },
+    {
+      "predicate": "chunk_memory_size",
+      "value": "0"
+    },
+    {
+      "predicate": "source_stage",
+      "value": "autoinstinct_learning"
+    },
+    {
+      "predicate": "final_decision_emitted",
+      "value": "false"
+    }
+  ]
+}

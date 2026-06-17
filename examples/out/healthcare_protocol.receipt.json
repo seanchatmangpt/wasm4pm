@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "ee5a37f2db7fd0a7162f63d6ea19219fb7d3b7ee",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "healthcare_protocol",
+  "input": {
+    "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "alignments",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e",
+      "duration_ms": 32.939,
+      "expected_path": {
+        "route_id": "wpm.example.healthcare_protocol.alignments.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_alignments_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e",
+                "duration_ms": 32.939
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alignments",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alignments_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "591fe40a10f1d976a014afc9f2166d1e02eec286f48205d519b3356888511540"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_alignments_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:35.107Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:35.715Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:38.996Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:38.977Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:37.950Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e",
+                "duration_ms": 32.939
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:37.031Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:42.150Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:42.042Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:42.170Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_alignments_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:39.890Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alignments",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alignments_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "325460cd1b479f82ffa89eb18f1cd97932793fe8f10fb4b1dd0929827ab51f20",
+        "observed_result_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
+        "output_artifact_hash": "2b8844b81fc7872bc19ee5e230968af9237a9c82e0bd4e7c12f44eb2ec1d0e6e",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "complexity_metrics",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691",
+      "duration_ms": 21.51,
+      "expected_path": {
+        "route_id": "wpm.example.healthcare_protocol.complexity_metrics.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691",
+                "duration_ms": 21.51
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_complexity_metrics",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_complexity_metrics_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "a183a164eeb2fbe261eda669e5bb550db9dedcbb8366cd1f6fe3ebf53767d138"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:37.951Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:36.017Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:39.508Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:40.818Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:39.978Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691",
+                "duration_ms": 21.51
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:39.963Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:37.933Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:40.572Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:43.326Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_complexity_metrics_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:40.667Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_complexity_metrics",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_complexity_metrics_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "baaca24fe750a2919d567930152e22c359ab3ab3ad3c1c724e7d3cc9a7e359d5",
+        "observed_result_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
+        "output_artifact_hash": "45d37a037bfb6a8e2027ab2a4abf54b601316c46a87a801af9f0c4d7b091e691",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "pnml_import",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630",
+      "duration_ms": 50.045,
+      "expected_path": {
+        "route_id": "wpm.example.healthcare_protocol.pnml_import.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_pnml_import_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630",
+                "duration_ms": 50.045
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_pnml_import",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_pnml_import_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "001c15c270fc058c8bec12bd3a9c0a2872a778815d93438431d7101f3745a5d7"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_pnml_import_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:34.989Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:35.424Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:35.985Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:37.028Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:39.775Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630",
+                "duration_ms": 50.045
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:40.150Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:39.843Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:38.824Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_pnml_import",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:42.015Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_pnml_import_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:41.825Z",
+              "relationships": [
+                {
+                  "objectId": "result_pnml_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_pnml_import",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_pnml_import_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "cb241d9b9ce130426ac77ec23a0d85629a6fface313413c97ca90b69b33e66f2",
+        "observed_result_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
+        "output_artifact_hash": "a47f296fa5ea129de91e75d60f6a2995066d04a53cbd772fb7e14d1b08e13630",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "bpmn_import",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385",
+      "duration_ms": 45.208,
+      "expected_path": {
+        "route_id": "wpm.example.healthcare_protocol.bpmn_import.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385",
+                "duration_ms": 45.208
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_bpmn_import",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_bpmn_import_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "7d126fe94ca5b0b0d791444974f800b4702310d3a9d92cda775873373c8a534d"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:35.151Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:35.576Z",
+              "relationships": [
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:35.858Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:36.435Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:37.047Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385",
+                "duration_ms": 45.208
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:39.962Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:41.380Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:39.483Z",
+              "relationships": [
+                {
+                  "objectId": "example_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_bpmn_import",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:42.797Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_healthcare_protocol_bpmn_import_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.620Z",
+              "relationships": [
+                {
+                  "objectId": "result_bpmn_import_healthcare_protocol",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_healthcare_protocol",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_healthcare_protocol",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_healthcare_protocol",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_bpmn_import",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_bpmn_import_healthcare_protocol",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_healthcare_protocol",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "36162bdd68a1b455ceaefd5a2341a1566681d247a6b27ccde9b181192c9fb81a",
+        "observed_result_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "4d1fb52d93e05ce0c0984c4f88dd79e69ad3772a8631a24c02e0ce4d97bae7a8",
+        "output_artifact_hash": "360bd7e24e7d5fcb2e3139dca1aa90f0e59fc11919b98b0b2684369fb492b385",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T23:56:34.492Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "4c0312b1061c6a48936c93fadec21c1c4423d31c3a7015172b9f7cdd9123504f"
+}

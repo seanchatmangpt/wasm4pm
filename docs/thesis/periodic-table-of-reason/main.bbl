@@ -1,0 +1,278 @@
+\begin{thebibliography}{31}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Aamodt and Plaza(1994)]{aamodt1994cbr}
+Agnar Aamodt and Enric Plaza.
+\newblock Case-based reasoning: Foundational issues, methodological variations,
+  and system approaches.
+\newblock \emph{AI Communications}, 7\penalty0 (1):\penalty0 39--59, 1994.
+\newblock Defines the Retrieve--Reuse--Revise--Retain cycle. Foundational for
+  the \textsc{cbr} breed Jaccard identity proof (Theorem~3.1, clause~(v)).
+
+\bibitem[Adriansyah(2014)]{adriansyah2014aligning}
+Arya Adriansyah.
+\newblock \emph{Aligning Observed and Modeled Behavior}.
+\newblock {PhD} thesis, Technische Universiteit Eindhoven, 2014.
+\newblock Full formal treatment of alignment-based conformance checking.
+  Defines the alignment cost function used in Definition~4.2 of this
+  dissertation. 252 pages.
+
+\bibitem[Berry(1941)]{berry1941}
+Andrew~C. Berry.
+\newblock The accuracy of the {Gaussian} approximation to the sum of
+  independent variates.
+\newblock \emph{Transactions of the American Mathematical Society}, 49\penalty0
+  (1):\penalty0 122--136, 1941.
+\newblock \doi{10.2307/1990053}.
+\newblock Establishes the rate $C/\sqrt{k}$ for the Kolmogorov--Smirnov
+  distance between empirical and Gaussian distributions. Used in Theorem~8.1
+  (Berry-Esseen bound for Bayesian sensitivity analysis).
+
+\bibitem[Berti et~al.(2024)Berti, Koren, Adams, Park, et~al.]{ocel2standard}
+Alessandro Berti, Isabelle Koren, Jan~Niklas Adams, Gyunam Park, et~al.
+\newblock {OCEL} 2.0 specification.
+\newblock arXiv:2403.01975v1 [cs.DB], 2024.
+\newblock URL \url{https://arxiv.org/abs/2403.01975}.
+\newblock Adds O2O relationships, dynamic object attributes, and three exchange
+  formats: SQLite, XML, JSON. Foundation of Definition~4.1.
+
+\bibitem[Chatman(2025)]{chatman2025proofbound}
+Sean Chatman.
+\newblock Proof-bound enterprise change.
+\newblock Technical report, Autonomic Research Division, 2025.
+\newblock Third in the \textit{wasm4pm} series. Introduces the receipt monad,
+  BLAKE3 chain continuity ($C_1$), and the causal completeness of
+  input\_hash-covered receipts. File:
+  \texttt{\textasciitilde/Documents/Papers/Proof-Bound Enterprise Change.pdf}.
+
+\bibitem[Erman et~al.(1980)Erman, Hayes-Roth, Lesser, and
+  Reddy]{erman1980hearsay}
+Lee~D. Erman, Frederick Hayes-Roth, Victor~R. Lesser, and D.~Raj Reddy.
+\newblock The {Hearsay-II} speech-understanding system: Integrating knowledge
+  to resolve uncertainty.
+\newblock \emph{ACM Computing Surveys}, 12\penalty0 (2):\penalty0 213--253,
+  1980.
+\newblock \doi{10.1145/356810.356816}.
+\newblock Defines the blackboard architecture and KSAR opportunistic scheduling
+  used in the \textsc{hearsay} breed (Theorem~3.1, clause~(vi)).
+
+\bibitem[Feigenbaum et~al.(1971)Feigenbaum, Buchanan, and
+  Lederberg]{feigenbaum1971dendral}
+Edward~A. Feigenbaum, Bruce~G. Buchanan, and Joshua Lederberg.
+\newblock On generality and problem solving: A case study using the {DENDRAL}
+  program.
+\newblock In B.~Meltzer and D.~Michie, editors, \emph{Machine Intelligence},
+  volume~6, pages 165--190. Edinburgh University Press, 1971.
+\newblock Constrained structure generation with forbid/require rules.
+  Foundation for the \textsc{dendral} breed (Theorem~3.1, clause~(vii)).
+
+\bibitem[Feller(1968)]{feller1968}
+William Feller.
+\newblock \emph{An Introduction to Probability Theory and Its Applications},
+  volume~2.
+\newblock Wiley, New York, 2nd edition, 1968.
+\newblock Standard graduate probability reference. Contains the Berry-Esseen
+  theorem in the form used in Theorem~8.1, establishing the phase-transition
+  latency bound $\tau^*_\varepsilon$.
+
+\bibitem[Fikes and Nilsson(1971)]{fikes1971strips}
+Richard~E. Fikes and Nils~J. Nilsson.
+\newblock {STRIPS}: A new approach to the application of theorem proving to
+  problem solving.
+\newblock \emph{Artificial Intelligence}, 2\penalty0 (3--4):\penalty0 189--208,
+  1971.
+\newblock \doi{10.1016/0004-3702(71)90010-5}.
+\newblock Introduces the STRIPS planning formalism with closed-world
+  assumption, preconditions, and add/delete effects. Foundation for the
+  \textsc{strips} breed plan-soundness proof (Theorem~3.1, clause~(iii)).
+
+\bibitem[Goodenough and Gerhart(1975)]{goodenoughandgerhart1975}
+John~B. Goodenough and Susan~L. Gerhart.
+\newblock \emph{Toward a Theory of Test Data Selection}.
+\newblock ACM, 1975.
+\newblock Foundational paper on test adequacy criteria.
+
+\bibitem[Kowalski(1974)]{kowalski1974prolog}
+Robert Kowalski.
+\newblock Predicate logic as a programming language.
+\newblock In \emph{Proceedings of the IFIP Congress 1974}, pages 569--574.
+  North-Holland, 1974.
+\newblock Introduces logic programming and establishes the procedural
+  interpretation of Horn clauses. Co-foundational with Robinson~(1965) for the
+  \textsc{prolog} breed.
+
+\bibitem[K{\"u}sters and van~der Aalst(2025)]{kusters2025ocpq}
+Aaron K{\"u}sters and Wil M.~P. van~der Aalst.
+\newblock {OCPQ}: Object-centric process querying \& constraints.
+\newblock In \emph{19th International Conference on Research Challenges in
+  Information Science (RCIS 2025)}, 2025.
+\newblock arXiv:2506.11541. Formal Definitions~1--9 for OCPQ query tree
+  semantics over object-centric event logs.
+
+\bibitem[Laird et~al.(1987)Laird, Newell, and Rosenbloom]{laird1987soar}
+John~E. Laird, Allen Newell, and Paul~S. Rosenbloom.
+\newblock {SOAR}: An architecture for general intelligence.
+\newblock \emph{Artificial Intelligence}, 33\penalty0 (1):\penalty0 1--64,
+  1987.
+\newblock \doi{10.1016/0004-3702(87)90050-6}.
+\newblock Introduces impasse-driven subgoaling and chunking. Foundational for
+  the \textsc{soar} breed antisymmetry proof (Theorem~3.1, clause~(iv)) and the
+  epistemological space vector.
+
+\bibitem[Leemans et~al.(2013)Leemans, Fahland, and van~der
+  Aalst]{leemans2013discovering}
+Sander J.~J. Leemans, Dirk Fahland, and Wil M.~P. van~der Aalst.
+\newblock Discovering block-structured process models from event logs --- a
+  constructive approach.
+\newblock In \emph{Application and Theory of Petri Nets and Concurrency (Petri
+  Nets 2013)}, volume 7927 of \emph{Lecture Notes in Computer Science}, pages
+  311--329. Springer, 2013.
+\newblock \doi{10.1007/978-3-642-38697-8_17}.
+\newblock The Inductive Miner algorithm. Guarantees fitness $\geq 0.5$ and
+  soundness of discovered models. Used in Proposition~4.1.
+
+\bibitem[Leucker and Schallhart(2009)]{leucker2009rv}
+Martin Leucker and Christian Schallhart.
+\newblock A brief account of runtime verification.
+\newblock \emph{Journal of Logic and Algebraic Programming}, 78\penalty0
+  (5):\penalty0 293--303, 2009.
+
+\bibitem[Mac~Lane(1971)]{maclane1971}
+Saunders Mac~Lane.
+\newblock \emph{Categories for the Working Mathematician}, volume~5 of
+  \emph{Graduate Texts in Mathematics}.
+\newblock Springer, 1971.
+\newblock \doi{10.1007/978-1-4757-4721-8}.
+\newblock The standard reference for category theory. The compact-open topology
+  (Chapter~2), Kleisli categories, and functors are drawn from this source.
+
+\bibitem[Mac~Lane and Moerdijk(1992)]{maclane1992sheaves}
+Saunders Mac~Lane and Ieke Moerdijk.
+\newblock \emph{Sheaves in Geometry and Logic: A First Introduction to Topos
+  Theory}.
+\newblock Universitext. Springer, 1992.
+\newblock \doi{10.1007/978-1-4612-0927-0}.
+\newblock Defines the sheaf condition (locality + gluing) used in
+  Proposition~7.1 (BVC as a sheaf over the pipeline graph).
+
+\bibitem[Moggi(1991)]{moggi1991monads}
+Eugenio Moggi.
+\newblock Notions of computation and monads.
+\newblock \emph{Information and Computation}, 93\penalty0 (1):\penalty0 55--92,
+  1991.
+\newblock \doi{10.1016/0890-5401(91)90052-4}.
+\newblock Introduces computational monads as a categorical framework for
+  effects. The writer monad over the free monoid of BLAKE3 digests
+  (Definition~9.3, Receipt Functor) is an instance of this framework.
+
+\bibitem[Moreau et~al.(2013)Moreau, Missier, et~al.]{moreau2013prov}
+Luc Moreau, Paolo Missier, et~al.
+\newblock {PROV-DM}: The {PROV} data model.
+\newblock In \emph{W3C Recommendation}, 2013.
+\newblock \url{https://www.w3.org/TR/prov-dm/}.
+
+\bibitem[Necula(1997)]{necula1997pcc}
+George~C. Necula.
+\newblock Proof-carrying code.
+\newblock In \emph{Proceedings of the 24th ACM SIGPLAN-SIGACT Symposium on
+  Principles of Programming Languages (POPL)}, pages 106--119. ACM, 1997.
+
+\bibitem[Newell and Simon(1963)]{newell1963gps}
+Allen Newell and Herbert~A. Simon.
+\newblock {GPS}, a program that simulates human thought.
+\newblock In Edward~A. Feigenbaum and Julian Feldman, editors, \emph{Computers
+  and Thought}, pages 279--293. McGraw-Hill, New York, 1963.
+\newblock Introduces means-ends analysis and the difference-reduction table.
+  Foundation for the \textsc{gps} breed (Theorem~3.1, clause~(viii)).
+
+\bibitem[O'Connor et~al.(2020)O'Connor, Aumasson, Neves, and
+  Wilcox-O'Hearn]{blake3_2020}
+Jack O'Connor, Jean-Philippe Aumasson, Samuel Neves, and Zooko Wilcox-O'Hearn.
+\newblock {BLAKE3}: One function, fast everywhere.
+\newblock arXiv:2012.04616, 2020.
+\newblock URL
+  \url{https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf}.
+\newblock Design and security analysis of BLAKE3. Describes the ARX
+  permutation, Merkle tree structure, and collision resistance guarantees used
+  in Definition~9.1 and Theorem~9.1.
+
+\bibitem[Popper(1959)]{popper1959}
+Karl~R. Popper.
+\newblock \emph{The Logic of Scientific Discovery}.
+\newblock Hutchinson, London, 1959.
+\newblock German original: \textit{Logik der Forschung}, 1934. Introduces
+  falsifiability as the demarcation criterion for scientific theories.
+  Foundational for Definitions~1.1--1.2 and the epigraph of Chapter~3.
+
+\bibitem[Popper(1963)]{popper1963}
+Karl~R. Popper.
+\newblock \emph{Conjectures and Refutations: The Growth of Scientific
+  Knowledge}.
+\newblock Routledge and Kegan Paul, London, 1963.
+\newblock Extends falsifiability to the growth-of-knowledge framework. Source
+  of the Chapter~1 epigraph.
+
+\bibitem[Robinson(1965)]{robinson1965}
+J.~Alan Robinson.
+\newblock A machine-oriented logic based on the resolution principle.
+\newblock \emph{Journal of the ACM}, 12\penalty0 (1):\penalty0 23--41, 1965.
+\newblock \doi{10.1145/321250.321253}.
+\newblock Introduces Robinson unification (most general unifier) and SLD
+  resolution. Foundation for the \textsc{prolog} breed grandparent derivation
+  proof (Theorem~3.1, clause~(ii)).
+
+\bibitem[Schank(1972)]{schank1972}
+Roger~C. Schank.
+\newblock Conceptual dependency: A theory of natural language understanding.
+\newblock \emph{Cognitive Psychology}, 3\penalty0 (4):\penalty0 552--631, 1972.
+\newblock Foundational CD theory paper; cited for ELIZA/autoinstinct-semantics
+  breed provenance.
+
+\bibitem[Shortliffe(1976)]{shortliffe1976}
+Edward~H. Shortliffe.
+\newblock \emph{Computer-Based Medical Consultations: {MYCIN}}.
+\newblock Elsevier / American Elsevier, New York, 1976.
+\newblock Original MYCIN monograph. Defines the Certainty Factor calculus and
+  the threshold $\tau = 0.2$ used in the unfakeable oracle (Theorem~3.1,
+  clause~(i)). Shortliffe's PhD dissertation at Stanford.
+
+\bibitem[van~der Aalst(2016)]{vanderaalst2016}
+Wil M.~P. van~der Aalst.
+\newblock \emph{Process Mining: Data Science in Action}.
+\newblock Springer, 2nd edition, 2016.
+\newblock \doi{10.1007/978-3-662-49851-4}.
+\newblock The definitive text on process mining. Introduces alignment-based
+  conformance checking, discovery algorithms, and the Process Mining Manifesto.
+  Second edition adds predictive and prescriptive mining.
+
+\bibitem[{WebAssembly Community Group}(2019)]{webassembly2019}
+{WebAssembly Community Group}.
+\newblock {WebAssembly} core specification.
+\newblock Technical report, W3C, 2019.
+\newblock Version 1.0. \url{https://webassembly.github.io/spec/core/}.
+
+\bibitem[Weizenbaum(1966)]{weizenbaum1966eliza}
+Joseph Weizenbaum.
+\newblock {ELIZA}---a computer program for the study of natural language
+  communication between man and machine.
+\newblock \emph{Communications of the ACM}, 9\penalty0 (1):\penalty0 36--45,
+  1966.
+\newblock \doi{10.1145/365153.365168}.
+\newblock Defines the keystack pattern-matching architecture with priority
+  scores. Foundation for the \textsc{eliza} breed (Theorem~3.1, clause~(ix)).
+
+\bibitem[Wolpert and Macready(1997)]{wolpert1997nfl}
+David~H. Wolpert and William~G. Macready.
+\newblock No free lunch theorems for optimization.
+\newblock \emph{IEEE Transactions on Evolutionary Computation}, 1\penalty0
+  (1):\penalty0 67--82, 1997.
+\newblock \doi{10.1109/4235.585893}.
+\newblock Proves that no finite set of structural checks over a wrapper can
+  certify the correctness of an arbitrary inner function. Used in the
+  No-Free-Lunch argument of Theorem~7.1 (Fourth Constraint Necessity).
+
+\end{thebibliography}

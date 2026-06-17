@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cognition",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -40,7 +40,9 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
-    "wasm4pm-cognition": "./pkg"
+    "blake3": "^2.1.4",
+    "wasm4pm-cognition": "./pkg",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

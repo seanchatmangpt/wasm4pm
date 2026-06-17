@@ -4,6 +4,7 @@
  * Orchestrates bootstrap, planning, execution, and monitoring
  */
 
+import { z } from 'zod';
 import {
   EngineState,
   ExecutionPlan,
@@ -27,17 +28,19 @@ import {
   ObservabilityConfig,
 } from '@wasm4pm/observability';
 
+export const KernelRunResultSchema = z.object({
+  handle: z.string(),
+  algorithm: z.string(),
+  outputType: z.string(),
+  durationMs: z.number(),
+  params: z.record(z.string(), z.unknown()),
+  hash: z.string(),
+});
+
 /**
  * Result returned from Kernel.run()
  */
-export interface KernelRunResult {
-  handle: string;
-  algorithm: string;
-  outputType: string;
-  durationMs: number;
-  params: Record<string, unknown>;
-  hash: string;
-}
+export type KernelRunResult = z.infer<typeof KernelRunResultSchema>;
 
 /**
  * Kernel interface - abstract definition of WASM kernel
@@ -85,39 +88,34 @@ export interface Executor {
  * Useful for dashboards, `wpm status`, and autonomic recovery decisions.
  * All fields are always present (no optionals that change the call site shape).
  */
-export interface EngineHealthStatus {
-  /** Current engine state */
-  state: EngineState;
-  /** Milliseconds since the Engine instance was constructed */
-  uptime_ms: number;
-  /** Total state transitions recorded by the state machine */
-  transition_count: number;
-  /** Number of errors accumulated by the status tracker */
-  error_count: number;
-  /** Last error message, or null if no errors */
-  last_error: string | null;
-  /** Mean time to recovery in ms (0 if no recovery has happened) */
-  mttr_ms: number;
-  /** Number of algorithms available from the kernel registry (-1 if unknown) */
-  algorithms_loaded: number;
-  /** Whether the WASM binary is currently loaded */
-  wasm_loaded: boolean;
-}
+export const EngineHealthStatusSchema = z.object({
+  state: z.string() as z.ZodType<EngineState>,
+  uptime_ms: z.number(),
+  transition_count: z.number(),
+  error_count: z.number(),
+  last_error: z.string().nullable(),
+  mttr_ms: z.number(),
+  algorithms_loaded: z.number(),
+  wasm_loaded: z.boolean(),
+});
+
+export type EngineHealthStatus = z.infer<typeof EngineHealthStatusSchema>;
 
 /**
  * Severity level for a single diagnostic finding.
  */
 export type DiagnosticLevel = 'ok' | 'warn' | 'error';
 
+export const DiagnosticResultSchema = z.object({
+  level: z.enum(['ok', 'warn', 'error']) as z.ZodType<DiagnosticLevel>,
+  message: z.string(),
+  detail: z.record(z.string(), z.unknown()).optional(),
+});
+
 /**
  * A single diagnostic finding returned by {@link Engine.diagnose}.
  */
-export interface DiagnosticResult {
-  level: DiagnosticLevel;
-  message: string;
-  /** Optional structured detail for programmatic consumers */
-  detail?: Record<string, unknown>;
-}
+export type DiagnosticResult = z.infer<typeof DiagnosticResultSchema>;
 
 /**
  * Aggregated runtime metrics for the engine.
@@ -125,20 +123,16 @@ export interface DiagnosticResult {
  * Counters accumulate for the lifetime of the Engine instance.
  * Calling `reset()` does NOT reset these; they are not persisted across restarts.
  */
-export interface EngineMetrics {
-  /** Total number of `engine.run()` calls attempted */
-  runs_total: number;
-  /** Number of `run()` calls that completed without error */
-  runs_successful: number;
-  /** Number of `run()` calls that ended with an error */
-  runs_failed: number;
-  /** Per-algorithm execution counts — keyed by algorithm registry ID */
-  algorithms_used: Record<string, number>;
-  /** Rolling mean run duration in ms (0 if no runs yet) */
-  avg_run_duration_ms: number;
-  /** Total events processed across all runs (from ExecutionReceipt summaries) */
-  total_events_processed: number;
-}
+export const EngineMetricsSchema = z.object({
+  runs_total: z.number(),
+  runs_successful: z.number(),
+  runs_failed: z.number(),
+  algorithms_used: z.record(z.string(), z.number()),
+  avg_run_duration_ms: z.number(),
+  total_events_processed: z.number(),
+});
+
+export type EngineMetrics = z.infer<typeof EngineMetricsSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -151,13 +145,11 @@ export class Engine {
   private currentRunId?: string;
   private transitionUnsubscribe?: () => void;
   private wasmLoader: WasmLoader;
-  private wasmModule?: WasmModule;
   private watchSession?: WatchSession;
   private watchConfig?: WatchConfig;
   private observability: ObservabilityWrapper;
   private traceId: string;
   private requiredOtelAttrs: RequiredOtelAttributes;
-  private observabilityErrors: Array<{ timestamp: Date; layer: string; message: string }> = [];
   private signalHandler?: SignalHandler;
   private checkpointStore: ICheckpointStore;
 
@@ -531,7 +523,6 @@ export class Engine {
     // Update required OTEL attributes with current run ID
     this.requiredOtelAttrs['run.id'] = this.currentRunId;
 
-    const bootstrapStart = Date.now();
 
     try {
       // Validate transition
@@ -597,7 +588,7 @@ export class Engine {
         throw timeoutError;
       });
 
-      this.wasmModule = result.wasmModule;
+      void result.wasmModule; // retained for future use
 
       // Transition to ready
       this.stateMachine.transition('ready', 'WASM and kernel initialized successfully');

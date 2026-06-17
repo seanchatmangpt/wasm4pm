@@ -1,0 +1,110 @@
+{
+  "intent": "Parse operator command 'route batch A through station 3 then QA' into CD ATRANS/PTRANS primitives",
+  "candidates": [
+    {
+      "id": "2026-06-10T08:00:00Z",
+      "score": 1,
+      "eliminated": false
+    },
+    {
+      "id": "active",
+      "score": 1,
+      "eliminated": false
+    },
+    {
+      "id": "blocked",
+      "score": 1,
+      "eliminated": false
+    },
+    {
+      "id": "idle",
+      "score": 1,
+      "eliminated": false
+    },
+    {
+      "id": "running",
+      "score": 1,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "machine_1_state",
+      "value": "running"
+    },
+    {
+      "key": "machine_2_state",
+      "value": "blocked"
+    },
+    {
+      "key": "machine_3_state",
+      "value": "idle"
+    },
+    {
+      "key": "conveyor_A_state",
+      "value": "running"
+    },
+    {
+      "key": "raw_command",
+      "value": "route batch A through station 3 then QA"
+    },
+    {
+      "key": "actor",
+      "value": "operator"
+    },
+    {
+      "key": "object",
+      "value": "batch_A"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_route",
+      "premise": [
+        "raw_command=route batch A through station 3 then QA",
+        "actor=operator"
+      ],
+      "conclusion": "PTRANS(object,src,dest)",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_then",
+      "premise": [
+        "raw_command=route batch A through station 3 then QA"
+      ],
+      "conclusion": "ordered_PTRANS_chain",
+      "certainty": 0.8
+    },
+    {
+      "id": "r_QA",
+      "premise": [
+        "object=batch_A",
+        "actor=operator"
+      ],
+      "conclusion": "ATRANS(ownership, QA_dept)",
+      "certainty": 0.8
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "parse_command_to_CD",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "c_route_1",
+      "intent": "PTRANS chain",
+      "architecture": "rule-based",
+      "outcome_score": 0.8,
+      "facts": []
+    }
+  ],
+  "state": [
+    {
+      "predicate": "command_parsed",
+      "value": "false"
+    }
+  ]
+}

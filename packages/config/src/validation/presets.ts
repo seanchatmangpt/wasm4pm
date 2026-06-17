@@ -3,6 +3,7 @@
  * Provides minimal working configs and scenario-specific templates.
  */
 
+import { z } from 'zod';
 import { SCHEMA_VERSION } from '../schema.js';
 import type { BaseConfig } from '../types.js';
 
@@ -418,26 +419,28 @@ export function describePublicPreset(preset: PublicPreset): string {
   return describePreset(PRESET_ALIAS[preset]);
 }
 
-export interface PresetConstraints {
-  maxMemoryMb?: number;
-  maxLatencyMs?: number;
-  requiredAlgorithms?: string[];
-  requiredFeatures?: string[];
-}
+export const presetConstraintsSchema = z.object({
+  maxMemoryMb: z.number().optional(),
+  maxLatencyMs: z.number().optional(),
+  requiredAlgorithms: z.array(z.string()).optional(),
+  requiredFeatures: z.array(z.string()).optional(),
+});
+export type PresetConstraints = z.infer<typeof presetConstraintsSchema>;
 
 /**
  * Observed characteristics of the event log being analysed.
  * When provided to `generateOptimalConfig`, these influence the
  * selection reason and can surface additional instinct signals.
  */
-export interface LogCharacteristics {
+export const logCharacteristicsSchema = z.object({
   /** Total number of events in the log (sum across all traces). */
-  eventCount?: number;
+  eventCount: z.number().optional(),
   /** Number of distinct cases / traces in the log. */
-  traceCount?: number;
+  traceCount: z.number().optional(),
   /** Number of unique activity labels observed. */
-  activityCount?: number;
-}
+  activityCount: z.number().optional(),
+});
+export type LogCharacteristics = z.infer<typeof logCharacteristicsSchema>;
 
 const QUALITY_ALGORITHMS = new Set([
   'genetic_algorithm',
@@ -470,17 +473,19 @@ export function suggestPreset(constraints: PresetConstraints): PublicPreset {
 // Benchmark-driven AutoML preset selection
 // ============================================================================
 
-export interface AlgorithmMeasurement {
-  median_ms_per_100_events: number | null;
-  speed_score: number;
-  quality_score: number;
-  profile: string[];
-}
+export const algorithmMeasurementSchema = z.object({
+  median_ms_per_100_events: z.number().nullable(),
+  speed_score: z.number(),
+  quality_score: z.number(),
+  profile: z.array(z.string()),
+});
+export type AlgorithmMeasurement = z.infer<typeof algorithmMeasurementSchema>;
 
-export interface BenchmarkData {
-  schema_version: string;
-  algorithms: Record<string, AlgorithmMeasurement>;
-}
+export const benchmarkDataSchema = z.object({
+  schema_version: z.string(),
+  algorithms: z.record(z.string(), algorithmMeasurementSchema),
+});
+export type BenchmarkData = z.infer<typeof benchmarkDataSchema>;
 
 /**
  * Select the best PublicPreset by scoring algorithms against actual benchmark

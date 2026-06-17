@@ -1,28 +1,20 @@
 # wasm4pm
 
-High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and nine Old-AI cognition breeds — all through one CLI (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 13 Old-AI cognition breeds — all through one CLI (`wpm`).
 
 **Old AI is the factory. LLMs are the brochure.**
 
 ## Install
 
-```bash
-npm install -g @wasm4pm/cli
-```
-
-Library for Node/TypeScript:
-
-```bash
-npm install wasm4pm
-```
-
-From the monorepo without a global install:
+`@wasm4pm/cli` is not yet published to npm. Use the monorepo directly:
 
 ```bash
 # CLI requires the Node.js WASM target (once per clone)
 cd wasm4pm && npm run build:nodejs && cd ..
 npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
 ```
+
+> **npm global install coming soon.** `npm install -g @wasm4pm/cli` will be available once the package is published to npmjs.org.
 
 > **Dual-binary caveat:** Installing the Rust crate (`cargo install wasm4pm-cli`) places a second `wpm` binary on your `PATH` that only exposes ~10 commands. It may shadow the TypeScript CLI (`@wasm4pm/cli`, 50+ commands), which is the published source of truth. Run `wpm doctor` to detect binary shadowing and confirm which binary is active.
 
@@ -51,7 +43,7 @@ wpm status --format json
 
 The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, cognition, receipts, cell, and utilities). Run `wpm --help` for the full tree.
 
-**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `heuristic_miner`. Run `wpm --help` for the full command tree.
+**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `simd_streaming_dfg`. Run `wpm --help` for the full command tree.
 
 ## Algorithms
 
@@ -81,10 +73,10 @@ const logHandle = wasm.load_eventlog_from_xes(
 const kernel = new Kernel(wasm);
 await kernel.init();
 
-const { output } = await kernel.discover('dfg', logHandle, {
+const { handle, metadata } = await kernel.discover('dfg', logHandle, {
   activity_key: 'concept:name',
 });
-console.log(output);
+console.log(handle, metadata);
 ```
 
 ## Truex — OCEL 2.0 Execution Trust
@@ -112,35 +104,41 @@ Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
 
 ## Cognition (Old AI)
 
-Nine breeds run natively in Rust and are exposed through `wpm cognition`:
+Thirteen breeds run natively in Rust and are exposed through `wpm cognition`. Nine are classic Old-AI paradigms; four are Autoinstinct breeds:
 
 ```bash
 wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 ```
 
-| Breed | Origin | Technique |
-|-------|--------|-----------|
-| ELIZA | 1966 | Pattern matching with slot binding |
-| MYCIN | 1976 | Forward chaining + certainty factors |
-| STRIPS | 1971 | Goal regression planning |
-| Prolog | 1965 | Robinson unification + SLD resolution |
-| CBR | 1992 | Jaccard similarity case retrieval |
-| DENDRAL | 1969 | Constraint-driven enumeration |
-| GPS | 1963 | Means-ends gap reduction |
-| SOAR | 1987 | Preference-based operator selection |
-| Hearsay-II | 1980 | Blackboard consensus fusion |
+| Breed | Category | Origin | Technique |
+|-------|----------|--------|-----------|
+| STRIPS | Old AI | 1971 | Goal regression planning |
+| Prolog | Old AI | 1965 | Robinson unification + SLD resolution |
+| CBR | Old AI | 1992 | Jaccard similarity case retrieval |
+| DENDRAL | Old AI | 1969 | Constraint-driven enumeration |
+| GPS | Old AI | 1963 | Means-ends gap reduction |
+| SOAR | Old AI | 1987 | Preference-based operator selection |
+| Hearsay-II | Old AI | 1980 | Blackboard consensus fusion |
+| Frame | Old AI | 1975 | Frame-based knowledge representation |
+| Production Rules | Old AI | 1943 | Rule-based forward chaining |
+| Autoinstinct: Vision | Autoinstinct | — | Autoinstinct visual perception |
+| Autoinstinct: Semantics | Autoinstinct | — | Autoinstinct semantic reasoning |
+| Autoinstinct: Neurosis | Autoinstinct | — | Autoinstinct neurosis detection |
+| Autoinstinct: Learning | Autoinstinct | — | Autoinstinct adaptive learning |
 
 ## Deployment Profiles
 
-Optimized WASM bundles for every environment:
+Optimized WASM bundles for every environment. All profiles currently build to ~5–8 MB; feature-flag-based size reduction is in progress.
 
-| Profile | Size | Use case |
-|---------|------|----------|
-| `mobile` | ~500KB | Mobile / low bandwidth |
-| `iot` | ~1.0MB | Embedded |
-| `edge` | ~1.5MB | CDN / edge workers |
-| `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~3.4MB | Web + Node.js (default) |
+| Profile | Actual Size | Use case |
+|---------|-------------|----------|
+| `mobile` | ~5.4 MB | Mobile / low bandwidth |
+| `iot` | ~5.4 MB | Embedded |
+| `edge` | ~5.4 MB | CDN / edge workers |
+| `fog` | ~5.4 MB | IoT gateways |
+| `browser` | ~7.6 MB | Web + Node.js (default) |
+
+> **Note:** Non-browser profiles share feature flags with the Node.js target and produce identical binary sizes (~5.4 MB) until per-profile `--features` forwarding is fully wired in the build scripts. Browser target compiles to ~7.6 MB. See [audit 2026-06-09](docs/audits/readme-validation-2026-06-09.md).
 
 Detailed feature mapping and build instructions: [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
 

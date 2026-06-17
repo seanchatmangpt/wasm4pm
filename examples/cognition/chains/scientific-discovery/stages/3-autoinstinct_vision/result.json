@@ -1,0 +1,175 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_vision",
+    "breed": "autoinstinct_vision",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctvision",
+      "candidates": [
+        {
+          "id": "1.2",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "1.43_angstrom",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "5",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "6",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "6_carbon_1_oxygen_detected",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "C-C_single_and_C-O_single",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "autoinstinct_vision_bond_topology_detector",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "cyclohexanol",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "xray_crystallography_electron_density",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "scene_type",
+          "value": "xray_crystallography_electron_density"
+        },
+        {
+          "key": "resolution_angstrom",
+          "value": "1.2"
+        },
+        {
+          "key": "prolog_conforming_candidates",
+          "value": "5"
+        },
+        {
+          "key": "top_candidate_from_prolog",
+          "value": "cyclohexanol"
+        },
+        {
+          "key": "expected_ring_size",
+          "value": "6"
+        },
+        {
+          "key": "expected_bond_type",
+          "value": "C-C_single_and_C-O_single"
+        },
+        {
+          "key": "scene_parser",
+          "value": "autoinstinct_vision_bond_topology_detector"
+        },
+        {
+          "key": "electron_density_peaks",
+          "value": "6_carbon_1_oxygen_detected"
+        },
+        {
+          "key": "bond_length_C_O",
+          "value": "1.43_angstrom"
+        }
+      ],
+      "selected": "1.2",
+      "explanation": "AutoinstinctVision: 9 objects observed; first clear object is 1.2",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "observe-object",
+          "detail": "observed 1.2 as resolution_angstrom (on table)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "observe-object",
+          "detail": "observed 1.43_angstrom as bond_length_C_O (on table)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "observe-object",
+          "detail": "observed 5 as prolog_conforming_candidates (on table)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "observe-object",
+          "detail": "observed 6 as expected_ring_size (on table)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "observe-object",
+          "detail": "observed 6_carbon_1_oxygen_detected as electron_density_peaks (on table)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "observe-object",
+          "detail": "observed C-C_single_and_C-O_single as expected_bond_type (on table)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "observe-object",
+          "detail": "observed autoinstinct_vision_bond_topology_detector as scene_parser (on table)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "observe-object",
+          "detail": "observed cyclohexanol as top_candidate_from_prolog (on table)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "observe-object",
+          "detail": "observed xray_crystallography_electron_density as scene_type (on table)",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "find-clear-object",
+          "detail": "clear object found: 1.2",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "181f7ebec77af8084e9a9f171615e4c009fc61c877b01f061187d5d729bb19fb",
+    "output_hash": "29662feda5d1425235f2143543cf7671ebd58803ad913a5c4cc98ff15dcb6c91",
+    "replay_pointer": "29662feda5d14252",
+    "inference_step_count": 10,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/181f7ebec77af8084e9a9f171615e4c009fc61c877b01f061187d5d729bb19fb.json"
+  },
+  "meta": {
+    "run_id": "a53c9e48-dc92-475d-8a56-4f7fb39c2eed",
+    "timestamp": "2026-06-10T15:46:49.041Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

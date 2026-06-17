@@ -4,15 +4,24 @@
  * Uses native fetch (Node 18+) — no additional dependencies required.
  */
 
+import { z } from 'zod';
 import type { Span } from './spans.js';
 
-export interface OtlpExporterConfig {
-  endpoint: string;
-  headers?: Record<string, string>;
-  timeoutMs?: number;
-  batchSize?: number;
-  flushIntervalMs?: number;
-}
+/**
+ * Zod schema for OtlpExporterConfig.
+ * Validates the OTLP exporter configuration sourced from env vars or config
+ * files, catching malformed endpoints, wrong header types, and non-positive
+ * numeric options before any network activity begins.
+ */
+export const OtlpExporterConfigSchema = z.object({
+  endpoint: z.string().url(),
+  headers: z.record(z.string()).optional(),
+  timeoutMs: z.number().int().positive().optional(),
+  batchSize: z.number().int().positive().optional(),
+  flushIntervalMs: z.number().int().positive().optional(),
+});
+
+export type OtlpExporterConfig = z.infer<typeof OtlpExporterConfigSchema>;
 
 function spansToOtlpPayload(spans: Span[]): unknown {
   return {

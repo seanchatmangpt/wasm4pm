@@ -1,0 +1,80 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_neurosis",
+    "breed": "autoinstinct_neurosis",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctneurosis",
+      "candidates": [
+        {
+          "id": "stranger_approaches",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "loud_noise",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "belief:paranoia",
+          "value": "0.7"
+        },
+        {
+          "key": "belief:hostility",
+          "value": "0.4"
+        },
+        {
+          "key": "belief:trust",
+          "value": "0.2"
+        }
+      ],
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.100,\"belief_count\":5}",
+      "explanation": "AutoinstinctNeurosis: processed 2 stimuli over 3 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.100",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed-beliefs",
+          "detail": "seeded 3 beliefs from facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "curious",
+          "detail": "stimulus=\"stranger_approaches\" strength=0.800 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "curious",
+          "detail": "stimulus=\"loud_noise\" strength=0.900 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "affect-snapshot",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.100 beliefs=5",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0",
+    "output_hash": "d5cc6811264052354a4d8629ef82695575eec303b36334910cd8933d35be06c5",
+    "replay_pointer": "d5cc681126405235",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0.json"
+  },
+  "meta": {
+    "run_id": "92d91602-be0e-442e-aa22-0b88776ed934",
+    "timestamp": "2026-06-10T15:46:43.873Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

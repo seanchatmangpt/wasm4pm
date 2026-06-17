@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { plan as makePlan, getSuggestions } from '@wasm4pm/planner';
+import { plan as makePlan, getSuggestions, checkCostModelDrift } from '@wasm4pm/planner';
 import { computeParetoFront } from './suggest.js';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
@@ -1384,6 +1384,16 @@ export const run = defineCommand({
                 // log statistics are best-effort and non-fatal
               }
 
+              // Step 8c: Cost-model drift check against runtime receipt evidence.
+              // Best-effort: must never break the run.
+              let costDrift: ReturnType<typeof checkCostModelDrift> = undefined;
+              try {
+                const signal = checkCostModelDrift('.wasm4pm/receipts', resolvedAlgoFinal);
+                if (signal?.isAlert) costDrift = signal;
+              } catch {
+                // drift detection is advisory only
+              }
+
               // Step 9: Build output payload
               const payload = {
                 status: 'success',
@@ -1397,6 +1407,7 @@ export const run = defineCommand({
                 ...(qualityMetrics && { quality: qualityMetrics }),
                 ...(preflightWarnings.length > 0 && { preflightWarnings }),
                 ...(estimatedMs > 0 && { estimatedMs }),
+                ...(costDrift && { cost_drift: costDrift }),
               };
 
               // Capture final values for OTEL span (semantic attributes)
@@ -1431,6 +1442,12 @@ export const run = defineCommand({
                       algorithm: resolvedAlgoFinal,
                       activityKey,
                       elapsedMs: Math.round(elapsedMs * 100) / 100,
+                      // duration_ms + eventCount are read by the planner's
+                      // cost-drift detector and runtime meta-learner corpus
+                      duration_ms: Math.round(elapsedMs * 100) / 100,
+                      ...(logStats?.total_events !== undefined && {
+                        eventCount: logStats.total_events,
+                      }),
                     },
                   };
                   saveCommandReceipt(receipt);
@@ -1542,6 +1559,19 @@ export const run = defineCommand({
                       'Preflight validation complete — log is ready for discovery'
                     );
                   }
+                }
+
+                // Cost-model drift alert (advisory)
+                if (p.cost_drift) {
+                  const d = p.cost_drift as {
+                    actualMeanMs: number;
+                    predictedMeanMs: number;
+                    ewmaRatio: number;
+                    trend: string;
+                  };
+                  projection.warn(
+                    `⚠ Cost model stale for ${p.algorithm}: actual ${d.actualMeanMs.toFixed(1)}ms vs predicted ${d.predictedMeanMs.toFixed(1)}ms (EWMA ratio ${d.ewmaRatio.toFixed(2)}, ${d.trend}) — consider re-running benchmarks`
+                  );
                 }
 
                 // ML analysis summary

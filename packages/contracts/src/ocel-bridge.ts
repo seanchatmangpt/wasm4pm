@@ -10,6 +10,7 @@
  *   3. admitted | refused — mcpp admission verdict derived from status
  */
 
+import { z } from 'zod';
 import type { Receipt } from './receipt.js';
 
 // ---------------------------------------------------------------------------
@@ -17,21 +18,22 @@ import type { Receipt } from './receipt.js';
 // ---------------------------------------------------------------------------
 
 /**
+ * Zod schema for OCEL 2.0 event rows as written to `.mcpp/events.jsonl`.
+ * Keys follow the `ocel:` prefix convention from the OCEL 2.0 spec.
+ */
+export const OcelEventSchema = z.object({
+  'ocel:eid': z.string(),
+  'ocel:activity': z.string(),
+  'ocel:timestamp': z.string(),
+  'ocel:omap': z.array(z.string()),
+  'ocel:vmap': z.record(z.string(), z.unknown()),
+});
+
+/**
  * Single OCEL 2.0 event row as written to `.mcpp/events.jsonl`.
  * Keys follow the `ocel:` prefix convention from the OCEL 2.0 spec.
  */
-export type OcelEvent = {
-  /** Unique event identifier */
-  'ocel:eid': string;
-  /** Activity label (verb phrase describing what happened) */
-  'ocel:activity': string;
-  /** ISO-8601 timestamp */
-  'ocel:timestamp': string;
-  /** Object references — IDs of objects involved in this event */
-  'ocel:omap': string[];
-  /** Value map — additional key/value attributes */
-  'ocel:vmap': Record<string, unknown>;
-};
+export type OcelEvent = z.infer<typeof OcelEventSchema>;
 
 // ---------------------------------------------------------------------------
 // Receipt → OCEL events

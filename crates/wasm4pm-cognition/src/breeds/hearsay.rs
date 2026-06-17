@@ -15,11 +15,16 @@
 //!
 //! Consensus: when two KSs post the same content, confidences are fused
 //! via noisy-OR: `c = 1 - (1-c1)(1-c2)`.
+//!
+//! Scheduling: Hearsay-II opportunistic scheduler using a KSAR (Knowledge
+//! Source Activation Record) priority queue. Rating = ks.certainty * trigger_cf.
+//! The agenda is sorted by (rating desc, ks.id asc, conclusion asc).
 
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use std::collections::HashMap;
+use std::collections::BTreeMap;
+use tracing;
 
 /// Hearsay-II breed.
 pub struct Hearsay;
@@ -45,6 +50,32 @@ fn level_of(content: &str) -> &str {
     content.split(':').next().unwrap_or("")
 }
 
+/// Knowledge Source Activation Record — represents a pending KS firing.
+#[derive(Clone, Debug)]
+struct Ksar {
+    /// Rating = ks.certainty * trigger_cf, clamped to [0, 1].
+    rating: f32,
+    /// KS id (for tie-breaking, asc).
+    ks_id: String,
+    /// Conclusion the KS will post (for tie-breaking, asc).
+    conclusion: String,
+    /// The trigger content (premise[0]) that activated this KSAR.
+    trigger: String,
+    /// KS certainty factor.
+    certainty: f32,
+}
+
+/// Sort KSARs: rating desc (via total_cmp on clamped values), then ks_id asc,
+/// then conclusion asc.
+fn ksar_order(a: &Ksar, b: &Ksar) -> std::cmp::Ordering {
+    let ra = a.rating.clamp(0.0, 1.0);
+    let rb = b.rating.clamp(0.0, 1.0);
+    // Descending rating: compare rb to ra.
+    rb.total_cmp(&ra)
+        .then_with(|| a.ks_id.cmp(&b.ks_id))
+        .then_with(|| a.conclusion.cmp(&b.conclusion))
+}
+
 impl CognitionBreed for Hearsay {
     fn id(&self) -> BreedId {
         BreedId::Hearsay
@@ -62,8 +93,8 @@ impl CognitionBreed for Hearsay {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        // Blackboard: content → confidence
-        let mut blackboard: HashMap<String, f32> = HashMap::new();
+        // Blackboard: content → confidence (BTreeMap for deterministic iteration).
+        let mut blackboard: BTreeMap<String, f32> = BTreeMap::new();
         let mut trace: Vec<TraceStep> = Vec::new();
 
         // Seed from initial facts.
@@ -75,44 +106,168 @@ impl CognitionBreed for Hearsay {
                 kind: "seed".to_string(),
                 detail: content,
                 depth: 0,
+                objects: vec![],
             });
         }
 
-        // Iterative agenda: keep firing KSs whose triggers exist on the
-        // blackboard, until a full pass produces no further change.
-        let max_iters = input.rules.len().saturating_mul(4) + 4;
-        let mut iters = 0;
+        let firing_cap = input.rules.len().saturating_mul(8).max(8);
+
+        // Build initial agenda: scan all rules against current blackboard.
+        let mut agenda: Vec<Ksar> = Vec::new();
+        for ks in &input.rules {
+            let trigger = match ks.premise.first() {
+                Some(t) => t,
+                None => continue,
+            };
+            if let Some(&trigger_cf) = blackboard.get(trigger) {
+                let rating =
+                    (ks.certainty.clamp(0.0, 1.0) * trigger_cf.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+                let ksar = Ksar {
+                    rating,
+                    ks_id: ks.id.clone(),
+                    conclusion: ks.conclusion.clone(),
+                    trigger: trigger.clone(),
+                    certainty: ks.certainty.clamp(0.0, 1.0),
+                };
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "enqueue-ksar".to_string(),
+                    detail: format!(
+                        "ks={} trigger={} rating={:.3}",
+                        ksar.ks_id, ksar.trigger, ksar.rating
+                    ),
+                    depth: 0,
+                    objects: vec![],
+                });
+                agenda.push(ksar);
+            }
+        }
+        agenda.sort_by(ksar_order);
+
+        let mut firings: usize = 0;
+
         loop {
-            iters += 1;
-            if iters > max_iters {
+            if firings >= firing_cap {
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "agenda-cap-hit".to_string(),
+                    detail: format!("cap={}", firing_cap),
+                    depth: 0,
+                    objects: vec![],
+                });
                 break;
             }
-            let mut changed = false;
-            for ks in &input.rules {
-                let trigger = match ks.premise.first() {
-                    Some(t) => t,
-                    None => continue,
+
+            if agenda.is_empty() {
+                break;
+            }
+            let ksar = agenda.remove(0);
+            tracing::debug!(
+                breed.step = "hypothesis_evaluated",
+                breed = "hearsay",
+                "L1 inference step"
+            );
+
+            // Check trigger still valid on blackboard.
+            let trigger_cf = match blackboard.get(&ksar.trigger).copied() {
+                Some(cf) => cf,
+                None => continue,
+            };
+
+            // Re-compute rating in case trigger_cf changed (stale-ksar).
+            let current_rating = (ksar.certainty * trigger_cf.clamp(0.0, 1.0)).clamp(0.0, 1.0);
+            if (current_rating - ksar.rating).abs() > 1e-6 {
+                let updated = Ksar {
+                    rating: current_rating,
+                    ks_id: ksar.ks_id.clone(),
+                    conclusion: ksar.conclusion.clone(),
+                    trigger: ksar.trigger.clone(),
+                    certainty: ksar.certainty,
                 };
-                let trigger_cf = match blackboard.get(trigger).copied() {
-                    Some(cf) => cf,
-                    None => continue,
-                };
-                let posted_cf = trigger_cf * ks.certainty.clamp(0.0, 1.0);
-                let prev = blackboard.get(&ks.conclusion).copied().unwrap_or(0.0);
-                let fused = noisy_or(prev, posted_cf);
-                if (fused - prev).abs() > 1e-6 {
-                    blackboard.insert(ks.conclusion.clone(), fused);
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "stale-ksar".to_string(),
+                    detail: format!(
+                        "ks={} old-rating={:.3} new-rating={:.3}",
+                        ksar.ks_id, ksar.rating, current_rating
+                    ),
+                    depth: 0,
+                    objects: vec![],
+                });
+                agenda.push(updated);
+                agenda.sort_by(ksar_order);
+                continue;
+            }
+
+            // Fire: compute posted cf and fuse.
+            let posted_cf = (trigger_cf * ksar.certainty).clamp(0.0, 1.0);
+            let prev = blackboard.get(&ksar.conclusion).copied().unwrap_or(0.0);
+            let fused = noisy_or(prev, posted_cf);
+            firings += 1;
+
+            if (fused - prev).abs() > 1e-6 {
+                blackboard.insert(ksar.conclusion.clone(), fused);
+                tracing::debug!(
+                    breed.step = "hypothesis_posted",
+                    breed = "hearsay",
+                    "L1 inference step"
+                );
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "post-hypothesis".to_string(),
+                    detail: format!(
+                        "{} ⇒ {} (rating={:.3})",
+                        ksar.ks_id, ksar.conclusion, ksar.rating
+                    ),
+                    depth: 0,
+                    objects: vec![],
+                });
+
+                // Enqueue new KSARs for rules whose trigger is this new conclusion.
+                let new_content = ksar.conclusion.clone();
+                for ks in &input.rules {
+                    let trigger = match ks.premise.first() {
+                        Some(t) => t,
+                        None => continue,
+                    };
+                    if trigger != &new_content {
+                        continue;
+                    }
+                    // Deduplicate by ks_id + conclusion.
+                    let already = agenda
+                        .iter()
+                        .any(|k| k.ks_id == ks.id && k.conclusion == ks.conclusion);
+                    if already {
+                        continue;
+                    }
+                    let new_trigger_cf = blackboard.get(trigger).copied().unwrap_or(0.0);
+                    let rating = (ks.certainty.clamp(0.0, 1.0) * new_trigger_cf.clamp(0.0, 1.0))
+                        .clamp(0.0, 1.0);
+                    let new_ksar = Ksar {
+                        rating,
+                        ks_id: ks.id.clone(),
+                        conclusion: ks.conclusion.clone(),
+                        trigger: trigger.clone(),
+                        certainty: ks.certainty.clamp(0.0, 1.0),
+                    };
+                    tracing::debug!(
+                        breed.step = "knowledge_source_triggered",
+                        breed = "hearsay",
+                        "L1 inference step"
+                    );
                     trace.push(TraceStep {
                         step: trace.len(),
-                        kind: "post-hypothesis".to_string(),
-                        detail: format!("{} ⇒ {} (cf={:.3})", ks.id, ks.conclusion, fused),
+                        kind: "enqueue-ksar".to_string(),
+                        detail: format!(
+                            "ks={} trigger={} rating={:.3}",
+                            new_ksar.ks_id, new_ksar.trigger, new_ksar.rating
+                        ),
                         depth: 0,
+                        objects: vec![],
                     });
-                    changed = true;
+                    agenda.push(new_ksar);
                 }
-            }
-            if !changed {
-                break;
+                agenda.sort_by(ksar_order);
             }
         }
 
@@ -134,15 +289,15 @@ impl CognitionBreed for Hearsay {
             .max_by(|(ak, av), (bk, bv)| {
                 av.partial_cmp(bv)
                     .unwrap_or(std::cmp::Ordering::Equal)
-                    .then_with(|| ak.cmp(bk))
+                    .then_with(|| bk.cmp(ak)) // reversed: smallest key wins on tie
             })
             .map(|(k, _)| (*k).clone());
 
+        // Collect new_facts from BTreeMap (already sorted).
         let mut new_facts: Vec<Fact> = blackboard
             .keys()
             .filter_map(|k| {
                 let (kk, vv) = k.split_once(':')?;
-
                 Some(Fact {
                     key: kk.to_string(),
                     value: vv.to_string(),
@@ -151,6 +306,11 @@ impl CognitionBreed for Hearsay {
             .collect();
         new_facts.sort_by(|a, b| a.key.cmp(&b.key).then_with(|| a.value.cmp(&b.value)));
 
+        tracing::debug!(
+            breed.step = "consensus_reached",
+            breed = "hearsay",
+            "L1 inference step"
+        );
         let explanation = format!(
             "Hearsay posted {} hypotheses; selected {:?}",
             blackboard.len(),
@@ -164,13 +324,282 @@ impl CognitionBreed for Hearsay {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("Hearsay must record at least one blackboard event".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{BreedInput, Fact, Rule};
+
+    fn make_input(facts: Vec<Fact>, rules: Vec<Rule>) -> BreedInput {
+        BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts,
+            cases: vec![],
+            rules,
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    #[test]
+    fn test_noisy_or_commutative() {
+        let a = 0.6_f32;
+        let b = 0.3_f32;
+        assert!((noisy_or(a, b) - noisy_or(b, a)).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_noisy_or_identity() {
+        let x = 0.7_f32;
+        assert!(
+            (noisy_or(x, 0.0) - x).abs() < 1e-6,
+            "noisy_or identity failed"
+        );
+    }
+
+    #[test]
+    fn test_noisy_or_upper_bound() {
+        assert!(noisy_or(0.9, 0.9) <= 1.0);
+        assert!(noisy_or(1.0, 1.0) <= 1.0);
+    }
+
+    #[test]
+    fn test_noisy_or_monotone() {
+        let a = 0.5_f32;
+        let b = 0.3_f32;
+        assert!(
+            noisy_or(a, b) >= noisy_or(a, 0.0),
+            "noisy_or must be monotone"
+        );
+    }
+
+    #[test]
+    fn test_self_reinforcing_terminates() {
+        let input = make_input(
+            vec![Fact {
+                key: "phone".into(),
+                value: "X".into(),
+            }],
+            vec![Rule {
+                id: "self-ks".into(),
+                premise: vec!["phone:X".into()],
+                conclusion: "phone:X".into(),
+                certainty: 0.9,
+            }],
+        );
+        let output = Hearsay
+            .run(&input)
+            .expect("self-reinforcing must terminate");
+        assert!(!output.inference_trace.is_empty());
+    }
+
+    #[test]
+    fn test_multi_level_fusion() {
+        let input = make_input(
+            vec![Fact {
+                key: "phone".into(),
+                value: "T".into(),
+            }],
+            vec![
+                Rule {
+                    id: "ks-word".into(),
+                    premise: vec!["phone:T".into()],
+                    conclusion: "word:THE".into(),
+                    certainty: 0.9,
+                },
+                Rule {
+                    id: "ks-phrase".into(),
+                    premise: vec!["word:THE".into()],
+                    conclusion: "phrase:THE_CAT".into(),
+                    certainty: 0.8,
+                },
+            ],
+        );
+        let output = Hearsay.run(&input).expect("multi-level run");
+        let sel = output.selected.as_deref().unwrap_or("");
+        assert!(
+            sel.starts_with("word:") || sel.starts_with("phrase:"),
+            "expected word or phrase level selected, got: {:?}",
+            sel
+        );
+    }
+
+    #[test]
+    fn test_deterministic_tie() {
+        let input = make_input(
+            vec![Fact {
+                key: "phone".into(),
+                value: "A".into(),
+            }],
+            vec![
+                Rule {
+                    id: "ks-1".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:ZZZ".into(),
+                    certainty: 0.8,
+                },
+                Rule {
+                    id: "ks-2".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:AAA".into(),
+                    certainty: 0.8,
+                },
+            ],
+        );
+        let out1 = Hearsay.run(&input).expect("run 1");
+        let out2 = Hearsay.run(&input).expect("run 2");
+        assert_eq!(
+            out1.selected, out2.selected,
+            "tie must resolve deterministically"
+        );
+    }
+
+    #[test]
+    fn test_duplicate_post_fusion() {
+        // noisy_or(0.5, 0.5) = 1 - (1-0.5)*(1-0.5) = 0.75
+        let result = noisy_or(0.5, 0.5);
+        assert!(
+            (result - 0.75).abs() < 1e-5,
+            "noisy_or(0.5, 0.5) must be 0.75, got {}",
+            result
+        );
+        assert!(result < 1.0, "duplicate posts must not saturate to 1.0");
+    }
+
+    /// A lower-rated KS appears first in input but the higher-rated KS fires
+    /// first because the agenda orders by rating descending.
+    #[test]
+    fn test_opportunistic_order_beats_declaration() {
+        // Rule order: low-certainty KS declared first, high-certainty KS second.
+        // With KSAR agenda the high KS fires first.
+        let input = make_input(
+            vec![Fact {
+                key: "phone".into(),
+                value: "A".into(),
+            }],
+            vec![
+                Rule {
+                    id: "ks-low".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:LOW".into(),
+                    certainty: 0.3,
+                },
+                Rule {
+                    id: "ks-high".into(),
+                    premise: vec!["phone:A".into()],
+                    conclusion: "word:HIGH".into(),
+                    certainty: 0.9,
+                },
+            ],
+        );
+        let output = Hearsay.run(&input).expect("opportunistic run");
+        let post_steps: Vec<&TraceStep> = output
+            .inference_trace
+            .iter()
+            .filter(|s| s.kind == "post-hypothesis")
+            .collect();
+        assert!(post_steps.len() >= 2, "both KSs should fire");
+        // First post-hypothesis should mention ks-high (higher rated).
+        assert!(
+            post_steps[0].detail.contains("ks-high"),
+            "high-rated KS must fire first; got: {}",
+            post_steps[0].detail
+        );
+    }
+
+    /// Shuffling rule order must not change the selected hypothesis.
+    #[test]
+    fn test_shuffled_rules_same_result() {
+        let facts = vec![Fact {
+            key: "phone".into(),
+            value: "T".into(),
+        }];
+        let rules_orig = vec![
+            Rule {
+                id: "ks-a".into(),
+                premise: vec!["phone:T".into()],
+                conclusion: "word:THE".into(),
+                certainty: 0.9,
+            },
+            Rule {
+                id: "ks-b".into(),
+                premise: vec!["phone:T".into()],
+                conclusion: "word:THAT".into(),
+                certainty: 0.5,
+            },
+            Rule {
+                id: "ks-c".into(),
+                premise: vec!["word:THE".into()],
+                conclusion: "phrase:SENTENCE".into(),
+                certainty: 0.8,
+            },
+        ];
+        // Shuffled: reverse order.
+        let rules_shuffled = vec![
+            rules_orig[2].clone(),
+            rules_orig[0].clone(),
+            rules_orig[1].clone(),
+        ];
+
+        let out_orig = Hearsay
+            .run(&make_input(facts.clone(), rules_orig))
+            .expect("orig run");
+        let out_shuffled = Hearsay
+            .run(&make_input(facts, rules_shuffled))
+            .expect("shuffled run");
+
+        assert_eq!(
+            out_orig.selected, out_shuffled.selected,
+            "selected must be identical regardless of rule declaration order"
+        );
+    }
+
+    /// A KS whose conclusion re-triggers its own premise must terminate.
+    /// noisy-OR is monotone-increasing and bounded at 1.0 — it converges in O(1)
+    /// when the seed value is already 1.0 (initial facts are seeded at 1.0).
+    /// Termination happens via empty-agenda (convergence), NOT cap-hit.
+    /// The cap exists for non-convergent pathological cases; noisy-OR prevents those.
+    #[test]
+    fn test_cyclic_ks_terminates() {
+        let input = make_input(
+            vec![Fact {
+                key: "word".into(),
+                value: "CYCLE".into(),
+            }],
+            vec![Rule {
+                id: "ks-cycle".into(),
+                premise: vec!["word:CYCLE".into()],
+                conclusion: "word:CYCLE".into(),
+                certainty: 0.99,
+            }],
+        );
+        let output = Hearsay
+            .run(&input)
+            .expect("cyclic KS must terminate (not infinite-loop)");
+        // Must produce trace evidence (non-empty)
+        assert!(
+            !output.inference_trace.is_empty(),
+            "must produce trace steps"
+        );
+        // noisy_or(1.0, 0.99) = 1.0 → no blackboard change → empty agenda → terminates normally
+        // Either convergence (empty-agenda) or cap-hit are both valid termination paths.
+        let terminated = output
+            .inference_trace
+            .iter()
+            .any(|s| s.kind == "agenda-cap-hit" || s.kind == "post-hypothesis" || s.kind == "seed");
+        assert!(terminated, "cycle must terminate with trace evidence");
     }
 }

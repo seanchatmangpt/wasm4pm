@@ -23,6 +23,7 @@ use crate::breeds::{
     prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
     CognitionBreed,
 };
+use crate::evidence::check_trace_laws;
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
 
@@ -41,46 +42,6 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
     let s = serde_json::to_string(val)
         .map_err(|e| wasm_err(&format!("Serialization failed: {}", e)))?;
     Ok(js_val(&s))
-}
-
-/// Run a breed through its full lifecycle: preconditions → run → postconditions.
-///
-/// Enforces the `CognitionBreed` contract at the WASM boundary:
-/// - `preconditions` must pass before execution begins (TPS fail-fast).
-/// - `postconditions` must pass after execution (FM-5 fraud guard: empty
-///   inference_trace is rejected as proof that real work did not occur).
-fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutput, String> {
-    b.preconditions(input)
-        .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
-    let output = b
-        .run(input)
-        .map_err(|e| format!("{}: {}", e.breed, e.message))?;
-    b.postconditions(&output)
-        .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
-    Ok(output)
-}
-
-/// Dispatch to the correct breed's `run()` method.
-///
-/// Each branch delegates to `run_breed`, which enforces pre- and post-conditions
-/// so the empty-trace fraud signal is caught at the WASM boundary.
-fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => run_breed(&Eliza, input),
-        "cbr" => run_breed(&Cbr, input),
-        "dendral" => run_breed(&Dendral, input),
-        "strips" => run_breed(&Strips, input),
-        "prolog" => run_breed(&Prolog, input),
-        "mycin" => run_breed(&Mycin, input),
-        "gps" => run_breed(&Gps, input),
-        "soar" => run_breed(&Soar, input),
-        "hearsay" => run_breed(&Hearsay, input),
-        "autoinstinct_neurosis" => run_breed(&AutoinstinctNeurosis, input),
-        "autoinstinct_semantics" => run_breed(&AutoinstinctSemantics, input),
-        "autoinstinct_vision" => run_breed(&AutoinstinctVision, input),
-        "autoinstinct_learning" => run_breed(&AutoinstinctLearning, input),
-        other => Err(format!("unknown breed: {}", other)),
-    }
 }
 
 /// JSON-backed evidence source for adversarial detection.
@@ -171,6 +132,16 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
     to_js_str(&report)
 }
 
+/// Return BLAKE3 hex of the L1 OCPN model JSON for a known breed, or
+/// "model-not-yet-defined" if no model file exists for the breed.
+fn compute_model_hash(breed: &str) -> String {
+    let json: Option<&str> = crate::ocel::model_sources::model_source(breed);
+    match json {
+        Some(s) => blake3::hash(s.as_bytes()).to_hex().to_string(),
+        None => "model-not-yet-defined".to_string(),
+    }
+}
+
 /// Run cognition contract with breed execution. Strict input validation:
 /// 10 MiB cap, schema with `deny_unknown_fields`, breed length bounds.
 #[wasm_bindgen]
@@ -188,8 +159,11 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         return Err(wasm_err("breed must be 1..=256 chars"));
     }
 
-    // Dispatch to the breed's run() method.
-    let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
+    // Compute input hash before dispatch (covers raw request bytes).
+    let input_hash = blake3::hash(input_json.as_bytes()).to_hex().to_string();
+
+    /// Dispatch to the breed's run() method.
+        let output = crate::breeds::dispatch::dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
     // Compute deterministic hashes over the actual BreedOutput.
     let output_payload = serde_json::to_string(&output)
@@ -199,6 +173,23 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
         .to_hex()
         .to_string();
     let replay_pointer = output_hash[..16].to_string();
+    let ocel_hash = if let Some(ref ocel_log) = output.ocel_log {
+        blake3::hash(ocel_log.to_string().as_bytes())
+            .to_hex()
+            .to_string()
+    } else {
+        String::new()
+    };
+
+    // BLAKE3 of the WASM binary injected by CI via WASM4PM_WASM_HASH; "build-time-unavailable"
+    // when building outside the wasm-pack pipeline (native tests, cargo check).
+    let wasm_hash = option_env!("WASM4PM_WASM_HASH")
+        .unwrap_or("build-time-unavailable")
+        .to_string();
+
+    // BLAKE3 of the L1 OCPN model JSON for this breed, included at compile time.
+    // Returns "model-not-yet-defined" if the breed has no model file.
+    let model_hash = compute_model_hash(&input.breed);
 
     let receipt = CognitionReceipt {
         run_id: run_id.clone(),
@@ -207,14 +198,59 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     };
     REGISTRY.with(|r| r.borrow_mut().insert(run_id.clone(), receipt.clone()));
 
+    // Build conformance summary — run_breed() already enforced the F7 gate,
+    // so if we reach here conformance passed. Re-derive actual fitness from ocel_log.
+    let conformance_summary = if let Some(ref ocel_log) = output.ocel_log {
+        if let Some(model) = crate::ocel::get_model(&input.breed) {
+            let ocel: crate::ocel::OcelLog = serde_json::from_value(ocel_log.clone())
+                .unwrap_or_else(|_| crate::ocel::OcelLog {
+                    object_types: vec![],
+                    event_types: vec![],
+                    events: vec![],
+                    objects: vec![],
+                });
+            let result = crate::ocel::validate_ocel_alignment(&ocel, model);
+            serde_json::json!({
+                "fitness": result.fitness,
+                "model_id": result.model_id,
+                "refusals": result.refusals
+            })
+        } else {
+            serde_json::json!({ "fitness": 1.0, "model_id": null, "refusals": [], "note": "l0_only_no_l1_model" })
+        }
+    } else {
+        serde_json::json!({ "fitness": null, "model_id": null, "refusals": ["no_ocel_log"] })
+    };
+
+    // Ed25519 signing — deterministic actor keyed from a stable constant.
+    #[cfg(feature = "actor-ed25519")]
+    let (signature_hex, public_key_id) = {
+        use crate::autosystems::receipt::ActorSigner;
+        let signer =
+            ActorSigner::from_seed(*blake3::hash(b"wasm4pm.cognition.v1.default-actor").as_bytes());
+        let receipt_msg = format!("{}|{}|{}", run_id, input_hash, output_hash);
+        let sig_bytes = signer.sign(receipt_msg.as_bytes());
+        (hex::encode(&sig_bytes), hex::encode(&signer.id.public_key))
+    };
+    #[cfg(not(feature = "actor-ed25519"))]
+    let (signature_hex, public_key_id) = (String::from("ed25519-disabled"), String::from("n/a"));
+
     let result = serde_json::json!({
         "status": "ok",
         "breed": input.breed,
         "run_id": run_id,
+        "input_hash": input_hash,
         "output_hash": output_hash,
+        "ocel_hash": ocel_hash,
+        "wasm_hash": wasm_hash,
+        "model_hash": model_hash,
         "replay_pointer": replay_pointer,
         "options_profile": input.options.profile,
         "output": output,
+        "conformance": conformance_summary,
+        "signature": signature_hex,
+        "public_key_id": public_key_id,
+        "signature_algorithm": "ed25519",
     });
     to_js_str(&result)
 }
@@ -234,11 +270,31 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
 
     // Wrap JSON as EvidenceSource and run all detectors.
     let src = JsonEvidenceSource {
-        inner: result_value,
+        inner: result_value.clone(),
         chain: ReceiptChain::new(),
     };
     let registry = FindingRegistry::new();
-    let findings = registry.run_all(&src);
+    let mut findings = registry.run_all(&src);
+
+    // Run trace-law checker if the result carries an inference trace.
+    if let Some(steps_value) = result_value
+        .get("output")
+        .and_then(|o| o.get("inference_trace"))
+    {
+        if let Ok(steps) =
+            serde_json::from_value::<Vec<crate::breeds::TraceStep>>(steps_value.clone())
+        {
+            let trace_violations = check_trace_laws(&steps);
+            for msg in trace_violations {
+                findings.push(crate::autosystems::findings::Finding {
+                    code: "BROKEN_LOGICAL_CLOCK".to_string(),
+                    severity: crate::autosystems::findings::Severity::Fatal,
+                    message: msg.clone(),
+                    evidence: vec![msg],
+                });
+            }
+        }
+    }
 
     let finding_jsons: Vec<serde_json::Value> = findings
         .into_iter()

@@ -19,6 +19,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
 use std::collections::{HashMap, HashSet};
+use tracing;
 
 /// STRIPS planner.
 pub struct Strips;
@@ -145,6 +146,7 @@ fn idfs(
         kind: "subgoal".to_string(),
         detail: unsat.clone(),
         depth: (MAX_PLAN_DEPTH - depth) as u32,
+        objects: vec![],
     });
     for action in actions {
         let eff = parse_effect(&action.conclusion);
@@ -154,13 +156,29 @@ fn idfs(
         if !applicable(action, state) {
             continue;
         }
+        tracing::debug!(
+            breed.step = "operator_selected",
+            breed = "strips",
+            "L1 inference step"
+        );
         trace.push(TraceStep {
             step: trace.len(),
             kind: "try-action".to_string(),
             detail: action.id.clone(),
             depth: (MAX_PLAN_DEPTH - depth) as u32,
+            objects: vec![],
         });
+        tracing::debug!(
+            breed.step = "precondition_checked",
+            breed = "strips",
+            "L1 inference step"
+        );
         let next = apply_with_frames(action, state, frame_axioms);
+        tracing::debug!(
+            breed.step = "effect_applied",
+            breed = "strips",
+            "L1 inference step"
+        );
         if let Some(rest) = idfs(&next, goals, actions, depth - 1, trace, frame_axioms) {
             let mut plan = vec![action.id.clone()];
             plan.extend(rest);
@@ -191,6 +209,11 @@ impl CognitionBreed for Strips {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let initial = atoms_of(&input.state);
+        tracing::debug!(
+            breed.step = "state_loaded",
+            breed = "strips",
+            "L1 inference step"
+        );
         let goals = goal_strings(&input.goals);
         let frame_axioms = parse_frame_axioms(&input.facts);
         let mut trace: Vec<TraceStep> = Vec::new();
@@ -206,6 +229,7 @@ impl CognitionBreed for Strips {
                 kind: "check-presatisfied".to_string(),
                 detail: format!("{} goals already satisfied in initial state", goals.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -215,6 +239,7 @@ impl CognitionBreed for Strips {
                 kind: "frame-axioms-loaded".to_string(),
                 detail: format!("{} frame axioms", frame_axioms.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -225,6 +250,7 @@ impl CognitionBreed for Strips {
                 kind: "iterate-depth".to_string(),
                 detail: format!("d={}", d),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(p) = idfs(&initial, &goals, &input.rules, d, &mut trace, &frame_axioms) {
                 plan = Some(p);
@@ -260,8 +286,14 @@ impl CognitionBreed for Strips {
                 kind: "execute".to_string(),
                 detail: action.id.clone(),
                 depth: 0,
+                objects: vec![],
             });
         }
+        tracing::debug!(
+            breed.step = "goal_tested",
+            breed = "strips",
+            "L1 inference step"
+        );
         if !goals_satisfied(&goals, &s) {
             return Err(BreedError {
                 breed: BreedId::Strips,
@@ -287,6 +319,11 @@ impl CognitionBreed for Strips {
             None
         };
 
+        tracing::debug!(
+            breed.step = "plan_emitted",
+            breed = "strips",
+            "L1 inference step"
+        );
         Ok(BreedOutput {
             breed: BreedId::Strips,
             candidates: input.candidates.clone(),
@@ -294,10 +331,12 @@ impl CognitionBreed for Strips {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("STRIPS must record search steps".to_string());
         }

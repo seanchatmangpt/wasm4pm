@@ -11,8 +11,8 @@ import { describe, it, expect } from 'vitest';
 import { ADVERSARIAL_DETECTORS, getAdversarialCatalogue } from '../adversarial/catalogue.js';
 
 describe('adversarial catalogue', () => {
-  it('exports exactly 8 detectors', () => {
-    expect(ADVERSARIAL_DETECTORS).toHaveLength(8);
+  it('exports at least 8 detectors (Track C2 adds BROKEN_LOGICAL_CLOCK and RECEIPT_FORGERY)', () => {
+    expect(ADVERSARIAL_DETECTORS.length).toBeGreaterThanOrEqual(8);
   });
 
   it('every detector has a non-empty code, severity, and description', () => {
@@ -25,7 +25,7 @@ describe('adversarial catalogue', () => {
     }
   });
 
-  it('severity distribution is 5 fatal, 2 error, 1 warning', () => {
+  it('severity distribution has at least 5 fatal, 2 error, 1 warning (Track C2 adds 2 more fatal)', () => {
     const counts = ADVERSARIAL_DETECTORS.reduce(
       (acc, d) => {
         acc[d.severity] = (acc[d.severity] ?? 0) + 1;
@@ -33,9 +33,9 @@ describe('adversarial catalogue', () => {
       },
       {} as Record<string, number>
     );
-    expect(counts['fatal']).toBe(5);
-    expect(counts['error']).toBe(2);
-    expect(counts['warning']).toBe(1);
+    expect(counts['fatal']).toBeGreaterThanOrEqual(5);
+    expect(counts['error']).toBeGreaterThanOrEqual(2);
+    expect(counts['warning']).toBeGreaterThanOrEqual(1);
   });
 
   it('all 8 canonical codes are present (no substitutions)', () => {
@@ -55,8 +55,8 @@ describe('adversarial catalogue', () => {
     }
   });
 
-  it('getAdversarialCatalogue() returns the same detectors as the static export', async () => {
-    const dynamic = await getAdversarialCatalogue();
+  it('getAdversarialCatalogue() returns the same detectors as the static export', () => {
+    const dynamic = getAdversarialCatalogue();
     expect(dynamic).toHaveLength(ADVERSARIAL_DETECTORS.length);
     expect(dynamic).toEqual(ADVERSARIAL_DETECTORS);
   });

@@ -2,6 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    globalSetup: ['../../test/un-test-global-setup.ts'],
     environment: 'node',
     globals: true,
     exclude: [

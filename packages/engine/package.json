@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/engine",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -30,17 +30,18 @@
     "@wasm4pm/contracts": "workspace:*",
     "@wasm4pm/observability": "workspace:*",
     "blake3": "^2.1.4",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "wasm4pm": "workspace:*",
-    "@wasm4pm/testing": "workspace:*",
     "@types/node": "^20.10.0",
     "@types/uuid": "^10.0.0",
     "@vitest/coverage-v8": "^1.6.0",
+    "@wasm4pm/testing": "workspace:*",
     "typescript": "^5.3.3",
     "vite-plugin-wasm": "^3.3.0",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "wasm4pm": "workspace:*"
   },
   "repository": {
     "type": "git",

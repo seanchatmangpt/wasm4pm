@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "ee5a37f2db7fd0a7162f63d6ea19219fb7d3b7ee",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "autonomic_healing",
+  "input": {
+    "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "handover_network",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f",
+      "duration_ms": 12.983,
+      "expected_path": {
+        "route_id": "wpm.example.autonomic_healing.handover_network.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_handover_network_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f",
+                "duration_ms": 12.983
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_handover_network",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_handover_network_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "24bfca1780a0f5ef5ea916cfe217c2b33fbe790edfd35ee1ee4eb72b806bd31e"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_handover_network_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:35.543Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:39.771Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:37.316Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:36.514Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:41.545Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f",
+                "duration_ms": 12.983
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:37.343Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:38.488Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:41.210Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_handover_network",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:40.286Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_handover_network_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.486Z",
+              "relationships": [
+                {
+                  "objectId": "result_handover_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_handover_network",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_handover_network_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "018f2675e80d0afecc72cc0c6d8645152801ce113219450f95489415b8443954",
+        "observed_result_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b",
+        "output_artifact_hash": "f58d1d15f46a47eeb345080f7f192301ad5423379c549a240b1f1522ff5b616f",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "working_together_network",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188",
+      "duration_ms": 12.308,
+      "expected_path": {
+        "route_id": "wpm.example.autonomic_healing.working_together_network.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_working_together_network_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188",
+                "duration_ms": 12.308
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_working_together_network",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_working_together_network_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "06f558fd96b9034b40d10c0b70204295df659e59a389c1c9356d7304fa08710e"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_working_together_network_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:35.623Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:38.605Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:36.610Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:39.848Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:40.815Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188",
+                "duration_ms": 12.308
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:37.137Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:37.796Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:42.240Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_working_together_network",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:41.536Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_working_together_network_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:40.046Z",
+              "relationships": [
+                {
+                  "objectId": "result_working_together_network_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_working_together_network",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_working_together_network_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "4eadbaf00e2ac06c0ac4876c9f07632a3a0f79773a0cfe789f5a9937b39c34fe",
+        "observed_result_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b",
+        "output_artifact_hash": "f218e14305562ea5edbf10ae0871c4a594634977857f091301d679acfad22188",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "ocel_dfg",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956",
+      "duration_ms": 52.361,
+      "expected_path": {
+        "route_id": "wpm.example.autonomic_healing.ocel_dfg.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956",
+                "duration_ms": 52.361
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_dfg",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_dfg_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "84026e64d3570dcce72ef69ac725e39bad4974f8ea1571cf725543094d457c33"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:35.211Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:40.020Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:38.693Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:36.783Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:36.712Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956",
+                "duration_ms": 52.361
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:39.561Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:41.715Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:38.844Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_dfg",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:40.127Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.584Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_dfg",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_dfg_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "e436ab092161e793bfb36f6c96c55bbe1bcd79f69e3011321217f2f3fa8e77ba",
+        "observed_result_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b",
+        "output_artifact_hash": "53a778c8a0ee146e33a18ded671d2571163485a9f9da68c7aa883c5a18247956",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "ocel_dfg_per_type",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280",
+      "duration_ms": 15.3,
+      "expected_path": {
+        "route_id": "wpm.example.autonomic_healing.ocel_dfg_per_type.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280",
+                "duration_ms": 15.3
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_dfg_per_type",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_dfg_per_type_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "71f0e733988e36d1a6c9d97a7e624da5717f4bd7ded93e74f60dbbdcade6fb8f"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-10T23:56:34.532Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-10T23:56:39.463Z",
+              "relationships": [
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-10T23:56:36.225Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-10T23:56:40.474Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-10T23:56:39.601Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280",
+                "duration_ms": 15.3
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-10T23:56:37.425Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-10T23:56:42.377Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-10T23:56:42.668Z",
+              "relationships": [
+                {
+                  "objectId": "example_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ocel_dfg_per_type",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-10T23:56:42.726Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_autonomic_healing_ocel_dfg_per_type_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-10T23:56:42.001Z",
+              "relationships": [
+                {
+                  "objectId": "result_ocel_dfg_per_type_autonomic_healing",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_autonomic_healing",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_autonomic_healing",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_autonomic_healing",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ocel_dfg_per_type",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ocel_dfg_per_type_autonomic_healing",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_autonomic_healing",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "f5daa71e764d479f9f2a9ec2716d0a1d2fb4ad591598d9aa1e378ce2147bbebe",
+        "observed_result_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "b755d10f43289013b5661a80ac6f82d02a25bf628af8552b3c567728e9e0c86b",
+        "output_artifact_hash": "8aad22eceabb338a7df3aa5c9f0261cbf48d33c31cb6a91569e11d59c23eb280",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-10T23:56:34.528Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "7ace6c7d961d9ceb063b9e028b70a4bc58b2df7347dd7df4de67af64e7e00acd"
+}

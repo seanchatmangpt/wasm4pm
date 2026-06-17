@@ -1,0 +1,43 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_semantics",
+    "breed": "autoinstinct_semantics",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctsemantics",
+      "candidates": [],
+      "facts": [],
+      "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"Parse operator command 'route batch A through station 3 then QA' into CD ATRANS/PTRANS primitives\"",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-parser",
+          "detail": "SemanticParser created; parsing intent: \"Parse operator command 'route batch A through station 3 then QA' into CD ATRANS/PTRANS primitives\"",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "no-act-found",
+          "detail": "no CD primitive matched for intent: \"Parse operator command 'route batch A through station 3 then QA' into CD ATRANS/PTRANS primitives\"",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1a05d12fca71f9d4af36c244fa8ebaab288c1c3224e4767625c3ca3e170a5214",
+    "output_hash": "36890479ce360c06919377325e327fb022a271e28cb954b0572c2bb91d27765f",
+    "replay_pointer": "36890479ce360c06",
+    "inference_step_count": 2,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/1a05d12fca71f9d4af36c244fa8ebaab288c1c3224e4767625c3ca3e170a5214.json"
+  },
+  "meta": {
+    "run_id": "e99b09de-e984-465b-9863-09b526f0aa9c",
+    "timestamp": "2026-06-10T15:46:50.602Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

@@ -9,7 +9,15 @@
 ## Installation
 
 ### Standard
-npm install -g @wasm4pm/cli
+
+> **Note:** Global npm publish is not yet available. Install from the monorepo:
+
+```bash
+git clone https://github.com/seanchatmangpt/wasm4pm
+cd wasm4pm && pnpm install
+cd wasm4pm && npm run build:nodejs && cd ..
+node apps/wasm4pm/dist/bin/wpm.js --version
+```
 
 ### Air-Gapped
 
@@ -100,7 +108,7 @@ Algorithms using randomness (genetic, ACO, PSO, simulated annealing, A*) use a f
 
 ### WASM Binary Size (Browser Profile)
 
-The browser-profile WASM binary is approximately 3.5 MB. Use the mobile (~500KB), IoT (~1MB), edge (~1.5MB), or fog (~2MB) profiles for size-constrained deployments.
+The browser-profile WASM binary is approximately 7.6 MB. All profiles (mobile/iot/edge/fog) currently build to ~5.4 MB; they differ by feature-gated algorithm subsets. Bundle size optimization is planned for a future release.
 
 ## Support
 
@@ -108,3 +116,22 @@ The browser-profile WASM binary is approximately 3.5 MB. Use the mobile (~500KB)
 - Bugs: GitHub Issues
 - Security: See SECURITY.md
 - Commercial: xpointsh@gmail.com
+
+## Domain Use Case Examples
+
+`examples/zoe-la/` demonstrates wasm4pm applied to a real-world service operations domain (community care coordination). Five end-to-end scripts show how the platform's process mining, autonomic monitoring, and cognition layers compose:
+
+| Example | Job-to-be-Done |
+|---------|---------------|
+| `01-prayer-request-pipeline.ts` | Process discovery over care request flow |
+| `02-connect-group-belonging.ts` | Conformance checking on community engagement |
+| `03-sunday-threshold-andon.ts` | ANDON gate: detect threshold violations in service log |
+| `04-autonomic-care-coordinator.ts` | Autonomic RL monitoring with convergence analysis |
+| `05-red-team-adversary.ts` | Adversarial probe: inject invalid logs, verify rejection |
+
+```bash
+tsx examples/zoe-la/01-prayer-request-pipeline.ts
+tsx examples/zoe-la/05-red-team-adversary.ts
+```
+
+These examples are instrumented with OTEL spans and emit BLAKE3 receipts — the same discipline as production deployments.

@@ -403,9 +403,7 @@ pub fn admit_change(candidate: &serde_json::Value, config: &AdmissionConfig) -> 
     }
 
     // C7: Objects structural soundness
-    let objects_arr = candidate
-        .get("objects")
-        .and_then(|v| v.as_array());
+    let objects_arr = candidate.get("objects").and_then(|v| v.as_array());
     let objects_empty = objects_arr.map(|arr| arr.is_empty()).unwrap_or(true);
     if objects_empty {
         write_residual(candidate, "C7", "ObjectsEmpty");
@@ -419,7 +417,8 @@ pub fn admit_change(candidate: &serde_json::Value, config: &AdmissionConfig) -> 
     // C7b: each object must have a non-empty "id" string
     if let Some(arr) = objects_arr {
         for obj in arr {
-            let id_ok = obj.get("id")
+            let id_ok = obj
+                .get("id")
                 .and_then(|v| v.as_str())
                 .map(|s| !s.is_empty())
                 .unwrap_or(false);
@@ -432,7 +431,8 @@ pub fn admit_change(candidate: &serde_json::Value, config: &AdmissionConfig) -> 
                     receipt_hash: None,
                 };
             }
-            let type_ok = obj.get("type")
+            let type_ok = obj
+                .get("type")
                 .and_then(|v| v.as_str())
                 .map(|s| !s.is_empty())
                 .unwrap_or(false);
@@ -511,68 +511,150 @@ pub fn admit_change_with_contents(
         .and_then(|r| r.get("receipt_hash"))
         .and_then(|v| v.as_str())
         .map(|s| !s.is_empty())
-        .unwrap_or_else(|| candidate.get("receipt_hash").and_then(|v| v.as_str()).map(|s| !s.is_empty()).unwrap_or(false));
+        .unwrap_or_else(|| {
+            candidate
+                .get("receipt_hash")
+                .and_then(|v| v.as_str())
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
+        });
     let has_prev_hash = receipt_obj
         .and_then(|r| r.get("previous_receipt_hash"))
         .and_then(|v| v.as_str())
         .map(|s| !s.is_empty())
-        .unwrap_or_else(|| candidate.get("previous_receipt_hash").and_then(|v| v.as_str()).map(|s| !s.is_empty()).unwrap_or(false));
+        .unwrap_or_else(|| {
+            candidate
+                .get("previous_receipt_hash")
+                .and_then(|v| v.as_str())
+                .map(|s| !s.is_empty())
+                .unwrap_or(false)
+        });
     if !has_receipt_hash || !has_prev_hash {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C2".to_string()), refusal_code: Some("ReceiptChainIncomplete".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C2".to_string()),
+            refusal_code: Some("ReceiptChainIncomplete".to_string()),
+            receipt_hash: None,
+        };
     }
     // C3
     if let Ok(policy) = serde_json::from_str::<AdmissionPolicy>(policy_contents) {
-        let actor = candidate.get("actor").and_then(|v| v.as_str()).unwrap_or("");
-        let event_type = candidate.get("event_type").and_then(|v| v.as_str()).unwrap_or("");
+        let actor = candidate
+            .get("actor")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        let event_type = candidate
+            .get("event_type")
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         if !policy_allows(actor, event_type, &policy) {
-            return AdmissionResult { admitted: false, failing_conjunct: Some("C3".to_string()), refusal_code: Some("PolicyDenied".to_string()), receipt_hash: None };
+            return AdmissionResult {
+                admitted: false,
+                failing_conjunct: Some("C3".to_string()),
+                refusal_code: Some("PolicyDenied".to_string()),
+                receipt_hash: None,
+            };
         }
     }
     // C4
     let ver = current_validator_version();
     let revoked: Vec<String> = serde_json::from_str(revoked_contents).unwrap_or_default();
     if revoked.iter().any(|v| v == &ver) {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C4".to_string()), refusal_code: Some("ValidatorRevoked".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C4".to_string()),
+            refusal_code: Some("ValidatorRevoked".to_string()),
+            receipt_hash: None,
+        };
     }
     // C5
-    let nonce = candidate.get("challenge_nonce").and_then(|v| v.as_str()).unwrap_or("");
+    let nonce = candidate
+        .get("challenge_nonce")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     let nonce_consumed = ledger_contents.lines().any(|line| {
-        serde_json::from_str::<serde_json::Value>(line).ok()
+        serde_json::from_str::<serde_json::Value>(line)
+            .ok()
             .and_then(|v| v.get("nonce").and_then(|n| n.as_str()).map(|n| n == nonce))
             .unwrap_or(false)
     });
     if nonce.is_empty() || nonce_consumed {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C5".to_string()), refusal_code: Some("NonceConsumed".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C5".to_string()),
+            refusal_code: Some("NonceConsumed".to_string()),
+            receipt_hash: None,
+        };
     }
     // C6
-    let bm = serde_json::from_str::<serde_json::Value>(boundary_contents).ok()
+    let bm = serde_json::from_str::<serde_json::Value>(boundary_contents)
+        .ok()
         .and_then(|v| {
-            let map_v = if let Some(inner) = v.get("transitions") { inner.clone() } else { v };
+            let map_v = if let Some(inner) = v.get("transitions") {
+                inner.clone()
+            } else {
+                v
+            };
             serde_json::from_value::<HashMap<String, Vec<String>>>(map_v).ok()
         })
         .map(|t| BoundaryMap { transitions: t })
         .unwrap_or_else(default_boundary_map);
-    let state = candidate.get("state").and_then(|v| v.as_str()).unwrap_or("");
-    let event_type = candidate.get("event_type").and_then(|v| v.as_str()).unwrap_or("");
+    let state = candidate
+        .get("state")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let event_type = candidate
+        .get("event_type")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
     if !boundary_admits(state, event_type, &bm) {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C6".to_string()), refusal_code: Some("BoundaryDenied".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C6".to_string()),
+            refusal_code: Some("BoundaryDenied".to_string()),
+            receipt_hash: None,
+        };
     }
     // C7
-    let objects_ok = candidate.get("objects").and_then(|v| v.as_array()).map(|a| !a.is_empty()).unwrap_or(false);
+    let objects_ok = candidate
+        .get("objects")
+        .and_then(|v| v.as_array())
+        .map(|a| !a.is_empty())
+        .unwrap_or(false);
     if !objects_ok {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C7".to_string()), refusal_code: Some("ObjectsEmpty".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C7".to_string()),
+            refusal_code: Some("ObjectsEmpty".to_string()),
+            receipt_hash: None,
+        };
     }
     // C1
     if candidate.get("signature").is_some() {
         if !verify_receipt_signature(candidate) {
-            return AdmissionResult { admitted: false, failing_conjunct: Some("C1".to_string()), refusal_code: Some("SignatureInvalid".to_string()), receipt_hash: None };
+            return AdmissionResult {
+                admitted: false,
+                failing_conjunct: Some("C1".to_string()),
+                refusal_code: Some("SignatureInvalid".to_string()),
+                receipt_hash: None,
+            };
         }
     } else {
-        return AdmissionResult { admitted: false, failing_conjunct: Some("C1".to_string()), refusal_code: Some("SignatureMissing".to_string()), receipt_hash: None };
+        return AdmissionResult {
+            admitted: false,
+            failing_conjunct: Some("C1".to_string()),
+            refusal_code: Some("SignatureMissing".to_string()),
+            receipt_hash: None,
+        };
     }
     let candidate_bytes = serde_json::to_vec(candidate).unwrap_or_default();
     let receipt_hash = bytes_to_hex(blake3::hash(&candidate_bytes).as_bytes());
-    AdmissionResult { admitted: true, failing_conjunct: None, refusal_code: None, receipt_hash: Some(receipt_hash) }
+    AdmissionResult {
+        admitted: true,
+        failing_conjunct: None,
+        refusal_code: None,
+        receipt_hash: Some(receipt_hash),
+    }
 }
 
 // ─── WASM exports ─────────────────────────────────────────────────────────────
@@ -628,9 +710,16 @@ pub fn wasm_admit_change_inline(
                 "failing_conjunct": "parse",
                 "refusal_code": format!("ParseError: {}", e),
                 "receipt_hash": null
-            }).to_string();
+            })
+            .to_string();
         }
     };
-    let result = admit_change_with_contents(&candidate, ledger_contents, policy_contents, boundary_contents, revoked_contents);
+    let result = admit_change_with_contents(
+        &candidate,
+        ledger_contents,
+        policy_contents,
+        boundary_contents,
+        revoked_contents,
+    );
     serde_json::to_string(&result).unwrap_or_default()
 }

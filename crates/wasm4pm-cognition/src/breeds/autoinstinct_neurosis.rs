@@ -15,6 +15,7 @@ use crate::autoinstinct::neurosis::NeuroticState;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
+use tracing;
 
 /// AutoinstinctNeurosis breed: simulates paranoid / affect-driven belief processing
 /// in the tradition of Colby's PARRY and Abelson's ideology machines.
@@ -81,12 +82,18 @@ impl CognitionBreed for AutoinstinctNeurosis {
         let beliefs = parse_beliefs(&input.facts);
         for (concept, strength) in &beliefs {
             state.beliefs.insert(concept.clone(), *strength);
+            tracing::debug!(
+                breed.step = "belief_evaluated",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
         }
         trace.push(TraceStep {
             step: trace.len(),
             kind: "seed-beliefs".to_string(),
             detail: format!("seeded {} beliefs from facts", beliefs.len()),
             depth: 0,
+            objects: vec![],
         });
 
         // Step 2: collect stimuli — use candidate ids, or fall back to "default_stimulus".
@@ -107,10 +114,20 @@ impl CognitionBreed for AutoinstinctNeurosis {
             let snap_mistrust = state.mistrust;
 
             let response = state.process_input(stimulus, *strength);
+            tracing::debug!(
+                breed.step = "conflict_detected",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
 
             let delta_fear = state.fear - snap_fear;
             let delta_anger = state.anger - snap_anger;
             let delta_mistrust = state.mistrust - snap_mistrust;
+            tracing::debug!(
+                breed.step = "anxiety_computed",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
 
             trace.push(TraceStep {
                 step: trace.len(),
@@ -120,8 +137,14 @@ impl CognitionBreed for AutoinstinctNeurosis {
                     stimulus, strength, delta_fear, delta_anger, delta_mistrust
                 ),
                 depth: 0,
+                objects: vec![],
             });
 
+            tracing::debug!(
+                breed.step = "resolution_proposed",
+                breed = "autoinstinct_neurosis",
+                "L1 inference step"
+            );
             // Emit a candidate describing the affect change for this stimulus.
             output_candidates.push(Candidate {
                 id: stimulus.clone(),
@@ -150,6 +173,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
                 state.beliefs.len()
             ),
             depth: 0,
+            objects: vec![],
         });
 
         // Step 5: serialize selected as affect summary.
@@ -186,10 +210,12 @@ impl CognitionBreed for AutoinstinctNeurosis {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctNeurosis must produce at least one trace step (affect evidence)"
@@ -352,8 +378,10 @@ mod tests {
             selected: None,
             explanation: "empty".into(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
-        assert!(breed.postconditions(&output).is_err());
+        assert!(breed.postconditions(&make_input(vec![], vec![]), &output).is_err());
     }
 
     #[test]

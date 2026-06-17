@@ -20,6 +20,7 @@ smallvec = { version = "1.13", features = ["serde"] }
 itertools = "0.14.0"
 rustc-hash = "2"
 blake3 = "1.5"
+tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 wasm4pm-compat = { version = "26.6.8" }

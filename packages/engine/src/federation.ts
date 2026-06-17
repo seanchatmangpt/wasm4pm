@@ -11,16 +11,13 @@
  * - NullBackend — Fail-open sentinel backend
  */
 
+import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import type { ExecutionPlan, BudgetEnvelope, LatencyClass, QualityTier, ExecutionMode } from '@wasm4pm/contracts';
 import type {
   MiningBackend,
   EventLogIR,
-  ModelIR,
   ResultEnvelope,
-  ConformanceResult,
-  AnalysisTask,
-  ProvenanceChain,
   KernelWasmModule,
 } from 'wasm4pm';
 import { DefaultBackendRegistry, WasmBackend, MlBackend } from 'wasm4pm';
@@ -87,21 +84,26 @@ export class FederationCircuitBreaker {
   }
 }
 
+export const DecisionTraceEntrySchema = z.object({
+  cycle_seq: z.number(),
+  timestamp: z.number(),
+  algorithm_id: z.string(),
+  budget: z.unknown() as z.ZodType<BudgetEnvelope>,
+  candidates_before_selection: z.array(z.string()),
+  selected_backend_id: z.string(),
+  rule_that_selected: z.union([
+    z.literal(1), z.literal(2), z.literal(3), z.literal(4),
+    z.literal(5), z.literal(6), z.literal(7),
+  ]),
+  rl_scores: z.record(z.string(), z.number()).optional(),
+  result_status: z.enum(['success', 'partial', 'failed']),
+  latency_ms: z.number(),
+});
+
 /**
  * Decision trace entry for audit trail (Section 5.6)
  */
-export interface DecisionTraceEntry {
-  readonly cycle_seq: number;
-  readonly timestamp: number;
-  readonly algorithm_id: string;
-  readonly budget: BudgetEnvelope;
-  readonly candidates_before_selection: ReadonlyArray<string>;
-  readonly selected_backend_id: string;
-  readonly rule_that_selected: 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  readonly rl_scores?: Readonly<Record<string, number>>;
-  readonly result_status: 'success' | 'partial' | 'failed';
-  readonly latency_ms: number;
-}
+export type DecisionTraceEntry = z.infer<typeof DecisionTraceEntrySchema>;
 
 /**
  * FederationController: Main control-plane singleton (Section 5.1)
@@ -320,7 +322,7 @@ export class FederationController {
   private getCandidatesForRule7(
     algorithmId: string,
     budget: BudgetEnvelope,
-    healthLevel: number
+    _healthLevel: number
   ): MiningBackend[] {
     try {
       // Use registry's 7-rule selection; we've already applied health filtering
@@ -380,8 +382,8 @@ export class FederationController {
  * ```
  */
 export async function initializeFederationStack(
-  wasmModule: KernelWasmModule,
-  pm4pyMcpPath: string = 'pm4py-mcp'
+  _wasmModule: KernelWasmModule,
+  _pm4pyMcpPath: string = 'pm4py-mcp'
 ): Promise<FederationController> {
   const registry = new DefaultBackendRegistry();
   const controller = new FederationController(registry);

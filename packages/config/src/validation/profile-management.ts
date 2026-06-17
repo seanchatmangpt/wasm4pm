@@ -3,20 +3,22 @@
  * Enables selection, validation, and documentation of the 5 deployment profiles.
  */
 
+import { z } from 'zod';
 import type { ExecutionProfile } from '../types.js';
-import { ALGORITHM_IDS } from '../schema.js';
+import { ALGORITHM_IDS, algorithmIdSchema } from '../schema.js';
 import type { AlgorithmId } from '../schema.js';
 
-export interface ProfileCapabilities {
-  name: ExecutionProfile;
-  displayName: string;
-  target: string;
-  sizeTarget: string;
-  description: string;
-  algorithms: readonly AlgorithmId[];
-  features: string[];
-  recommendedFor: string[];
-}
+export const profileCapabilitiesSchema = z.object({
+  name: z.enum(['fast', 'balanced', 'quality', 'stream']),
+  displayName: z.string(),
+  target: z.string(),
+  sizeTarget: z.string(),
+  description: z.string(),
+  algorithms: z.array(algorithmIdSchema),
+  features: z.array(z.string()),
+  recommendedFor: z.array(z.string()),
+});
+export type ProfileCapabilities = z.infer<typeof profileCapabilitiesSchema>;
 
 /**
  * Get full capability descriptor for a deployment profile.
@@ -69,7 +71,7 @@ export function getProfileCapabilities(profile: ExecutionProfile): ProfileCapabi
       target: 'High-accuracy process discovery',
       sizeTarget: '~2.7MB',
       description: 'All algorithms, ML, RL orchestration, full streaming, OCEL',
-      algorithms: ALGORITHM_IDS,
+      algorithms: [...ALGORITHM_IDS],
       features: [
         'feature-conformance-full',
         'feature-discovery-advanced',
@@ -104,12 +106,13 @@ export function getProfileCapabilities(profile: ExecutionProfile): ProfileCapabi
 /**
  * Suggest a deployment profile based on constraints.
  */
-export interface ProfileSuggestionConstraints {
-  memoryBudgetMb?: number;
-  latencyBudgetMs?: number;
-  requiredAlgorithms?: string[];
-  desiredFeatures?: string[];
-}
+export const profileSuggestionConstraintsSchema = z.object({
+  memoryBudgetMb: z.number().optional(),
+  latencyBudgetMs: z.number().optional(),
+  requiredAlgorithms: z.array(z.string()).optional(),
+  desiredFeatures: z.array(z.string()).optional(),
+});
+export type ProfileSuggestionConstraints = z.infer<typeof profileSuggestionConstraintsSchema>;
 
 export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   recommended: ExecutionProfile;

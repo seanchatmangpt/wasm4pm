@@ -1,0 +1,56 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "gps",
+    "breed": "gps",
+    "status": "ok",
+    "output": {
+      "breed": "gps",
+      "candidates": [],
+      "facts": [],
+      "selected": "put-on-shirt,get-dressed",
+      "explanation": "GPS plan (2 ops): put-on-shirt → get-dressed",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "reduce-gap",
+          "detail": "dressed=yes",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "reduce-gap",
+          "detail": "shirt=on",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-operator",
+          "detail": "put-on-shirt",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "apply-operator",
+          "detail": "get-dressed",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7",
+    "output_hash": "9f81a6c98331c6a900c8604a973146ba967b3e892ae055d689a95366cd1874fd",
+    "replay_pointer": "9f81a6c98331c6a9",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/62bfc37c045216a0bc0a973692710d18b7d7ec0be6ab2483e9e2c6266f900fe7.json"
+  },
+  "meta": {
+    "run_id": "e6795a65-80b6-46f7-9c17-0af4336e3084",
+    "timestamp": "2026-06-10T15:46:42.339Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

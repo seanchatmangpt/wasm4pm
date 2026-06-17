@@ -14,6 +14,7 @@
  *   with other V2 extension producers.
  */
 
+import { z } from 'zod';
 import type { Config } from './types.js';
 
 // ---------------------------------------------------------------------------
@@ -22,44 +23,48 @@ import type { Config } from './types.js';
 // mcpp-core/src/protocol/request.rs — kept in sync by convention.
 // ---------------------------------------------------------------------------
 
-export interface ObjectRef {
-  id: string;
-  type: string;
+export const objectRefSchema = z.object({
+  id: z.string(),
+  type: z.string(),
   /** "blake3:<64 hex>" */
-  hash: string;
-}
+  hash: z.string(),
+});
+export type ObjectRef = z.infer<typeof objectRefSchema>;
 
 /**
  * Five conformance dimensions understood by the mcpp admission gate.
  * All values are thresholds in [0, 1]; absent means "not required".
  */
-export interface ConformanceThresholds {
-  fitness?: number;
-  precision?: number;
-  lifecycle?: number;
-  cardinality?: number;
-  receipt?: number;
-}
+export const conformanceThresholdsSchema = z.object({
+  fitness: z.number().min(0).max(1).optional(),
+  precision: z.number().min(0).max(1).optional(),
+  lifecycle: z.number().min(0).max(1).optional(),
+  cardinality: z.number().min(0).max(1).optional(),
+  receipt: z.number().min(0).max(1).optional(),
+});
+export type ConformanceThresholds = z.infer<typeof conformanceThresholdsSchema>;
 
 export type PolicyOnNonconformance = 'refuse';
 
-export interface Policy {
-  on_nonconformance?: PolicyOnNonconformance;
-  proof_pack_required?: boolean;
-  receipt_required?: boolean;
-}
+export const policySchema = z.object({
+  on_nonconformance: z.literal('refuse').optional(),
+  proof_pack_required: z.boolean().optional(),
+  receipt_required: z.boolean().optional(),
+});
+export type Policy = z.infer<typeof policySchema>;
 
-export interface McpplusRequest {
-  mcpp_version: string;
-  part_id: string;
-  route_class?: string;
-  input_objects: ObjectRef[];
-  required_conformance?: ConformanceThresholds;
-  policy?: Policy;
-  trace_parent?: string;
+export const mcpplusRequestSchema = z.object({
+  mcpp_version: z.string(),
+  part_id: z.string(),
+  route_class: z.string().optional(),
+  input_objects: z.array(objectRefSchema),
+  required_conformance: conformanceThresholdsSchema.optional(),
+  policy: policySchema.optional(),
+  trace_parent: z.string().optional(),
   /** Forward-compatible extension slot (V2). Keys: "wasm4pm.<section>.<field>". */
-  extensions?: Record<string, unknown>;
-}
+  extensions: z.record(z.string(), z.unknown()).optional(),
+});
+export type McpplusRequest = z.infer<typeof mcpplusRequestSchema>;
 
 // ---------------------------------------------------------------------------
 // MCPP_VERSION constant — must match the Rust constant in protocol/mod.rs

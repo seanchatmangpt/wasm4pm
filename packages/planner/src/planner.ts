@@ -8,8 +8,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { hash as blake3Hash } from 'blake3';
+import { estimateDurationMs as benchEstimateDurationMs, benchSpeedTier } from './benchmark-costs.js';
+import { checkCostModelDrift, type CostDriftSignal } from './cost-drift.js';
 import type { ErrorInfo, BudgetEnvelope } from '@wasm4pm/contracts';
-import { createError, createDefaultBudgetEnvelope } from '@wasm4pm/contracts';
+import { createError } from '@wasm4pm/contracts';
 import {
   ALGORITHM_ID_TO_STEP_TYPE,
   getProfileAlgorithms,
@@ -120,6 +122,9 @@ export interface AlternativePlan {
 
   /** Estimated wall-clock duration in ms for this alternative */
   estimated_duration_ms: number;
+
+  /** Quality efficiency: qualityTier / estimated_duration_ms. Higher = more quality per ms. */
+  quality_efficiency: number;
 }
 
 /**
@@ -196,6 +201,15 @@ export interface ExecutionPlan {
    * missing features. Non-fatal; plan is still valid.
    */
   warnings: string[];
+
+  /** Quality efficiency of the primary algorithm: primaryQualityTier / calibrated_duration_ms. */
+  quality_efficiency: number;
+
+  /**
+   * Cost-model drift alerts for the primary algorithm. Populated only when
+   * the caller passes a receiptsDir to plan() and runtime evidence exists.
+   */
+  cost_drift_alerts?: CostDriftSignal[];
 }
 
 /**
@@ -336,7 +350,7 @@ function algorithmNameFromStepType(stepType: PlanStepType): string {
  */
 function createBudgetEnvelopeFromConfig(
   config: Config,
-  sourceKind: string
+  _sourceKind: string
 ): { budget: BudgetEnvelope; eventCount?: number } {
   const profile = config.execution.profile.toLowerCase();
 
@@ -413,7 +427,10 @@ function createBudgetEnvelopeFromConfig(
  * @returns ExecutionPlan with deterministic structure and BLAKE3 hash, BudgetEnvelope attached
  * @throws Error if configuration is invalid
  */
-export function plan(config: Config): ExecutionPlan {
+export function plan(
+  config: Config,
+  options?: { receiptsDir?: string }
+): ExecutionPlan {
   // Validate configuration with typed errors
   if (!config || typeof config !== 'object') {
     throw new PlannerError(
@@ -573,7 +590,6 @@ export function plan(config: Config): ExecutionPlan {
   }
 
   for (const algoType of pipelineSteps) {
-    let stepType = algoType;
     const algoName = algorithmNameFromStepType(algoType);
     let planStep: PlanStep;
     const algoParams = algorithmOverride
@@ -784,11 +800,25 @@ export function plan(config: Config): ExecutionPlan {
   // Quality prediction: derived from profile and primary discovery algorithm
   const quality_prediction = deriveQualityPrediction(profile, config.algorithm?.name);
 
+  // Event count hint for bench-calibrated duration estimates
+  const eventCount = config.execution.maxEvents ?? 10_000;
+
+  // Refine primary estimated_duration_ms with bench data when a single algorithm is specified
+  const primaryAlgo = config.algorithm?.name;
+  const bench_primary_ms = primaryAlgo ? benchEstimateDurationMs(primaryAlgo, eventCount) : undefined;
+  const calibrated_duration_ms = bench_primary_ms !== undefined
+    ? Math.max(1, Math.round(bench_primary_ms))
+    : estimated_duration_ms;
+
   // Alternative plans: other good discovery algorithms for this profile
-  const alternatives = deriveAlternatives(profile, config.algorithm?.name, estimated_duration_ms);
+  const alternatives = deriveAlternatives(profile, config.algorithm?.name, calibrated_duration_ms, eventCount);
 
   // Warnings: advisory notes about this plan
   const warnings = deriveWarnings(profile, config, steps);
+
+  // Quality efficiency for primary algorithm
+  const primaryQualityTier = primaryAlgo ? (ALT_QUALITY_TIER[primaryAlgo] ?? 50) : 50;
+  const quality_efficiency = calibrated_duration_ms > 0 ? primaryQualityTier / calibrated_duration_ms : 0;
 
   // Return the execution plan with BudgetEnvelope attached
   const executionPlan: ExecutionPlan = {
@@ -801,12 +831,25 @@ export function plan(config: Config): ExecutionPlan {
     sinkKind,
     profile,
     budget,
-    estimated_duration_ms,
+    estimated_duration_ms: calibrated_duration_ms,
     estimated_memory_mb,
     quality_prediction,
     alternatives,
     warnings,
+    quality_efficiency,
   };
+
+  // Cost-model drift alerts: only when caller provides runtime receipt evidence
+  if (options?.receiptsDir && primaryAlgo) {
+    try {
+      const signal = checkCostModelDrift(options.receiptsDir, primaryAlgo);
+      if (signal) {
+        executionPlan.cost_drift_alerts = [signal];
+      }
+    } catch {
+      // drift detection must never break planning
+    }
+  }
 
   return executionPlan;
 }
@@ -866,28 +909,24 @@ function deriveQualityPrediction(
 
 // ── Alternative plan helpers ────────────────────────────────────────────────
 
-/** Duration-per-100-events rates for alternatives (ms) */
-const ALT_DURATION_PER_100_EVENTS_MS: Record<string, number> = {
-  dfg: 0.5,
-  process_skeleton: 0.3,
-  simd_streaming_dfg: 0.2,
-  heuristic_miner: 10,
-  alpha_plus_plus: 5,
-  inductive_miner: 15,
-  genetic_algorithm: 40,
-  ilp: 80,
-};
-
-/** Speed tiers for alternative suggestions */
+/** Speed tiers for alternative suggestions (1=fastest, 80=slowest).
+ *  Values for benchmarked algorithms are derived from measured dispatchUs
+ *  (see benchmark-costs.ts); unmeasured algorithms keep hand-authored values. */
 const ALT_SPEED_TIER: Record<string, number> = {
-  dfg: 5,
+  dfg: benchSpeedTier('dfg') ?? 5,
   process_skeleton: 3,
   simd_streaming_dfg: 2,
-  heuristic_miner: 25,
+  heuristic_miner: benchSpeedTier('heuristic_miner') ?? 25,
   alpha_plus_plus: 20,
-  inductive_miner: 30,
+  inductive_miner: benchSpeedTier('inductive_miner') ?? 30,
+  hill_climbing: benchSpeedTier('hill_climbing') ?? 35,
+  simulated_annealing: benchSpeedTier('simulated_annealing') ?? 40,
+  transition_system: benchSpeedTier('transition_system') ?? 30,
+  log_to_trie: benchSpeedTier('log_to_trie') ?? 30,
+  batches: benchSpeedTier('batches') ?? 30,
+  correlation_miner: benchSpeedTier('correlation_miner') ?? 35,
   genetic_algorithm: 75,
-  ilp: 80,
+  ilp: benchSpeedTier('ilp') ?? 80,
 };
 
 /** Quality tiers for alternative suggestions */
@@ -905,7 +944,8 @@ const ALT_QUALITY_TIER: Record<string, number> = {
 function deriveAlternatives(
   profile: string,
   primaryAlgorithm: string | undefined,
-  baseDurationMs: number
+  baseDurationMs: number,
+  eventCount = 10_000
 ): AlternativePlan[] {
   // Map profile → sensible alternative algorithms
   const PROFILE_ALTERNATIVES: Record<string, Array<{ alg: string; reason: string }>> = {
@@ -934,11 +974,18 @@ function deriveAlternatives(
     .map(({ alg, reason }) => {
       const speed_tier = ALT_SPEED_TIER[alg] ?? 50;
       const quality_tier = ALT_QUALITY_TIER[alg] ?? 50;
-      // Estimate duration relative to base using speed tier ratio
-      const primarySpeedTier = primaryAlgorithm ? (ALT_SPEED_TIER[primaryAlgorithm] ?? 25) : 25;
-      const speedRatio = primarySpeedTier > 0 ? speed_tier / primarySpeedTier : 1;
-      const estimated_duration_ms = Math.max(10, Math.round(baseDurationMs * speedRatio));
-      return { algorithm: alg, reason, speed_tier, quality_tier, estimated_duration_ms };
+      // Bench-calibrated estimate when measured; speed-tier ratio fallback otherwise
+      const bench_ms = benchEstimateDurationMs(alg, eventCount);
+      let estimated_duration_ms: number;
+      if (bench_ms !== undefined) {
+        estimated_duration_ms = Math.max(1, Math.round(bench_ms));
+      } else {
+        const primarySpeedTier = primaryAlgorithm ? (ALT_SPEED_TIER[primaryAlgorithm] ?? 25) : 25;
+        const speedRatio = primarySpeedTier > 0 ? speed_tier / primarySpeedTier : 1;
+        estimated_duration_ms = Math.max(10, Math.round(baseDurationMs * speedRatio));
+      }
+      const quality_efficiency = estimated_duration_ms > 0 ? quality_tier / estimated_duration_ms : 0;
+      return { algorithm: alg, reason, speed_tier, quality_tier, estimated_duration_ms, quality_efficiency };
     });
 }
 

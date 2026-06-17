@@ -1,0 +1,87 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "cbr",
+    "breed": "cbr",
+    "status": "ok",
+    "output": {
+      "breed": "cbr",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ingredient",
+          "value": "flour"
+        },
+        {
+          "key": "ingredient",
+          "value": "egg"
+        },
+        {
+          "key": "prep_time",
+          "value": "5min"
+        }
+      ],
+      "selected": "pancakes",
+      "explanation": "CBR best=pancakes sim=0.500 weighted=0.450",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "build-index",
+          "detail": "index built for 2 cases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "retrieve-candidates",
+          "detail": "retrieved 2 candidates from 2 total cases",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "score-case",
+          "detail": "pancakes sim=0.500 score=0.450",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "score-case",
+          "detail": "scones sim=0.200 score=0.140",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "reuse-adapt",
+          "detail": "pancakes adapted 0 facts",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "revise-accept",
+          "detail": "pancakes sim=0.667",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "retain-case",
+          "detail": "retained-fd60ef00",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d",
+    "output_hash": "0f4e3c1bb49303487a88879835d5170521d3356612bbe5364280dd55df9828b5",
+    "replay_pointer": "0f4e3c1bb4930348",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/7b58985ed746fb0d02a4d45061a851a5be84611409ec71bee352343acb95034d.json"
+  },
+  "meta": {
+    "run_id": "51419448-3d5a-4084-ac4a-61a9bd9f5254",
+    "timestamp": "2026-06-10T15:46:41.189Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

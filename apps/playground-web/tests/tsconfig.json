@@ -1,0 +1,21 @@
+{
+  "extends": "../.nuxt/tsconfig.app.json",
+  "compilerOptions": {
+    "composite": true,
+    "types": ["vitest/globals"],
+    "paths": {
+      "~/*": ["../app/*"],
+      "@/*": ["../app/*"],
+      "wasm4pm": ["../public/wasm4pm.js"]
+    },
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "strict": false
+  },
+  "include": [
+    "./**/*.ts",
+    "./**/*.spec.ts",
+    "../app/**/*.ts",
+    "../app/**/*.vue"
+  ]
+}

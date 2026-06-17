@@ -1,0 +1,109 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "soar",
+    "breed": "soar",
+    "status": "ok",
+    "output": {
+      "breed": "soar",
+      "candidates": [
+        {
+          "id": "approach_NMR_COSY_first",
+          "score": 0.8700000047683716,
+          "eliminated": false
+        },
+        {
+          "id": "approach_GCMS_first",
+          "score": 0.7900000214576721,
+          "eliminated": false
+        },
+        {
+          "id": "approach_MSMS_first",
+          "score": 0.7400000095367432,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "experiment_plan_from_learning",
+          "value": "NMR_COSY_then_GCMS_then_MSMS"
+        },
+        {
+          "key": "top_structure",
+          "value": "cyclohexanol"
+        },
+        {
+          "key": "ambiguity_remaining",
+          "value": "conformation_only"
+        },
+        {
+          "key": "budget_hours_remaining",
+          "value": "8"
+        },
+        {
+          "key": "sample_quantity_limited",
+          "value": "true"
+        },
+        {
+          "key": "lab_availability_NMR",
+          "value": "immediately"
+        },
+        {
+          "key": "lab_availability_GCMS",
+          "value": "2_hour_wait"
+        },
+        {
+          "key": "lab_availability_MSMS",
+          "value": "next_day"
+        },
+        {
+          "key": "soar_architecture",
+          "value": "preference_resolution_tie_impasse"
+        },
+        {
+          "key": "decision_cycle_count",
+          "value": "0"
+        },
+        {
+          "key": "impasse_type_expected",
+          "value": "tie_between_NMR_and_GCMS"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:approach_NMR_COSY_first:reason:impasse-unresolved-fallback"
+        }
+      ],
+      "selected": "approach_NMR_COSY_first",
+      "explanation": "SOAR impasse-resolved selected Some(\"approach_NMR_COSY_first\") (best=0, worst=0, require=0, prohibit=0, better-pairs=0)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "impasse",
+          "detail": "tie among 3 candidates",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "impasse-unresolved-fallback",
+          "detail": "no impasse:tie rules, using score+lex",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1014fda1ab4cfe8865cf0e43ec8523f65224cd8c08a08cea2dbf7cddf31551cc",
+    "output_hash": "361c0aa750a1843798b527bccd88409b2a8ddb3e7d6e961733ff1a9bdf231f9f",
+    "replay_pointer": "361c0aa750a18437",
+    "inference_step_count": 2,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1014fda1ab4cfe8865cf0e43ec8523f65224cd8c08a08cea2dbf7cddf31551cc.json"
+  },
+  "meta": {
+    "run_id": "a86cb9e5-b941-40f5-811b-523088d79cf3",
+    "timestamp": "2026-06-10T15:46:49.806Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

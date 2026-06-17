@@ -6,6 +6,8 @@
  * deterministic serialization for hashing.
  */
 
+import { z } from 'zod';
+
 /**
  * All valid lifecycle states
  */
@@ -47,48 +49,42 @@ export const STATE_TRANSITIONS: Record<LifecycleState, readonly LifecycleState[]
   failed: ['uninitialized'],
 };
 
+export const LifecycleStateSchema = z.enum([
+  'uninitialized',
+  'bootstrapping',
+  'ready',
+  'planning',
+  'running',
+  'watching',
+  'degraded',
+  'failed',
+]);
+
+export const StatusSchema = z.object({
+  schema_version: z.literal('1.0'),
+  state: LifecycleStateSchema,
+  timestamp: z.string(),
+  last_transition: z.string(),
+  previous_state: LifecycleStateSchema.nullable(),
+  transition_count: z.number().int().min(0),
+  run_id: z.string().nullable(),
+  degradation: z.object({
+    reason: z.string(),
+    affected_subsystems: z.array(z.string()),
+    since: z.string(),
+  }).optional(),
+  failure: z.object({
+    error_code: z.string(),
+    message: z.string(),
+    recoverable: z.boolean(),
+  }).optional(),
+  uptime_ms: z.number().min(0),
+});
+
 /**
  * Status snapshot — captures full runtime state at a point in time
  */
-export interface Status {
-  /** Schema version for forward compatibility */
-  schema_version: '1.0';
-
-  /** Current lifecycle state */
-  state: LifecycleState;
-
-  /** ISO 8601 timestamp of this snapshot */
-  timestamp: string;
-
-  /** ISO 8601 timestamp of last state transition */
-  last_transition: string;
-
-  /** Previous state before the current one */
-  previous_state: LifecycleState | null;
-
-  /** Number of state transitions since initialization */
-  transition_count: number;
-
-  /** Active run ID (if state is running/watching/degraded) */
-  run_id: string | null;
-
-  /** Degradation details (if state is degraded) */
-  degradation?: {
-    reason: string;
-    affected_subsystems: string[];
-    since: string;
-  };
-
-  /** Failure details (if state is failed) */
-  failure?: {
-    error_code: string;
-    message: string;
-    recoverable: boolean;
-  };
-
-  /** Uptime in milliseconds since initialization */
-  uptime_ms: number;
-}
+export type Status = z.infer<typeof StatusSchema>;
 
 /**
  * Check if a state transition is valid

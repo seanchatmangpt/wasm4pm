@@ -1,0 +1,93 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_vision",
+    "breed": "autoinstinct_vision",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctvision",
+      "candidates": [
+        {
+          "id": "A",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "B",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "C",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "block",
+          "value": "A"
+        },
+        {
+          "key": "block",
+          "value": "B"
+        },
+        {
+          "key": "pyramid",
+          "value": "C"
+        },
+        {
+          "key": "supported_by:B",
+          "value": "A"
+        },
+        {
+          "key": "supported_by:C",
+          "value": "B"
+        }
+      ],
+      "selected": "C",
+      "explanation": "AutoinstinctVision: 3 objects observed; first clear object is C",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "observe-object",
+          "detail": "observed A as block (on table)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "observe-object",
+          "detail": "observed B as block (supported_by=A)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "observe-object",
+          "detail": "observed C as pyramid (supported_by=B)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "find-clear-object",
+          "detail": "clear object found: C",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f",
+    "output_hash": "0dddfce965370d09910c3f8b6530e98c60675799bc30c2b4e6f91f706d0fed23",
+    "replay_pointer": "0dddfce965370d09",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c4a01c53d950b99201149b98d05bb00a20915f632e651c70179530f9fc2d0d9f.json"
+  },
+  "meta": {
+    "run_id": "dae181dc-73fc-49f6-b1f1-5fd812e9043b",
+    "timestamp": "2026-06-10T15:46:44.635Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

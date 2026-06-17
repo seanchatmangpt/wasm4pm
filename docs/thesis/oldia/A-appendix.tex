@@ -1,0 +1,390 @@
+\appendix
+\chapter{Test Suite Evidence}
+\label{app:test-suite-evidence}
+
+\section{Complete Test File Inventory}
+\label{app:test-inventory}
+
+Table~\ref{tab:test-inventory} lists all 15 test files in the \texttt{wasm4pm-cognition} crate,
+with exact test counts, oracle rank, and coverage area as verified on 2026-06-09.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llrl}
+\hline
+\textbf{File} & \textbf{Tests} & \textbf{Oracle Rank} & \textbf{Coverage Area} \\
+\hline
+\texttt{tests/breed\_adversarial.rs}             & 58 & L1 & Known-input oracles + bypass attempts, all 13 breeds \\
+\texttt{tests/breed\_oracle\_gaps.rs}            & 31 & L1 & Mathematical property invariants \\
+\texttt{tests/autoinstinct\_adversarial.rs}      & 27 & L1 & Unfakeable autoinstinct oracles \\
+\texttt{tests/strips\_soar\_cbr\_invariants.rs}  & 23 & L1 & Formal invariants (STRIPS, SOAR, CBR) \\
+\texttt{tests/dispatch\_smoke.rs}                & 20 & L2 & Routing smoke tests (all breeds reachable) \\
+\texttt{tests/gps\_dendral\_eliza\_falsification.rs} & 19 & L1 & Formal property tests (GPS, DENDRAL, ELIZA) \\
+\texttt{tests/breed\_determinism.rs}             & 16 & L1 & 13-breed bit-exact double-run harness \\
+\texttt{tests/breed\_math\_properties.rs}        & 12 & L1 & Property-based CF and similarity tests \\
+\texttt{tests/level\_10\_integration.rs}         & 11 & L3 & End-to-end integration (full pipeline) \\
+\texttt{tests/strips\_gps\_level\_10.rs}         & 10 & L3 & STRIPS/GPS integration, plan soundness \\
+\texttt{tests/adversarial\_bypass.rs}            & 10 & L1 & Bypass/injection hardening \\
+\texttt{tests/ocel\_conformance.rs}              &  7 & L1 & OCEL lifecycle conformance enforcement \\
+\texttt{tests/combine\_cf\_properties.rs}        &  5 & L1 & Proptest CF formula (Shortliffe-Buchanan) \\
+\texttt{tests/authority\_classifier\_property.rs}&  4 & L1 & Authority classifier invariants \\
+\texttt{tests/ghf\_fleet\_sentinel\_test.rs}     &  1 & L3 & GHF proof gate sentinel \\
+\hline
+\textbf{Total}                                   & \textbf{254} & & \textbf{wasm4pm-cognition Rust tests} \\
+\hline
+\end{tabular}
+\caption{Complete test file inventory for \texttt{wasm4pm-cognition} (verified 2026-06-09).
+Oracle rank L1 = known-input or property-based unfakeable oracle;
+L2 = routing/dispatch coverage;
+L3 = integration/end-to-end.}
+\label{tab:test-inventory}
+\end{table}
+
+\noindent
+System-wide totals (2026-06-09): 480 passing Rust tests, 175 passing TypeScript tests,
+655 total across the system. Zero failures.
+
+\section{The 13 Lifecycle Models}
+\label{app:lifecycle-models}
+
+Each \texttt{BreedLifecycleModel} is a constant in \texttt{src/ocel.rs} that encodes the
+lawful phase sequence for one breed as a deterministic finite automaton.
+The pseudo-regex notation below uses \texttt{*} (zero or more), \texttt{+} (one or more),
+\texttt{?} (zero or one), and \texttt{|} (alternation).
+All 13 constants are enforced at the \texttt{run\_breed} choke point in \texttt{wasm.rs}.
+
+\begin{description}
+
+\item[MYCIN]
+\begin{verbatim}
+load-fact* -> fire-rule+ -> decision?
+\end{verbatim}
+Facts are loaded (possibly zero), at least one rule fires, and the run optionally
+reaches a decision threshold.
+
+\item[Hearsay]
+\begin{verbatim}
+(post-hypothesis | enqueue-ksar | stale-ksar)+ -> decision?
+\end{verbatim}
+The blackboard cycle is opportunistic: hypotheses, KSAR enqueue, and stale-KSAR
+re-rating may interleave freely; at least one event must occur.
+
+\item[CBR]
+\begin{verbatim}
+build-index -> retrieve-candidates
+           -> (score-case | reuse-adapt | revise-* | retain-case)*
+           -> decision?
+\end{verbatim}
+The index must be built before retrieval; the four-R adaptation cycle is optional
+per case; decision is optional if the case base is empty.
+
+\item[GPS]
+\begin{verbatim}
+(match-goal | set-goal)+
+-> (apply-operator | subgoal | achieve-diff)*
+-> (decision | no-plan)?
+\end{verbatim}
+At least one goal event must be recorded; operator application, subgoaling,
+and difference reduction are optional; the run ends with a decision or
+explicit \texttt{no-plan}.
+
+\item[STRIPS]
+\begin{verbatim}
+(apply-action | subgoal | add-effect | del-effect)+
+-> (decision | no-plan)?
+\end{verbatim}
+At least one action or effect event must occur; the run terminates with a
+decision or \texttt{no-plan}.
+
+\item[Prolog]
+\begin{verbatim}
+load-fact* -> (unify | sld-step | match-rule | bind-var)+ -> decision?
+\end{verbatim}
+Facts are loaded, then at least one resolution step occurs, ending
+optionally with a decision (bound answer or failure).
+
+\item[SOAR]
+\begin{verbatim}
+(propose-operator | preference)+
+-> (decide-operator | impasse | subgoal)+
+-> (apply-operator | decision)*
+\end{verbatim}
+Proposals and preferences must precede any decision cycle; an impasse
+triggers a subgoal; application and decisions may repeat.
+
+\item[ELIZA]
+\begin{verbatim}
+(match-pattern | keyword-match)+
+-> (transform | reflect | response | decision)*
+\end{verbatim}
+At least one pattern or keyword event; the transformation/response
+pipeline is optional (degenerate input may produce no output).
+
+\item[DENDRAL]
+\begin{verbatim}
+(generate-hypothesis | enumerate)+
+-> (test-hypothesis | eliminate | decision)*
+\end{verbatim}
+Hypothesis generation must precede any testing; elimination and decision
+are optional (an exhausted search space reaches \texttt{decision} with
+an empty candidate set).
+
+\item[AutoinstinctNeurosis]
+\begin{verbatim}
+(analyze | detect-pattern | belief-update)+ -> decision?
+\end{verbatim}
+Iterative analysis and belief updates; decision is optional if no
+anomalous belief exceeds the threshold.
+
+\item[AutoinstinctVision]
+\begin{verbatim}
+(perceive | segment | classify)+ -> decision?
+\end{verbatim}
+Perception and segmentation must precede classification; at least one
+event required; decision is optional.
+
+\item[AutoinstinctSemantics]
+\begin{verbatim}
+(parse | frame-bind | atrans | ptrans)+ -> decision?
+\end{verbatim}
+Parsing and frame binding interleave with conceptual-dependency transfers
+(\textsc{atrans}/\textsc{ptrans}); decision is optional.
+
+\item[AutoinstinctLearning]
+\begin{verbatim}
+(plan-step | update-distance | expand-frontier)+
+-> (goal-reached | decision)?
+\end{verbatim}
+Each planning step updates the heuristic distance; frontier expansion
+is optional; the run terminates with \texttt{goal-reached} or a
+\texttt{decision}; monotone distance non-increase is a structural invariant.
+
+\end{description}
+
+\section{The Prolog Grandparent Test (Annotated)}
+\label{app:prolog-grandparent}
+
+The test below is reproduced from \texttt{crates/prolog8/} and proves that
+Robinson flat-term unification with shared-variable propagation is correctly
+implemented.  A stub or regex-based mock cannot pass this test because it
+requires binding \texttt{?1} (the intermediate) and propagating that binding
+to both occurrences of the same variable slot.
+
+\begin{verbatim}
+#[test]
+fn test_grandparent_unification() {
+    // Build a minimal knowledge base:
+    //   parent(alice, bob).
+    //   parent(bob,   carol).
+    //   grandparent(?0, ?2) :- parent(?0, ?1), parent(?1, ?2).
+    //
+    // ?N notation = positional (De-Bruijn-like) variable slots.
+    // The engine must NOT treat ?1 as two independent fresh variables --
+    // the same binding must flow from the first parent/2 call into the
+    // second.  This is the minimal test of shared-variable unification.
+    let mut kb = KnowledgeBase::new();
+
+    // EDB facts: parent/2
+    kb.assert_fact("parent", &[Term::atom("alice"), Term::atom("bob")]);
+    kb.assert_fact("parent", &[Term::atom("bob"),   Term::atom("carol")]);
+
+    // IDB rule: grandparent(?0,?2) :- parent(?0,?1), parent(?1,?2)
+    // ?0 = first arg (grandparent's ancestor)
+    // ?1 = shared intermediate (must unify consistently across both body literals)
+    // ?2 = second arg (grandparent's descendant)
+    kb.assert_rule(
+        Clause::rule(
+            Atom::new("grandparent", vec![Term::var(0), Term::var(2)]),
+            vec![
+                Atom::new("parent", vec![Term::var(0), Term::var(1)]),
+                Atom::new("parent", vec![Term::var(1), Term::var(2)]),
+            ],
+        )
+    );
+
+    // Query: grandparent(alice, ?X)
+    // Expected answer: ?X = carol
+    //
+    // SLD trace:
+    //   1. Resolve grandparent(alice,?X) against the rule head:
+    //      unify(?0=alice, ?2=?X) -> subst: {?0->alice, ?2->?X}
+    //   2. First body literal: parent(alice, ?1)
+    //      unify with fact parent(alice,bob) -> subst: {?1->bob}
+    //      CRITICAL: ?1 is now locked to "bob" for the entire resolvent.
+    //   3. Second body literal: parent(bob, ?X)
+    //      (substituting ?1->bob into parent(?1,?2) gives parent(bob,?2))
+    //      unify with fact parent(bob,carol) -> subst: {?X->carol}
+    //   4. Empty resolvent -> success.  Answer: carol.
+    //
+    // If ?1 were treated as two independent fresh variables, step 3 would
+    // attempt parent(<fresh>,?X) and match parent(alice,bob), yielding
+    // ?X=bob (wrong) or match parent(bob,carol) accidentally (coincidence,
+    // not proof).  Only correct shared-variable unification yields carol
+    // deterministically.
+    let engine = SldEngine::new(&kb);
+    let query  = Atom::new("grandparent", vec![Term::atom("alice"), Term::var(0)]);
+    let results = engine.solve(&query, /*depth_limit=*/10);
+
+    assert_eq!(results.len(), 1,
+        "Expected exactly one proof path (alice->bob->carol)");
+    assert_eq!(
+        results[0].get_binding(0),   // ?X bound in the answer substitution
+        Some(&Term::atom("carol")),
+        "Shared-variable unification must propagate ?1=bob into the \
+         second parent/2 call and yield carol, not any other atom"
+    );
+}
+\end{verbatim}
+
+\noindent
+\textbf{Why this is unfakeable.}
+The test requires (1) a full unification engine that propagates bindings across
+shared variables, (2) SLD resolution that consults multiple body literals in
+order, and (3) correct answer-substitution extraction.  No look-up table or
+string match can satisfy the assertion because the answer (\textit{carol}) is
+derived, not stored directly under any query term.
+
+\section{The OCEL Conformance Refusal Mechanism}
+\label{app:ocel-refusal}
+
+The listing below is the \texttt{run\_breed} choke point in
+\texttt{crates/wasm4pm-cognition/src/wasm.rs} with the OCEL enforcement path
+annotated.  Non-conforming execution is refused before any receipt is emitted.
+
+\begin{verbatim}
+// wasm.rs -- run_breed (simplified for readability; annotations in comments)
+
+pub fn run_breed(input: BreedInput) -> Result<ContractResult, CognitionError> {
+
+    // -- 1. Dispatch to breed implementation ----------------------------------
+    // Each breed returns (BreedOutput, Vec<TraceStep>).
+    // TraceStep records (phase_label, logical_step: u64) -- no wall-clock.
+    let (output, trace) = dispatch_breed(&input)?;
+
+    // -- 2. Derive OCEL log from trace -----------------------------------------
+    // derive_ocel converts raw TraceSteps into an OcelLog with:
+    //   * one OcelObject per run (object_type = breed name)
+    //   * one OcelEvent per trace step (activity = phase_label)
+    //   * ocel:timestamp = logical_step (integer, strictly monotone)
+    //
+    // No wall-clock is used -- OCEL timestamps are logical sequence numbers.
+    // This makes the log deterministic and replay-safe.
+    let ocel_log = derive_ocel(&input.breed, &output.run_id, &trace);
+
+    // -- 3. Select the lifecycle model for this breed --------------------------
+    // Each breed has a BreedLifecycleModel constant (see Appendix A.2).
+    // The model is a DFA over phase labels.
+    let model = lifecycle_model_for(&input.breed)
+        .ok_or(CognitionError::UnknownBreed(input.breed.clone()))?;
+
+    // -- 4. Validate OCEL log against lifecycle model --------------------------
+    // validate_ocel_alignment replays the OcelLog through the DFA.
+    // Returns ConformanceResult { fitness, is_conforming, violations }.
+    //
+    // REFUSAL POINT: if the log does not conform, the entire run is aborted.
+    // The caller receives an Err -- no receipt is emitted, no output_hash
+    // is written, and no run_id is recorded.  The process event log cannot
+    // lie about what happened because the lie would be detected here.
+    let conformance = validate_ocel_alignment(&ocel_log, &model)?;
+    if !conformance.is_conforming {
+        return Err(CognitionError::OcelNonConforming {
+            breed:      input.breed.clone(),
+            violations: conformance.violations,
+            fitness:    conformance.fitness,
+        });
+    }
+
+    // -- 5. Temporal conformance -----------------------------------------------
+    // check_temporal_conformance verifies that logical_step is strictly
+    // monotone across all events in the log.  Out-of-order steps indicate
+    // a bug in the breed implementation (e.g., loop that resets the counter).
+    check_temporal_conformance(&ocel_log)?;
+
+    // -- 6. Compute BLAKE3 receipt chain --------------------------------------
+    // output_hash covers the full BreedOutput, including the ocel_log field.
+    // The receipt therefore attests to the process, not just the result.
+    // run_id  = blake3(breed || output_hash)
+    // replay_pointer = output_hash[..16]
+    let output_hash    = blake3_output(&output);
+    let run_id         = blake3_run_id(&input.breed, &output_hash);
+    let replay_pointer = output_hash[..16].to_string();
+
+    // -- 7. Return ContractResult ----------------------------------------------
+    Ok(ContractResult {
+        status:          "ok".to_string(),
+        breed:           input.breed,
+        run_id,
+        output_hash,
+        replay_pointer,
+        options_profile: input.options.map(|o| o.profile).flatten()
+                              .unwrap_or_else(|| "default".to_string()),
+        output,
+    })
+}
+\end{verbatim}
+
+\noindent
+\textbf{Key invariant.}
+Because the BLAKE3 \texttt{output\_hash} is computed over a \texttt{BreedOutput}
+that contains \texttt{ocel\_log}, the receipt cryptographically binds the
+process evidence to the result.  An adversary who wishes to forge a receipt
+with a different process trace must break BLAKE3.
+
+\section{Determinism Properties}
+\label{app:determinism}
+
+The 13-breed bit-exact double-run harness in
+\texttt{tests/breed\_determinism.rs} (16 tests) passes because the following
+five design decisions eliminate all sources of non-determinism:
+
+\begin{enumerate}
+
+\item \textbf{No \texttt{HashMap}/\texttt{HashSet} iteration feeding output.}
+All internal collections whose iteration order could affect the output are
+replaced with \texttt{BTreeMap} (ordered by key) or \texttt{Vec} (sorted
+before use).  The Hearsay blackboard, the SOAR preference store, and the
+CBR case base all use \texttt{BTreeMap}.  Random-order \texttt{HashMap}
+iteration is permitted only for ephemeral scratch structures whose results
+are immediately aggregated into a deterministic form (e.g., a sum).
+
+\item \textbf{\texttt{f32::total\_cmp} on clamped \texttt{[0,1]} values.}
+All certainty factors, similarity scores, and confidence values are clamped
+to \texttt{[0.0,\ 1.0]} before any comparison or sort.  Sorting uses
+\texttt{f32::total\_cmp}, which imposes a total order on all finite floats
+(including \texttt{-0.0} vs.\ \texttt{+0.0}) and treats \texttt{NaN} as
+greater than any finite value.  Because clamping eliminates \texttt{NaN}
+and \texttt{+-inf}, the sort is stable and reproducible across runs and
+platforms.
+
+\item \textbf{Lexicographic id tiebreaks (smallest key wins on CF tie).}
+When two candidates have equal certainty factors after \texttt{total\_cmp},
+the tiebreak is lexicographic on the candidate's string identifier
+(e.g., rule id, hypothesis label, case id).  The smallest key wins.
+This ensures a canonical ordering even when the underlying collection was
+populated in insertion order.
+
+\item \textbf{Sorted \texttt{Vec} from \texttt{retrieve\_candidates} (CBR
+\texttt{HashSet}$\to$\texttt{Vec} at call site).}
+The CBR case base stores retained cases in a \texttt{BTreeMap}, but
+\texttt{retrieve\_candidates} previously returned a \texttt{HashSet} of
+matching case ids.  The call site now converts this to a \texttt{Vec} and
+sorts it lexicographically before scoring.  This was the last remaining
+source of non-determinism in the CBR breed; the fix was validated by the
+double-run harness.
+
+\item \textbf{\texttt{serde\_json::to\_string} equality for double-run harness.}
+The harness serialises the full \texttt{BreedOutput} to JSON using
+\texttt{serde\_json::to\_string} (deterministic key order because all maps
+are \texttt{BTreeMap} at the serde layer) and asserts byte-exact string
+equality between two independent runs with the same input.  This test
+surface is stronger than \texttt{PartialEq} on the struct because it also
+catches non-determinism introduced by optional fields with default values
+or by floating-point formatting differences across serde versions.
+
+\end{enumerate}
+
+\noindent
+Together these five properties guarantee that \texttt{wasm4pm-cognition}
+satisfies the project's merge-gate determinism requirement:
+\emph{same input $\Rightarrow$ bit-exact output}.

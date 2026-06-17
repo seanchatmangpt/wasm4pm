@@ -1,0 +1,62 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "strips",
+    "breed": "strips",
+    "status": "ok",
+    "output": {
+      "breed": "strips",
+      "candidates": [],
+      "facts": [],
+      "selected": "stack_A_on_B",
+      "explanation": "STRIPS plan (1 steps): stack_A_on_B",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "iterate-depth",
+          "detail": "d=0",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "iterate-depth",
+          "detail": "d=1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "subgoal",
+          "detail": "on=A_B",
+          "depth": 15
+        },
+        {
+          "step": 3,
+          "kind": "try-action",
+          "detail": "stack_A_on_B",
+          "depth": 15
+        },
+        {
+          "step": 4,
+          "kind": "execute",
+          "detail": "stack_A_on_B",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689",
+    "output_hash": "70d70d6f6164c53156fa6461026125799cdf4ef1fa100fe9042939f050cc8565",
+    "replay_pointer": "70d70d6f6164c531",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689.json"
+  },
+  "meta": {
+    "run_id": "700c1eaa-c045-495c-9e32-22b79fc8f810",
+    "timestamp": "2026-06-10T15:46:41.957Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

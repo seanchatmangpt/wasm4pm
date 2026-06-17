@@ -1,0 +1,26 @@
+{
+  "model_id": "fuzzy_logic-l1-v1",
+  "model_level": "L1",
+  "breed_id": "fuzzy_logic",
+  "object_types": ["run", "breed"],
+  "places": [
+    {"id": "p1", "name": "fuzzified", "object_type": "run"},
+    {"id": "p2", "name": "inferencing", "object_type": "breed"},
+    {"id": "p3", "name": "defuzzified", "object_type": "breed"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "fuzzify", "label": "fuzzify"},
+    {"id": "t2", "name": "fire-rule", "label": "fire-rule"},
+    {"id": "t3", "name": "defuzzify", "label": "defuzzify"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p3": 1}]
+}

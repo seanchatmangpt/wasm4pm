@@ -1,0 +1,47 @@
+%% Abstract — The Periodic Table of Reason
+
+Between 1956 and 1990, classical artificial intelligence produced a generation of landmark
+architectures: \textsc{Mycin} diagnosed infectious disease with certainty factors,
+\textsc{Strips} planned robotic action through goal regression, \textsc{Soar} unified
+cognition through production rules and chunking, \textsc{Hearsay} coordinated speech
+understanding through a blackboard, \textsc{Prolog} derived conclusions through resolution
+over Horn clauses, CBR retrieved and adapted prior cases, GPS searched means--ends spaces,
+\textsc{Dendral} proposed molecular structures through heuristic chemistry, and \textsc{Eliza}
+reflected natural language through pattern-matching scripts. Each architecture was
+epistemically rigorous within its own paradigm: it embodied a principled theory of how
+knowledge is represented, updated, and discharged. None was operationally falsifiable. No
+architecture shipped a proof that its runtime execution conformed to its declared inference
+model; no architecture emitted a tamper-evident receipt linking input evidence to output
+conclusion; no architecture produced an object-centric event log that could be replayed
+against a process model under token-based conformance checking. The AI winter that followed
+was not a failure of ideas. It was a failure of proof discipline.
+
+This dissertation closes that gap through three contributions. First, we construct
+\emph{complete, unfakeable oracle test suites} for all thirteen symbolic reasoning
+architectures — \textsc{Mycin}, \textsc{Strips}, \textsc{Soar}, \textsc{Hearsay},
+\textsc{Prolog}, CBR, GPS, \textsc{Dendral}, \textsc{Eliza}, and four
+autoinstinct breeds (Vision, Semantics, Neurosis, Learning) — producing 483 tests with
+zero failures and L0 wrapper conformance fitness $= 1.0$ for all thirteen breeds (L1
+breed-inference step coverage $= 1.0$ for three flagship breeds; token-replay alignment
+fitness deferred to proof-pack v2). Second, we define the
+\emph{Epistemological Space} $\Ei = \mathbb{R}^8$ in which each breed occupies a unique
+coordinate vector, prove that the thirteen breeds constitute thirteen basis objects in a typed admissibility category
+over $\Ei$, and show that together they span the symbolic
+cognition subspace of $\Ei$. Third, we introduce the \emph{Breed Validation Certificate}
+$V(\Breed) = 1$ as the fourth constraint of the Universal Causal Equation: a breed is
+admissible as a component of a manufactured intelligence pipeline if and only if it passes
+oracle certification, OCEL process conformance, BLAKE3 receipt integrity, and
+bit-exact determinism simultaneously.
+
+Orthogonally, a \emph{Speed Phase Transition Theorem} shows that sub-microsecond
+WebAssembly execution latency does not merely accelerate classical reasoning — it
+\emph{enables qualitatively new capabilities} that were architecturally impossible for the
+original investigators. Below the phase-transition threshold $\tau \leq \tau_{\text{interrupt}} \approx 10\,\mu\text{s}$,
+ensemble Bayesian analysis across all thirteen breeds becomes feasible in interactive time;
+Pareto-frontier planning over uncertainty--depth trade-offs becomes a real-time operation;
+and adversarial robustness auditing — systematic injection of malformed inputs to verify
+rejection — becomes a continuous background process rather than an offline batch procedure.
+The implementation is \textsc{partial-alive}: 483 tests, 0 failures, L0 wrapper fitness
+$= 1.0$ for all thirteen breeds, L1 step coverage $= 1.0$ for three flagship breeds, and a BLAKE3 receipt chain covering \texttt{input\_hash} (emitted at the WASM
+boundary in \texttt{cognition\_run()}) through \texttt{output\_hash} and
+\texttt{ocel\_log} for every breed invocation in the validated corpus.

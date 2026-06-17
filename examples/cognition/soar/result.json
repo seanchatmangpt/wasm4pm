@@ -1,0 +1,85 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "soar",
+    "breed": "soar",
+    "status": "ok",
+    "output": {
+      "breed": "soar",
+      "candidates": [
+        {
+          "id": "op-fetch",
+          "score": 0.6000000238418579,
+          "eliminated": true,
+          "elimination_reason": "dominated by op-search"
+        },
+        {
+          "id": "op-search",
+          "score": 0.800000011920929,
+          "eliminated": false
+        },
+        {
+          "id": "op-propose",
+          "score": 0.5,
+          "eliminated": true,
+          "elimination_reason": "prohibit"
+        }
+      ],
+      "facts": [
+        {
+          "key": "pref",
+          "value": "better:op-search:op-fetch"
+        },
+        {
+          "key": "pref",
+          "value": "prohibit:op-propose"
+        },
+        {
+          "key": "state",
+          "value": "problem-space=blocks-world"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:op-search:reason:decisive"
+        }
+      ],
+      "selected": "op-search",
+      "explanation": "SOAR decisive selected Some(\"op-search\") (best=0, worst=0, require=0, prohibit=1, better-pairs=1)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "prohibit",
+          "detail": "op-propose",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "dominate",
+          "detail": "op-search > op-fetch",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "evaluate-single",
+          "detail": "op-search",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef",
+    "output_hash": "729ad206d43b056f8c44e3af477b5c931bb17acaf148db2891d9d8f6e1719857",
+    "replay_pointer": "729ad206d43b056f",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef.json"
+  },
+  "meta": {
+    "run_id": "66d8e99a-45ce-41e7-9451-a0d6ed254e29",
+    "timestamp": "2026-06-10T15:46:40.804Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

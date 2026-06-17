@@ -1,0 +1,44 @@
+% acknowledgments.tex — OLDIA Thesis Acknowledgments Fragment
+% Include via \input{acknowledgments} from the main thesis document.
+
+\chapter*{Acknowledgments}
+\addcontentsline{toc}{chapter}{Acknowledgments}
+
+This work stands on the shoulders of the process mining discipline established by
+Wil M.~P.~van der Aalst, whose insistence that conformance between declared models
+and observed event logs is not a discrepancy but a defect provided the theoretical
+and methodological foundation for the Object-Level Diagnostic Inference Architecture
+described here. The van~der~Aalst constitution---\emph{trust only event evidence
+that can be mined into a conforming object-centric process}---pervades every layer
+of this design.
+
+Deep acknowledgment is owed to the original researchers whose work this architecture
+honors: Edward~H.~Shortliffe and the MYCIN team, who demonstrated that structured
+knowledge could reason reliably under uncertainty; Allen~Newell and Herbert~A.~Simon,
+whose General Problem Solver first articulated the architecture of symbolic search;
+Lee~D.~Erman and Victor~R.~Lesser for Hearsay-II's blackboard model of cooperative
+problem solving; Bruce~G.~Buchanan and Edward~A.~Feigenbaum for DENDRAL's demonstration
+that domain knowledge encodes discovery; Joseph~Weizenbaum for ELIZA's uncomfortable
+lesson about the boundary between language and understanding; John~Alan~Robinson for
+the resolution principle that made machine inference tractable;
+Janet~Kolodner, Agnar~Aamodt, and Enric~Plaza for case-based reasoning;
+Richard~E.~Fikes and Nils~J.~Nilsson for STRIPS; John~E.~Laird,
+Allen~Newell, and Paul~S.~Rosenbloom for SOAR; Roger~C.~Schank for
+Conceptual Dependency; Karl~R.~Popper for the logical structure of refutation;
+Alain~Colmerauer and his colleagues for Prolog; Terry~Winograd for SHRDLU;
+Kenneth~M.~Colby for PARRY; and Patrick~H.~Winston for structural learning from
+examples. Each of these systems left a visible seam in OLDIA's breed taxonomy.
+
+The author is grateful to the open-source communities whose infrastructure makes
+a deterministic, auditable architecture feasible at the scale described here:
+the \textbf{WebAssembly} Working Group and the contributors to
+\texttt{wasm-bindgen} and \texttt{wasm-pack}, whose portable binary format
+provides the isolation boundary between the inference kernel and its host;
+the \textbf{BLAKE3} team, whose cryptographic hash function supplies the
+receipt-chain integrity guarantees that make replay and conformance auditing
+meaningful; and the \textbf{Rust} language community, whose ownership model and
+compilation guarantees eliminate an entire class of runtime defects before any
+event log is ever written.
+
+Any errors of judgment, gaps in conformance, or violations of the van~der~Aalst
+constitution that remain in this work are the sole responsibility of the author.

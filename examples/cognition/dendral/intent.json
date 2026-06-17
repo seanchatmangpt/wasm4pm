@@ -1,0 +1,17 @@
+{
+  "intent": "constraint_enumeration",
+  "candidates": [
+    { "id": "centralized-cloud", "score": 0.9, "eliminated": false, "elimination_reason": null },
+    { "id": "offline-edge", "score": 0.75, "eliminated": false, "elimination_reason": null },
+    { "id": "hybrid-offline", "score": 0.85, "eliminated": false, "elimination_reason": null }
+  ],
+  "facts": [
+    { "key": "constraint", "value": "forbid:centralized-cloud" },
+    { "key": "constraint", "value": "require:offline" },
+    { "key": "constraint", "value": "min-score:0.5" }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

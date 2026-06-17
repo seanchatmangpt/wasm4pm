@@ -5,6 +5,7 @@
  * artifacts (receipts, models, reports, snapshots) from wasm4pm.
  */
 
+import { z } from 'zod';
 import { Result } from './result.js';
 
 /**
@@ -32,29 +33,27 @@ export type ExistsBehavior = 'skip' | 'overwrite' | 'append' | 'error';
  */
 export type FailureMode = 'fail' | 'degrade' | 'ignore';
 
+// ============================================================================
+// Zod Schemas
+// ============================================================================
+
+export const SinkAdapterSchema = z.object({
+  kind: z.enum(['file', 'http', 'database', 'mcp', 'cloud', 'custom']),
+  version: z.string(),
+  atomicity: z.enum(['none', 'event', 'batch', 'transaction']),
+  onExists: z.enum(['skip', 'overwrite', 'append', 'error']),
+  failureMode: z.enum(['fail', 'degrade', 'ignore']),
+});
+
+export type SinkAdapterData = z.infer<typeof SinkAdapterSchema>;
+
 /**
  * Sink Adapter Contract
  *
  * All sink adapters MUST implement this interface to be registered
  * with the sink registry.
  */
-export interface SinkAdapter {
-  // ============================================================================
-  // Identity
-  // ============================================================================
-
-  /**
-   * Unique kind identifier for this adapter
-   * Examples: "file", "http", "database", "mcp", "cloud"
-   */
-  readonly kind: SinkAdapterKind;
-
-  /**
-   * Semantic version of this adapter
-   * Used to track compatibility and migrations
-   */
-  readonly version: string;
-
+export type SinkAdapter = SinkAdapterData & {
   // ============================================================================
   // Artifact Type Coverage
   // ============================================================================
@@ -73,43 +72,6 @@ export interface SinkAdapter {
    * @returns true if supported, false otherwise
    */
   supportsArtifact(type: ArtifactType): boolean;
-
-  // ============================================================================
-  // Atomicity & Consistency Guarantees
-  // ============================================================================
-
-  /**
-   * Atomicity guarantee level offered by this sink
-   *
-   * - 'none': No guarantees, write may be partial
-   * - 'event': Each event write is atomic
-   * - 'batch': Multiple events in a batch are atomic
-   * - 'transaction': Full transaction semantics (all-or-nothing)
-   */
-  readonly atomicity: AtomicityLevel;
-
-  /**
-   * Behavior when artifact already exists at destination
-   *
-   * - 'skip': Do not write, return success
-   * - 'overwrite': Replace existing artifact
-   * - 'append': Append to existing artifact (if supported)
-   * - 'error': Fail with error if artifact exists
-   */
-  readonly onExists: ExistsBehavior;
-
-  // ============================================================================
-  // Failure Semantics
-  // ============================================================================
-
-  /**
-   * How this sink handles write failures
-   *
-   * - 'fail': Propagate error, halt processing
-   * - 'degrade': Log warning and continue with reduced functionality
-   * - 'ignore': Silently continue (use with caution)
-   */
-  readonly failureMode: FailureMode;
 
   // ============================================================================
   // Lifecycle & Validation
@@ -156,7 +118,7 @@ export interface SinkAdapter {
    * @returns Promise that resolves when cleanup is complete
    */
   close(): Promise<void>;
-}
+};
 
 /**
  * Sink Registry

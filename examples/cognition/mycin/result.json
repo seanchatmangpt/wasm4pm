@@ -1,0 +1,65 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "mycin",
+    "breed": "mycin",
+    "status": "ok",
+    "output": {
+      "breed": "mycin",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "antibiotic",
+          "value": "penicillin"
+        },
+        {
+          "key": "diagnosis",
+          "value": "strep_infection"
+        },
+        {
+          "key": "gram_positive_cocci",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "strep",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "throat",
+          "value": "cf=1.000"
+        }
+      ],
+      "selected": "organism=gram_positive_cocci",
+      "explanation": "MYCIN fired 2 rules; final selection Some(\"organism=gram_positive_cocci\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "fire-rule",
+          "detail": "r1 ⇒ diagnosis=strep_infection (cf=0.700)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "fire-rule",
+          "detail": "r2 ⇒ antibiotic=penicillin (cf=0.665)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b",
+    "output_hash": "f0886d11be3240a21a29504fcc0fa0de341c844bcd2aeb395678fead1db401d6",
+    "replay_pointer": "f0886d11be3240a2",
+    "inference_step_count": 2,
+    "rules_evaluated": 2,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/f6fd38457c58dd44a2b9a29a8e2ebcf70c7b7cec76deba6034b77c990669792b.json"
+  },
+  "meta": {
+    "run_id": "e3838b9f-2973-40e9-b252-101afd6e3229",
+    "timestamp": "2026-06-10T15:46:40.053Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

@@ -12,6 +12,7 @@ use crate::autoinstinct::semantics::{PrimitiveAct, SemanticParser};
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
+use tracing;
 
 /// AutoInstinct Semantics breed: NLU, semantic frame extraction, Schank CD primitives.
 pub struct AutoinstinctSemantics;
@@ -48,9 +49,15 @@ impl CognitionBreed for AutoinstinctSemantics {
             kind: "init-parser".to_string(),
             detail: format!("SemanticParser created; parsing intent: {:?}", input.intent),
             depth: 0,
+            objects: vec![],
         });
 
         let frame_opt = parser.parse(&input.intent);
+        tracing::debug!(
+            breed.step = "token_parsed",
+            breed = "autoinstinct_semantics",
+            "L1 inference step"
+        );
 
         let (selected, candidates, explanation, facts) = match &frame_opt {
             None => {
@@ -59,6 +66,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                     kind: "no-act-found".to_string(),
                     detail: format!("no CD primitive matched for intent: {:?}", input.intent),
                     depth: 0,
+                    objects: vec![],
                 });
                 (
                     None,
@@ -72,6 +80,11 @@ impl CognitionBreed for AutoinstinctSemantics {
             }
             Some(frame) => {
                 let act_name = format!("{:?}", frame.act);
+                tracing::debug!(
+                    breed.step = "cd_primitive_identified",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 let act_description = match &frame.act {
                     PrimitiveAct::Atrans => "transfer of abstract relationship (e.g. give)",
                     PrimitiveAct::Ptrans => "transfer of physical location (e.g. go)",
@@ -84,6 +97,11 @@ impl CognitionBreed for AutoinstinctSemantics {
 
                 let rule_id = format!("sem-{}", act_name.to_uppercase());
 
+                tracing::debug!(
+                    breed.step = "actor_bound",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "extract-act".to_string(),
@@ -92,6 +110,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                         rule_id, act_name, frame.actor, frame.object
                     ),
                     depth: 0,
+                    objects: vec![],
                 });
 
                 if let Some(ref to) = frame.to {
@@ -100,6 +119,7 @@ impl CognitionBreed for AutoinstinctSemantics {
                         kind: "extract-recipient".to_string(),
                         detail: format!("to={}", to),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
                 if let Some(ref from) = frame.from {
@@ -108,9 +128,15 @@ impl CognitionBreed for AutoinstinctSemantics {
                         kind: "extract-source".to_string(),
                         detail: format!("from={}", from),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
 
+                tracing::debug!(
+                    breed.step = "relation_extracted",
+                    breed = "autoinstinct_semantics",
+                    "L1 inference step"
+                );
                 let selected_json = serde_json::json!({
                     "act": act_name,
                     "actor": frame.actor,
@@ -178,10 +204,12 @@ impl CognitionBreed for AutoinstinctSemantics {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctSemantics must produce at least one inference trace step".to_string(),
@@ -311,8 +339,10 @@ mod tests {
             selected: None,
             explanation: "test".to_string(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
-        let result = breed.postconditions(&output);
+        let result = breed.postconditions(&base_input(""), &output);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()

@@ -2735,6 +2735,7 @@ name = "wasm4pm-cognition"
 version = "26.6.9"
 dependencies = [
  "blake3",
+ "criterion",
  "ed25519-dalek",
  "hex",
  "indexmap",
@@ -2742,12 +2743,14 @@ dependencies = [
  "once_cell",
  "prolog8",
  "proptest",
+ "rand 0.8.5",
  "rand_core 0.6.4",
  "regex",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
  "smallvec",
+ "tracing",
  "trybuild",
  "wasm-bindgen",
 ]

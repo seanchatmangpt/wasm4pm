@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/contracts",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -84,7 +84,8 @@
   },
   "dependencies": {
     "blake3": "^2.1.4",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",

@@ -1,0 +1,56 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "eliza",
+      "candidates": [],
+      "facts": [],
+      "selected": "i feel *",
+      "explanation": "Tell me more about feeling sad about your deadlines.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "match-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "bind-slot",
+          "detail": "${1}=sad about my deadlines",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722",
+    "output_hash": "9932078050af4f41040f5f277540604fc0fb4f8f68536c195e28df0050496ccf",
+    "replay_pointer": "9932078050af4f41",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1598ee1ad1032c9ad9f2270a6cd944ef357bf38334dba6313f95e95525a16722.json"
+  },
+  "meta": {
+    "run_id": "37097ec3-2570-4949-ae7d-868ccd1e1de0",
+    "timestamp": "2026-06-10T15:46:43.113Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

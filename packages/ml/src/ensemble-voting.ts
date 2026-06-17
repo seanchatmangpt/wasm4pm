@@ -5,10 +5,14 @@
  * Tie-breaking uses deterministic sorting (no randomness).
  */
 
-export interface VoteCount {
-  label: number;
-  votes: number;
-}
+import { z } from 'zod';
+
+export const VoteCountSchema = z.object({
+  label: z.number(),
+  votes: z.number(),
+});
+
+export type VoteCount = z.infer<typeof VoteCountSchema>;
 
 /**
  * Aggregate votes from multiple classifiers into a single prediction.

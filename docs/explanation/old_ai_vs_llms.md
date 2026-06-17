@@ -9,11 +9,13 @@ Large Language Models (LLMs) excel at natural language generation, conversationa
 * **Lack of Auditability:** The reasoning of an LLM is a black-box vector multiplication; it cannot be audited step-by-step.
 * **No Mathematical Guarantees:** LLMs cannot provide cryptographic proofs of conformance, execution bounds, or strict deterministic behavior.
 
-## The Old AI Factory: The 9 Cognition Breeds
+## The Old AI Factory: The 13 Cognition Breeds
 
-To solve these systemic flaws, `wasm4pm` implements 9 classical "Old AI" breeds directly in WebAssembly-compiled Rust. These systems are deterministic, transparent, and produce append-only inference traces that guarantee rigorous reasoning. They form the `@wasm4pm/cognition` package.
+To solve these systemic flaws, `wasm4pm` implements 13 breeds directly in WebAssembly-compiled Rust — 9 classical "Old AI" systems and 4 Autoinstinct breeds. These systems are deterministic, transparent, and produce append-only inference traces that guarantee rigorous reasoning. They form the `@wasm4pm/cognition` package.
 
 The available breeds and their capabilities are:
+
+### Old AI Breeds (9)
 
 1. **ELIZA (`eliza`)**: Frame-based pattern matching with slot filling (Weizenbaum 1966). Ideal for basic intent extraction and robust natural language classification without LLM hallucination risk.
 2. **Case-Based Reasoning (`cbr`)**: Similarity-based matching via Jaccard metrics (Schank 1983). Best for leveraging historical outcomes (like previous system architectures) to solve new problems.
@@ -24,6 +26,13 @@ The available breeds and their capabilities are:
 7. **General Problem Solver (`gps`)**: Means-ends analysis and gap reduction (Newell & Shaw 1963). Excellent for hierarchical planning and breaking down large tasks into resolvable sub-goals.
 8. **SOAR (`soar`)**: Preference-based operator selection (Laird 1987). Designed for continuous agent execution loops, impasse resolution, and multi-criteria decision making.
 9. **Hearsay-II (`hearsay`)**: Blackboard consensus fusion (Erman & Lesser 1980). Provides robust multi-agent coordination, allowing disparate systems to vote on and synthesize a single ground truth.
+
+### Autoinstinct Breeds (4)
+
+10. **Autoinstinct Learning (`autoinstinct_learning`)**: Reinforcement learning autoinstinct. Adapts behavior from outcome signals without explicit reprogramming.
+11. **Autoinstinct Neurosis (`autoinstinct_neurosis`)**: Behavioral anomaly detection. Identifies deviations from established behavioral baselines in running processes.
+12. **Autoinstinct Semantics (`autoinstinct_semantics`)**: Semantic field mapping. Translates between heterogeneous field vocabularies without manual schema alignment.
+13. **Autoinstinct Vision (`autoinstinct_vision`)**: Process structure perception. Extracts structural patterns and topology from raw process event data.
 
 ## Why Are They Available?
 

@@ -226,7 +226,7 @@ export const sinkConfigSchema = z
 export const algorithmConfigSchema = z
   .object({
     name: algorithmIdSchema.default('dfg'),
-    parameters: z.record(z.unknown()).default({}),
+    parameters: z.record(z.string(), z.unknown()).default({}),
   })
   .describe('Algorithm configuration');
 
@@ -236,7 +236,7 @@ export const otelConfigSchema = z
     exporter: otelExporterSchema.default('otlp'),
     endpoint: z.string().url().optional(),
     required: z.boolean().default(false),
-    headers: z.record(z.string()).optional(),
+    headers: z.record(z.string(), z.string()).optional(),
   })
   .describe('OpenTelemetry configuration');
 

@@ -9,6 +9,7 @@
 
 import type { KernelResult } from './api.js';
 import type { AlgorithmMetadata } from './registry.js';
+import { validateWasmPayload } from './zod-validators.js';
 
 export interface ViolationReport {
   rule: string;
@@ -91,6 +92,24 @@ export function validateKernelResult(
       message: 'Result hash is missing — determinism checks will fail',
       path: 'hash',
     });
+  }
+
+  // Validate the raw WASM payload against the algorithm's registered Zod schema.
+  // This is the insertion point for safeParse: it runs after envelope checks
+  // so we only reach here when handle/type/duration/hash are sane.
+  const payload = (result as any).metadata?.result;
+  if (payload !== undefined) {
+    try {
+      validateWasmPayload(result.algorithm, payload);
+    } catch (err) {
+      violations.push({
+        rule: 'wasm-payload-schema',
+        severity: 'error',
+        message: (err as Error).message,
+        path: 'metadata.result',
+        context: { algorithm: result.algorithm },
+      });
+    }
   }
 
   const errors = violations.filter((v) => v.severity === 'error');

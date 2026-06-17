@@ -73,13 +73,15 @@ Evidence discipline: [AGENTS.md](../../AGENTS.md).
 
 wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
 
-| Profile | Target | Size Target | Use case |
+| Profile | Target | Actual Size | Use case |
 |---------|--------|-------------|----------|
-| `mobile` | Mobile devices | ~500KB | Mobile / low bandwidth |
-| `iot` | IoT devices, embedded | ~1.0MB | Embedded |
-| `edge` | CDN workers, edge servers | ~1.5MB | CDN / edge workers |
-| `fog` | Fog computing, gateways | ~2.0MB | IoT gateways |
-| `browser` | Web browsers (DEFAULT) | **3.4MB** | Web + Node.js (default) |
+| `mobile` | Mobile devices | ~5.4MB | Mobile / low bandwidth |
+| `iot` | IoT devices, embedded | ~5.4MB | Embedded |
+| `edge` | CDN workers, edge servers | ~5.4MB | CDN / edge workers |
+| `fog` | Fog computing, gateways | ~5.4MB | IoT gateways |
+| `browser` | Web browsers (DEFAULT) | ~7.6MB | Web + Node.js (default) |
+
+> Profiles differ by feature-gated algorithm subsets, not bundle size. Size optimization is planned for a future release.
 
 See [Deployment Profiles Reference](../reference/deployment_profiles.md) for feature flags and build commands.
 
@@ -89,7 +91,7 @@ See [Deployment Profiles Reference](../reference/deployment_profiles.md) for fea
 
 **Truex:** OCEL 2.0 canonicalization + BLAKE3 receipt verification via `wpm truex verify`. Profile: [Truex OCEL 2.0 Canonical Profile](../truex-ocel2-canonical-profile.md).
 
-**Cognition:** Nine Old-AI breeds via `wpm cognition run --contract <breed>`.
+**Cognition:** 13 breeds (9 Old AI + 4 Autoinstinct) via `wpm cognition run --contract <breed>`.
 
 **Prediction:** Next-activity, remaining-time, drift via `wpm predict`.
 
@@ -109,12 +111,20 @@ See [Deployment Profiles Reference](../reference/deployment_profiles.md) for fea
 We follow the [Diátaxis framework](https://diataxis.fr/).
 
 - **Tutorials:** [Getting Started](../tutorials/getting_started.md), [Truex Receipts](../tutorials/truex_receipts.md), [Predictive Monitoring](../tutorials/predictive_monitoring.md), [Cognition Contracts](../tutorials/cognition_contracts.md)
-- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md)
-- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Truex Profile](../truex-ocel2-canonical-profile.md)
-- **Explanation:** [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](../docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md), [Receipt Truth Verification](docs/explanation/prd_ard_receipt_truth_verification.md)
+- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md), [Troubleshooting](../how-to/troubleshooting.md)
+- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Glossary](../reference/glossary.md)
+- **Explanation:** [Old AI vs. LLM Doctrine](old_ai_vs_llms.md), [Receipt Truth Verification](prd_ard_receipt_truth_verification.md), [Process Mining Primer](process-mining-primer.md)
 
 Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 
 ## License
 
 BUSL-1.1. See [LICENSE](../../LICENSE).
+
+## Graph and Variant Analysis Example
+
+`examples/09-graph-and-variants.ts` demonstrates DFG graph construction, variant extraction, and footprint comparison — a good starting point for understanding how the WASM core transforms raw event logs into structured process models:
+
+```bash
+tsx examples/09-graph-and-variants.ts data/small-example.xes
+```

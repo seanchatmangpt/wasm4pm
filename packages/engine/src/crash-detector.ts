@@ -3,24 +3,29 @@
  * Detects process crashes using lock files and PID checks
  */
 
+import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import type { ICheckpointStore } from './checkpoint-store.js';
 import type { Checkpoint } from './checkpointing.js';
 
-export interface ProcessLock {
-  runId: string;
-  pid: number;
-  startedAt: number;
-  hostname: string;
-}
+export const ProcessLockSchema = z.object({
+  runId: z.string(),
+  pid: z.number(),
+  startedAt: z.number(),
+  hostname: z.string(),
+});
 
-export interface CrashDetectionResult {
-  crashed: boolean;
-  reason?: string;
-  lastLock?: ProcessLock;
-  recoveryAvailable: boolean;
-}
+export type ProcessLock = z.infer<typeof ProcessLockSchema>;
+
+export const CrashDetectionResultSchema = z.object({
+  crashed: z.boolean(),
+  reason: z.string().optional(),
+  lastLock: ProcessLockSchema.optional(),
+  recoveryAvailable: z.boolean(),
+});
+
+export type CrashDetectionResult = z.infer<typeof CrashDetectionResultSchema>;
 
 export class CrashDetector {
   private lockDir: string;

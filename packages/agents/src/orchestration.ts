@@ -11,6 +11,7 @@
 
 import crypto from 'node:crypto';
 import { existsSync } from 'node:fs';
+import { z } from 'zod';
 import { AgentRegistry } from './registry.js';
 import { AuditStore } from './audit.js';
 import type {
@@ -88,22 +89,23 @@ function emitAgentSpan(
 }
 
 /** Input for agent execution */
-export interface AgentExecutionContext {
+export const AgentExecutionContextSchema = z.object({
   /** Artifact ID to validate */
-  artifact_id: string;
+  artifact_id: z.string(),
   /** Path to event log file (XES, OCEL, CSV) */
-  input_file?: string;
+  input_file: z.string().optional(),
   /** OTel trace data (if available) */
-  traces?: Record<string, unknown>[];
+  traces: z.array(z.record(z.string(), z.unknown())).optional(),
   /** OCEL event data (if available) */
-  ocel_events?: Record<string, unknown>[];
+  ocel_events: z.array(z.record(z.string(), z.unknown())).optional(),
   /** Receipt chain data (if available) */
-  receipts?: Record<string, unknown>[];
+  receipts: z.array(z.record(z.string(), z.unknown())).optional(),
   /** Whether to apply corrections (false = dry-run) */
-  dry_run?: boolean;
+  dry_run: z.boolean().optional(),
   /** Specific gate being evaluated (for on-demand agents) */
-  gate_name?: string;
-}
+  gate_name: z.string().optional(),
+});
+export type AgentExecutionContext = z.infer<typeof AgentExecutionContextSchema>;
 
 /**
  * Agent Orchestrator — coordinates the 8 Van der Aalst agents

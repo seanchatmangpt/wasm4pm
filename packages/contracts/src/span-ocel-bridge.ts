@@ -7,6 +7,7 @@
  * Reuses OcelEvent and toOcelJsonl from ocel-bridge.
  */
 
+import { z } from 'zod';
 import { type OcelEvent, toOcelJsonl } from './ocel-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -29,22 +30,16 @@ export type { OcelEvent };
  * RawSpan in self-conformance.ts, which matches the FileSpanExporter's
  * on-disk snake_case format.
  */
-export type SpanExport = {
-  /** W3C trace ID (32 hex chars) */
-  traceId: string;
-  /** Span ID (16 hex chars) */
-  spanId: string;
-  /** Span name, e.g. "wpm.run" or "wasm4pm.ocel.discover" */
-  name: string;
-  /** Start time as nanoseconds since epoch (string to avoid overflow) */
-  startTimeUnixNano: string;
-  /** End time as nanoseconds since epoch (string to avoid overflow) */
-  endTimeUnixNano: string;
-  /** Span status — code 0=UNSET, 1=OK, 2=ERROR */
-  status: { code: number };
-  /** Arbitrary span attributes */
-  attributes: Record<string, unknown>;
-};
+export const SpanExportSchema = z.object({
+  traceId: z.string(),
+  spanId: z.string(),
+  name: z.string(),
+  startTimeUnixNano: z.string(),
+  endTimeUnixNano: z.string(),
+  status: z.object({ code: z.number() }),
+  attributes: z.record(z.string(), z.unknown()),
+});
+export type SpanExport = z.infer<typeof SpanExportSchema>;
 
 // ---------------------------------------------------------------------------
 // Span status helpers

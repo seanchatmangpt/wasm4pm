@@ -17,6 +17,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use std::collections::HashMap;
+use tracing;
 
 /// AutoinstinctVision breed: symbolic Blocks World perception.
 pub struct AutoinstinctVision;
@@ -104,7 +105,20 @@ impl CognitionBreed for AutoinstinctVision {
                 kind: "observe-object".to_string(),
                 detail,
                 depth: 0,
+                objects: vec![],
             });
+            tracing::debug!(
+                breed.step = "object_detected",
+                breed = "autoinstinct_vision",
+                "L1 inference step"
+            );
+            if poly.supported_by.is_some() {
+                tracing::debug!(
+                    breed.step = "relation_inferred",
+                    breed = "autoinstinct_vision",
+                    "L1 inference step"
+                );
+            }
             sys.observe(poly.clone());
         }
 
@@ -115,9 +129,15 @@ impl CognitionBreed for AutoinstinctVision {
                 kind: "observe-object".to_string(),
                 detail: "no parseable polyhedra in facts".to_string(),
                 depth: 0,
+                objects: vec![],
             });
         }
 
+        tracing::debug!(
+            breed.step = "support_structure_built",
+            breed = "autoinstinct_vision",
+            "L1 inference step"
+        );
         let clear_object = sys.find_clear_object();
 
         let selected = clear_object.map(|obj| obj.id.clone());
@@ -130,6 +150,7 @@ impl CognitionBreed for AutoinstinctVision {
                 None => "no clear object found".to_string(),
             },
             depth: 0,
+            objects: vec![],
         });
 
         let candidates: Vec<Candidate> = polyhedra
@@ -154,6 +175,11 @@ impl CognitionBreed for AutoinstinctVision {
             ),
         };
 
+        tracing::debug!(
+            breed.step = "scene_description_emitted",
+            breed = "autoinstinct_vision",
+            "L1 inference step"
+        );
         Ok(BreedOutput {
             breed: BreedId::AutoinstinctVision,
             candidates,
@@ -161,10 +187,12 @@ impl CognitionBreed for AutoinstinctVision {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err(
                 "AutoinstinctVision must produce at least one inference trace step".to_string(),
@@ -270,7 +298,9 @@ mod tests {
             selected: None,
             explanation: "test".into(),
             inference_trace: vec![],
+            ocel_log: None,
+            retained_cases: vec![],
         };
-        assert!(breed.postconditions(&output).is_err());
+        assert!(breed.postconditions(&base_input(vec![]), &output).is_err());
     }
 }

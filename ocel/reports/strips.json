@@ -1,0 +1,34 @@
+{
+  "breed_id": "strips",
+  "model_id": "strips-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-10",
+  "method": "native_dfa_replay",
+  "fitness": 1.0,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay). Conformance gate enforced in run_breed().",
+  "trace_coverage": {
+    "declared_steps": [
+      "state_loaded",
+      "operator_selected",
+      "precondition_checked",
+      "effect_applied",
+      "goal_tested",
+      "plan_emitted"
+    ],
+    "observed_in_traces": [
+      "state_loaded",
+      "operator_selected",
+      "precondition_checked",
+      "effect_applied",
+      "goal_tested",
+      "plan_emitted"
+    ],
+    "coverage": 1.0,
+    "coverage_note": "All 6 declared L1 steps appear in accepted trace corpus (tracing::debug! spans in breeds/strips.rs). Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
+  },
+  "l0_fitness": 1.0,
+  "l0_fitness_note": "L0 wrapper lifecycle enforced structurally by BVC admission gate.",
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
+}

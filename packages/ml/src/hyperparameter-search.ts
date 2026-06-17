@@ -18,6 +18,7 @@
  * Returns sorted results by mean score (descending).
  */
 
+import { z } from 'zod';
 import { classifyTraces, regressRemainingTime } from './classifiers.js';
 import { clusterTraces } from './clustering.js';
 import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
@@ -28,37 +29,55 @@ export type { FeatureMatrix };
 /** Search space: maps each hyperparameter to the list of values to try. */
 export type SearchSpace = Record<string, ParamValue[]>;
 
+// ---------------------------------------------------------------------------
+// EvalMetrics
+// ---------------------------------------------------------------------------
+
+export const EvalMetricsSchema = z.object({
+  accuracy: z.number().optional(),
+  f1: z.number().optional(),
+  precision: z.number().optional(),
+  recall: z.number().optional(),
+  silhouetteScore: z.number().optional(),
+  inertia: z.number().optional(),
+  rmse: z.number().optional(),
+  mae: z.number().optional(),
+  cvMeanAccuracy: z.number().optional(),
+  cvStdAccuracy: z.number().optional(),
+  cvFoldAccuracies: z.array(z.number()).optional(),
+  trainingTimeMs: z.number().optional(),
+});
+
 /** Metrics from a single model evaluation. */
-export interface EvalMetrics {
-  accuracy?: number;
-  f1?: number;
-  precision?: number;
-  recall?: number;
-  silhouetteScore?: number;
-  inertia?: number;
-  rmse?: number;
-  mae?: number;
-  cvMeanAccuracy?: number;
-  cvStdAccuracy?: number;
-  cvFoldAccuracies?: number[];
-  trainingTimeMs?: number;
-}
+export type EvalMetrics = z.infer<typeof EvalMetricsSchema>;
+
+// ---------------------------------------------------------------------------
+// RankedResult
+// ---------------------------------------------------------------------------
+
+export const RankedResultSchema = z.object({
+  rank: z.number(),
+  params: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  metrics: EvalMetricsSchema,
+});
 
 /** One ranked result from GridSearch. */
-export interface RankedResult {
-  rank: number;
-  params: Record<string, ParamValue>;
-  metrics: EvalMetrics;
-}
+export type RankedResult = z.infer<typeof RankedResultSchema>;
+
+// ---------------------------------------------------------------------------
+// GridSearchOutput
+// ---------------------------------------------------------------------------
+
+export const GridSearchOutputSchema = z.object({
+  bestParams: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  bestMetrics: EvalMetricsSchema,
+  allResults: z.array(RankedResultSchema),
+  evaluatedConfigs: z.number(),
+  totalConfigs: z.number(),
+});
 
 /** Full output from GridSearch.search(). */
-export interface GridSearchOutput {
-  bestParams: Record<string, ParamValue>;
-  bestMetrics: EvalMetrics;
-  allResults: RankedResult[];
-  evaluatedConfigs: number;
-  totalConfigs: number;
-}
+export type GridSearchOutput = z.infer<typeof GridSearchOutputSchema>;
 
 /**
  * Class-based GridSearch that wraps the functional gridSearch() with a richer
@@ -276,28 +295,29 @@ export type ParamValue = number | string | boolean | number[];
  */
 export type ParamGrid = Record<string, ParamValue[]>;
 
+// ---------------------------------------------------------------------------
+// GridSearchResult
+// ---------------------------------------------------------------------------
+
+export const GridSearchResultSchema = z.object({
+  /** Parameter combination tested */
+  params: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  /** Mean score across CV folds */
+  meanScore: z.number(),
+  /** Standard deviation of scores */
+  stdDev: z.number(),
+  /** Confidence interval lower bound (95% CI via t-distribution) */
+  ciLower: z.number(),
+  /** Confidence interval upper bound */
+  ciUpper: z.number(),
+  /** Per-fold scores */
+  scores: z.array(z.number()),
+});
+
 /**
  * Single parameter combination result.
  */
-export interface GridSearchResult {
-  /** Parameter combination tested */
-  params: Record<string, ParamValue>;
-
-  /** Mean score across CV folds */
-  meanScore: number;
-
-  /** Standard deviation of scores */
-  stdDev: number;
-
-  /** Confidence interval lower bound (95% CI via t-distribution) */
-  ciLower: number;
-
-  /** Confidence interval upper bound */
-  ciUpper: number;
-
-  /** Per-fold scores */
-  scores: number[];
-}
+export type GridSearchResult = z.infer<typeof GridSearchResultSchema>;
 
 /**
  * Compute t-distribution quantile (approximation for df >= 1).

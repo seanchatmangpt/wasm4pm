@@ -202,14 +202,31 @@ impl CognitionBreed for Eliza {
                 kind: "try-pattern".to_string(),
                 detail: frame.pattern.clone(),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(slots) = try_match(&frame.pattern, &text) {
+                tracing::debug!(
+                    breed.step = "pattern_matched",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
+                tracing::debug!(
+                    breed.step = "script_selected",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 let response = render(&frame.template, &slots);
+                tracing::debug!(
+                    breed.step = "template_applied",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "match-pattern".to_string(),
                     detail: frame.pattern.clone(),
                     depth: 0,
+                    objects: vec![],
                 });
                 for (i, s) in slots.iter().enumerate() {
                     trace.push(TraceStep {
@@ -217,8 +234,14 @@ impl CognitionBreed for Eliza {
                         kind: "bind-slot".to_string(),
                         detail: format!("${{{}}}={}", i + 1, s),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
+                tracing::debug!(
+                    breed.step = "response_emitted",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 return Ok(BreedOutput {
                     breed: BreedId::Eliza,
                     candidates: input.candidates.clone(),
@@ -226,6 +249,8 @@ impl CognitionBreed for Eliza {
                     selected: Some(frame.pattern.clone()),
                     explanation: response,
                     inference_trace: trace,
+                    ocel_log: None,
+                    retained_cases: vec![],
                 });
             }
         }
@@ -237,10 +262,12 @@ impl CognitionBreed for Eliza {
             selected: None,
             explanation: "No pattern matched.".to_string(),
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         if output.inference_trace.is_empty() {
             return Err("ELIZA must record at least one pattern attempt".to_string());
         }

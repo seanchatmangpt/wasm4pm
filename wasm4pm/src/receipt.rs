@@ -254,7 +254,9 @@ impl SyntheticMarkerScanner {
                 // Refine check with allowlist replacements to avoid false positives on legitimate algorithm names
                 let temp_lower = lower
                     .replace("simulated_annealing", "")
-                    .replace("simulated annealing", "");
+                    .replace("simulated annealing", "")
+                    .replace("monte_carlo_simulation", "")
+                    .replace("monte carlo simulation", "");
                 for marker in FORBIDDEN_EVIDENCE_MARKERS {
                     if temp_lower.contains(marker) {
                         let severity = if is_ev {

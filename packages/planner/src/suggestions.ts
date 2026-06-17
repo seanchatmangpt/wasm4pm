@@ -10,17 +10,21 @@
  * propagates here.
  */
 
-export interface LogStats {
-  traceCount: number;
-  eventCount: number;
-  variantCount: number;
+import { z } from 'zod';
+import { benchSpeedScore } from './benchmark-costs.js';
+
+export const LogStatsSchema = z.object({
+  traceCount: z.number(),
+  eventCount: z.number(),
+  variantCount: z.number(),
   /** Number of distinct activity names, if known. */
-  activityCount?: number;
+  activityCount: z.number().optional(),
   /** Whether org:resource attribute is present (enables social network mining). */
-  hasResources?: boolean;
+  hasResources: z.boolean().optional(),
   /** Whether time:timestamp attribute is present (enables temporal analysis). */
-  hasTimestamps?: boolean;
-}
+  hasTimestamps: z.boolean().optional(),
+});
+export type LogStats = z.infer<typeof LogStatsSchema>;
 
 export type SuggestionGoal =
   | 'fast'
@@ -73,37 +77,43 @@ export const VALID_GOALS: SuggestionGoal[] = [
   'predict outcomes',
 ];
 
-export interface AlgorithmRecommendation {
-  algorithm: string;
-  quality: number;
-  speed: number;
+export const AlgorithmRecommendationSchema = z.object({
+  algorithm: z.string(),
+  quality: z.number(),
+  speed: z.number(),
   /** Composite score in [0, 1]. */
-  score: number;
-  reason: string;
+  score: z.number(),
+  reason: z.string(),
   /** Expected fitness estimate as a fraction (0–1). */
-  expectedFitness?: number;
+  expectedFitness: z.number().optional(),
   /** Expected precision estimate as a fraction (0–1). */
-  expectedPrecision?: number;
-  estimatedTimeMs?: number;
+  expectedPrecision: z.number().optional(),
+  estimatedTimeMs: z.number().optional(),
   /** Detailed explain lines (only populated when explainMode=true). */
-  explainLines?: string[];
-}
+  explainLines: z.array(z.string()).optional(),
+});
+export type AlgorithmRecommendation = z.infer<typeof AlgorithmRecommendationSchema>;
 
 /** Analysis commands recommended as follow-ups for a given goal + log profile. */
-export interface AnalysisRecommendation {
-  command: string;
-  reason: string;
-  example: string;
-}
+export const AnalysisRecommendationSchema = z.object({
+  command: z.string(),
+  reason: z.string(),
+  example: z.string(),
+});
+export type AnalysisRecommendation = z.infer<typeof AnalysisRecommendationSchema>;
 
-export interface SuggestionResult {
-  goal: SuggestionGoal;
-  logStats: LogStats;
-  recommendations: AlgorithmRecommendation[];
-  analysisRecommendations: AnalysisRecommendation[];
-  topPick: string | null;
-  runCommand: string | null;
-}
+export const SuggestionResultSchema = z.object({
+  goal: z.enum([
+    'fast', 'balanced', 'quality', 'conformance', 'streaming',
+    'find bottlenecks', 'check compliance', 'predict outcomes',
+  ]),
+  logStats: LogStatsSchema,
+  recommendations: z.array(AlgorithmRecommendationSchema),
+  analysisRecommendations: z.array(AnalysisRecommendationSchema),
+  topPick: z.string().nullable(),
+  runCommand: z.string().nullable(),
+});
+export type SuggestionResult = z.infer<typeof SuggestionResultSchema>;
 
 /**
  * Composite scoring weight per goal.
@@ -137,23 +147,29 @@ interface CandidateEntry {
   expectedPrecision: number;
 }
 
+/** Speed values for benchmarked algorithms come from measured dispatch costs
+ *  (benchmark-costs.ts, normalized 0-100); unmeasured keep hand-authored values. */
 const DISCOVERY_CANDIDATES: CandidateEntry[] = [
-  { id: 'dfg',                quality: 30, speed: 95, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.40 },
+  { id: 'dfg',                quality: 30, speed: benchSpeedScore('dfg') ?? 95, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.40 },
   { id: 'process_skeleton',   quality: 25, speed: 97, scalesWell: true,  expectedFitness: 1.0, expectedPrecision: 0.30 },
   { id: 'simd_streaming_dfg', quality: 28, speed: 98, scalesWell: true,  streamingOnly: true,  expectedFitness: 1.0, expectedPrecision: 0.38 },
-  { id: 'heuristic_miner',    quality: 50, speed: 75, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.72 },
+  { id: 'heuristic_miner',    quality: 50, speed: benchSpeedScore('heuristic_miner') ?? 75, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.72 },
   { id: 'alpha_plus_plus',    quality: 50, speed: 80, scalesWell: false, expectedFitness: 0.80, expectedPrecision: 0.68 },
-  { id: 'inductive_miner',    quality: 55, speed: 70, scalesWell: true,  expectedFitness: 0.87, expectedPrecision: 0.74 },
-  { id: 'hill_climbing',      quality: 55, speed: 60, scalesWell: false, expectedFitness: 0.84, expectedPrecision: 0.70 },
+  { id: 'inductive_miner',    quality: 55, speed: benchSpeedScore('inductive_miner') ?? 70, scalesWell: true,  expectedFitness: 0.87, expectedPrecision: 0.74 },
+  { id: 'hill_climbing',      quality: 55, speed: benchSpeedScore('hill_climbing') ?? 60, scalesWell: false, expectedFitness: 0.84, expectedPrecision: 0.70 },
   { id: 'declare',            quality: 50, speed: 65, scalesWell: false, expectedFitness: 0.78, expectedPrecision: 0.65 },
-  { id: 'simulated_annealing',quality: 65, speed: 45, scalesWell: false, expectedFitness: 0.86, expectedPrecision: 0.76 },
+  { id: 'simulated_annealing',quality: 65, speed: benchSpeedScore('simulated_annealing') ?? 45, scalesWell: false, expectedFitness: 0.86, expectedPrecision: 0.76 },
   { id: 'a_star',             quality: 70, speed: 40, scalesWell: false, expectedFitness: 0.88, expectedPrecision: 0.78 },
   { id: 'aco',                quality: 75, speed: 35, scalesWell: false, expectedFitness: 0.90, expectedPrecision: 0.80 },
   { id: 'pso',                quality: 75, speed: 30, scalesWell: false, expectedFitness: 0.90, expectedPrecision: 0.80 },
   { id: 'genetic_algorithm',  quality: 80, speed: 25, scalesWell: false, expectedFitness: 0.93, expectedPrecision: 0.83 },
-  { id: 'ilp',                quality: 90, speed: 20, scalesWell: false, expectedFitness: 0.97, expectedPrecision: 0.90 },
+  { id: 'ilp',                quality: 90, speed: benchSpeedScore('ilp') ?? 20, scalesWell: false, expectedFitness: 0.97, expectedPrecision: 0.90 },
   { id: 'optimized_dfg',      quality: 85, speed: 30, scalesWell: true,  expectedFitness: 0.95, expectedPrecision: 0.82 },
   { id: 'alignments',         quality: 85, speed: 15, scalesWell: false, expectedFitness: 0.95, expectedPrecision: 0.88 },
+  { id: 'batches',            quality: 55, speed: benchSpeedScore('batches') ?? 80, scalesWell: true,  expectedFitness: 0.80, expectedPrecision: 0.65 },
+  { id: 'correlation_miner',  quality: 60, speed: benchSpeedScore('correlation_miner') ?? 78, scalesWell: true,  expectedFitness: 0.82, expectedPrecision: 0.70 },
+  { id: 'transition_system',  quality: 50, speed: benchSpeedScore('transition_system') ?? 78, scalesWell: true,  expectedFitness: 0.85, expectedPrecision: 0.68 },
+  { id: 'log_to_trie',        quality: 50, speed: benchSpeedScore('log_to_trie') ?? 77, scalesWell: true,  expectedFitness: 0.85, expectedPrecision: 0.66 },
 ];
 
 /**

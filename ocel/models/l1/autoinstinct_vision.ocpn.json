@@ -1,0 +1,32 @@
+{
+  "model_id": "autoinstinct_vision-l1-v1",
+  "model_level": "L1",
+  "breed_id": "autoinstinct_vision",
+  "object_types": ["object", "relation", "scene"],
+  "places": [
+    {"id": "p1", "name": "object_detected",          "object_type": "object"},
+    {"id": "p2", "name": "relation_inferred",         "object_type": "relation"},
+    {"id": "p3", "name": "support_structure_built",   "object_type": "scene"},
+    {"id": "p4", "name": "scene_description_emitted", "object_type": "scene"},
+    {"id": "p5", "name": "scene_refused",             "object_type": "scene"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "object_detected",          "label": "object_detected"},
+    {"id": "t2", "name": "relation_inferred",         "label": "relation_inferred"},
+    {"id": "t3", "name": "support_structure_built",   "label": "support_structure_built"},
+    {"id": "t4", "name": "scene_description_emitted", "label": "scene_description_emitted"},
+    {"id": "t5", "name": "scene_refused",             "label": "scene_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}, {"p5": 1}]
+}

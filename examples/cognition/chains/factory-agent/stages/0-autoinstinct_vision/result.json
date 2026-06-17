@@ -1,0 +1,119 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_vision",
+    "breed": "autoinstinct_vision",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctvision",
+      "candidates": [
+        {
+          "id": "2026-06-10T08:00:00Z",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "active",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "blocked",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "idle",
+          "score": 1,
+          "eliminated": false
+        },
+        {
+          "id": "running",
+          "score": 1,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "machine_2_state",
+          "value": "blocked"
+        },
+        {
+          "key": "machine_3_state",
+          "value": "idle"
+        },
+        {
+          "key": "conveyor_A_state",
+          "value": "running"
+        },
+        {
+          "key": "floor_camera_feed",
+          "value": "active"
+        },
+        {
+          "key": "timestamp",
+          "value": "2026-06-10T08:00:00Z"
+        }
+      ],
+      "selected": "2026-06-10T08:00:00Z",
+      "explanation": "AutoinstinctVision: 5 objects observed; first clear object is 2026-06-10T08:00:00Z",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "observe-object",
+          "detail": "observed 2026-06-10T08:00:00Z as timestamp (on table)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "observe-object",
+          "detail": "observed active as floor_camera_feed (on table)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "observe-object",
+          "detail": "observed blocked as machine_2_state (on table)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "observe-object",
+          "detail": "observed idle as machine_3_state (on table)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "observe-object",
+          "detail": "observed running as conveyor_A_state (on table)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "find-clear-object",
+          "detail": "clear object found: 2026-06-10T08:00:00Z",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "60a43f6846678bd8af2b1ee258d3b98709631fcd9d5054ebcc52a0b7b2e2cbe6",
+    "output_hash": "581d2da11f2d6328c092c945519f42bbf3c26f40e112ca5d5cc2139fd4e21d6b",
+    "replay_pointer": "581d2da11f2d6328",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/60a43f6846678bd8af2b1ee258d3b98709631fcd9d5054ebcc52a0b7b2e2cbe6.json"
+  },
+  "meta": {
+    "run_id": "58d6520d-a58c-4a93-aba0-2ed95a3b333c",
+    "timestamp": "2026-06-10T15:46:50.204Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

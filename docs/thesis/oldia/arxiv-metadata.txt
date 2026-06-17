@@ -1,0 +1,54 @@
+Title: OLDIA: Operational Lifecycle Determinism in Intelligent Architectures — Validated, Falsified, and Deployed at Civilization Scale
+Authors: Sean Chatman (wasm4pm Research Group)
+Categories: cs.AI (primary), cs.SE (secondary), cs.DB
+Comments: 7 chapters, 1 appendix, 655 verified tests. Implementation: https://github.com/chatmangpt/wasm4pm
+License: CC BY 4.0
+
+Abstract:
+For seventy years, classical artificial intelligence produced architectures that were
+theoretically elegant and operationally unverifiable. MYCIN diagnosed infectious
+disease with demonstrable clinical accuracy yet left no falsifiable execution trail.
+SOAR modelled universal cognition with formal preference algebras yet offered no
+mechanism for a downstream auditor to confirm that a particular run obeyed the
+declared lifecycle. Hearsay, GPS, STRIPS, DENDRAL, ELIZA, CBR, Prolog, and their
+successors shared the same blind spot: correctness was a property of the design
+document, not of the deployed runtime. Every execution was, in the van der Aalst
+sense, a dark process---behaviour that existed but could not be mined, replayed, or
+refused.
+
+This thesis introduces wasm4pm cognition breeds: thirteen classical AI architectures
+reimplemented as WebAssembly modules under a unified provability contract. The
+thirteen breeds are MYCIN (Shortliffe-Buchanan certainty-factor algebra), Hearsay
+(KSAR blackboard with opportunistic scheduling), SOAR (full preference algebra with
+subgoal impasse resolution), Case-Based Reasoning (4R cycle with Jaccard similarity
+and BLAKE3 retained-case identity), Prolog (Robinson flat-term unification with
+bounded SLD resolution), STRIPS (plan-soundness-verified forward chaining), GPS
+(difference-coverage enforced means-ends analysis), DENDRAL (forbidden-candidate
+elimination), ELIZA (pattern-action reflection), and four Autoinstinct breeds---Vision,
+Semantics, Neurosis, and Learning---that express emergent inference over perceptual
+and symbolic substrates. Each breed is not merely implemented; it is validated,
+falsified, and receipt-chained.
+
+The methodological contribution is an OCEL 2.0 provability layer wired at the
+run_breed chokepoint in wasm.rs. Every breed execution emits an object-centric event
+log whose lifecycle phases are checked against a statically declared
+BreedLifecycleModel (a deterministic finite automaton over OCEL 2.0 activity labels)
+before any output is returned. Non-conforming executions are refused, not merely
+flagged. The BLAKE3 receipt chain extends provability from process to artefact:
+output_hash = blake3(BreedOutput), run_id = blake3(breed || output_hash), and the
+OCEL log is embedded inside the output before hashing, so the receipt attests to the
+process, not just the result. Temporal conformance is enforced by strictly monotone
+logical_step attributes; wall-clock time is excluded from the hash domain to preserve
+determinism under replay.
+
+The test infrastructure comprises 655 tests with unfakeable oracles: 480 Rust tests
+and 175 TypeScript tests, with zero failures recorded. Measured execution latency
+across the thirteen breeds runs from 2 to 50 microseconds on 2026 hardware, compiled
+to both nodejs and browser WASM targets via wasm-pack. The system operates as
+civilization-scale auditable reasoning infrastructure: any institution that ingests a
+cognition breed receipt can independently verify, replay, and mine the execution
+history as a first-class process artefact. OLDIA demonstrates that the gap between
+theoretical AI correctness and operational verifiability is not a fundamental
+limitation of classical reasoning but an engineering choice---one that can be reversed
+by placing OCEL provability and receipt-chained falsifiability at the execution
+boundary of every classical AI architecture deployed in the world.

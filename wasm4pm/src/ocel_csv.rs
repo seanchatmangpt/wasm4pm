@@ -194,10 +194,7 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
         .map(|h| h.to_string())
         .collect();
 
-    let columns: Vec<Column> = raw_headers
-        .iter()
-        .map(|h| classify_header(h))
-        .collect();
+    let columns: Vec<Column> = raw_headers.iter().map(|h| classify_header(h)).collect();
 
     // Locate required column indices
     let id_col = columns.iter().position(|c| matches!(c, Column::Id));
@@ -306,7 +303,10 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
                     }
                     // obj_id#qualifier
                     let (obj_id, qualifier) = if let Some(pos) = entry.find('#') {
-                        (entry[..pos].trim().to_string(), entry[pos + 1..].trim().to_string())
+                        (
+                            entry[..pos].trim().to_string(),
+                            entry[pos + 1..].trim().to_string(),
+                        )
                     } else {
                         (entry.to_string(), obj_type.clone())
                     };
@@ -322,13 +322,15 @@ pub fn parse_ocel_csv(csv_string: &str) -> Result<OCEL, String> {
                     });
 
                     // Upsert object into map
-                    objects_map.entry(obj_id.clone()).or_insert_with(|| OCELObject {
-                        id: obj_id.clone(),
-                        object_type: obj_type.clone(),
-                        attributes: HashMap::new(),
-                        changes: vec![],
-                        embedded_relations: vec![],
-                    });
+                    objects_map
+                        .entry(obj_id.clone())
+                        .or_insert_with(|| OCELObject {
+                            id: obj_id.clone(),
+                            object_type: obj_type.clone(),
+                            attributes: HashMap::new(),
+                            changes: vec![],
+                            embedded_relations: vec![],
+                        });
                 }
             }
         }
@@ -447,10 +449,18 @@ e3,Place Order,2024-01-03T09:00:00Z,o2,,10,yes
     fn test_object_reference_parsing() {
         let ocel = parse_ocel_csv(SAMPLE_CSV).expect("parse failed");
         // e2 references o1 (Order) and i1#ships, i2#ships (Item)
-        let e2 = ocel.events.iter().find(|e| e.id == "e2").expect("e2 missing");
+        let e2 = ocel
+            .events
+            .iter()
+            .find(|e| e.id == "e2")
+            .expect("e2 missing");
         assert!(e2.object_ids.contains(&"i1".to_string()));
         assert!(e2.object_ids.contains(&"i2".to_string()));
-        let ships_refs: Vec<_> = e2.object_refs.iter().filter(|r| r.qualifier == "ships").collect();
+        let ships_refs: Vec<_> = e2
+            .object_refs
+            .iter()
+            .filter(|r| r.qualifier == "ships")
+            .collect();
         assert_eq!(ships_refs.len(), 2);
     }
 
@@ -459,8 +469,14 @@ e3,Place Order,2024-01-03T09:00:00Z,o2,,10,yes
         assert_eq!(infer_value("true"), AttributeValue::Boolean(true));
         assert_eq!(infer_value("42"), AttributeValue::Int(42));
         assert_eq!(infer_value("3.14"), AttributeValue::Float(3.14));
-        assert!(matches!(infer_value("2024-01-01T10:00:00Z"), AttributeValue::Date(_)));
-        assert_eq!(infer_value("hello"), AttributeValue::String("hello".to_string()));
+        assert!(matches!(
+            infer_value("2024-01-01T10:00:00Z"),
+            AttributeValue::Date(_)
+        ));
+        assert_eq!(
+            infer_value("hello"),
+            AttributeValue::String("hello".to_string())
+        );
     }
 
     #[test]
@@ -478,8 +494,14 @@ e3,Place Order,2024-01-03T09:00:00Z,o2,,10,yes
         assert!(matches!(classify_header("event_id"), Column::Id));
         assert!(matches!(classify_header("ocel:activity"), Column::Activity));
         assert!(matches!(classify_header("activity"), Column::Activity));
-        assert!(matches!(classify_header("ocel:timestamp"), Column::Timestamp));
-        assert!(matches!(classify_header("ocel:type:Order"), Column::ObjectType(_)));
+        assert!(matches!(
+            classify_header("ocel:timestamp"),
+            Column::Timestamp
+        ));
+        assert!(matches!(
+            classify_header("ocel:type:Order"),
+            Column::ObjectType(_)
+        ));
         assert!(matches!(classify_header("price"), Column::EventAttr(_)));
     }
 

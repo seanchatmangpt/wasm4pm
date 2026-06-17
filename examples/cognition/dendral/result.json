@@ -1,0 +1,80 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "dendral",
+      "candidates": [
+        {
+          "id": "centralized-cloud",
+          "score": 0.8999999761581421,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:centralized-cloud"
+        },
+        {
+          "id": "offline-edge",
+          "score": 0.75,
+          "eliminated": false
+        },
+        {
+          "id": "hybrid-offline",
+          "score": 0.8500000238418579,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "constraint",
+          "value": "forbid:centralized-cloud"
+        },
+        {
+          "key": "constraint",
+          "value": "require:offline"
+        },
+        {
+          "key": "constraint",
+          "value": "min-score:0.5"
+        }
+      ],
+      "selected": "hybrid-offline",
+      "explanation": "DENDRAL applied 3 constraints; 2/3 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "eliminate",
+          "detail": "centralized-cloud by forbid:centralized-cloud: forbidden by constraint forbid:centralized-cloud",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "survive",
+          "detail": "offline-edge",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "survive",
+          "detail": "hybrid-offline",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb",
+    "output_hash": "9442f99ed7d0b0d839dad34b0d57e0669b87b2e38e52cf2aa242d3ba650760da",
+    "replay_pointer": "9442f99ed7d0b0d8",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9e07666b3adf50424a778866f8f38d6bc5fdc18ef84c82b2feef92ae151a13eb.json"
+  },
+  "meta": {
+    "run_id": "2c28d282-91da-4d70-acf9-7d9220514be5",
+    "timestamp": "2026-06-10T15:46:42.729Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/observability",
-  "version": "26.6.9",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -31,7 +31,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@opentelemetry/api": "^1.9.0"
+    "@opentelemetry/api": "^1.9.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",

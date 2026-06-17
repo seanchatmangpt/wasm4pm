@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan, withSpanRaw } from './_otel.js';
+import { WASM_FUNCTION_NAMES } from '@wasm4pm/contracts';
 
 export interface ExplainOptions {
   format?: 'human' | 'json';
@@ -143,6 +144,20 @@ export const explain = defineCommand({
                 );
                 emitResult(result, { format, verbose, quiet });
                 return await exitWithFlush(result.exit_code);
+              }
+
+              const knownAlgorithms = Object.keys(WASM_FUNCTION_NAMES);
+              for (const [argName, algId] of [['algorithm1', alg1], ['algorithm2', alg2]] as const) {
+                if (!knownAlgorithms.includes(algId)) {
+                  const result = makeErrorResult(
+                    'explain',
+                    `Unknown algorithm for ${argName}: '${algId}'\n\nKnown algorithms: ${knownAlgorithms.join(', ')}`,
+                    EXIT_CODES.config_error,
+                    'UNKNOWN_ALGORITHM'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  return await exitWithFlush(result.exit_code);
+                }
               }
 
               const comparison = buildAlgorithmComparison(alg1, alg2);

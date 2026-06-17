@@ -111,3 +111,24 @@ export {
   type AlgorithmFamily,
   type AlgorithmId,
 } from './policy.js';
+
+// AutoML layers (bench-calibrated cost model, receipt-corpus meta-learning, drift)
+export {
+  ALGO_BENCH_COSTS,
+  estimateDurationMs,
+  benchSpeedScore,
+  benchSpeedTier,
+  type AlgoBenchCost,
+} from './benchmark-costs.js';
+export {
+  readAlgoBehaviorCases,
+  readRuntimeCases,
+  mergeMetaCases,
+  type MetaCase,
+} from './receipt-reader.js';
+// Aliased: kernel exports a heuristic recommendAlgorithm(LogProfile)
+export {
+  recommendAlgorithm as recommendAlgorithmMeta,
+  type MetaRecommendation,
+} from './meta-learner.js';
+export { checkCostModelDrift, type CostDriftSignal } from './cost-drift.js';

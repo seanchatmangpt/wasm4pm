@@ -1,0 +1,43 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_semantics",
+    "breed": "autoinstinct_semantics",
+    "status": "ok",
+    "output": {
+      "breed": "autoinstinctsemantics",
+      "candidates": [],
+      "facts": [],
+      "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"John gave Mary the book\"",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-parser",
+          "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "no-act-found",
+          "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b",
+    "output_hash": "3b61a92be807bf735c91b07bece64000abde1871ce339bf3205a94d4e9afba1d",
+    "replay_pointer": "3b61a92be807bf73",
+    "inference_step_count": 2,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b.json"
+  },
+  "meta": {
+    "run_id": "08b2a8f4-f312-4fde-b267-1dffabe30b28",
+    "timestamp": "2026-06-10T15:46:44.257Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

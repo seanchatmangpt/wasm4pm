@@ -1,0 +1,195 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "dendral",
+      "candidates": [
+        {
+          "id": "explanation_coolant_pump_seized",
+          "score": 0.8799999952316284,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_heat_exchanger_fouled",
+          "score": 0.7200000286102295,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_bearing_lubricant_depleted",
+          "score": 0.6499999761581421,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_thermostat_sensor_drift",
+          "score": 0.44999998807907104,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_ambient_temp_spike",
+          "score": 0.30000001192092896,
+          "eliminated": true
+        }
+      ],
+      "facts": [
+        {
+          "key": "0.6",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "0.9",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "43units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "45",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "60units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "8.2bar",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "92C",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "combined_cf ",
+          "value": " cf1 + cf2*(1-cf1)"
+        },
+        {
+          "key": "dx_coolant_failure CF",
+          "value": "0.85"
+        },
+        {
+          "key": "current_temp",
+          "value": "92C"
+        },
+        {
+          "key": "target_temp",
+          "value": "75C"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "current_throughput",
+          "value": "43units/hr"
+        },
+        {
+          "key": "target_throughput",
+          "value": "60units/hr"
+        },
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "coolant_system_state",
+          "value": "failed"
+        },
+        {
+          "key": "feed_rate",
+          "value": "100pct"
+        },
+        {
+          "key": "goal_bitmask",
+          "value": "0b1111"
+        },
+        {
+          "key": "achieved_bitmask",
+          "value": "0b0000"
+        },
+        {
+          "key": "safety_constraint_met",
+          "value": "true"
+        },
+        {
+          "key": "best_plan",
+          "value": "plan_B_partial_stop_flush"
+        },
+        {
+          "key": "operator_preference",
+          "value": "minimize_downtime"
+        },
+        {
+          "key": "batch_A_in_progress",
+          "value": "true"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:strategy_parallel_coolant_repair:reason:impasse-unresolved-fallback"
+        },
+        {
+          "key": "selected_strategy",
+          "value": "strategy_parallel_coolant_repair"
+        },
+        {
+          "key": "constraint_coolant_flow_zero",
+          "value": "true"
+        },
+        {
+          "key": "constraint_pressure_upstream_high",
+          "value": "true"
+        },
+        {
+          "key": "constraint_vibration_pump_area",
+          "value": "true"
+        }
+      ],
+      "selected": "explanation_coolant_pump_seized",
+      "explanation": "DENDRAL applied 0 constraints; 4/5 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "survive",
+          "detail": "explanation_coolant_pump_seized",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "survive",
+          "detail": "explanation_heat_exchanger_fouled",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "survive",
+          "detail": "explanation_bearing_lubricant_depleted",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "survive",
+          "detail": "explanation_thermostat_sensor_drift",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7ff5bdcb3adf909c95a0cbacf57c70c2e3e4518c5123b3afac21e295e53a9d3d",
+    "output_hash": "3d5ff74b7ddd969835635e88badf45b52806d1568f0b7942bbe1ad089e973b4e",
+    "replay_pointer": "3d5ff74b7ddd9698",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/7ff5bdcb3adf909c95a0cbacf57c70c2e3e4518c5123b3afac21e295e53a9d3d.json"
+  },
+  "meta": {
+    "run_id": "de186ba1-1bef-4cc1-a3f4-343ff41232d1",
+    "timestamp": "2026-06-10T15:46:53.394Z",
+    "duration_ms": 12,
+    "version": "26.6.9"
+  }
+}

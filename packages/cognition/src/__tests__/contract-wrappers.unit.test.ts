@@ -60,7 +60,7 @@ const { replayReceipt } = await import('../receipt/replay.js');
 // ── Helpers ───────────────────────────────────────────────name────────────────
 
 const VERIFY_RESULT = JSON.stringify({ status: 'verified', findings: [] });
-const SHOW_RESULT = JSON.stringify({ breeds: [{ id: 'ELIZA', name: 'ELIZA', year: 1966 }] });
+const SHOW_RESULT = JSON.stringify({ breeds: [{ id: 'eliza', name: 'ELIZA', year: 1966 }] });
 const BUILD_RESULT = JSON.stringify({
   pareto_front: [{ id: 'c1', family_id: 'f1', dimensions: {} }],
   dominated: [],

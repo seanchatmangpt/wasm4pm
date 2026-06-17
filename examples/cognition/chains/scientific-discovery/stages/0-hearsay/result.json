@@ -1,0 +1,174 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "hearsay",
+    "breed": "hearsay",
+    "status": "ok",
+    "output": {
+      "breed": "hearsay",
+      "candidates": [
+        {
+          "id": "cyclohexanol",
+          "score": 0.7200000286102295,
+          "eliminated": false
+        },
+        {
+          "id": "hexanal",
+          "score": 0.6499999761581421,
+          "eliminated": false
+        },
+        {
+          "id": "2-hexanone",
+          "score": 0.6100000143051147,
+          "eliminated": false
+        },
+        {
+          "id": "methyl_cyclopentanol",
+          "score": 0.47999998927116394,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "degree_of_unsaturation",
+          "value": "1"
+        },
+        {
+          "key": "formula",
+          "value": "C6H12O"
+        },
+        {
+          "key": "ir_absorption_1000_1200cm",
+          "value": "CO_stretch_secondary_alcohol"
+        },
+        {
+          "key": "ir_absorption_3350cm",
+          "value": "broad_OH_stretch"
+        },
+        {
+          "key": "ms_base_peak",
+          "value": "57"
+        },
+        {
+          "key": "ms_fragment_71",
+          "value": "loss_of_29_CHO"
+        },
+        {
+          "key": "ms_fragment_82",
+          "value": "loss_of_18_water"
+        },
+        {
+          "key": "ms_molecular_ion",
+          "value": "100"
+        },
+        {
+          "key": "nmr_13c_shift_70ppm",
+          "value": "carbon_bearing_OH"
+        },
+        {
+          "key": "nmr_1h_shift_1.2_to_1.8ppm",
+          "value": "aliphatic_CH2_CH_ring"
+        },
+        {
+          "key": "nmr_1h_shift_broad_3.6ppm",
+          "value": "OH_proton_present"
+        },
+        {
+          "key": "source_fusion_method",
+          "value": "KSAR_blackboard"
+        }
+      ],
+      "selected": "degree_of_unsaturation:1",
+      "explanation": "Hearsay posted 12 hypotheses; selected Some(\"degree_of_unsaturation:1\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed",
+          "detail": "ms_molecular_ion:100",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "seed",
+          "detail": "ms_base_peak:57",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "seed",
+          "detail": "ms_fragment_82:loss_of_18_water",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "seed",
+          "detail": "ms_fragment_71:loss_of_29_CHO",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "seed",
+          "detail": "nmr_1h_shift_broad_3.6ppm:OH_proton_present",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "seed",
+          "detail": "nmr_1h_shift_1.2_to_1.8ppm:aliphatic_CH2_CH_ring",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "seed",
+          "detail": "nmr_13c_shift_70ppm:carbon_bearing_OH",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "seed",
+          "detail": "ir_absorption_3350cm:broad_OH_stretch",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "seed",
+          "detail": "ir_absorption_1000_1200cm:CO_stretch_secondary_alcohol",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "seed",
+          "detail": "formula:C6H12O",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "seed",
+          "detail": "degree_of_unsaturation:1",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "seed",
+          "detail": "source_fusion_method:KSAR_blackboard",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "2ef006d0ef4ad54e9ec86e824958b16e0988222f1a07ca15ad937fb01e45c11b",
+    "output_hash": "3f202f0966affc14fa11d666df72d3c142624161fa611e41afe88caa7eae651b",
+    "replay_pointer": "3f202f0966affc14",
+    "inference_step_count": 12,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/2ef006d0ef4ad54e9ec86e824958b16e0988222f1a07ca15ad937fb01e45c11b.json"
+  },
+  "meta": {
+    "run_id": "9e2278bd-fa57-497b-b2d4-485cc1b4f623",
+    "timestamp": "2026-06-10T15:46:47.872Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

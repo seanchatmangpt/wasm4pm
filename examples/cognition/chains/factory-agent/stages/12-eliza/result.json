@@ -1,0 +1,279 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "eliza",
+      "candidates": [
+        {
+          "id": "explanation_template_operator_plain",
+          "score": 0.8999999761581421,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_template_escalation_summary",
+          "score": 0.8500000238418579,
+          "eliminated": false
+        },
+        {
+          "id": "explanation_template_technical",
+          "score": 0.6000000238418579,
+          "eliminated": false
+        }
+      ],
+      "facts": [
+        {
+          "key": "0.6",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "0.9",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "43units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "45",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "60units/hr",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "8.2bar",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "92C",
+          "value": "cf=1.000"
+        },
+        {
+          "key": "combined_cf ",
+          "value": " cf1 + cf2*(1-cf1)"
+        },
+        {
+          "key": "dx_coolant_failure CF",
+          "value": "0.85"
+        },
+        {
+          "key": "current_temp",
+          "value": "92C"
+        },
+        {
+          "key": "target_temp",
+          "value": "75C"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "current_throughput",
+          "value": "43units/hr"
+        },
+        {
+          "key": "target_throughput",
+          "value": "60units/hr"
+        },
+        {
+          "key": "machine_1_state",
+          "value": "running"
+        },
+        {
+          "key": "coolant_system_state",
+          "value": "failed"
+        },
+        {
+          "key": "feed_rate",
+          "value": "100pct"
+        },
+        {
+          "key": "goal_bitmask",
+          "value": "0b1111"
+        },
+        {
+          "key": "achieved_bitmask",
+          "value": "0b0000"
+        },
+        {
+          "key": "safety_constraint_met",
+          "value": "true"
+        },
+        {
+          "key": "best_plan",
+          "value": "plan_B_partial_stop_flush"
+        },
+        {
+          "key": "operator_preference",
+          "value": "minimize_downtime"
+        },
+        {
+          "key": "batch_A_in_progress",
+          "value": "true"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:strategy_parallel_coolant_repair:reason:impasse-unresolved-fallback"
+        },
+        {
+          "key": "selected_strategy",
+          "value": "strategy_parallel_coolant_repair"
+        },
+        {
+          "key": "constraint_coolant_flow_zero",
+          "value": "true"
+        },
+        {
+          "key": "constraint_pressure_upstream_high",
+          "value": "true"
+        },
+        {
+          "key": "constraint_vibration_pump_area",
+          "value": "true"
+        },
+        {
+          "key": "top_explanation",
+          "value": "explanation_coolant_pump_seized"
+        },
+        {
+          "key": "plan_step_1",
+          "value": "stop_machine_1"
+        },
+        {
+          "key": "plan_step_2",
+          "value": "flush_coolant_system"
+        },
+        {
+          "key": "safety_rule_lockout_tagout",
+          "value": "must_stop_before_maintenance"
+        },
+        {
+          "key": "plan_validated",
+          "value": "true"
+        },
+        {
+          "key": "active_alarms_count",
+          "value": "7"
+        },
+        {
+          "key": "operator_response_latency_sec",
+          "value": "12"
+        },
+        {
+          "key": "operator_error_rate_last_5min",
+          "value": "0.3"
+        },
+        {
+          "key": "operator_shift_hours",
+          "value": "6.5"
+        },
+        {
+          "key": "current_incident_id",
+          "value": "incident_2026_06_10_machine1"
+        },
+        {
+          "key": "diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "resolution",
+          "value": "plan_B_partial_stop_flush"
+        },
+        {
+          "key": "escalation_triggered",
+          "value": "true"
+        },
+        {
+          "key": "operator_overload",
+          "value": "overload"
+        },
+        {
+          "key": "final_diagnosis",
+          "value": "dx_coolant_failure"
+        },
+        {
+          "key": "resolution_applied",
+          "value": "plan_B_partial_stop_flush"
+        },
+        {
+          "key": "operator_overload_flagged",
+          "value": "true"
+        },
+        {
+          "key": "supervisor_escalated",
+          "value": "true"
+        },
+        {
+          "key": "batch_A_status",
+          "value": "resumed_at_station_3"
+        }
+      ],
+      "selected": "*",
+      "explanation": "Please go on.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "try-pattern",
+          "detail": "i need *",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "try-pattern",
+          "detail": "i am *",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "try-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "match-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "bind-slot",
+          "detail": "${1}=generate operator-facing natural language explanation of diagnosis and resolution via keystack reflection",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "8e45a7f3978b16e23de3134cffd70f3cbfac42afb75a3603fbc121d8129ba469",
+    "output_hash": "c34e5627ddee64665027951e260384ee5633d6a07d41e8feecd4ca4809653f11",
+    "replay_pointer": "c34e5627ddee6466",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/8e45a7f3978b16e23de3134cffd70f3cbfac42afb75a3603fbc121d8129ba469.json"
+  },
+  "meta": {
+    "run_id": "03113d7b-f2b8-4b45-a804-e8f1b081f0e9",
+    "timestamp": "2026-06-10T15:46:54.997Z",
+    "duration_ms": 13,
+    "version": "26.6.9"
+  }
+}

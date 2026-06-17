@@ -140,6 +140,20 @@ export type { TimeoutFactors, TimeoutResult } from './adaptive-timeout.js';
 // Validation exports
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
+export { validateWasmPayload } from './zod-validators.js';
+export {
+  PetriNetSchema,
+  DFGSchema,
+  ConformanceResultSchema,
+  TokenReplayResultSchema,
+  BpmnProcessSchema,
+  DeclareModelSchema,
+  ReceiptSchema,
+  DetectDriftSchema,
+  ComputeEwmaSchema,
+  TransitionMatrixSchema,
+  AutomlResultSchema,
+} from './zod-validators.js';
 
 // Step dispatcher bridge
 export { buildKernelStepHandlers } from './step-dispatcher.js';
@@ -266,6 +280,10 @@ export * from './model-registry.js';
 
 // Process-Law Query Language - M4
 export * from './ocpq.js';
+
+// Log structure fingerprint (AutoML Layer 2)
+export { computeFingerprint } from './log-fingerprint.js';
+export type { LogFingerprint } from './log-fingerprint.js';
 
 // Export all WASM functions from @wasm4pm/core to provide unified entry point
 export * from '@wasm4pm/core';
