@@ -1,0 +1,30 @@
+{
+  "intent": "resolve my_chair legs",
+  "facts": [
+    {
+      "key": "frame:my_chair:isa",
+      "value": "chair"
+    },
+    {
+      "key": "frame:chair:isa",
+      "value": "furniture"
+    },
+    {
+      "key": "frame:chair:slot:legs:default",
+      "value": "4"
+    },
+    {
+      "key": "frame:furniture:slot:movable:default",
+      "value": "yes"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "event_calculus:6cc023f07186f504fd5959fb0a69c977db1e2ca49208aeed9431039d391a2192"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

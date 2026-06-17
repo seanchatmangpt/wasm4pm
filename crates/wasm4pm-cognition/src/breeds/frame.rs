@@ -15,6 +15,7 @@
 //! patterns are supplied, a built-in Rogerian script is used.
 
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Frame / ELIZA breed.
 pub struct Eliza;
@@ -268,9 +269,7 @@ impl CognitionBreed for Eliza {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("ELIZA must record at least one pattern attempt".to_string());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

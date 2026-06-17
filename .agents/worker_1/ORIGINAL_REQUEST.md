@@ -1,25 +1,60 @@
-## 2026-06-10T15:39:39-07:00
-You are a teamwork_preview_worker. Your task is to implement and verify the first 4 of the 10 Tier P1 cognition breeds:
-1. `ltl_monitor`
-2. `allen_temporal`
-3. `fuzzy_logic`
-4. `bayesian_network`
+## 2026-06-10T23:48:23-07:00
+Your working directory is `/Users/sac/wasm4pm/.agents/worker_1`. You are Worker 1.
+Objective: Populate and verify individual examples and chain stages for breeds 1-6:
+1. `abductive_ibe` (Chain Stage `00-abductive_ibe`)
+2. `abductive_lp` (Chain Stage `01-abductive_lp`)
+3. `act_r` (Chain Stage `02-act_r`)
+4. `allen_temporal` (Chain Stage `03-allen_temporal`)
+5. `analogy_sme` (Chain Stage `04-analogy_sme`)
+6. `asp` (Chain Stage `05-asp`)
 
-For each of these 4 breeds, perform the following steps:
-1. Implement the core algorithm in `crates/wasm4pm-cognition/src/breeds/<b>.rs` implementing the `CognitionBreed` trait.
-   - For `ltl_monitor`: Implement LTL monitoring over a sequence of states/valuations. Parse formula from facts/intent using `support::formula::Formula::parse`. Trace steps must record states evaluated.
-   - For `allen_temporal`: Implement Allen's Interval Algebra consistency/closure checks. Trace steps must record constraint propagation events.
-   - For `fuzzy_logic`: Implement fuzzy logic inference (fuzzification, rule evaluation using min T-norm, max T-conorm, Mamdani implication, centroid defuzzification). Trace steps must record rule firings.
-   - For `bayesian_network`: Implement exact Bayesian network inference via enumeration. Query variable, CPTs, and evidence should be parsed from input goals, rules, and facts. Trace steps must record variable elimination or enumeration steps.
-2. Register the module in `crates/wasm4pm-cognition/src/breeds/mod.rs` (e.g., `pub mod <b>;`).
-3. Wire up dispatch in `crates/wasm4pm-cognition/src/breeds/dispatch.rs` (update `dispatch_breed` and `dispatch_breed_test` to use the new implementations).
-4. Create `crates/wasm4pm-cognition/src/ocel/models_p1.rs` if it doesn't exist, define the static `BreedLifecycleModel` for each breed, and register it in `crates/wasm4pm-cognition/src/ocel/mod.rs` `lifecycle_model_for`.
-5. Add `include_str!` in `crates/wasm4pm-cognition/src/ocel/model_sources.rs`.
-6. Author the OCPN model JSON in `ocel/models/l1/<b>.ocpn.json` (ensure fitness will be 1.0 against the generated trace steps).
-7. Implement test cases in `crates/wasm4pm-cognition/tests/oracle_negative.rs`, `crates/wasm4pm-cognition/tests/oracle_hidden.rs`, `crates/wasm4pm-cognition/tests/paper_grounded.rs` (with fixture `crates/wasm4pm-cognition/tests/fixtures/papers/<b>.json`), and `crates/wasm4pm-cognition/tests/breed_determinism.rs`.
-8. Add the breed bench entry in `crates/wasm4pm-cognition/benches/breed_latency.rs`.
-9. Add TS test cases in `packages/cognition/src/__tests__/cognition-breeds.integration.test.ts` and update TS inputs in `packages/cognition/src/__tests__/fixtures/breed-inputs.ts`.
-10. Flip status in `crates/wasm4pm-cognition/breeds/registry.json` from `UNSUPPORTED` to `PARTIAL_ALIVE`.
-11. Generate documentation cards in `docs/breeds/<b>.md` (8-section format).
-12. Measure OCEL fitness (must be 1.0) and generate `ocel/reports/<b>.json`.
-13. Run `cargo test -p wasm4pm-cognition` and `pnpm run test` or `npx vitest` to ensure all tests pass cleanly.
+For each of the 6 breeds, you must:
+A. Create an example directory `examples/cognition/<breed>/`:
+  - Read `/Users/sac/wasm4pm/packages/cognition/src/__tests__/fixtures/papers/<breed>.json` to extract the `input` field.
+  - Write it as `intent.json` in the example directory.
+  - Create `run.sh` inside the directory:
+    ```bash
+    #!/usr/bin/env bash
+    set -euo pipefail
+    cd "$(dirname "$0")"
+    if command -v wpm >/dev/null 2>&1; then
+      WPM=wpm
+    else
+      REPO_ROOT="$(cd ../../.. && pwd)"
+      WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
+    fi
+    $WPM cognition run --contract <breed> --input intent.json --format json | tee result.json
+    ```
+    (Note: replace <breed> with the actual breed_id). Make it executable!
+  - Execute `bash run.sh` to generate the initial `result.json` and redirect its output logs to `last-output.log`.
+
+B. Create a chain stage directory under `examples/cognition/chains/factory-agent/stages/<stage_name>/` (e.g., `00-abductive_ibe`, `01-abductive_lp`, etc.):
+  - For stage `00-abductive_ibe` (first stage), copy the `intent.json` from the example directory. No `transform.py` is needed for stage 0.
+  - For stages 01-05, create a `transform.py` script:
+    ```python
+    import json
+    import sys
+
+    prev = json.load(sys.stdin)
+    prev_payload = prev.get('payload', {})
+    prev_output_hash = prev_payload.get('output_hash', '') or prev.get('output_hash', '')
+    prev_breed = prev_payload.get('breed', '') or prev.get('breed', '')
+
+    # Load base input from the template json
+    base_input = ... # insert the extracted 'input' block for this breed
+
+    # Cryptographically bind to prior stage
+    if prev_output_hash:
+        base_input['facts'].append({
+            'key': 'prior_stage_hash',
+            'value': f"{prev_breed}:{prev_output_hash}"
+        })
+
+    print(json.dumps(base_input, indent=2))
+    ```
+    Ensure the `transform.py` outputs a valid `BreedInput` JSON.
+
+MANDATORY INTEGRITY WARNING:
+DO NOT CHEAT. All implementations must be genuine. DO NOT hardcode test results, create dummy/facade implementations, or circumvent the intended task. A Forensic Auditor will independently verify your work. Integrity violations WILL be detected and your work WILL be rejected.
+
+When completed, report back with your findings and file list.

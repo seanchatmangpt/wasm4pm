@@ -1,0 +1,121 @@
+(node:13989) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "mdp",
+    "breed": "mdp",
+    "status": "ok",
+    "output": {
+      "breed": "Mdp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "mdp:value:goal",
+          "value": "0.000000"
+        },
+        {
+          "key": "mdp:value:s0",
+          "value": "1.800000"
+        },
+        {
+          "key": "mdp:value:s1",
+          "value": "2.000000"
+        },
+        {
+          "key": "mdp:value:s_142044aa",
+          "value": "1.000000"
+        },
+        {
+          "key": "mdp:policy:goal",
+          "value": "stay"
+        },
+        {
+          "key": "mdp:policy:s0",
+          "value": "go"
+        },
+        {
+          "key": "mdp:policy:s1",
+          "value": "go"
+        },
+        {
+          "key": "mdp:policy:s_142044aa",
+          "value": "go"
+        }
+      ],
+      "selected": "goal:stay,s0:go,s1:go,s_142044aa:go",
+      "explanation": "Value iteration converged in 3 sweeps (residual 0.000e0); greedy policy extracted.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "mdp-init",
+          "detail": "4 states, 2 actions, gamma=0.900000",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "mdp-iterate",
+          "detail": "sweep 1",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "mdp-iterate",
+          "detail": "sweep 2",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "mdp-iterate",
+          "detail": "sweep 3",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "mdp-iterate",
+          "detail": "3 sweeps, residual=0.000e0 (threshold eps=1e-6)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "mdp-policy",
+          "detail": "goal -> stay",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "mdp-policy",
+          "detail": "s0 -> go",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "mdp-policy",
+          "detail": "s1 -> go",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "mdp-policy",
+          "detail": "s_142044aa -> go",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "4d9094fd9e16da782a2df908f0ed9f260e91f8b44e56479afc5ed2b14197f313",
+    "output_hash": "94e4fdb8ceb3026f8a82104157f677853d326d4dc5dfabad350c8176a5c66adf",
+    "replay_pointer": "94e4fdb8ceb3026f",
+    "inference_step_count": 9,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/4d9094fd9e16da782a2df908f0ed9f260e91f8b44e56479afc5ed2b14197f313.json"
+  },
+  "meta": {
+    "run_id": "90c2c2e4-c408-46b2-b873-07b4e389edae",
+    "timestamp": "2026-06-11T08:35:02.887Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

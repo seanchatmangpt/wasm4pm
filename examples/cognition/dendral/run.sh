@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DENDRAL — constrained structure enumeration with forbid/require rules (Buchanan & Feigenbaum 1978).
+# DENDRAL — mass spectrometry molecular structure constraint pruning (Lederberg 1969).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -10,5 +10,5 @@ else
   WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── dendral: molecular formula + constraints → enumerate valid candidate structures ───"
+echo "─── dendral: formula + spectrometry peaks → prune isomer candidates ───"
 $WPM cognition run --contract dendral --input intent.json --format json | tee result.json

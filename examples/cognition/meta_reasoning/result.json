@@ -1,0 +1,75 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "meta_reasoning",
+    "breed": "meta_reasoning",
+    "status": "ok",
+    "output": {
+      "breed": "MetaReasoning",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "meta:conflicts",
+          "value": "1"
+        },
+        {
+          "key": "meta:decision:therapy",
+          "value": "gentamicin"
+        },
+        {
+          "key": "meta:weight:therapy",
+          "value": "0.800000"
+        }
+      ],
+      "selected": "therapy=gentamicin",
+      "explanation": "Meta-reasoning over 2 reports: 1 conflict(s) detected; resolved to therapy=gentamicin",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ingest-report",
+          "detail": "mycin: therapy=gentamicin (confidence 0.800000)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ingest-report",
+          "detail": "prolog: therapy=none (confidence 0.600000)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "conflict-detected",
+          "detail": "mycin vs prolog on 'therapy': mycin=gentamicin / prolog=none (differing values)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "vote",
+          "detail": "key 'therapy': gentamicin=0.800000, none=0.600000 -> winner gentamicin=0.800000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "resolve",
+          "detail": "1 conflict(s); 1 decision key(s); selected therapy=gentamicin (weight 0.800000)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "aee0e5c04094d67b5aba7e636bd939beeac22505ed002ca6ddec1f857cdca6ec",
+    "output_hash": "ac2659a7f875be3ef7afa266a166a3d51ddca1891542c8fd8d8ac359bf2e3723",
+    "replay_pointer": "ac2659a7f875be3e",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/meta_reasoning/.wasm4pm/receipts/aee0e5c04094d67b5aba7e636bd939beeac22505ed002ca6ddec1f857cdca6ec.json"
+  },
+  "meta": {
+    "run_id": "97834e9e-6b7a-42f1-841c-7dbc2f385bd8",
+    "timestamp": "2026-06-11T07:03:15.313Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

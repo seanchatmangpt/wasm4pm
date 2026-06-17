@@ -1,0 +1,1 @@
+{"intent": "circ", "facts": [{"key": "applies", "value": "true"}], "rules": [{"id": "r1", "premise": ["applies", "not ab_c_3236d66d"], "conclusion": "lawful_c_3236d66d", "certainty": 1.0}], "goals": [{"id": "g1", "predicate": "query", "value": "lawful_c_3236d66d"}], "candidates": [], "cases": [], "state": []}

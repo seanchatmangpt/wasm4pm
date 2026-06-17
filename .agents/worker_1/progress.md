@@ -1,16 +1,15 @@
-# Progress Heartbeat
+# Progress Tracker
 
-Last visited: 2026-06-10T16:05:00-07:00
+Last visited: 2026-06-10T23:54:15-07:00
 
-- [x] Initialized agent workspace
-- [x] Investigate codebase and existing cognition breeds
-- [x] Implement ltl_monitor
-- [x] Implement allen_temporal
-- [x] Implement fuzzy_logic
-- [x] Implement bayesian_network
-- [x] Register new breeds & wire dispatch
-- [x] Create lifecycle models and OCPN JSON models
-- [x] Add tests (Rust + TS)
-- [x] Flip registry status and generate docs
-- [x] Measure OCEL fitness and generate reports
-- [x] Run test suite and verify
+## Active Step
+- Final verification of examples and chain stages.
+
+## Todo List
+- [x] Read and extract input blocks from the 6 fixtures.
+- [x] For each breed (1-6), create example dir with `intent.json` and `run.sh`.
+- [x] Run `run.sh` to generate initial `result.json` and `last-output.log`.
+- [x] Create chain stages under `examples/cognition/chains/factory-agent/stages/`.
+- [x] Write `transform.py` for stages 01-05 incorporating the extracted base input JSON.
+- [x] Verify everything works by running test commands.
+- [x] Create handoff report.

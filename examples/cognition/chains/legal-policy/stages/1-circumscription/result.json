@@ -1,0 +1,63 @@
+(node:14021) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "circumscription",
+    "breed": "circumscription",
+    "status": "ok",
+    "output": {
+      "breed": "Circumscription",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "entailed:lawful_c_3236d66d",
+          "value": "false"
+        }
+      ],
+      "selected": null,
+      "explanation": "circumscription over 0 ab-atoms found 1 models, 1 minimal; entailed 0/1 goals",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-defaults",
+          "detail": "1 rules; abnormality atoms: {}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "enumerate-model",
+          "detail": "S={} -> model",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "entail",
+          "detail": "lawful_c_3236d66d |= false in 0/1 minimal models -> false",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "decision",
+          "detail": "1 minimal models; cautiously entailed: {}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "79b53eeefcee0e97330c3b17c6d44e91124e996efe0aa619d4f35e3f167af783",
+    "output_hash": "858ba7193f2227ebe336e8ba3cba3248df36c1a6b261bdd2fd5e619b0755443f",
+    "replay_pointer": "858ba7193f2227eb",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/79b53eeefcee0e97330c3b17c6d44e91124e996efe0aa619d4f35e3f167af783.json"
+  },
+  "meta": {
+    "run_id": "e7cc5126-97dd-4935-984d-815aeafc5812",
+    "timestamp": "2026-06-11T08:35:04.349Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "intent": "circumscribe abnormality over the bird/penguin theory",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "bird_tweety",
+      "value": "true"
+    },
+    {
+      "key": "bird_opus",
+      "value": "true"
+    },
+    {
+      "key": "penguin_opus",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r-fly-tweety",
+      "premise": [
+        "bird_tweety",
+        "not_ab_bird_tweety"
+      ],
+      "conclusion": "flies_tweety",
+      "certainty": 1.0
+    },
+    {
+      "id": "r-fly-opus",
+      "premise": [
+        "bird_opus",
+        "not_ab_bird_opus"
+      ],
+      "conclusion": "flies_opus",
+      "certainty": 1.0
+    },
+    {
+      "id": "r-penguin-ab",
+      "premise": [
+        "penguin_opus"
+      ],
+      "conclusion": "ab_bird_opus",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "entail",
+      "value": "flies_tweety"
+    },
+    {
+      "id": "g2",
+      "predicate": "entail",
+      "value": "flies_opus"
+    }
+  ],
+  "state": []
+}

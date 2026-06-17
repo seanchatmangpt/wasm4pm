@@ -1,0 +1,215 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "partial_order_plan",
+    "breed": "partial_order_plan",
+    "status": "ok",
+    "output": {
+      "breed": "PartialOrderPlan",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "pop:plan",
+          "value": "put_c_from_a_on_table;put_b_on_c;put_a_on_b"
+        },
+        {
+          "key": "pop:step_count",
+          "value": "3"
+        }
+      ],
+      "selected": "put_c_from_a_on_table;put_b_on_c;put_a_on_b",
+      "explanation": "SNLP causal-link planning: 3 steps, 10 causal links, 10 orderings.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "pop-init",
+          "detail": "Start adds {clear_b,clear_c,on_c_a,ontable_a,ontable_b}, Finish needs {on_a_b,on_b_c}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "pop-resolve",
+          "detail": "'on_a_b' needed by '__finish__'",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "pop-resolve",
+          "detail": "'put_a_on_b' (id 2)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "pop-resolve",
+          "detail": "put_a_on_b --on_a_b--> __finish__",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "pop-resolve",
+          "detail": "'clear_a' needed by 'put_a_on_b'",
+          "depth": 2
+        },
+        {
+          "step": 5,
+          "kind": "pop-resolve",
+          "detail": "'put_c_from_a_on_table' (id 3)",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "pop-resolve",
+          "detail": "put_c_from_a_on_table --clear_a--> put_a_on_b",
+          "depth": 2
+        },
+        {
+          "step": 7,
+          "kind": "pop-resolve",
+          "detail": "'clear_b' needed by 'put_a_on_b'",
+          "depth": 3
+        },
+        {
+          "step": 8,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_b--> put_a_on_b",
+          "depth": 3
+        },
+        {
+          "step": 9,
+          "kind": "pop-resolve",
+          "detail": "'clear_c' needed by 'put_c_from_a_on_table'",
+          "depth": 4
+        },
+        {
+          "step": 10,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_c--> put_c_from_a_on_table",
+          "depth": 4
+        },
+        {
+          "step": 11,
+          "kind": "pop-resolve",
+          "detail": "'on_b_c' needed by '__finish__'",
+          "depth": 5
+        },
+        {
+          "step": 12,
+          "kind": "pop-resolve",
+          "detail": "'put_b_on_c' (id 4)",
+          "depth": 5
+        },
+        {
+          "step": 13,
+          "kind": "pop-resolve",
+          "detail": "put_b_on_c --on_b_c--> __finish__",
+          "depth": 5
+        },
+        {
+          "step": 14,
+          "kind": "pop-resolve",
+          "detail": "step 'put_b_on_c' deletes 'clear_c' threatening link __start__→put_c_from_a_on_table",
+          "depth": 5
+        },
+        {
+          "step": 15,
+          "kind": "pop-resolve",
+          "detail": "'put_b_on_c' after 'put_c_from_a_on_table'",
+          "depth": 5
+        },
+        {
+          "step": 16,
+          "kind": "pop-resolve",
+          "detail": "'clear_b' needed by 'put_b_on_c'",
+          "depth": 6
+        },
+        {
+          "step": 17,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_b--> put_b_on_c",
+          "depth": 6
+        },
+        {
+          "step": 18,
+          "kind": "pop-resolve",
+          "detail": "step 'put_a_on_b' deletes 'clear_b' threatening link __start__→put_b_on_c",
+          "depth": 6
+        },
+        {
+          "step": 19,
+          "kind": "pop-resolve",
+          "detail": "'put_a_on_b' after 'put_b_on_c'",
+          "depth": 6
+        },
+        {
+          "step": 20,
+          "kind": "pop-resolve",
+          "detail": "'clear_c' needed by 'put_b_on_c'",
+          "depth": 7
+        },
+        {
+          "step": 21,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_c--> put_b_on_c",
+          "depth": 7
+        },
+        {
+          "step": 22,
+          "kind": "pop-resolve",
+          "detail": "'on_c_a' needed by 'put_c_from_a_on_table'",
+          "depth": 8
+        },
+        {
+          "step": 23,
+          "kind": "pop-resolve",
+          "detail": "__start__ --on_c_a--> put_c_from_a_on_table",
+          "depth": 8
+        },
+        {
+          "step": 24,
+          "kind": "pop-resolve",
+          "detail": "'ontable_a' needed by 'put_a_on_b'",
+          "depth": 9
+        },
+        {
+          "step": 25,
+          "kind": "pop-resolve",
+          "detail": "__start__ --ontable_a--> put_a_on_b",
+          "depth": 9
+        },
+        {
+          "step": 26,
+          "kind": "pop-resolve",
+          "detail": "'ontable_b' needed by 'put_b_on_c'",
+          "depth": 10
+        },
+        {
+          "step": 27,
+          "kind": "pop-resolve",
+          "detail": "__start__ --ontable_b--> put_b_on_c",
+          "depth": 10
+        },
+        {
+          "step": 28,
+          "kind": "pop-plan",
+          "detail": "plan: [put_c_from_a_on_table;put_b_on_c;put_a_on_b]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f755911123fd70cd882622aa652624c4b06415f3f38e901de57bfd4500450c06",
+    "output_hash": "f5974881fde5e8af559c4aa1e9ebfe8a5b1ad86ca53423b8dfcc00c8878d7885",
+    "replay_pointer": "f5974881fde5e8af",
+    "inference_step_count": 29,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/f755911123fd70cd882622aa652624c4b06415f3f38e901de57bfd4500450c06.json"
+  },
+  "meta": {
+    "run_id": "0d28a3a5-272b-4579-8756-18c9117fbcb0",
+    "timestamp": "2026-06-11T08:38:27.319Z",
+    "duration_ms": 20,
+    "version": "26.6.10"
+  }
+}

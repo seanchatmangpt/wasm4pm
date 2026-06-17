@@ -1,0 +1,110 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_neurosis",
+    "breed": "autoinstinct_neurosis",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctNeurosis",
+      "candidates": [
+        {
+          "id": "default_stimulus",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "belief:system_redundancy",
+          "value": "high — multiple replicas ensure no single point of failure"
+        },
+        {
+          "key": "belief:system_reliability",
+          "value": "low — any single node outage causes full service loss"
+        },
+        {
+          "key": "belief:deployment_is_automated",
+          "value": "true — CI/CD pipeline handles all releases without human review"
+        },
+        {
+          "key": "belief:deployment_requires_manual_approval",
+          "value": "true — all production changes require sign-off from on-call engineer"
+        },
+        {
+          "key": "belief:data_is_ephemeral",
+          "value": "true — containers are stateless; no durable data written locally"
+        },
+        {
+          "key": "belief:data_must_be_local",
+          "value": "true — latency constraints require in-process data cache written to local disk"
+        },
+        {
+          "key": "belief:scaling_is_horizontal",
+          "value": "true — load is distributed across N identical stateless pods"
+        },
+        {
+          "key": "belief:database_is_single_writer",
+          "value": "true — all writes funnel through one primary to preserve ordering guarantees"
+        },
+        {
+          "key": "belief:config_is_immutable",
+          "value": "true — service config baked into container image at build time"
+        },
+        {
+          "key": "belief:config_is_runtime_dynamic",
+          "value": "true — feature flags and thresholds updated live via config service without redeploy"
+        },
+        {
+          "key": "belief:observability_is_complete",
+          "value": "true — every operation emits a span; no blind spots"
+        },
+        {
+          "key": "belief:tracing_is_sampled",
+          "value": "true — only 1% of traces are retained to control storage costs"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "autoinstinct_learning:d4178c3e34c112de4e642f04a505a44e4a626b1932b2202b36edb18ae709696d"
+        }
+      ],
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.050,\"belief_count\":14}",
+      "explanation": "AutoinstinctNeurosis: processed 1 stimuli over 13 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.050",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed-beliefs",
+          "detail": "seeded 13 beliefs from facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "curious",
+          "detail": "stimulus=\"default_stimulus\" strength=0.500 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "affect-snapshot",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.050 beliefs=14",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f2cac36bf41b567a5e3208ae7ec5520afb78ac8979184926007f8a520e9c8060",
+    "output_hash": "ec49094817ba42e24893987163d6d91f0aab40d4967ce619da44ca3855ea0f4f",
+    "replay_pointer": "ec49094817ba42e2",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/f2cac36bf41b567a5e3208ae7ec5520afb78ac8979184926007f8a520e9c8060.json"
+  },
+  "meta": {
+    "run_id": "835c317c-9b8e-47f7-ac78-6ad49b3971df",
+    "timestamp": "2026-06-11T08:38:14.893Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

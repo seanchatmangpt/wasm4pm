@@ -1,0 +1,59 @@
+{
+  "intent": "recall the most relevant kitchen episode",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "place",
+      "value": "kitchen"
+    },
+    {
+      "key": "cue:t",
+      "value": "10"
+    },
+    {
+      "key": "episode:ep-breakfast:t",
+      "value": "9"
+    },
+    {
+      "key": "episode:ep-dinner:t",
+      "value": "2"
+    }
+  ],
+  "cases": [
+    {
+      "id": "ep-breakfast",
+      "intent": "morning meal",
+      "architecture": "episode",
+      "outcome_score": 0.5,
+      "facts": [
+        {
+          "key": "place",
+          "value": "kitchen"
+        },
+        {
+          "key": "meal",
+          "value": "breakfast"
+        }
+      ]
+    },
+    {
+      "id": "ep-dinner",
+      "intent": "evening meal",
+      "architecture": "episode",
+      "outcome_score": 0.5,
+      "facts": [
+        {
+          "key": "place",
+          "value": "kitchen"
+        },
+        {
+          "key": "meal",
+          "value": "dinner"
+        }
+      ]
+    }
+  ],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

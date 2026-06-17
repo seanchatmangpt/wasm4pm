@@ -1,36 +1,227 @@
 {
-  "intent": "best-recipe",
-  "candidates": [],
+  "intent": "diagnose-and-treat current patient with fever and cough",
+  "candidates": [
+    {
+      "id": "CASE-PHYSICIAN-2WK",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-A",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-B",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-CREDIT-TROUBLED-CO",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-PHYSICIAN-6MO",
+      "score": 0,
+      "eliminated": false
+    }
+  ],
   "facts": [
-    { "key": "ingredient", "value": "flour" },
-    { "key": "ingredient", "value": "egg" },
-    { "key": "prep_time", "value": "5min" }
+    {
+      "key": "domain",
+      "value": "medical"
+    },
+    {
+      "key": "symptom_primary",
+      "value": "fever"
+    },
+    {
+      "key": "symptom_secondary",
+      "value": "cough"
+    },
+    {
+      "key": "urgency",
+      "value": "moderate"
+    },
+    {
+      "key": "patient_status",
+      "value": "current"
+    }
   ],
   "cases": [
     {
-      "id": "pancakes",
-      "intent": "best-recipe",
-      "architecture": "pancakes",
-      "outcome_score": 0.9,
+      "id": "CASE-PHYSICIAN-2WK",
+      "intent": "patient treated two weeks ago with fever and cough",
+      "architecture": "antibiotic-course",
+      "outcome_score": 0.95,
       "facts": [
-        { "key": "ingredient", "value": "flour" },
-        { "key": "ingredient", "value": "egg" },
-        { "key": "ingredient", "value": "milk" }
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "cough"
+        },
+        {
+          "key": "urgency",
+          "value": "moderate"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
       ]
     },
     {
-      "id": "scones",
-      "intent": "best-recipe",
-      "architecture": "scones",
-      "outcome_score": 0.7,
+      "id": "CASE-PHYSICIAN-6MO",
+      "intent": "patient treated six months ago with fever and rash",
+      "architecture": "antiviral-course",
+      "outcome_score": 0.72,
       "facts": [
-        { "key": "ingredient", "value": "flour" },
-        { "key": "ingredient", "value": "butter" },
-        { "key": "prep_time", "value": "30min" }
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "rash"
+        },
+        {
+          "key": "urgency",
+          "value": "low"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-A",
+      "intent": "first blowout — critical-pressure combination triggered well blow-out",
+      "architecture": "emergency-mud-weight-increase",
+      "outcome_score": 0.88,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "drilling"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "critical-pressure-spike"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "mud-return-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-B",
+      "intent": "second blowout — engineer error contributed to blow-out recurrence",
+      "architecture": "procedure-override-abort",
+      "outcome_score": 0.6,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "drilling"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "critical-pressure-spike"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "gas-influx"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-CREDIT-TROUBLED-CO",
+      "intent": "previous company in similar financial trouble — loan refused",
+      "architecture": "refuse-loan-application",
+      "outcome_score": 0.91,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "finance"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "negative-cash-flow"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "high-debt-ratio"
+        },
+        {
+          "key": "urgency",
+          "value": "low"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
       ]
     }
   ],
   "rules": [],
-  "goals": [],
-  "state": []
+  "goals": [
+    {
+      "id": "G1",
+      "predicate": "retrieve",
+      "value": "most-similar-past-case"
+    },
+    {
+      "id": "G2",
+      "predicate": "reuse",
+      "value": "diagnosis-and-treatment"
+    },
+    {
+      "id": "G3",
+      "predicate": "revise",
+      "value": "if-treatment-fails"
+    },
+    {
+      "id": "G4",
+      "predicate": "retain",
+      "value": "new-case-in-case-base"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "cbr_cycle_step",
+      "value": "retrieve"
+    },
+    {
+      "predicate": "query_domain",
+      "value": "medical"
+    }
+  ]
 }

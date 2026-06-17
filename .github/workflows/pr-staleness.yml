@@ -94,13 +94,13 @@ jobs:
                 gh pr comment "$PR_NUM" \
                   --body "🚫 **MERGE BLOCKED**
 
-This PR has been in review for **${HOURS_IN_REVIEW} hours** (limit: ${MERGE_BLOCK_HOURS}h).
+            This PR has been in review for **${HOURS_IN_REVIEW} hours** (limit: ${MERGE_BLOCK_HOURS}h).
 
-**Required action:**
-- Obtain explicit decision (approve/request changes) from reviewer(s)
-- Or close this PR if no longer needed
+            **Required action:**
+            - Obtain explicit decision (approve/request changes) from reviewer(s)
+            - Or close this PR if no longer needed
 
-See [\`.wasm4pm/wip-config.json\`](/.wasm4pm/wip-config.json) for staleness policy." \
+            See [\`.wasm4pm/wip-config.json\`](/.wasm4pm/wip-config.json) for staleness policy." \
                   --repo "${{ github.repository }}" 2>/dev/null || true
               fi
             fi
@@ -114,14 +114,14 @@ See [\`.wasm4pm/wip-config.json\`](/.wasm4pm/wip-config.json) for staleness poli
                 gh pr comment "$PR_NUM" \
                   --body "⏱️ **ESCALATION: PR in review >48h**
 
-This PR has been waiting for **${HOURS_IN_REVIEW} hours** without a decision.
+            This PR has been waiting for **${HOURS_IN_REVIEW} hours** without a decision.
 
-**Action required:**
-- Request review from specific person (@mention)
-- Or provide update on blockers
-- Or close if no longer needed
+            **Action required:**
+            - Request review from specific person (@mention)
+            - Or provide update on blockers
+            - Or close if no longer needed
 
-Target: Merge or close within 24 more hours (by hour ${MERGE_BLOCK_HOURS})." \
+            Target: Merge or close within 24 more hours (by hour ${MERGE_BLOCK_HOURS})." \
                   --repo "${{ github.repository }}" 2>/dev/null || true
               fi
             fi
@@ -148,15 +148,15 @@ Target: Merge or close within 24 more hours (by hour ${MERGE_BLOCK_HOURS})." \
                   gh pr comment "$PR_NUM" \
                     --body "⏳ **This PR has been in review for ${HOURS_IN_REVIEW} hours.**
 
-Per WIP policy, PRs should merge within 24 hours of review.
+            Per WIP policy, PRs should merge within 24 hours of review.
 
-**Next steps:**
-- Request specific review: \`@mention\`
-- Add missing info: push commit with updates
-- If blocked: comment with blocker and next steps
-- If obsolete: close the PR
+            **Next steps:**
+            - Request specific review: \`@mention\`
+            - Add missing info: push commit with updates
+            - If blocked: comment with blocker and next steps
+            - If obsolete: close the PR
 
-Target: Merge or escalate within 24 more hours." \
+            Target: Merge or escalate within 24 more hours." \
                     --repo "${{ github.repository }}" 2>/dev/null || true
                 fi
               fi

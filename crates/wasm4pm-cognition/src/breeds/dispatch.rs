@@ -56,8 +56,9 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
 
 /// Dispatch to the correct breed's `run()` method.
 ///
-/// Each branch delegates to `run_breed`, which enforces pre- and post-conditions
-/// so the empty-trace fraud signal is caught at the boundary.
+/// Parses the breed string via `BreedId::from_str_id`, then routes through
+/// `breed_instance` — the macro-generated match is compiler-checked for
+/// exhaustiveness. Unknown/unsupported strings are caught before the match.
 pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     match breed {
         "eliza" => run_breed(&Eliza, input),

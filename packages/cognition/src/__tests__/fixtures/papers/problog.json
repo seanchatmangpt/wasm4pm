@@ -3,7 +3,7 @@
   "provenance": {
     "paper": "De Raedt, L., Kimmig, A., & Toivonen, H. (2007). ProbLog: a probabilistic Prolog and its application in link discovery.",
     "citation": "De Raedt, L., Kimmig, A., & Toivonen, H. (2007). Proceedings of IJCAI 2007, 2468-2473.",
-    "locus": "Section 2: success probability P_s(q) = Σ over subprograms L ⊆ L_T where L ∪ BK ⊨ q of Π p_i Π (1-p_i) — the distribution semantics evaluated here by exact possible-worlds enumeration.",
+    "locus": "Section 2: success probability P_s(q) = \u03a3 over subprograms L \u2286 L_T where L \u222a BK \u22a8 q of \u03a0 p_i \u03a0 (1-p_i) \u2014 the distribution semantics evaluated here by exact possible-worlds enumeration.",
     "extraction": "instantiated",
     "notes": "Three independent probabilistic causes of wet (0.2::rain, 0.2::sprinkler, 0.3::hose) with wet :- rain / wet :- sprinkler / wet :- hose. Noisy-or closed form: P(wet) = 1 - (1-0.2)(1-0.2)(1-0.3) = 1 - 0.448 = 0.552 exactly, the PRD-mandated oracle value, asserted to 1e-6."
   },
@@ -11,25 +11,60 @@
     "intent": "compute the exact success probability of wet",
     "candidates": [],
     "facts": [
-      {"key": "pfact:rain", "value": "0.2"},
-      {"key": "pfact:sprinkler", "value": "0.2"},
-      {"key": "pfact:hose", "value": "0.3"}
+      {
+        "key": "pfact:rain",
+        "value": "0.2"
+      },
+      {
+        "key": "pfact:sprinkler",
+        "value": "0.2"
+      },
+      {
+        "key": "pfact:hose",
+        "value": "0.3"
+      }
     ],
     "cases": [],
     "rules": [
-      {"id": "r-rain", "premise": ["rain"], "conclusion": "wet", "certainty": 1.0},
-      {"id": "r-sprinkler", "premise": ["sprinkler"], "conclusion": "wet", "certainty": 1.0},
-      {"id": "r-hose", "premise": ["hose"], "conclusion": "wet", "certainty": 1.0}
+      {
+        "id": "r-rain",
+        "premise": [
+          "rain"
+        ],
+        "conclusion": "wet",
+        "certainty": 1.0
+      },
+      {
+        "id": "r-sprinkler",
+        "premise": [
+          "sprinkler"
+        ],
+        "conclusion": "wet",
+        "certainty": 1.0
+      },
+      {
+        "id": "r-hose",
+        "premise": [
+          "hose"
+        ],
+        "conclusion": "wet",
+        "certainty": 1.0
+      }
     ],
     "goals": [
-      {"id": "g1", "predicate": "query", "value": "wet"}
+      {
+        "id": "g1",
+        "predicate": "query",
+        "value": "wet"
+      }
     ],
     "state": []
   },
   "expected": {
     "probability": 0.552,
-    "tolerance": 1e-6,
+    "tolerance": 1e-06,
     "worlds": 8,
-    "notes": "P(wet) = 1 - 0.8·0.8·0.7 = 0.552 exact; 2^3 = 8 worlds enumerated."
+    "notes": "P(wet) = 1 - 0.8\u00b70.8\u00b70.7 = 0.552 exact; 2^3 = 8 worlds enumerated.",
+    "value": "0.552000"
   }
 }

@@ -8,140 +8,336 @@
     "breed": "hearsay",
     "status": "ok",
     "output": {
-      "breed": "hearsay",
+      "breed": "Hearsay",
       "candidates": [],
       "facts": [
         {
-          "key": "phone",
-          "value": "AX"
-        },
-        {
-          "key": "phone",
-          "value": "H"
-        },
-        {
-          "key": "phone",
-          "value": "T"
+          "key": "phrase",
+          "value": "AND+FELDMAN+]*:145:225:90"
         },
         {
           "key": "phrase",
-          "value": "THE_UTTERANCE"
+          "value": "ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:24:225:82"
         },
         {
-          "key": "syllable",
-          "value": "THE"
+          "key": "phrase",
+          "value": "BY+FEIGENBAUM+AND+FELDMAN+]*:52:225:84"
+        },
+        {
+          "key": "phrase",
+          "value": "FEIGENBAUM+AND+FELDMAN+]*:80:225:83"
+        },
+        {
+          "key": "phrase",
+          "value": "[+ARE*]:0:28:97"
+        },
+        {
+          "key": "phrase",
+          "value": "[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:0:225:85"
+        },
+        {
+          "key": "segment",
+          "value": "fricative:157:175"
+        },
+        {
+          "key": "segment",
+          "value": "fricative:48:72"
+        },
+        {
+          "key": "segment",
+          "value": "silence:0:5"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-nonpeak:100:145"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-nonpeak:28:48"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-peak:145:157"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-peak:175:225"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-peak:5:28"
+        },
+        {
+          "key": "segment",
+          "value": "sonorant-peak:72:100"
+        },
+        {
+          "key": "syllable-class",
+          "value": "A:145:225:88"
+        },
+        {
+          "key": "syllable-class",
+          "value": "A:5:28:85"
+        },
+        {
+          "key": "syllable-class",
+          "value": "A:72:100:80"
+        },
+        {
+          "key": "syllable-class",
+          "value": "I:28:48:72"
+        },
+        {
+          "key": "syllable-class",
+          "value": "N:100:145:75"
+        },
+        {
+          "key": "syllable-class",
+          "value": "U:48:72:65"
         },
         {
           "key": "word",
-          "value": "THE"
+          "value": "AND:145:175:75"
+        },
+        {
+          "key": "word",
+          "value": "ANY:24:49:65"
+        },
+        {
+          "key": "word",
+          "value": "ARE:0:28:85"
+        },
+        {
+          "key": "word",
+          "value": "BY:52:72:80"
+        },
+        {
+          "key": "word",
+          "value": "FEIGENBAUM:80:150:80"
+        },
+        {
+          "key": "word",
+          "value": "FELDMAN:175:225:85"
+        },
+        {
+          "key": "word-sequence",
+          "value": "EIGHT:48:57:85"
+        },
+        {
+          "key": "word-sequence",
+          "value": "SHAW-AND-MARVIN:72:157:75"
+        },
+        {
+          "key": "word-sequence",
+          "value": "[-ARE*]:0:28:97"
+        },
+        {
+          "key": "word-sequence",
+          "value": "[AND+FELDMAN-]*:145:225:90"
         }
       ],
-      "selected": "word:THE",
-      "explanation": "Hearsay posted 6 hypotheses; selected Some(\"word:THE\")",
+      "selected": "phrase:AND+FELDMAN+]*:145:225:90",
+      "explanation": "Hearsay posted 31 hypotheses; selected Some(\"phrase:AND+FELDMAN+]*:145:225:90\")",
       "inference_trace": [
         {
           "step": 0,
           "kind": "seed",
-          "detail": "phone:T",
+          "detail": "segment:silence:0:5",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "seed",
-          "detail": "phone:H",
+          "detail": "segment:sonorant-peak:5:28",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "seed",
-          "detail": "phone:AX",
+          "detail": "segment:sonorant-nonpeak:28:48",
           "depth": 0
         },
         {
           "step": 3,
-          "kind": "enqueue-ksar",
-          "detail": "ks=syllable-ks trigger=phone:T rating=0.800",
+          "kind": "seed",
+          "detail": "segment:fricative:48:72",
           "depth": 0
         },
         {
           "step": 4,
-          "kind": "enqueue-ksar",
-          "detail": "ks=alt-syllable-ks trigger=phone:AX rating=0.600",
+          "kind": "seed",
+          "detail": "segment:sonorant-peak:72:100",
           "depth": 0
         },
         {
           "step": 5,
-          "kind": "post-hypothesis",
-          "detail": "syllable-ks ⇒ syllable:THE (rating=0.800)",
+          "kind": "seed",
+          "detail": "segment:sonorant-nonpeak:100:145",
           "depth": 0
         },
         {
           "step": 6,
-          "kind": "enqueue-ksar",
-          "detail": "ks=word-ks trigger=syllable:THE rating=0.720",
+          "kind": "seed",
+          "detail": "segment:sonorant-peak:145:157",
           "depth": 0
         },
         {
           "step": 7,
-          "kind": "post-hypothesis",
-          "detail": "word-ks ⇒ word:THE (rating=0.720)",
+          "kind": "seed",
+          "detail": "segment:fricative:157:175",
           "depth": 0
         },
         {
           "step": 8,
-          "kind": "enqueue-ksar",
-          "detail": "ks=phrase-ks trigger=word:THE rating=0.612",
+          "kind": "seed",
+          "detail": "segment:sonorant-peak:175:225",
           "depth": 0
         },
         {
           "step": 9,
-          "kind": "post-hypothesis",
-          "detail": "phrase-ks ⇒ phrase:THE_UTTERANCE (rating=0.612)",
+          "kind": "seed",
+          "detail": "syllable-class:A:5:28:85",
           "depth": 0
         },
         {
           "step": 10,
-          "kind": "post-hypothesis",
-          "detail": "alt-syllable-ks ⇒ syllable:THE (rating=0.600)",
+          "kind": "seed",
+          "detail": "syllable-class:I:28:48:72",
           "depth": 0
         },
         {
           "step": 11,
-          "kind": "enqueue-ksar",
-          "detail": "ks=word-ks trigger=syllable:THE rating=0.828",
+          "kind": "seed",
+          "detail": "syllable-class:U:48:72:65",
           "depth": 0
         },
         {
           "step": 12,
-          "kind": "post-hypothesis",
-          "detail": "word-ks ⇒ word:THE (rating=0.828)",
+          "kind": "seed",
+          "detail": "syllable-class:A:72:100:80",
           "depth": 0
         },
         {
           "step": 13,
-          "kind": "enqueue-ksar",
-          "detail": "ks=phrase-ks trigger=word:THE rating=0.809",
+          "kind": "seed",
+          "detail": "syllable-class:N:100:145:75",
           "depth": 0
         },
         {
           "step": 14,
-          "kind": "post-hypothesis",
-          "detail": "phrase-ks ⇒ phrase:THE_UTTERANCE (rating=0.809)",
+          "kind": "seed",
+          "detail": "syllable-class:A:145:225:88",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "seed",
+          "detail": "word:ARE:0:28:85",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "seed",
+          "detail": "word:ANY:24:49:65",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "seed",
+          "detail": "word:BY:52:72:80",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "seed",
+          "detail": "word:FEIGENBAUM:80:150:80",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "seed",
+          "detail": "word:AND:145:175:75",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "seed",
+          "detail": "word:FELDMAN:175:225:85",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "seed",
+          "detail": "word-sequence:[-ARE*]:0:28:97",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "seed",
+          "detail": "word-sequence:[AND+FELDMAN-]*:145:225:90",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "seed",
+          "detail": "word-sequence:EIGHT:48:57:85",
+          "depth": 0
+        },
+        {
+          "step": 24,
+          "kind": "seed",
+          "detail": "word-sequence:SHAW-AND-MARVIN:72:157:75",
+          "depth": 0
+        },
+        {
+          "step": 25,
+          "kind": "seed",
+          "detail": "phrase:[+ARE*]:0:28:97",
+          "depth": 0
+        },
+        {
+          "step": 26,
+          "kind": "seed",
+          "detail": "phrase:AND+FELDMAN+]*:145:225:90",
+          "depth": 0
+        },
+        {
+          "step": 27,
+          "kind": "seed",
+          "detail": "phrase:FEIGENBAUM+AND+FELDMAN+]*:80:225:83",
+          "depth": 0
+        },
+        {
+          "step": 28,
+          "kind": "seed",
+          "detail": "phrase:BY+FEIGENBAUM+AND+FELDMAN+]*:52:225:84",
+          "depth": 0
+        },
+        {
+          "step": 29,
+          "kind": "seed",
+          "detail": "phrase:ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:24:225:82",
+          "depth": 0
+        },
+        {
+          "step": 30,
+          "kind": "seed",
+          "detail": "phrase:[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:0:225:85",
           "depth": 0
         }
       ]
     },
-    "run_id": "ce0bc33caa5e8a48f9c7761d7f4a35236ac52944c0013d393a032e6324df91c5",
-    "output_hash": "a28c2c75c4c6c2a2ba86aa39ba655734e2871cc498851aaaafea2d23a1b90ee0",
-    "replay_pointer": "a28c2c75c4c6c2a2",
-    "inference_step_count": 15,
+    "run_id": "4a0012a14d477419214a80d3046a134abc5c57b62e72bf39091d84ed836df970",
+    "output_hash": "91a01ff5a78eb05794869fdfa73008226c0e567f14536a26a22cec224aa69cb9",
+    "replay_pointer": "91a01ff5a78eb057",
+    "inference_step_count": 31,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/ce0bc33caa5e8a48f9c7761d7f4a35236ac52944c0013d393a032e6324df91c5.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/hearsay/.wasm4pm/receipts/4a0012a14d477419214a80d3046a134abc5c57b62e72bf39091d84ed836df970.json"
   },
   "meta": {
-    "run_id": "bdfd78d9-1a35-4ece-ba62-65f9359471d9",
-    "timestamp": "2026-06-10T15:46:40.425Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "b48025b7-6761-478d-8768-fc257ae605b1",
+    "timestamp": "2026-06-11T07:03:11.174Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
   }
 }

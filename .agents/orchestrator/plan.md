@@ -1,36 +1,65 @@
-# Plan - pm4py-lsp PM4PY-LSP-003 Definition-of-Done Swarm
+# plan.md — Cognition Breeds Examples & E2E Verification Plan
 
-## Goal
-Prove whether pm4py-lsp is DONE (PM4PY-LSP-003_ALIVE) by implementing and verifying the complete test suite across unit, integration, E2E, chaos, stress, and benchmark gates.
+## Mission
+Populate examples for all 52 cognition breeds under `examples/cognition/`, construct an E2E cryptographically bound receipt chain, and verify replay determinism and receipt authenticity.
+
+## Architecture
+- `examples/cognition/<breed>/`: Contains `intent.json`, `run.sh`, `result.json`, and `last-output.log`.
+- `examples/cognition/chains/factory-agent/`: Chained execution of all 52 breeds sequentially.
+- Verification script: Verifies all receipts using `wpm truex` (or equivalent), asserts bit-exact replay determinism, and checks for fake receipt hashes.
+
+## Swarm Topology (10 Subagents)
+We spawn exactly 10 subagents to parallelize the breed example population. The 52 breeds are partitioned as follows:
+
+- **Subagent 1**: `worker_breed_group_1`
+  - Breeds (5): `eliza`, `cbr`, `dendral`, `strips`, `prolog`
+- **Subagent 2**: `worker_breed_group_2`
+  - Breeds (5): `mycin`, `gps`, `soar`, `hearsay`, `autoinstinct_neurosis`
+- **Subagent 3**: `worker_breed_group_3`
+  - Breeds (5): `autoinstinct_semantics`, `autoinstinct_vision`, `autoinstinct_learning`, `ltl_monitor`, `allen_temporal`
+- **Subagent 4**: `worker_breed_group_4`
+  - Breeds (5): `fuzzy_logic`, `bayesian_network`, `csp_ac3`, `default_logic`, `htn_planning`
+- **Subagent 5**: `worker_breed_group_5`
+  - Breeds (5): `dempster_shafer`, `frames_inheritance`, `ebl`, `asp`, `description_logic`
+- **Subagent 6**: `worker_breed_group_6`
+  - Breeds (5): `abductive_lp`, `abductive_ibe`, `partial_order_plan`, `event_calculus`, `mdp`
+- **Subagent 7**: `worker_breed_group_7`
+  - Breeds (5): `version_space`, `belief_merging`, `qualitative_reason`, `script_sam`, `clp`
+- **Subagent 8**: `worker_breed_group_8`
+  - Breeds (5): `situation_calculus`, `circumscription`, `analogy_sme`, `act_r`, `problog`
+- **Subagent 9**: `worker_breed_group_9`
+  - Breeds (6): `sat_cdcl`, `episodic_memory`, `rl_symbolic`, `ctl_check`, `ilp`, `naive_physics`
+- **Subagent 10**: `worker_breed_group_10`
+  - Breeds (6): `tableaux`, `construction_grammar`, `markov_logic`, `pomdp`, `contingent_plan`, `meta_reasoning`
 
 ## Milestones
 
-### Milestone 1: Unit & Integration Gates Verification
-- Implement/verify all unit test gates (U1-U18).
-- Ensure `static_analysis_test.rs`, `diagnostics_test.rs`, `receipts_fixtures_test.rs`, `parity_contract_test.rs`, and `pm4py_bridge_test.rs` are fully present and passing.
-- Implement/verify all integration test gates (I1-I10) via `capability_test.rs` and `actions_commands_test.rs`.
-- Dispatch to specialists to implement any missing unit/integration tests and verify.
+### Milestone 1: Swarm Initialization & Validation
+- Validate build and CLI functionality of the workspace.
+- Initialize breed configuration mapping using paper fixtures.
+- Dispatch exactly 10 subagents with clear breed assignments.
 
-### Milestone 2: E2E LSP Test Implementation & Verification
-- Implement `crates/pm4py-lsp/tests/e2e_lsp_test.rs` covering the complete 13-step E2E lifecycle (initialize, didOpen, diagnostics, codeAction, command, WorkspaceEdit, receipt persistence, didChange, diagnostics clear, conformance vector Admitted, didClose, deactivate).
-- Run and verify the E2E test.
+### Milestone 2: Breed Examples Generation (Parallel)
+- Monitor the 10 subagents as they generate:
+  - `intent.json` (extracted from paper fixtures)
+  - `run.sh` (standard runner executing `wpm cognition run`)
+  - `result.json` (raw JSON output from running)
+  - `last-output.log` (stdout/stderr log of the run)
+- Track completion of all 52 breed directories.
 
-### Milestone 3: Chaos & Stress Gates Implementation & Verification
-- Implement `crates/pm4py-lsp/tests/chaos_test.rs` covering C1-C18 (or C1-C12) including malformed python, partial edits, corrupted fixtures/receipts, concurrent edits, and unavailable runtime.
-- Implement `crates/pm4py-lsp/tests/stress_test.rs` covering S1-S8 (1,000 files, 10k lines, concurrent didChange, memory bounds, etc.). Mark heavy stress tests as `#[ignore = "stress gate"]`.
-- Run chaos tests and run stress tests with `-- --ignored`.
+### Milestone 3: E2E Cryptographic Chain Building
+- Build/extend the sequential chain `examples/cognition/chains/factory-agent/` (or similar).
+- Chain the output state/facts of the preceding breed into the input goals/facts of the succeeding breed for all 52 breeds.
+- Verify each stage produces a valid BLAKE3 receipt.
 
-### Milestone 4: Performance Benchmarking
-- Add `criterion = "0.5"` to `crates/pm4py-lsp/Cargo.toml` dev-dependencies.
-- Implement Criterion benches under `crates/pm4py-lsp/benches/`:
-  - `analysis_bench.rs`
-  - `diagnostics_bench.rs`
-  - `receipts_bench.rs`
-  - `lsp_flow_bench.rs`
-- Run `cargo bench -p pm4py-lsp` to verify throughput/latency.
+### Milestone 4: Cryptographic Verification & Replay Determinism
+- Write a master verification runner script that:
+  - Runs all 52 examples and the chain.
+  - Verifies that execution results contain valid, non-empty BLAKE3 output hashes and signatures.
+  - Asserts bit-exact output equality (replay determinism) by running each twice with identical inputs.
+  - Verifies that all receipt hashes link correctly.
+  - Ensures no fake/stubbed receipt hashes.
 
-### Milestone 5: Final Swarm Report & Checkpoint Promotion
-- Collect all test and benchmark reports.
-- Verify clippy, fmt, and boundary fence purity.
-- Write all individual agent reports under `docs/reports/pm4py-lsp-dod/`.
-- Produce the final verdict report `docs/reports/pm4py-lsp-dod/FINAL-VERDICT.md` with final verdict `PM4PY-LSP-003_ALIVE`.
+### Milestone 5: Final Auditing & Checkpoint Verification
+- Run a Forensic Auditor on the codebase to verify integrity.
+- Check that all verifications pass and final receipts are committed.

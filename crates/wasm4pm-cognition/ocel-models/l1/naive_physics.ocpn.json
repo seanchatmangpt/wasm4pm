@@ -1,0 +1,36 @@
+{
+  "model_id": "naive_physics-l1-v1",
+  "model_level": "L1",
+  "breed_id": "naive_physics",
+  "object_types": ["scene", "axiom", "prediction", "decision"],
+  "places": [
+    {"id": "p1", "name": "scene_pending",     "object_type": "scene"},
+    {"id": "p2", "name": "scene_loaded",      "object_type": "scene"},
+    {"id": "p3", "name": "axioms_saturating", "object_type": "axiom"},
+    {"id": "p4", "name": "prediction_made",   "object_type": "prediction"},
+    {"id": "p5", "name": "decision_emitted",  "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-scene",  "label": "load-scene"},
+    {"id": "t2", "name": "apply-axiom", "label": "apply-axiom"},
+    {"id": "t3", "name": "predict",     "label": "predict"},
+    {"id": "t4", "name": "decision",    "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

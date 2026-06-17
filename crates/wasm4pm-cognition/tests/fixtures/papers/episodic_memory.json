@@ -5,16 +5,28 @@
     "citation": "Tulving, E. (1983). Oxford University Press (Ch. 7: encoding specificity and temporal organisation). Nuxoll, A. M., & Laird, J. E. (2007). Proceedings of AAAI 2007, 1560-1565 (cue-based retrieval of the best partially-matching episode).",
     "locus": "Tulving Ch. 7: episodic retrieval is organised by temporal context, not content alone; Nuxoll & Laird Section 3: activation-biased partial matching of cue against stored episodes.",
     "extraction": "instantiated",
-    "notes": "Two kitchen episodes share equal content overlap with the cue (Jaccard 0.5 each); temporal proximity (breakfast at t=9 vs dinner at t=2, cue at t=10) breaks the tie exactly as Tulving's temporal organisation predicts: score(breakfast) = 0.5 + 1/2 = 1.0 > score(dinner) = 0.5 + 1/9 ≈ 0.6111."
+    "notes": "Two kitchen episodes share equal content overlap with the cue (Jaccard 0.5 each); temporal proximity (breakfast at t=9 vs dinner at t=2, cue at t=10) breaks the tie exactly as Tulving's temporal organisation predicts: score(breakfast) = 0.5 + 1/2 = 1.0 > score(dinner) = 0.5 + 1/9 \u2248 0.6111."
   },
   "input": {
     "intent": "recall the most relevant kitchen episode",
     "candidates": [],
     "facts": [
-      {"key": "place", "value": "kitchen"},
-      {"key": "cue:t", "value": "10"},
-      {"key": "episode:ep-breakfast:t", "value": "9"},
-      {"key": "episode:ep-dinner:t", "value": "2"}
+      {
+        "key": "place",
+        "value": "kitchen"
+      },
+      {
+        "key": "cue:t",
+        "value": "10"
+      },
+      {
+        "key": "episode:ep-breakfast:t",
+        "value": "9"
+      },
+      {
+        "key": "episode:ep-dinner:t",
+        "value": "2"
+      }
     ],
     "cases": [
       {
@@ -23,8 +35,14 @@
         "architecture": "episode",
         "outcome_score": 0.5,
         "facts": [
-          {"key": "place", "value": "kitchen"},
-          {"key": "meal", "value": "breakfast"}
+          {
+            "key": "place",
+            "value": "kitchen"
+          },
+          {
+            "key": "meal",
+            "value": "breakfast"
+          }
         ]
       },
       {
@@ -33,8 +51,14 @@
         "architecture": "episode",
         "outcome_score": 0.5,
         "facts": [
-          {"key": "place", "value": "kitchen"},
-          {"key": "meal", "value": "dinner"}
+          {
+            "key": "place",
+            "value": "kitchen"
+          },
+          {
+            "key": "meal",
+            "value": "dinner"
+          }
         ]
       }
     ],
@@ -43,10 +67,11 @@
     "state": []
   },
   "expected": {
+    "value": "ep-breakfast",
     "recalled": "ep-breakfast",
     "score_breakfast": 1.0,
     "score_dinner": 0.6111,
     "tolerance": 0.001,
-    "notes": "Equal Jaccard (1/2 each); the temporal kernel 1/(1+|Δt|) decides: 0.5 vs 0.1111."
+    "notes": "Equal Jaccard (1/2 each); the temporal kernel 1/(1+|\u0394t|) decides: 0.5 vs 0.1111."
   }
 }

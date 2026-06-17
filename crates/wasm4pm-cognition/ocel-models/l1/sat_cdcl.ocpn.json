@@ -1,0 +1,45 @@
+{
+  "model_id": "sat_cdcl-l1-v1",
+  "model_level": "L1",
+  "breed_id": "sat_cdcl",
+  "object_types": ["clause", "assignment", "decision"],
+  "places": [
+    {"id": "p1", "name": "formula_pending",   "object_type": "clause"},
+    {"id": "p2", "name": "formula_loaded",    "object_type": "clause"},
+    {"id": "p3", "name": "search_open",       "object_type": "assignment"},
+    {"id": "p4", "name": "conflict_detected", "object_type": "assignment"},
+    {"id": "p5", "name": "clause_learned",    "object_type": "clause"},
+    {"id": "p6", "name": "verdict_emitted",   "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-clause",  "label": "load-clause"},
+    {"id": "t2", "name": "decide",       "label": "decide"},
+    {"id": "t3", "name": "propagate",    "label": "propagate"},
+    {"id": "t4", "name": "conflict",     "label": "conflict"},
+    {"id": "t5", "name": "learn-clause", "label": "learn-clause"},
+    {"id": "t6", "name": "backjump",     "label": "backjump"},
+    {"id": "t7", "name": "decision",     "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t7", "type": "consume"},
+    {"from": "t7", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

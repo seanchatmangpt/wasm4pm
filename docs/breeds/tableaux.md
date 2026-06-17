@@ -33,4 +33,4 @@ Model: `ocel/models/l1/tableaux.ocpn.json`; fitness 1.0 (`ocel/reports/tableaux.
 Pure deterministic DFS, no RNG. Median 5.87 µs (≤ 100 µs budget).
 
 ## 8. Status
-PARTIAL_ALIVE in `breeds/registry.json`; dispatch arm + WASM export `cognition_run`.
+ADMITTED in `breeds/registry.json`; dispatch arm + WASM export `cognition_run`.

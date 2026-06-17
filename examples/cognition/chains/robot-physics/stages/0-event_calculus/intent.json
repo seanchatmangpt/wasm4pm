@@ -1,0 +1,18 @@
+{
+  "intent": "evaluate HoldsAt queries over the Kowalski-Sergot hired/promoted narrative",
+  "candidates": [],
+  "facts": [
+    {"key": "ec:happens:2", "value": "hire"},
+    {"key": "ec:happens:5", "value": "promote"},
+    {"key": "ec:initiates:hire", "value": "employed"},
+    {"key": "ec:initiates:hire", "value": "lecturer"},
+    {"key": "ec:initiates:promote", "value": "professor"},
+    {"key": "ec:terminates:promote", "value": "lecturer"}
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {"id": "q1", "predicate": "ec:holdsat", "value": "lecturer@4"}
+  ],
+  "state": []
+}

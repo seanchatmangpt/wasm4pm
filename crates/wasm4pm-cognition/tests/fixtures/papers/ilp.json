@@ -11,19 +11,58 @@
     "intent": "learn the daughter relation",
     "candidates": [],
     "facts": [
-      {"key": "bg:parent(ann,mary)", "value": "true"},
-      {"key": "bg:parent(ann,tom)", "value": "true"},
-      {"key": "bg:parent(tom,eve)", "value": "true"},
-      {"key": "bg:parent(tom,ian)", "value": "true"},
-      {"key": "bg:female(ann)", "value": "true"},
-      {"key": "bg:female(mary)", "value": "true"},
-      {"key": "bg:female(eve)", "value": "true"},
-      {"key": "pos:daughter(mary,ann)", "value": "true"},
-      {"key": "pos:daughter(eve,tom)", "value": "true"},
-      {"key": "neg:daughter(tom,ann)", "value": "true"},
-      {"key": "neg:daughter(eve,ann)", "value": "true"},
-      {"key": "neg:daughter(ian,tom)", "value": "true"},
-      {"key": "neg:daughter(ann,mary)", "value": "true"}
+      {
+        "key": "bg:parent(ann,mary)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(ann,tom)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(tom,eve)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(tom,ian)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(ann)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(mary)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(eve)",
+        "value": "true"
+      },
+      {
+        "key": "pos:daughter(mary,ann)",
+        "value": "true"
+      },
+      {
+        "key": "pos:daughter(eve,tom)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(tom,ann)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(eve,ann)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(ian,tom)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(ann,mary)",
+        "value": "true"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -32,8 +71,12 @@
   },
   "expected": {
     "head": "daughter(V0,V1)",
-    "body_set": ["female(V0)", "parent(V1,V0)"],
+    "body_set": [
+      "female(V0)",
+      "parent(V1,V0)"
+    ],
     "clause_count": 1,
-    "notes": "One clause covers both positives and excludes all four negatives; body compared as a set."
+    "notes": "One clause covers both positives and excludes all four negatives; body compared as a set.",
+    "value": "verified"
   }
 }

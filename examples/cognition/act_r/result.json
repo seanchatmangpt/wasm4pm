@@ -1,0 +1,83 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "act_r",
+    "breed": "act_r",
+    "status": "ok",
+    "output": {
+      "breed": "ActR",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "retrieved",
+          "value": "fact34"
+        },
+        {
+          "key": "sum",
+          "value": "7"
+        }
+      ],
+      "selected": "fact34",
+      "explanation": "ACT-R ran 1 productions with activation-based retrieval (last retrieved: Some(\"fact34\"))",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-chunk",
+          "detail": "chunk 'fact34' B=0.500 (3 slots)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "load-chunk",
+          "detail": "chunk 'fact35' B=0.300 (3 slots)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "match-production",
+          "detail": "'p-retrieve-sum' matched (utility=0.900, 0 competitors)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "fire-production",
+          "detail": "fired 'p-retrieve-sum'",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "retrieval-request",
+          "detail": "pattern addend1=3",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "retrieve-chunk",
+          "detail": "retrieved 'fact34' A=1.1667 (tau=0.00)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "decision",
+          "detail": "1 productions fired; last retrieval: Some(\"fact34\")",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "afd5e362f3192212db0a34d9d0069f010569e7480c0f45636cb843f21f5daeb9",
+    "output_hash": "55d3e70daddee0916935f4823491b2f4f370a10f8b274052fafa80a4139e773c",
+    "replay_pointer": "55d3e70daddee091",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/act_r/.wasm4pm/receipts/afd5e362f3192212db0a34d9d0069f010569e7480c0f45636cb843f21f5daeb9.json"
+  },
+  "meta": {
+    "run_id": "30e59dec-6687-434c-abb3-898854534693",
+    "timestamp": "2026-06-11T07:02:51.853Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

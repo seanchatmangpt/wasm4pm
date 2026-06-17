@@ -1,7 +1,7 @@
 {
   "breed_id": "contingent_plan",
   "model_id": "contingent_plan-l1-v1",
-  "fitness": 1.0,
+  "fitness": 1,
   "admitted": true,
   "measured_by": "tests/ocel_conformance.rs::contingent_plan_ocel_fitness_one",
   "negative_injection": "reversed trace rejected (is_conforming=false)",

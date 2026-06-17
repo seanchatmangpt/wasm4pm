@@ -1,0 +1,97 @@
+(node:14060) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "script_sam",
+    "breed": "script_sam",
+    "status": "ok",
+    "output": {
+      "breed": "ScriptSam",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "sam:script",
+          "value": "restaurant"
+        },
+        {
+          "key": "sam:inferred:order",
+          "value": "unbound"
+        },
+        {
+          "key": "sam:inferred:eat",
+          "value": "unbound"
+        },
+        {
+          "key": "sam:inferred:pay",
+          "value": "unbound"
+        },
+        {
+          "key": "sam:inferred_count",
+          "value": "3"
+        }
+      ],
+      "selected": "restaurant",
+      "explanation": "SAM applied script 'restaurant': aligned 2 events, inferred gap scenes [order,eat,pay].",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "select-script",
+          "detail": "'restaurant' (overlap 2/2 events)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "align-event",
+          "detail": "'enter' -> scene 0 of 'restaurant'",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "align-event",
+          "detail": "'leave' -> scene 4 of 'restaurant'",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "infer-gap",
+          "detail": "scene 'order' inferred (filler: unbound)",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "infer-gap",
+          "detail": "scene 'eat' inferred (filler: unbound)",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "infer-gap",
+          "detail": "scene 'pay' inferred (filler: unbound)",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "summary",
+          "detail": "script 'restaurant': 2 aligned, 3 inferred, 0 role binding(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "ae0f86c07cebe13e1a5b3a3e9972a5f16ab992271f55d51ffb894e850b302cac",
+    "output_hash": "ea09a4336148c4e1cfd0da2c6ffa30e34db532ccaa6a758d23dcf1099ab39f56",
+    "replay_pointer": "ea09a4336148c4e1",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/ae0f86c07cebe13e1a5b3a3e9972a5f16ab992271f55d51ffb894e850b302cac.json"
+  },
+  "meta": {
+    "run_id": "5a6a13af-00ff-469e-a040-e6e70be3e180",
+    "timestamp": "2026-06-11T08:35:06.141Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

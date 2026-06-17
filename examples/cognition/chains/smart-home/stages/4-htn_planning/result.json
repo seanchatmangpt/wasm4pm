@@ -1,0 +1,69 @@
+(node:13903) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "htn_planning",
+    "breed": "htn_planning",
+    "status": "ok",
+    "output": {
+      "breed": "HtnPlanning",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "htn:plan",
+          "value": "op:load_7bfb6f1b,op:drive_7bfb6f1b,op:unload_7bfb6f1b"
+        }
+      ],
+      "selected": "op:load_7bfb6f1b,op:drive_7bfb6f1b,op:unload_7bfb6f1b",
+      "explanation": "HTN plan found with 3 steps after 4 expansions (replay self-audit passed)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "htn-decompose",
+          "detail": "method:deliver_7bfb6f1b:by_truck_7bfb6f1b",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "htn-apply",
+          "detail": "op:load_7bfb6f1b",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "htn-apply",
+          "detail": "op:drive_7bfb6f1b",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "htn-apply",
+          "detail": "op:unload_7bfb6f1b",
+          "depth": 3
+        },
+        {
+          "step": 4,
+          "kind": "htn-plan",
+          "detail": "op:load_7bfb6f1b,op:drive_7bfb6f1b,op:unload_7bfb6f1b",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "aee21b59944cde38389dcf78d167cc2f3b1d152db90e31adca580f95ba387cdd",
+    "output_hash": "6ecab14325b7ad008b46b4001d0fe03abaf10e602bef7fdc5b86d3fc0dd0db3f",
+    "replay_pointer": "6ecab14325b7ad00",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/aee21b59944cde38389dcf78d167cc2f3b1d152db90e31adca580f95ba387cdd.json"
+  },
+  "meta": {
+    "run_id": "23244ee1-c1a7-43cb-848c-ae896bdafc7c",
+    "timestamp": "2026-06-11T08:34:58.941Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

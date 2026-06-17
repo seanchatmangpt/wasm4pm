@@ -192,46 +192,6 @@ fn make_input() -> BreedInput {
                 key: "budget:high".into(),
                 value: "true".into(),
             },
-            Fact {
-                key: "formula".into(),
-                value: "G true".into(),
-            },
-            Fact {
-                key: "relation".into(),
-                value: "A meets B".into(),
-            },
-            Fact {
-                key: "temperature".into(),
-                value: "25.0".into(),
-            },
-            Fact {
-                key: "fuzzy_set:temperature:warm".into(),
-                value: "triangular 20,25,30".into(),
-            },
-            Fact {
-                key: "fuzzy_set:ventilation:medium".into(),
-                value: "triangular 10,50,90".into(),
-            },
-            Fact {
-                key: "Alarm".into(),
-                value: "true".into(),
-            },
-            Fact {
-                key: "csp-var".into(),
-                value: "V1:R,G,B".into(),
-            },
-            Fact {
-                key: "csp-var".into(),
-                value: "V2:R,G,B".into(),
-            },
-            Fact {
-                key: "csp-constraint".into(),
-                value: "V1!=V2".into(),
-            },
-            Fact {
-                key: "tweety".into(),
-                value: "tweety".into(),
-            },
         ],
         cases: vec![
             Case {
@@ -280,54 +240,6 @@ fn make_input() -> BreedInput {
                 conclusion: "prefer:managed-service".into(),
                 certainty: 0.70,
             },
-            Rule {
-                id: "rfuzzy".into(),
-                premise: vec!["temperature is warm".into()],
-                conclusion: "ventilation is medium".into(),
-                certainty: 1.0,
-            },
-            Rule {
-                id: "r-burg".into(),
-                premise: vec![],
-                conclusion: "Burglary=true".into(),
-                certainty: 0.001,
-            },
-            Rule {
-                id: "r-eq".into(),
-                premise: vec![],
-                conclusion: "Earthquake=true".into(),
-                certainty: 0.002,
-            },
-            Rule {
-                id: "r-alarm1".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.95,
-            },
-            Rule {
-                id: "r-alarm2".into(),
-                premise: vec!["Burglary=true".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.94,
-            },
-            Rule {
-                id: "r-alarm3".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=true".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.29,
-            },
-            Rule {
-                id: "r-alarm4".into(),
-                premise: vec!["Burglary=false".into(), "Earthquake=false".into()],
-                conclusion: "Alarm=true".into(),
-                certainty: 0.001,
-            },
-            Rule {
-                id: "r_default".into(),
-                premise: vec!["tweety".into(), "unless:non_flying".into()],
-                conclusion: "flies".into(),
-                certainty: 1.0,
-            },
         ],
         goals: vec![
             Goal {
@@ -339,11 +251,6 @@ fn make_input() -> BreedInput {
                 id: "g2".into(),
                 predicate: "cost".into(),
                 value: "controlled".into(),
-            },
-            Goal {
-                id: "query".into(),
-                predicate: "query".into(),
-                value: "Burglary".into(),
             },
         ],
         state: vec![
@@ -385,47 +292,9 @@ fn bench_breeds(c: &mut Criterion) {
     bench_breed!(group, "autoinstinct_semantics", AutoinstinctSemantics);
     bench_breed!(group, "autoinstinct_neurosis", AutoinstinctNeurosis);
     bench_breed!(group, "autoinstinct_vision", AutoinstinctVision);
-    bench_breed!(group, "htn_planning", HtnPlanning);
-    bench_breed!(group, "csp_ac3", CspAc3);
-    bench_breed!(group, "default_logic", DefaultLogic);
-    bench_breed!(group, "ltl_monitor", LtlMonitor);
-    bench_breed!(group, "allen_temporal", AllenTemporal);
-    bench_breed!(group, "fuzzy_logic", FuzzyLogic);
-    bench_breed!(group, "bayesian_network", BayesianNetwork);
-    bench_breed!(group, "dempster_shafer", DempsterShafer);
-    bench_breed!(group, "asp", Asp);
-    bench_breed!(group, "description_logic", DescriptionLogic);
-    bench_breed!(group, "abductive_lp", AbductiveLp);
-    bench_breed!(group, "abductive_ibe", AbductiveIbe);
-
-    let mut fi_input = input.clone();
-    fi_input.intent = "resolve widget_a weight".to_string();
-    fi_input.facts.push(Fact { key: "frame:widget_a:isa".into(), value: "widget".into() });
-    fi_input.facts.push(Fact { key: "frame:widget:slot:weight:default".into(), value: "10kg".into() });
-    fi_input.facts.push(Fact { key: "frame:widget_a:slot:weight".into(), value: "5kg".into() });
-    group.bench_function("frames_inheritance", |b| b.iter(|| FramesInheritance.run(black_box(&fi_input))));
-
-    let mut ebl_input_obj = input.clone();
-    ebl_input_obj.facts.push(Fact { key: "has_handle(obj1)".into(), value: "true".into() });
-    ebl_input_obj.facts.push(Fact { key: "concave(obj1)".into(), value: "true".into() });
-    ebl_input_obj.rules.push(Rule {
-        id: "r1_ebl".into(),
-        premise: vec!["cup(?x)".into()],
-        conclusion: "drinkable(?x)".into(),
-        certainty: 1.0,
-    });
-    ebl_input_obj.rules.push(Rule {
-        id: "r2_ebl".into(),
-        premise: vec!["has_handle(?y)".into(), "concave(?y)".into()],
-        conclusion: "cup(?y)".into(),
-        certainty: 1.0,
-    });
-    ebl_input_obj.goals = vec![Goal {
-        id: "g1".into(),
-        predicate: "drinkable(obj1)".into(),
-        value: "true".into(),
-    }];
-    group.bench_function("ebl", |b| b.iter(|| Ebl.run(black_box(&ebl_input_obj))));
+    bench_breed!(group, "event_calculus", EventCalculus);
+    bench_breed!(group, "mdp", Mdp);
+    bench_breed!(group, "version_space", VersionSpace);
 
     macro_rules! bench_p1_breed {
         ($group:expr, $name:expr, $breed:expr) => {

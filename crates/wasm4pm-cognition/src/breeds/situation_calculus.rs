@@ -19,6 +19,7 @@
 //!
 //! Caps (refusals, never silent truncation): ≤64 fluents, ≤32 steps.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -244,13 +245,9 @@ impl CognitionBreed for SituationCalculus {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of progression".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "regress-step") {
-            return Err("no regress-step recorded — no action was progressed".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["regress-step"])?;
         Ok(())
     }
 }

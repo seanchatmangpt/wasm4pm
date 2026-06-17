@@ -1,7 +1,7 @@
 {
   "breed_id": "tableaux",
   "model_id": "tableaux-l1-v1",
-  "fitness": 1.0,
+  "fitness": 1,
   "admitted": true,
   "measured_by": "tests/ocel_conformance.rs::tableaux_ocel_fitness_one",
   "negative_injection": "reversed trace rejected (is_conforming=false)",

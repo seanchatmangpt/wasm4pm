@@ -1,0 +1,26 @@
+{
+  "model_id": "event_calculus-l1-v1",
+  "model_level": "L1",
+  "breed_id": "event_calculus",
+  "object_types": ["narrative", "fluent", "verdict"],
+  "places": [
+    {"id": "p1", "name": "narrative_raw",    "object_type": "narrative"},
+    {"id": "p2", "name": "narrative_loaded", "object_type": "narrative"},
+    {"id": "p3", "name": "answered",         "object_type": "verdict"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ec_load",   "label": "ec-load"},
+    {"id": "t2", "name": "ec_infer",  "label": "ec-infer"},
+    {"id": "t3", "name": "ec_model",  "label": "ec-model"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p3": 1}]
+}

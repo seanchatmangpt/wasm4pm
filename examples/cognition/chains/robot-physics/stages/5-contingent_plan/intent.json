@@ -1,0 +1,30 @@
+{
+  "intent": "vacuum world contingent plan with dynamic dirt dirt_e45ff863",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "cp:unknown",
+      "value": "dirt_e45ff863"
+    },
+    {
+      "key": "cp:goal:dirt_e45ff863",
+      "value": "false"
+    },
+    {
+      "key": "cp:act:suck_e45ff863:pre",
+      "value": "dirt_e45ff863"
+    },
+    {
+      "key": "cp:act:suck_e45ff863:del",
+      "value": "dirt_e45ff863"
+    },
+    {
+      "key": "cp:sense:check-dirt",
+      "value": "dirt_e45ff863"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

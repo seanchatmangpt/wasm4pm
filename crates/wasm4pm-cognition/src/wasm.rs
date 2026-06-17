@@ -156,8 +156,8 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     // Compute input hash before dispatch (covers raw request bytes).
     let input_hash = blake3::hash(input_json.as_bytes()).to_hex().to_string();
 
-    /// Dispatch to the breed's run() method.
-        let output = crate::breeds::dispatch::dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
+    // Dispatch to the breed's run() method.
+    let output = dispatch_breed(&input.breed, &input.contract).map_err(|e| wasm_err(&e))?;
 
     // Compute deterministic hashes over the actual BreedOutput.
     let output_payload = serde_json::to_string(&output)

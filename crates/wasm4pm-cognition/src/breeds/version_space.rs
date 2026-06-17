@@ -3,8 +3,10 @@
 //! Steps: `vs-init`, `vs-update`, `vs-verdict`.
 //! Enforces General (G) and Specific (S) boundary constraints.
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 use std::collections::{HashMap, HashSet};
 

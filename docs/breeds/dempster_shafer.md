@@ -1,9 +1,7 @@
 # Dempster-Shafer Theory
 
-## Origin
-- **Paper:** "A Mathematical Theory of Evidence" (Shafer, 1976)
-- **Authors:** Glenn Shafer (building on Arthur P. Dempster)
-- **Tradition:** Evidential Reasoning, Uncertainty Management, Belief Functions
+## 1. Identity & Lineage
+Dempster–Shafer theory of evidence — Shafer 1976. BreedId `dempster_shafer`, module `src/breeds/dempster_shafer.rs`.
 
 ## Algorithm
 Dempster-Shafer theory combines belief mass distributions over subsets of hypotheses.
@@ -47,19 +45,11 @@ function run(input):
     return bel, pl
 ```
 
-## Input contract
-- `intent`: not used
-- `facts`: not used
-- `rules`: represents basic probability assignments (certainty factor as mass, conclusion as hypotheses subset, id as source).
-- `goals`: contains a query goal (`predicate = "query"` or `id = "query"`) with the target hypothesis subset in `value`.
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+## 6. Oracles
+Refusal: frame > 8 hypotheses / K=1 total conflict / missing query / mass > 1. Hidden: combination correctly normalizes conflict. Paper: Two independent witnesses at 0.9 reliability yield Bel(life) = 0.99.
 
-## Output contract
-- `selected`: `Bel=<bel>, Pl=<pl>` representation of the results.
-- `explanation`: string detailing the query, belief, plausibility, and frame.
-- `inference_trace`: trace steps recording `"ds-load-bpa"`, `"ds-combine"`, and `"ds-belief"`.
+## 7. Determinism & Bounds
+BTreeMap/BTreeSet working sets only. BTreeMap for subset grouping. f64 for mass. Frame size bounded to 8 hypotheses (256 subsets).
 
 ## Complexity
 - Time: $O(S \cdot 2^{2H})$ where $S$ is the number of sources and $H$ is the number of hypotheses (max 8).

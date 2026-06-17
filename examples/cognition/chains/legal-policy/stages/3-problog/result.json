@@ -1,0 +1,69 @@
+(node:14035) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "problog",
+    "breed": "problog",
+    "status": "ok",
+    "output": {
+      "breed": "Problog",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "prob:valid_c_53671937",
+          "value": "0.800000"
+        }
+      ],
+      "selected": "0.800000",
+      "explanation": "problog enumerated 2 possible worlds exactly; P(valid_c_53671937) = 0.800000",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-pfact",
+          "detail": "0.800000::valid_c_53671937",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "enumerate-world",
+          "detail": "world {} w=0.200000 |= valid_c_53671937 : false",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "enumerate-world",
+          "detail": "world {valid_c_53671937} w=0.800000 |= valid_c_53671937 : true",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "sum-weight",
+          "detail": "+0.800000 -> P=0.800000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "decision",
+          "detail": "P(valid_c_53671937) = 0.800000 over 2 worlds",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "518b0b5143c9a38cf548c227e10e5a24c7cea9b17d80dd08890bf76381a56493",
+    "output_hash": "5a1324a6d572236ae3a7f842a186d43f9ead4bf8988867711561f1e2e2e4cece",
+    "replay_pointer": "5a1324a6d572236a",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/518b0b5143c9a38cf548c227e10e5a24c7cea9b17d80dd08890bf76381a56493.json"
+  },
+  "meta": {
+    "run_id": "74b91e1e-2493-4326-a3f3-7d5496dff978",
+    "timestamp": "2026-06-11T08:35:05.078Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

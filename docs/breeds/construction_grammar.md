@@ -34,4 +34,4 @@ construction, the construction contributes the meaning (`cxg:coerced = true`).
 Deterministic; no RNG. Median 4.88 µs.
 
 ## 8. Status
-PARTIAL_ALIVE; full BVC ceremony complete.
+ADMITTED; full BVC ceremony complete.

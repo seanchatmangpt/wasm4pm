@@ -1,0 +1,40 @@
+{
+  "model_id": "bayesian_network-l1-v1",
+  "model_level": "L1",
+  "breed_id": "bayesian_network",
+  "object_types": ["cpt", "evidence", "node", "decision"],
+  "places": [
+    {"id": "p1", "name": "network_empty",    "object_type": "cpt"},
+    {"id": "p2", "name": "cpts_loaded",      "object_type": "cpt"},
+    {"id": "p3", "name": "evidence_applied", "object_type": "evidence"},
+    {"id": "p4", "name": "eliminating",      "object_type": "node"},
+    {"id": "p5", "name": "posterior_emitted","object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "bn-load-cpt",   "label": "bn-load-cpt"},
+    {"id": "t2", "name": "bn-observe",    "label": "bn-observe"},
+    {"id": "t3", "name": "bn-eliminate",  "label": "bn-eliminate"},
+    {"id": "t4", "name": "bn-verdict",    "label": "bn-verdict"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p2", "to": "t3", "type": "consume"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p2", "to": "t4", "type": "consume"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p5": 1}]
+}

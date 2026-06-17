@@ -10,5 +10,5 @@ else
   WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── strips: on_table(A) + clear(A) → plan: stack A on B on C ───"
+echo "─── strips: initial state + goals → plan sequence of actions ───"
 $WPM cognition run --contract strips --input intent.json --format json | tee result.json

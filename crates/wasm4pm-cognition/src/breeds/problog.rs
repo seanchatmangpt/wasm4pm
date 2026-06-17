@@ -17,11 +17,39 @@
 //! Cap (refusal, never silent truncation): 1 ≤ k ≤ 12 probabilistic facts.
 
 use crate::breeds::support::closure::{forward_close, HornRule};
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
+};
 use std::collections::BTreeSet;
 
 /// Exact possible-worlds ProbLog engine.
 pub struct Problog;
+
+impl BoundedBreed for Problog {
+    fn breed_name(&self) -> &'static str {
+        "problog"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let pf = pfacts(input).ok()?;
+        if pf.len() > 12 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "complexity cap exceeded: {} probabilistic facts > 12 (refusal, not truncation)",
+                    pf.len()
+                ),
+            });
+        }
+        None
+    }
+}
 
 fn pfacts(input: &BreedInput) -> Result<Vec<(String, f64)>, String> {
     let mut out: Vec<(String, f64)> = Vec::new();
@@ -59,12 +87,7 @@ impl CognitionBreed for Problog {
         if pf.is_empty() {
             return Err("problog requires at least one pfact:<atom> probabilistic fact".to_string());
         }
-        if pf.len() > 12 {
-            return Err(format!(
-                "complexity cap exceeded: {} probabilistic facts > 12 (refusal, not truncation)",
-                pf.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         if input.goals.is_empty() {
             return Err("problog requires a query goal (goals[0].value = query atom)".to_string());
         }
@@ -177,17 +200,9 @@ impl CognitionBreed for Problog {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of world enumeration".to_string());
-        }
-        if !output
-            .inference_trace
-            .iter()
-            .any(|t| t.kind == "enumerate-world")
-        {
-            return Err("no enumerate-world step — enumeration did not run".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["enumerate-world"])?;
         Ok(())
     }
 }

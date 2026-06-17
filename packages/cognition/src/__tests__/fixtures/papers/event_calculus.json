@@ -1,30 +1,68 @@
 {
   "breed": "event_calculus",
   "provenance": {
-    "citation": "Kowalski, R., & Sergot, M. (1986). A Logic-based Calculus of Events. New Generation Computing, 4(1), 67–95.",
-    "locus": "Sections 2–5: the running office-personnel narrative — 'Mary was hired as a lecturer', 'Mary was promoted to professor' — with events initiating and terminating rank/employment periods; HoldsAt queries over the resulting periods.",
+    "citation": "Kowalski, R., & Sergot, M. (1986). A Logic-based Calculus of Events. New Generation Computing, 4(1), 67\u201395.",
+    "locus": "Sections 2\u20135: the running office-personnel narrative \u2014 'Mary was hired as a lecturer', 'Mary was promoted to professor' \u2014 with events initiating and terminating rank/employment periods; HoldsAt queries over the resulting periods.",
     "extraction": "adapted",
-    "notes": "The paper's narrative uses named events E1 (Mary hired as lecturer) and E2 (Mary promoted to professor). Adaptation: integer time points 2 and 5 replace the paper's partially-ordered event tokens (this breed implements the discrete simplified event calculus over a totally ordered timeline). hire initiates employed and lecturer; promote initiates professor and terminates lecturer — exactly the initiates/terminates structure of the paper's example. The asserted period structure matches the paper: lecturer holds between hire and promote (clipped by promotion), professor and employed hold after the promotion."
+    "notes": "The paper's narrative uses named events E1 (Mary hired as lecturer) and E2 (Mary promoted to professor). Adaptation: integer time points 2 and 5 replace the paper's partially-ordered event tokens (this breed implements the discrete simplified event calculus over a totally ordered timeline). hire initiates employed and lecturer; promote initiates professor and terminates lecturer \u2014 exactly the initiates/terminates structure of the paper's example. The asserted period structure matches the paper: lecturer holds between hire and promote (clipped by promotion), professor and employed hold after the promotion."
   },
   "input": {
     "intent": "evaluate HoldsAt queries over the Kowalski-Sergot hired/promoted narrative",
     "candidates": [],
     "facts": [
-      { "key": "ec:happens:2", "value": "hire" },
-      { "key": "ec:happens:5", "value": "promote" },
-      { "key": "ec:initiates:hire", "value": "employed" },
-      { "key": "ec:initiates:hire", "value": "lecturer" },
-      { "key": "ec:initiates:promote", "value": "professor" },
-      { "key": "ec:terminates:promote", "value": "lecturer" }
+      {
+        "key": "ec:happens:2",
+        "value": "hire"
+      },
+      {
+        "key": "ec:happens:5",
+        "value": "promote"
+      },
+      {
+        "key": "ec:initiates:hire",
+        "value": "employed"
+      },
+      {
+        "key": "ec:initiates:hire",
+        "value": "lecturer"
+      },
+      {
+        "key": "ec:initiates:promote",
+        "value": "professor"
+      },
+      {
+        "key": "ec:terminates:promote",
+        "value": "lecturer"
+      }
     ],
     "cases": [],
     "rules": [],
     "goals": [
-      { "id": "q1", "predicate": "ec:holdsat", "value": "lecturer@4" },
-      { "id": "q2", "predicate": "ec:holdsat", "value": "lecturer@7" },
-      { "id": "q3", "predicate": "ec:holdsat", "value": "professor@7" },
-      { "id": "q4", "predicate": "ec:holdsat", "value": "employed@7" },
-      { "id": "q5", "predicate": "ec:holdsat", "value": "professor@4" }
+      {
+        "id": "q1",
+        "predicate": "ec:holdsat",
+        "value": "lecturer@4"
+      },
+      {
+        "id": "q2",
+        "predicate": "ec:holdsat",
+        "value": "lecturer@7"
+      },
+      {
+        "id": "q3",
+        "predicate": "ec:holdsat",
+        "value": "professor@7"
+      },
+      {
+        "id": "q4",
+        "predicate": "ec:holdsat",
+        "value": "employed@7"
+      },
+      {
+        "id": "q5",
+        "predicate": "ec:holdsat",
+        "value": "professor@4"
+      }
     ],
     "state": []
   },

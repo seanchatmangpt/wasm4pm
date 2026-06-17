@@ -1,0 +1,165 @@
+import json
+import sys
+
+_raw = sys.stdin.read()
+_idx = _raw.find('{')
+prev = json.loads(_raw[_idx:]) if _idx != -1 else {}
+prev_payload = prev.get('payload', {})
+prev_output_hash = prev_payload.get('output_hash', '') or prev.get('output_hash', '')
+prev_breed = prev_payload.get('breed', '') or prev.get('breed', '')
+
+# Load base input from the template json
+base_input = json.loads(r'''{
+  "intent": "resolve stereo disparity correspondence for random-dot stereogram \u2014 find stable 2.5D depth grouping via cooperative uniqueness and continuity constraints",
+  "facts": [
+    {
+      "key": "region:foreground_square",
+      "value": "disparity_candidate:+3"
+    },
+    {
+      "key": "region:foreground_square",
+      "value": "disparity_candidate:+2"
+    },
+    {
+      "key": "region:foreground_square",
+      "value": "disparity_candidate:+1"
+    },
+    {
+      "key": "region:background_field",
+      "value": "disparity_candidate:0"
+    },
+    {
+      "key": "region:background_field",
+      "value": "disparity_candidate:-1"
+    },
+    {
+      "key": "region:left_border",
+      "value": "disparity_candidate:0"
+    },
+    {
+      "key": "region:right_border",
+      "value": "disparity_candidate:0"
+    },
+    {
+      "key": "constraint:R1_uniqueness",
+      "value": "each_region_assigned_at_most_one_disparity"
+    },
+    {
+      "key": "constraint:R2_continuity",
+      "value": "disparity_varies_smoothly_across_adjacent_regions"
+    },
+    {
+      "key": "network:density",
+      "value": "0.50"
+    },
+    {
+      "key": "network:disparity_layers",
+      "value": "7"
+    },
+    {
+      "key": "network:theta",
+      "value": "3.0"
+    },
+    {
+      "key": "network:epsilon",
+      "value": "2.0"
+    },
+    {
+      "key": "network:excitatory_diameter_M",
+      "value": "5"
+    }
+  ],
+  "candidates": [
+    {
+      "id": "grouping:foreground_square_at_+3_background_at_0",
+      "score": 0.95,
+      "eliminated": false
+    },
+    {
+      "id": "grouping:foreground_square_at_+2_background_at_0",
+      "score": 0.72,
+      "eliminated": false
+    },
+    {
+      "id": "grouping:all_regions_at_0_no_depth",
+      "score": 0.1,
+      "eliminated": false
+    },
+    {
+      "id": "grouping:random_false_targets_unresolved",
+      "score": 0.05,
+      "eliminated": false
+    }
+  ],
+  "rules": [
+    {
+      "id": "R1-uniqueness",
+      "premise": [
+        "region_has_multiple_disparity_candidates"
+      ],
+      "conclusion": "assign_exactly_one_disparity_via_inhibition_along_lines_of_sight",
+      "certainty": 1
+    },
+    {
+      "id": "R2-continuity",
+      "premise": [
+        "adjacent_regions_assigned_disparities"
+      ],
+      "conclusion": "smooth_disparity_field_via_excitation_along_iso-disparity_diagonals",
+      "certainty": 1
+    },
+    {
+      "id": "cooperative-convergence",
+      "premise": [
+        "R1-uniqueness",
+        "R2-continuity",
+        "network:density=0.50"
+      ],
+      "conclusion": "stable_fixed_point_reached_at_iteration_14",
+      "certainty": 0.95
+    }
+  ],
+  "goals": [
+    {
+      "id": "g-stable-grouping",
+      "predicate": "stable_3d_grouping",
+      "value": "foreground_square_at_disparity_+3_floating_above_background"
+    },
+    {
+      "id": "g-false-targets-suppressed",
+      "predicate": "false_targets_eliminated",
+      "value": "true"
+    },
+    {
+      "id": "g-depth-separation",
+      "predicate": "depth_relation",
+      "value": "foreground_square_nearer_than_background_field"
+    }
+  ],
+  "cases": [],
+  "state": [
+    {
+      "predicate": "network_iteration",
+      "value": "0"
+    },
+    {
+      "predicate": "network_state",
+      "value": "disordered_all_candidate_disparities_active"
+    },
+    {
+      "predicate": "surface_cohesion",
+      "value": "matter_is_cohesive_surfaces_smooth_relative_to_viewer_distance"
+    }
+  ]
+}''')
+
+# Cryptographically bind to prior stage
+if prev_output_hash:
+    if 'facts' not in base_input:
+        base_input['facts'] = []
+    base_input['facts'].append({
+        'key': 'prior_stage_hash',
+        'value': f"{prev_breed}:{prev_output_hash}"
+    })
+
+print(json.dumps(base_input, indent=2))

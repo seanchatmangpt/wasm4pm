@@ -16,6 +16,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctLearning breed: STRIPS/HACKER heuristic planning via bitwise goal state search.
 pub struct AutoinstinctLearning;
@@ -175,11 +176,7 @@ impl CognitionBreed for AutoinstinctLearning {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err(
-                "AutoinstinctLearning must emit at least one inference trace step".to_string(),
-            );
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

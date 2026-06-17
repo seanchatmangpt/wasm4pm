@@ -15,11 +15,39 @@
 //!
 //! Cap (refusal, never silent truncation): ≤12 abnormality atoms.
 
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
+};
 use std::collections::BTreeSet;
 
 /// McCarthy circumscription engine over `ab_` abnormality atoms.
 pub struct Circumscription;
+
+impl BoundedBreed for Circumscription {
+    fn breed_name(&self) -> &'static str {
+        "circumscription"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let abs = ab_atoms(input);
+        if abs.len() > 12 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "complexity cap exceeded: {} abnormality atoms > 12 (refusal, not truncation)",
+                    abs.len()
+                ),
+            });
+        }
+        None
+    }
+}
 
 fn ab_atoms(input: &BreedInput) -> BTreeSet<String> {
     let mut abs = BTreeSet::new();
@@ -104,13 +132,7 @@ impl CognitionBreed for Circumscription {
         if input.goals.is_empty() {
             return Err("circumscription requires at least one goal atom to test entailment".to_string());
         }
-        let abs = ab_atoms(input);
-        if abs.len() > 12 {
-            return Err(format!(
-                "complexity cap exceeded: {} abnormality atoms > 12 (refusal, not truncation)",
-                abs.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         for r in &input.rules {
             for p in &r.premise {
                 if let Some(x) = p.strip_prefix("not_") {
@@ -264,13 +286,8 @@ impl CognitionBreed for Circumscription {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of model enumeration".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "enumerate-model") {
-            return Err("no enumerate-model step — minimization did not run".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&["enumerate-model"])?;
         Ok(())
     }
 }

@@ -18,6 +18,7 @@ use crate::breeds::{
 };
 use std::collections::HashMap;
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctVision breed: symbolic Blocks World perception.
 pub struct AutoinstinctVision;
@@ -193,11 +194,7 @@ impl CognitionBreed for AutoinstinctVision {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err(
-                "AutoinstinctVision must produce at least one inference trace step".to_string(),
-            );
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

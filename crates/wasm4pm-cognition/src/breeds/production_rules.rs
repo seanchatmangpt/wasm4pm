@@ -13,6 +13,7 @@
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::support::certainty::combine_cf;
 use std::collections::{HashMap, HashSet};
 use tracing;
@@ -169,12 +170,7 @@ impl CognitionBreed for Mycin {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err(
-                "MYCIN fired 0 rules — no evidence of inference when rules were provided"
-                    .to_string(),
-            );
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

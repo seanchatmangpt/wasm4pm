@@ -20,7 +20,9 @@
 //! multi-kind lifecycle phase, HEARSAY_MODEL precedent); per-step
 //! `q-update` events are emitted for the first three episodes only.
 
+use crate::breeds::support::breed_class::OptimizerBreed;
 use crate::breeds::support::rng::seeded_rng;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use rand::Rng;
 use std::collections::{BTreeMap, BTreeSet};
@@ -106,6 +108,15 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
         rewards,
         episodes,
     })
+}
+
+impl OptimizerBreed for RlSymbolic {
+    fn optimality_fact_key(&self) -> &'static str {
+        // Fact keys are `policy:{state}` (NOT `rl:policy:`); each is emitted
+        // alongside an `extract-policy` trace step, which postconditions
+        // already requires — so this guard is behaviour-equivalent.
+        "policy:"
+    }
 }
 
 impl CognitionBreed for RlSymbolic {
@@ -310,16 +321,10 @@ impl CognitionBreed for RlSymbolic {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of learning".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "episode-end") {
-            return Err("no episode-end step — no episode completed".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "extract-policy") {
-            return Err("no extract-policy step — no policy extracted".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["episode-end", "extract-policy"])?;
+        self.assert_optimality_fact_present(output)?;
         Ok(())
     }
 }

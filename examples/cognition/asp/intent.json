@@ -1,0 +1,25 @@
+{
+  "intent": "compute stable models of the Gelfond-Lifschitz 1988 example program",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "f-p12",
+      "premise": [],
+      "conclusion": "p_1_2",
+      "certainty": 1.0
+    },
+    {
+      "id": "r-q1",
+      "premise": [
+        "p_1_2",
+        "not q_2"
+      ],
+      "conclusion": "q_1",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}

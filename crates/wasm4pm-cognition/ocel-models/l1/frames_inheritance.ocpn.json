@@ -1,0 +1,29 @@
+{
+  "model_id": "frames_inheritance-l1-v1",
+  "model_level": "L1",
+  "breed_id": "frames_inheritance",
+  "object_types": ["frame", "slot", "decision"],
+  "places": [
+    {"id": "p1", "name": "frames_posed",   "object_type": "frame"},
+    {"id": "p2", "name": "loaded",         "object_type": "frame"},
+    {"id": "p3", "name": "walking_chain",  "object_type": "slot"},
+    {"id": "p4", "name": "slot_resolved",  "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "frame-load",    "label": "frame-load"},
+    {"id": "t2", "name": "frame-walk",    "label": "frame-walk"},
+    {"id": "t3", "name": "frame-resolve", "label": "frame-resolve"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}]
+}

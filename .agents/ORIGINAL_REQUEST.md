@@ -1138,3 +1138,103 @@ Add robust test cases for all QoL improvements to verify outputs, parameters val
 - [ ] Running `npm run build:cli` compiles the CLI app successfully with zero errors.
 - [ ] Running `npm test` (or the workspace test suite) executes and passes all new and existing tests cleanly.
 - [ ] Running `npm run lint` and `npm run check` results in zero style or syntax warnings.
+
+## Follow-up — 2026-06-10T15:22:35-07:00
+
+Implement the "Full Periodic Table" expansion for the wasm4pm project, adding all 42 new symbolic-reasoning cognition breeds. The work will execute the entire `wasm4pm-full-periodic-adaptive-melody.md` plan, starting with Phase A (Batch 0: Infrastructure) and Phase C1 (Combinator Core), and then scaling out to all breeds in parallel.
+
+Working directory: /Users/sac/wasm4pm
+Integrity mode: benchmark
+
+## Requirements
+
+### R1. Establish Infrastructure and Combinator Core
+Complete Phase A (Batch 0) by refactoring OCEL/dispatch and reconciling the registry. Complete Stage C1 by building and proving all shared combinator core components (`support/` modules like `fact_keys.rs`, `formula.rs`, `csp.rs`) before starting on breeds.
+
+### R2. Implement All 42 Breeds
+Implement all 42 cognition breeds across the P1, P2, P3, and P4 tiers according to the precise algorithm specifications, trace kinds, and hidden oracles defined in the plan. Each breed must have a complete implementation, OCPN model, and verification tests.
+
+### R3. Strict Mathematical Correctness
+Adhere to Lean Six Sigma discipline: zero placeholders, stubs, or empty-trace returns. Every breed must pass its formal specification gate (Rank-1 oracles, closed-form values).
+
+## Acceptance Criteria
+
+### Verification Gates
+- [ ] `cargo check` and `cargo test -p wasm4pm-cognition` run and pass continuously with 0 failures.
+- [ ] The `registry.json` contains exactly 55 ADMITTED-track breeds.
+- [ ] OCEL fitness is measured at 1.0 for every new breed.
+- [ ] The determinism suite is green for all breeds.
+- [ ] `cargo bench --bench breed_latency` executes successfully for all breeds.
+- [ ] Full-ensemble verification (`tests/ensemble_meta.rs`) passes.
+
+## Follow-up — 2026-06-11T06:40:03Z
+
+Update the wasm4pm codebase documentation (specifically `README.md`, `docs/registry/certified-breeds-2026-06.md`, `docs/implementation-status.md`, and `docs/breeds/*`) to accurately align with the newly implemented periodic table of 39 breeds (52 value-level oracles, 52 adversaries) and the v26.6.10 release changes.
+
+Working directory: `/Users/sac/wasm4pm`
+Integrity mode: demo
+
+## Requirements
+
+### R1. Align Breed and Status Metrics
+Update the core documentation files—including `README.md`, `docs/registry/certified-breeds-2026-06.md`, and `docs/implementation-status.md`—to accurately reflect the implementation of 39 breeds (with 52 value-level oracles and 52 adversaries) and v26.6.10 release metrics, replacing the outdated references to "13 breeds".
+
+### R2. Verify Breed Details Against Source Code
+Verify breed IDs, schemas, and test configurations directly against the source code (such as `packages/cognition/src/schemas.ts` and the test files under `packages/cognition/src/__tests__/`) to ensure the breed descriptions in `docs/breeds/` are technically correct.
+
+### R3. Programmatic Verification
+Run and verify the automated documentation checks (e.g., `node check_docs.js`) and address any missing files or broken references found.
+
+## Acceptance Criteria
+
+### Documentation Consistency
+- [ ] `README.md` correctly specifies the total count of 39 implemented/admitted breeds in the Cognition section.
+- [ ] `docs/registry/certified-breeds-2026-06.md` is updated to include all 39 implemented breeds as ADMITTED and lists the remaining as PARTIAL_ALIVE or UNSUPPORTED (totaling 52 defined breeds).
+- [ ] `docs/implementation-status.md` contains updated table entries reflecting the correct status of the registry, breed count, and related metrics.
+
+### Technical Accuracy & Validation
+- [ ] All breed IDs used in `docs/breeds/` files match the defined enum values in `packages/cognition/src/schemas.ts`.
+- [ ] `node check_docs.js` executes and exits successfully with no output indicating missing files.
+- [ ] No placeholder text, unresolved TODOs, or mismatching versions remain in the updated documentation files.
+
+## 2026-06-11T06:46:11Z
+
+Populate `examples/` with usages of all 52 cognition breeds in combinations that are impossible to fake, verifying each via cryptographic receipts, chaining transitions, and deterministic replay checks.
+
+Working directory: `/Users/sac/wasm4pm`
+Integrity mode: demo
+
+## Requirements
+
+### R1. Populate Examples for All 52 Breeds
+Create a subdirectory for each of the 52 defined cognition breeds under `examples/cognition/` containing:
+- `intent.json`: A valid input payload conforming to the breed's schema.
+- `run.sh`: A shell runner that executes the breed using the CLI (`wpm cognition run`).
+- `result.json`: The raw output resulting from the execution.
+- `last-output.log`: Execution logs containing the output and inference traces.
+Update `examples/cognition/run-all.sh` and `examples/cognition/README.md` to reference and run all 52 breeds.
+
+### R2. Build an End-to-End Cryptographically Bound Chain
+Create/extend a master chain (e.g., in `examples/cognition/chains/factory-agent/`) that chains all 52 breeds together sequentially, transforming the output state/facts of the preceding breed into the input goals/facts of the succeeding breed. Every stage in the chain must produce a valid BLAKE3 receipt.
+
+### R3. Cryptographic Verification & Replay Determinism
+Write a master verification runner script that runs all individual examples and the chain, and:
+- Verifies that all execution results contain valid, non-empty BLAKE3 output hashes and signatures.
+- Runs each example twice with identical input and asserts bit-exact output equality (replay determinism).
+- Verifies that all receipt hashes link correctly in the chain.
+
+## Acceptance Criteria
+
+### Execution and Outputs
+- [ ] Individual directories exist for all 52 breeds under `examples/cognition/`, and running `bash run-all.sh` executes all 52 successfully (exit code 0).
+- [ ] The chained execution runs all 52 stages successfully, producing a linked cryptographic receipt chain.
+
+### Verification and Parity
+- [ ] A verification script asserts bit-exact replay determinism for every breed example.
+- [ ] Cryptographic receipts generated by all examples are successfully verified (e.g., using `wpm truex` or equivalent validation command).
+- [ ] No fake or stubbed receipt hashes are present in the committed results.
+
+## Follow-up — 2026-06-11T06:46:42Z
+
+Please ensure that your team scales up to exactly 10 subagents to parallelize and execute the documentation rewrite task. Report back with the roles, IDs, and tasks of the 10 spawned subagents.
+

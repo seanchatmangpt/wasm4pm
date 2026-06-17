@@ -5,6 +5,7 @@
 //! Facts: `fuzzy:var:term`, `fuzzy:input:var`.
 //! Trace kinds: `fuzzy-fuzzify` -> `fuzzy-fire` -> `fuzzy-aggregate` -> `fuzzy-defuzz`(1,1).
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };

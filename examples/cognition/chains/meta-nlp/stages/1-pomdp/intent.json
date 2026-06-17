@@ -1,0 +1,162 @@
+{
+  "intent": "tiger problem belief update with observation 391261ee",
+  "facts": [
+    {
+      "key": "pomdp:states",
+      "value": "tiger-left,tiger-right"
+    },
+    {
+      "key": "pomdp:actions",
+      "value": "listen,open-left,open-right"
+    },
+    {
+      "key": "pomdp:observations",
+      "value": "hear-391261ee,hear-right"
+    },
+    {
+      "key": "pomdp:gamma",
+      "value": "0.95"
+    },
+    {
+      "key": "pomdp:horizon",
+      "value": "3"
+    },
+    {
+      "key": "pomdp:b0:tiger-left",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:b0:tiger-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:listen:tiger-left:tiger-left",
+      "value": "1.0"
+    },
+    {
+      "key": "pomdp:t:listen:tiger-left:tiger-right",
+      "value": "0.0"
+    },
+    {
+      "key": "pomdp:t:listen:tiger-right:tiger-left",
+      "value": "0.0"
+    },
+    {
+      "key": "pomdp:t:listen:tiger-right:tiger-right",
+      "value": "1.0"
+    },
+    {
+      "key": "pomdp:o:listen:tiger-left:hear-391261ee",
+      "value": "0.85"
+    },
+    {
+      "key": "pomdp:o:listen:tiger-left:hear-right",
+      "value": "0.15"
+    },
+    {
+      "key": "pomdp:o:listen:tiger-right:hear-391261ee",
+      "value": "0.15"
+    },
+    {
+      "key": "pomdp:o:listen:tiger-right:hear-right",
+      "value": "0.85"
+    },
+    {
+      "key": "pomdp:r:listen:tiger-left",
+      "value": "-1.0"
+    },
+    {
+      "key": "pomdp:r:listen:tiger-right",
+      "value": "-1.0"
+    },
+    {
+      "key": "pomdp:t:open-left:tiger-left:tiger-left",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-left:tiger-left:tiger-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-left:tiger-right:tiger-left",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-left:tiger-right:tiger-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-left:tiger-left:hear-391261ee",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-left:tiger-left:hear-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-left:tiger-right:hear-391261ee",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-left:tiger-right:hear-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:r:open-left:tiger-left",
+      "value": "-100.0"
+    },
+    {
+      "key": "pomdp:r:open-left:tiger-right",
+      "value": "10.0"
+    },
+    {
+      "key": "pomdp:t:open-right:tiger-left:tiger-left",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-right:tiger-left:tiger-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-right:tiger-right:tiger-left",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:t:open-right:tiger-right:tiger-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-right:tiger-left:hear-391261ee",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-right:tiger-left:hear-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-right:tiger-right:hear-391261ee",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:o:open-right:tiger-right:hear-right",
+      "value": "0.5"
+    },
+    {
+      "key": "pomdp:r:open-right:tiger-left",
+      "value": "10.0"
+    },
+    {
+      "key": "pomdp:r:open-right:tiger-right",
+      "value": "-100.0"
+    },
+    {
+      "key": "pomdp:step:0",
+      "value": "listen|hear-391261ee"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

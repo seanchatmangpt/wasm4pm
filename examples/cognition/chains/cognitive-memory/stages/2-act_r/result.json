@@ -1,0 +1,63 @@
+(node:14074) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "act_r",
+    "breed": "act_r",
+    "status": "ok",
+    "output": {
+      "breed": "ActR",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "retrieve_chunk",
+          "value": "true"
+        }
+      ],
+      "selected": null,
+      "explanation": "ACT-R ran 1 productions with activation-based retrieval (last retrieved: None)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-chunk",
+          "detail": "chunk 'chunk_c_1c6f7737' B=1.000 (1 slots)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "match-production",
+          "detail": "'p1_c_1c6f7737' matched (utility=1.000, 0 competitors)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "fire-production",
+          "detail": "fired 'p1_c_1c6f7737'",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "decision",
+          "detail": "1 productions fired; last retrieval: None",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "8211c743d8efea271d5c9d7ff9f1659869e5da14bea4a9cb313b0fbf2b858bdb",
+    "output_hash": "2400c41748fb4b728df9229aff678aeee1da319c07ba4cf6ea0f8b22fbd0188d",
+    "replay_pointer": "2400c41748fb4b72",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/8211c743d8efea271d5c9d7ff9f1659869e5da14bea4a9cb313b0fbf2b858bdb.json"
+  },
+  "meta": {
+    "run_id": "7f638915-7e9c-48c1-ad4f-98ada4ae46f3",
+    "timestamp": "2026-06-11T08:35:06.868Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

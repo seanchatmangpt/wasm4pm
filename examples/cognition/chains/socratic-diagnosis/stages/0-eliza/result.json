@@ -8,32 +8,37 @@
     "breed": "eliza",
     "status": "ok",
     "output": {
-      "breed": "eliza",
+      "breed": "Eliza",
       "candidates": [
         {
           "id": "fever",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "cough",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "fatigue",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "headache",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "shortness_of_breath",
           "score": 0,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -113,9 +118,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/7a7e232ae2fe34950607f85b1c7639e3c05cece89940782926769b40af6c555f.json"
   },
   "meta": {
-    "run_id": "fa3cabf2-34ef-4a6e-911f-75920caa88b5",
-    "timestamp": "2026-06-10T15:46:45.053Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "eb20b8dc-8f7b-4fa7-af8f-b4ca7c153e9e",
+    "timestamp": "2026-06-11T08:34:32.234Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
   }
 }

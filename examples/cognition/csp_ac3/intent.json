@@ -1,0 +1,34 @@
+{
+  "intent": "color the constraint network",
+  "facts": [
+    {
+      "key": "csp-var",
+      "value": "X:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Y:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Z:B,G,R"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X!=Y"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "Y!=Z"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X!=Z"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

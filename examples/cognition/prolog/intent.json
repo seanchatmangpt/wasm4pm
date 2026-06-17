@@ -1,14 +1,28 @@
 {
-  "intent": "parent",
+  "intent": "prove parent(bob, ann) from the family fact base (Kowalski 1974)",
   "candidates": [],
   "facts": [
-    { "key": "parent", "value": "alice" },
-    { "key": "parent", "value": "bob" }
+    {
+      "key": "parent",
+      "value": "tom-bob"
+    },
+    {
+      "key": "parent",
+      "value": "bob-ann"
+    },
+    {
+      "key": "parent",
+      "value": "bob-pat"
+    }
   ],
-  "cases": [],
   "rules": [],
   "goals": [
-    { "id": "g1", "predicate": "parent", "value": "alice" }
+    {
+      "id": "g1",
+      "predicate": "parent",
+      "value": "bob-ann"
+    }
   ],
+  "cases": [],
   "state": []
 }

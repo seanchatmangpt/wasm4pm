@@ -1,25 +1,25 @@
 # HTN Planning
 
-Hierarchical Task Network (HTN) Planning is a cognitive breed based on SHOP2 (Nau et al., 2003) for total-order task decomposition.
+## 1. Identity & Lineage
+HTN planning — SHOP2-style total-order decomposition (Nau et al. 2003). BreedId `htn_planning`, module `src/breeds/htn_planning.rs`.
 
-## Overview
+## 2. Algorithm
+Chronological backtracking over method choice (declaration order), depth cap 64, expansion cap 512. After planning, the plan is REPLAYED against the initial state (self-audit): a plan that does not replay is refused.
 
-Unlike STRIPS, which searches backward from goals, HTN planning starts with an initial high-level task and uses domain-specific methods to decompose it into smaller subtasks, continuing until primitive operators are reached. This allows domain knowledge to guide and restrict the search space, making it efficient.
+## 3. Input Contract
+Goals define initial tasks (compound or `op:<name>`). Rules use `method:<task>:<variant>` or `op:<name>`. `method` premise = preconditions over `pred=val` state atoms, conclusion = `;`-separated subtasks. `op` conclusion = `;`-separated effects (`atom`, `!atom`). State array represents initial state.
 
-## Lifecycle
+## 4. Output Contract
+Fact `htn:plan` with comma-separated operator plan. `selected` = plan string.
 
-The `htn_planning` breed follows a strict lifecycle model with trace steps representing its search:
-1. `htn-decompose`: Selects a method to break down a compound task.
-2. `htn-apply`: Applies a primitive operator, modifying the state.
-3. `htn-backtrack`: Reverses a choice if decomposition fails.
-4. `htn-plan`: Emits the successfully verified plan.
+## 5. Trace & OCEL Lifecycle
+`{htn-decompose,htn-apply,htn-backtrack}`(1,*) → `htn-plan`(1,1). Exact operators and methods recorded in detail. Report fitness 1.0.
 
-## Input Encoding
+## 6. Oracles
+Refusal: no tasks / no rules / plan self-audit failure / exceed depth or expansion limits. Hidden: correctly decomposes and returns sequence of operators. Paper: Logistics/transport domain, deliver decomposes into load;drive;unload.
 
-* **Initial State**: Defined in `input.state`.
-* **Initial Tasks**: Encoded in `input.goals` with `predicate: "task"` and `value: "task-name"`.
-* **Methods**: Defined in `input.rules` with `id: "method:<task>:<variant>"`. The `conclusion` is a semicolon-separated list of subtasks.
-* **Operators**: Defined in `input.rules` with `id: "op:<name>"`. The `conclusion` contains adds and deletes (prefixed with `!`).
+## 7. Determinism & Bounds
+BTreeSet for state atoms. Depth cap 64, expansion cap 512. Fixed declaration order for method/operator selection. Plan self-audit ensures strict linear state application.
 
 ## Algorithm Limits
 

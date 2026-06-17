@@ -1,24 +1,37 @@
 {
-  "intent": "means-ends planning",
+  "intent": "transform propositional logic expression L1 into L0 using symbolic-logic rules",
   "candidates": [],
   "facts": [],
   "cases": [],
   "rules": [
     {
-      "id": "get-dressed",
-      "premise": ["shirt=on"],
-      "conclusion": "dressed=yes",
-      "certainty": 1.0
+      "id": "R6",
+      "premise": [
+        "expr=L1"
+      ],
+      "conclusion": "expr=L2;!expr=L1",
+      "certainty": 1
     },
     {
-      "id": "put-on-shirt",
-      "premise": [],
-      "conclusion": "shirt=on",
-      "certainty": 1.0
+      "id": "R12",
+      "premise": [
+        "expr=L2"
+      ],
+      "conclusion": "expr=L0;!expr=L2",
+      "certainty": 1
     }
   ],
   "goals": [
-    { "id": "g1", "predicate": "dressed", "value": "yes" }
+    {
+      "id": "goal-1",
+      "predicate": "expr",
+      "value": "L0"
+    }
   ],
-  "state": []
+  "state": [
+    {
+      "predicate": "expr",
+      "value": "L1"
+    }
+  ]
 }

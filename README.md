@@ -1,6 +1,6 @@
 # wasm4pm
 
-High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 13 Old-AI cognition breeds — all through one CLI (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 39 Old-AI cognition breeds — all through one CLI (`wpm`).
 
 **Old AI is the factory. LLMs are the brochure.**
 
@@ -104,27 +104,53 @@ Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
 
 ## Cognition (Old AI)
 
-Thirteen breeds run natively in Rust and are exposed through `wpm cognition`. Nine are classic Old-AI paradigms; four are Autoinstinct breeds:
+Thirty-nine implemented/admitted breeds run natively in Rust and are exposed through `wpm cognition`:
 
 ```bash
-wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
+wpm cognition run --contract tableaux --input examples/cognition/tableaux/intent.json
 ```
 
-| Breed | Category | Origin | Technique |
-|-------|----------|--------|-----------|
-| STRIPS | Old AI | 1971 | Goal regression planning |
-| Prolog | Old AI | 1965 | Robinson unification + SLD resolution |
-| CBR | Old AI | 1992 | Jaccard similarity case retrieval |
-| DENDRAL | Old AI | 1969 | Constraint-driven enumeration |
-| GPS | Old AI | 1963 | Means-ends gap reduction |
-| SOAR | Old AI | 1987 | Preference-based operator selection |
-| Hearsay-II | Old AI | 1980 | Blackboard consensus fusion |
-| Frame | Old AI | 1975 | Frame-based knowledge representation |
-| Production Rules | Old AI | 1943 | Rule-based forward chaining |
-| Autoinstinct: Vision | Autoinstinct | — | Autoinstinct visual perception |
-| Autoinstinct: Semantics | Autoinstinct | — | Autoinstinct semantic reasoning |
-| Autoinstinct: Neurosis | Autoinstinct | — | Autoinstinct neurosis detection |
-| Autoinstinct: Learning | Autoinstinct | — | Autoinstinct adaptive learning |
+| # | Breed ID | Category | Key Technique |
+|---|---|---|---|
+| 1 | `ltl_monitor` | Temporal Logic | LTL runtime monitoring on traces |
+| 2 | `allen_temporal` | Temporal Reasoning | Interval algebra constraint propagation |
+| 3 | `fuzzy_logic` | Uncertain Reasoning | Fuzzy sets & approximate reasoning operators |
+| 4 | `bayesian_network` | Probabilistic | Directed acyclic graph belief propagation |
+| 5 | `csp_ac3` | Constraint Satisfaction | Arc consistency AC-3 constraint network solver |
+| 6 | `default_logic` | Non-monotonic Logic | Reiter's default rules & extension generator |
+| 7 | `htn_planning` | Planning | Hierarchical Task Network decomposition |
+| 8 | `dempster_shafer` | Uncertain Reasoning | Belief functions & Dempster's rule of combination |
+| 9 | `frames_inheritance` | Knowledge Representation | Frame-based slot/filler inheritance hierarchy |
+| 10 | `ebl` | Machine Learning | Explanation-based generalization of proofs |
+| 11 | `asp` | Logic Programming | Answer Set Programming stable model solving |
+| 12 | `description_logic` | Knowledge Representation | ALC description logic subsumption checking |
+| 13 | `abductive_lp` | Logic Programming | Abductive logic programming with integrity constraints |
+| 14 | `abductive_ibe` | Uncertain Reasoning | Inference to the best explanation scoring |
+| 15 | `partial_order_plan` | Planning | Least-commitment partial-order planning |
+| 16 | `event_calculus` | Temporal Reasoning | Event calculus effect reasoning on fluents |
+| 17 | `mdp` | Decision Theory | Markov Decision Process value iteration solver |
+| 18 | `version_space` | Machine Learning | Candidate elimination concept learning |
+| 19 | `belief_merging` | Knowledge Representation | Distance-based propositional belief merging |
+| 20 | `qualitative_reason` | Qualitative Reasoning | Qualitative process theory sign/flow arithmetic |
+| 21 | `script_sam` | Knowledge Representation | Schankian narrative script instantiation |
+| 22 | `clp` | Constraint Programming | Constraint logic programming solver |
+| 23 | `situation_calculus` | Temporal Reasoning | Golog-style situation calculus evaluation |
+| 24 | `circumscription` | Non-monotonic Logic | McCarthy's abnormality predicate minimization |
+| 25 | `analogy_sme` | Analogical Reasoning | Structure Mapping Engine analogy builder |
+| 26 | `act_r` | Cognitive Architecture | Declarative/procedural cognitive step simulation |
+| 27 | `problog` | Probabilistic Logic | Probabilistic logic program query solver |
+| 28 | `sat_cdcl` | Boolean SAT | Conflict-Driven Clause Learning SAT solver |
+| 29 | `episodic_memory` | Cognitive Architecture | Temporal indexing & recall of trace segments |
+| 30 | `rl_symbolic` | Reinforcement Learning | Q-learning over symbolic state transitions |
+| 31 | `ctl_check` | Model Checking | Computation Tree Logic model checking |
+| 32 | `ilp` | Logic Programming | Inductive Logic Programming rule learning |
+| 33 | `naive_physics` | Qualitative Reasoning | Qualitative reasoning on physics equations |
+| 34 | `tableaux` | Logic Programming | Semantic tableaux first-order theorem prover |
+| 35 | `construction_grammar` | Cognitive Systems | Construction grammar sentence parsing & coercion |
+| 36 | `markov_logic` | Probabilistic Logic | Markov Logic Network inference |
+| 37 | `pomdp` | Decision Theory | Partially Observable MDP point-based value iteration |
+| 38 | `contingent_plan` | Planning | Contingent planning with sensing actions |
+| 39 | `meta_reasoning` | Cognitive Systems | Meta-level monitoring & scheduler arbitration |
 
 ## Deployment Profiles
 

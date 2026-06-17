@@ -18,6 +18,7 @@
 //! every flip up to 64, then every 64th.
 
 use crate::breeds::support::rng::seeded_rng;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -310,13 +311,9 @@ impl CognitionBreed for MarkovLogic {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "map-found") {
-            return Err("missing map-found step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["map-found"])?;
         if !output.facts.iter().any(|f| f.key == "mln:cost") {
             return Err("missing mln:cost fact".to_string());
         }

@@ -1,0 +1,168 @@
+(node:14107) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "asp",
+    "breed": "asp",
+    "status": "ok",
+    "output": {
+      "breed": "Asp",
+      "candidates": [
+        {
+          "id": "a",
+          "score": 0.5,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "b",
+          "score": 0.5,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "asp:answer_set:0",
+          "value": "a"
+        },
+        {
+          "key": "asp:answer_set:1",
+          "value": "b"
+        },
+        {
+          "key": "asp:answer_set_count",
+          "value": "2"
+        }
+      ],
+      "selected": "a",
+      "explanation": "Gelfond–Lifschitz enumeration over 2 atoms (4 candidates): 2 stable model(s).",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ground",
+          "detail": "2 atoms, 2 rules",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "guess-candidate",
+          "detail": "M={}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "reduct",
+          "detail": "2 rules kept, 0 dropped",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "least-model",
+          "detail": "LM(P^M)={a,b}",
+          "depth": 2
+        },
+        {
+          "step": 4,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({a,b} vs {})",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "guess-candidate",
+          "detail": "M={a}",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 7,
+          "kind": "least-model",
+          "detail": "LM(P^M)={a}",
+          "depth": 2
+        },
+        {
+          "step": 8,
+          "kind": "stable-accept",
+          "detail": "{a} is a stable model",
+          "depth": 1
+        },
+        {
+          "step": 9,
+          "kind": "guess-candidate",
+          "detail": "M={b}",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "reduct",
+          "detail": "1 rules kept, 1 dropped",
+          "depth": 2
+        },
+        {
+          "step": 11,
+          "kind": "least-model",
+          "detail": "LM(P^M)={b}",
+          "depth": 2
+        },
+        {
+          "step": 12,
+          "kind": "stable-accept",
+          "detail": "{b} is a stable model",
+          "depth": 1
+        },
+        {
+          "step": 13,
+          "kind": "guess-candidate",
+          "detail": "M={a,b}",
+          "depth": 1
+        },
+        {
+          "step": 14,
+          "kind": "reduct",
+          "detail": "0 rules kept, 2 dropped",
+          "depth": 2
+        },
+        {
+          "step": 15,
+          "kind": "least-model",
+          "detail": "LM(P^M)={}",
+          "depth": 2
+        },
+        {
+          "step": 16,
+          "kind": "stable-reject",
+          "detail": "LM(P^M) != M ({} vs {a,b})",
+          "depth": 1
+        },
+        {
+          "step": 17,
+          "kind": "answer-set",
+          "detail": "2 answer set(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1f885a70b37137e350c6f79dc03c083ce942c29f7e33a36eb54d361e9b0b22b7",
+    "output_hash": "56cf32c67151d3a96e88ac3c165ebf7ec109656703a2a6c3a2d86fa181d95333",
+    "replay_pointer": "56cf32c67151d3a9",
+    "inference_step_count": 18,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1f885a70b37137e350c6f79dc03c083ce942c29f7e33a36eb54d361e9b0b22b7.json"
+  },
+  "meta": {
+    "run_id": "1d5dc6c8-4bdf-4c84-85b9-a5532c2861be",
+    "timestamp": "2026-06-11T08:35:08.301Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

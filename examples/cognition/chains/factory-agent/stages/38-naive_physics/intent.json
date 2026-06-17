@@ -1,0 +1,34 @@
+{
+  "intent": "predict what happens when the table is removed",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "np:ground:floor",
+      "value": "true"
+    },
+    {
+      "key": "np:on:table",
+      "value": "floor"
+    },
+    {
+      "key": "np:on:cup",
+      "value": "table"
+    },
+    {
+      "key": "np:liquid:water",
+      "value": "cup"
+    },
+    {
+      "key": "np:remove:table",
+      "value": "true"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "mycin:d0f352b5e408b6cd68ab044f74ee2165f2d6afcb60045e388abf3162c0f9d30f"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

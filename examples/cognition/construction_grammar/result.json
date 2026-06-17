@@ -1,0 +1,145 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "construction_grammar",
+    "breed": "construction_grammar",
+    "status": "ok",
+    "output": {
+      "breed": "ConstructionGrammar",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "cxg:construction",
+          "value": "ditransitive"
+        },
+        {
+          "key": "cxg:meaning",
+          "value": "CAUSE-RECEIVE(pat, bill, the letter; verb=faxed)"
+        },
+        {
+          "key": "cxg:coerced",
+          "value": "true"
+        },
+        {
+          "key": "cxg:verb",
+          "value": "faxed"
+        },
+        {
+          "key": "cxg:slot:subj",
+          "value": "pat"
+        },
+        {
+          "key": "cxg:slot:rec",
+          "value": "bill"
+        },
+        {
+          "key": "cxg:slot:theme",
+          "value": "the letter"
+        }
+      ],
+      "selected": "ditransitive",
+      "explanation": "Construction grammar: 'pat faxed bill the letter' matched ditransitive (CAUSE-RECEIVE(pat, bill, the letter; verb=faxed)) — meaning coerced by construction, not the verb's lexical entry",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "tokenize",
+          "detail": "pat faxed bill the letter",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "pos-tag",
+          "detail": "pat/noun",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "pos-tag",
+          "detail": "faxed/verb",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "pos-tag",
+          "detail": "bill/noun",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "pos-tag",
+          "detail": "the/det",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "pos-tag",
+          "detail": "letter/noun",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "chunk",
+          "detail": "NP[pat]",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "chunk",
+          "detail": "NP[bill]",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "chunk",
+          "detail": "NP[the letter]",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "match-construction",
+          "detail": "ditransitive: match",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "bind-slot",
+          "detail": "subj <- pat",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "bind-slot",
+          "detail": "rec <- bill (arg 1)",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "bind-slot",
+          "detail": "theme <- the letter (arg 2)",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "fuse-meaning",
+          "detail": "CAUSE-RECEIVE(pat, bill, the letter; verb=faxed) via ditransitive [coerced]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "a33abdcb11fa124215163a8dfd1c77430358ed0e658b49fe19af87432c3a171c",
+    "output_hash": "391261ee6ea3b91fe9b5afcf2ae2b7aadedbbb6d468f555c5a713fdbc12f7772",
+    "replay_pointer": "391261ee6ea3b91f",
+    "inference_step_count": 14,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/construction_grammar/.wasm4pm/receipts/a33abdcb11fa124215163a8dfd1c77430358ed0e658b49fe19af87432c3a171c.json"
+  },
+  "meta": {
+    "run_id": "563556c8-ed50-4413-a1f9-6b3c9ea79f7e",
+    "timestamp": "2026-06-11T07:03:00.737Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

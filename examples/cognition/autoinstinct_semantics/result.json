@@ -8,36 +8,67 @@
     "breed": "autoinstinct_semantics",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctsemantics",
-      "candidates": [],
-      "facts": [],
-      "explanation": "AutoinstinctSemantics could not parse a semantic frame from: \"John gave Mary the book\"",
+      "breed": "AutoinstinctSemantics",
+      "candidates": [
+        {
+          "id": "Atrans",
+          "score": 0.8999999761581421,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "act",
+          "value": "Atrans"
+        },
+        {
+          "key": "actor",
+          "value": "John"
+        },
+        {
+          "key": "object",
+          "value": "book"
+        },
+        {
+          "key": "to",
+          "value": "Mary"
+        }
+      ],
+      "selected": "{\"act\":\"Atrans\",\"actor\":\"John\",\"object\":\"book\",\"to\":\"Mary\",\"from\":null}",
+      "explanation": "AutoinstinctSemantics extracted CD primitive Atrans (transfer of abstract relationship (e.g. give)) from actor=John object=book",
       "inference_trace": [
         {
           "step": 0,
           "kind": "init-parser",
-          "detail": "SemanticParser created; parsing intent: \"John gave Mary the book\"",
+          "detail": "SemanticParser created; parsing intent: \"John give book to Mary\"",
           "depth": 0
         },
         {
           "step": 1,
-          "kind": "no-act-found",
-          "detail": "no CD primitive matched for intent: \"John gave Mary the book\"",
+          "kind": "extract-act",
+          "detail": "rule=sem-ATRANS act=Atrans actor=John object=book",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "extract-recipient",
+          "detail": "to=Mary",
           "depth": 0
         }
       ]
     },
-    "run_id": "93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b",
-    "output_hash": "3b61a92be807bf735c91b07bece64000abde1871ce339bf3205a94d4e9afba1d",
-    "replay_pointer": "3b61a92be807bf73",
-    "inference_step_count": 2,
+    "run_id": "dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5",
+    "output_hash": "936d32763f36fd871016eb8a4f15b928de058a8a63799e3bcdab54054216c343",
+    "replay_pointer": "936d32763f36fd87",
+    "inference_step_count": 3,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/93555934196d87810376e7be35646044b2de12134382759b159af5c7fab4260b.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_semantics/.wasm4pm/receipts/dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5.json"
   },
   "meta": {
-    "run_id": "08b2a8f4-f312-4fde-b267-1dffabe30b28",
-    "timestamp": "2026-06-10T15:46:44.257Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "d4a52175-975c-4229-9513-61877682b0d2",
+    "timestamp": "2026-06-11T07:02:55.939Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

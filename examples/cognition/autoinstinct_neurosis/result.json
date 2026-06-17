@@ -8,73 +8,99 @@
     "breed": "autoinstinct_neurosis",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctneurosis",
+      "breed": "AutoinstinctNeurosis",
       "candidates": [
         {
-          "id": "stranger_approaches",
+          "id": "default_stimulus",
           "score": 1,
-          "eliminated": false
-        },
-        {
-          "id": "loud_noise",
-          "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
         {
-          "key": "belief:paranoia",
-          "value": "0.7"
+          "key": "belief:system_redundancy",
+          "value": "high — multiple replicas ensure no single point of failure"
         },
         {
-          "key": "belief:hostility",
-          "value": "0.4"
+          "key": "belief:system_reliability",
+          "value": "low — any single node outage causes full service loss"
         },
         {
-          "key": "belief:trust",
-          "value": "0.2"
+          "key": "belief:deployment_is_automated",
+          "value": "true — CI/CD pipeline handles all releases without human review"
+        },
+        {
+          "key": "belief:deployment_requires_manual_approval",
+          "value": "true — all production changes require sign-off from on-call engineer"
+        },
+        {
+          "key": "belief:data_is_ephemeral",
+          "value": "true — containers are stateless; no durable data written locally"
+        },
+        {
+          "key": "belief:data_must_be_local",
+          "value": "true — latency constraints require in-process data cache written to local disk"
+        },
+        {
+          "key": "belief:scaling_is_horizontal",
+          "value": "true — load is distributed across N identical stateless pods"
+        },
+        {
+          "key": "belief:database_is_single_writer",
+          "value": "true — all writes funnel through one primary to preserve ordering guarantees"
+        },
+        {
+          "key": "belief:config_is_immutable",
+          "value": "true — service config baked into container image at build time"
+        },
+        {
+          "key": "belief:config_is_runtime_dynamic",
+          "value": "true — feature flags and thresholds updated live via config service without redeploy"
+        },
+        {
+          "key": "belief:observability_is_complete",
+          "value": "true — every operation emits a span; no blind spots"
+        },
+        {
+          "key": "belief:tracing_is_sampled",
+          "value": "true — only 1% of traces are retained to control storage costs"
         }
       ],
-      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.100,\"belief_count\":5}",
-      "explanation": "AutoinstinctNeurosis: processed 2 stimuli over 3 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.100",
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.050,\"belief_count\":13}",
+      "explanation": "AutoinstinctNeurosis: processed 1 stimuli over 12 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.050",
       "inference_trace": [
         {
           "step": 0,
           "kind": "seed-beliefs",
-          "detail": "seeded 3 beliefs from facts",
+          "detail": "seeded 12 beliefs from facts",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "curious",
-          "detail": "stimulus=\"stranger_approaches\" strength=0.800 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "detail": "stimulus=\"default_stimulus\" strength=0.500 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
           "depth": 0
         },
         {
           "step": 2,
-          "kind": "curious",
-          "detail": "stimulus=\"loud_noise\" strength=0.900 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
-          "depth": 0
-        },
-        {
-          "step": 3,
           "kind": "affect-snapshot",
-          "detail": "fear=0.000 anger=0.000 mistrust=0.100 beliefs=5",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.050 beliefs=13",
           "depth": 0
         }
       ]
     },
-    "run_id": "75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0",
-    "output_hash": "d5cc6811264052354a4d8629ef82695575eec303b36334910cd8933d35be06c5",
-    "replay_pointer": "d5cc681126405235",
-    "inference_step_count": 4,
+    "run_id": "5631e867ea91e1f9ae00b9de1bb21e77ea8942d42eac7b31aafb44b349a41f27",
+    "output_hash": "d3e33c417e99da15e0fa449b2cc636b6a575e92d9bfc61592ca7121526aeea9e",
+    "replay_pointer": "d3e33c417e99da15",
+    "inference_step_count": 3,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/75b6f66765b4619ce519f95dcbf2ebc96ac13fd4032b3af903912cfc8d58f4d0.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_neurosis/.wasm4pm/receipts/5631e867ea91e1f9ae00b9de1bb21e77ea8942d42eac7b31aafb44b349a41f27.json"
   },
   "meta": {
-    "run_id": "92d91602-be0e-442e-aa22-0b88776ed934",
-    "timestamp": "2026-06-10T15:46:43.873Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "ba79680e-fd05-4237-99f8-0e57796dc7ba",
+    "timestamp": "2026-06-11T07:02:55.259Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
   }
 }

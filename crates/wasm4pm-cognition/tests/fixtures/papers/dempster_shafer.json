@@ -32,6 +32,9 @@
         "value": "flim"
       }
     ],
+    "candidates": [],
+    "facts": [],
+    "cases": [],
     "state": []
   },
   "expected": {

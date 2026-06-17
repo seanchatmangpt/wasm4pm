@@ -1,0 +1,93 @@
+(node:14135) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "markov_logic",
+    "breed": "markov_logic",
+    "status": "ok",
+    "output": {
+      "breed": "MarkovLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "mln:cost",
+          "value": "0.000000"
+        },
+        {
+          "key": "mln:flips",
+          "value": "1"
+        },
+        {
+          "key": "mln:atom:cancer_anna",
+          "value": "true"
+        },
+        {
+          "key": "mln:atom:cancer_bob",
+          "value": "false"
+        },
+        {
+          "key": "mln:atom:ev7c3d71e4",
+          "value": "true"
+        },
+        {
+          "key": "mln:atom:smokes_anna",
+          "value": "true"
+        },
+        {
+          "key": "mln:atom:smokes_bob",
+          "value": "false"
+        }
+      ],
+      "selected": "cost=0.000000",
+      "explanation": "MaxWalkSAT MAP over 3 clauses / 5 atoms: cost 0.000000 (1 flips, seed 42)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ground-clauses",
+          "detail": "3 clauses over 5 atoms",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "clamp-evidence",
+          "detail": "ev7c3d71e4=true, smokes_anna=true",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "init-assignment",
+          "detail": "evidence-clamped, others false; cost=3.500000",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "flip",
+          "detail": "#1 clause=smoke-cancer-a var=cancer_anna cost=0.000000 best=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "map-found",
+          "detail": "cost=0.000000 after 1 flips",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "42a825b1cfe2d7df83e85215d932eed89c523d98e622a1f9432c8e7f403a5eea",
+    "output_hash": "a7cce106819b1604a3505b5cfc74e66f2f5d9905ccb268fbf451d6c241a4daec",
+    "replay_pointer": "a7cce106819b1604",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/42a825b1cfe2d7df83e85215d932eed89c523d98e622a1f9432c8e7f403a5eea.json"
+  },
+  "meta": {
+    "run_id": "31754ab9-84ea-438b-ac3e-85d6df30ec66",
+    "timestamp": "2026-06-11T08:35:09.747Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

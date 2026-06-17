@@ -1,3 +1,5 @@
+(node:13527) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,47 +10,55 @@
     "breed": "dendral",
     "status": "ok",
     "output": {
-      "breed": "dendral",
+      "breed": "Dendral",
       "candidates": [
         {
           "id": "d",
           "score": 0.5,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "e",
           "score": 0.5,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "g",
           "score": 0.5,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "r",
           "score": 0.5,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "cyclohexanol",
           "score": 0.550000011920929,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "1_methylcyclopentanol",
           "score": 0.550000011920929,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "cis_2_methylcyclopentanol",
           "score": 0.550000011920929,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "trans_2_methylcyclopentanol",
           "score": 0.550000011920929,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -146,9 +156,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9fae0117a8c12aac7a8ce006b3d490c0b748de43eb2c715f8fcb5086fe8cf0cf.json"
   },
   "meta": {
-    "run_id": "0431b661-b911-4857-b0b1-cb44509296a9",
-    "timestamp": "2026-06-10T15:46:48.264Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "93fe4550-5f23-4f1d-bae2-5989a36ddd4f",
+    "timestamp": "2026-06-11T08:34:35.336Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
   }
 }

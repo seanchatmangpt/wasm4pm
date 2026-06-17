@@ -1,0 +1,62 @@
+{
+  "intent": "learn the daughter relation",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "bg:parent(ann,mary)",
+      "value": "true"
+    },
+    {
+      "key": "bg:parent(ann,tom)",
+      "value": "true"
+    },
+    {
+      "key": "bg:parent(tom,eve)",
+      "value": "true"
+    },
+    {
+      "key": "bg:parent(tom,ian)",
+      "value": "true"
+    },
+    {
+      "key": "bg:female(ann)",
+      "value": "true"
+    },
+    {
+      "key": "bg:female(mary)",
+      "value": "true"
+    },
+    {
+      "key": "bg:female(eve)",
+      "value": "true"
+    },
+    {
+      "key": "pos:daughter(mary,ann)",
+      "value": "true"
+    },
+    {
+      "key": "pos:daughter(eve,tom)",
+      "value": "true"
+    },
+    {
+      "key": "neg:daughter(tom,ann)",
+      "value": "true"
+    },
+    {
+      "key": "neg:daughter(eve,ann)",
+      "value": "true"
+    },
+    {
+      "key": "neg:daughter(ian,tom)",
+      "value": "true"
+    },
+    {
+      "key": "neg:daughter(ann,mary)",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

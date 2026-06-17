@@ -1,0 +1,42 @@
+{
+  "intent": "select the best explanation of the biological evidence (Thagard 1978 Darwin case)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ibe:obs:fossil_record",
+      "value": "true"
+    },
+    {
+      "key": "ibe:obs:embryology",
+      "value": "true"
+    },
+    {
+      "key": "ibe:obs:biogeography",
+      "value": "true"
+    },
+    {
+      "key": "ibe:obs:rudimentary_organs",
+      "value": "true"
+    },
+    {
+      "key": "ibe:hyp:evolution:covers",
+      "value": "fossil_record,embryology,biogeography,rudimentary_organs"
+    },
+    {
+      "key": "ibe:hyp:evolution:cost",
+      "value": "1"
+    },
+    {
+      "key": "ibe:hyp:creation:covers",
+      "value": "fossil_record"
+    },
+    {
+      "key": "ibe:hyp:creation:cost",
+      "value": "3"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

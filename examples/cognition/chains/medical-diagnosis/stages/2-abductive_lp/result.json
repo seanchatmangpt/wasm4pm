@@ -1,0 +1,123 @@
+(node:13936) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_lp",
+    "breed": "abductive_lp",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveLp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "alp:explanation_count",
+          "value": "0"
+        }
+      ],
+      "selected": null,
+      "explanation": "KKT abduction: 0 minimal explanation(s) of 'obs' over 2 abducibles.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-abducibles",
+          "detail": "A={A,B}, 0 ICs, observe 'obs'",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "candidate-delta",
+          "detail": "Δ={}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=0 atoms",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "explain-reject",
+          "detail": "Δ={}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "candidate-delta",
+          "detail": "Δ={A}",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=1 atoms",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "explain-reject",
+          "detail": "Δ={A}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "candidate-delta",
+          "detail": "Δ={B}",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=1 atoms",
+          "depth": 2
+        },
+        {
+          "step": 9,
+          "kind": "explain-reject",
+          "detail": "Δ={B}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "candidate-delta",
+          "detail": "Δ={A,B}",
+          "depth": 1
+        },
+        {
+          "step": 11,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 12,
+          "kind": "explain-reject",
+          "detail": "Δ={A,B}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 13,
+          "kind": "minimal-set",
+          "detail": "0 minimal explanation(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "60bd2a9656eefe5113739ad4df4575b52eed3a9b77a7fe37b3c4e76fb3a68b5e",
+    "output_hash": "1cc732f537ba098a2ee4bb164aef70815e8e6dbb29f3938138e49f6270407098",
+    "replay_pointer": "1cc732f537ba098a",
+    "inference_step_count": 14,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/60bd2a9656eefe5113739ad4df4575b52eed3a9b77a7fe37b3c4e76fb3a68b5e.json"
+  },
+  "meta": {
+    "run_id": "8d4c4c4a-19a9-4668-91f7-24fa788d2c97",
+    "timestamp": "2026-06-11T08:35:00.363Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

@@ -1,0 +1,67 @@
+(node:13943) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "default_logic",
+    "breed": "default_logic",
+    "status": "ok",
+    "output": {
+      "breed": "DefaultLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ext:bird(tweety)",
+          "value": "bird(tweety)"
+        },
+        {
+          "key": "ext:flies(tweety)",
+          "value": "flies(tweety)"
+        }
+      ],
+      "selected": "bird(tweety), flies(tweety)",
+      "explanation": "default logic extension with 2 atoms (2 fired, 0 blocked)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "default-load",
+          "detail": "loaded 2 rules over 1 facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "default-fire",
+          "detail": "fired rule d1_c_1cc732f5 inferring flies(tweety)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "default-fire",
+          "detail": "fired rule r_isa inferring bird(tweety)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "default-extension",
+          "detail": "extension: bird(tweety), flies(tweety)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9bccf6d9729c6b3aa1c750bb7826a3bc8bed496b9eb8f5e38fa7d3ec3312587a",
+    "output_hash": "f183927adb0be60cbd3cb9e663d803efd4322f4bcbfbbde22cc6bbef082f217c",
+    "replay_pointer": "f183927adb0be60c",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9bccf6d9729c6b3aa1c750bb7826a3bc8bed496b9eb8f5e38fa7d3ec3312587a.json"
+  },
+  "meta": {
+    "run_id": "7fddd862-7fe0-4d7c-b515-36086d4fc5a0",
+    "timestamp": "2026-06-11T08:35:00.731Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

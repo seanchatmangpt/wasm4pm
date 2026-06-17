@@ -1,3 +1,5 @@
+(node:13541) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,52 +10,61 @@
     "breed": "autoinstinct_vision",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctvision",
+      "breed": "AutoinstinctVision",
       "candidates": [
         {
           "id": "1.2",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "1.43_angstrom",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "5",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "6",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "6_carbon_1_oxygen_detected",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "C-C_single_and_C-O_single",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "autoinstinct_vision_bond_topology_detector",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "cyclohexanol",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "xray_crystallography_electron_density",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -167,9 +178,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/181f7ebec77af8084e9a9f171615e4c009fc61c877b01f061187d5d729bb19fb.json"
   },
   "meta": {
-    "run_id": "a53c9e48-dc92-475d-8a56-4f7fb39c2eed",
-    "timestamp": "2026-06-10T15:46:49.041Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "0ef44893-a7b7-4d16-a95a-3b112dd40c58",
+    "timestamp": "2026-06-11T08:34:36.066Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
   }
 }

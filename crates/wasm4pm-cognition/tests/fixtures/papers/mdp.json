@@ -2,21 +2,42 @@
   "breed": "mdp",
   "provenance": {
     "citation": "Bellman, R. (1957). Dynamic Programming. Princeton University Press. (Functional equation / principle of optimality, Chapter III; successive-approximation solution, Chapter IV.)",
-    "locus": "The functional equation V(s) = max_a [ r(s,a) + γ Σ p(s'|s,a) V(s') ] and its solution by successive approximation (value iteration); closed-form geometric-series fixed points for stationary policies.",
+    "locus": "The functional equation V(s) = max_a [ r(s,a) + \u03b3 \u03a3 p(s'|s,a) V(s') ] and its solution by successive approximation (value iteration); closed-form geometric-series fixed points for stationary policies.",
     "extraction": "closed-form-instance",
-    "notes": "Bellman 1957 provides the method, not a canonical small numeric example; the fixture instantiates a 3-state chain whose optimal values are hand-derivable in closed form from the functional equation: V(goal)=0 (zero-reward self-loop), V(s1)=2 (reward 2 then goal), V(s0)=max(0.1+0.9·V(s0), 0+0.9·V(s1)) = max(1.0, 1.8) = 1.8 — so the optimal action at s0 is 'go', not the myopic 'stay'. The Russell & Norvig 4×3 grid was NOT used because its published utilities assume γ=1, which is outside this breed's documented contract γ ∈ [0,1) (deviation recorded)."
+    "notes": "Bellman 1957 provides the method, not a canonical small numeric example; the fixture instantiates a 3-state chain whose optimal values are hand-derivable in closed form from the functional equation: V(goal)=0 (zero-reward self-loop), V(s1)=2 (reward 2 then goal), V(s0)=max(0.1+0.9\u00b7V(s0), 0+0.9\u00b7V(s1)) = max(1.0, 1.8) = 1.8 \u2014 so the optimal action at s0 is 'go', not the myopic 'stay'. The Russell & Norvig 4\u00d73 grid was NOT used because its published utilities assume \u03b3=1, which is outside this breed's documented contract \u03b3 \u2208 [0,1) (deviation recorded)."
   },
   "input": {
     "intent": "solve the chain MDP by value iteration (Bellman functional equation)",
     "candidates": [],
     "facts": [
-      { "key": "mdp:gamma", "value": "0.9" },
-      { "key": "mdp:trans:s0:go", "value": "s1:1.0" },
-      { "key": "mdp:trans:s0:stay", "value": "s0:1.0" },
-      { "key": "mdp:reward:s0:stay", "value": "0.1" },
-      { "key": "mdp:trans:s1:go", "value": "goal:1.0" },
-      { "key": "mdp:reward:s1:go", "value": "2.0" },
-      { "key": "mdp:trans:goal:stay", "value": "goal:1.0" }
+      {
+        "key": "mdp:gamma",
+        "value": "0.9"
+      },
+      {
+        "key": "mdp:trans:s0:go",
+        "value": "s1:1.0"
+      },
+      {
+        "key": "mdp:trans:s0:stay",
+        "value": "s0:1.0"
+      },
+      {
+        "key": "mdp:reward:s0:stay",
+        "value": "0.1"
+      },
+      {
+        "key": "mdp:trans:s1:go",
+        "value": "goal:1.0"
+      },
+      {
+        "key": "mdp:reward:s1:go",
+        "value": "2.0"
+      },
+      {
+        "key": "mdp:trans:goal:stay",
+        "value": "goal:1.0"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -24,9 +45,16 @@
     "state": []
   },
   "expected": {
-    "values": { "s0": 1.8, "s1": 2.0, "goal": 0.0 },
+    "values": {
+      "s0": 1.8,
+      "s1": 2.0,
+      "goal": 0.0
+    },
     "tolerance": 0.0001,
-    "policy": { "s0": "go", "s1": "go" },
+    "policy": {
+      "s0": "go",
+      "s1": "go"
+    },
     "notes": "Hand-derived fixed point of the Bellman functional equation; Bellman residual < 1e-4 at every state."
   }
 }

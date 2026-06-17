@@ -1,0 +1,217 @@
+(node:13957) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "partial_order_plan",
+    "breed": "partial_order_plan",
+    "status": "ok",
+    "output": {
+      "breed": "PartialOrderPlan",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "pop:plan",
+          "value": "put_c_from_a_on_table_c_be91e29d;put_b_on_c_c_be91e29d;put_a_on_b_c_be91e29d"
+        },
+        {
+          "key": "pop:step_count",
+          "value": "3"
+        }
+      ],
+      "selected": "put_c_from_a_on_table_c_be91e29d;put_b_on_c_c_be91e29d;put_a_on_b_c_be91e29d",
+      "explanation": "SNLP causal-link planning: 3 steps, 10 causal links, 10 orderings.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "pop-init",
+          "detail": "Start adds {clear_b,clear_c,on_c_a,ontable_a,ontable_b}, Finish needs {on_a_b,on_b_c}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "pop-resolve",
+          "detail": "'on_a_b' needed by '__finish__'",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "pop-resolve",
+          "detail": "'put_a_on_b_c_be91e29d' (id 2)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "pop-resolve",
+          "detail": "put_a_on_b_c_be91e29d --on_a_b--> __finish__",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "pop-resolve",
+          "detail": "'clear_a' needed by 'put_a_on_b_c_be91e29d'",
+          "depth": 2
+        },
+        {
+          "step": 5,
+          "kind": "pop-resolve",
+          "detail": "'put_c_from_a_on_table_c_be91e29d' (id 3)",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "pop-resolve",
+          "detail": "put_c_from_a_on_table_c_be91e29d --clear_a--> put_a_on_b_c_be91e29d",
+          "depth": 2
+        },
+        {
+          "step": 7,
+          "kind": "pop-resolve",
+          "detail": "'clear_b' needed by 'put_a_on_b_c_be91e29d'",
+          "depth": 3
+        },
+        {
+          "step": 8,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_b--> put_a_on_b_c_be91e29d",
+          "depth": 3
+        },
+        {
+          "step": 9,
+          "kind": "pop-resolve",
+          "detail": "'clear_c' needed by 'put_c_from_a_on_table_c_be91e29d'",
+          "depth": 4
+        },
+        {
+          "step": 10,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_c--> put_c_from_a_on_table_c_be91e29d",
+          "depth": 4
+        },
+        {
+          "step": 11,
+          "kind": "pop-resolve",
+          "detail": "'on_b_c' needed by '__finish__'",
+          "depth": 5
+        },
+        {
+          "step": 12,
+          "kind": "pop-resolve",
+          "detail": "'put_b_on_c_c_be91e29d' (id 4)",
+          "depth": 5
+        },
+        {
+          "step": 13,
+          "kind": "pop-resolve",
+          "detail": "put_b_on_c_c_be91e29d --on_b_c--> __finish__",
+          "depth": 5
+        },
+        {
+          "step": 14,
+          "kind": "pop-resolve",
+          "detail": "step 'put_b_on_c_c_be91e29d' deletes 'clear_c' threatening link __start__→put_c_from_a_on_table_c_be91e29d",
+          "depth": 5
+        },
+        {
+          "step": 15,
+          "kind": "pop-resolve",
+          "detail": "'put_b_on_c_c_be91e29d' after 'put_c_from_a_on_table_c_be91e29d'",
+          "depth": 5
+        },
+        {
+          "step": 16,
+          "kind": "pop-resolve",
+          "detail": "'clear_b' needed by 'put_b_on_c_c_be91e29d'",
+          "depth": 6
+        },
+        {
+          "step": 17,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_b--> put_b_on_c_c_be91e29d",
+          "depth": 6
+        },
+        {
+          "step": 18,
+          "kind": "pop-resolve",
+          "detail": "step 'put_a_on_b_c_be91e29d' deletes 'clear_b' threatening link __start__→put_b_on_c_c_be91e29d",
+          "depth": 6
+        },
+        {
+          "step": 19,
+          "kind": "pop-resolve",
+          "detail": "'put_a_on_b_c_be91e29d' after 'put_b_on_c_c_be91e29d'",
+          "depth": 6
+        },
+        {
+          "step": 20,
+          "kind": "pop-resolve",
+          "detail": "'clear_c' needed by 'put_b_on_c_c_be91e29d'",
+          "depth": 7
+        },
+        {
+          "step": 21,
+          "kind": "pop-resolve",
+          "detail": "__start__ --clear_c--> put_b_on_c_c_be91e29d",
+          "depth": 7
+        },
+        {
+          "step": 22,
+          "kind": "pop-resolve",
+          "detail": "'on_c_a' needed by 'put_c_from_a_on_table_c_be91e29d'",
+          "depth": 8
+        },
+        {
+          "step": 23,
+          "kind": "pop-resolve",
+          "detail": "__start__ --on_c_a--> put_c_from_a_on_table_c_be91e29d",
+          "depth": 8
+        },
+        {
+          "step": 24,
+          "kind": "pop-resolve",
+          "detail": "'ontable_a' needed by 'put_a_on_b_c_be91e29d'",
+          "depth": 9
+        },
+        {
+          "step": 25,
+          "kind": "pop-resolve",
+          "detail": "__start__ --ontable_a--> put_a_on_b_c_be91e29d",
+          "depth": 9
+        },
+        {
+          "step": 26,
+          "kind": "pop-resolve",
+          "detail": "'ontable_b' needed by 'put_b_on_c_c_be91e29d'",
+          "depth": 10
+        },
+        {
+          "step": 27,
+          "kind": "pop-resolve",
+          "detail": "__start__ --ontable_b--> put_b_on_c_c_be91e29d",
+          "depth": 10
+        },
+        {
+          "step": 28,
+          "kind": "pop-plan",
+          "detail": "plan: [put_c_from_a_on_table_c_be91e29d;put_b_on_c_c_be91e29d;put_a_on_b_c_be91e29d]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1f2f2f5812eec2739ceebcc0fcf9b88c68d8537ce5b14499083b209c6b016857",
+    "output_hash": "d369b428851851c6a3ee98b3365b592006f2540bf1f645a275ba670a2ac148eb",
+    "replay_pointer": "d369b428851851c6",
+    "inference_step_count": 29,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/1f2f2f5812eec2739ceebcc0fcf9b88c68d8537ce5b14499083b209c6b016857.json"
+  },
+  "meta": {
+    "run_id": "f5370f4f-16da-4ba7-a9f8-7aeb1d6c0c34",
+    "timestamp": "2026-06-11T08:35:01.460Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

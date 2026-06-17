@@ -19,6 +19,8 @@
 //! least value on ties). All confidences are rendered with fixed precision
 //! (`{:.6}`) for bit-stable receipts.
 
+use crate::breeds::support::breed_class::VerifierBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
@@ -85,6 +87,18 @@ fn parse_reports(input: &BreedInput) -> Result<Vec<Report>, String> {
 
 fn negation_pair(a: &str, b: &str) -> bool {
     a.strip_prefix("not_") == Some(b) || b.strip_prefix("not_") == Some(a)
+}
+
+impl VerifierBreed for MetaReasoning {
+    /// Meta-reasoning verdicts are open-vocabulary decision keys (e.g.
+    /// `therapy=gentamicin`); only require that a decision was selected.
+    fn assert_verdict_valid(&self, output: &BreedOutput) -> Result<(), String> {
+        if output.selected.is_some() {
+            Ok(())
+        } else {
+            Err(format!("{}: requires a selected decision", self.id()))
+        }
+    }
 }
 
 impl CognitionBreed for MetaReasoning {
@@ -267,13 +281,10 @@ impl CognitionBreed for MetaReasoning {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "resolve") {
-            return Err("missing resolve step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_verdict_valid(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["resolve"])?;
         if !output.facts.iter().any(|f| f.key == "meta:conflicts") {
             return Err("missing meta:conflicts fact".to_string());
         }

@@ -5,7 +5,9 @@ Reads previous stage result JSON from stdin, writes next intent JSON to stdout.
 import json
 import sys
 
-prev = json.load(sys.stdin)
+_raw = sys.stdin.read()
+_idx = _raw.find('{')
+prev = json.loads(_raw[_idx:]) if _idx != -1 else {}
 
 output = prev.get("payload", {}).get("output", {})
 facts_raw = output.get("facts", [])

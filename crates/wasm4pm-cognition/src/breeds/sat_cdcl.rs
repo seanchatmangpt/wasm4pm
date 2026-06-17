@@ -16,12 +16,43 @@
 //! variables, negative = negated). Caps (refusals): ≤64 variables,
 //! ≤256 input clauses.
 
+use crate::breeds::support::breed_class::VerifierBreed;
 use crate::breeds::support::clauses::{Clause, Lit};
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
+};
 use std::collections::BTreeMap;
 
 /// GRASP-style CDCL solver.
 pub struct SatCdcl;
+
+impl BoundedBreed for SatCdcl {
+    fn breed_name(&self) -> &'static str {
+        "sat_cdcl"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        // One parsed clause per `clause:*` fact, so counting facts matches
+        // the original `parse_clauses(input)?.len()` semantics exactly.
+        let clause_count = input.facts.iter().filter(|f| f.key.starts_with("clause:")).count();
+        if clause_count > 256 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!(
+                    "complexity cap exceeded: {} clauses > 256 (refusal, not truncation)",
+                    clause_count
+                ),
+            });
+        }
+        None
+    }
+}
 
 fn parse_clauses(input: &BreedInput) -> Result<Vec<Clause>, String> {
     let mut keyed: Vec<(String, Clause)> = Vec::new();
@@ -65,6 +96,12 @@ fn fmt_clause(c: &Clause) -> String {
         .join(" ")
 }
 
+impl VerifierBreed for SatCdcl {
+    fn valid_verdicts(&self) -> &'static [&'static str] {
+        &["SAT", "UNSAT"]
+    }
+}
+
 impl CognitionBreed for SatCdcl {
     fn id(&self) -> BreedId {
         BreedId::SatCdcl
@@ -83,12 +120,7 @@ impl CognitionBreed for SatCdcl {
         if clauses.is_empty() {
             return Err("sat_cdcl requires at least one clause:<i> fact".to_string());
         }
-        if clauses.len() > 256 {
-            return Err(format!(
-                "complexity cap exceeded: {} clauses > 256 (refusal, not truncation)",
-                clauses.len()
-            ));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -408,13 +440,9 @@ impl CognitionBreed for SatCdcl {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of search".to_string());
-        }
-        match output.selected.as_deref() {
-            Some("SAT") | Some("UNSAT") => Ok(()),
-            other => Err(format!("invalid SAT verdict {:?}", other)),
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
+        self.assert_verdict_valid(output)?;
+        Ok(())
     }
 }

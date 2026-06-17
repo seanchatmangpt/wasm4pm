@@ -20,9 +20,11 @@
 //! parser; `A`/`E` must wrap a temporal operator). Caps (refusals):
 //! ≤64 states; the transition relation must be total.
 
+use crate::breeds::support::breed_class::VerifierBreed;
 use crate::breeds::support::formula::Formula;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
 use std::collections::{BTreeMap, BTreeSet};
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// Clarke–Emerson–Sistla CTL labeling checker.
 pub struct CtlCheck;
@@ -327,6 +329,12 @@ fn bfs_path(ts: &Ts, from: usize, goal: &BTreeSet<usize>) -> Option<Vec<usize>> 
     None
 }
 
+impl VerifierBreed for CtlCheck {
+    fn valid_verdicts(&self) -> &'static [&'static str] {
+        &["holds", "fails"]
+    }
+}
+
 impl CognitionBreed for CtlCheck {
     fn id(&self) -> BreedId {
         BreedId::CtlCheck
@@ -458,13 +466,10 @@ impl CognitionBreed for CtlCheck {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of labeling".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "label-states") {
-            return Err("no label-states step — labeling did not run".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_verdict_valid(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["label-states"])?;
         Ok(())
     }
 }

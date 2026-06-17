@@ -14,8 +14,10 @@
 //! IC-worlds with minimal aggregated distance vector (Σ: sum; GMax: leximax
 //! on the descending-sorted vector).
 
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 
 /// Maximum number of atoms (2^12 worlds).
@@ -23,6 +25,27 @@ const MAX_ATOMS: usize = 12;
 
 /// Distance-based belief-merging breed.
 pub struct BeliefMerging;
+
+impl BoundedBreed for BeliefMerging {
+    fn breed_name(&self) -> &'static str {
+        "belief_merging"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let p = parse(input).ok()?;
+        if p.atoms.len() > MAX_ATOMS {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("atom count {} exceeds cap {}", p.atoms.len(), MAX_ATOMS),
+            });
+        }
+        None
+    }
+}
 
 /// A literal conjunction: (atom index, positive?).
 type Conj = Vec<(usize, bool)>;
@@ -142,9 +165,7 @@ impl CognitionBreed for BeliefMerging {
         if p.atoms.is_empty() {
             return Err("bm:atoms must list at least one atom".to_string());
         }
-        if p.atoms.len() > MAX_ATOMS {
-            return Err(format!("atom count {} exceeds cap {}", p.atoms.len(), MAX_ATOMS));
-        }
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         if p.bases.len() < 2 {
             return Err("belief merging requires at least two bm:base:* bases".to_string());
         }
@@ -304,16 +325,11 @@ impl CognitionBreed for BeliefMerging {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace (FM-5 fraud signal)".to_string());
-        }
-        if output.inference_trace.first().map(|t| t.kind.as_str()) != Some("enumerate-worlds") {
-            return Err("first step must be 'enumerate-worlds'".to_string());
-        }
-        if output.inference_trace.last().map(|t| t.kind.as_str()) != Some("merged-belief") {
-            return Err("final step must be 'merged-belief'".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty()?;
+        tq.require_first("enumerate-worlds")?;
+        tq.require_last("merged-belief")?;
         if !output.facts.iter().any(|f| f.key == "bm:model_count") {
             return Err("missing bm:model_count fact".to_string());
         }

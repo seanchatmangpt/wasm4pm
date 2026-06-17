@@ -1,9 +1,7 @@
 # Explanation-Based Learning (EBL)
 
-## Origin
-- **Paper:** "Explanation-Based Generalization: A Unifying View" (Mitchell, Keller & Kedar-Cabelli, 1986)
-- **Authors:** Tom M. Mitchell, Richard M. Keller, Smadar T. Kedar-Cabelli
-- **Tradition:** Machine Learning, Generalization, Analytical Learning, Prolog Lineage
+## 1. Identity & Lineage
+Explanation-Based Generalization (Mitchell, Keller & Kedar-Cabelli, Machine Learning 1(1), 1986). BreedId `ebl`, module `crates/wasm4pm-cognition/src/breeds/ebl.rs`.
 
 ## Algorithm
 Explanation-Based Learning learns a generalized rule from a single training example and domain theory.
@@ -30,20 +28,11 @@ function run(input):
     return new_rule
 ```
 
-## Input contract
-- `intent`: not used
-- `facts`: contains training example facts.
-- `rules`: represents the domain theory.
-- `goals`: first goal is the training example to explain.
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+## 6. Oracles
+Refusal: no goals, no domain theory, unprovable goal. Hidden: the learned rule is executed as a domain rule on fresh objects. Paper: Mitchell 1986 SafeToStack (learned rule fully variablized over training constants).
 
-## Output contract
-- `selected`: newly learned operationalized rule.
-- `explanation`: `"EBL operationalized a new rule"`
-- `facts`: contains original facts plus `ebl:rule` showing the generalized rule.
-- `inference_trace`: trace steps recording `"ebl-explain"`, `"ebl-generalize"`, and `"ebl-operationalize"`.
+## 7. Determinism & Bounds
+Depth-capped (32) SLD search; bit-exact double-run determinism.
 
 ## Complexity
 - Time: $O(D \cdot R \cdot U)$ where $D$ is the proof depth, $R$ is the number of rules, and $U$ is the cost of unification.

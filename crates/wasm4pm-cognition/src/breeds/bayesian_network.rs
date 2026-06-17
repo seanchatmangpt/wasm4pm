@@ -7,6 +7,27 @@ use crate::breeds::{
 /// Exact boolean variable elimination and Bayes-ball d-separation.
 pub struct BayesianNetwork;
 
+impl BoundedBreed for BayesianNetwork {
+    fn breed_name(&self) -> &'static str {
+        "bayesian_network"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let node_count = input.facts.iter().filter(|f| f.key.starts_with("cpt:")).count();
+        if node_count > 16 {
+            return Some(CognitionError::ComplexityCap {
+                breed: self.breed_name(),
+                detail: format!("max 16 nodes supported (got {})", node_count),
+            });
+        }
+        None
+    }
+}
+
 #[derive(Debug, Clone)]
 struct Factor {
     vars: Vec<usize>,

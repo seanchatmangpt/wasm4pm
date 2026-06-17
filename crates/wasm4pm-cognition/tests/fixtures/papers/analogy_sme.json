@@ -11,12 +11,30 @@
     "intent": "map the solar system onto the Rutherford atom",
     "candidates": [],
     "facts": [
-      {"key": "base:0", "value": "(greater (mass sun) (mass planet))"},
-      {"key": "base:1", "value": "(revolve planet sun)"},
-      {"key": "base:2", "value": "(cause (greater (mass sun) (mass planet)) (revolve planet sun))"},
-      {"key": "base:3", "value": "(greater (temperature sun) (temperature planet))"},
-      {"key": "target:0", "value": "(greater (mass nucleus) (mass electron))"},
-      {"key": "target:1", "value": "(revolve electron nucleus)"}
+      {
+        "key": "base:0",
+        "value": "(greater (mass sun) (mass planet))"
+      },
+      {
+        "key": "base:1",
+        "value": "(revolve planet sun)"
+      },
+      {
+        "key": "base:2",
+        "value": "(cause (greater (mass sun) (mass planet)) (revolve planet sun))"
+      },
+      {
+        "key": "base:3",
+        "value": "(greater (temperature sun) (temperature planet))"
+      },
+      {
+        "key": "target:0",
+        "value": "(greater (mass nucleus) (mass electron))"
+      },
+      {
+        "key": "target:1",
+        "value": "(revolve electron nucleus)"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -24,8 +42,12 @@
     "state": []
   },
   "expected": {
-    "mapping": {"sun": "nucleus", "planet": "electron"},
+    "mapping": {
+      "sun": "nucleus",
+      "planet": "electron"
+    },
     "candidate_inference_contains": "(cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))",
-    "notes": "base:2 (cause) has no target counterpart but all its entities are mapped, so it is the unique candidate inference; base:3 (temperature attribute) must produce no mapping influence."
+    "notes": "base:2 (cause) has no target counterpart but all its entities are mapped, so it is the unique candidate inference; base:3 (temperature attribute) must produce no mapping influence.",
+    "value": "sun->nucleus,planet->electron"
   }
 }

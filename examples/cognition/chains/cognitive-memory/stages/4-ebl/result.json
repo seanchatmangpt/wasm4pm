@@ -1,0 +1,89 @@
+(node:14089) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ebl",
+    "breed": "ebl",
+    "status": "ok",
+    "output": {
+      "breed": "Ebl",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "weight(obj1_c_eead306a,light)",
+          "value": "true"
+        },
+        {
+          "key": "weight(obj2_c_eead306a,heavy)",
+          "value": "true"
+        },
+        {
+          "key": "ebl:rule",
+          "value": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack_c_eead306a(?x_g1,?y_g1)"
+        }
+      ],
+      "selected": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack_c_eead306a(?x_g1,?y_g1)",
+      "explanation": "EBL operationalized a new rule from the proof of safe_to_stack_c_eead306a(obj1_c_eead306a,obj2_c_eead306a)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ebl-explain",
+          "detail": "fact: weight(obj1_c_eead306a,light)",
+          "depth": 30
+        },
+        {
+          "step": 1,
+          "kind": "ebl-explain",
+          "detail": "fact: weight(obj2_c_eead306a,heavy)",
+          "depth": 30
+        },
+        {
+          "step": 2,
+          "kind": "ebl-explain",
+          "detail": "rule: r_lighter",
+          "depth": 31
+        },
+        {
+          "step": 3,
+          "kind": "ebl-explain",
+          "detail": "rule: r_safe",
+          "depth": 32
+        },
+        {
+          "step": 4,
+          "kind": "ebl-generalize",
+          "detail": "rule: r_safe",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "ebl-generalize",
+          "detail": "rule: r_lighter",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "ebl-operationalize",
+          "detail": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack_c_eead306a(?x_g1,?y_g1)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "b29d208984947411e231b4ead0fac77004eef776605a57c7e0f1b0a08b1c2959",
+    "output_hash": "e95b8f9d289c77d1dd89d792b75c8ca1c06ba2d5bbf0cff91cd989c6687cc4a2",
+    "replay_pointer": "e95b8f9d289c77d1",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/b29d208984947411e231b4ead0fac77004eef776605a57c7e0f1b0a08b1c2959.json"
+  },
+  "meta": {
+    "run_id": "f0512cb9-2c23-4b74-8893-7abecb8de8df",
+    "timestamp": "2026-06-11T08:35:07.597Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

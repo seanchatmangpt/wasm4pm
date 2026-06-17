@@ -1,99 +1,152 @@
 # Cognition Examples
 
-Working `wpm cognition` examples for all 13 breeds — 9 Old AI + 4 Autoinstinct. Each example is a self-contained directory with a JSON input file (`intent.json`), a shell runner (`run.sh`), a live `result.json`, and a `last-output.log`.
+Working `wpm cognition` examples for all 52 breeds — including 39 Admitted Periodic Table breeds and 13 Classic / Autoinstinct breeds. Each example is a self-contained directory with a JSON input file (`intent.json`), a shell runner (`run.sh`), a live `result.json`, and a `last-output.log`.
 
 ## Quickstart
 
 ```bash
-# Run a single breed
+# Run a single breed example
 bash examples/cognition/mycin/run.sh
 
-# Run all 13 breeds
+# Run all 52 breed examples sequentially
 bash examples/cognition/run-all.sh
+
+# Run the 52-stage factory-agent chain
+bash examples/cognition/chains/factory-agent/chain.sh
+
+# Run master verification runner
+bash examples/cognition/verify-all.sh
 ```
 
-## Old AI Breeds (9)
+## The 52 Cognition Breeds
 
-All 9 Old AI breeds have verified working examples. Every run exits 0, produces `status: ok`, an OCEL conformance receipt (fitness=1.0), and a BLAKE3 output hash.
+Every breed has a verified working example that exits 0, produces `status: ok`, an OCEL conformance receipt (fitness=1.0), and a BLAKE3 output hash.
 
-| Breed | CLI ID | Demonstrates | Directory |
-|-------|--------|--------------|-----------|
-| MYCIN | `mycin` | Shortliffe CF combining for bacterial infection diagnosis | `mycin/` |
-| HEARSAY-II | `hearsay` | KSAR opportunistic scheduler over speech hypothesis blackboard | `hearsay/` |
-| SOAR | `soar` | Preference resolution + bounded subgoal on tie impasse | `soar/` |
-| CBR | `cbr` | 4R cycle: Retrieve (Jaccard), Reuse, Revise, Retain (BLAKE3 id) | `cbr/` |
-| Prolog | `prolog` | Flat-term Robinson unification + bounded SLD resolution | `prolog/` |
-| STRIPS | `strips` | Iterative-deepening forward search with frame axioms | `strips/` |
-| GPS | `gps` | Means-ends analysis with difference reduction table | `gps/` |
-| DENDRAL | `dendral` | Constrained structure enumeration with forbid/require rules | `dendral/` |
-| ELIZA | `eliza` | Keystack priority pattern matching, Rogerian therapist | `eliza/` |
+### Admitted Periodic Table Breeds (39)
+1. **abductive_ibe**: Abductive Inference (medical diagnosis/competing illness hypotheses)
+2. **abductive_lp**: Abductive Logic Programming (explanation of grass wetness)
+3. **act_r**: Cognitive Architecture (memory retrieval/declarative chunk activation)
+4. **allen_temporal**: Temporal Logic (transitive relations over events)
+5. **analogy_sme**: Analogical Reasoning (Structure Mapping Engine over solar system / atom)
+6. **asp**: Answer Set Programming (graph coloring stable models)
+7. **bayesian_network**: Uncertain Reasoning (probabilistic belief propagation / burglar alarm)
+8. **belief_merging**: Knowledge Representation (integrating conflicting expert facts)
+9. **circumscription**: Non-monotonic Logic (minimization of predicates/abnormalities)
+10. **clp**: Constraint Logic Programming (cryptarithmetic puzzle SEND + MORE = MONEY)
+11. **construction_grammar**: Cognitive Linguistics (syntactic structure construction parsing)
+12. **contingent_plan**: Planning (conditional plan execution under environment uncertainty)
+13. **csp_ac3**: Constraint Satisfaction (AC-3 arc consistency for map coloring)
+14. **ctl_check**: Model Checking (CTL formula progression over state transitions)
+15. **default_logic**: Non-monotonic Logic (Reiter default extensions for bird/penguin flying)
+16. **dempster_shafer**: Uncertain Reasoning (belief intervals combination for sensor fusion)
+17. **description_logic**: Description Logic (subsumption checks over family ontology)
+18. **ebl**: Machine Learning (Explanation-Based Generalization of cup concept)
+19. **episodic_memory**: Cognitive Memory (Jaccard-based memory recall with temporal decay)
+20. **event_calculus**: Temporal Reasoning (fluent activation/termination over time)
+21. **frames_inheritance**: Knowledge Representation (frame slot inheritance with overrides)
+22. **fuzzy_logic**: Uncertain Reasoning (Mamdani centroid defuzzification for ventilation control)
+23. **htn_planning**: Planning (Hierarchical Task Network decomposition for manufacturing)
+24. **ilp**: Inductive Logic Programming (inductive hypothesis learning from positive/negative examples)
+25. **ltl_monitor**: Temporal Logic (LTL safety properties monitor)
+26. **markov_logic**: Probabilistic Logic (first-order logic rules with weights)
+27. **mdp**: Decision Theory (Value Iteration for Markov Decision Process gridworld)
+28. **meta_reasoning**: Cognitive Systems (monitoring and adjusting reasoning strategies)
+29. **naive_physics**: Qualitative Reasoning (qualitative state transitions of container liquid)
+30. **partial_order_plan**: Planning (least-commitment partial-order plan scheduling)
+31. **pomdp**: Decision Theory (Partially Observable MDP belief updates)
+32. **problog**: Probabilistic Logic (probabilistic prolog query evaluation)
+33. **qualitative_reason**: Qualitative Reasoning (qualitative simulation of clock pendulum)
+34. **rl_symbolic**: Reinforcement Learning (Q-learning updates over symbolic state transitions)
+35. **sat_cdcl**: Boolean Satisfiability (CDCL-style conflict analysis and backjumping)
+36. **script_sam**: Knowledge Representation (script-based story schema instantiation)
+37. **situation_calculus**: Temporal Reasoning (first-order action representation and regression)
+38. **tableaux**: Theorem Proving (semantic tableaux path expansion for propositional logic)
+39. **version_space**: Machine Learning (candidate elimination algorithm over hypothesis space)
 
-## Autoinstinct Breeds (4)
-
-| Breed | CLI ID | Demonstrates | Directory |
-|-------|--------|--------------|-----------|
-| AutoinstinctLearning | `autoinstinct_learning` | STRIPS/HACKER bitwise heuristic planning (Winston 1975) | `autoinstinct_learning/` |
-| AutoinstinctNeurosis | `autoinstinct_neurosis` | Affect simulation with noisy-OR belief update under conflict | `autoinstinct_neurosis/` |
-| AutoinstinctSemantics | `autoinstinct_semantics` | Conceptual Dependency ATRANS/PTRANS/MTRANS parsing | `autoinstinct_semantics/` |
-| AutoinstinctVision | `autoinstinct_vision` | Blocks-world scene parsing: support-graph, clear-set, stack detection | `autoinstinct_vision/` |
+### Classic / Autoinstinct Breeds (13)
+40. **cbr**: Case-Based Reasoning (Retrieve, Reuse, Revise, Retain cycle)
+41. **dendral**: Constrained structure enumeration
+42. **eliza**: Keystack priority pattern matching Rogerian therapist
+43. **gps**: Means-ends analysis with difference reduction
+44. **hearsay**: Opportunistic scheduler blackboard
+45. **mycin**: Shortliffe certainty factors combining for diagnoses
+46. **prolog**: Robinson SLD resolution
+47. **soar**: Preference resolution and impasse subgoaling
+48. **strips**: Forward planning state search
+49. **autoinstinct_learning**: Bits plan heuristics
+50. **autoinstinct_neurosis**: Noisy-OR affect simulation under conflict
+51. **autoinstinct_semantics**: Conceptual Dependency parsing
+52. **autoinstinct_vision**: Blocks-world parsing
 
 ## Breed Chains
 
-Chains wire multiple breeds end-to-end — each breed's output becomes the next breed's input. Three case studies are provided:
+Chains wire multiple breeds end-to-end — each breed's output becomes the next breed's input. 
 
-| Chain | Breeds | Description |
-|-------|--------|-------------|
-| [socratic-diagnosis](chains/socratic-diagnosis/) | 7 | `eliza → semantics → neurosis → mycin → gps → strips → cbr` — clinical diagnosis from free-text complaint to retained case |
-| [scientific-discovery](chains/scientific-discovery/) | 6 | `hearsay → dendral → prolog → vision → learning → soar` — acoustic signal to validated hypothesis |
-| [factory-agent](chains/factory-agent/) | 13 (all) | All 13 breeds in sequence — the full cognitive stack as an existence proof |
+*   **[factory-agent](chains/factory-agent/)**: Executes all **52 breeds** sequentially in a single cryptographic chain (`00-abductive_ibe` to `51-version_space`). Each stage's output is cryptographically bound to the next stage by injecting the `prior_stage_hash` (formatted as `f"{prev_breed}:{prev_output_hash}"`) into the next breed's facts array.
 
-```bash
-# Run all three chains
-bash examples/cognition/chains/run-all-chains.sh
-```
+## Live Output Hashes (v26.6.10)
 
-See [chains/README.md](chains/README.md) for chain diagrams, data flow, and theoretical grounding in the OLDIA thesis.
-
----
-
-## Doctrine
-
-Every example produces:
-
-1. A non-empty **inference trace** (the breed's actual reasoning, not a canned string).
-2. An **OCEL 2.0 event log** inside `output_hash` — every phase of the declared lifecycle is attested.
-3. **OCEL conformance fitness = 1.0** — model-vs-log mismatch is a defect, not a discrepancy.
-4. A **BLAKE3 output_hash** covering the OCEL log — proof the declared process happened.
-5. **Replay determinism** — same input → bit-exact hash across runs and platforms.
-
-If any example exits non-zero or produces an empty `output_hash`, the breed has regressed.
-
-## Live output hashes (v26.6.9a)
+These output hashes represent the bit-exact, deterministic results generated during validation of the individual examples:
 
 | Breed | output_hash (first 16) |
-|-------|------------------------|
-| mycin | `f0886d11be3240a2` |
-| hearsay | `a28c2c75c4c6c2a2` |
-| soar | `729ad206d43b056f` |
-| cbr | `0f4e3c1bb4930348` |
-| prolog | `a8ca0fc451e8f268` |
-| strips | `70d70d6f6164c531` |
-| gps | `9f81a6c98331c6a9` |
-| dendral | `9442f99ed7d0b0d8` |
-| eliza | `9932078050af4f41` |
-| autoinstinct_learning | `98a21d56937ae82e` |
-| autoinstinct_neurosis | `d5cc681126405235` |
-| autoinstinct_semantics | `3b61a92be807bf73` |
-| autoinstinct_vision | `0dddfce965370d09` |
+|---|---|
+| abductive_ibe | `03505d975e04bcd5` |
+| abductive_lp | `1d2b00a9181d2b4f` |
+| act_r | `55d3e70daddee091` |
+| allen_temporal | `5857df023eaa19ce` |
+| analogy_sme | `1c0c86192c1d10cc` |
+| asp | `26bc8234a55d2cf3` |
+| autoinstinct_learning | `9f1389b72fe6023c` |
+| autoinstinct_neurosis | `d3e33c417e99da15` |
+| autoinstinct_semantics | `936d32763f36fd87` |
+| autoinstinct_vision | `59ffb7d74da33fe7` |
+| bayesian_network | `73439e7ebb9120de` |
+| belief_merging | `c3e82c3d29ade8c3` |
+| cbr | `9d1996d75e81d7e5` |
+| circumscription | `d43ab3c928ce1458` |
+| clp | `515f57f16fb98af8` |
+| construction_grammar | `391261ee6ea3b91f` |
+| contingent_plan | `3467f6a0049cb801` |
+| csp_ac3 | `85014b3e712b45b8` |
+| ctl_check | `7c3d71e4256fff43` |
+| default_logic | `a5497eeb4c461bbf` |
+| dempster_shafer | `dd7ed98802b0cddd` |
+| dendral | `e49b7fd1e3b9ba65` |
+| description_logic | `0c7afe958ae08ff8` |
+| ebl | `5d2b61fd7d0eac08` |
+| eliza | `dd442150f3db7c73` |
+| episodic_memory | `7fb9b952ce035224` |
+| event_calculus | `6cc023f07186f504` |
+| frames_inheritance | `579e9d61e73e92f0` |
+| fuzzy_logic | `c1ca20d367d5f6de` |
+| gps | `80fd9b7528bb883d` |
+| hearsay | `91a01ff5a78eb057` |
+| htn_planning | `b7a9d87615b02e34` |
+| ilp | `340869bc3cd91796` |
+| ltl_monitor | `91da8cfb05ecbc34` |
+| markov_logic | `d82fb1a7318e1b4d` |
+| mdp | `a233ae442bf64a09` |
+| meta_reasoning | `ac2659a7f875be3e` |
+| mycin | `700c805a262974ea` |
+| naive_physics | `78a716dd643e607b` |
+| partial_order_plan | `f5974881fde5e8af` |
+| pomdp | `27b5b6976bac698a` |
+| problog | `c2f11755fb85fa71` |
+| prolog | `43d645c296cf7a9a` |
+| qualitative_reason | `4d46336a65718384` |
+| rl_symbolic | `c0ef95c1524fabab` |
+| sat_cdcl | `fb70c79f8eb340a8` |
+| script_sam | `0378f26b4fa05f23` |
+| situation_calculus | `03acc09c9ae7eb0e` |
+| soar | `40e44da0c464aed5` |
+| strips | `5bd502b8a78c4ac5` |
+| tableaux | `ba67019f66de0810` |
+| version_space | `1dba3dc45e3818f5` |
 
-## Prerequisites
+## Verification & Trust Doctrine
 
-- `wpm` is on PATH, **or** run from repo root (scripts auto-detect `apps/wasm4pm/dist/bin/wpm.js`)
-- WASM module is built: `cd wasm4pm && npm run build:nodejs`
-- TypeScript CLI is built: `cd apps/wasm4pm && pnpm build`
-
-## Docs
-
-- [Cognition Contracts Tutorial](../../docs/tutorials/cognition_contracts.md) — full field reference, all 13 breeds, receipt chain
-- [Glossary: breed, contract, ContractResult](../../docs/reference/glossary.md)
-- [OLDIA Thesis](../../docs/thesis/oldia/) — PhD-level validation and falsification of all 13 breeds
+Every cognition example run complies with the following trust boundaries:
+1. **Inference Trace**: Pure non-empty logic matching the breed's execution.
+2. **BLAKE3 hashes**: Deterministic cryptographic digests representing execution state.
+3. **Replay Determinism**: Exiting cleanly and verifying bit-exact outputs twice under `NODE_NO_WARNINGS=1` environment.
+4. **Receipt Doctor Integrity**: Cryptographic receipts audited successfully via Rust Receipt Doctor (`cargo run --bin wpm receipt doctor`).

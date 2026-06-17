@@ -106,6 +106,6 @@ npx eslint --no-eslintrc --config .eslintrc.cjs \
 
 ## References
 
-- [ESLint Rule Format](https://eslint.org/docs/developers/rule-structure)
-- [ESLint Visitor Pattern](https://eslint.org/docs/developers/working-with-rules)
-- [wasm4pm GEMBA.md](../GEMBA.md)
+- [ESLint Rule Format](https://eslint.org/docs/latest/extend/custom-rules)
+- [ESLint Visitor Pattern](https://eslint.org/docs/latest/extend/custom-rules)
+- [wasm4pm GEMBA checklist](../../../../docs_quarantine/ARCHIVE/GEMBA-CHECKLIST.md)

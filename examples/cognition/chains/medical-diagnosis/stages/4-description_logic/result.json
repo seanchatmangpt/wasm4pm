@@ -1,0 +1,75 @@
+(node:13950) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "description_logic",
+    "breed": "description_logic",
+    "status": "ok",
+    "output": {
+      "breed": "DescriptionLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "dl:verdict:A_c_f183927a:C_c_f183927a",
+          "value": "true"
+        }
+      ],
+      "selected": "A_c_f183927a⊑C_c_f183927a=true",
+      "explanation": "EL completion (CR1–CR4) to fixpoint over 3 concepts; verdicts: A_c_f183927a⊑C_c_f183927a=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "normalize",
+          "detail": "3 concepts, 2 subclass, 0 conj, 0 exists-rhs, 0 exists-lhs axioms",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "apply-cr1",
+          "detail": "A_c_f183927a ⊑ B_c_f183927a (via A_c_f183927a ⊑ B_c_f183927a)",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-cr1",
+          "detail": "B_c_f183927a ⊑ C_c_f183927a (via B_c_f183927a ⊑ C_c_f183927a)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "apply-cr1",
+          "detail": "A_c_f183927a ⊑ C_c_f183927a (via B_c_f183927a ⊑ C_c_f183927a)",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "fixpoint",
+          "detail": "saturated: 6 subsumptions, 0 role edges",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "classify-verdict",
+          "detail": "A_c_f183927a ⊑ C_c_f183927a : true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "8e8d80b347c73922f81ef41eeba1b074e11eac3580c9d89657d6b830a520141a",
+    "output_hash": "be91e29d15e5e591d88530ae2fd618509e3a2a0194a26b26e21de855471c3aba",
+    "replay_pointer": "be91e29d15e5e591",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/8e8d80b347c73922f81ef41eeba1b074e11eac3580c9d89657d6b830a520141a.json"
+  },
+  "meta": {
+    "run_id": "f0d1cf4a-c9f1-4fe1-9742-4c4b1d584646",
+    "timestamp": "2026-06-11T08:35:01.097Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

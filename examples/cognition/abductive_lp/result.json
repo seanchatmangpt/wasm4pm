@@ -1,0 +1,117 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_lp",
+    "breed": "abductive_lp",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveLp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "alp:explanation:0",
+          "value": "{rained}"
+        },
+        {
+          "key": "alp:explanation:1",
+          "value": "{sprinkler_on}"
+        },
+        {
+          "key": "alp:explanation_count",
+          "value": "2"
+        }
+      ],
+      "selected": "{rained}",
+      "explanation": "KKT abduction: 2 minimal explanation(s) of 'grass_wet' over 2 abducibles.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-abducibles",
+          "detail": "A={rained,sprinkler_on}, 0 ICs, observe 'grass_wet'",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "candidate-delta",
+          "detail": "Δ={}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=0 atoms",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "explain-reject",
+          "detail": "Δ={}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "candidate-delta",
+          "detail": "Δ={rained}",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "explain-accept",
+          "detail": "Δ={rained} explains 'grass_wet'",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "candidate-delta",
+          "detail": "Δ={sprinkler_on}",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 9,
+          "kind": "explain-accept",
+          "detail": "Δ={sprinkler_on} explains 'grass_wet'",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "explain-reject",
+          "detail": "{rained,sprinkler_on} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 11,
+          "kind": "minimal-set",
+          "detail": "2 minimal explanation(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "2faf59afc0471c32c32d7379a3304978c492fe5bca6a6e71839be8304695f927",
+    "output_hash": "1d2b00a9181d2b4fab228ef326cd8674e80cf66ff8cb0eb538f6c00bb33a0d3c",
+    "replay_pointer": "1d2b00a9181d2b4f",
+    "inference_step_count": 12,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/abductive_lp/.wasm4pm/receipts/2faf59afc0471c32c32d7379a3304978c492fe5bca6a6e71839be8304695f927.json"
+  },
+  "meta": {
+    "run_id": "ff08b100-b95b-4896-b8be-87ad6eb0a3ef",
+    "timestamp": "2026-06-11T07:02:51.162Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

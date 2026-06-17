@@ -8,58 +8,68 @@
     "breed": "prolog",
     "status": "ok",
     "output": {
-      "breed": "prolog",
+      "breed": "Prolog",
       "candidates": [],
       "facts": [
         {
           "key": "parent",
-          "value": "alice"
+          "value": "tom-bob"
         },
         {
           "key": "parent",
-          "value": "bob"
+          "value": "bob-ann"
+        },
+        {
+          "key": "parent",
+          "value": "bob-pat"
         }
       ],
-      "selected": "alice",
-      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [c0, 35, 66, 8])",
+      "selected": "bob-ann",
+      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [6e, 8d, 49, 1d])",
       "inference_trace": [
         {
           "step": 0,
           "kind": "intern-fact",
-          "detail": "parent=alice",
+          "detail": "parent=tom-bob",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "intern-fact",
-          "detail": "parent=bob",
+          "detail": "parent=bob-ann",
           "depth": 0
         },
         {
           "step": 2,
-          "kind": "kernel-query",
-          "detail": "pred_id=1 binding_mask=0b1",
+          "kind": "intern-fact",
+          "detail": "parent=bob-pat",
           "depth": 0
         },
         {
           "step": 3,
+          "kind": "kernel-query",
+          "detail": "pred_id=2 binding_mask=0b1",
+          "depth": 0
+        },
+        {
+          "step": 4,
           "kind": "decision",
           "detail": "Allow with 1 proof nodes",
           "depth": 0
         }
       ]
     },
-    "run_id": "5d010e6f9039a59a7209dc0267896ff5ad3aa48cb0bdc3c61d41c90671b4ce23",
-    "output_hash": "a8ca0fc451e8f268d89f4296374a4bba1df515574f843ffff9577532a54152f6",
-    "replay_pointer": "a8ca0fc451e8f268",
-    "inference_step_count": 4,
+    "run_id": "497f0742cc352fd7fdbc380faa4648c6bf7afbe5514c87b01f55b9daa087b490",
+    "output_hash": "43d645c296cf7a9a8191c2ecb081c2db9857508127f825a3c06764558c2a4af2",
+    "replay_pointer": "43d645c296cf7a9a",
+    "inference_step_count": 5,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/5d010e6f9039a59a7209dc0267896ff5ad3aa48cb0bdc3c61d41c90671b4ce23.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/prolog/.wasm4pm/receipts/497f0742cc352fd7fdbc380faa4648c6bf7afbe5514c87b01f55b9daa087b490.json"
   },
   "meta": {
-    "run_id": "4bcf6638-16f4-4d1c-a7bd-e92ffdba3ff6",
-    "timestamp": "2026-06-10T15:46:41.572Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "75edc302-a905-46f6-a860-0f7b9f734736",
+    "timestamp": "2026-06-11T07:03:19.488Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
   }
 }

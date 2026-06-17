@@ -24,6 +24,7 @@
 //!    b. If still unresolved after depth cap, fall back to score+lex with trace "impasse-unresolved-fallback".
 //! 6. Emit a `chunk.pref` output fact recording winning operator and reason.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, Rule, TraceStep,
 };
@@ -447,9 +448,7 @@ impl CognitionBreed for Soar {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("SOAR must record at least one evaluation step".to_string());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

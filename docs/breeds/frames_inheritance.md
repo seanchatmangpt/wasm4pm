@@ -1,9 +1,7 @@
 # Frames Inheritance
 
-## Origin
-- **Paper:** "A Framework for Representing Knowledge" (Minsky, 1974)
-- **Authors:** Marvin Minsky
-- **Tradition:** Frame theory, Semantic Networks, Object-Oriented Knowledge Representation
+## 1. Identity & Lineage
+Frame-based inheritance — Minsky 1974. BreedId `frames_inheritance`, module `src/breeds/frames_inheritance.rs`.
 
 ## Algorithm
 Frames Inheritance parses a frame graph (parent links, slot values, default values) and resolves slot values down the inheritance path, applying overrides.
@@ -45,19 +43,11 @@ function run(input):
     return None
 ```
 
-## Input contract
-- `intent`: must be `"resolve <frame> <slot>"`
-- `facts`: represents frame graph facts (`frame:<F>:isa`, `frame:<F>:slot:<S>`, `frame:<F>:slot:<S>:default`).
-- `rules`: not used
-- `goals`: not used
-- `cases`: not used
-- `state`: not used
-- `candidates`: passed through unchanged
+## 6. Oracles
+Refusal: malformed intent / no frame facts / isa cycle. Hidden: own overrides default; nearest ancestor wins. Paper: my_chair isa chair isa furniture; default legs=4 inherited.
 
-## Output contract
-- `selected`: resolved slot value if found, or None.
-- `explanation`: string detailing the resolution path and distance.
-- `inference_trace`: trace steps recording `"frame-load"`, `"frame-walk"`, and `"frame-resolve"`.
+## 7. Determinism & Bounds
+BTreeMap and BTreeSet working sets only. Cycle detection set prevents infinite walks. Fixed string comparisons for resolution. 
 
 ## Complexity
 - Time: $O(N)$ where $N$ is the depth of the inheritance hierarchy.

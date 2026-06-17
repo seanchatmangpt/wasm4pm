@@ -8,78 +8,109 @@
     "breed": "soar",
     "status": "ok",
     "output": {
-      "breed": "soar",
+      "breed": "Soar",
       "candidates": [
         {
-          "id": "op-fetch",
-          "score": 0.6000000238418579,
-          "eliminated": true,
-          "elimination_reason": "dominated by op-search"
+          "id": "op-move-blank-up",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "id": "op-search",
-          "score": 0.800000011920929,
-          "eliminated": false
+          "id": "op-move-blank-down",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
-          "id": "op-propose",
-          "score": 0.5,
-          "eliminated": true,
-          "elimination_reason": "prohibit"
+          "id": "op-move-blank-left",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "op-move-blank-right",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
         {
           "key": "pref",
-          "value": "better:op-search:op-fetch"
+          "value": "acceptable:op-move-blank-up"
         },
         {
           "key": "pref",
-          "value": "prohibit:op-propose"
+          "value": "acceptable:op-move-blank-down"
         },
         {
-          "key": "state",
-          "value": "problem-space=blocks-world"
+          "key": "pref",
+          "value": "acceptable:op-move-blank-left"
+        },
+        {
+          "key": "pref",
+          "value": "acceptable:op-move-blank-right"
+        },
+        {
+          "key": "pref",
+          "value": "best:op-move-blank-up"
+        },
+        {
+          "key": "pref",
+          "value": "worse:op-move-blank-down"
+        },
+        {
+          "key": "tile-above-blank",
+          "value": "5"
+        },
+        {
+          "key": "tile-below-blank",
+          "value": "8"
+        },
+        {
+          "key": "tile-left-of-blank",
+          "value": "4"
+        },
+        {
+          "key": "tile-right-of-blank",
+          "value": "none"
+        },
+        {
+          "key": "goal-position-5",
+          "value": "row1-col2"
+        },
+        {
+          "key": "current-position-5",
+          "value": "row2-col2"
         },
         {
           "key": "chunk.pref",
-          "value": "winner:op-search:reason:decisive"
+          "value": "winner:op-move-blank-up:reason:decisive"
         }
       ],
-      "selected": "op-search",
-      "explanation": "SOAR decisive selected Some(\"op-search\") (best=0, worst=0, require=0, prohibit=1, better-pairs=1)",
+      "selected": "op-move-blank-up",
+      "explanation": "SOAR decisive selected Some(\"op-move-blank-up\") (best=1, worst=0, require=0, prohibit=0, better-pairs=0)",
       "inference_trace": [
         {
           "step": 0,
-          "kind": "prohibit",
-          "detail": "op-propose",
-          "depth": 0
-        },
-        {
-          "step": 1,
-          "kind": "dominate",
-          "detail": "op-search > op-fetch",
-          "depth": 0
-        },
-        {
-          "step": 2,
           "kind": "evaluate-single",
-          "detail": "op-search",
+          "detail": "op-move-blank-up",
           "depth": 0
         }
       ]
     },
-    "run_id": "666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef",
-    "output_hash": "729ad206d43b056f8c44e3af477b5c931bb17acaf148db2891d9d8f6e1719857",
-    "replay_pointer": "729ad206d43b056f",
-    "inference_step_count": 3,
+    "run_id": "e32f7f57fd40bd36e24d8f594e56fc19fdfd442f1aaa5dac800f63363629e413",
+    "output_hash": "40e44da0c464aed57663d9cb256df2f42c6512f8b7d71dcad17a7d217d4ff9a9",
+    "replay_pointer": "40e44da0c464aed5",
+    "inference_step_count": 1,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/666fa7b29e35e2957246f7f5f0e09e662b68c544a2e12996129427183fbfcfef.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/soar/.wasm4pm/receipts/e32f7f57fd40bd36e24d8f594e56fc19fdfd442f1aaa5dac800f63363629e413.json"
   },
   "meta": {
-    "run_id": "66d8e99a-45ce-41e7-9451-a0d6ed254e29",
-    "timestamp": "2026-06-10T15:46:40.804Z",
-    "duration_ms": 13,
-    "version": "26.6.9"
+    "run_id": "e8a953b9-1550-4ca5-b817-40ad249a8eb9",
+    "timestamp": "2026-06-11T07:03:23.608Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

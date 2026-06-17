@@ -1,0 +1,143 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "event_calculus",
+    "breed": "event_calculus",
+    "status": "ok",
+    "output": {
+      "breed": "EventCalculus",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ec:verdict:lecturer@4",
+          "value": "true"
+        },
+        {
+          "key": "ec:verdict:lecturer@7",
+          "value": "false"
+        },
+        {
+          "key": "ec:verdict:professor@7",
+          "value": "true"
+        },
+        {
+          "key": "ec:verdict:employed@7",
+          "value": "true"
+        },
+        {
+          "key": "ec:verdict:professor@4",
+          "value": "false"
+        }
+      ],
+      "selected": "lecturer@4=true",
+      "explanation": "Discrete event calculus over 2 events: lecturer@4=true; lecturer@7=false; professor@7=true; employed@7=true; professor@4=false",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ec-load",
+          "detail": "2 events, 0 initially-fluents",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ec-infer",
+          "detail": "Happens(hire,2) initiates lecturer",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "ec-infer",
+          "detail": "Clipped(2,lecturer,4) = false (inertia)",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(lecturer,4) = true",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "ec-infer",
+          "detail": "Happens(hire,2) initiates lecturer",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "ec-infer",
+          "detail": "Clipped(2,lecturer,7) = true (by 'promote'@5)",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(lecturer,7) = false",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "ec-infer",
+          "detail": "Happens(promote,5) initiates professor",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "ec-infer",
+          "detail": "Clipped(5,professor,7) = false (inertia)",
+          "depth": 2
+        },
+        {
+          "step": 9,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(professor,7) = true",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "ec-infer",
+          "detail": "Happens(hire,2) initiates employed",
+          "depth": 1
+        },
+        {
+          "step": 11,
+          "kind": "ec-infer",
+          "detail": "Clipped(2,employed,7) = false (inertia)",
+          "depth": 2
+        },
+        {
+          "step": 12,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(employed,7) = true",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(professor,4) = false",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "ec-model",
+          "detail": "5 verdict(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "08975d34c4cb5f9bcbd7a37f34170f418b346ffc260c54b122fe9a8e63a0efd8",
+    "output_hash": "6cc023f07186f504fd5959fb0a69c977db1e2ca49208aeed9431039d391a2192",
+    "replay_pointer": "6cc023f07186f504",
+    "inference_step_count": 15,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/08975d34c4cb5f9bcbd7a37f34170f418b346ffc260c54b122fe9a8e63a0efd8.json"
+  },
+  "meta": {
+    "run_id": "3bafe755-2d0c-41c5-87f5-9fb5b88ac5f1",
+    "timestamp": "2026-06-11T08:38:22.288Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

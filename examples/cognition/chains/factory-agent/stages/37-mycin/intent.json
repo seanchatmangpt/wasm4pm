@@ -1,0 +1,54 @@
+{
+  "intent": "diagnose bacteremia organism and recommend antibiotic therapy",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "gram-stain",
+      "value": "gram-positive"
+    },
+    {
+      "key": "morphology",
+      "value": "coccus"
+    },
+    {
+      "key": "growth-conformation",
+      "value": "chains"
+    },
+    {
+      "key": "site",
+      "value": "blood"
+    },
+    {
+      "key": "allergy-penicillin",
+      "value": "no"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "meta_reasoning:ac2659a7f875be3ef7afa266a166a3d51ddca1891542c8fd8d8ac359bf2e3723"
+    }
+  ],
+  "rules": [
+    {
+      "id": "RULE050-class",
+      "premise": [
+        "gram-positive",
+        "coccus",
+        "chains"
+      ],
+      "conclusion": "organism=streptococcus",
+      "certainty": 0.7
+    },
+    {
+      "id": "RULE071-class",
+      "premise": [
+        "organism=streptococcus",
+        "allergy-penicillin=no"
+      ],
+      "conclusion": "therapy=penicillin",
+      "certainty": 0.9
+    }
+  ],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

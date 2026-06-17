@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prolog8 — flat-term SLD resolution with Robinson unification, grandparent derivation.
+# PROLOG — SLD resolution back-tracking engine (Colmerauer & Kowalski 1972).
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -10,5 +10,5 @@ else
   WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── prolog: parent/2 facts → grandparent(?0,?2) via Robinson unification ───"
+echo "─── prolog: horn clauses + query → proof search via SLD resolution ───"
 $WPM cognition run --contract prolog --input intent.json --format json | tee result.json

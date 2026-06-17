@@ -21,6 +21,8 @@
 //!   α: T(A&B)→{TA,TB}   F(A|B)→{FA,FB}   F(A->B)→{TA,FB}   T(!A)→{FA}   F(!A)→{TA}
 //!   β: F(A&B)→{FA|FB}   T(A|B)→{TA|TB}   T(A->B)→{FA|TB}
 
+use crate::breeds::support::breed_class::VerifierBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::support::formula::Formula;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
@@ -124,6 +126,12 @@ impl Tableaux {
             .iter()
             .find(|f| f.key == "tableaux:formula")
             .map(|f| f.value.as_str())
+    }
+}
+
+impl VerifierBreed for Tableaux {
+    fn valid_verdicts(&self) -> &'static [&'static str] {
+        &["valid", "invalid"]
     }
 }
 
@@ -370,13 +378,10 @@ impl CognitionBreed for Tableaux {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace — no evidence of tableau expansion".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "verdict") {
-            return Err("missing verdict step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_verdict_valid(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["verdict"])?;
         if !output
             .facts
             .iter()

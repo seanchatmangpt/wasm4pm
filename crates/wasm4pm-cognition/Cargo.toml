@@ -16,6 +16,7 @@ serde_json = { workspace = true }
 blake3 = { workspace = true }
 smallvec = { workspace = true }
 indexmap = { version = "2.2", features = ["serde"] }
+thiserror = "1"
 once_cell = "1.19"
 tracing = { workspace = true }
 hex = "0.4"
@@ -36,6 +37,8 @@ default = ["actor-ed25519"]
 wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:js-sys"]
 actor-ed25519 = ["dep:ed25519-dalek", "dep:rand_core"]
 actor-mac-fallback = []
+# Oracle impls for the universal anti-cheat harness (test-only surface; never default).
+breed-oracles = []
 
 [dev-dependencies]
 serde_json = { workspace = true }
@@ -46,3 +49,183 @@ criterion = { version = "0.5", features = ["html_reports"] }
 [[bench]]
 name = "breed_latency"
 harness = false
+
+[[test]]
+name = "universal_anticheat"
+required-features = ["breed-oracles"]
+
+[[example]]
+name = "abductive_ibe"
+path = "examples/abductive_ibe.rs"
+
+[[example]]
+name = "abductive_lp"
+path = "examples/abductive_lp.rs"
+
+[[example]]
+name = "act_r"
+path = "examples/act_r.rs"
+
+[[example]]
+name = "allen_temporal"
+path = "examples/allen_temporal.rs"
+
+[[example]]
+name = "analogy_sme"
+path = "examples/analogy_sme.rs"
+
+[[example]]
+name = "asp"
+path = "examples/asp.rs"
+
+[[example]]
+name = "bayesian_network"
+path = "examples/bayesian_network.rs"
+
+[[example]]
+name = "belief_merging"
+path = "examples/belief_merging.rs"
+
+[[example]]
+name = "circumscription"
+path = "examples/circumscription.rs"
+
+[[example]]
+name = "clp"
+path = "examples/clp.rs"
+
+[[example]]
+name = "construction_grammar"
+path = "examples/construction_grammar.rs"
+
+[[example]]
+name = "contingent_plan"
+path = "examples/contingent_plan.rs"
+
+[[example]]
+name = "csp_ac3"
+path = "examples/csp_ac3.rs"
+
+[[example]]
+name = "ctl_check"
+path = "examples/ctl_check.rs"
+
+[[example]]
+name = "default_logic"
+path = "examples/default_logic.rs"
+
+[[example]]
+name = "dempster_shafer"
+path = "examples/dempster_shafer.rs"
+
+[[example]]
+name = "description_logic"
+path = "examples/description_logic.rs"
+
+[[example]]
+name = "ebl"
+path = "examples/ebl.rs"
+
+[[example]]
+name = "episodic_memory"
+path = "examples/episodic_memory.rs"
+
+[[example]]
+name = "event_calculus"
+path = "examples/event_calculus.rs"
+
+[[example]]
+name = "frames_inheritance"
+path = "examples/frames_inheritance.rs"
+
+[[example]]
+name = "fuzzy_logic"
+path = "examples/fuzzy_logic.rs"
+
+[[example]]
+name = "htn_planning"
+path = "examples/htn_planning.rs"
+
+[[example]]
+name = "ilp"
+path = "examples/ilp.rs"
+
+[[example]]
+name = "ltl_monitor"
+path = "examples/ltl_monitor.rs"
+
+[[example]]
+name = "markov_logic"
+path = "examples/markov_logic.rs"
+
+[[example]]
+name = "mdp"
+path = "examples/mdp.rs"
+
+[[example]]
+name = "meta_reasoning"
+path = "examples/meta_reasoning.rs"
+
+[[example]]
+name = "naive_physics"
+path = "examples/naive_physics.rs"
+
+[[example]]
+name = "partial_order_plan"
+path = "examples/partial_order_plan.rs"
+
+[[example]]
+name = "pomdp"
+path = "examples/pomdp.rs"
+
+[[example]]
+name = "problog"
+path = "examples/problog.rs"
+
+[[example]]
+name = "qualitative_reason"
+path = "examples/qualitative_reason.rs"
+
+[[example]]
+name = "rl_symbolic"
+path = "examples/rl_symbolic.rs"
+
+[[example]]
+name = "sat_cdcl"
+path = "examples/sat_cdcl.rs"
+
+[[example]]
+name = "script_sam"
+path = "examples/script_sam.rs"
+
+[[example]]
+name = "situation_calculus"
+path = "examples/situation_calculus.rs"
+
+[[example]]
+name = "tableaux"
+path = "examples/tableaux.rs"
+
+[[example]]
+name = "version_space"
+path = "examples/version_space.rs"
+
+[[example]]
+name = "chain_diagnosis"
+path = "examples/chain_diagnosis.rs"
+
+[[example]]
+name = "chain_planning"
+path = "examples/chain_planning.rs"
+
+[[example]]
+name = "chain_learning"
+path = "examples/chain_learning.rs"
+
+[[example]]
+name = "chain_temporal"
+path = "examples/chain_temporal.rs"
+
+[[example]]
+name = "chain_abductive"
+path = "examples/chain_abductive.rs"

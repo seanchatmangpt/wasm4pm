@@ -16,6 +16,7 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use tracing;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctNeurosis breed: simulates paranoid / affect-driven belief processing
 /// in the tradition of Colby's PARRY and Abelson's ideology machines.
@@ -216,12 +217,7 @@ impl CognitionBreed for AutoinstinctNeurosis {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err(
-                "AutoinstinctNeurosis must produce at least one trace step (affect evidence)"
-                    .to_string(),
-            );
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

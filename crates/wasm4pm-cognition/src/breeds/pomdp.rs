@@ -25,9 +25,12 @@
 //! invariants and `value_iteration` supplies the QMDP upper bound recorded in
 //! the `select-action` trace step.
 
+use crate::breeds::support::breed_class::OptimizerBreed;
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::support::mdp::{value_iteration, MdpModel};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, Fact, TraceStep,
 };
 use std::collections::BTreeMap;
 
@@ -226,6 +229,74 @@ fn dot(a: &[f64], b: &[f64]) -> f64 {
     a.iter().zip(b.iter()).map(|(x, y)| x * y).sum()
 }
 
+impl OptimizerBreed for Pomdp {
+    fn optimality_fact_key(&self) -> &'static str {
+        "pomdp:belief:"
+    }
+}
+
+impl BoundedBreed for Pomdp {
+    fn breed_name(&self) -> &'static str {
+        "pomdp"
+    }
+
+    fn domain_bound(&self) -> DomainBound {
+        DomainBound::default()
+    }
+
+    fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
+        let cap = |detail: String| {
+            Some(CognitionError::ComplexityCap {
+                breed: "pomdp",
+                detail,
+            })
+        };
+        // Missing/malformed facts are content errors, reported by preconditions()
+        // via parse_model; the cap check only measures well-formed dimensions.
+        let count = |key: &str| -> Option<usize> {
+            input.facts.iter().find(|f| f.key == key).map(|f| {
+                f.value
+                    .split(',')
+                    .map(str::trim)
+                    .filter(|s| !s.is_empty())
+                    .count()
+            })
+        };
+        if let (Some(ns), Some(na), Some(no)) = (
+            count("pomdp:states"),
+            count("pomdp:actions"),
+            count("pomdp:observations"),
+        ) {
+            let product = ns * na * no;
+            if product > MAX_PRODUCT {
+                return cap(format!(
+                    "|S|·|A|·|O| = {} exceeds {} — model refused (PBVI structural cap)",
+                    product, MAX_PRODUCT
+                ));
+            }
+        }
+        if let Some(h) = input.facts.iter().find(|f| f.key == "pomdp:horizon") {
+            if let Ok(horizon) = h.value.parse::<usize>() {
+                if horizon > MAX_HORIZON {
+                    return cap(format!(
+                        "horizon must be in 1..={}, got {}",
+                        MAX_HORIZON, horizon
+                    ));
+                }
+            }
+        }
+        let steps = input
+            .facts
+            .iter()
+            .filter(|f| matches!(f.key.split(':').collect::<Vec<_>>().as_slice(), ["pomdp", "step", _]))
+            .count();
+        if steps > 32 {
+            return cap("observation history exceeds 32 steps".to_string());
+        }
+        None
+    }
+}
+
 impl CognitionBreed for Pomdp {
     fn id(&self) -> BreedId {
         BreedId::Pomdp
@@ -240,6 +311,7 @@ impl CognitionBreed for Pomdp {
     }
 
     fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
+        self.check_domain_bounds(input).map_err(|e| e.to_string())?;
         parse_model(input).map(|_| ())
     }
 
@@ -460,16 +532,9 @@ impl CognitionBreed for Pomdp {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "select-action") {
-            return Err("missing select-action step".to_string());
-        }
-        if !output.facts.iter().any(|f| f.key.starts_with("pomdp:belief:")) {
-            return Err("missing pomdp:belief facts".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty_with_kinds(&["select-action"])?;
+        self.assert_optimality_fact_present(output)?;
         Ok(())
     }
 }

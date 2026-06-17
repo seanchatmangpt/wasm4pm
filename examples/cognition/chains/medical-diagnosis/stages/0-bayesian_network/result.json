@@ -1,0 +1,87 @@
+(node:13922) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "bayesian_network",
+    "breed": "bayesian_network",
+    "status": "ok",
+    "output": {
+      "breed": "BayesianNetwork",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "cpt:Pneumonia",
+          "value": "0.05"
+        },
+        {
+          "key": "cpt:TB",
+          "value": "0.02"
+        },
+        {
+          "key": "cpt:Cough|Pneumonia,TB",
+          "value": "0.1,0.6,0.8,0.95"
+        },
+        {
+          "key": "evidence:Cough",
+          "value": "true"
+        }
+      ],
+      "selected": "prob:Pneumonia=0.277566540",
+      "explanation": "prob:Pneumonia=0.277566540",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "bn-load-cpt",
+          "detail": "Pneumonia",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "bn-load-cpt",
+          "detail": "TB",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "bn-load-cpt",
+          "detail": "Cough|Pneumonia,TB",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "bn-observe",
+          "detail": "Cough=true",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "bn-eliminate",
+          "detail": "TB",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "bn-verdict",
+          "detail": "prob:Pneumonia=0.277566540",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "88245eccb124356246ffb761202d4645878155ff6c5407550335cc7517442218",
+    "output_hash": "7e6e7475e8c28fca3067be90f661fef80ff123d3835af53b3ff9983b66c17199",
+    "replay_pointer": "7e6e7475e8c28fca",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/88245eccb124356246ffb761202d4645878155ff6c5407550335cc7517442218.json"
+  },
+  "meta": {
+    "run_id": "ecc7a038-f921-4d7e-9b7b-4f52b49a4889",
+    "timestamp": "2026-06-11T08:34:59.644Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

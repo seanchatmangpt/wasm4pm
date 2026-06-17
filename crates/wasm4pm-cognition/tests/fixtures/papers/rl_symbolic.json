@@ -11,13 +11,34 @@
     "intent": "learn the optimal policy for the two-state goal task",
     "candidates": [],
     "facts": [
-      {"key": "mdp:gamma", "value": "0.9"},
-      {"key": "mdp:start", "value": "s0"},
-      {"key": "mdp:terminal:goal", "value": "true"},
-      {"key": "mdp:t:s0:go", "value": "goal"},
-      {"key": "mdp:t:s0:stay", "value": "s0"},
-      {"key": "mdp:r:s0:go", "value": "1.0"},
-      {"key": "rl:episodes", "value": "300"}
+      {
+        "key": "mdp:gamma",
+        "value": "0.9"
+      },
+      {
+        "key": "mdp:start",
+        "value": "s0"
+      },
+      {
+        "key": "mdp:terminal:goal",
+        "value": "true"
+      },
+      {
+        "key": "mdp:t:s0:go",
+        "value": "goal"
+      },
+      {
+        "key": "mdp:t:s0:stay",
+        "value": "s0"
+      },
+      {
+        "key": "mdp:r:s0:go",
+        "value": "1.0"
+      },
+      {
+        "key": "rl:episodes",
+        "value": "300"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -29,6 +50,7 @@
     "q_s0_go": 1.0,
     "q_s0_stay": 0.9,
     "tolerance": 0.05,
-    "notes": "Closed-form Bellman fixed point; Watkins-Dayan convergence checked against exact Q*."
+    "notes": "Closed-form Bellman fixed point; Watkins-Dayan convergence checked against exact Q*.",
+    "value": "verified"
   }
 }

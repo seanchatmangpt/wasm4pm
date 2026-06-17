@@ -1,0 +1,64 @@
+{
+  "intent": "evaluate HoldsAt queries over the Kowalski-Sergot hired/promoted narrative",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ec:happens:2",
+      "value": "hire"
+    },
+    {
+      "key": "ec:happens:5",
+      "value": "promote"
+    },
+    {
+      "key": "ec:initiates:hire",
+      "value": "employed"
+    },
+    {
+      "key": "ec:initiates:hire",
+      "value": "lecturer"
+    },
+    {
+      "key": "ec:initiates:promote",
+      "value": "professor"
+    },
+    {
+      "key": "ec:terminates:promote",
+      "value": "lecturer"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "episodic_memory:c22613f4e1de1c737654e1edf56abeea0064a44d1f5462e808980be772fc7895"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {
+      "id": "q1",
+      "predicate": "ec:holdsat",
+      "value": "lecturer@4"
+    },
+    {
+      "id": "q2",
+      "predicate": "ec:holdsat",
+      "value": "lecturer@7"
+    },
+    {
+      "id": "q3",
+      "predicate": "ec:holdsat",
+      "value": "professor@7"
+    },
+    {
+      "id": "q4",
+      "predicate": "ec:holdsat",
+      "value": "employed@7"
+    },
+    {
+      "id": "q5",
+      "predicate": "ec:holdsat",
+      "value": "professor@4"
+    }
+  ],
+  "state": []
+}

@@ -1,3 +1,5 @@
+(node:13548) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
 {
   "command": "cognition run",
   "status": "ok",
@@ -8,12 +10,13 @@
     "breed": "autoinstinct_learning",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctlearning",
+      "breed": "AutoinstinctLearning",
       "candidates": [
         {
           "id": "plan-step-0",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -77,9 +80,9 @@
     "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9fc18bc9b594bab3cf8c45252bbbae57496b0762241a18325267a9d50b204c57.json"
   },
   "meta": {
-    "run_id": "bfdc120e-f101-4c04-ab35-d0202479e3e5",
-    "timestamp": "2026-06-10T15:46:49.421Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "4e209de6-8151-4786-b48c-87d5c8393846",
+    "timestamp": "2026-06-11T08:34:36.427Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

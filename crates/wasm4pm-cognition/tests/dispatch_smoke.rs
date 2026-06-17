@@ -3,7 +3,7 @@
 
 use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
-    dispatch_breed, dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
+    dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
 
 /// Create a minimal valid BreedInput for testing.

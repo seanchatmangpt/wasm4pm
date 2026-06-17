@@ -1,0 +1,61 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "frames_inheritance",
+    "breed": "frames_inheritance",
+    "status": "ok",
+    "output": {
+      "breed": "FramesInheritance",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "frame:resolved:my_chair:legs",
+          "value": "4"
+        }
+      ],
+      "selected": "4",
+      "explanation": "resolved my_chair.legs = 4 at chair (default, distance 1)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "frame-load",
+          "detail": "loaded 3 frames (2 isa links)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "frame-walk",
+          "detail": "walking my_chair",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "frame-walk",
+          "detail": "walking chair",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "frame-resolve",
+          "detail": "my_chair slot legs resolved to 4 at chair (default)",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "0479bc26bbac76ca5594583f85652a8a3a279e1569cde54c66399ff1fa829229",
+    "output_hash": "579e9d61e73e92f0bbd4cdf0472e72cee43a65f5dd5356b25abb424937a2a8c8",
+    "replay_pointer": "579e9d61e73e92f0",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/0479bc26bbac76ca5594583f85652a8a3a279e1569cde54c66399ff1fa829229.json"
+  },
+  "meta": {
+    "run_id": "2348de4a-0c11-42cc-b83a-8fe5320f5cc7",
+    "timestamp": "2026-06-11T08:38:22.677Z",
+    "duration_ms": 13,
+    "version": "26.6.10"
+  }
+}

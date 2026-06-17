@@ -8,32 +8,37 @@
     "breed": "autoinstinct_neurosis",
     "status": "ok",
     "output": {
-      "breed": "autoinstinctneurosis",
+      "breed": "AutoinstinctNeurosis",
       "candidates": [
         {
           "id": "urgency_low",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "urgency_moderate",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "urgency_high",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "affect_anxious",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         },
         {
           "id": "affect_calm",
           "score": 1,
-          "eliminated": false
+          "eliminated": false,
+          "elimination_reason": null
         }
       ],
       "facts": [
@@ -117,9 +122,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/socratic-diagnosis/.wasm4pm/receipts/efb22c9d2fc5da7a7f2693dc19d8b639867e64a2d461ad26d254c8d689bf315b.json"
   },
   "meta": {
-    "run_id": "da1fb5c6-df85-40f1-a449-49f9a073a11a",
-    "timestamp": "2026-06-10T15:46:45.873Z",
-    "duration_ms": 14,
-    "version": "26.6.9"
+    "run_id": "6fc26a5f-3739-460c-b132-4954e4e3aeb9",
+    "timestamp": "2026-06-11T08:34:33.021Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

@@ -112,6 +112,12 @@ fn htn_seek(
     None
 }
 
+impl PlannerBreed for HtnPlanning {
+    fn required_trace_kinds(&self) -> &'static [&'static str] {
+        &["htn-plan"]
+    }
+}
+
 impl CognitionBreed for HtnPlanning {
     fn id(&self) -> BreedId {
         BreedId::HtnPlanning

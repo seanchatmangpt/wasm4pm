@@ -1,0 +1,78 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_learning",
+    "breed": "autoinstinct_learning",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctLearning",
+      "candidates": [
+        {
+          "id": "plan-step-0",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "achieved",
+          "value": "section-1-cleartop"
+        },
+        {
+          "key": "achieved",
+          "value": "section-2-bottom-up-ordering"
+        },
+        {
+          "key": "belief:patch_cleartop_known",
+          "value": "1.0"
+        },
+        {
+          "key": "belief:patch_bottom_up_known",
+          "value": "1.0"
+        },
+        {
+          "key": "belief:patch_space_compacting_known",
+          "value": "0.5"
+        },
+        {
+          "key": "belief:patch_space_flushing_known",
+          "value": "0.2"
+        },
+        {
+          "key": "belief:patch_protect_known",
+          "value": "0.0"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "asp:26bc8234a55d2cf366a99df5ba0f44477a24343afff3eb416958e19e11a71acc"
+        }
+      ],
+      "selected": "1 steps to goal",
+      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00011111, final_state=0b11111111, goal_reached=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "plan-step",
+          "detail": "state=0b11111111 distance=0 action toward goal: flip next missing bit",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "b958900875a57eb3942b04a5aefdaed3e07d6155fea18ec94b0052fe52010901",
+    "output_hash": "d4178c3e34c112de4e642f04a505a44e4a626b1932b2202b36edb18ae709696d",
+    "replay_pointer": "d4178c3e34c112de",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/b958900875a57eb3942b04a5aefdaed3e07d6155fea18ec94b0052fe52010901.json"
+  },
+  "meta": {
+    "run_id": "cde80b18-e005-403a-9c83-e0845a6a04c7",
+    "timestamp": "2026-06-11T08:38:14.506Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

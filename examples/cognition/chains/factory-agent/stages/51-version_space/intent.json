@@ -1,0 +1,34 @@
+{
+  "intent": "learn the EnjoySport concept by candidate elimination",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "vs:attrs",
+      "value": "sky,airtemp,humidity,wind,water,forecast"
+    },
+    {
+      "key": "vs:example:1",
+      "value": "Sunny,Warm,Normal,Strong,Warm,Same:+"
+    },
+    {
+      "key": "vs:example:2",
+      "value": "Sunny,Warm,High,Strong,Warm,Same:+"
+    },
+    {
+      "key": "vs:example:3",
+      "value": "Rainy,Cold,High,Strong,Warm,Change:-"
+    },
+    {
+      "key": "vs:example:4",
+      "value": "Sunny,Warm,High,Strong,Cool,Change:+"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "tableaux:ba67019f66de081044582e4ff48d458f09ea198e2dcedd2018fc3220f357524b"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

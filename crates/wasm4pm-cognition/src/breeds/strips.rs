@@ -15,6 +15,7 @@
 //!   * `fact.key == "frame"` encodes: `atom,action1,action2,action3`
 //!   * Meaning: this atom is preserved (not deleted) across these actions.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
@@ -337,9 +338,7 @@ impl CognitionBreed for Strips {
     }
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("STRIPS must record search steps".to_string());
-        }
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }

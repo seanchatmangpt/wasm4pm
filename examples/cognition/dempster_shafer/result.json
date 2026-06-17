@@ -1,0 +1,59 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dempster_shafer",
+    "breed": "dempster_shafer",
+    "status": "ok",
+    "output": {
+      "breed": "DempsterShafer",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "belief:life",
+          "value": "0.989999995"
+        },
+        {
+          "key": "plausibility:life",
+          "value": "1.000000000"
+        }
+      ],
+      "selected": "Bel=0.989999995, Pl=1.000000000",
+      "explanation": "Dempster-Shafer query 'life' Bel=0.989999995, Pl=1.000000000 over frame {death,life}",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ds-load-bpa",
+          "detail": "loaded 2 sources over frame of size 2",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ds-combine",
+          "detail": "combined witness1 with witness2, K=0.000000000",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "ds-belief",
+          "detail": "query life => Bel=0.989999995, Pl=1.000000000",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "3102f59f0c8a8b59c36c405bcebb4fd7073e2c820e5a81022dc829f998f7e6fa",
+    "output_hash": "dd7ed98802b0cdddf66e33a058685dd457abd2182ca826a508e08ee33b8af618",
+    "replay_pointer": "dd7ed98802b0cddd",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dempster_shafer/.wasm4pm/receipts/3102f59f0c8a8b59c36c405bcebb4fd7073e2c820e5a81022dc829f998f7e6fa.json"
+  },
+  "meta": {
+    "run_id": "98ee8826-1493-4079-a0a1-e5e0d9f72d21",
+    "timestamp": "2026-06-11T07:03:04.228Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

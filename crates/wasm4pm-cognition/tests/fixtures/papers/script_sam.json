@@ -2,18 +2,30 @@
   "breed": "script_sam",
   "provenance": {
     "citation": "Schank, R. C., & Abelson, R. P. (1977). Scripts, Plans, Goals and Understanding: An Inquiry into Human Knowledge Structures. Lawrence Erlbaum Associates.",
-    "locus": "Chapter 3 (Scripts): the restaurant script ($RESTAURANT) with its scene sequence (entering, ordering, eating, exiting/paying) and the canonical story-understanding example: 'John went to a restaurant. He ordered lobster. He paid the check and left.' — readers (and SAM) infer that John ate the lobster although eating is never stated.",
+    "locus": "Chapter 3 (Scripts): the restaurant script ($RESTAURANT) with its scene sequence (entering, ordering, eating, exiting/paying) and the canonical story-understanding example: 'John went to a restaurant. He ordered lobster. He paid the check and left.' \u2014 readers (and SAM) infer that John ate the lobster although eating is never stated.",
     "extraction": "verbatim",
-    "notes": "The story instantiates the restaurant script's enter/order/pay/leave scenes with John bound to the customer role; the eating scene falls in the gap between matched scenes and is inferred with the bound role filler — the book's central demonstration of script-based inference. Scene tokens are normalized to the breed's built-in inventory (enter, order, eat, pay, leave)."
+    "notes": "The story instantiates the restaurant script's enter/order/pay/leave scenes with John bound to the customer role; the eating scene falls in the gap between matched scenes and is inferred with the bound role filler \u2014 the book's central demonstration of script-based inference. Scene tokens are normalized to the breed's built-in inventory (enter, order, eat, pay, leave)."
   },
   "input": {
     "intent": "understand the restaurant story (Schank & Abelson 1977, Chapter 3)",
     "candidates": [],
     "facts": [
-      { "key": "sam:event:1", "value": "enter:john" },
-      { "key": "sam:event:2", "value": "order:john" },
-      { "key": "sam:event:3", "value": "pay:john" },
-      { "key": "sam:event:4", "value": "leave:john" }
+      {
+        "key": "sam:event:1",
+        "value": "enter:john"
+      },
+      {
+        "key": "sam:event:2",
+        "value": "order:john"
+      },
+      {
+        "key": "sam:event:3",
+        "value": "pay:john"
+      },
+      {
+        "key": "sam:event:4",
+        "value": "leave:john"
+      }
     ],
     "cases": [],
     "rules": [],
@@ -21,10 +33,15 @@
     "state": []
   },
   "expected": {
+    "value": "1",
     "script": "restaurant",
-    "inferred": { "sam:inferred:eat": "john" },
+    "inferred": {
+      "sam:inferred:eat": "john"
+    },
     "inferred_count": "1",
-    "role": { "sam:role:customer": "john" },
+    "role": {
+      "sam:role:customer": "john"
+    },
     "notes": "SAM infers the unstated eating scene with John as filler; no scene outside the observed span is invented."
   }
 }

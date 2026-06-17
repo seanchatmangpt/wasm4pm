@@ -1,0 +1,103 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "strips",
+    "breed": "strips",
+    "status": "ok",
+    "output": {
+      "breed": "Strips",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "prior_stage_hash",
+          "value": "soar:c168f575cc450a6fccadfa1fac9631940607c61a4d8983e633c837f05626ecde"
+        }
+      ],
+      "selected": "turn-on-light,close-door1",
+      "explanation": "STRIPS plan (2 steps): turn-on-light → close-door1",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "iterate-depth",
+          "detail": "d=0",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "iterate-depth",
+          "detail": "d=1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "subgoal",
+          "detail": "light=on",
+          "depth": 15
+        },
+        {
+          "step": 3,
+          "kind": "try-action",
+          "detail": "turn-on-light",
+          "depth": 15
+        },
+        {
+          "step": 4,
+          "kind": "iterate-depth",
+          "detail": "d=2",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "subgoal",
+          "detail": "light=on",
+          "depth": 14
+        },
+        {
+          "step": 6,
+          "kind": "try-action",
+          "detail": "turn-on-light",
+          "depth": 14
+        },
+        {
+          "step": 7,
+          "kind": "subgoal",
+          "detail": "door1=closed",
+          "depth": 15
+        },
+        {
+          "step": 8,
+          "kind": "try-action",
+          "detail": "close-door1",
+          "depth": 15
+        },
+        {
+          "step": 9,
+          "kind": "execute",
+          "detail": "turn-on-light",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "execute",
+          "detail": "close-door1",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f34288be93796cb96a607d94a866db20aafeada289ced217814a0c513a91f52d",
+    "output_hash": "afc7dc6e0552c8044d549298c9e6acb4fd6a12e35fbb6f003d09c804de929f93",
+    "replay_pointer": "afc7dc6e0552c804",
+    "inference_step_count": 11,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/f34288be93796cb96a607d94a866db20aafeada289ced217814a0c513a91f52d.json"
+  },
+  "meta": {
+    "run_id": "691e8f50-bfb9-4218-aaf6-90647b979d0f",
+    "timestamp": "2026-06-11T08:38:31.234Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

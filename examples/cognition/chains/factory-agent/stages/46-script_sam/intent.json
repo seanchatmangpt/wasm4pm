@@ -1,0 +1,30 @@
+{
+  "intent": "understand the restaurant story (Schank & Abelson 1977, Chapter 3)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "sam:event:1",
+      "value": "enter:john"
+    },
+    {
+      "key": "sam:event:2",
+      "value": "order:john"
+    },
+    {
+      "key": "sam:event:3",
+      "value": "pay:john"
+    },
+    {
+      "key": "sam:event:4",
+      "value": "leave:john"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "sat_cdcl:fb70c79f8eb340a801c25cca03356a01eaa562f29c14213bddd6e7f76bdbdd51"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

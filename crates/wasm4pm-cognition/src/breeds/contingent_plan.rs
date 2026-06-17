@@ -24,6 +24,8 @@ use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use crate::breeds::support::breed_class::PlannerBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 
 /// AND-OR contingent planner over belief states.
 pub struct ContingentPlan;
@@ -261,6 +263,12 @@ impl<'a> Search<'a> {
     }
 }
 
+impl PlannerBreed for ContingentPlan {
+    fn required_trace_kinds(&self) -> &'static [&'static str] {
+        &["plan-complete"]
+    }
+}
+
 impl CognitionBreed for ContingentPlan {
     fn id(&self) -> BreedId {
         BreedId::ContingentPlan
@@ -347,13 +355,10 @@ impl CognitionBreed for ContingentPlan {
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("empty inference trace".to_string());
-        }
-        if !output.inference_trace.iter().any(|t| t.kind == "plan-complete") {
-            return Err("missing plan-complete step".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        self.assert_plan_trace_complete(output)?;
+        let tq = TraceQuery::from_output(output);
+        tq.require_non_empty_with_kinds(&["plan-complete"])?;
         if !output.facts.iter().any(|f| f.key == "plan:tree") {
             return Err("missing plan:tree fact".to_string());
         }

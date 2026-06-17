@@ -35,4 +35,4 @@ a linear plan valid in only some worlds.
 Deterministic (BTreeMap/BTreeSet, sorted action order); no RNG. Median 2.91 µs.
 
 ## 8. Status
-PARTIAL_ALIVE; full BVC ceremony complete.
+ADMITTED; full BVC ceremony complete.

@@ -1,0 +1,30 @@
+{
+  "intent": "predict what happens when the table is removed",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "np:ground:floor",
+      "value": "true"
+    },
+    {
+      "key": "np:on:table",
+      "value": "floor"
+    },
+    {
+      "key": "np:on:cup",
+      "value": "table"
+    },
+    {
+      "key": "np:liquid:water",
+      "value": "cup"
+    },
+    {
+      "key": "np:remove:table",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

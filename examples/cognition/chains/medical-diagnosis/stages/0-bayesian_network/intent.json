@@ -1,0 +1,32 @@
+{
+  "intent": "diagnose medical condition",
+  "facts": [
+    {
+      "key": "cpt:Pneumonia",
+      "value": "0.05"
+    },
+    {
+      "key": "cpt:TB",
+      "value": "0.02"
+    },
+    {
+      "key": "cpt:Cough|Pneumonia,TB",
+      "value": "0.1,0.6,0.8,0.95"
+    },
+    {
+      "key": "evidence:Cough",
+      "value": "true"
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "query",
+      "value": "prob:Pneumonia"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "state": []
+}

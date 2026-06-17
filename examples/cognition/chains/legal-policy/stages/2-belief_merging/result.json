@@ -1,0 +1,119 @@
+(node:14028) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "belief_merging",
+    "breed": "belief_merging",
+    "status": "ok",
+    "output": {
+      "breed": "BeliefMerging",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "bm:model:0",
+          "value": "lawful_c_858ba719,-fair"
+        },
+        {
+          "key": "bm:model:1",
+          "value": "lawful_c_858ba719,fair"
+        },
+        {
+          "key": "bm:model_count",
+          "value": "2"
+        }
+      ],
+      "selected": "lawful_c_858ba719,-fair",
+      "explanation": "Σ merging of 2 bases over 2 atoms: 2 model(s) in the merged belief.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "enumerate-worlds",
+          "detail": "2 atoms -> 4 worlds, 2 bases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "filter-ic",
+          "detail": "4 IC-worlds of 4",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "distance",
+          "detail": "w=(-lawful_c_858ba719,-fair) d=(2,1)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "aggregate",
+          "detail": "w=(-lawful_c_858ba719,-fair) sum=3",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "distance",
+          "detail": "w=(lawful_c_858ba719,-fair) d=(1,0)",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "aggregate",
+          "detail": "w=(lawful_c_858ba719,-fair) sum=1",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "distance",
+          "detail": "w=(-lawful_c_858ba719,fair) d=(1,2)",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "aggregate",
+          "detail": "w=(-lawful_c_858ba719,fair) sum=3",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "distance",
+          "detail": "w=(lawful_c_858ba719,fair) d=(0,1)",
+          "depth": 1
+        },
+        {
+          "step": 9,
+          "kind": "aggregate",
+          "detail": "w=(lawful_c_858ba719,fair) sum=1",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "select-min",
+          "detail": "2 minimal world(s) under Σ",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "merged-belief",
+          "detail": "[(lawful_c_858ba719,-fair) (lawful_c_858ba719,fair)]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c349a0517f87b99d68d6c9710071831b879977ccd8a31627cc6d8470cdc90f43",
+    "output_hash": "536719375f380fc88d00f71f7aa1071c829546b8afa59646b058baf6d7a9d7c5",
+    "replay_pointer": "536719375f380fc8",
+    "inference_step_count": 12,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c349a0517f87b99d68d6c9710071831b879977ccd8a31627cc6d8470cdc90f43.json"
+  },
+  "meta": {
+    "run_id": "96fba48c-9f0d-441e-9447-31105f4d66c5",
+    "timestamp": "2026-06-11T08:35:04.706Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

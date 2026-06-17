@@ -8,11 +8,11 @@
     "breed": "strips",
     "status": "ok",
     "output": {
-      "breed": "strips",
+      "breed": "Strips",
       "candidates": [],
       "facts": [],
-      "selected": "stack_A_on_B",
-      "explanation": "STRIPS plan (1 steps): stack_A_on_B",
+      "selected": "turn-on-light,close-door1",
+      "explanation": "STRIPS plan (2 steps): turn-on-light → close-door1",
       "inference_trace": [
         {
           "step": 0,
@@ -29,34 +29,70 @@
         {
           "step": 2,
           "kind": "subgoal",
-          "detail": "on=A_B",
+          "detail": "light=on",
           "depth": 15
         },
         {
           "step": 3,
           "kind": "try-action",
-          "detail": "stack_A_on_B",
+          "detail": "turn-on-light",
           "depth": 15
         },
         {
           "step": 4,
+          "kind": "iterate-depth",
+          "detail": "d=2",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "subgoal",
+          "detail": "light=on",
+          "depth": 14
+        },
+        {
+          "step": 6,
+          "kind": "try-action",
+          "detail": "turn-on-light",
+          "depth": 14
+        },
+        {
+          "step": 7,
+          "kind": "subgoal",
+          "detail": "door1=closed",
+          "depth": 15
+        },
+        {
+          "step": 8,
+          "kind": "try-action",
+          "detail": "close-door1",
+          "depth": 15
+        },
+        {
+          "step": 9,
           "kind": "execute",
-          "detail": "stack_A_on_B",
+          "detail": "turn-on-light",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "execute",
+          "detail": "close-door1",
           "depth": 0
         }
       ]
     },
-    "run_id": "e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689",
-    "output_hash": "70d70d6f6164c53156fa6461026125799cdf4ef1fa100fe9042939f050cc8565",
-    "replay_pointer": "70d70d6f6164c531",
-    "inference_step_count": 5,
+    "run_id": "ca9aebe65683d010272b0ecf9237beeb4b6a4200a978665681445b54abad58ad",
+    "output_hash": "5bd502b8a78c4ac5fffe73dce106ff3aaaf83fe6f47eb6b91e6c7587e01b32f2",
+    "replay_pointer": "5bd502b8a78c4ac5",
+    "inference_step_count": 11,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/e0e53362e97f800a7d4475789b9e788623141d2a5e425e927fef585edc198689.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/strips/.wasm4pm/receipts/ca9aebe65683d010272b0ecf9237beeb4b6a4200a978665681445b54abad58ad.json"
   },
   "meta": {
-    "run_id": "700c1eaa-c045-495c-9e32-22b79fc8f810",
-    "timestamp": "2026-06-10T15:46:41.957Z",
-    "duration_ms": 12,
-    "version": "26.6.9"
+    "run_id": "ffcd8016-c018-46bf-ace6-60324af9f18d",
+    "timestamp": "2026-06-11T07:03:24.290Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
   }
 }

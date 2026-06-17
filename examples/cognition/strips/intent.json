@@ -1,28 +1,46 @@
 {
-  "intent": "blocks-world planning",
+  "intent": "turn on the light and close door1",
   "candidates": [],
   "facts": [],
   "cases": [],
   "rules": [
     {
-      "id": "pick_up_A",
-      "premise": ["onTable=A", "clear=A", "handEmpty=true"],
-      "conclusion": "holding=A;!onTable=A;!clear=A;!handEmpty=true",
-      "certainty": 1.0
+      "id": "turn-on-light",
+      "premise": [
+        "light=off"
+      ],
+      "conclusion": "light=on;!light=off",
+      "certainty": 1
     },
     {
-      "id": "stack_A_on_B",
-      "premise": ["holding=A", "clear=B"],
-      "conclusion": "on=A_B;clear=A;handEmpty=true;!holding=A;!clear=B",
-      "certainty": 1.0
+      "id": "close-door1",
+      "premise": [
+        "door1=open"
+      ],
+      "conclusion": "door1=closed;!door1=open",
+      "certainty": 1
     }
   ],
   "goals": [
-    { "id": "g1", "predicate": "on", "value": "A_B" }
+    {
+      "id": "g1",
+      "predicate": "light",
+      "value": "on"
+    },
+    {
+      "id": "g2",
+      "predicate": "door1",
+      "value": "closed"
+    }
   ],
   "state": [
-    { "predicate": "onTable", "value": "B" },
-    { "predicate": "clear", "value": "B" },
-    { "predicate": "holding", "value": "A" }
+    {
+      "predicate": "light",
+      "value": "off"
+    },
+    {
+      "predicate": "door1",
+      "value": "open"
+    }
   ]
 }
