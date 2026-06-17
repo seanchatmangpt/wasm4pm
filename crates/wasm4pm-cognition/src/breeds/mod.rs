@@ -84,6 +84,13 @@ pub mod qualitative_reason;
 /// Dispatch logic for cognitive breeds
 pub mod dispatch;
 /// Shared combinator-core support library (parsers, solvers, fixpoint engines).
+/// Abductive IBE module.
+pub mod abductive_ibe;
+/// Event Calculus module.
+pub mod event_calculus;
+/// Partial Order Plan module.
+pub mod partial_order_plan;
+
 pub mod support;
 
 pub use dispatch::{dispatch_breed, dispatch_breed_test};
