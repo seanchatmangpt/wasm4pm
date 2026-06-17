@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * OTEL Span Timing Verification & Remediation
  *
@@ -27,13 +29,20 @@ export interface TimingGap {
   endTime?: number;
 }
 
-export interface OtelSpanTiming {
-  trace_id: string;
-  span_id: string;
-  start_time: number; // nanoseconds, required
-  end_time: number; // nanoseconds, required
-  name: string;
-}
+/**
+ * Zod schema for OtelSpanTiming.
+ * Coerces nanosecond fields that may arrive as strings (OTLP proto encoding)
+ * to numbers so conformance checks always operate on numeric values.
+ */
+export const OtelSpanTimingSchema = z.object({
+  trace_id: z.string(),
+  span_id: z.string(),
+  start_time: z.union([z.number(), z.string().transform((v) => parseInt(v, 10))]),
+  end_time: z.union([z.number(), z.string().transform((v) => parseInt(v, 10))]),
+  name: z.string(),
+});
+
+export type OtelSpanTiming = z.infer<typeof OtelSpanTimingSchema>;
 
 /**
  * Validates OTEL span timing for accuracy and consistency.

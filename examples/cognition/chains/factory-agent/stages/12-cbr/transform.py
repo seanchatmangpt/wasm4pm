@@ -1,0 +1,249 @@
+import json
+import sys
+
+_raw = sys.stdin.read()
+_idx = _raw.find('{')
+prev = json.loads(_raw[_idx:]) if _idx != -1 else {}
+prev_payload = prev.get('payload', {})
+prev_output_hash = prev_payload.get('output_hash', '') or prev.get('output_hash', '')
+prev_breed = prev_payload.get('breed', '') or prev.get('breed', '')
+
+# Load base input from the template json
+base_input = json.loads(r'''{
+  "intent": "diagnose-and-treat current patient with fever and cough",
+  "candidates": [
+    {
+      "id": "CASE-PHYSICIAN-2WK",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-A",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-B",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-CREDIT-TROUBLED-CO",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "CASE-PHYSICIAN-6MO",
+      "score": 0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "domain",
+      "value": "medical"
+    },
+    {
+      "key": "symptom_primary",
+      "value": "fever"
+    },
+    {
+      "key": "symptom_secondary",
+      "value": "cough"
+    },
+    {
+      "key": "urgency",
+      "value": "moderate"
+    },
+    {
+      "key": "patient_status",
+      "value": "current"
+    }
+  ],
+  "cases": [
+    {
+      "id": "CASE-PHYSICIAN-2WK",
+      "intent": "patient treated two weeks ago with fever and cough",
+      "architecture": "antibiotic-course",
+      "outcome_score": 0.95,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "cough"
+        },
+        {
+          "key": "urgency",
+          "value": "moderate"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-PHYSICIAN-6MO",
+      "intent": "patient treated six months ago with fever and rash",
+      "architecture": "antiviral-course",
+      "outcome_score": 0.72,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "rash"
+        },
+        {
+          "key": "urgency",
+          "value": "low"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-A",
+      "intent": "first blowout \u2014 critical-pressure combination triggered well blow-out",
+      "architecture": "emergency-mud-weight-increase",
+      "outcome_score": 0.88,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "drilling"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "critical-pressure-spike"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "mud-return-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-DRILLING-BLOWOUT-B",
+      "intent": "second blowout \u2014 engineer error contributed to blow-out recurrence",
+      "architecture": "procedure-override-abort",
+      "outcome_score": 0.6,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "drilling"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "critical-pressure-spike"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "gas-influx"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    },
+    {
+      "id": "CASE-CREDIT-TROUBLED-CO",
+      "intent": "previous company in similar financial trouble \u2014 loan refused",
+      "architecture": "refuse-loan-application",
+      "outcome_score": 0.91,
+      "facts": [
+        {
+          "key": "domain",
+          "value": "finance"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "negative-cash-flow"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "high-debt-ratio"
+        },
+        {
+          "key": "urgency",
+          "value": "low"
+        },
+        {
+          "key": "patient_status",
+          "value": "past"
+        }
+      ]
+    }
+  ],
+  "rules": [],
+  "goals": [
+    {
+      "id": "G1",
+      "predicate": "retrieve",
+      "value": "most-similar-past-case"
+    },
+    {
+      "id": "G2",
+      "predicate": "reuse",
+      "value": "diagnosis-and-treatment"
+    },
+    {
+      "id": "G3",
+      "predicate": "revise",
+      "value": "if-treatment-fails"
+    },
+    {
+      "id": "G4",
+      "predicate": "retain",
+      "value": "new-case-in-case-base"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "cbr_cycle_step",
+      "value": "retrieve"
+    },
+    {
+      "predicate": "query_domain",
+      "value": "medical"
+    }
+  ]
+}''')
+
+# Cryptographically bind to prior stage
+if prev_output_hash:
+    if 'facts' not in base_input:
+        base_input['facts'] = []
+    base_input['facts'].append({
+        'key': 'prior_stage_hash',
+        'value': f"{prev_breed}:{prev_output_hash}"
+    })
+
+print(json.dumps(base_input, indent=2))

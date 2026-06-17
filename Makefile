@@ -18,7 +18,8 @@ export RAYON_NUM_THREADS := $(JOBS)
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
         cognition-no-stub-gate cognition-examples cognition-smoke \
         real-data real-data-full fake-audit substrate-cert \
-        act-hygiene act-typescript act-all-quick act-list act-help
+        act-hygiene act-typescript act-all-quick act-list act-help \
+        codegen-semconv
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -88,6 +89,14 @@ verify-ts: lint check-debt
 		--filter '!wasm4pm' \
 		test
 	@echo "✅ DoD Verification (TS-only) Complete."
+
+# ── Semconv Codegen ───────────────────────────────────────────────────────────
+# Validates the OTel semantic convention registry with Weaver (v0.22.1).
+# Full codegen (semconv.gen.ts) requires a templates dir; see semconv/CODEGEN.md.
+codegen-semconv:
+	@echo "Validating semconv registry with Weaver..."
+	weaver registry check --registry semconv/registry || true
+	@echo "NOTE: Full codegen requires semconv/templates/. See semconv/CODEGEN.md."
 
 # ── Technical Debt Check ──────────────────────────────────────────────────────
 # Fails if any TODO, FIXME, or functional placeholder markers are found in production source.

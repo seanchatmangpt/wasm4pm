@@ -1,0 +1,145 @@
+{
+  "intent": "Plan optimal experimental validation sequence for cyclohexanol \u2014 sequence experiments to maximally resolve conformation_only using STRIPS/HACKER bitwise heuristic",
+  "candidates": [
+    {
+      "id": "plan_NMR_COSY_then_GCMS",
+      "score": 0.87,
+      "eliminated": false
+    },
+    {
+      "id": "plan_MSMS_fragmentation_then_NMR",
+      "score": 0.79,
+      "eliminated": false
+    },
+    {
+      "id": "plan_GC_retention_index_first",
+      "score": 0.71,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "top_structure",
+      "value": "cyclohexanol"
+    },
+    {
+      "key": "ring_topology_confirmed",
+      "value": "true"
+    },
+    {
+      "key": "oh_orientation",
+      "value": "equatorial"
+    },
+    {
+      "key": "conformation",
+      "value": "chair"
+    },
+    {
+      "key": "ambiguity_remaining",
+      "value": "conformation_only"
+    },
+    {
+      "key": "available_techniques",
+      "value": "NMR_COSY,NMR_NOESY,GCMS,MSMS,optical_rotation"
+    },
+    {
+      "key": "samples_available",
+      "value": "3"
+    },
+    {
+      "key": "experiment_budget_hours",
+      "value": "8"
+    },
+    {
+      "key": "learning_method",
+      "value": "STRIPS_bitwise_HACKER_heuristic"
+    },
+    {
+      "key": "structural_candidates_remaining",
+      "value": "0"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_nmr_cosy_resolves_adjacent",
+      "premise": [
+        "stereoisomers_possible"
+      ],
+      "conclusion": "NMR COSY resolves adjacent H-H coupling",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_gcms_retention_index",
+      "premise": [
+        "isomers_with_same_mass"
+      ],
+      "conclusion": "GC retention index separates structural isomers",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_hacker_least_commitment",
+      "premise": [
+        "multiple_experiments_available"
+      ],
+      "conclusion": "sequence by maximum ambiguity reduction per hour",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_resolve_ambiguity",
+      "predicate": "conformation_only_resolved",
+      "value": "true"
+    },
+    {
+      "id": "g_plan_complete",
+      "predicate": "experiment_sequence_fully_ordered",
+      "value": "true"
+    },
+    {
+      "id": "g_budget_constraint",
+      "predicate": "total_experiment_hours_le_8",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_experiment_sequencing",
+      "intent": "STRIPS experiment sequence planning for cyclohexanol",
+      "architecture": "optimal_experiment_sequence_planned",
+      "outcome_score": 0.87,
+      "facts": [
+        {
+          "key": "top_structure",
+          "value": "cyclohexanol"
+        },
+        {
+          "key": "ambiguity",
+          "value": "conformation_only"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "pipeline_stage",
+      "value": "5_autoinstinct_learning_experiment_planning"
+    },
+    {
+      "predicate": "vision_conformation",
+      "value": "chair"
+    },
+    {
+      "predicate": "strips_state_encoded",
+      "value": "false"
+    },
+    {
+      "predicate": "source_stage",
+      "value": "autoinstinct_vision"
+    },
+    {
+      "predicate": "candidates_from_vision",
+      "value": "0"
+    }
+  ]
+}

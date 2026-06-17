@@ -1,0 +1,200 @@
+%% Chapter 7 — The Fourth Constraint: Extending the Universal Causal Equation
+
+\chapter{The Fourth Constraint: Extending the Universal Causal Equation}
+\label{chap:fourth-constraint}
+
+\epigraph{%
+  ``A chain is only as strong as its weakest link.''
+}{--- proverb; in manufacturing intelligence, the weakest link was always the unverified reasoning engine}
+
+\section{Recapitulation of the Prior Series}
+\label{sec:prior-series}
+
+Papers~2 and~3 of the \emph{wasm4pm} series established the Universal Causal Equation
+in its original three-constraint form. We recall the relevant definitions here for
+self-containment.
+
+\paragraph{Constraint $C_0$ — Algorithmic Completeness.}
+Every algorithm invoked by the manufacturing pipeline must be registered in the kernel
+registry and reachable via the WASM boundary. A pipeline that silently falls back to an
+unregistered algorithm violates $C_0$ and may not claim a valid receipt.
+
+\paragraph{Constraint $C_1$ — Receipt Continuity.}
+Every manufacturing stage must emit a BLAKE3 receipt whose \texttt{input\_hash} is the
+\texttt{output\_hash} of the preceding stage. A gap or reorder in the receipt chain
+breaks causal provenance and invalidates the pipeline's proof of correctness.
+
+\paragraph{Constraint $C_2$ — Process Conformance.}
+The object-centric event log derived from the pipeline's OTel spans must conform with
+fitness $\phi \geq \phi^*$ (typically $\phi^* = 0.85$) to the declared process model
+under native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework. A pipeline that passes code-level tests but fails
+process conformance is non-conforming by the van der Aalst Constitution
+(\texttt{\textasciitilde/.claude/rules/process-mining-chicago-tdd.md}).
+
+Under $C_0 \wedge C_1 \wedge C_2$, the Universal Causal Equation reads:
+\[
+  A_U = \mu_U(\mathcal{O}^*_B)
+  \quad \text{s.t.} \quad C_0 \wedge C_1 \wedge C_2.
+\]
+
+This formulation was sufficient for a pipeline whose reasoning engines were treated as
+black boxes. Chapter~\ref{chap:bvc} reveals the gap: $C_0$--$C_2$ constrain the
+\emph{pipeline} but not the \emph{breed} executing inside it. A breed that is
+non-deterministic, or whose oracle is fakeable, or whose receipt does not cover the
+ocel\_log field, may satisfy $C_0$--$C_2$ while producing reasoning artefacts that are
+epistemically untrustworthy. The fourth constraint closes this gap.
+
+\section{The Missing Constraint}
+\label{sec:missing-constraint}
+
+\begin{theorem}[Fourth Constraint Necessity]
+\label{thm:fourth-constraint-necessity}
+No finite set of pipeline-level constraints $\{C_0, C_1, C_2\}$ is sufficient to
+guarantee trustworthy reasoning output if the participating breeds are uncertified.
+\end{theorem}
+
+\begin{proof}
+We apply a No-Free-Lunch argument. Let $\mathcal{B}$ be any breed not required to
+satisfy $C_{\mathrm{test}} = 1$. Then there exists an adversarial implementation
+$\hat{\mathcal{B}}$ that:
+(a) is registered in the kernel registry (satisfying $C_0$),
+(b) emits a structurally valid BLAKE3 receipt chain (satisfying $C_1$),
+(c) produces an OCEL log whose events have correct timestamps and object references,
+    with fitness $\phi = 1.0$ under a trivially conforming single-trace model
+    (satisfying $C_2$),
+yet whose actual reasoning is the constant function $f_\perp(\cdot) = \perp$
+(always returning a null or default conclusion regardless of input).
+
+Concretely: $\hat{\mathcal{B}}$ could implement MYCIN by returning the first
+diagnosis in alphabetical order irrespective of certainty factors. The pipeline
+constraints $C_0$--$C_2$ cannot distinguish $\hat{\mathcal{B}}$ from a correct
+implementation because they inspect only structural receipt topology and event log
+conformance, not the epistemic content of the conclusion. The No-Free-Lunch theorem
+for supervised learning (Wolpert 1996) generalises this: no finite set of structural
+checks over the pipeline wrapper can certify the correctness of an arbitrary inner
+function without a breed-specific oracle that constrains the inner function directly
+\cite{wolpert1997nfl}.
+Therefore, a fourth constraint operating at the breed level is both necessary and
+non-redundant with respect to $C_0$--$C_2$.
+\end{proof}
+
+\begin{definition}[The Fourth Constraint $C_3$]
+\label{def:fourth-constraint}
+\label{def:fourth-constraint-ucq}
+The \emph{fourth constraint} $C_3$ requires that every breed $\Breed_i$ participating
+in the universal manufacturing pipeline $\mu_U$ holds its Breed Validation Certificate:
+\[
+  C_3 \;:\; \forall\, \Breed_i \in \mu_U,\quad V(\Breed_i) = 1.
+\]
+Operationally, $C_3$ is enforced by the \texttt{admitBVC()} gate in
+\texttt{packages/contracts/src/admission.ts}: at engine startup, \texttt{admitBVC()}
+is called for every breed in the active registry. If any breed returns a
+\texttt{BVCAdmissionResult} with \texttt{admitted = false}, the engine refuses to
+start and emits a structured rejection with the failing component name and measured
+value. This fail-fast behaviour ensures that $C_3$ cannot be bypassed by deferred
+evaluation or lazy initialisation.
+\end{definition}
+
+\section{The Four-Constraint Universal Equation}
+\label{sec:four-constraint-equation}
+
+\begin{theorem}[Four-Constraint Universal Causal Equation]
+\label{thm:four-constraint-equation}
+Under constraints $C_0 \wedge C_1 \wedge C_2 \wedge C_3$, the Universal Causal
+Equation is:
+\[
+  \boxed{A_U \;=\; \mu_U\!\bigl(\mathcal{O}^*_B\bigr)
+  \quad\text{s.t.}\quad
+  C_0 \;\wedge\; C_1 \;\wedge\; C_2 \;\wedge\; C_3}
+\]
+where:
+\begin{itemize}
+  \item $A_U$ is the universal manufacturing artefact produced by the pipeline.
+  \item $\mu_U$ is the universal manufacturing function.
+  \item $\mathcal{O}^*_B$ is the object-centric process state enriched by the breed
+        corpus $\mathcal{C}$.
+  \item $C_0$ — algorithmic completeness (kernel registry coverage).
+  \item $C_1$ — receipt continuity (BLAKE3 chain unbroken).
+  \item $C_2$ — process conformance ($\phi \geq \phi^*$ under native Rust DFA replay via \texttt{validate\_ocel\_alignment()} (\texttt{ocel.rs}) against the declared lifecycle OCPN---deterministic, reproducible, no external process-mining framework).
+  \item $C_3$ — breed certification ($V(\Breed_i) = 1$ for all $\Breed_i \in \mu_U$).
+\end{itemize}
+\end{theorem}
+
+\begin{proof}
+By Theorem~\ref{thm:fourth-constraint-necessity}, $C_0 \wedge C_1 \wedge C_2$ is
+insufficient. By Theorem~\ref{thm:universal-bvc}, all thirteen breeds currently satisfy
+$C_3$. The conjunction $C_0 \wedge C_1 \wedge C_2 \wedge C_3$ is therefore both
+necessary (removing any one constraint admits a counterexample by the argument of
+Theorem~\ref{thm:fourth-constraint-necessity}) and sufficient (all four dimensions of
+trustworthiness are covered): algorithmic completeness ensures no unregistered code runs;
+receipt continuity ensures causal provenance is unbroken; process conformance ensures
+the declared process model is respected; breed certification ensures each reasoning
+engine is oracle-verified, receipt-chained, process-conformant at the breed level, and
+deterministic. Together they constitute a closed proof obligation for a manufacturing
+pipeline claiming to produce a certified artefact $A_U$.
+\end{proof}
+
+\section{Operational Semantics --- BVC as a Sheaf Condition}
+\label{sec:sheaf-condition}
+
+The four-constraint equation has a natural categorical reading that clarifies how local
+breed certificates compose into a global pipeline certificate.
+
+\begin{proposition}[BVC as a Sheaf Condition \cite{maclane1992sheaves}]
+\label{prop:sheaf-condition}
+Let the pipeline $\mu_U$ be modelled as a directed graph $G = (V, E)$ where each
+node $v \in V$ corresponds to a manufacturing stage and each edge $e \in E$ carries a
+receipt. We equip $G$ with the Alexandrov topology induced by the stage partial order: opens are down-closed sets of stages. Under the discrete topology the gluing condition trivializes; the Alexandrov topology is the substantive choice that makes locality and gluing non-trivial. Define a presheaf $\mathcal{F}$ on $G$ by assigning to each node $v$ the set
+$\mathcal{F}(v) = \{A : \mathrm{BVC}(\Breed(v)) \wedge \text{receipt}(v)\}$ of
+certified artefacts at that stage. Then $\mathcal{F}$ is a \emph{sheaf}: local
+certificates glue to a global certificate if and only if $C_1$ (receipt continuity)
+holds on all edges.
+\end{proposition}
+
+\begin{proof}
+The sheaf axioms require (i) locality and (ii) gluing. Locality: if two stages $u, v$
+agree on their shared receipt boundary (i.e., \texttt{output\_hash}$(u)$ =
+\texttt{input\_hash}$(v)$, enforced by $C_1$), then the restriction of their
+certified artefacts to the shared boundary is consistent. Gluing: given a compatible
+family of locally certified artefacts at each node (each satisfying $C_3$), there
+exists a unique globally certified artefact for the entire pipeline, namely $A_U$.
+The uniqueness follows from the determinism component of $C_3$
+($C_{\mathrm{determ}} = 1$): the same input seed always produces the same output,
+so the global artefact is determined by the input and the pipeline topology, with no
+ambiguity from non-deterministic choices at any stage.
+
+To see that the sheaf condition fails without $C_3$: if any breed is non-deterministic
+($C_{\mathrm{determ}} < 1$), then two pipeline runs with the same input may produce
+different local sections at the non-deterministic node, and no global section can be
+constructed from the resulting incompatible local data. The gluing axiom is thereby
+violated. This confirms that $C_3$ is the algebraic completion of the sheaf structure
+already implicit in $C_1$.
+
+To see that the sheaf condition fails without $C_1$: if any edge lacks a valid receipt
+(a gap in the BLAKE3 chain), the restriction maps are undefined on that edge, and
+locality fails. Thus $C_1$ and $C_3$ are jointly necessary for the sheaf structure,
+and together with $C_0$ and $C_2$ they provide the four independent proof obligations
+that constitute the four-constraint universal equation.
+\end{proof}
+
+The sheaf reading has a practical consequence: the \texttt{admitBVC()} gate at engine
+startup and the receipt chain validator at pipeline completion are not independent
+checks. They are the local and global sections of the same sheaf, and verifying both
+is equivalent to verifying the sheaf condition on the entire pipeline graph. An
+audit tool that checks only one and not the other is examining a presheaf, not a
+sheaf, and cannot issue a global conformance certificate.
+
+\section{Summary}
+\label{sec:fourth-constraint-summary}
+
+This chapter completed the Universal Causal Equation by introducing $C_3$, the breed
+certification constraint that operates at the level of individual reasoning engines
+rather than the pipeline wrapper. Theorem~\ref{thm:fourth-constraint-necessity}
+showed by a No-Free-Lunch argument that $C_0$--$C_2$ cannot detect an adversarial or
+trivially-constant breed implementation, while Theorem~\ref{thm:four-constraint-equation}
+established the complete four-constraint form $A_U = \mu_U(\mathcal{O}^*_B)$ s.t.\
+$C_0 \wedge C_1 \wedge C_2 \wedge C_3$. Proposition~\ref{prop:sheaf-condition}
+reframed the operational semantics as a sheaf condition, showing that determinism and
+receipt continuity are two faces of the same categorical gluing requirement. The next
+chapter turns to the latency and throughput properties of the certified breed corpus
+under real workloads.

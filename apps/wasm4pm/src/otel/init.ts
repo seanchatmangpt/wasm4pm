@@ -11,6 +11,7 @@
 import type { OtelSpan, SpanSink } from '@wasm4pm/cognition';
 import { setGlobalSpanSink, resetGlobalSpanSink } from './sink.js';
 import { setOtelHandle } from './exit.js';
+import { appendSpanToFile } from '@wasm4pm/observability/file-span-exporter';
 
 export interface OtelHandle {
   sink: SpanSink;
@@ -93,7 +94,10 @@ export async function initOtel(): Promise<OtelHandle> {
 
   const sink: SpanSink = (span: OtelSpan): void => {
     try {
-      exporter!.emit(spanToEvent(span));
+      const event = spanToEvent(span);
+      exporter!.emit(event);
+      // Also persist to .wasm4pm/spans.jsonl for self-conformance reads.
+      appendSpanToFile(event);
     } catch {
       /* never block on OTEL */
     }

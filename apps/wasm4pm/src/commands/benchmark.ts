@@ -87,7 +87,8 @@ const benchmarkBuild = defineCommand({
 
     if (!existsSync(corpusPath)) {
       const result = makeErrorResult('benchmark build', `Corpus file not found: ${corpusPath}`,
-        EXIT_CODES.source_error, 'SOURCE_NOT_FOUND');
+        EXIT_CODES.source_error, 'SOURCE_NOT_FOUND',
+        `Verify the corpus path is correct and the file exists. Try: wpm benchmark build --corpus <path>`);
       emitResult(result, { format, quiet });
       return await exitWithFlush(EXIT_CODES.source_error);
     }
@@ -1507,7 +1508,14 @@ export const benchmark = defineCommand({
     name: 'benchmark',
     description: 'Benchmark corpus management and verification. Example: wpm benchmark verify --corpus data/benchmarks.jsonl',
   },
-  async run() {
+  async run(ctx) {
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
     process.stdout.write(`
   wpm benchmark — Benchmark Corpus Verification & Algorithm Performance
 

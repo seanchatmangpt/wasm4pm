@@ -1,0 +1,57 @@
+// Process intelligence algorithm registry — generated from wasm4pm pi ontology.
+// Regenerate with: ggen sync
+// Source: ggen/ontology/algorithms.ttl (pi:ProcessIntelligenceAlgorithm)
+// {{ sparql_results | length }} algorithms in category-then-ID order.
+
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
+/// All process intelligence algorithms admitted in wasm4pm.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum ProcessIntelligenceAlgorithm {
+{% for row in sparql_results %}    /// {{ row.algorithm_doc }}
+    {{ row.algorithm_label }},
+{% endfor %}
+}
+
+impl ProcessIntelligenceAlgorithm {
+    /// Canonical snake_case algorithm ID matching TypeScript AlgorithmId.
+    pub fn id(&self) -> &'static str {
+        match self {
+{% for row in sparql_results %}            Self::{{ row.algorithm_label }} => {{ row.algorithm_id | json_encode }},
+{% endfor %}
+        }
+    }
+
+    /// WASM export function name.
+    pub fn wasm_export(&self) -> &'static str {
+        match self {
+{% for row in sparql_results %}            Self::{{ row.algorithm_label }} => {{ row.wasm_export | json_encode }},
+{% endfor %}
+        }
+    }
+
+    /// Functional category.
+    pub fn category(&self) -> &'static str {
+        match self {
+{% for row in sparql_results %}            Self::{{ row.algorithm_label }} => {{ row.category | json_encode }},
+{% endfor %}
+        }
+    }
+
+    /// Resolve snake_case ID or CLI alias to a variant. Returns None for unknown input.
+    pub fn from_id(input: &str) -> Option<Self> {
+        Self::ALL.iter().copied().find(|a| a.id() == input)
+    }
+
+    /// All admitted algorithms in category-then-ID order.
+    pub const ALL: [ProcessIntelligenceAlgorithm; {{ sparql_results | length }}] = [
+{% for row in sparql_results %}        Self::{{ row.algorithm_label }},
+{% endfor %}    ];
+}
+
+impl fmt::Display for ProcessIntelligenceAlgorithm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.id())
+    }
+}

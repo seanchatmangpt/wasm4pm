@@ -1,0 +1,193 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "sat_cdcl",
+    "breed": "sat_cdcl",
+    "status": "ok",
+    "output": {
+      "breed": "SatCdcl",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "learned:0",
+          "value": "-1"
+        }
+      ],
+      "selected": "UNSAT",
+      "explanation": "CDCL verdict UNSAT after learning 1 clauses over 6 variables",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-clause",
+          "detail": "c0: (1 2)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "load-clause",
+          "detail": "c1: (3 4)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "load-clause",
+          "detail": "c2: (5 6)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "load-clause",
+          "detail": "c3: (-1 -3)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "load-clause",
+          "detail": "c4: (-1 -5)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "load-clause",
+          "detail": "c5: (-3 -5)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "load-clause",
+          "detail": "c6: (-2 -4)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "load-clause",
+          "detail": "c7: (-2 -6)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "load-clause",
+          "detail": "c8: (-4 -6)",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "decide",
+          "detail": "decide 1 = true @L1",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "propagate",
+          "detail": "unit c3 forces -3 @L1",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "propagate",
+          "detail": "unit c4 forces -5 @L1",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "propagate",
+          "detail": "unit c1 forces 4 @L1",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "propagate",
+          "detail": "unit c2 forces 6 @L1",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "propagate",
+          "detail": "unit c6 forces -2 @L1",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "conflict",
+          "detail": "c8 (-4 -6) falsified at level 1",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "learn-clause",
+          "detail": "learned=[-1] from=[8,2,1,4,3] pivots=[6,4,5,3]",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "backjump",
+          "detail": "non-chronological backjump to level 0",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "propagate",
+          "detail": "asserted UIP -1 @L0 by learned c9",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "propagate",
+          "detail": "unit c0 forces 2 @L0",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "propagate",
+          "detail": "unit c6 forces -4 @L0",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "propagate",
+          "detail": "unit c7 forces -6 @L0",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "propagate",
+          "detail": "unit c1 forces 3 @L0",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "propagate",
+          "detail": "unit c2 forces 5 @L0",
+          "depth": 0
+        },
+        {
+          "step": 24,
+          "kind": "conflict",
+          "detail": "c5 (-3 -5) falsified at level 0",
+          "depth": 0
+        },
+        {
+          "step": 25,
+          "kind": "decision",
+          "detail": "UNSAT (9 input clauses, 1 learned)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "0f144a98609c1b6605acce87f235d36572a92a58f19f75864f6761b95878a385",
+    "output_hash": "fb70c79f8eb340a801c25cca03356a01eaa562f29c14213bddd6e7f76bdbdd51",
+    "replay_pointer": "fb70c79f8eb340a8",
+    "inference_step_count": 26,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/0f144a98609c1b6605acce87f235d36572a92a58f19f75864f6761b95878a385.json"
+  },
+  "meta": {
+    "run_id": "f61de97a-0fb7-4b68-9840-ac10b3005274",
+    "timestamp": "2026-06-11T19:56:19.352Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
+  }
+}

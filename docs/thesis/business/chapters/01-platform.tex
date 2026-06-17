@@ -1,0 +1,65 @@
+\chapter{The Platform as an Economic Object}
+\label{ch:platform}
+
+\section{What wasm4pm actually is}
+
+wasm4pm is two layers with distinct economic properties:
+
+\begin{enumerate}[leftmargin=2em]
+  \item A \textbf{Rust/WASM core} containing 60 registered process mining
+        algorithms --- discovery (DFG, heuristic, inductive), conformance
+        checking, performance analysis, and object-centric querying ---
+        compiled to WebAssembly. Deterministic by construction: the same
+        input produces a bit-exact output, with all randomness seeded and
+        all hash-map iteration sorted.
+  \item A \textbf{TypeScript monorepo} of eleven packages that wrap the core
+        with a professional CLI (\texttt{wpm}), Zod-validated configuration,
+        an execution planner with four deployment profiles, OpenTelemetry
+        observability, and a Supabase persistence layer.
+\end{enumerate}
+
+Three architectural decisions create the commercial surface area this
+document explores.
+
+\section{Determinism as a product feature}
+
+Most analytics platforms treat reproducibility as a best effort. wasm4pm
+treats it as a merge gate: same input, bit-exact output, enforced in CI.
+Commercially, determinism converts an analytical claim into an
+\emph{auditable artifact}. A compliance officer does not have to trust that
+the conformance score was 0.94; they can re-run the analysis and obtain the
+identical bytes. Determinism is the precondition for everything in
+Chapter~\ref{ch:eaas}.
+
+\section{The receipt chain}
+
+Every \texttt{wpm run} emits a BLAKE3 receipt to
+\texttt{.wasm4pm/receipts/} containing the run identifier, the command, a
+hash of every input, a hash of every output, and the execution status. The
+receipts compose into a chain: the output hash of one analysis becomes the
+input hash of the next. The chain is the platform's most defensible asset
+because it is \emph{accumulated state} --- a competitor can reimplement an
+algorithm in a weekend, but cannot reproduce a customer's two-year evidence
+history.
+
+\section{WebAssembly as a distribution strategy}
+
+Compiling to WASM collapses the deployment matrix. One artifact runs in the
+browser, in Node.js, on edge runtimes (Cloudflare Workers, Fastly), and
+inside any host language with a WASM runtime (Python, Go, JVM,~.NET). The
+size-profiled builds --- mobile ($\sim$500\,KB), IoT ($\sim$1\,MB), edge
+($\sim$1.5\,MB), fog ($\sim$2\,MB), and full browser ($\sim$3.5\,MB) ---
+mean the same algorithm catalog can be sold into radically different
+deployment contexts without porting cost. Chapter~\ref{ch:edge} prices this.
+
+\section{The unit of value}
+
+The framing assumption for every model that follows:
+
+\begin{quote}
+\itshape Algorithms are commodities; pm4py gives away a superset of this
+catalog for free. The sellable unit is the receipt --- the verifiable,
+portable, machine-checkable proof that a specific analysis ran on specific
+data and produced a specific result, on infrastructure the customer
+controls.
+\end{quote}

@@ -1,0 +1,287 @@
+% Chapter 0 — Imported Axioms and Prior Theorems
+% Periodic Table of Reason — wasm4pm thesis
+% Axioms Ax 0.1 – Ax 0.12: boundary conditions imported from prior work.
+% Nothing in subsequent chapters may contradict these without explicit
+% citation of the prior result being superseded.
+
+\chapter{Imported Axioms and Prior Theorems}
+\label{chap:axioms}
+\label{chap:imported-axioms}
+
+This chapter collects twelve axioms imported wholesale from prior literature.
+They are not proved here; they are adopted as load-bearing constraints on every
+construct introduced in subsequent chapters.
+Each entry states what the axiom \emph{licenses}—the inferences downstream
+chapters are permitted to draw—and what it \emph{does not license}, marking the
+boundary at which a new theorem is required rather than a citation.
+
+% ---------------------------------------------------------------------------
+\section*{Notation}
+Throughout this chapter $\mathcal{L}$ denotes an event log, $N$ a Petri-net
+process model, $f$ a computable function, $\sigma$ a trace, and $H$ a
+collision-resistant hash function.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Symbolic Representability]\label{ax:symbolic}
+\textbf{(Ax~0.1)}
+Let $D$ be a finite domain and $f : D \to D$ a computable function.
+Then there exists a finite set of symbolic rewrite rules $R$ such that,
+for every $d \in D$, iterative application of $R$ to $d$ reaches $f(d)$ in
+finite time~\cite{robinson1965}.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Any algorithm operating over finite process-mining tokens (activities, cases,
+resources) may be expressed as a rule system and therefore audited, replayed,
+and composed symbolically.
+
+\noindent\textit{Does not license.}
+Symbolic representability does not guarantee tractable rule-set size, nor does
+it extend to continuous or uncountably infinite domains without further
+restriction.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Specialization / No Free Lunch]\label{ax:nfl}
+\textbf{(Ax~0.2)}
+For any two algorithms $A_1$ and $A_2$, when performance is averaged uniformly
+over all possible discrete optimization problems, $A_1$ and $A_2$ yield
+identical expected performance~\cite{wolpert1997nfl}.
+No algorithm achieves universally superior discovery or conformance checking
+across all process variants without exploiting domain-specific structure.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Every algorithm selection in the kernel registry must be justified by a
+domain-specific inductive bias; generic superiority claims are inadmissible.
+
+\noindent\textit{Does not license.}
+The No Free Lunch theorem does not prohibit algorithm $A$ from dominating $B$
+on the specific, empirically bounded class of OCEL-conformant traces used in
+this work; it only prohibits the universal claim.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Falsifiability]\label{ax:falsifiability}
+\textbf{(Ax~0.3)}
+A statement $S$ is scientifically admissible only if there exists at least one
+conceivable observation $O$ such that, were $O$ to obtain, $S$ would be
+refuted~\cite{popper1959,popper1963}.
+Every proof gate, receipt predicate, and conformance assertion in this system
+must be stated in falsifiable form.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Any claim accompanied by a concrete counterexample witness class is
+scientifically admissible regardless of whether the counterexample has been
+observed.
+
+\noindent\textit{Does not license.}
+Falsifiability does not establish truth; a falsifiable claim that has survived
+repeated testing is corroborated, not proven.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Valid Test Selection]\label{ax:testselection}
+\textbf{(Ax~0.4)}
+A test suite $T$ is \emph{valid} for implementation $P$ against specification
+$S$ only if $T$ distinguishes $P$ from every non-conforming alternative in the
+declared adversary class $\mathcal{A}(S)$~\cite{goodenoughandgerhart1975}.
+A suite that does not characterise $\mathcal{A}(S)$ provides no conformance
+guarantee regardless of pass rate.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+A passing run of a valid suite constitutes evidence that $P$ conforms to $S$
+with respect to $\mathcal{A}(S)$.
+
+\noindent\textit{Does not license.}
+Passing a valid suite does not establish conformance against adversaries outside
+$\mathcal{A}(S)$, nor does it substitute for formal proof when $\mathcal{A}(S)$
+is undefinable.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Undecidability Boundary]\label{ax:rice}
+\textbf{(Ax~0.5)}
+For any non-trivial semantic property $\mathcal{P}$ of programs (i.e.,
+$\mathcal{P}$ is satisfied by some programs and not others), no algorithm
+decides $\mathcal{P}$ for all programs in finite time.
+This is a direct corollary of Rice's theorem, itself derived from the
+undecidability of the halting problem~\cite{robinson1965}.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Any static analyser or proof gate in this system may restrict its domain to a
+decidable sub-class; such restriction is not a weakness but a formally
+necessary precondition for termination.
+
+\noindent\textit{Does not license.}
+Undecidability does not preclude sound-but-incomplete static analysis; it
+prohibits only the claim of completeness over arbitrary programs.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Proof-Carrying Execution]\label{ax:pcc}
+\textbf{(Ax~0.6)}
+An executable $e$ is \emph{proof-carrying} if it is accompanied by a formal
+proof $\pi$ of a safety property $\varphi$ such that a verifier can check
+$\pi \vdash \varphi(e)$ in time polynomial in $|e|$~\cite{necula1997pcc}.
+The proof travels with the code and is checked at load time, not at the origin
+site.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+WASM modules shipped with attached receipts and conformance certificates may
+assert safety properties checkable without re-executing the full computation.
+
+\noindent\textit{Does not license.}
+Proof-carrying execution does not guarantee liveness or functional
+correctness—only that the stated safety invariant holds on every execution
+path covered by $\pi$.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Runtime Verification]\label{ax:rv}
+\textbf{(Ax~0.7)}
+A monitor $M$ performing runtime verification observes execution trace $\sigma$
+and evaluates a temporal specification $\varphi$ against $\sigma$ online,
+producing a verdict in $\{\mathit{ok},\,\mathit{violation},\,\mathit{unknown}\}$
+without requiring a complete trace in advance~\cite{leucker2009rv}.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Span-level OTEL monitors attached to manufacturing pipeline stages are
+admissible as runtime conformance witnesses; their verdicts accumulate into
+the receipt chain.
+
+\noindent\textit{Does not license.}
+Runtime verification provides a verdict only for the observed prefix; it does
+not predict future behaviour or substitute for model checking over all
+reachable states.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Process Conformance]\label{ax:conformance}
+\textbf{(Ax~0.8)}
+Let $\mathcal{L}$ be an event log and $N$ a sound Petri-net process model.
+The \emph{fitness} $f(\mathcal{L}, N) \in [0, 1]$ is the fraction of trace
+behaviour in $\mathcal{L}$ that can be replayed in $N$; this quantity is
+computable via token-based or alignment-based replay~\cite{vanderaalst2016,adriansyah2014aligning}.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Any manufacturing pipeline whose OTel traces have been converted to OCEL may
+have its conformance against a declared Petri-net model computed numerically.
+
+\noindent\textit{Does not license.}
+Fitness alone does not establish correctness; a model with $f = 1$ may still
+be unsound (e.g., deadlocking) or imprecise (accepting all traces).
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Provenance]\label{ax:provenance}
+\textbf{(Ax~0.9)}
+For every data item $d$ produced by a computational process, there exists a
+directed acyclic derivation graph $G_d$ whose nodes are entities, activities,
+and agents, and whose edges encode \texttt{wasDerivedFrom},
+\texttt{wasGeneratedBy}, and \texttt{wasAttributedTo} relations, as specified
+by the W3C PROV data model~\cite{moreau2013prov}.
+The graph $G_d$ is computable from the execution record.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Every receipt emitted by this system may be traced to its originating inputs
+and the algorithm that produced it; provenance graphs are admissible as
+legal-grade audit evidence.
+
+\noindent\textit{Does not license.}
+A complete provenance graph does not certify that the derivation was
+\emph{correct}—only that it is \emph{traceable}.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Cryptographic Commitment]\label{ax:hash}
+\textbf{(Ax~0.10)}
+Let $H : \{0,1\}^* \to \{0,1\}^{256}$ be the BLAKE3 hash function.
+For any two distinct inputs $x \neq x'$, finding $H(x) = H(x')$ is
+computationally infeasible under standard assumptions~\cite{blake3_2020}.
+A digest $h = H(d)$ therefore constitutes a binding commitment to $d$.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Receipts binding $h = H(\text{artifact})$ provide tamper-evident content
+addressing; a receipt with a matching digest certifies content integrity.
+
+\noindent\textit{Does not license.}
+A cryptographic commitment does not establish the \emph{authority} or
+\emph{correctness} of the committed content, nor does it prevent an adversary
+from committing to an incorrect artifact.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Deterministic Portable Execution]\label{ax:wasm}
+\textbf{(Ax~0.11)}
+A WebAssembly module $W$ compiled from deterministic source (no floating-point
+non-determinism, no host-imported randomness) produces bit-identical output
+on every conforming WebAssembly runtime given identical inputs, as guaranteed
+by the WebAssembly Core Specification~\cite{webassembly2019}.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Algorithm outputs produced by the wasm4pm WASM kernel are cross-platform
+reproducible; receipts generated on any conforming host are comparable without
+environment normalisation.
+
+\noindent\textit{Does not license.}
+Determinism is vacated by any host import that introduces non-determinism
+(e.g., wall-clock time, PRNG seeded from OS entropy) unless such imports are
+explicitly excluded or pinned.
+
+% ---------------------------------------------------------------------------
+\begin{axiom}[Queueing Threshold]\label{ax:queueing}
+\textbf{(Ax~0.12)}
+For a single-server queue with arrival rate $\lambda$ and service rate $\mu$,
+the system is stable if and only if the utilisation $\rho = \lambda / \mu < 1$.
+Under stability, Little's Law gives mean queue length $L = \lambda W$, where
+$W$ is mean sojourn time~\cite{feller1968}.
+When $\rho \geq 1$ the queue length grows without bound.
+\end{axiom}
+
+\noindent\textit{Licenses.}
+Any streaming or batch pipeline in this system may be declared \emph{throughput
+bounded} if an empirical measurement establishes $\hat{\rho} < 1$ under peak
+load; the bound is tight by Little's Law.
+
+\noindent\textit{Does not license.}
+The classical queueing bound assumes exponential inter-arrival and service
+times (M/M/1); heavy-tailed or correlated arrivals require separate analysis
+before the stability guarantee transfers.
+
+% ---------------------------------------------------------------------------
+\section*{Summary of Imported Axioms}
+
+Table~\ref{tab:axioms} summarises the twelve axioms, their provenance, and
+the primary chapters that rely on each.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+\textbf{Axiom} & \textbf{Label} & \textbf{Source} & \textbf{Used in} \\
+\midrule
+Ax~0.1 & Symbolic Representability & \cite{robinson1965}                          & Ch.\ 1, 3 \\
+Ax~0.2 & No Free Lunch             & \cite{wolpert1997nfl}                         & Ch.\ 2, 5 \\
+Ax~0.3 & Falsifiability            & \cite{popper1959,popper1963}                  & Ch.\ 1–7  \\
+Ax~0.4 & Valid Test Selection      & \cite{goodenoughandgerhart1975}               & Ch.\ 4    \\
+Ax~0.5 & Undecidability Boundary   & Rice / \cite{robinson1965}                    & Ch.\ 3, 6 \\
+Ax~0.6 & Proof-Carrying Execution  & \cite{necula1997pcc}                          & Ch.\ 5, 6 \\
+Ax~0.7 & Runtime Verification      & \cite{leucker2009rv}                          & Ch.\ 4, 6 \\
+Ax~0.8 & Process Conformance       & \cite{vanderaalst2016,adriansyah2014aligning} & Ch.\ 2, 4 \\
+Ax~0.9 & Provenance                & \cite{moreau2013prov}                         & Ch.\ 5, 6 \\
+Ax~0.10 & Cryptographic Commitment & \cite{blake3_2020}                            & Ch.\ 5    \\
+Ax~0.11 & Deterministic Execution  & \cite{webassembly2019}                        & Ch.\ 2, 5 \\
+Ax~0.12 & Queueing Threshold       & \cite{feller1968}                             & Ch.\ 3, 7 \\
+\bottomrule
+\end{tabular}
+\caption{Imported axioms with primary sources and downstream chapter dependencies.}
+\label{tab:axioms}
+\end{table}
+
+\noindent
+Any subsequent chapter that appears to contradict one of these axioms must
+explicitly cite the axiom being superseded, provide a narrowing condition
+under which the contradiction dissolves, or introduce a new theorem that
+extends the axiom to a broader domain with a full proof.
+Silence is not permitted.

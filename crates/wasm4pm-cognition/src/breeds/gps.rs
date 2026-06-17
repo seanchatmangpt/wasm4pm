@@ -11,10 +11,12 @@
 //! `rule.conclusion` is `;`-separated effects, atoms are `pred=val`.
 //! `input.goals` and `input.state` carry the planning problem.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
 use std::collections::HashSet;
+use tracing;
 
 /// GPS planner.
 pub struct Gps;
@@ -78,6 +80,7 @@ fn solve(
         kind: "reduce-gap".to_string(),
         detail: goal.to_string(),
         depth,
+        objects: vec![],
     });
     let mut last_err = format!("no operator produces {}", goal);
     for action in actions {
@@ -85,6 +88,7 @@ fn solve(
         if !adds.contains(&goal.to_string()) {
             continue;
         }
+        tracing::debug!(breed.step = "operator_selected", breed = "gps", operator = %action.id, "L1 inference step");
         // Try to satisfy preconditions recursively.
         let snapshot = state.clone();
         let mut ok = true;
@@ -106,12 +110,14 @@ fn solve(
         for a in adds {
             state.insert(a);
         }
+        tracing::debug!(breed.step = "operator_applied", breed = "gps", operator = %action.id, "L1 inference step");
         plan.push(action.id.clone());
         trace.push(TraceStep {
             step: trace.len(),
             kind: "apply-operator".to_string(),
             detail: action.id.clone(),
             depth,
+            objects: vec![],
         });
         visiting.remove(goal);
         return Ok(());
@@ -160,6 +166,7 @@ impl CognitionBreed for Gps {
                     kind: "check-presatisfied".into(),
                     detail: format!("goal {} is already satisfied", goal.id),
                     depth: 0,
+                    objects: vec![],
                 });
             } else {
                 all_presatisfied = false;
@@ -168,7 +175,14 @@ impl CognitionBreed for Gps {
 
         let mut last_gap_count = goals.iter().filter(|g| !state.contains(*g)).count() + 1;
         while let Some(gap) = first_gap(&goals, &state) {
+            tracing::debug!(breed.step = "goal_selected", breed = "gps", goal = %gap, "L1 inference step");
             let gap_count = goals.iter().filter(|g| !state.contains(*g)).count();
+            tracing::debug!(
+                breed.step = "difference_computed",
+                breed = "gps",
+                gap_count = gap_count,
+                "L1 inference step"
+            );
             if gap_count >= last_gap_count {
                 return Err(BreedError {
                     breed: BreedId::Gps,
@@ -192,6 +206,12 @@ impl CognitionBreed for Gps {
                 });
             }
         }
+        tracing::debug!(
+            breed.step = "goal_achieved",
+            breed = "gps",
+            plan_ops = plan.len(),
+            "L1 inference step"
+        );
 
         let explanation = format!("GPS plan ({} ops): {}", plan.len(), plan.join(" → "));
         // Semantic contract for `selected`:
@@ -218,13 +238,13 @@ impl CognitionBreed for Gps {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("GPS must record at least one gap reduction".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }
@@ -273,6 +293,54 @@ mod tests {
             .inference_trace
             .iter()
             .any(|t| t.kind == "check-presatisfied"));
+    }
+
+    /// Newell & Shaw 1963 means-ends: GPS must select the operator whose effect
+    /// adds the unsatisfied goal atom. If a wrong operator fires or none fires,
+    /// `selected` will not equal `"op:move_right"` and the test fails.
+    #[test]
+    fn falsification_single_step_means_ends() {
+        let input = BreedInput {
+            intent: "reach goal".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "op:move_left".into(),
+                    premise: vec!["position=right".into()],
+                    conclusion: "position=left".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "op:move_right".into(),
+                    premise: vec!["position=left".into()],
+                    conclusion: "position=right".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "position".into(),
+                value: "right".into(),
+            }],
+            state: vec![StateAtom {
+                predicate: "position".into(),
+                value: "left".into(),
+            }],
+        };
+        let out = Gps.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("op:move_right"),
+            "GPS must apply op:move_right to close position=right gap (means-ends)"
+        );
+        assert!(
+            out.inference_trace
+                .iter()
+                .any(|t| t.kind == "apply-operator" && t.detail == "op:move_right"),
+            "apply-operator trace step for op:move_right must exist"
+        );
     }
 
     /// Rank-2: with multiple goals, all pre-satisfied -> Some(""); planning

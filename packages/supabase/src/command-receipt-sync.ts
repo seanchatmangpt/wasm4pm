@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { z } from 'zod';
 import {
   assertSupabaseResponse,
   createSupabaseWriteClient,
@@ -7,23 +8,35 @@ import {
 } from './client.js';
 import { SupabaseIntegrationError, type SupabaseIntegrationConfig } from './config.js';
 
-export interface CommandReceiptRow {
-  run_id: string;
-  command: string;
-  input_hash: string;
-  output_hash: string;
-  status: string;
-  payload: Record<string, unknown>;
-  git_commit?: string | null;
-  inserted_at?: string;
-}
+// ---------------------------------------------------------------------------
+// CommandReceiptRow
+// ---------------------------------------------------------------------------
 
-export interface CommandReceiptSyncResult {
-  synced: number;
-  skipped: number;
-  errors: Array<{ run_id: string; message: string }>;
-  dryRun: boolean;
-}
+export const CommandReceiptRowSchema = z.object({
+  run_id: z.string(),
+  command: z.string(),
+  input_hash: z.string(),
+  output_hash: z.string(),
+  status: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+  git_commit: z.string().nullable().optional(),
+  inserted_at: z.string().optional(),
+});
+
+export type CommandReceiptRow = z.infer<typeof CommandReceiptRowSchema>;
+
+// ---------------------------------------------------------------------------
+// CommandReceiptSyncResult
+// ---------------------------------------------------------------------------
+
+export const CommandReceiptSyncResultSchema = z.object({
+  synced: z.number(),
+  skipped: z.number(),
+  errors: z.array(z.object({ run_id: z.string(), message: z.string() })),
+  dryRun: z.boolean(),
+});
+
+export type CommandReceiptSyncResult = z.infer<typeof CommandReceiptSyncResultSchema>;
 
 const HEX64 = /^[0-9a-f]{64}$/;
 

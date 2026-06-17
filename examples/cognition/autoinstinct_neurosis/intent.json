@@ -1,0 +1,38 @@
+{
+  "intent": "",
+  "facts": [
+    {
+      "key": "belief:safety",
+      "value": "0.9"
+    },
+    {
+      "key": "belief:control",
+      "value": "0.2"
+    },
+    {
+      "key": "belief:social_approval",
+      "value": "0.6"
+    },
+    {
+      "key": "belief:competence",
+      "value": "0.4"
+    },
+    {
+      "key": "belief:health",
+      "value": "0.75"
+    },
+    {
+      "key": "belief:future_outcomes",
+      "value": "0.35"
+    },
+    {
+      "key": "belief:worthiness",
+      "value": "0.55"
+    }
+  ],
+  "candidates": [],
+  "rules": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

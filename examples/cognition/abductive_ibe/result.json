@@ -1,0 +1,96 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_ibe",
+    "breed": "abductive_ibe",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveIbe",
+      "candidates": [
+        {
+          "id": "H1",
+          "score": 1.899999976158142,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "H1+H2",
+          "score": 1.7999999523162842,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "H2",
+          "score": 0.8999999761581421,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "ibe:best",
+          "value": "H1"
+        },
+        {
+          "key": "ibe:score",
+          "value": "1.9000"
+        }
+      ],
+      "selected": "H1",
+      "explanation": "IBE over 3 candidate sets: best explanation 'H1' with score 1.9000 (coverage − 0.1·cost).",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "collect-observations",
+          "detail": "2 observations [E1,E2], 2 hypotheses",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "score-hypothesis",
+          "detail": "H1 score=1.9000",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "compare",
+          "detail": "new best H1 (1.9000)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "score-hypothesis",
+          "detail": "H2 score=0.9000",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "score-hypothesis",
+          "detail": "H1+H2 score=1.8000",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "best-explanation",
+          "detail": "H1 score=1.9000",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "528a67fd4c131dedf0c8f90a28ff2a8024dae614eccb3757d02acd6045842f82",
+    "output_hash": "5bf886010710db683f99d076c3de9e8af585ccbedc95d08cf4ead3677612aed1",
+    "replay_pointer": "5bf886010710db68",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/abductive_ibe/.wasm4pm/receipts/528a67fd4c131dedf0c8f90a28ff2a8024dae614eccb3757d02acd6045842f82.json"
+  },
+  "meta": {
+    "run_id": "a040303a-ce8a-49cd-92a7-10bb7797d25e",
+    "timestamp": "2026-06-11T19:26:06.364Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
+  }
+}

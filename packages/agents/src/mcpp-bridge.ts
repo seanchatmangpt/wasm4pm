@@ -62,6 +62,7 @@
 
 import { fromMcppNativeJsonl } from '@wasm4pm/contracts/ocel-bridge';
 import type { OcelEvent } from '@wasm4pm/contracts/ocel-bridge';
+import { z } from 'zod';
 import type { AgentOrchestrator } from './orchestration.js';
 import type { AuditEntry, CorrectionType, Severity } from './types.js';
 
@@ -195,12 +196,13 @@ export function mcppEventToAuditEntry(event: OcelEvent): AuditEntry | null {
 /**
  * Result of ingesting mcpp NDJSON into an AgentOrchestrator.
  */
-export interface IngestResult {
+export const IngestResultSchema = z.object({
   /** Number of agent events successfully converted and ingested */
-  ingested: number;
+  ingested: z.number(),
   /** Number of lines that were skipped (non-agent events, parse errors, missing fields) */
-  skipped: number;
-}
+  skipped: z.number(),
+});
+export type IngestResult = z.infer<typeof IngestResultSchema>;
 
 /**
  * Parse mcpp NDJSON output, convert agent events to AuditEntry objects, and
@@ -235,15 +237,6 @@ export function ingestMcppJsonl(
 
     // Skip blank lines
     if (trimmed.length === 0) {
-      skipped++;
-      continue;
-    }
-
-    // Parse JSON — skip malformed lines
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(trimmed);
-    } catch {
       skipped++;
       continue;
     }

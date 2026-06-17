@@ -1,0 +1,36 @@
+{
+  "breed": "htn_planning",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Nau et al. 2003"
+  },
+  "input": {
+    "intent": "plan",
+    "state": [
+      { "predicate": "at", "value": "home" }
+    ],
+    "goals": [
+      { "id": "g1", "predicate": "task", "value": "go_to_dest" }
+    ],
+    "rules": [
+      {
+        "id": "method:go_to_dest:walk",
+        "premise": ["at=home"],
+        "conclusion": "op:walk",
+        "certainty": 1.0
+      },
+      {
+        "id": "op:walk",
+        "premise": [],
+        "conclusion": "at=dest",
+        "certainty": 1.0
+      }
+    ],
+    "candidates": [],
+    "facts": [],
+    "cases": []
+  },
+  "expected": {
+    "plan": "op:walk"
+  }
+}

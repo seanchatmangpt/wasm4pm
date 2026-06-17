@@ -1,0 +1,32 @@
+{
+  "intent": "apply script",
+  "facts": [
+    {
+      "key": "sam:event:1",
+      "value": "enter"
+    },
+    {
+      "key": "sam:event:2",
+      "value": "leave"
+    }
+  ],
+  "rules": [
+    {
+      "id": "restaurant",
+      "premise": [
+        "enter",
+        "sit",
+        "order",
+        "eat",
+        "pay",
+        "leave"
+      ],
+      "conclusion": "restaurant_visit",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "candidates": [],
+  "cases": [],
+  "state": []
+}

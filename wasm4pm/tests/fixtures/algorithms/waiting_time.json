@@ -1,0 +1,12 @@
+{
+  "algorithm": "waiting_time",
+  "provenance": {
+    "paper": "van der Aalst et al. (2011) Process Mining Manifesto — IEEE Task Force on Process Mining; waiting time is mean inter-activity duration extracted from performance DFG",
+    "locus": "§2.3 — performance perspective: waiting and service times",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "dfg_nonempty",
+    "rationale": "Performance DFG from running-example log must contain at least one edge with timing data."
+  }
+}

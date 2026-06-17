@@ -1,0 +1,59 @@
+{
+  "intent": "deliver the package 7bfb6f1b",
+  "state": [
+    {
+      "predicate": "pkg_7bfb6f1b",
+      "value": "at_depot"
+    },
+    {
+      "predicate": "truck_7bfb6f1b",
+      "value": "at_depot"
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1_7bfb6f1b",
+      "predicate": "task",
+      "value": "deliver_7bfb6f1b"
+    }
+  ],
+  "rules": [
+    {
+      "id": "method:deliver_7bfb6f1b:by_truck_7bfb6f1b",
+      "premise": [
+        "pkg_7bfb6f1b=at_depot"
+      ],
+      "conclusion": "op:load_7bfb6f1b;op:drive_7bfb6f1b;op:unload_7bfb6f1b",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:load_7bfb6f1b",
+      "premise": [
+        "pkg_7bfb6f1b=at_depot",
+        "truck_7bfb6f1b=at_depot"
+      ],
+      "conclusion": "!pkg_7bfb6f1b=at_depot;pkg_7bfb6f1b=in_truck",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:drive_7bfb6f1b",
+      "premise": [
+        "truck_7bfb6f1b=at_depot"
+      ],
+      "conclusion": "!truck_7bfb6f1b=at_depot;truck_7bfb6f1b=at_dest",
+      "certainty": 1.0
+    },
+    {
+      "id": "op:unload_7bfb6f1b",
+      "premise": [
+        "pkg_7bfb6f1b=in_truck",
+        "truck_7bfb6f1b=at_dest"
+      ],
+      "conclusion": "!pkg_7bfb6f1b=in_truck;pkg_7bfb6f1b=at_dest",
+      "certainty": 1.0
+    }
+  ],
+  "candidates": [],
+  "facts": [],
+  "cases": []
+}

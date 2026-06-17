@@ -1,0 +1,82 @@
+{
+  "breed": "ilp",
+  "provenance": {
+    "paper": "Quinlan, J. R. (1990). Learning logical definitions from relations.",
+    "citation": "Quinlan, J. R. (1990). Machine Learning, 5(3), 239-266.",
+    "locus": "Section 3 (the FOIL algorithm: information gain t\u00b7(log2(p1/(p1+n1)) \u2212 log2(p0/(p0+n0)))); the daughter/parent family relation example used throughout the ILP literature for FOIL.",
+    "extraction": "instantiated",
+    "notes": "The classic daughter learning task: from parent/2 and female/1 background facts, FOIL must induce daughter(X,Y) :- female(X), parent(Y,X). With head variables V0=X, V1=Y the learned body must equal {female(V0), parent(V1,V0)} as a set (literal order is the greedy gain order)."
+  },
+  "input": {
+    "intent": "learn the daughter relation",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "bg:parent(ann,mary)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(ann,tom)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(tom,eve)",
+        "value": "true"
+      },
+      {
+        "key": "bg:parent(tom,ian)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(ann)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(mary)",
+        "value": "true"
+      },
+      {
+        "key": "bg:female(eve)",
+        "value": "true"
+      },
+      {
+        "key": "pos:daughter(mary,ann)",
+        "value": "true"
+      },
+      {
+        "key": "pos:daughter(eve,tom)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(tom,ann)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(eve,ann)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(ian,tom)",
+        "value": "true"
+      },
+      {
+        "key": "neg:daughter(ann,mary)",
+        "value": "true"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "head": "daughter(V0,V1)",
+    "body_set": [
+      "female(V0)",
+      "parent(V1,V0)"
+    ],
+    "clause_count": 1,
+    "notes": "One clause covers both positives and excludes all four negatives; body compared as a set.",
+    "value": "verified"
+  }
+}

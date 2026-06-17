@@ -107,3 +107,37 @@ export function mapWasmError(err: unknown): { code: string; exitCode: ExitCode }
       return { code: 'EXECUTION_ERROR', exitCode: EXIT_CODES.execution_error };
   }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Run-one core (factored out of `cognition run` for reuse by `wpm compile --run`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Execute a single breed contract through the real WASM kernel.
+ * Thin wrapper over `runContract` so `wpm compile --run` and
+ * `wpm cognition run` share one execution core.
+ */
+export async function runOne(
+  breed: string,
+  input: unknown,
+  opts?: { spanSink?: unknown },
+): Promise<{
+  status?: string;
+  breed?: string;
+  run_id?: string;
+  output_hash?: string;
+  replay_pointer?: string;
+  output?: {
+    selected?: string | null;
+    explanation?: string;
+    facts?: Array<{ key: string; value: string }>;
+    inference_trace?: unknown[];
+  };
+}> {
+  const { runContract } = await import('@wasm4pm/cognition');
+  return (await runContract(
+    breed,
+    input as never,
+    opts as never,
+  )) as never;
+}

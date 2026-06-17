@@ -1,0 +1,55 @@
+{
+  "breed": "mycin",
+  "provenance": {
+    "citation": "Shortliffe, E.H. (1976). Computer-Based Medical Consultations: MYCIN. American Elsevier, New York.",
+    "locus": "p.247 — therapy CF derivation: RULE069 (cultures=blood → organism=streptococcus CF 0.7) and RULE071 (organism=streptococcus + allergy-penicillin=no → therapy=penicillin CF 0.9). Combined therapy CF = rule.certainty × premise_cf = 0.9 × 0.7 = 0.630.",
+    "extraction": "verbatim-propositionalized",
+    "notes": "Shortliffe 1976 §11.4 p.247 presents the two-step certainty-factor chain as the canonical MYCIN example. RULE069 fires first (streptococcus CF=0.7), then RULE071 propagates certainty: therapy_cf = 0.9 × 0.7 = 0.630. This fixture asserts the numeric value 0.630 with tolerance 0.001 so the paper-grounded harness can verify the algorithm produces the published result."
+  },
+  "input": {
+    "intent": "diagnose bacteremia organism and recommend antibiotic therapy",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "site",
+        "value": "blood"
+      },
+      {
+        "key": "allergy-penicillin",
+        "value": "no"
+      }
+    ],
+    "cases": [],
+    "rules": [
+      {
+        "id": "RULE069",
+        "premise": [
+          "site=blood"
+        ],
+        "conclusion": "organism=streptococcus",
+        "certainty": 0.7
+      },
+      {
+        "id": "RULE071",
+        "premise": [
+          "organism=streptococcus",
+          "allergy-penicillin=no"
+        ],
+        "conclusion": "therapy=penicillin",
+        "certainty": 0.9
+      }
+    ],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "value": "0.630",
+    "tolerance": 0.001,
+    "top_conclusion": "therapy=penicillin",
+    "organism": "streptococcus",
+    "organism_cf": 0.7,
+    "therapy": "penicillin",
+    "therapy_cf": 0.63,
+    "notes": "Shortliffe 1976 p.247: therapy CF = rule certainty (0.9) × premise CF (0.7) = 0.630. The terminal conclusion is therapy=penicillin; organism=streptococcus is an intermediate step consumed as a premise by RULE071."
+  }
+}

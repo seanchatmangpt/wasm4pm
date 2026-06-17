@@ -1,0 +1,57 @@
+\chapter{Ecosystem and Platform Strategy}
+\label{ch:ecosystem}
+
+\section{The package surface as a funnel}
+
+The npm distribution is deliberately granular: thirteen
+\texttt{@wasm4pm/*} packages plus the bare \texttt{wasm4pm} WASM core, each
+independently installable. This is a funnel design. A developer who adopts
+only \texttt{@wasm4pm/contracts} for its receipt types, or only the WASM
+core for a one-off discovery task, is a qualified lead for the platform;
+the workspace-coherent versioning (every package at the same CalVer)
+makes the upgrade path from one package to the full stack frictionless.
+
+\section{The agent and MCP channel}
+
+Process mining's historical bottleneck is the analyst: someone must know
+which algorithm answers which question. Large-language-model agents
+dissolve that bottleneck, and wasm4pm is unusually well positioned for the
+agentic channel:
+
+\begin{itemize}[leftmargin=2em]
+  \item Deterministic, schema-validated tools are exactly what agent
+        frameworks need --- a stochastic tool poisons an agent's reasoning,
+        a deterministic one grounds it.
+  \item Receipts give agent outputs provenance: when an agent claims
+        ``this process has a bottleneck at approval,'' the receipt chain
+        shows which analysis, on which data, produced that claim. This is
+        the antidote to hallucination in analytical workflows.
+  \item MCP tooling exposes the catalog conversationally; every Claude or
+        GPT deployment in an enterprise becomes a distribution endpoint
+        that no incumbent sales force can match.
+\end{itemize}
+
+The commercial expression is metered tool-call pricing for hosted agent
+backends, plus the OEM license for agent-platform vendors who embed the
+WASM core directly.
+
+\section{Marketplace dynamics}
+
+Once the receipt format and the algorithm registry are stable public
+interfaces, third parties can sell into the ecosystem: domain-specific
+process model packs (Chapter~\ref{ch:verticals}), custom conformance rules,
+and adapters from proprietary event sources (SAP, Salesforce, Epic).
+The platform takes a revenue share and --- more importantly --- every
+third-party pack deepens the moat, because packs are written against the
+receipt schema and the OCEL contracts, not against a competitor's.
+
+\section{The standards position}
+
+OCEL~2.0 and XES are open standards; wasm4pm's strategic posture should be
+aggressive standards conformance plus one proprietary extension: the
+receipt and TrueX envelope schemas. Interoperate on data in, differentiate
+on evidence out. If the receipt format itself later becomes a de facto
+standard, first-mover verification infrastructure (the hosted receipt
+store, Chapter~\ref{ch:eaas}) is where the rent accrues --- the Let's
+Encrypt lesson: the certificate can be free while the issuance and
+transparency infrastructure carries the strategic value.

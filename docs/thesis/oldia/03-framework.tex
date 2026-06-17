@@ -1,0 +1,405 @@
+\chapter{The OLDIA Framework: Architecture and Design}
+\label{ch:framework}
+
+This chapter presents the technical architecture of OLDIA---the Object-Centric Logical Determinism Invariant Architecture. OLDIA is not a testing framework layered atop the cognition layer; it is the cognition layer's structural law. Every breed execution is governed by a single choke point, every receipt attests to the process that produced it, and every claim of correct behavior is falsifiable by replaying the attached OCEL 2.0 log through a lifecycle conformance checker. The chapter describes each architectural element in turn, from the foundational design principles to the algorithm-level fidelity upgrades that made the OCEL provability layer non-trivial to satisfy.
+
+\section{Design Principles}
+\label{sec:design-principles}
+
+Five principles govern every design decision in OLDIA. Violating any one of them collapses the operational falsifiability guarantee.
+
+\subsection{Operational Falsifiability as a First-Class Property}
+
+A system is operationally falsifiable if, and only if, its claimed behavior can be refuted by examining its own artifacts without access to the source code or any external oracle. In OLDIA, the artifact is the \texttt{ContractResult} returned by \texttt{cognition\_run}. The \texttt{output\_hash} field is a BLAKE3 digest of the serialized \texttt{BreedOutput}, which includes the \texttt{ocel\_log} field. Any consumer who possesses the \texttt{ContractResult} can re-hash the output and verify that the OCEL log inside it was not substituted after the fact. Any process mining tool that speaks OCEL 2.0 can replay the log through a lifecycle model and verify that the phases executed in lawful order. Falsifiability is therefore operational: it requires only the output, not the code.
+
+\subsection{No Wall-Clock Timestamps}
+
+Wall-clock timestamps are a determinism hazard. If execution time appears anywhere in the output, two runs of the same breed on the same input will produce different \texttt{output\_hash} values, breaking the determinism gate. All \texttt{OcelEvent} timestamps in OLDIA are set to the constant epoch value \texttt{"1970-01-01T00:00:00Z"}. Temporal ordering is encoded in the \texttt{logical\_step} attribute---a monotonically increasing integer assigned at event creation time. The conformance checker enforces strict monotonicity of \texttt{logical\_step}; any duplicate or retrograde value causes conformance refusal. The result is a log that is simultaneously OCEL 2.0 compliant, temporally ordered, and bit-exact across runs.
+
+\subsection{OCEL Log Inside \texttt{output\_hash}}
+
+The OCEL log is not a side-channel artifact appended after hashing. It is a field of the \texttt{BreedOutput} struct, serialized as part of the value that \texttt{blake3} digests. The consequence is non-negotiable: the receipt attests to the process, not merely the result. A breed that produced the correct final answer via a non-conforming execution path would produce a different \texttt{output\_hash} than one that produced the same answer via the lawful path---because the OCEL logs would differ. There is no way to produce a valid receipt for a correct result without a conforming process.
+
+\subsection{Single Choke Point Enforcement}
+
+All thirteen breed implementations are dispatched through a single function: \texttt{run\_breed} in \texttt{wasm.rs}. There is no alternate path. The function signature accepts a breed identifier and a \texttt{BreedInput}; it returns a \texttt{ContractResult} or an error. Between those two points, in this order, it calls: precondition check, \texttt{run()}, postcondition check (including the empty-trace fraud guard), \texttt{derive\_ocel}, \texttt{validate\_ocel\_alignment}, conformance refusal if fitness is below 1.0, OCEL attachment, BLAKE3 hashing, and result construction. No breed can bypass any of these steps. A breed that attempts to return early from \texttt{run()} with an empty trace will be refused at the postcondition check before OCEL derivation is even attempted.
+
+\subsection{Additive-Only \texttt{ContractResult}}
+
+The \texttt{ContractResult} struct has six frozen fields: \texttt{status}, \texttt{breed}, \texttt{run\_id}, \texttt{output\_hash}, \texttt{replay\_pointer}, \texttt{options\_profile}, and \texttt{output}. These fields are the external contract between the WASM boundary and every TypeScript consumer in the eleven-package monorepo. They are additive-only: new fields may be appended in future versions, but existing fields are never renamed, removed, or retyped. The \texttt{cognition-contract-guard.sh} hook enforces this at commit time. Any change to the frozen field set triggers a build failure with a diagnostic citing the specific violated contract. The \texttt{conformance} sub-object (carrying \texttt{fitness}, \texttt{model\_id}, and \texttt{refusals}) was added as an additive extension and does not alter the frozen core.
+
+\section{The Breed Contract Interface}
+\label{sec:breed-contract}
+
+Each of the thirteen breeds implements the \texttt{CognitionBreed} trait defined in \texttt{breeds/mod.rs}. The trait has four required methods:
+
+\begin{verbatim}
+pub trait CognitionBreed: Send + Sync {
+    fn id(&self) -> BreedId;
+    fn preconditions(&self, input: &BreedInput)
+        -> Result<(), String>;
+    fn run(&self, input: &BreedInput)
+        -> Result<BreedOutput, BreedError>;
+    fn postconditions(&self, output: &BreedOutput)
+        -> Result<(), String>;
+}
+\end{verbatim}
+
+The \texttt{id()} method returns a \texttt{BreedId}---a string identifier unique within the registry. The \texttt{preconditions} method validates the input before any computation begins; typical checks include required field presence, non-empty fact sets, and rule-count minimums. The \texttt{run} method performs the breed-specific inference and returns a \texttt{BreedOutput}. The \texttt{postconditions} method validates the output after inference; the most important postcondition across all breeds is the empty-trace fraud guard:
+
+\begin{verbatim}
+if output.inference_trace.is_empty() {
+    return Err("postcondition: empty inference_trace".into());
+}
+\end{verbatim}
+
+This guard prevents a pathological breed implementation from returning a structurally valid output while having performed no observable reasoning steps. An empty trace would produce an OCEL log containing only the synthetic run-start and run-end events, which no lifecycle model accepts as conforming.
+
+\subsection{The \texttt{TraceStep} Struct}
+
+The atomic unit of observable reasoning is the \texttt{TraceStep}:
+
+\begin{verbatim}
+pub struct TraceStep {
+    pub step:    usize,
+    pub kind:    String,
+    pub detail:  String,
+    pub depth:   u32,
+    pub objects: Vec<(String, String)>,
+}
+\end{verbatim}
+
+The \texttt{step} field is a monotonically increasing counter assigned by the breed implementation. The \texttt{kind} field encodes the lifecycle phase event type (e.g., \texttt{"load-fact"}, \texttt{"fire-rule"}, \texttt{"decision"}). The \texttt{detail} field carries human-readable content such as the rule identifier fired or the hypothesis posted. The \texttt{depth} field records subgoal nesting depth for breeds that support recursive decomposition (STRIPS, GPS, SOAR). The \texttt{objects} field carries a vector of \texttt{(object\_type, object\_id)} pairs that link the event to the OCEL objects it involves.
+
+\subsection{The \texttt{BreedOutput} Struct}
+
+\texttt{BreedOutput} carries three fields that are relevant to the OCEL layer:
+
+\begin{verbatim}
+pub struct BreedOutput {
+    // ... breed-specific fields ...
+    pub inference_trace:  Vec<TraceStep>,
+    pub ocel_log:         Option<serde_json::Value>,
+    pub retained_cases:   Vec<Case>,
+}
+\end{verbatim}
+
+The \texttt{inference\_trace} is populated by the breed during \texttt{run()}. The \texttt{ocel\_log} field is \texttt{None} when the breed returns from \texttt{run()}; it is populated by \texttt{run\_breed} after \texttt{derive\_ocel} completes. Because \texttt{ocel\_log} is populated before hashing, the BLAKE3 digest covers the full provenance record. The \texttt{retained\_cases} field is specific to CBR and carries the cases added to the case base during the Retain phase.
+
+\section{The OCEL 2.0 Provability Layer}
+\label{sec:ocel-layer}
+
+The OCEL provability layer is implemented in \texttt{src/ocel.rs} (632 lines). It converts the structured \texttt{inference\_trace} emitted by each breed into an OCEL 2.0 event log, derives a lifecycle model for the breed, and validates the log against the model using a deterministic finite automaton (DFA) phase checker.
+
+\subsection{OCEL 2.0 Data Structures}
+
+An \texttt{OcelEvent} represents a single observable action:
+
+\begin{verbatim}
+OcelEvent {
+    event_id:   String,          // "evt-{run_id}-{step}"
+    activity:   String,          // e.g. "fire-rule"
+    timestamp:  String,          // CONSTANT "1970-01-01T00:00:00Z"
+    attributes: BTreeMap<String, Value>,
+                                 // includes logical_step
+    o2o:        Vec<(String, String)>, // object refs
+}
+\end{verbatim}
+
+The \texttt{timestamp} is a string constant, never derived from \texttt{std::time::SystemTime}. Temporal ordering information lives exclusively in the \texttt{logical\_step} attribute, which is set to the \texttt{TraceStep.step} value.
+
+An \texttt{OcelObject} represents a persistent entity referenced across events:
+
+\begin{verbatim}
+OcelObject {
+    object_id:   String,
+    object_type: String,  // run | breed | candidate | fact |
+                          // rule | hypothesis | plan_step |
+                          // decision
+    attributes:  BTreeMap<String, Value>,
+}
+\end{verbatim}
+
+The eight object types cover all semantic roles that can appear in breed execution: the execution container (\texttt{run}), the algorithm (\texttt{breed}), and the domain-level entities each algorithm manipulates.
+
+\subsection{Log Derivation}
+
+The \texttt{derive\_ocel} function accepts a breed identifier, a run identifier, and a slice of \texttt{TraceStep} values. It produces an \texttt{OcelLog}:
+
+\begin{verbatim}
+pub fn derive_ocel(
+    breed_id: &str,
+    run_id:   &str,
+    steps:    &[TraceStep],
+) -> OcelLog
+\end{verbatim}
+
+The function emits a synthetic \texttt{run-start} event as the first event (logical\_step = 0), one event per \texttt{TraceStep} (logical\_step = step + 1), and a synthetic \texttt{run-end} event as the final event (logical\_step = steps.len() + 1). The \texttt{run-start} and \texttt{run-end} events are required by every lifecycle model; they establish the outer lifecycle boundary within which all phase events must fall.
+
+\subsection{Lifecycle Models}
+
+A \texttt{BreedLifecycleModel} specifies the permissible phase sequences for a breed. It is defined as an ordered list of phases, each with a minimum and maximum occurrence count, plus a set of allowed activity names:
+
+\begin{verbatim}
+pub struct LifecyclePhase {
+    pub name:            &'static str,
+    pub activities:      &'static [&'static str],
+    pub min_occurrences: usize,
+    pub max_occurrences: Option<usize>, // None = unbounded
+}
+\end{verbatim}
+
+Thirteen lifecycle model constants are defined, one per breed. Two illustrative examples follow.
+
+\paragraph{MYCIN Lifecycle Model.}
+
+MYCIN executes in three phases. First, all facts are loaded (zero or more \texttt{load-fact} events). Second, at least one rule fires (one or more \texttt{fire-rule} events). Third, at most one decision is rendered (zero or one \texttt{decision} events). In EBNF notation:
+
+\begin{center}
+\texttt{MYCIN: load-fact* \textrightarrow{} fire-rule+ \textrightarrow{} decision?}
+\end{center}
+
+A MYCIN execution that fires no rules, or that emits a decision event before any rule fires, fails conformance. The fitness score for such a log is 0.0 and the execution is refused.
+
+\paragraph{Hearsay Lifecycle Model.}
+
+Hearsay is an opportunistic blackboard system; its execution order is non-linear but bounded. The lifecycle model reflects this:
+
+\begin{center}
+\texttt{Hearsay: (post-hypothesis | enqueue-ksar | stale-ksar)+ \textrightarrow{} decision?}
+\end{center}
+
+Any mixture of hypothesis postings, KSAR enqueue events, and stale-KSAR re-rating events satisfies the first phase, provided at least one such event occurs. The decision event is optional, since blackboard systems may terminate without a conclusive hypothesis. This model is deliberately permissive about internal ordering while still excluding the degenerate case of an execution that produces no observable blackboard activity.
+
+\subsection{Conformance Checking}
+
+The \texttt{validate\_ocel\_alignment} function implements a DFA-based phase checker:
+
+\begin{verbatim}
+pub fn validate_ocel_alignment(
+    log:   &OcelLog,
+    model: &BreedLifecycleModel,
+) -> ConformanceResult
+\end{verbatim}
+
+\begin{verbatim}
+pub struct ConformanceResult {
+    pub fitness:       f32,
+    pub model_id:      String,
+    pub refusals:      Vec<String>,
+    pub is_conforming: bool,
+}
+\end{verbatim}
+
+The checker advances through model phases in order. For each event in the log (excluding \texttt{run-start} and \texttt{run-end}), it determines which phase accepts the event's activity. If the event's activity belongs to the current phase, the phase's occurrence counter is incremented and the checker remains in that phase. If the activity belongs to a later phase, the checker validates that the current phase's minimum occurrence count was met, then advances to the later phase. If the activity belongs to an earlier phase or to no phase, a refusal is recorded. At log end, the checker verifies that all mandatory phases reached their minimum occurrence counts.
+
+The fitness score is computed as the ratio of accepted events to total non-boundary events. An execution is conforming if and only if fitness equals 1.0 and no refusals were recorded. The \texttt{is\_conforming} flag encodes this disjunction.
+
+\subsection{Temporal Conformance}
+
+The \texttt{check\_temporal\_conformance} function enforces strictly monotone \texttt{logical\_step} values across the log:
+
+\begin{verbatim}
+pub fn check_temporal_conformance(log: &OcelLog) -> Result<(), String>
+\end{verbatim}
+
+It iterates over events in log order and verifies that each \texttt{logical\_step} is strictly greater than the previous. If any event has a \texttt{logical\_step} equal to or less than its predecessor, the function returns an error with the offending step indices. This check runs at the \texttt{run\_breed} choke point before lifecycle conformance is evaluated. A breed that re-uses step numbers (which would indicate a buggy trace-step counter) is refused before the lifecycle model is even consulted.
+
+\section{The \texttt{run\_breed} Enforcement Point}
+\label{sec:run-breed}
+
+The \texttt{run\_breed} function in \texttt{wasm.rs} is the single point through which all breed execution flows. Its sequential structure encodes the OLDIA enforcement protocol:
+
+\begin{verbatim}
+fn run_breed(
+    breed_id: &str,
+    input:    &BreedInput,
+) -> Result<ContractResult, CognitionError> {
+    let breed = BREED_REGISTRY.get(breed_id)?;
+
+    // 1. Preconditions
+    breed.preconditions(input)
+        .map_err(CognitionError::Precondition)?;
+
+    // 2. Run
+    let mut output = breed.run(input)
+        .map_err(CognitionError::Execution)?;
+
+    // 3. Postconditions (includes empty-trace fraud guard)
+    breed.postconditions(&output)
+        .map_err(CognitionError::Postcondition)?;
+
+    // 4. Derive OCEL log
+    let run_id_seed = format!("{}:{}", breed_id,
+        serde_json::to_string(&output).unwrap_or_default());
+    let run_id = blake3_hex(run_id_seed.as_bytes());
+    let ocel = derive_ocel(breed_id, &run_id, &output.inference_trace);
+
+    // 5. Check temporal conformance
+    check_temporal_conformance(&ocel)
+        .map_err(CognitionError::TemporalViolation)?;
+
+    // 6. Validate lifecycle alignment
+    let model = lifecycle_model_for(breed_id);
+    let conformance = validate_ocel_alignment(&ocel, model);
+
+    // 7. Refuse if not conforming
+    if !conformance.is_conforming {
+        return Err(CognitionError::ConformanceRefusal(
+            conformance.refusals.join("; ")
+        ));
+    }
+
+    // 8. Attach OCEL log to output
+    output.ocel_log = Some(serde_json::to_value(&ocel)?);
+
+    // 9. Hash output (covers ocel_log)
+    let output_json = serde_json::to_string(&output)?;
+    let output_hash = blake3_hex(output_json.as_bytes());
+
+    // 10. Derive run_id and replay_pointer
+    let run_id   = blake3_hex(
+        format!("{}:{}", breed_id, &output_hash).as_bytes()
+    );
+    let replay_pointer = output_hash[..16].to_string();
+
+    Ok(ContractResult {
+        status:          "ok".into(),
+        breed:           breed_id.into(),
+        run_id,
+        output_hash,
+        replay_pointer,
+        options_profile: input.options.as_ref()
+            .and_then(|o| o.profile.clone())
+            .unwrap_or_else(|| "default".into()),
+        output:          serde_json::to_value(&output)?,
+        conformance:     Some(conformance),
+    })
+}
+\end{verbatim}
+
+Steps 1 through 10 are executed unconditionally for every breed. There is no early return between step 2 and step 7 that could produce a valid \texttt{ContractResult}. The only returns prior to step 10 are error returns.
+
+\section{The \texttt{ContractResult} and Receipt Chain}
+\label{sec:contract-result}
+
+The \texttt{ContractResult} is the external artifact produced by \texttt{cognition\_run}:
+
+\begin{verbatim}
+{
+  "status":          "ok",
+  "breed":           "mycin",
+  "run_id":          "<blake3-64>",
+  "output_hash":     "<blake3-64>",
+  "replay_pointer":  "<output_hash[..16]>",
+  "options_profile": "default",
+  "output":          { ... BreedOutput with ocel_log ... },
+  "conformance": {
+    "fitness":   1.0,
+    "model_id":  "mycin-v1",
+    "refusals":  []
+  }
+}
+\end{verbatim}
+
+The BLAKE3 receipt chain is:
+
+\begin{enumerate}
+\item \texttt{output\_hash} = \texttt{blake3(serde\_json(BreedOutput))} --- covers the OCEL log, inference trace, and all breed-specific result fields.
+\item \texttt{run\_id} = \texttt{blake3(breed\_id | output\_hash)} --- binds the execution identity to the specific breed and output.
+\item \texttt{replay\_pointer} = \texttt{output\_hash[..16]} --- a short, human-readable prefix for log lookup and cross-referencing.
+\end{enumerate}
+
+The chain has no cycles and no truncation: knowledge of \texttt{replay\_pointer} implies knowledge of the first 16 hexadecimal characters of \texttt{output\_hash}; knowledge of \texttt{output\_hash} implies knowledge of the full serialized \texttt{BreedOutput}. Any modification to any field of the output---including the OCEL log inside it---produces a different \texttt{output\_hash} and therefore a different \texttt{run\_id} and \texttt{replay\_pointer}. A consumer who stores the \texttt{ContractResult} and later re-derives \texttt{output\_hash} from \texttt{output} can detect tampering without contacting any external service.
+
+\section{The Determinism Guarantee}
+\label{sec:determinism}
+
+The determinism guarantee states: for any breed and any input, two executions of \texttt{cognition\_run} on identical inputs produce bit-exact \texttt{output\_hash} values. This guarantee is necessary for the receipt chain to be meaningful: a receipt that changes between runs is not a receipt, it is noise.
+
+Determinism in Rust is straightforward for pure computation but requires discipline in three areas.
+
+\paragraph{HashMap and HashSet Iteration Order.}
+
+Rust's \texttt{HashMap} and \texttt{HashSet} types use a randomized hash seed by default. Any code that iterates over these collections and feeds the iteration order into output will produce non-deterministic results. OLDIA resolves this by prohibiting \texttt{HashMap}/\texttt{HashSet} in any code path that contributes to output serialization. The blackboard in Hearsay uses \texttt{BTreeMap}. The rule index in MYCIN uses \texttt{BTreeMap}. The preference graph in SOAR uses \texttt{BTreeMap}. The case base in CBR uses \texttt{BTreeMap}. Iteration over \texttt{BTreeMap} is lexicographic by key and therefore deterministic.
+
+\paragraph{\texttt{f32} Comparison.}
+
+Floating-point comparison using \texttt{PartialOrd} is not total: \texttt{f32::NAN != f32::NAN}. Any sort that uses \texttt{PartialOrd} on \texttt{f32} values may produce different orderings for equal elements depending on the sort algorithm's comparison sequence. OLDIA uses \texttt{f32::total\_cmp} for all floating-point comparisons in sort keys. Where \texttt{f32} values serve as sort keys and ties are possible (e.g., two KSAR entries with equal \texttt{rating}), lexicographic comparison on the string identifier breaks ties deterministically.
+
+\paragraph{Certainty Factor Clamping.}
+
+The MYCIN certainty factor combination formula can produce values outside $[-1.0, 1.0]$ due to floating-point rounding at the boundaries. All CF values are clamped to $[-1.0, 1.0]$ before serialization. Clamping before hashing ensures that two runs that compute values infinitesimally different due to floating-point evaluation order produce identical clamped values.
+
+\paragraph{Verification Harness.}
+
+The \texttt{tests/breed\_determinism.rs} test file contains 16 tests organized as a 13-breed double-run bit-exact harness. Each test constructs a fixed input for one breed, runs the breed twice through \texttt{run\_breed}, and asserts that the two \texttt{output\_hash} values are identical. The harness covers all thirteen breeds including the four autoinstinct breeds. All 16 tests pass in the current implementation.
+
+\section{The Fidelity Upgrades}
+\label{sec:fidelity-upgrades}
+
+The OCEL provability layer places a demanding requirement on breed implementations: each execution must produce a \texttt{inference\_trace} that satisfies the breed's lifecycle model. Satisfying a lifecycle model requires that the breed actually perform the phases it claims to perform, in the order it claims to perform them. This requirement exposed fidelity gaps in four of the thirteen breed implementations that were resolved during the development of OLDIA.
+
+\subsection{Hearsay: KSAR Priority Queue}
+
+The original Hearsay implementation swept KSAs in fixed declaration order on each blackboard cycle. This produced a conforming OCEL log (the \texttt{enqueue-ksar} and \texttt{fire-ksar} events were emitted in order) but violated a fundamental property of the Hearsay-II architecture: the blackboard scheduler is supposed to select the most promising KSA for activation based on a credibility-weighted priority.
+
+The fidelity upgrade replaced the fixed-order sweep with a priority queue. Each KSAR entry is assigned a \texttt{rating} computed as:
+
+\begin{equation}
+\text{rating} = \text{certainty} \times \text{trigger\_cf}
+\end{equation}
+
+where \texttt{certainty} is the KSA's base confidence and \texttt{trigger\_cf} is the certainty factor of the hypothesis that triggered the KSAR. KSARs are inserted into a \texttt{BTreeMap} keyed by \texttt{(OrderedFloat(rating), ksar\_id)} in descending order of rating (via negation). The scheduler always activates the entry at the front of the map. When a hypothesis is posted, any KSAR whose trigger conditions match the new hypothesis is inserted with its updated rating; any KSAR whose trigger hypothesis has been superseded by a higher-certainty hypothesis is re-rated with a \texttt{stale-ksar} trace event before reinsertion.
+
+The unfakeable test for this upgrade verifies opportunistic ordering: a KSAR declared second but with a higher rating fires before a KSAR declared first with a lower rating. This property cannot be satisfied by any fixed-order implementation.
+
+\subsection{SOAR: Bounded Subgoal on Tie Impasse}
+
+The original SOAR implementation detected the tie impasse condition (multiple operators with equal preference and no \texttt{require} or \texttt{best} preference resolving the tie) but resolved it by arbitrarily selecting the first operator in declaration order. This violated the SOAR architecture's subgoal mechanism, in which an impasse causes the creation of a subgoal state in which new problem-solving activity attempts to resolve the impasse.
+
+The fidelity upgrade implements bounded subgoal creation on tie impasse. When a tie is detected:
+
+\begin{enumerate}
+\item A new subgoal state is created with a copy of the current working memory, augmented with the impasse context.
+\item The subgoal operator preference phase runs in the subgoal state. Rules whose names begin with \texttt{impasse:tie} are eligible to fire in the subgoal and may inject \texttt{pref:better} operators.
+\item If the subgoal phase produces a unique preferred operator, the subgoal is resolved and the operator is selected. The resolution is recorded as a \texttt{chunk.pref} output in the trace.
+\item If the subgoal phase fails to resolve the impasse within a depth cap of 2, the original tie is resolved by lexicographic operator identifier order, ensuring deterministic behavior.
+\end{enumerate}
+
+The depth cap of 2 prevents unbounded subgoal recursion, which the original SOAR architecture does not bound but which is necessary for guaranteed termination in the OLDIA context. The antisymmetry test verifies that circular \texttt{worse-than} preferences (A worse than B, B worse than A) produce deterministic termination via the depth cap rather than infinite recursion.
+
+\subsection{CBR: Full 4R Cycle}
+
+The original CBR implementation performed retrieval and reuse but did not implement the Revise and Retain phases. The fidelity upgrade completes the 4R cycle:
+
+\begin{description}
+\item[Retrieve] Cases are retrieved from the case base using Jaccard similarity on attribute key sets. Jaccard similarity is defined as $|A \cap B| / |A \cup B|$ where $A$ and $B$ are the attribute key sets of the query and candidate case. The identical-query test verifies that $\text{sim}(q, q) = 1.0$ exactly for any case $q$.
+
+\item[Reuse] The retrieved case's solution is adapted to the query context by merging the case's attribute values into the query's attribute values using \texttt{BTreeMap::extend}. The query's attributes take precedence over the case's attributes on key collision, modeling the principle that the current situation supersedes the historical case.
+
+\item[Revise] The proposed solution is validated by computing its similarity to the retrieved case using the same Jaccard measure. If the similarity falls below a configurable threshold (default 0.5), the solution is flagged as potentially unreliable and a \texttt{revise-reject} trace event is emitted.
+
+\item[Retain] If the revised solution is accepted, the case is added to the case base with a BLAKE3-derived identifier computed from the serialized case content. Retention is recorded in \texttt{retained\_cases} and a \texttt{retain-case} trace event is emitted with the BLAKE3 identifier as the detail field.
+\end{description}
+
+\subsection{Prolog: Flat-Term Robinson Unification}
+
+The original Prolog breed implementation used a pattern-matching approach to clause resolution that handled single-argument ground terms correctly but failed to perform shared-variable unification across clause arguments. The grandparent query:
+
+\begin{verbatim}
+grandparent(?0,?2) :- parent(?0,?1), parent(?1,?2).
+\end{verbatim}
+
+requires that the \texttt{?1} variable be unified with the same term in both \texttt{parent} subgoals. The original implementation evaluated each subgoal independently, so \texttt{?1} in the first subgoal and \texttt{?1} in the second subgoal were treated as unrelated variables. The derivation \texttt{grandparent(alice, carol)} from \texttt{parent(alice, bob)} and \texttt{parent(bob, carol)} could not be proved.
+
+The fidelity upgrade rewrites the resolution core in \texttt{crates/prolog8/kernel.rs} (1143 lines) using Robinson's flat-term unification algorithm. Terms are represented as an enum distinguishing atoms, compound terms, and variables. Variables carry positional identifiers (\texttt{?0}, \texttt{?1}, etc.) that are consistently renamed on each clause instantiation to avoid variable capture across resolution steps. Unification maintains a substitution map (\texttt{BTreeMap<VarId, Term>}) that is propagated through the resolution stack. Bounded SLD resolution with a configurable depth cap replaces the original scan-based approach. The grandparent test---deriving \texttt{carol} from the three-clause database using shared-variable unification---passes and is classified as unfakeable because no implementation without genuine Robinson unification can produce the correct derivation.
+
+\section{Summary}
+\label{sec:framework-summary}
+
+OLDIA is an architecture in which operational falsifiability is not a property of the test suite but a property of the artifact. Every call to \texttt{cognition\_run} produces a \texttt{ContractResult} whose \texttt{output\_hash} cryptographically commits to the OCEL 2.0 process log of the execution that produced it. The log is validated against a breed-specific lifecycle model before the hash is computed. A non-conforming execution is refused before a \texttt{ContractResult} is emitted. The determinism guarantee ensures that the same input always produces the same \texttt{output\_hash}, making receipts stable identifiers for specific reasoning events rather than time-stamped snapshots.
+
+The four algorithm-level fidelity upgrades---Hearsay priority scheduling, SOAR bounded subgoal resolution, CBR full 4R cycle, and Prolog flat-term unification---were not cosmetic improvements. They were required to produce inference traces that satisfied the OCEL lifecycle models for those breeds. An architecture that demands process provability has the secondary effect of demanding algorithmic fidelity: a shallow implementation that does not perform the phases it claims to perform cannot produce a conforming log. OLDIA's proof gates are, in this sense, algorithm correctness requirements expressed as process conformance conditions.
+
+The implementation is verified by 655 tests: 480 Rust tests and 175 TypeScript tests. The Rust test suite includes dedicated test files for adversarial oracle testing (58 tests), mathematical property invariants (31 tests), determinism verification (16 tests), and OCEL lifecycle conformance (7 tests). All tests pass. The architecture described in this chapter is the architecture under test.

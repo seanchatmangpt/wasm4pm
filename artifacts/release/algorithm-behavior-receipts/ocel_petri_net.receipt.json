@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": true,
+  "wasm_export_present": false,
   "positive_cases": [
     {
       "case_id": "ocel_petri_net.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-      "duration_ms": 0.14904200000091805,
-      "receipt_hash": "070f0876db386ffc7a9c235ac048ac56babcb169d2b35668bee11607d0155a8b"
+      "duration_ms": 0.2150839999994787,
+      "receipt_hash": "273aa4dba2c0e555d04c6b1c68ee441c86731de062e0c009d70bccb14da12d88"
     }
   ],
   "negative_cases": [
@@ -49,5 +49,5 @@
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "e943aa1a51ce469038f410b87af50fea15e39c90cb0a5c3668fa17a565e5a646"
+  "algorithm_evidence_hash": "0f5bbd2168f309989866e0c0a205b672ec0a6b3838bf60f1cca790ed614fba48"
 }

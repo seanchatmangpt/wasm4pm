@@ -1,0 +1,32 @@
+{
+  "model_id": "autoinstinct_semantics-l1-v1",
+  "model_level": "L1",
+  "breed_id": "autoinstinct_semantics",
+  "object_types": ["token", "primitive", "relation"],
+  "places": [
+    {"id": "p1", "name": "token_parsed",           "object_type": "token"},
+    {"id": "p2", "name": "cd_primitive_identified","object_type": "primitive"},
+    {"id": "p3", "name": "actor_bound",            "object_type": "primitive"},
+    {"id": "p4", "name": "relation_extracted",     "object_type": "relation"},
+    {"id": "p5", "name": "relation_refused",       "object_type": "relation"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "token_parsed",           "label": "token_parsed"},
+    {"id": "t2", "name": "cd_primitive_identified","label": "cd_primitive_identified"},
+    {"id": "t3", "name": "actor_bound",            "label": "actor_bound"},
+    {"id": "t4", "name": "relation_extracted",     "label": "relation_extracted"},
+    {"id": "t5", "name": "relation_refused",       "label": "relation_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}, {"p5": 1}]
+}

@@ -1,0 +1,46 @@
+{
+  "intent": "turn on the light and close door1",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "turn-on-light",
+      "premise": [
+        "light=off"
+      ],
+      "conclusion": "light=on;!light=off",
+      "certainty": 1
+    },
+    {
+      "id": "close-door1",
+      "premise": [
+        "door1=open"
+      ],
+      "conclusion": "door1=closed;!door1=open",
+      "certainty": 1
+    }
+  ],
+  "goals": [
+    {
+      "id": "g-light-on",
+      "predicate": "light",
+      "value": "on"
+    },
+    {
+      "id": "g-door1-closed",
+      "predicate": "door1",
+      "value": "closed"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "light",
+      "value": "off"
+    },
+    {
+      "predicate": "door1",
+      "value": "open"
+    }
+  ]
+}

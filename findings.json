@@ -1,0 +1,815 @@
+{
+  "findings": [
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/execute-learn-contracts.test.ts",
+      "line": 652,
+      "col": 20,
+      "text": "receipts: [{ hash: 'abc123', previous_hash: null }],",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 96,
+      "col": 5,
+      "text": "{ hash: 'blake3-seed-01', previous_hash: null,             stage: 'seed-ontology',    run_id: 'mcpp-run-001' },",
+      "message": "Short string (14 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-seed-01\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 97,
+      "col": 5,
+      "text": "{ hash: 'blake3-breed-02',previous_hash: 'blake3-seed-01', stage: 'breed-ontology',   run_id: 'mcpp-run-001' },",
+      "message": "Short string (15 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-breed-02\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 98,
+      "col": 5,
+      "text": "{ hash: 'blake3-valid-03',previous_hash: 'blake3-breed-02',stage: 'validate-ontology',run_id: 'mcpp-run-001' },",
+      "message": "Short string (15 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-valid-03\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 99,
+      "col": 5,
+      "text": "{ hash: 'blake3-proj-04', previous_hash: 'blake3-valid-03',stage: 'project-artifact', run_id: 'mcpp-run-001' },",
+      "message": "Short string (14 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-proj-04\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 100,
+      "col": 5,
+      "text": "{ hash: 'blake3-comp-05', previous_hash: 'blake3-proj-04', stage: 'compile-artifact', run_id: 'mcpp-run-001' },",
+      "message": "Short string (14 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-comp-05\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 101,
+      "col": 5,
+      "text": "{ hash: 'blake3-bench-06',previous_hash: 'blake3-comp-05', stage: 'run-benchmark',    run_id: 'mcpp-run-001' },",
+      "message": "Short string (15 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-bench-06\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/mcpp-agent-pipeline.test.ts",
+      "line": 102,
+      "col": 5,
+      "text": "{ hash: 'blake3-rel-07',  previous_hash: 'blake3-bench-06',stage: 'release-package',  run_id: 'mcpp-run-001' },",
+      "message": "Short string (13 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3-rel-07\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 30,
+      "col": 20,
+      "text": "receipts: [{ hash: 'h1', previous_hash: null }],",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 71,
+      "col": 25,
+      "text": "const receipts = [{ hash: 'h1', previous_hash: null }];",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 104,
+      "col": 20,
+      "text": "receipts: [{ hash: 'abc', previous_hash: null }],",
+      "message": "Short string (3 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 121,
+      "col": 9,
+      "text": "{ hash: 'h1', previous_hash: null },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 122,
+      "col": 9,
+      "text": "{ hash: 'h2', previous_hash: 'h1' },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-analyze-plan-contracts.test.ts",
+      "line": 123,
+      "col": 9,
+      "text": "{ hash: 'h3', previous_hash: 'h2' },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h3\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 338,
+      "col": 20,
+      "text": "receipts: [{ hash: 'abc123', previous_hash: null }],",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 417,
+      "col": 20,
+      "text": "receipts: [{ hash: 'h1', previous_hash: null }],",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 680,
+      "col": 22,
+      "text": "receipts: [{ hash: 'h1', previous_hash: null }],",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 699,
+      "col": 9,
+      "text": "{ hash: 'h1', previous_hash: null },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 700,
+      "col": 9,
+      "text": "{ hash: 'h2', previous_hash: 'h1' },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 701,
+      "col": 9,
+      "text": "{ hash: 'h3', previous_hash: 'h2' },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h3\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 702,
+      "col": 9,
+      "text": "{ hash: 'h4', previous_hash: 'h3' },",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"h4\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-execute-lifecycle.test.ts",
+      "line": 1089,
+      "col": 20,
+      "text": "receipts: [{ hash: 'same-hash', previous_hash: 'same-hash' }],",
+      "message": "Short string (9 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"same-hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/monitor-plan-phases.test.ts",
+      "line": 35,
+      "col": 20,
+      "text": "receipts: [{ hash: 'abc123', previous_hash: null }],",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 117,
+      "col": 22,
+      "text": "receipts: [{ hash: 'a' }, { hash: 'b' /* missing previous_hash */ }],",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 117,
+      "col": 37,
+      "text": "receipts: [{ hash: 'a' }, { hash: 'b' /* missing previous_hash */ }],",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"b\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 124,
+      "col": 22,
+      "text": "receipts: [{ hash: 'a' }, { hash: 'b', previous_hash: 'wrong' }],",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 124,
+      "col": 37,
+      "text": "receipts: [{ hash: 'a' }, { hash: 'b', previous_hash: 'wrong' }],",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"b\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 134,
+      "col": 13,
+      "text": "{ hash: 'a' },",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 135,
+      "col": 13,
+      "text": "{ hash: 'b', previous_hash: 'a' },",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"b\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-contracts.test.ts",
+      "line": 136,
+      "col": 13,
+      "text": "{ hash: 'c', previous_hash: 'b' },",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"c\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 76,
+      "col": 11,
+      "text": "{ hash: 'aaa000', previous_hash: null },",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"aaa000\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 77,
+      "col": 11,
+      "text": "{ hash: 'bbb111', previous_hash: 'WRONG_HASH' }, // should be 'aaa000'",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"bbb111\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 78,
+      "col": 11,
+      "text": "{ hash: 'ccc222', previous_hash: 'bbb111' },",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"ccc222\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 101,
+      "col": 11,
+      "text": "{ hash: 'aaa000', previous_hash: null },",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"aaa000\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 102,
+      "col": 11,
+      "text": "{ hash: 'bbb111', previous_hash: 'WRONG_HASH' },",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"bbb111\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/orchestration-timeout-errors.test.ts",
+      "line": 128,
+      "col": 11,
+      "text": "{ hash: 'deadbeef', previous_hash: 'deadbeef' }, // self-referential",
+      "message": "Short string (8 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"deadbeef\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/otel-span-coverage.test.ts",
+      "line": 80,
+      "col": 11,
+      "text": "{ hash: 'aaa' },",
+      "message": "Short string (3 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"aaa\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/otel-span-coverage.test.ts",
+      "line": 81,
+      "col": 11,
+      "text": "{ hash: 'bbb', previous_hash: 'aaa' },",
+      "message": "Short string (3 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"bbb\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/otel-span-coverage.test.ts",
+      "line": 222,
+      "col": 20,
+      "text": "receipts: [{ hash: 'x1' }, { hash: 'x2', previous_hash: 'x1' }],",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"x1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/agents/src/__tests__/otel-span-coverage.test.ts",
+      "line": 222,
+      "col": 36,
+      "text": "receipts: [{ hash: 'x1' }, { hash: 'x2', previous_hash: 'x1' }],",
+      "message": "Short string (2 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"x2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/__tests__/mcpp-bridge.test.ts",
+      "line": 52,
+      "col": 5,
+      "text": "hash: 'blake3:' + 'a'.repeat(64),",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/__tests__/mcpp-bridge.test.ts",
+      "line": 544,
+      "col": 38,
+      "text": "{ id: 'a', type: 'EventLog', hash: 'blake3:' + 'a'.repeat(64) },",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/__tests__/mcpp-bridge.test.ts",
+      "line": 545,
+      "col": 42,
+      "text": "{ id: 'b', type: 'ProcessModel', hash: 'blake3:' + 'b'.repeat(64) },",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/__tests__/mcpp-bridge.test.ts",
+      "line": 731,
+      "col": 9,
+      "text": "hash: 'blake3:' + 'a'.repeat(64),",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/__tests__/mcpp-bridge.test.ts",
+      "line": 740,
+      "col": 9,
+      "text": "hash: 'blake3:' + 'f'.repeat(64),",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/config/src/mcpp-bridge.ts",
+      "line": 348,
+      "col": 39,
+      "text": "*   { id: 'log-1', type: 'EventLog', hash: 'blake3:abc...' },",
+      "message": "Short string (13 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:abc...\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/contracts/src/__tests__/cross-system-receipt.test.ts",
+      "line": 406,
+      "col": 28,
+      "text": "badResponse.proof_pack.hash = 'blake3:NOT_HEX_NOT_64_CHARS';",
+      "message": "Short string (27 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:NOT_HEX_NOT_64_CHARS\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/contracts/src/__tests__/enterprise-integration.test.ts",
+      "line": 820,
+      "col": 11,
+      "text": "const hash = 'b'.repeat(64);",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"b\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/contracts/src/__tests__/shared-schema.test.ts",
+      "line": 59,
+      "col": 5,
+      "text": "hash: 'blake3:' + HEX_64_A,",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/contracts/src/__tests__/shared-schema.test.ts",
+      "line": 64,
+      "col": 5,
+      "text": "hash: 'blake3:' + HEX_64_D,",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"blake3:\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/kernel/src/__tests__/batch-runner.test.ts",
+      "line": 40,
+      "col": 7,
+      "text": "hash: 'hash123',",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 30,
+      "col": 9,
+      "text": "hash: 'hash-abc123',",
+      "message": "Short string (11 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 55,
+      "col": 9,
+      "text": "hash: 'hash-abc123',",
+      "message": "Short string (11 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 89,
+      "col": 11,
+      "text": "hash: 'hash-abc123',",
+      "message": "Short string (11 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-abc123\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 142,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 151,
+      "col": 9,
+      "text": "hash: 'hash-2',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 160,
+      "col": 9,
+      "text": "hash: 'hash-3',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-3\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 195,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 216,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 239,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 248,
+      "col": 9,
+      "text": "hash: 'hash-2',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 269,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 295,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 307,
+      "col": 11,
+      "text": "hash: 'hash-2',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-2\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/discovery-cache.test.ts",
+      "line": 351,
+      "col": 9,
+      "text": "hash: 'hash-1',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-1\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 30,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 56,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 84,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 94,
+      "col": 9,
+      "text": "hash: 'hash-heuristic-def',",
+      "message": "Short string (18 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-heuristic-def\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 121,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 143,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 161,
+      "col": 9,
+      "text": "hash: 'hash-dfg-abc',",
+      "message": "Short string (12 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-dfg-abc\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 196,
+      "col": 9,
+      "text": "hash: 'hash',",
+      "message": "Short string (4 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 242,
+      "col": 9,
+      "text": "hash: 'hash',",
+      "message": "Short string (4 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 267,
+      "col": 9,
+      "text": "hash: 'hash',",
+      "message": "Short string (4 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 295,
+      "col": 9,
+      "text": "hash: 'hash',",
+      "message": "Short string (4 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 331,
+      "col": 9,
+      "text": "hash: 'hash',",
+      "message": "Short string (4 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/observability/src/__tests__/model-cache.test.ts",
+      "line": 356,
+      "col": 9,
+      "text": "hash: 'hash-genetic-xyz',",
+      "message": "Short string (16 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-genetic-xyz\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/harness-self.test.ts",
+      "line": 50,
+      "col": 9,
+      "text": "hash: 'hash-test',",
+      "message": "Short string (9 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-test\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/receipt-validator.test.ts",
+      "line": 280,
+      "col": 24,
+      "text": "(receipt as any).signature = 'a'.repeat(128); // 128 hex chars = 64 bytes (typical Ed25519)",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/receipt-validator.test.ts",
+      "line": 303,
+      "col": 24,
+      "text": "(receipt as any).signature = 'a'.repeat(256);",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/receipt-validator.test.ts",
+      "line": 309,
+      "col": 24,
+      "text": "(receipt as any).signature = 'a'.repeat(513);",
+      "message": "Short string (1 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"a\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/testing-gaps.test.ts",
+      "line": 383,
+      "col": 9,
+      "text": "hash: 'hash-ee',",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-ee\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/testing-gaps.test.ts",
+      "line": 404,
+      "col": 9,
+      "text": "hash: 'hash-nm',",
+      "message": "Short string (7 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-nm\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/testing-gaps.test.ts",
+      "line": 421,
+      "col": 37,
+      "text": "plan: () => ({ id: 'trivial', hash: 'hash-t', steps: [] }),",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-t\""
+    },
+    {
+      "rule": "R2",
+      "severity": "CRITICAL",
+      "file": "packages/testing/__tests__/unit/testing-gaps.test.ts",
+      "line": 442,
+      "col": 9,
+      "text": "hash: 'hash-d',",
+      "message": "Short string (6 chars) assigned to hash/fingerprint/id field — BLAKE3 hashes are 64 hex chars. Value: \"hash-d\""
+    },
+    {
+      "rule": "R1",
+      "severity": "HIGH",
+      "file": "packages/ml/src/cross-validation.ts",
+      "line": 231,
+      "col": 28,
+      "text": "const j = Math.floor(Math.random() * (i + 1));",
+      "message": "Math.random() in production source — non-deterministic, not cryptographic. Use crypto.getRandomValues() or a seeded PRNG."
+    },
+    {
+      "rule": "R1",
+      "severity": "HIGH",
+      "file": "packages/ml/src/feature-importance.ts",
+      "line": 80,
+      "col": 28,
+      "text": "const j = Math.floor(Math.random() * (i + 1));",
+      "message": "Math.random() in production source — non-deterministic, not cryptographic. Use crypto.getRandomValues() or a seeded PRNG."
+    },
+    {
+      "rule": "R1",
+      "severity": "HIGH",
+      "file": "packages/observability/src/error-span-capture.ts",
+      "line": 287,
+      "col": 10,
+      "text": "return Math.random().toString(16).substring(2) + Math.random().toString(16).substring(2);",
+      "message": "Math.random() in production source — non-deterministic, not cryptographic. Use crypto.getRandomValues() or a seeded PRNG."
+    },
+    {
+      "rule": "R1",
+      "severity": "HIGH",
+      "file": "packages/observability/src/error-span-capture.ts",
+      "line": 294,
+      "col": 10,
+      "text": "return Math.random().toString(16).substring(2);",
+      "message": "Math.random() in production source — non-deterministic, not cryptographic. Use crypto.getRandomValues() or a seeded PRNG."
+    }
+  ],
+  "total": 90
+}

@@ -1,0 +1,280 @@
+{
+  "intent": "ARE ANY BY FEIGENBAUM AND FELDMAN",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "segment",
+      "value": "silence:0:5"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-peak:5:28"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-nonpeak:28:48"
+    },
+    {
+      "key": "segment",
+      "value": "fricative:48:72"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-peak:72:100"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-nonpeak:100:145"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-peak:145:157"
+    },
+    {
+      "key": "segment",
+      "value": "fricative:157:175"
+    },
+    {
+      "key": "segment",
+      "value": "sonorant-peak:175:225"
+    },
+    {
+      "key": "syllable-class",
+      "value": "A:5:28:85"
+    },
+    {
+      "key": "syllable-class",
+      "value": "I:28:48:72"
+    },
+    {
+      "key": "syllable-class",
+      "value": "U:48:72:65"
+    },
+    {
+      "key": "syllable-class",
+      "value": "A:72:100:80"
+    },
+    {
+      "key": "syllable-class",
+      "value": "N:100:145:75"
+    },
+    {
+      "key": "syllable-class",
+      "value": "A:145:225:88"
+    },
+    {
+      "key": "word",
+      "value": "ARE:0:28:85"
+    },
+    {
+      "key": "word",
+      "value": "ANY:24:49:65"
+    },
+    {
+      "key": "word",
+      "value": "BY:52:72:80"
+    },
+    {
+      "key": "word",
+      "value": "FEIGENBAUM:80:150:80"
+    },
+    {
+      "key": "word",
+      "value": "AND:145:175:75"
+    },
+    {
+      "key": "word",
+      "value": "FELDMAN:175:225:85"
+    },
+    {
+      "key": "word-sequence",
+      "value": "[-ARE*]:0:28:97"
+    },
+    {
+      "key": "word-sequence",
+      "value": "[AND+FELDMAN-]*:145:225:90"
+    },
+    {
+      "key": "word-sequence",
+      "value": "EIGHT:48:57:85"
+    },
+    {
+      "key": "word-sequence",
+      "value": "SHAW-AND-MARVIN:72:157:75"
+    },
+    {
+      "key": "phrase",
+      "value": "[+ARE*]:0:28:97"
+    },
+    {
+      "key": "phrase",
+      "value": "AND+FELDMAN+]*:145:225:90"
+    },
+    {
+      "key": "phrase",
+      "value": "FEIGENBAUM+AND+FELDMAN+]*:80:225:83"
+    },
+    {
+      "key": "phrase",
+      "value": "BY+FEIGENBAUM+AND+FELDMAN+]*:52:225:84"
+    },
+    {
+      "key": "phrase",
+      "value": "ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:24:225:82"
+    },
+    {
+      "key": "phrase",
+      "value": "[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:0:225:85"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "gps:091667199098d94ee0e299ed1bd52f5511061c8f0594d36d9781b8050ba4d59c"
+    }
+  ],
+  "rules": [
+    {
+      "id": "KS-SEG",
+      "premise": [
+        "acoustic-signal"
+      ],
+      "conclusion": "segment-hypotheses",
+      "certainty": 1
+    },
+    {
+      "id": "KS-POM",
+      "premise": [
+        "segment-hypotheses"
+      ],
+      "conclusion": "syllable-class-hypotheses",
+      "certainty": 0.85
+    },
+    {
+      "id": "KS-MOW",
+      "premise": [
+        "syllable-class-hypotheses"
+      ],
+      "conclusion": "word-hypotheses",
+      "certainty": 0.88
+    },
+    {
+      "id": "KS-WORD-CTL",
+      "premise": [
+        "start-of-processing"
+      ],
+      "conclusion": "word-level-goal-hypotheses",
+      "certainty": 1
+    },
+    {
+      "id": "KS-WORD-SEQ-CTL",
+      "premise": [
+        "start-of-processing"
+      ],
+      "conclusion": "word-sequence-level-goal-hypotheses",
+      "certainty": 1
+    },
+    {
+      "id": "KS-WORD-SEQ",
+      "premise": [
+        "word-hypotheses"
+      ],
+      "conclusion": "word-sequence-hypotheses",
+      "certainty": 0.9
+    },
+    {
+      "id": "KS-PARSE",
+      "premise": [
+        "word-sequence-hypotheses"
+      ],
+      "conclusion": "phrase-hypotheses",
+      "certainty": 0.97
+    },
+    {
+      "id": "KS-PREDICT",
+      "premise": [
+        "phrase-hypotheses"
+      ],
+      "conclusion": "predicted-word-attributes-on-phrase",
+      "certainty": 0.8
+    },
+    {
+      "id": "KS-VERIFY",
+      "premise": [
+        "phrase-hypotheses",
+        "predicted-word-attributes-on-phrase"
+      ],
+      "conclusion": "verified-word-hypotheses",
+      "certainty": 0.85
+    },
+    {
+      "id": "KS-CONCAT",
+      "premise": [
+        "phrase-hypotheses",
+        "verified-word-hypotheses"
+      ],
+      "conclusion": "extended-phrase-hypotheses",
+      "certainty": 0.85
+    },
+    {
+      "id": "KS-RPOL",
+      "premise": [
+        "any-new-or-modified-hypothesis"
+      ],
+      "conclusion": "credibility-rating-updated",
+      "certainty": 1
+    },
+    {
+      "id": "KS-STOP",
+      "premise": [
+        "complete-spanning-phrase-hypothesis"
+      ],
+      "conclusion": "recognition-result-selected",
+      "certainty": 0.85
+    },
+    {
+      "id": "KS-SEMANT",
+      "premise": [
+        "accepted-phrase-hypothesis"
+      ],
+      "conclusion": "unambiguous-database-interpretation",
+      "certainty": 0.9
+    }
+  ],
+  "cases": [],
+  "goals": [
+    {
+      "id": "g-recognize-utterance",
+      "predicate": "phrase",
+      "value": "complete-sentence:0:225"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "utterance-duration-cs",
+      "value": "225"
+    },
+    {
+      "predicate": "vocabulary-size",
+      "value": "1011"
+    },
+    {
+      "predicate": "blackboard-levels",
+      "value": "parameter,segment,syllable,word,word-sequence,phrase"
+    },
+    {
+      "predicate": "microphone",
+      "value": "Electro-Voice-RE51"
+    },
+    {
+      "predicate": "environment-noise-db",
+      "value": "65"
+    },
+    {
+      "predicate": "sample-rate-khz",
+      "value": "10"
+    },
+    {
+      "predicate": "acoustic-params",
+      "value": "ZAPDASH"
+    }
+  ]
+}

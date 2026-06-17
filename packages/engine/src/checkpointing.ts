@@ -4,20 +4,23 @@
  * Saves and restores execution state for resumability
  */
 
+import { z } from 'zod';
 import { EngineState } from '@wasm4pm/contracts';
+
+export const CheckpointSchema = z.object({
+  id: z.string(),
+  runId: z.string(),
+  timestamp: z.date(),
+  sequenceNumber: z.number(),
+  state: z.string() as z.ZodType<EngineState>,
+  progress: z.number(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
+});
 
 /**
  * A checkpoint capturing execution state at a point in time
  */
-export interface Checkpoint {
-  id: string;
-  runId: string;
-  timestamp: Date;
-  sequenceNumber: number;
-  state: EngineState;
-  progress: number;
-  metadata?: Record<string, unknown>;
-}
+export type Checkpoint = z.infer<typeof CheckpointSchema>;
 
 /**
  * Manages checkpoints for a given run

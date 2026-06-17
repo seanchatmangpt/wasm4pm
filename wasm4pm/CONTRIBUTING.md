@@ -236,11 +236,10 @@ const result = function_name(arg1, arg2);
 ```
 ````
 
-````
-
 ### Update Getting Started
 
 Add examples to `GETTING_STARTED.md` in relevant sections:
+
 - Quick Start
 - Common Workflows
 - Advanced Features
@@ -248,6 +247,7 @@ Add examples to `GETTING_STARTED.md` in relevant sections:
 ### Architecture Documentation
 
 Update `ARCHITECTURE.md` for significant design changes:
+
 - Component changes
 - Data flow modifications
 - New subsystems
@@ -267,9 +267,9 @@ Update `ARCHITECTURE.md` for significant design changes:
 
 1. **Push to your fork**:
 
-```bash
-git push origin my-feature-branch
-````
+   ```bash
+   git push origin my-feature-branch
+   ```
 
 2. **Create PR on GitHub**:
    - Title: Clear, concise description
@@ -279,26 +279,26 @@ git push origin my-feature-branch
 
 3. **Example PR Description**:
 
-```markdown
-## Description
+   ```markdown
+   ## Description
 
-Adds support for discovering DECLARE constraints from event logs.
+   Adds support for discovering DECLARE constraints from event logs.
 
-## Changes
+   ## Changes
 
-- Implement `discover_declare()` function in Rust
-- Add integration tests
-- Update API documentation
-- Add usage example to GETTING_STARTED.md
+   - Implement `discover_declare()` function in Rust
+   - Add integration tests
+   - Update API documentation
+   - Add usage example to GETTING_STARTED.md
 
-## Testing
+   ## Testing
 
-- Unit tests pass locally
-- Tested with sample XES files
-- No performance regressions
+   - Unit tests pass locally
+   - Tested with sample XES files
+   - No performance regressions
 
-Closes #123
-```
+   Closes #123
+   ```
 
 ### Review Process
 

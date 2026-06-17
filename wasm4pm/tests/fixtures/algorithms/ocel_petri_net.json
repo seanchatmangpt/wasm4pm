@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_petri_net",
+  "provenance": {
+    "paper": "Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019. Section 4.",
+    "locus": "Section 4, per-type Petri net construction",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "petri_nets=1",
+    "description": "One flattened Petri net is produced per object type; the running example OCEL log has 1 object type, yielding 1 Petri net"
+  }
+}

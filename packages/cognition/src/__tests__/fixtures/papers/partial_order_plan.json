@@ -1,0 +1,95 @@
+{
+  "breed": "partial_order_plan",
+  "provenance": {
+    "citation": "McAllester, D., & Rosenblitt, D. (1991). Systematic Nonlinear Planning. In: Proceedings of the Ninth National Conference on Artificial Intelligence (AAAI-91), pp. 634\u2013639.",
+    "locus": "The Sussman anomaly (three-block problem, initial: C on A, A and B on table; goals: A on B and B on C), the canonical example motivating nonlinear/partial-order planning that SNLP solves systematically; threat resolution by promotion/demotion per the paper's causal-link semantics.",
+    "extraction": "verbatim-propositionalized",
+    "notes": "Blocks-world operators are propositionalized (no variables, per the breed's propositional STRIPS contract): put_c_from_a_on_table, put_a_on_b, put_b_on_c with the standard pre/add/del lists. The only valid solution order is the interleaved c-to-table, b-on-c, a-on-b \u2014 unreachable by linear goal-at-a-time planning, which is the anomaly the paper addresses. The plan requires causal-link threat detection (put_a_on_b deletes clear_b needed by put_b_on_c; put_b_on_c deletes clear_c needed by put_c_from_a_on_table) and resolution by ordering."
+  },
+  "input": {
+    "intent": "solve the Sussman anomaly with SNLP causal-link planning",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "pop:op:put_c_from_a_on_table:pre",
+        "value": "clear_c,on_c_a"
+      },
+      {
+        "key": "pop:op:put_c_from_a_on_table:add",
+        "value": "clear_a,ontable_c"
+      },
+      {
+        "key": "pop:op:put_c_from_a_on_table:del",
+        "value": "on_c_a"
+      },
+      {
+        "key": "pop:op:put_a_on_b:pre",
+        "value": "clear_a,clear_b,ontable_a"
+      },
+      {
+        "key": "pop:op:put_a_on_b:add",
+        "value": "on_a_b"
+      },
+      {
+        "key": "pop:op:put_a_on_b:del",
+        "value": "clear_b,ontable_a"
+      },
+      {
+        "key": "pop:op:put_b_on_c:pre",
+        "value": "clear_b,clear_c,ontable_b"
+      },
+      {
+        "key": "pop:op:put_b_on_c:add",
+        "value": "on_b_c"
+      },
+      {
+        "key": "pop:op:put_b_on_c:del",
+        "value": "clear_c,ontable_b"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "on_a_b",
+        "value": "true"
+      },
+      {
+        "id": "g2",
+        "predicate": "on_b_c",
+        "value": "true"
+      }
+    ],
+    "state": [
+      {
+        "predicate": "on_c_a",
+        "value": "true"
+      },
+      {
+        "predicate": "clear_c",
+        "value": "true"
+      },
+      {
+        "predicate": "clear_b",
+        "value": "true"
+      },
+      {
+        "predicate": "ontable_a",
+        "value": "true"
+      },
+      {
+        "predicate": "ontable_b",
+        "value": "true"
+      }
+    ]
+  },
+  "expected": {
+    "plan": "put_c_from_a_on_table;put_b_on_c;put_a_on_b",
+    "required_trace_kinds": [
+      "detect-threat"
+    ],
+    "notes": "The interleaved solution order; threat detection and promotion/demotion steps must appear in the trace.",
+    "value": "put_c_from_a_on_table;put_b_on_c;put_a_on_b"
+  }
+}

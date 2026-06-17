@@ -68,7 +68,8 @@ function makeEnvelope(overrides: Record<string, unknown> = {}): Record<string, u
 function makeReceipt(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     run_id: 'run-abc',
-    schema_version: '1.0',
+    schema_version: '1.1',
+    trace_id: 'a'.repeat(32),
     config_hash: 'a'.repeat(64),
     input_hash: 'b'.repeat(64),
     plan_hash: 'c'.repeat(64),

@@ -132,52 +132,35 @@ export function buildFeatureMatrix(
   for (let rowIdx = 0; rowIdx < validRows.length; rowIdx++) {
     const row = validRows[rowIdx];
 
-    // Extract case_id with fallback to row index
+    // Extract case_id: missing → push empty string (contract: coerce edge cases).
     const caseIdVal = row.case_id;
-    if (caseIdVal == null) {
-      caseIds.push(`row_${rowIdx}`);
-    } else {
-      caseIds.push(String(caseIdVal));
-    }
+    caseIds.push(caseIdVal == null ? '' : String(caseIdVal));
 
     const numericRow: number[] = [];
 
-    // Numeric columns: coerce safely, guard against NaN, Infinity, and missing values
-    // CRITICAL: Handle missing properties (undefined), NaN, Infinity all as 0
-    // GAP 1 FIX: Explicitly check Number.isFinite() which rejects NaN, Infinity, -Infinity
-    // GAP 3 FIX: Use sorted numeric columns to match feature name order
+    // Numeric columns: non-finite values coerced to 0 per contract.
     for (const col of sortedNumericCols) {
       const val = row[col];
-      if (typeof val === 'number' && Number.isFinite(val)) {
-        numericRow.push(val);
-      } else {
-        // Coerce to 0: missing, null, NaN, Infinity, -Infinity, non-numeric
-        numericRow.push(0);
-      }
+      numericRow.push(typeof val === 'number' && Number.isFinite(val) ? val : 0);
     }
 
     // One-hot encoded string columns (in sorted order for determinism)
-    // GAP 3 FIX: Use sortedCategoricalCols to ensure consistent column ordering
     for (const col of sortedCategoricalCols) {
       const values = oneHotMap.get(col)!;
-      const rowVal = row[col] == null ? '' : String(row[col]);
+      const rowVal = row[col];
+      // Missing categorical value coerced to empty string per contract.
+      const rowValStr = rowVal == null ? '' : String(rowVal);
       for (const v of values) {
-        numericRow.push(rowVal === v ? 1 : 0);
+        numericRow.push(rowValStr === v ? 1 : 0);
       }
     }
 
     data.push(numericRow);
 
-    // Extract numeric target with NaN/Infinity guard
-    // CRITICAL: Must handle NaN explicitly since typeof NaN === 'number'
-    // GAP 4 FIX: Use Number.isFinite() which rejects NaN, Infinity, -Infinity
+    // Extract numeric target: non-finite values coerced to 0 per contract.
     if (numericTargetKey) {
       const val = row[numericTargetKey];
-      if (typeof val === 'number' && Number.isFinite(val)) {
-        targets.push(val);
-      } else {
-        targets.push(0);
-      }
+      targets.push(typeof val === 'number' && Number.isFinite(val) ? val : 0);
     }
 
     // Extract categorical target

@@ -1,0 +1,115 @@
+(node:13982) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "qualitative_reason",
+    "breed": "qualitative_reason",
+    "status": "ok",
+    "output": {
+      "breed": "QualitativeReason",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "qr:state:0",
+          "value": "a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:+"
+        },
+        {
+          "key": "qr:state:1",
+          "value": "a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:0"
+        },
+        {
+          "key": "qr:state:2",
+          "value": "a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:-"
+        },
+        {
+          "key": "qr:state_count",
+          "value": "3"
+        },
+        {
+          "key": "qr:equilibrium",
+          "value": "none"
+        }
+      ],
+      "selected": "3 states",
+      "explanation": "Confluence envisionment: 3 consistent qualitative state(s); equilibrium none.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-model",
+          "detail": "5 variables, 2 confluences, 3 known signs",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "propagate-confluence",
+          "detail": "dyn: [dyn_v] = + forced",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "branch-ambiguity",
+          "detail": "valve: + ⊕ − ambiguous, deferring to envisionment",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "branch-ambiguity",
+          "detail": "valve: + ⊕ − ambiguous, deferring to envisionment",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "envision-state",
+          "detail": "S0: a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:+",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "limit-analysis",
+          "detail": "S0: moving variables [a,dyn_v,h_6ee3c81b,p,q]",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "envision-state",
+          "detail": "S1: a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:0",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "limit-analysis",
+          "detail": "S1: moving variables [a,dyn_v,h_6ee3c81b,p]",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "envision-state",
+          "detail": "S2: a:-,dyn_v:+,h_6ee3c81b:+,p:+,q:-",
+          "depth": 1
+        },
+        {
+          "step": 9,
+          "kind": "limit-analysis",
+          "detail": "S2: moving variables [a,dyn_v,h_6ee3c81b,p,q]",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "2dccb243390f37240d6869329571323c857ac0d21a908f22629c1f9d1a042ee5",
+    "output_hash": "142044aaa45efb9fb5fe34f778534e03ff33eafec27dda9139d0b35d59c715b0",
+    "replay_pointer": "142044aaa45efb9f",
+    "inference_step_count": 10,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/2dccb243390f37240d6869329571323c857ac0d21a908f22629c1f9d1a042ee5.json"
+  },
+  "meta": {
+    "run_id": "daf9a0dd-c51c-4411-bc69-e5e8f2934b76",
+    "timestamp": "2026-06-11T08:35:02.527Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

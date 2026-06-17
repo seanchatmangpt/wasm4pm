@@ -1,0 +1,42 @@
+{
+  "intent": "parse a ditransitive",
+  "facts": [
+    {
+      "key": "cxg:utterance",
+      "value": "pat faxed bill the letter"
+    },
+    {
+      "key": "lex:pat:pos",
+      "value": "noun"
+    },
+    {
+      "key": "lex:faxed:pos",
+      "value": "verb"
+    },
+    {
+      "key": "lex:faxed:valence",
+      "value": "transitive"
+    },
+    {
+      "key": "lex:bill:pos",
+      "value": "noun"
+    },
+    {
+      "key": "lex:the:pos",
+      "value": "det"
+    },
+    {
+      "key": "lex:letter:pos",
+      "value": "noun"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "clp:515f57f16fb98af87352d6bad887c7b567966429666c2b80b123bca6e27b66e5"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

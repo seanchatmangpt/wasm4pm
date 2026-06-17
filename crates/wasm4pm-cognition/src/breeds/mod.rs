@@ -7,15 +7,88 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Module for autoinstinct_learning
+pub mod autoinstinct_learning;
+/// Module for autoinstinct_neurosis
+pub mod autoinstinct_neurosis;
+pub mod autoinstinct_semantics;
+pub mod autoinstinct_vision;
+/// Module for cbr
 pub mod cbr;
+/// Module for ebl
+pub mod ebl;
+/// Module for asp
+pub mod asp;
+/// Module for description_logic
+pub mod description_logic;
+/// Module for abductive_lp
+pub mod abductive_lp;
+/// Module for default_logic
+pub mod default_logic;
+/// Module for clp
+pub mod clp;
+/// Module for csp_ac3
+pub mod csp_ac3;
+/// Module for clp
+pub mod clp;
+/// Module for dendral
 pub mod dendral;
+/// Module for frame
 pub mod frame;
+/// Module for gps
 pub mod gps;
 pub mod hearsay;
+/// Module for production_rules
 pub mod production_rules;
 pub mod prolog;
+/// Module for soar
 pub mod soar;
 pub mod strips;
+/// Module for ltl_monitor
+pub mod ltl_monitor;
+/// Module for allen_temporal
+pub mod allen_temporal;
+/// Module for fuzzy_logic
+pub mod fuzzy_logic;
+/// Module for bayesian_network
+pub mod bayesian_network;
+/// Module for dempster_shafer
+pub mod dempster_shafer;
+/// Module for frames_inheritance
+pub mod frames_inheritance;
+/// Module for asp
+pub mod asp;
+/// Module for description_logic
+pub mod description_logic;
+/// Module for abductive_lp
+pub mod abductive_lp;
+/// Module for abductive_ibe
+pub mod abductive_ibe;
+/// Module for partial_order_plan
+pub mod partial_order_plan;
+/// Module for event_calculus
+pub mod event_calculus;
+/// Module for mdp
+pub mod mdp;
+/// Module for version_space
+pub mod version_space;
+/// Module for qualitative_reason
+pub mod qualitative_reason;
+/// Dispatch logic for cognitive breeds
+pub mod dispatch;
+/// Shared combinator-core support library (parsers, solvers, fixpoint engines).
+/// Abductive IBE module.
+pub mod abductive_ibe;
+/// Event Calculus module.
+pub mod event_calculus;
+/// Partial Order Plan module.
+pub mod partial_order_plan;
+
+pub mod support;
+
+pub mod meta_reasoning;
+
+pub use dispatch::{dispatch_breed, dispatch_breed_test};
 
 /// Unique identifier for each old-AI breed system.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
@@ -38,6 +111,159 @@ pub enum BreedId {
     Soar,
     /// Hearsay-II: blackboard consensus fusion (Erman & Lesser 1980)
     Hearsay,
+    /// AutoinstinctLearning: STRIPS/HACKER bitwise heuristic planning (Winston 1975)
+    AutoinstinctLearning,
+    /// AutoinstinctSemantics: NLU via Schank CD primitives (ELIZA/SHRDLU lineage)
+    AutoinstinctSemantics,
+    /// AutoinstinctNeurosis: neural-pattern anxiety/conflict detection (Boden 1977)
+    AutoinstinctNeurosis,
+    /// AutoinstinctVision: perceptual pattern recognition (Marr 1982)
+    AutoinstinctVision,
+    /// Bayesian Inference breed (Pearl 1988)
+    BayesianNetwork,
+    /// Fuzzy Logic breed (Zadeh 1965)
+    FuzzyLogic,
+    /// Dempster-Shafer theory of evidence (Shafer 1976)
+    DempsterShafer,
+    /// Abductive Logic Programming (Peirce 1878)
+    AbductiveLp,
+    /// Inductive Logic Programming (Muggleton 1991)
+    Ilp,
+    /// Allen's Temporal Interval Algebra (Allen 1983)
+    AllenTemporal,
+    /// Description Logic reasoning (Baader 2005)
+    DescriptionLogic,
+    /// Constraint Satisfaction via AC-3 (Mackworth 1977)
+    CspAc3,
+    /// Structure Mapping Engine for analogy (Gentner 1983)
+    AnalogySme,
+    /// Linear Temporal Logic runtime monitoring (Havelund 2001)
+    LtlMonitor,
+    /// Default Logic extension finder (Reiter 1980)
+    DefaultLogic,
+    /// Hierarchical Task Network planning (Nau 2003)
+    HtnPlanning,
+    /// Frame-based inheritance with overrides (Minsky 1974)
+    FramesInheritance,
+    /// Explanation-Based Learning / generalization (Mitchell 1986)
+    Ebl,
+    /// Answer Set Programming stable models (Gelfond 1988)
+    Asp,
+    /// Abduction by Inference to the Best Explanation (Thagard 1978)
+    AbductiveIbe,
+    /// Partial Order Planner (McAllester 1991)
+    PartialOrderPlan,
+    /// Discrete Event Calculus solver (Kowalski 1986)
+    EventCalculus,
+    /// Markov Decision Process value iteration (Bellman 1957)
+    Mdp,
+    /// Mitchell's Candidate Elimination version space (Mitchell 1982)
+    VersionSpace,
+    /// Belief merging under integrity constraints (Konieczny 2002)
+    BeliefMerging,
+    /// Qualitative Reasoning sign algebra (de Kleer 1984)
+    QualitativeReason,
+    /// SAM Script Applier Mechanism (Schank 1977)
+    ScriptSam,
+    /// Constraint Logic Programming (Jaffar 1987)
+    Clp,
+    /// Successor-state situation calculus (Reiter 1991)
+    SituationCalculus,
+    /// Circumscription cautious entailment (McCarthy 1980)
+    Circumscription,
+    /// ACT-R cognitive production cycle (Anderson 1998)
+    ActR,
+    /// Probabilistic logic programming possible-worlds (De Raedt 2007)
+    Problog,
+    /// Conflict-Driven Clause Learning SAT solver (Marques-Silva 1999)
+    SatCdcl,
+    /// Episodic Memory similarity recall (Tulving 1983)
+    EpisodicMemory,
+    /// Tabular Q-learning reinforcement learning (Watkins 1992)
+    RlSymbolic,
+    /// Computation Tree Logic model checker (Clarke 1986)
+    CtlCheck,
+    /// Hayes Naive Physics axiomatization (Hayes 1979)
+    NaivePhysics,
+    /// Partially Observable MDP solver (Kaelbling 1998)
+    Pomdp,
+    /// Markov Logic Network MAP inference (Richardson 2006)
+    MarkovLogic,
+    /// Meta-Reasoning conflict resolver (Cox 2011)
+    MetaReasoning,
+    /// Goldberg Construction Grammar parser (Goldberg 1995)
+    ConstructionGrammar,
+    /// Contingent Planning AND-OR search (Norvig AIMA)
+    ContingentPlan,
+    /// Smullyan signed tableaux solver (Smullyan 1968)
+    Tableaux,
+    /// Morphological matrix variant generator
+    Morphological,
+    /// TRIZ contradiction solver
+    Triz,
+    /// Object-centric process mining discoverer
+    OcpmRouteDiscoverer,
+}
+
+impl BreedId {
+    /// All currently defined breed IDs.
+    pub const ALL: &'static [BreedId] = &[
+        BreedId::Eliza,
+        BreedId::Cbr,
+        BreedId::Dendral,
+        BreedId::Strips,
+        BreedId::Prolog,
+        BreedId::Mycin,
+        BreedId::Gps,
+        BreedId::Soar,
+        BreedId::Hearsay,
+        BreedId::AutoinstinctLearning,
+        BreedId::AutoinstinctSemantics,
+        BreedId::AutoinstinctNeurosis,
+        BreedId::AutoinstinctVision,
+        BreedId::BayesianNetwork,
+        BreedId::FuzzyLogic,
+        BreedId::DempsterShafer,
+        BreedId::AbductiveLp,
+        BreedId::Ilp,
+        BreedId::AllenTemporal,
+        BreedId::DescriptionLogic,
+        BreedId::CspAc3,
+        BreedId::AnalogySme,
+        BreedId::LtlMonitor,
+        BreedId::DefaultLogic,
+        BreedId::HtnPlanning,
+        BreedId::FramesInheritance,
+        BreedId::Ebl,
+        BreedId::Asp,
+        BreedId::AbductiveIbe,
+        BreedId::PartialOrderPlan,
+        BreedId::EventCalculus,
+        BreedId::Mdp,
+        BreedId::VersionSpace,
+        BreedId::BeliefMerging,
+        BreedId::QualitativeReason,
+        BreedId::ScriptSam,
+        BreedId::Clp,
+        BreedId::SituationCalculus,
+        BreedId::Circumscription,
+        BreedId::ActR,
+        BreedId::Problog,
+        BreedId::SatCdcl,
+        BreedId::EpisodicMemory,
+        BreedId::RlSymbolic,
+        BreedId::CtlCheck,
+        BreedId::NaivePhysics,
+        BreedId::Pomdp,
+        BreedId::MarkovLogic,
+        BreedId::MetaReasoning,
+        BreedId::ConstructionGrammar,
+        BreedId::ContingentPlan,
+        BreedId::Tableaux,
+        BreedId::Morphological,
+        BreedId::Triz,
+        BreedId::OcpmRouteDiscoverer,
+    ];
 }
 
 impl fmt::Display for BreedId {
@@ -52,9 +278,90 @@ impl fmt::Display for BreedId {
             BreedId::Gps => write!(f, "gps"),
             BreedId::Soar => write!(f, "soar"),
             BreedId::Hearsay => write!(f, "hearsay"),
+            BreedId::AutoinstinctLearning => write!(f, "autoinstinct_learning"),
+            BreedId::AutoinstinctSemantics => write!(f, "autoinstinct_semantics"),
+            BreedId::AutoinstinctNeurosis => write!(f, "autoinstinct_neurosis"),
+            BreedId::AutoinstinctVision => write!(f, "autoinstinct_vision"),
+            BreedId::BayesianNetwork => write!(f, "bayesian_network"),
+            BreedId::FuzzyLogic => write!(f, "fuzzy_logic"),
+            BreedId::DempsterShafer => write!(f, "dempster_shafer"),
+            BreedId::AbductiveLp => write!(f, "abductive_lp"),
+            BreedId::Ilp => write!(f, "ilp"),
+            BreedId::AllenTemporal => write!(f, "allen_temporal"),
+            BreedId::DescriptionLogic => write!(f, "description_logic"),
+            BreedId::CspAc3 => write!(f, "csp_ac3"),
+            BreedId::AnalogySme => write!(f, "analogy_sme"),
+            BreedId::LtlMonitor => write!(f, "ltl_monitor"),
+            BreedId::DefaultLogic => write!(f, "default_logic"),
+            BreedId::HtnPlanning => write!(f, "htn_planning"),
+            BreedId::FramesInheritance => write!(f, "frames_inheritance"),
+            BreedId::Ebl => write!(f, "ebl"),
+            BreedId::Asp => write!(f, "asp"),
+            BreedId::AbductiveIbe => write!(f, "abductive_ibe"),
+            BreedId::PartialOrderPlan => write!(f, "partial_order_plan"),
+            BreedId::EventCalculus => write!(f, "event_calculus"),
+            BreedId::Mdp => write!(f, "mdp"),
+            BreedId::VersionSpace => write!(f, "version_space"),
+            BreedId::BeliefMerging => write!(f, "belief_merging"),
+            BreedId::QualitativeReason => write!(f, "qualitative_reason"),
+            BreedId::ScriptSam => write!(f, "script_sam"),
+            BreedId::Clp => write!(f, "clp"),
+            BreedId::SituationCalculus => write!(f, "situation_calculus"),
+            BreedId::Circumscription => write!(f, "circumscription"),
+            BreedId::ActR => write!(f, "act_r"),
+            BreedId::Problog => write!(f, "problog"),
+            BreedId::SatCdcl => write!(f, "sat_cdcl"),
+            BreedId::EpisodicMemory => write!(f, "episodic_memory"),
+            BreedId::RlSymbolic => write!(f, "rl_symbolic"),
+            BreedId::CtlCheck => write!(f, "ctl_check"),
+            BreedId::NaivePhysics => write!(f, "naive_physics"),
+            BreedId::Pomdp => write!(f, "pomdp"),
+            BreedId::MarkovLogic => write!(f, "markov_logic"),
+            BreedId::MetaReasoning => write!(f, "meta_reasoning"),
+            BreedId::ConstructionGrammar => write!(f, "construction_grammar"),
+            BreedId::ContingentPlan => write!(f, "contingent_plan"),
+            BreedId::Tableaux => write!(f, "tableaux"),
+            BreedId::Morphological => write!(f, "morphological"),
+            BreedId::Triz => write!(f, "triz"),
+            BreedId::OcpmRouteDiscoverer => write!(f, "ocpm_route_discoverer"),
         }
-    }
+
+        impl fmt::Display for BreedId {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                match self {
+                    $( BreedId::$variant => f.write_str($id), )+
+                }
+            }
+        }
+
+        impl BreedId {
+            /// Parse a breed id string into its enum variant. Returns None for
+            /// unknown or not-yet-implemented ids (e.g. "ocpm_route_discoverer"
+            /// is registered but unimplemented).
+            pub fn from_str_id(s: &str) -> Option<Self> {
+                match s {
+                    $( $id => Some(Self::$variant), )+
+                    _ => None,
+                }
+            }
+
+            /// Number of registered (dispatchable) breeds — may exceed
+            /// `ALL.len()` while a breed awaits registry admission.
+            pub const REGISTERED_COUNT: usize = [$( $id ),+].len();
+        }
+
+        /// Static instance table: the single routing surface both
+        /// `dispatch_breed_id` and `dispatch_breed_test_id` consume.
+        /// Exhaustiveness is compiler-enforced by the match over `BreedId`.
+        pub fn breed_instance(id: BreedId) -> &'static dyn CognitionBreed {
+            match id {
+                $( BreedId::$variant => &$path, )+
+            }
+        }
+    };
 }
+
+include!("registration.rs");
 
 /// A logical fact: key-value pair in the knowledge representation.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -127,7 +434,7 @@ pub struct StateAtom {
 }
 
 /// Input to a breed's `run()` method: all available knowledge.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct BreedInput {
     /// User intent or problem statement
     pub intent: String,
@@ -149,7 +456,7 @@ pub struct BreedInput {
 ///
 /// Trace steps are append-only evidence that a real algorithm executed.
 /// An empty trace is a fraud signal: the breed did no work.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Default)]
 pub struct TraceStep {
     /// Monotonic step index (0-based)
     pub step: usize,
@@ -159,6 +466,9 @@ pub struct TraceStep {
     pub detail: String,
     /// Recursion depth at the time of the step
     pub depth: u32,
+    /// Object references for OCEL 2.0: (object_type, object_id) pairs
+    #[serde(default)]
+    pub objects: Vec<(String, String)>,
 }
 
 /// Output from a breed's `run()` method.
@@ -177,6 +487,38 @@ pub struct BreedOutput {
     /// Append-only inference trace: real algorithms produce non-empty traces.
     #[serde(default)]
     pub inference_trace: Vec<TraceStep>,
+    /// OCEL 2.0 event log derived from inference_trace (no wall-clock: uses logical steps)
+    #[serde(default)]
+    pub ocel_log: Option<serde_json::Value>,
+    /// Cases retained from this run (max 1 per run; host owns persistence)
+    #[serde(default)]
+    pub retained_cases: Vec<Case>,
+}
+
+impl BreedOutput {
+    /// Standard-shape constructor: fills the fields every breed sets the
+    /// same way (`candidates` passed through from input, no OCEL log yet,
+    /// no retained cases). Breeds that mutate candidates or retain a case
+    /// set those `pub` fields after construction.
+    pub fn from_parts(
+        breed: BreedId,
+        input: &BreedInput,
+        facts: Vec<Fact>,
+        selected: Option<String>,
+        explanation: String,
+        inference_trace: Vec<TraceStep>,
+    ) -> Self {
+        Self {
+            breed,
+            candidates: input.candidates.clone(),
+            facts,
+            selected,
+            explanation,
+            inference_trace,
+            ocel_log: None,
+            retained_cases: vec![],
+        }
+    }
 }
 
 /// Receipt from a breed's `run()` method: BLAKE3 hashes for integrity.
@@ -208,6 +550,49 @@ impl fmt::Display for BreedError {
 }
 
 impl std::error::Error for BreedError {}
+
+/// Structured error type for breed failures.
+///
+/// Use `CognitionError` in new breeds. `BreedError` remains as a type alias
+/// for interface stability with the 52 existing breed implementations.
+#[derive(Debug, Clone, thiserror::Error, serde::Serialize, serde::Deserialize)]
+pub enum CognitionError {
+    /// A required input fact or field was absent.
+    #[error("{breed}: missing required input — {field}")]
+    MissingInput {
+        /// Breed name.
+        breed: &'static str,
+        /// Missing field or fact key.
+        field: &'static str,
+    },
+    /// Precondition check rejected the input before execution.
+    #[error("{breed}: precondition — {reason}")]
+    PreconditionFailed {
+        /// Breed name.
+        breed: &'static str,
+        /// Human-readable reason.
+        reason: String,
+    },
+    /// Postcondition invariant was violated by the output.
+    #[error("{breed}: postcondition violated — {invariant}")]
+    PostconditionViolated {
+        /// Breed name.
+        breed: &'static str,
+        /// Invariant name or description.
+        invariant: &'static str,
+    },
+    /// Complexity cap exceeded (refusal, not truncation).
+    #[error("{breed}: complexity cap — {detail}")]
+    ComplexityCap {
+        /// Breed name.
+        breed: &'static str,
+        /// Detail message.
+        detail: String,
+    },
+    /// Breed string was not recognized.
+    #[error("unsupported breed: {0}")]
+    Unsupported(String),
+}
 
 /// Compute a BLAKE3 receipt for a breed's execution.
 ///
@@ -245,8 +630,11 @@ pub trait CognitionBreed: Send + Sync {
     /// Unique identifier for this breed.
     fn id(&self) -> BreedId;
 
-    /// Human-readable capability description.
-    fn capabilities(&self) -> Vec<String>;
+    /// Human-readable capability list. Default: `[breed_id_string]`.
+    /// Override when the breed exposes multiple named capabilities.
+    fn capabilities(&self) -> Vec<String> {
+        vec![format!("{}", self.id())]
+    }
 
     /// Precondition checks: ensure the breed can run.
     /// Returns Ok(()) if all pass; Err(message) if violation.
@@ -257,67 +645,24 @@ pub trait CognitionBreed: Send + Sync {
 
     /// Postcondition checks: verify the output is valid.
     /// Returns Ok(()) if all pass; Err(message) if violation.
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String>;
+    fn postconditions(&self, input: &BreedInput, output: &BreedOutput) -> Result<(), String>;
 
     /// Generate a BLAKE3 receipt for this execution.
     fn receipt(&self, input: &BreedInput, output: &BreedOutput) -> Receipt {
         compute_receipt(self.id(), input, output)
     }
-}
 
-/// Test harness: dispatch to the correct breed's `run()` method.
-///
-/// Routes each breed name to its corresponding `CognitionBreed::run()` implementation.
-/// Validates all 9 breeds and produces non-empty inference traces.
-///
-/// Used by integration tests in `tests/dispatch_smoke.rs` to verify:
-/// - Correct breed routing by name
-/// - Non-empty trace production (fraud detection)
-/// - Output structure validity
-/// - Multi-breed pipeline execution (Diagram 29)
-///   Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
-pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    use crate::breeds::cbr::Cbr;
-    use crate::breeds::dendral::Dendral;
-    use crate::breeds::frame::Eliza;
-    use crate::breeds::gps::Gps;
-    use crate::breeds::hearsay::Hearsay;
-    use crate::breeds::production_rules::Mycin;
-    use crate::breeds::prolog::Prolog;
-    use crate::breeds::soar::Soar;
-    use crate::breeds::strips::Strips;
-
-    match breed {
-        "eliza" => Eliza
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay
-            .run(input)
-            .map_err(|e| format!("{}: {}", e.breed, e.message)),
-        other => Err(format!("unknown breed: {}", other)),
+    /// Construct a `BreedError` tagged with this breed's id. Replaces the
+    /// hand-rolled local `err` closure pattern. Takes `String` (not
+    /// `impl Into<String>`) to keep the trait dyn-compatible.
+    fn error(&self, message: String) -> BreedError {
+        BreedError {
+            breed: self.id(),
+            message,
+        }
     }
 }
+/// Circumscription (Tier P3): cautious entailment through prioritized predicate minimization.
+pub mod circumscription;
+/// Situation Calculus (Tier P3): projection and plan extraction via Reiter successor-state axioms.
+pub mod situation_calculus;

@@ -1,0 +1,69 @@
+{
+  "breed": "mycin",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Shortliffe-Buchanan-1975-CF-Model.pdf",
+    "citation": "Shortliffe, E. H., & Buchanan, B. G. (1975). A model of inexact reasoning in medicine. Mathematical Biosciences, 23(3\u20134), 351\u2013379. Reprinted as Chapter 11 in: Buchanan, B. G., & Shortliffe, E. H. (Eds.), Rule-Based Expert Systems. Addison-Wesley, 1984.",
+    "locus": "Section 11.2 \"MYCIN's Rule-Based Approach\" (p. 238) \u2014 the illustrative rule used throughout the chapter; Section 11.4 (p. 247) \u2014 MB[h,e] = 0.7 derivation for the same rule.",
+    "extraction": "verbatim",
+    "notes": "The 1975 paper presents exactly one fully worked rule: gram-positive + coccus + chains \u2192 streptococcus with CF 0.7 (Section 11.2, p.238). The rule numbering RULE050/RULE071 does NOT appear in this paper \u2014 those labels come from the full MYCIN dissertation (Shortliffe 1976). The paper uses this single rule throughout as its running example to derive the MB/MD/CF formalism. The therapy step (penicillin) is mentioned only in the chapter abstract and broader MYCIN context; the CF 0.9 for the therapy rule is from secondary sources (Shortliffe 1976). The existing fixture's three-premise streptococcus rule and two-step chain are consistent with the paper but the paper specifies exactly three premises: (1) gram-positive stain, (2) coccus morphology, (3) grows in chains \u2014 the existing fixture omits the 'chains' premise, which is the third condition stated verbatim on p.238."
+  },
+  "input": {
+    "intent": "diagnose bacteremia organism and recommend antibiotic therapy",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "gram-stain",
+        "value": "gram-positive"
+      },
+      {
+        "key": "morphology",
+        "value": "coccus"
+      },
+      {
+        "key": "growth-conformation",
+        "value": "chains"
+      },
+      {
+        "key": "site",
+        "value": "blood"
+      },
+      {
+        "key": "allergy-penicillin",
+        "value": "no"
+      }
+    ],
+    "rules": [
+      {
+        "id": "RULE050-class",
+        "premise": [
+          "gram-positive",
+          "coccus",
+          "chains"
+        ],
+        "conclusion": "organism=streptococcus",
+        "certainty": 0.7
+      },
+      {
+        "id": "RULE071-class",
+        "premise": [
+          "organism=streptococcus",
+          "allergy-penicillin=no"
+        ],
+        "conclusion": "therapy=penicillin",
+        "certainty": 0.9
+      }
+    ],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "top_conclusion": "therapy=penicillin",
+    "organism": "streptococcus",
+    "organism_cf": 0.7,
+    "therapy": "penicillin",
+    "therapy_cf": 0.9,
+    "min_certainty": 0.5,
+    "notes": "Paper states MB[h,e]=0.7 for the streptococcus rule (p.247). The expert gave '7 out of 10' certainty (p.238 fn4). Therapy CF 0.9 is from the existing fixture (rule-71-class); the 1975 paper does not number the therapy rule explicitly \u2014 that numbering appears in Shortliffe 1976 dissertation. Combined CF via accumulation formula: CF_final = CF_old + CF_new*(1-CF_old) is the update law described in the full MYCIN system."
+  }
+}

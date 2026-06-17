@@ -1,0 +1,61 @@
+(node:13929) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dempster_shafer",
+    "breed": "dempster_shafer",
+    "status": "ok",
+    "output": {
+      "breed": "DempsterShafer",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "belief:fever_c_7e6e7475",
+          "value": "0.000000000"
+        },
+        {
+          "key": "plausibility:fever_c_7e6e7475",
+          "value": "0.153846143"
+        }
+      ],
+      "selected": "Bel=0.000000000, Pl=0.153846143",
+      "explanation": "Dempster-Shafer query 'fever_c_7e6e7475' Bel=0.000000000, Pl=0.153846143 over frame {bpa:{fever_c_7e6e7475,bpa:{fever_c_7e6e7475},cold},fever_c_7e6e7475}",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ds-load-bpa",
+          "detail": "loaded 2 sources over frame of size 4",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ds-combine",
+          "detail": "combined m1_fever_c_7e6e7475 with m2_fever_cold_c_7e6e7475, K=0.480000026",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "ds-belief",
+          "detail": "query fever_c_7e6e7475 => Bel=0.000000000, Pl=0.153846143",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "04b8ccd7e8f58b61e49df205940689672414db0291fbac0e9fbcd8d268165743",
+    "output_hash": "b361a105f37c61a3e7e5a1d0e3b593bc1f8ab54e09d8da5bf6fba1e382fb870d",
+    "replay_pointer": "b361a105f37c61a3",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/04b8ccd7e8f58b61e49df205940689672414db0291fbac0e9fbcd8d268165743.json"
+  },
+  "meta": {
+    "run_id": "68760126-0298-4dff-90de-ffeef045ae30",
+    "timestamp": "2026-06-11T08:35:00.001Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

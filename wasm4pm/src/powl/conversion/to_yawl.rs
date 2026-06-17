@@ -174,11 +174,29 @@ impl Builder {
             return;
         }
         let n = children.len();
-        let mut level = vec![0usize; n];
+        let mut in_deg = vec![0; n];
         for i in 0..n {
             for j in 0..n {
-                if order.is_edge(i, j) && level[j] <= level[i] {
-                    level[j] = level[i] + 1;
+                if order.is_edge(i, j) {
+                    in_deg[j] += 1;
+                }
+            }
+        }
+        let mut level = vec![0usize; n];
+        let mut queue = std::collections::VecDeque::new();
+        for i in 0..n {
+            if in_deg[i] == 0 {
+                queue.push_back(i);
+            }
+        }
+        while let Some(u) = queue.pop_front() {
+            for v in 0..n {
+                if order.is_edge(u, v) {
+                    level[v] = level[v].max(level[u] + 1);
+                    in_deg[v] -= 1;
+                    if in_deg[v] == 0 {
+                        queue.push_back(v);
+                    }
                 }
             }
         }

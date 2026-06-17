@@ -4,21 +4,27 @@
  * Provides type-safe state introspection and classification
  */
 
+import { z } from 'zod';
 import { EngineState } from '@wasm4pm/contracts';
 
 // Re-export for convenience
 export type { EngineState };
 
 /**
+ * Zod schema for StateMetadata
+ */
+export const StateMetadataSchema = z.object({
+  name: z.string() as z.ZodType<EngineState>,
+  description: z.string(),
+  operational: z.boolean(),
+  terminal: z.boolean(),
+  processing: z.boolean(),
+});
+
+/**
  * Metadata describing each engine state
  */
-export interface StateMetadata {
-  name: EngineState;
-  description: string;
-  operational: boolean;
-  terminal: boolean;
-  processing: boolean;
-}
+export type StateMetadata = z.infer<typeof StateMetadataSchema>;
 
 /**
  * Complete state metadata map

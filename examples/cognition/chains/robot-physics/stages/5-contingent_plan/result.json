@@ -1,0 +1,87 @@
+(node:14003) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "contingent_plan",
+    "breed": "contingent_plan",
+    "status": "ok",
+    "output": {
+      "breed": "ContingentPlan",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "plan:tree",
+          "value": "(sense check-dirt dirt_e45ff863 (act suck_e45ff863 (done)) (done))"
+        }
+      ],
+      "selected": "(sense check-dirt dirt_e45ff863 (act suck_e45ff863 (done)) (done))",
+      "explanation": "Contingent plan over 2 initial world(s): (sense check-dirt dirt_e45ff863 (act suck_e45ff863 (done)) (done))",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-belief",
+          "detail": "2 possible world(s), 1 unknown atom(s)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "or-expand",
+          "detail": "action 'suck_e45ff863': not applicable in all worlds",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "sense-branch",
+          "detail": "sense 'check-dirt' on 'dirt_e45ff863': 1 true-world(s) / 1 false-world(s)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "or-expand",
+          "detail": "action 'suck_e45ff863': applicable in all worlds",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "goal-reached",
+          "detail": "1 world(s) satisfy the goal",
+          "depth": 2
+        },
+        {
+          "step": 5,
+          "kind": "goal-reached",
+          "detail": "1 world(s) satisfy the goal",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "and-join",
+          "detail": "both branches of 'check-dirt' on 'dirt_e45ff863' reach the goal",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "plan-complete",
+          "detail": "(sense check-dirt dirt_e45ff863 (act suck_e45ff863 (done)) (done))",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "47994f05a36040b309a61e4442d24d91a2916424e5513aea837a9ad70746cf3a",
+    "output_hash": "c2572a1dd10a699696405f0b0a3f447e7988ddef7703a5ef75e1faa214a98454",
+    "replay_pointer": "c2572a1dd10a6996",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/47994f05a36040b309a61e4442d24d91a2916424e5513aea837a9ad70746cf3a.json"
+  },
+  "meta": {
+    "run_id": "db4052b3-5545-416e-9fc7-c62683409dc8",
+    "timestamp": "2026-06-11T08:35:03.647Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

@@ -1,0 +1,77 @@
+(node:14167) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "meta_reasoning",
+    "breed": "meta_reasoning",
+    "status": "ok",
+    "output": {
+      "breed": "MetaReasoning",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "meta:conflicts",
+          "value": "1"
+        },
+        {
+          "key": "meta:decision:therapy",
+          "value": "ebd1649d"
+        },
+        {
+          "key": "meta:weight:therapy",
+          "value": "0.900000"
+        }
+      ],
+      "selected": "therapy=ebd1649d",
+      "explanation": "Meta-reasoning over 2 reports: 1 conflict(s) detected; resolved to therapy=ebd1649d",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ingest-report",
+          "detail": "mycin: therapy=ebd1649d (confidence 0.900000)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ingest-report",
+          "detail": "prolog: therapy=none (confidence 0.400000)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "conflict-detected",
+          "detail": "mycin vs prolog on 'therapy': mycin=ebd1649d / prolog=none (differing values)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "vote",
+          "detail": "key 'therapy': ebd1649d=0.900000, none=0.400000 -> winner ebd1649d=0.900000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "resolve",
+          "detail": "1 conflict(s); 1 decision key(s); selected therapy=ebd1649d (weight 0.900000)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "3796692bf89598f6c24515c1a5dbc4b18b5a5609fc92b0bf73fd5775639df93b",
+    "output_hash": "15379fdf94a0c25e838ca1c0ee81fd4c0e2ba5f29be2b005116da15a4bd7739f",
+    "replay_pointer": "15379fdf94a0c25e",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/3796692bf89598f6c24515c1a5dbc4b18b5a5609fc92b0bf73fd5775639df93b.json"
+  },
+  "meta": {
+    "run_id": "169c4e70-cf99-4a18-b4cd-5e92d3226cb1",
+    "timestamp": "2026-06-11T08:35:11.187Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

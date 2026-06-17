@@ -20,7 +20,6 @@ import { social } from './commands/social.js';
 import { quality } from './commands/quality.js';
 import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
-import { swarm } from './commands/swarm.js';
 import { agent } from './commands/agent.js';
 import { membrane } from './commands/membrane.js';
 import { config } from './commands/config.js';
@@ -28,6 +27,7 @@ import { verify } from './commands/verify.js';
 import { proof } from './commands/proof.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
+import { compile } from './commands/compile.js';
 import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
@@ -50,11 +50,68 @@ import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
 import { suggest } from './commands/suggest.js';
+import { autopilot } from './commands/autopilot.js';
 import { pipeline } from './commands/pipeline.js';
 import { oracle } from './commands/oracle.js';
 import { workflow } from './commands/workflow.js';
 import { selectAlgorithm } from './commands/select-algorithm.js';
+import { analyzeCommand } from './commands/analyze.js';
+import { benchDataCommand } from './commands/bench-data.js';
+import { selfConformance } from './commands/self-conformance.js';
+import { queryCommand } from './commands/query.js';
 import pkg from '../package.json' with { type: 'json' };
+
+// ---------------------------------------------------------------------------
+// Command groups — reduce top-level cognitive load
+// ---------------------------------------------------------------------------
+
+const labGroup = defineCommand({
+  meta: {
+    name: 'lab',
+    description: 'Experimental and advanced commands (wpm lab <cmd>)',
+  },
+  subCommands: {
+    membrane,
+    cell,
+    oracle,
+    adversary,
+    truex,
+    autoprocess,
+    agent,
+  },
+});
+
+const dataGroup = defineCommand({
+  meta: {
+    name: 'data',
+    description: 'Data management commands (wpm data <cmd>)',
+  },
+  subCommands: {
+    cache,
+    models,
+    deduplicate,
+    batch,
+    supabase,
+  },
+});
+
+const devGroup = defineCommand({
+  meta: {
+    name: 'dev',
+    description: 'Developer tooling (wpm dev <cmd>)',
+  },
+  subCommands: {
+    'wasm-server': wasmServer,
+    trace,
+    prolog8,
+    claude,
+    proof,
+    benchmark,
+    timeout,
+    feedback,
+    completions,
+  },
+});
 
 export const main = defineCommand({
   meta: {
@@ -111,6 +168,7 @@ ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: config algorithm, else profile default)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
   ${GREEN}wpm run${RESET} <log.xes> --auto-select      Auto-pick best algorithm for the configured profile
+  ${GREEN}wpm autopilot${RESET} <log.xes>             Closed-loop AutoML: fingerprint → recommend → run → interpret → learn
   ${GREEN}wpm suggest${RESET} <log.xes>               Analyse log and recommend top algorithms for your goal
   ${GREEN}wpm suggest${RESET} <log.xes> --goal quality Show highest-quality algorithm recommendations
   ${GREEN}wpm compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
@@ -230,7 +288,6 @@ ${BOLD}PIPELINE${RESET}  ${DIM}(chain steps into reusable workflows)${RESET}
 
 ${BOLD}UTILITY${RESET}
   ${GREEN}wpm batch${RESET} <dir/>                    Process all XES/OCEL files in a directory, write results to --output-dir
-  ${GREEN}wpm swarm${RESET} <log.xes>                 Multi-worker swarm: parallel algorithm runs, convergence voting
   ${GREEN}wpm config show${RESET}                     Print the resolved config (all 5 layers merged), provenance included
   ${GREEN}wpm config validate${RESET}                 Validate wasm4pm.toml / wasm4pm.json against Zod schema
   ${GREEN}wpm explain${RESET} <algorithm>             Plain-English explanation + academic reference for any algorithm
@@ -268,61 +325,79 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
 `);
   },
   subCommands: {
+    // ---- Daily drivers (top-level) ----
     run,
+    analyze: analyzeCommand,
+    suggest,
+    autopilot,
+    compare,
+    quality,
+    conformance,
+    predict,
+    validate,
+    diff,
+    doctor,
+    init,
+    results,
+    repl,
+    explain,
+    'bench-data': benchDataCommand,
+
+    // ---- Command groups ----
+    lab: labGroup,
+    data: dataGroup,
+    dev: devGroup,
+
+    // ---- Backward-compat top-level aliases (citty has no 'hidden' meta support) ----
+    // lab group aliases
+    membrane,
+    cell,
+    oracle,
+    adversary,
+    truex,
+    autoprocess,
+    agent,
+    // data group aliases
+    cache,
+    models,
+    deduplicate,
     batch,
+    supabase,
+    // dev group aliases
+    'wasm-server': wasmServer,
+    trace,
+    prolog8,
+    claude,
+    proof,
+    benchmark,
+    timeout,
+    feedback,
+    completions,
+
+    // ---- Remaining top-level commands (not in any group) ----
     watch,
     status,
-    explain,
-    init,
-    predict,
     'drift-watch': driftWatch,
-    doctor,
-    diff,
-    results,
-    compare,
     ml,
     powl,
-    conformance,
     simulate,
     temporal,
     social,
-    quality,
-    validate,
-    autoprocess,
-    swarm,
-    agent,
-    membrane,
     config,
-    benchmark,
     verify,
-    proof,
-    truex,
-    supabase,
-    cell,
     cognition,
-    completions,
-    claude,
-    adversary,
-    trace,
+    compile,
     'prefix-conformance': prefixConformance,
-    prolog8,
     algorithms,
-    suggest,
     examples,
     interpret,
     'exit-codes': exitCodes,
-    repl,
-    feedback,
-    timeout,
-    'wasm-server': wasmServer,
     receipt,
-    cache,
-    deduplicate,
-    models,
     pipeline,
-    oracle,
     workflow,
     'select-algorithm': selectAlgorithm,
+    'self-conformance': selfConformance,
+    query: queryCommand,
   },
 });
 
@@ -351,7 +426,6 @@ export {
   quality,
   validate,
   autoprocess,
-  swarm,
   agent,
   membrane,
   config,
@@ -368,4 +442,5 @@ export {
   oracle,
   workflow,
   selectAlgorithm,
+  queryCommand,
 };

@@ -1,0 +1,85 @@
+{
+  "intent": "speech",
+  "candidates": [],
+  "facts": [
+    { "key": "phone", "value": "DH" },
+    { "key": "phone", "value": "AH" },
+    { "key": "phone", "value": "K" },
+    { "key": "phone", "value": "W" },
+    { "key": "phone", "value": "IH" },
+    { "key": "phone", "value": "K" },
+    { "key": "phone", "value": "B" },
+    { "key": "phone", "value": "R" },
+    { "key": "phone", "value": "AW" },
+    { "key": "phone", "value": "N" },
+    { "key": "phone", "value": "F" },
+    { "key": "phone", "value": "AO" },
+    { "key": "phone", "value": "K" },
+    { "key": "phone", "value": "S" }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "ks-dh-ah-the",
+      "premise": ["phone:DH"],
+      "conclusion": "syllable:THE",
+      "certainty": 0.85
+    },
+    {
+      "id": "ks-ah-the",
+      "premise": ["phone:AH"],
+      "conclusion": "syllable:THE",
+      "certainty": 0.7
+    },
+    {
+      "id": "ks-kwik-syllable",
+      "premise": ["phone:K", "phone:W"],
+      "conclusion": "syllable:KWIK",
+      "certainty": 0.75
+    },
+    {
+      "id": "ks-brown-syllable",
+      "premise": ["phone:B", "phone:R", "phone:AW"],
+      "conclusion": "syllable:BROWN",
+      "certainty": 0.8
+    },
+    {
+      "id": "ks-fox-syllable",
+      "premise": ["phone:F", "phone:AO", "phone:K", "phone:S"],
+      "conclusion": "syllable:FOX",
+      "certainty": 0.78
+    },
+    {
+      "id": "ks-syl-the-word",
+      "premise": ["syllable:THE"],
+      "conclusion": "word:THE",
+      "certainty": 0.95
+    },
+    {
+      "id": "ks-syl-kwik-word",
+      "premise": ["syllable:KWIK"],
+      "conclusion": "word:QUICK",
+      "certainty": 0.88
+    },
+    {
+      "id": "ks-syl-brown-word",
+      "premise": ["syllable:BROWN"],
+      "conclusion": "word:BROWN",
+      "certainty": 0.92
+    },
+    {
+      "id": "ks-syl-fox-word",
+      "premise": ["syllable:FOX"],
+      "conclusion": "word:FOX",
+      "certainty": 0.9
+    },
+    {
+      "id": "ks-phrase",
+      "premise": ["word:THE"],
+      "conclusion": "phrase:THE_QUICK_BROWN_FOX",
+      "certainty": 0.6
+    }
+  ],
+  "goals": [],
+  "state": []
+}

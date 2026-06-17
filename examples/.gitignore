@@ -1,0 +1,17 @@
+# Compiled TypeScript output (tsc --outDir is not set; files land next to sources)
+*.js
+*.mjs
+*.cjs
+*.d.ts
+*.d.mts
+*.d.cts
+*.js.map
+*.mjs.map
+*.d.ts.map
+*.d.mts.map
+
+# Runtime output directory
+out/
+
+# Dependencies
+node_modules/

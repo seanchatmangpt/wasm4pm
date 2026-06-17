@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Version-controlled pre-commit hook
+# Install: git config core.hooksPath scripts/hooks
+set -e
+
+# Warn if console.log found in staged TypeScript files
+CONSOLE=$(git diff --cached --name-only | grep -E "\.(ts|tsx)$" | xargs grep -l "console\.log" 2>/dev/null || true)
+if [ -n "$CONSOLE" ]; then
+  echo "Warning: console.log in staged files: $CONSOLE"
+fi
+
+# Block obvious secret patterns
+SECRETS=$(git diff --cached | grep -E "(password|api_key|secret)\s*=\s*[\"'][^\"']{8,}" -i 2>/dev/null || true)
+if [ -n "$SECRETS" ]; then
+  echo "ERROR: Possible secret in staged changes"
+  exit 1
+fi
+
+echo "Pre-commit checks passed."

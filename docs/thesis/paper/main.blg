@@ -1,0 +1,58 @@
+This is BibTeX, Version 0.99d (TeX Live 2024)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: main.aux
+The style file: splncs04.bst
+Database file #1: paper.bib
+Warning--to sort, need author or key in sok_ccmm_2024
+Warning--to sort, need author or key in crypto_agility_maturity_2022
+Warning--to sort, need author or key in ocel_2_standard_2023
+Warning--to sort, need author or key in type_safe_process_evidence_2024
+Warning--to sort, need author or key in provenance_semantic_web_2025
+Warning--to sort, need author or key in ethos_ai_agents_2024
+Warning--to sort, need author or key in nist_ai_rmf_maturity_2024
+Warning--to sort, need author or key in change_mgmt_traceability_2016
+Warning--to sort, need author or key in process_trace_kg_2024
+Warning--to sort, need author or key in ea_security_togaf_2017
+Warning--to sort, need author or key in blockchain_trilemma_2024
+You've used 48 entries,
+            2850 wiz_defined-function locations,
+            886 strings with 20345 characters,
+and the built_in function-call counts, 22136 in all, are:
+= -- 1841
+> -- 505
+< -- 31
++ -- 219
+- -- 168
+* -- 1309
+:= -- 2659
+add.period$ -- 79
+call.type$ -- 48
+change.case$ -- 293
+chr.to.int$ -- 0
+cite$ -- 59
+duplicate$ -- 2109
+empty$ -- 2229
+format.name$ -- 191
+if$ -- 4937
+int.to.chr$ -- 0
+int.to.str$ -- 48
+missing$ -- 437
+newline$ -- 150
+num.names$ -- 74
+pop$ -- 872
+preamble$ -- 1
+purify$ -- 179
+quote$ -- 0
+skip$ -- 558
+stack$ -- 0
+substring$ -- 1101
+swap$ -- 1060
+text.length$ -- 31
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 178
+warning$ -- 11
+while$ -- 162
+width$ -- 50
+write$ -- 547
+(There were 11 warnings)

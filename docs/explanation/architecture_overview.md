@@ -26,6 +26,38 @@ graph TB
 
 **Rule:** CLI logic must not import Rust directly. All algorithm dispatch goes through `packages/kernel/src/api.ts` so validation, OTEL, and error taxonomies apply uniformly.
 
+## Engine State Machine
+
+The `@wasm4pm/engine` lifecycle is governed by a state machine that handles bootstrapping, execution, and self-healing.
+
+```mermaid
+graph LR
+  uninitialized --> bootstrapping
+  bootstrapping --> ready
+  ready --> planning
+  planning --> running
+  running --> watching
+  watching --> ready
+  
+  bootstrapping --> failed
+  planning --> failed
+  running --> failed
+  
+  ready --> degraded
+  running --> degraded
+  watching --> degraded
+  degraded --> ready
+  failed --> bootstrapping
+```
+
+**Key Transitions:**
+- **bootstrap()**: `uninitialized` → `ready`. Loads WASM, initializes registry.
+- **plan(config)**: `ready` → `planning` → `ready`. Validates config, selects algorithm.
+- **run(plan)**: `ready` → `running` → `ready`. Dispatches to WASM.
+- **watch(plan)**: `ready` → `watching`. Continuous execution on source change.
+- **degrade(error)**: Transitions to `degraded` state for soft recovery.
+- **recover()**: Attempts to return to `ready` from `failed` or `degraded`.
+
 ## Verified Integrity
 
 wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with a **Release Certificate** that binds to the current commit and recomputes all evidence hashes.
@@ -39,17 +71,19 @@ Evidence discipline: [AGENTS.md](../../AGENTS.md).
 
 ## Deployment Profiles
 
-Optimized WASM bundles for every environment:
+wasm4pm provides optimized WASM bundles for different deployment environments by gating features during compilation.
 
-| Profile | Size | Use case |
-|---------|------|----------|
-| `mobile` | ~500KB | Mobile / low bandwidth |
-| `iot` | ~1.0MB | Embedded |
-| `edge` | ~1.5MB | CDN / edge workers |
-| `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~2.7MB | Web + Node.js (default) |
+| Profile | Target | Actual Size | Use case |
+|---------|--------|-------------|----------|
+| `mobile` | Mobile devices | ~5.4MB | Mobile / low bandwidth |
+| `iot` | IoT devices, embedded | ~5.4MB | Embedded |
+| `edge` | CDN workers, edge servers | ~5.4MB | CDN / edge workers |
+| `fog` | Fog computing, gateways | ~5.4MB | IoT gateways |
+| `browser` | Web browsers (DEFAULT) | ~7.6MB | Web + Node.js (default) |
 
-Build: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](../how-to/edge_deployment.md).
+> Profiles differ by feature-gated algorithm subsets, not bundle size. Size optimization is planned for a future release.
+
+See [Deployment Profiles Reference](../reference/deployment_profiles.md) for feature flags and build commands.
 
 ## Core Capabilities
 
@@ -57,7 +91,7 @@ Build: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](../how-
 
 **Truex:** OCEL 2.0 canonicalization + BLAKE3 receipt verification via `wpm truex verify`. Profile: [Truex OCEL 2.0 Canonical Profile](../truex-ocel2-canonical-profile.md).
 
-**Cognition:** Nine Old-AI breeds via `wpm cognition run --contract <breed>`.
+**Cognition:** 13 breeds (9 Old AI + 4 Autoinstinct) via `wpm cognition run --contract <breed>`.
 
 **Prediction:** Next-activity, remaining-time, drift via `wpm predict`.
 
@@ -77,12 +111,20 @@ Build: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](../how-
 We follow the [Diátaxis framework](https://diataxis.fr/).
 
 - **Tutorials:** [Getting Started](../tutorials/getting_started.md), [Truex Receipts](../tutorials/truex_receipts.md), [Predictive Monitoring](../tutorials/predictive_monitoring.md), [Cognition Contracts](../tutorials/cognition_contracts.md)
-- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md)
-- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Truex Profile](../truex-ocel2-canonical-profile.md)
-- **Explanation:** [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](../docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md), [Receipt Truth Verification](docs/explanation/prd_ard_receipt_truth_verification.md)
+- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md), [Troubleshooting](../how-to/troubleshooting.md)
+- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Glossary](../reference/glossary.md)
+- **Explanation:** [Old AI vs. LLM Doctrine](old_ai_vs_llms.md), [Receipt Truth Verification](prd_ard_receipt_truth_verification.md), [Process Mining Primer](process-mining-primer.md)
 
 Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](../../LICENSE-APACHE) and [LICENSE-MIT](../../LICENSE-MIT).
+BUSL-1.1. See [LICENSE](../../LICENSE).
+
+## Graph and Variant Analysis Example
+
+`examples/09-graph-and-variants.ts` demonstrates DFG graph construction, variant extraction, and footprint comparison — a good starting point for understanding how the WASM core transforms raw event logs into structured process models:
+
+```bash
+tsx examples/09-graph-and-variants.ts data/small-example.xes
+```

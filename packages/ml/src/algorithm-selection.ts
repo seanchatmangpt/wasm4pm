@@ -14,48 +14,53 @@
  * Returns recommendation with confidence [0-1] and rationale.
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// AlgorithmRecommendation
+// ---------------------------------------------------------------------------
+
+export const AlgorithmRecommendationSchema = z.object({
+  /** Selected algorithm */
+  algorithm: z.string(),
+  /** Confidence in this choice [0-1] */
+  confidence: z.number(),
+  /** Why this algorithm was selected */
+  rationale: z.string(),
+  /** Alternative algorithms (if applicable) */
+  alternatives: z.array(z.string()).optional(),
+});
+
 /**
  * Algorithm recommendation result.
  */
-export interface AlgorithmRecommendation {
-  /** Selected algorithm */
-  algorithm: string;
+export type AlgorithmRecommendation = z.infer<typeof AlgorithmRecommendationSchema>;
 
-  /** Confidence in this choice [0-1] */
-  confidence: number;
+// ---------------------------------------------------------------------------
+// FeatureMatrixCharacteristics
+// ---------------------------------------------------------------------------
 
-  /** Why this algorithm was selected */
-  rationale: string;
-
-  /** Alternative algorithms (if applicable) */
-  alternatives?: string[];
-}
+export const FeatureMatrixCharacteristicsSchema = z.object({
+  /** Number of samples (rows) */
+  n_samples: z.number(),
+  /** Number of features (columns) */
+  n_features: z.number(),
+  /** Correlation matrix (upper triangle as 1D array) */
+  correlations: z.array(z.number()).optional(),
+  /** Trend strength [0-1] for time series */
+  trend_strength: z.number().optional(),
+  /** Max absolute correlation (multicollinearity indicator) */
+  max_abs_correlation: z.number().optional(),
+  /** Variance explained by first component (PCA) */
+  pca_variance_explained: z.number().optional(),
+  /** Sparsity (fraction of zero values) */
+  sparsity: z.number().optional(),
+});
 
 /**
  * Feature matrix characteristics for algorithm selection.
  */
-export interface FeatureMatrixCharacteristics {
-  /** Number of samples (rows) */
-  n_samples: number;
-
-  /** Number of features (columns) */
-  n_features: number;
-
-  /** Correlation matrix (upper triangle as 1D array) */
-  correlations?: number[];
-
-  /** Trend strength [0-1] for time series */
-  trend_strength?: number;
-
-  /** Max absolute correlation (multicollinearity indicator) */
-  max_abs_correlation?: number;
-
-  /** Variance explained by first component (PCA) */
-  pca_variance_explained?: number;
-
-  /** Sparsity (fraction of zero values) */
-  sparsity?: number;
-}
+export type FeatureMatrixCharacteristics = z.infer<typeof FeatureMatrixCharacteristicsSchema>;
 
 /**
  * Compute multicollinearity metric (max absolute correlation between features).
@@ -123,7 +128,7 @@ export function computeMulticollinearity(data: number[][]): number {
  */
 export function selectClassificationAlgorithm(
   data: number[][],
-  labels: number[]
+  _labels: number[]
 ): AlgorithmRecommendation {
   const n_samples = data.length;
   const n_features = data[0]?.length ?? 0;

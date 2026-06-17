@@ -1,0 +1,22 @@
+{
+  "intent": "propagate temporal constraints",
+  "facts": [
+    {
+      "key": "relation",
+      "value": "A,B,m"
+    },
+    {
+      "key": "relation",
+      "value": "B,C,d"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "act_r:498890b04458408a36d1360b0d616bbed2d4fb85df8487e3e34818a3bc4242a2"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

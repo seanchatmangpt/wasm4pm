@@ -12,28 +12,31 @@
  * and extracts percentile bounds.
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// BootstrapCIResult
+// ---------------------------------------------------------------------------
+
+export const BootstrapCIResultSchema = z.object({
+  /** Metric name */
+  metric: z.enum(['accuracy', 'mae', 'rmse', 'f1']),
+  /** Point estimate (mean of bootstrap samples) */
+  point: z.number(),
+  /** Lower bound (percentile) */
+  lower: z.number(),
+  /** Upper bound (percentile) */
+  upper: z.number(),
+  /** Confidence level used (e.g., 0.95 for 95% CI) */
+  confidenceLevel: z.number(),
+  /** Bootstrap samples (for advanced analysis) */
+  samples: z.array(z.number()).optional(),
+});
+
 /**
  * Confidence interval result with point estimate and bounds.
  */
-export interface BootstrapCIResult {
-  /** Metric name */
-  metric: 'accuracy' | 'mae' | 'rmse' | 'f1';
-
-  /** Point estimate (mean of bootstrap samples) */
-  point: number;
-
-  /** Lower bound (percentile) */
-  lower: number;
-
-  /** Upper bound (percentile) */
-  upper: number;
-
-  /** Confidence level used (e.g., 0.95 for 95% CI) */
-  confidenceLevel: number;
-
-  /** Bootstrap samples (for advanced analysis) */
-  samples?: number[];
-}
+export type BootstrapCIResult = z.infer<typeof BootstrapCIResultSchema>;
 
 /**
  * Seeded random number generator for deterministic bootstrap.

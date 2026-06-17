@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_dfg",
+  "provenance": {
+    "paper": "Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019.",
+    "locus": "Section 4, OC-DFG construction",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "object_types=1",
+    "description": "The running example OCEL log has 1 object type; the OC-DFG is constructed across that single object type"
+  }
+}

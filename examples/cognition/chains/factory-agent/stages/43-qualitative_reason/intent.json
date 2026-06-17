@@ -1,0 +1,26 @@
+{
+  "intent": "envision the pressure-regulator valve confluence (de Kleer & Brown 1984)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "qr:confluence:valve",
+      "value": "+p,+a,-q"
+    },
+    {
+      "key": "qr:sign:p",
+      "value": "+"
+    },
+    {
+      "key": "qr:sign:a",
+      "value": "-"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "prolog:1095c6ef717f0ad0fccdbfdcb7832dd78ae2300854ae5de07758c441e565532d"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

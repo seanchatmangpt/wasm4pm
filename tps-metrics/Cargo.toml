@@ -4,13 +4,13 @@ version.workspace = true
 edition = "2021"
 description = "Toyota Production System metrics collection and analysis"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
-license = "MIT OR Apache-2.0"
+license.workspace = true
 repository = "https://github.com/seanchatmangpt/wasm4pm"
 documentation = "https://docs.rs/tps-metrics"
 readme = "README.md"
 
 [dependencies]
-git2 = "0.18"
+git2 = "0.21"
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

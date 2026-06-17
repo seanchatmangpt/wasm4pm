@@ -1,0 +1,34 @@
+{
+  "breed": "abductive_lp",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Kakas et al. 1992"
+  },
+  "input": {
+    "intent": "abduce",
+    "facts": [
+      { "key": "abducible", "value": "a" },
+      { "key": "abducible", "value": "b" },
+      { "key": "abducible", "value": "c" },
+      { "key": "abducible", "value": "d" },
+      { "key": "context", "value": "d" }
+    ],
+    "rules": [
+      { "id": "r1", "premise": ["a", "b"], "conclusion": "g", "certainty": 1.0 },
+      { "id": "r2", "premise": ["c"], "conclusion": "g", "certainty": 1.0 },
+      { "id": "r_ic", "premise": ["a", "d"], "conclusion": "false", "certainty": 1.0 }
+    ],
+    "candidates": [
+      { "id": "c", "score": 0.5, "eliminated": false, "elimination_reason": null }
+    ],
+    "cases": [],
+    "goals": [
+      { "id": "g1", "predicate": "goal", "value": "g" }
+    ],
+    "state": []
+  },
+  "expected": {
+    "explanations_count": "1",
+    "selected": "c"
+  }
+}

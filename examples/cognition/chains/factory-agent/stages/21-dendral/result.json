@@ -1,0 +1,178 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "Dendral",
+      "candidates": [
+        {
+          "id": "ketone-F1-C2H5-C2H5",
+          "score": 0.9100000262260437,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F2-CH3-C3H7",
+          "score": 0.8399999737739563,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F3-CH3-C3H7-branched",
+          "score": 0.7799999713897705,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ketone-F4-C4H9-CH3",
+          "score": 0.7200000286102295,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "ether-F5-C2H5-O-C2H5",
+          "score": 0.44999998807907104,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:ether-F5-C2H5-O-C2H5"
+        },
+        {
+          "id": "amine-F6-C2H5-NH-C2H5",
+          "score": 0.3799999952316284,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5"
+        },
+        {
+          "id": "ketone-F7-C4H9-CH3-iso",
+          "score": 0.6600000262260437,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso"
+        },
+        {
+          "id": "ketone-F8-CH3-CH3-C2H4",
+          "score": 0.550000011920929,
+          "eliminated": true,
+          "elimination_reason": "forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4"
+        }
+      ],
+      "facts": [
+        {
+          "key": "molecular-formula",
+          "value": "C5H10O"
+        },
+        {
+          "key": "molecular-weight",
+          "value": "86"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:ether-F5-C2H5-O-C2H5"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:amine-F6-C2H5-NH-C2H5"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:ketone-F7-C4H9-CH3-iso"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:ketone-F8-CH3-CH3-C2H4"
+        },
+        {
+          "key": "spectral-line",
+          "value": "57"
+        },
+        {
+          "key": "spectral-line",
+          "value": "29"
+        },
+        {
+          "key": "spectral-line",
+          "value": "86"
+        },
+        {
+          "key": "spectral-line",
+          "value": "71"
+        },
+        {
+          "key": "spectral-line",
+          "value": "43"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "dempster_shafer:0952589e0fdf3211082a04859eed1d0bb6558962884658a8d0debd7ef50d30e5"
+        }
+      ],
+      "selected": "ketone-F1-C2H5-C2H5",
+      "explanation": "DENDRAL applied 4 constraints; 4/8 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "survive",
+          "detail": "ketone-F1-C2H5-C2H5",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "survive",
+          "detail": "ketone-F2-CH3-C3H7",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "survive",
+          "detail": "ketone-F3-CH3-C3H7-branched",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "survive",
+          "detail": "ketone-F4-C4H9-CH3",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "eliminate",
+          "detail": "ether-F5-C2H5-O-C2H5 by forbid:ether-F5-C2H5-O-C2H5: forbidden by constraint forbid:ether-F5-C2H5-O-C2H5",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "eliminate",
+          "detail": "amine-F6-C2H5-NH-C2H5 by forbid:amine-F6-C2H5-NH-C2H5: forbidden by constraint forbid:amine-F6-C2H5-NH-C2H5",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "eliminate",
+          "detail": "ketone-F7-C4H9-CH3-iso by forbid:ketone-F7-C4H9-CH3-iso: forbidden by constraint forbid:ketone-F7-C4H9-CH3-iso",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "eliminate",
+          "detail": "ketone-F8-CH3-CH3-C2H4 by forbid:ketone-F8-CH3-CH3-C2H4: forbidden by constraint forbid:ketone-F8-CH3-CH3-C2H4",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7677d71a25c4433822ee0d1daeee48ce1ebf5b5943c9cd09031fbbd3ddc24e6e",
+    "output_hash": "76a3efb0a37c57a15a7097e1bdd840583159b9b2cd42016a253fff44ae7d4848",
+    "replay_pointer": "76a3efb0a37c57a1",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/7677d71a25c4433822ee0d1daeee48ce1ebf5b5943c9cd09031fbbd3ddc24e6e.json"
+  },
+  "meta": {
+    "run_id": "c1c740f6-8970-4101-ba13-7c7995a71b8d",
+    "timestamp": "2026-06-11T19:56:09.633Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

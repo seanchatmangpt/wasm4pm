@@ -1,0 +1,40 @@
+{
+  "intent": "combine evidence",
+  "rules": [
+    {
+      "id": "expert1",
+      "premise": [],
+      "conclusion": "Pneumonia_7e6e7475",
+      "certainty": 0.75
+    },
+    {
+      "id": "expert1",
+      "premise": [],
+      "conclusion": "Pneumonia_7e6e7475,TB_7e6e7475",
+      "certainty": 0.25
+    },
+    {
+      "id": "expert2",
+      "premise": [],
+      "conclusion": "Pneumonia_7e6e7475",
+      "certainty": 0.5
+    },
+    {
+      "id": "expert2",
+      "premise": [],
+      "conclusion": "Pneumonia_7e6e7475,TB_7e6e7475",
+      "certainty": 0.5
+    }
+  ],
+  "goals": [
+    {
+      "id": "query",
+      "predicate": "query",
+      "value": "Pneumonia_7e6e7475"
+    }
+  ],
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "state": []
+}

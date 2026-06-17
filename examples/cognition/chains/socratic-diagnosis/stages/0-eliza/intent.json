@@ -1,0 +1,159 @@
+{
+  "intent": "Interview patient and extract symptom keywords via keystack pattern matching",
+  "candidates": [
+    {
+      "id": "fever",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "cough",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "fatigue",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "headache",
+      "score": 0,
+      "eliminated": false
+    },
+    {
+      "id": "shortness_of_breath",
+      "score": 0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "patient_utterance",
+      "value": "I have been feeling hot and I keep coughing a lot"
+    },
+    {
+      "key": "chief_complaint",
+      "value": "fever and cough"
+    },
+    {
+      "key": "duration",
+      "value": "3 days"
+    },
+    {
+      "key": "severity",
+      "value": "moderate"
+    },
+    {
+      "key": "context",
+      "value": "clinical intake interview"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_fever_pattern",
+      "premise": [
+        "utterance contains 'hot' OR 'fever' OR 'temperature'"
+      ],
+      "conclusion": "symptom=fever",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_cough_pattern",
+      "premise": [
+        "utterance contains 'cough' OR 'coughing' OR 'hack'"
+      ],
+      "conclusion": "symptom=cough",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_fatigue_pattern",
+      "premise": [
+        "utterance contains 'tired' OR 'fatigue' OR 'exhausted'"
+      ],
+      "conclusion": "symptom=fatigue",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_reflect_symptom",
+      "premise": [
+        "symptom detected"
+      ],
+      "conclusion": "reflect: tell me more about your {symptom}",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_duration_probe",
+      "premise": [
+        "symptom confirmed"
+      ],
+      "conclusion": "probe: how long have you had this {symptom}",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_extract_symptoms",
+      "predicate": "symptom_keywords_extracted",
+      "value": "true"
+    },
+    {
+      "id": "g_confirm_duration",
+      "predicate": "duration_known",
+      "value": "true"
+    },
+    {
+      "id": "g_assess_severity",
+      "predicate": "severity_known",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_flu_interview",
+      "intent": "flu symptom intake",
+      "architecture": "eliza",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "utterance",
+          "value": "fever and body aches"
+        },
+        {
+          "key": "duration",
+          "value": "2 days"
+        }
+      ]
+    },
+    {
+      "id": "case_cold_interview",
+      "intent": "cold symptom intake",
+      "architecture": "eliza",
+      "outcome_score": 0.75,
+      "facts": [
+        {
+          "key": "utterance",
+          "value": "runny nose and sore throat"
+        },
+        {
+          "key": "duration",
+          "value": "1 week"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "interview_phase",
+      "value": "intake"
+    },
+    {
+      "predicate": "turns_completed",
+      "value": "0"
+    },
+    {
+      "predicate": "symptom_count",
+      "value": "0"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "algorithm": "similar_activity",
+  "provenance": {
+    "paper": "van der Aalst (2011) Process Mining, Springer — Ch. 7: Activity co-occurrence analysis; co-occurring activities indicate similar roles in the process",
+    "locus": "Ch. 7 — activity similarity via co-occurrence matrix",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "cooccurrence_nonneg",
+    "rationale": "Co-occurrence counts must be non-negative; at least one pair must co-occur in the running-example log (b,c always appear in same trace)."
+  }
+}

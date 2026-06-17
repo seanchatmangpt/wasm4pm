@@ -1,18 +1,14 @@
 #!/usr/bin/env bash
-# Prolog example — query a fact under bounded SLD resolution.
-# Demonstrates: byte-capped admission + positive proof + receipt emission.
-
+# PROLOG — SLD resolution back-tracking engine (Colmerauer & Kowalski 1972).
 set -euo pipefail
 cd "$(dirname "$0")"
 
 if command -v wpm >/dev/null 2>&1; then
   WPM=wpm
 else
-  WPM="pnpm --silent --filter @wasm4pm/cli exec wpm"
+  REPO_ROOT="$(cd ../../.. && pwd)"
+  WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 
-echo "─── Prolog: ?- parent(alice). ───"
+echo "─── prolog: horn clauses + query → proof search via SLD resolution ───"
 $WPM cognition run --contract prolog --input intent.json --format json | tee result.json
-echo ""
-RECEIPT_ID=$(python3 -c "import json,sys; d=json.load(open('result.json')); print(d.get('payload',{}).get('output',{}).get('explanation','no-receipt'))" 2>/dev/null || echo "no-receipt")
-echo "Receipt summary: $RECEIPT_ID"

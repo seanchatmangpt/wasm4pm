@@ -1,0 +1,22 @@
+{
+  "intent": "solve coloring",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "csp-var",
+      "value": "V1:R,G,B"
+    },
+    {
+      "key": "csp-var",
+      "value": "V2:R,G,B"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "V1!=V2"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

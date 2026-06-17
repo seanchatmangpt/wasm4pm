@@ -1,0 +1,60 @@
+\chapter{The Dual-License Engine: BUSL-1.1 Plus Commercial}
+\label{ch:licensing}
+
+\section{The structure}
+
+wasm4pm is licensed under the Business Source License 1.1 with a commercial
+license available for production use that falls outside the BUSL grant. After
+the Change Date the code converts automatically to AGPL-3.0. This is the
+MariaDB/HashiCorp/Sentry pattern, and it creates a three-segment funnel:
+
+\begin{description}[leftmargin=2em]
+  \item[Free tier (BUSL-compliant use).] Evaluation, development, internal
+    tooling, academic research. This population is the adoption engine ---
+    it produces GitHub stars, npm downloads, bug reports, and the analysts
+    who later champion a paid deployment.
+  \item[Commercial tier.] Anyone embedding wasm4pm in a product or service
+    offered to third parties, or whose production use exceeds the BUSL
+    additional-use grant. This is the revenue engine.
+  \item[Post-Change-Date tier.] Code older than the change window is AGPL ---
+    a strong-copyleft poison pill for proprietary embedders that keeps the
+    commercial license attractive even for old versions.
+\end{description}
+
+\section{Why BUSL fits this product specifically}
+
+BUSL is usually defended as cloud-provider insurance. For wasm4pm there is a
+sharper argument: \textbf{the product is a trust primitive, and trust
+primitives must be source-available.} A receipt chain whose verifier is
+closed-source is marketing, not evidence. A regulated customer's auditors
+must be able to read the BLAKE3 hashing path and the conformance scoring
+code. Fully proprietary licensing would destroy the core value proposition;
+fully permissive licensing (the previous MIT/Apache posture) would invite a
+hyperscaler to operate ``Process Mining as a Service'' on the project's own
+code. BUSL is the narrow corridor between those failure modes.
+
+\section{Pricing axes}
+
+The architecture suggests charging on axes that scale with value received,
+not with seats:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Axis} & \textbf{Rationale} \\
+\midrule
+Receipts retained / verified per month & Directly proportional to audit value; metered by the Supabase sync layer that already counts them. \\
+Deployment profiles unlocked & Browser-only free; edge/IoT/fog profiles commercial --- the size-optimized builds are real engineering, easily gated. \\
+Algorithm tiers & Core discovery free; conformance, OCEL 2.0 querying, and the cognition layer commercial. \\
+Embedding rights & OEM license for ISVs shipping wasm4pm inside their own products --- the classic dual-license cash cow. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{The CalVer signal}
+
+Versioning by calendar date (\texttt{v26.6.9} = June 9, 2026) is itself a
+licensing instrument: the BUSL Change Date is defined per release, so CalVer
+makes the conversion schedule legible at a glance. A customer can see
+precisely when any given version becomes AGPL, which converts license
+anxiety into a predictable procurement calculation.

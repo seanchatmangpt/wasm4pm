@@ -1,0 +1,12 @@
+{
+  "algorithm": "precision_negative_events",
+  "provenance": {
+    "paper": "Adriansyah, A., van Dongen, B., van der Aalst, W.M.P. (2011). Towards Robust Conformance Checking. BPI 2010, LNBIP 66.",
+    "locus": "§3 Align-ETC precision — non-negative precision on running-example log",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "precision_nonneg",
+    "rationale": "Alignment-based ETC precision must be non-negative (>= 0.0) for any valid log and Petri net."
+  }
+}

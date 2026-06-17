@@ -10,6 +10,7 @@
  * Atomicity: batch-level (all artifacts in a run written together)
  */
 
+import { z } from 'zod';
 import { promises as fs } from 'fs';
 import { dirname } from 'path';
 import {
@@ -27,26 +28,30 @@ import { createError } from '@wasm4pm/contracts';
 /**
  * Configuration for FileLogSinkAdapter
  */
-export interface FileLogSinkConfig {
-  directory: string;
-  onExists?: ExistsBehavior;
-  failureMode?: FailureMode;
-}
+export const FileLogSinkConfigSchema = z.object({
+  directory: z.string(),
+  onExists: z.string().optional() as z.ZodOptional<z.ZodType<ExistsBehavior>>,
+  failureMode: z.string().optional() as z.ZodOptional<z.ZodType<FailureMode>>,
+});
+
+export type FileLogSinkConfig = z.infer<typeof FileLogSinkConfigSchema>;
 
 /**
  * Receipt artifact structure
  */
-export interface Receipt {
-  run_id: string;
-  timestamp: string;
-  algorithm: string;
-  input_file?: string;
-  status: 'success' | 'failed' | 'partial';
-  event_count?: number;
-  trace_count?: number;
-  duration_ms?: number;
-  error?: string;
-}
+export const ReceiptSchema = z.object({
+  run_id: z.string(),
+  timestamp: z.string(),
+  algorithm: z.string(),
+  input_file: z.string().optional(),
+  status: z.enum(['success', 'failed', 'partial']),
+  event_count: z.number().optional(),
+  trace_count: z.number().optional(),
+  duration_ms: z.number().optional(),
+  error: z.string().optional(),
+});
+
+export type Receipt = z.infer<typeof ReceiptSchema>;
 
 /**
  * FileLogSinkAdapter - Write results to local filesystem

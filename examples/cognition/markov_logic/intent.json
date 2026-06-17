@@ -1,0 +1,34 @@
+{
+  "intent": "MAP inference on the smokes/friends MLN",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "mln:clause:smoke-cancer-a",
+      "value": "1.5|!smokes_anna,cancer_anna"
+    },
+    {
+      "key": "mln:clause:smoke-cancer-b",
+      "value": "1.5|!smokes_bob,cancer_bob"
+    },
+    {
+      "key": "mln:clause:friends-ab-1",
+      "value": "1.1|!friends_ab,!smokes_anna,smokes_bob"
+    },
+    {
+      "key": "mln:clause:friends-ab-2",
+      "value": "1.1|!friends_ab,!smokes_bob,smokes_anna"
+    },
+    {
+      "key": "evidence:smokes_anna",
+      "value": "true"
+    },
+    {
+      "key": "evidence:friends_ab",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

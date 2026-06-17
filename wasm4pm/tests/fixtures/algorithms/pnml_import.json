@@ -1,0 +1,16 @@
+{
+  "algorithm": "pnml_import",
+  "provenance": {
+    "paper": "The Petri Net Markup Language",
+    "citation": "Weber, M., Kindler, E. (2003). The Petri Net Markup Language. Petri Net Technology for Communication-Based Systems.",
+    "locus": "Section 3, PNML schema definition",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "format": "pnml"
+  },
+  "expected": {
+    "value": "import_supported",
+    "description": "PNML Petri net import capability is verified — algorithm can parse and load a PNML XML document into an internal Petri net representation"
+  }
+}

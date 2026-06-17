@@ -5,6 +5,7 @@
  * backoff for transient network failures.
  */
 
+import { z } from 'zod';
 import { createHash } from 'crypto';
 import {
   SourceAdapter,
@@ -22,19 +23,21 @@ import { createError } from '@wasm4pm/contracts';
 /**
  * Configuration for HttpSourceAdapter
  */
-export interface HttpSourceConfig {
-  url: string;
-  method?: 'GET' | 'POST';
-  headers?: Record<string, string>;
-  body?: string;
-  timeoutMs?: number;
-  auth?: {
-    type: AuthType;
-    token?: string;
-    username?: string;
-    password?: string;
-  };
-}
+export const HttpSourceConfigSchema = z.object({
+  url: z.string(),
+  method: z.enum(['GET', 'POST']).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  body: z.string().optional(),
+  timeoutMs: z.number().optional(),
+  auth: z.object({
+    type: z.string() as z.ZodType<AuthType>,
+    token: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+  }).optional(),
+});
+
+export type HttpSourceConfig = z.infer<typeof HttpSourceConfigSchema>;
 
 /**
  * Bearer token authentication config

@@ -1,6 +1,14 @@
 # WASM API Reference
 
-**All public Rust→JavaScript exports via `wasm-bindgen`. 335 total exports (verified 2026-05-29 against browser WASM build) across 100+ source modules. Source has 383 `#[wasm_bindgen]` annotations; 48 are omitted from the browser build due to feature flags (`feature-gpu`, `feature-rayon`, cloud-only features).**
+**All public Rust→JavaScript exports via `wasm-bindgen`. 335 total exports (verified 2026-05-29 against browser WASM build) across 100+ source modules.**
+
+## The WASM Sanctuary & Deterministic Calculus
+
+The WASM boundary is not merely an interface; it is a **Sovereign Sanctuary**.
+
+1. **Memory Isolation**: Every function call executes within a linear memory sanctuary, isolated from the host's non-deterministic state.
+2. **Deterministic Calculus**: All algorithms MUST satisfy the calculus: `f(Binary_Hash, Input_Hash, Seed) -> (Output, Receipt)`. Bit-exact identity is required for all Rank-1 oracles.
+3. **Immutable Verdicts**: The WASM runtime is the final arbiter. A `Refused` verdict from the kernel is an immutable process law that cannot be overturned by administrative layers.
 
 **Current version:** `26.5.29`
 
@@ -1512,6 +1520,158 @@ wpm prolog8 replay -i <input.json>    # Verify a receipt (detect tampering)
 | AAT counterfactual (P8-CF-1 to P8-CF-8) | 36 | Passing |
 | Integration | 11 | Passing |
 | **Total** | **78** | **All passing** |
+
+## Admission Gate — Accept(x) = C1∧…∧C7 (wasm4pm/src/admission.rs)
+
+Implements the 7-conjunct enterprise change admissibility predicate.
+
+### `wasm_admit_change(candidate_json_str, ledger_path, policy_path, boundary_map_path, revocation_path) → string`
+
+Evaluates a candidate change against all 7 conjuncts using **file paths** (native/server use).
+
+**Input:** JSON string of candidate change object with fields:
+- `actor: string` — identity of the change initiator
+- `event_type: string` — type of transition being requested
+- `state: string` — current process state
+- `objects: [{id, type}]` — OCEL 2.0 object references (non-empty)
+- `challenge_nonce: string` — 32-hex-char nonce from `wasm_mint_challenge_nonce`
+- `receipt: {receipt_hash: string, previous_receipt_hash: string}` — chain links
+- `signature: string` (64 hex) — ed25519 signature over canonical hash
+- `signer_pubkey: string` (32 hex) — corresponding verifying key
+
+**Returns:** `AdmissionResult` JSON:
+```json
+{ "admitted": true, "failing_conjunct": null, "refusal_code": null, "receipt_hash": "abc123..." }
+{ "admitted": false, "failing_conjunct": "C3", "refusal_code": "PolicyDenied", "receipt_hash": null }
+```
+
+**Conjunct evaluation order:** C2 → C3 → C4 → C5 → C6 → C7 → C1  
+(C1/signature is last so each other conjunct can be isolated in tests without a valid keypair)
+
+### `wasm_admit_change_inline(candidate_json_str, ledger_contents, policy_contents, boundary_contents, revoked_contents) → string`
+
+Same as above but accepts **config as inline strings** instead of file paths. Required for Node.js WASM (filesystem not accessible in wasm32-unknown-unknown sandbox). The Node.js caller reads files and passes contents.
+
+```typescript
+const result = JSON.parse(wasm.wasm_admit_change_inline(
+  candidateJson,
+  readFileSync('.wasm4pm/nonces/consumed.jsonl', 'utf8'),
+  readFileSync('.wasm4pm/policy.json', 'utf8'),
+  readFileSync('.wasm4pm/boundary-map.json', 'utf8'),
+  readFileSync('.wasm4pm/revoked-validators.json', 'utf8'),
+));
+```
+
+### `wasm_mint_challenge_nonce() → string`
+
+Generates a 32-hex-char (128-bit) challenge nonce via fastrand. **Not deterministic** — excluded from output-hash computation. Call before constructing a candidate; include result as `challenge_nonce` in the candidate and sign over it.
+
+### `wasm_verify_receipt_chain(receipts_dir) → string`
+
+Walks a directory of `.json` receipt files, orders them by `previous_receipt_hash` chain links from the genesis entry, and verifies each `BLAKE3(prior_receipt_body) == prior_receipt_hash`.
+
+**Returns:** `{"ok": true, "chain_length": 5}` or `{"ok": false, "error": "Chain broken at position 2: expected abc..., got def..."}`
+
+### Config file formats
+
+**`.wasm4pm/policy.json`**
+```json
+{
+  "version": "1.0",
+  "policy_hash": "<blake3-hex>",
+  "grants": [
+    { "actor_pattern": "*", "event_types": ["*"] },
+    { "actor_pattern": "finance-team", "event_types": ["approve", "pay"] }
+  ]
+}
+```
+
+**`.wasm4pm/boundary-map.json`**
+```json
+{
+  "transitions": {
+    "idle":      ["start"],
+    "running":   ["complete", "fail", "pause"],
+    "paused":    ["resume", "fail"],
+    "completed": [],
+    "failed":    ["retry"]
+  }
+}
+```
+
+**`.wasm4pm/nonces/consumed.jsonl`** — append-only, one JSON object per line:
+```
+{"nonce":"aabbcc..."}
+{"nonce":"ddeeff..."}
+```
+
+**`.wasm4pm/revoked-validators.json`** — JSON array of revoked version strings:
+```json
+["26.1.1", "26.2.3"]
+```
+
+### Refusal codes
+
+| Conjunct | Code | Meaning |
+|---|---|---|
+| C1 | `SignatureMissing` | No signature field present |
+| C1 | `SignatureInvalid` | ed25519 verification failed |
+| C2 | `ReceiptChainIncomplete` | `receipt_hash` or `previous_receipt_hash` null/absent |
+| C3 | `PolicyDenied` | Actor+event_type not covered by any grant |
+| C4 | `ValidatorRevoked` | Current validator version is in revocation list |
+| C5 | `NonceConsumed` | Nonce already in consumed ledger (replay attempt) |
+| C6 | `BoundaryDenied` | `B(state, event_type) = 0` — transition not admitted |
+| C7 | `ObjectsEmpty` | Objects array absent or empty |
+
+## Event Log & Model I/O Functions
+
+Functions for loading event logs and process models from various formats. All returned handles are opaque strings passed to subsequent algorithm calls.
+
+### CSV / XES.GZ / DFG
+
+```typescript
+// Load an event log from a CSV string. Returns a JSON string with { handle, trace_count, event_count }.
+load_ocel_from_csv(csv_string: string): string  // Result<String, JsValue>
+
+// Load a compressed XES event log from raw bytes (e.g. from fs.readFileSync on a .xes.gz file).
+// Returns a JsValue with { handle, trace_count, event_count }.
+load_eventlog_from_xes_gz(bytes: Uint8Array): JsValue  // Result<JsValue, JsValue>
+
+// Load a directly-follows graph from plain text format (one "A,B,count" row per line).
+// Returns a JsValue with { handle, node_count, edge_count }.
+load_dfg_from_text(content: string): JsValue  // Result<JsValue, JsValue>
+```
+
+### POWL Model Loading
+
+```typescript
+// Load a POWL v1 model from its JSON or repr string representation.
+// Returns a JsValue with { handle, root, node_count, repr }.
+load_powl_from_string(powl_str: string): JsValue  // Result<JsValue, JsValue>
+
+// Load a POWL model from the v2 DSL format (sequence: ->(A,B), parallel: +(A,B),
+// xor: X(A,B), loop: *(A,B), partial-order: PO{A,B; A->B}).
+// Returns a JsValue with { handle, root, node_count, repr }.
+load_powl_v2_from_string(dsl: string): JsValue  // Result<JsValue, JsValue>
+```
+
+**Usage pattern:**
+```typescript
+const loader = WasmLoader.getInstance();
+await loader.init();
+const wasm = loader.get() as any;
+
+// v1 (JSON or repr string)
+const result = JSON.parse(wasm.load_powl_from_string('->( A, B )'));
+// result: { handle: 'abc123', root: 0, node_count: 3, repr: '->(A, B)' }
+
+// v2 DSL
+const result2 = JSON.parse(wasm.load_powl_v2_from_string('*(A, B)'));
+```
+
+**CLI equivalent:** `wpm powl load --input model.powl` (v1) or `wpm powl load --input model.powl2 --v2` (v2 DSL).
+
+---
 
 ## Serialization Notes
 

@@ -1,0 +1,158 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "dendral",
+    "breed": "dendral",
+    "status": "ok",
+    "output": {
+      "breed": "Dendral",
+      "candidates": [
+        {
+          "id": "structure-A-aminopyridine",
+          "score": 0.8799999952316284,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "structure-B-pyrimidine-OH",
+          "score": 0.7599999904632568,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-C-benzene-NH2",
+          "score": 0.6499999761581421,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-D-furan-methyl",
+          "score": 0.7099999785423279,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-E-imidazole",
+          "score": 0.8299999833106995,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-F-alkyl-chain",
+          "score": 0.41999998688697815,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-G-naphthalene",
+          "score": 0.550000011920929,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        },
+        {
+          "id": "structure-H-phenol",
+          "score": 0.6899999976158142,
+          "eliminated": true,
+          "elimination_reason": "missing required token pyridine"
+        }
+      ],
+      "facts": [
+        {
+          "key": "constraint",
+          "value": "require:pyridine"
+        },
+        {
+          "key": "constraint",
+          "value": "require:amino"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:furan-methyl"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:alkyl-chain"
+        },
+        {
+          "key": "constraint",
+          "value": "forbid:naphthalene"
+        },
+        {
+          "key": "constraint",
+          "value": "min-score:0.6"
+        },
+        {
+          "key": "constraint",
+          "value": "max-score:0.95"
+        }
+      ],
+      "selected": "structure-A-aminopyridine",
+      "explanation": "DENDRAL applied 7 constraints; 1/8 candidates survived",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "survive",
+          "detail": "structure-A-aminopyridine",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "eliminate",
+          "detail": "structure-B-pyrimidine-OH by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "eliminate",
+          "detail": "structure-C-benzene-NH2 by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "eliminate",
+          "detail": "structure-D-furan-methyl by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "eliminate",
+          "detail": "structure-E-imidazole by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "eliminate",
+          "detail": "structure-F-alkyl-chain by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "eliminate",
+          "detail": "structure-G-naphthalene by require:pyridine: missing required token pyridine",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "eliminate",
+          "detail": "structure-H-phenol by require:pyridine: missing required token pyridine",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "7497f85b29f8b9ad8e602c5436834ec83e5f2f58380cf9f1f4a7a6ff836ed5bd",
+    "output_hash": "44ac33679bbf53b0e85bf25a866d69aa151b023963f800f56c5e95d998fa1477",
+    "replay_pointer": "44ac33679bbf53b0",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/dendral/.wasm4pm/receipts/7497f85b29f8b9ad8e602c5436834ec83e5f2f58380cf9f1f4a7a6ff836ed5bd.json"
+  },
+  "meta": {
+    "run_id": "bccaf423-14dc-4be7-ade9-398c6dacd008",
+    "timestamp": "2026-06-11T18:43:44.061Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

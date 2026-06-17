@@ -1,0 +1,14 @@
+{
+  "intent": "prove the K axiom",
+  "facts": [
+    {
+      "key": "tableaux:formula",
+      "value": "a -> (b -> a)"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

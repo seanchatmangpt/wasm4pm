@@ -1,0 +1,32 @@
+{
+  "intent": "solve contradiction",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "improving",
+      "value": "weight"
+    },
+    {
+      "key": "worsening",
+      "value": "strength"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "morphological:14a1b58d8054a31084fc8ce3ddb65228cae97d10cf9d2834f01279388f3e63fe"
+    }
+  ],
+  "rules": [
+    {
+      "id": "matrix_1_2",
+      "premise": [
+        "improving=weight",
+        "worsening=strength"
+      ],
+      "conclusion": "principles=40,26",
+      "certainty": 1.0
+    }
+  ],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

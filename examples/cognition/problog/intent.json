@@ -1,0 +1,53 @@
+{
+  "intent": "compute the exact success probability of wet",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "pfact:rain",
+      "value": "0.2"
+    },
+    {
+      "key": "pfact:sprinkler",
+      "value": "0.2"
+    },
+    {
+      "key": "pfact:hose",
+      "value": "0.3"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r-rain",
+      "premise": [
+        "rain"
+      ],
+      "conclusion": "wet",
+      "certainty": 1
+    },
+    {
+      "id": "r-sprinkler",
+      "premise": [
+        "sprinkler"
+      ],
+      "conclusion": "wet",
+      "certainty": 1
+    },
+    {
+      "id": "r-hose",
+      "premise": [
+        "hose"
+      ],
+      "conclusion": "wet",
+      "certainty": 1
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "query",
+      "value": "wet"
+    }
+  ],
+  "state": []
+}

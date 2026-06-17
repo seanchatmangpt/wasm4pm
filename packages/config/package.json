@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/config",
-  "version": "26.6.8",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -48,7 +48,7 @@
     "clean": "rm -rf dist *.tsbuildinfo"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
     "toml": "^3.0.0",
     "zod": "^3.22.4"
@@ -71,5 +71,14 @@
     "wasm4pm"
   ],
   "author": "Sean Chatman",
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "directory": "packages/config"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  }
 }

@@ -1,12 +1,12 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocpq", "crates/pm-core"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-cli", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/ocpq", "crates/wasm4pm-lsp"]
 
 [workspace.package]
-version = "26.6.8"
+version = "26.6.12"
 edition = "2021"
-license = "MIT OR Apache-2.0"
+license = "BUSL-1.1"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
 repository = "https://github.com/seanchatmangpt/wasm4pm"
 
@@ -20,23 +20,22 @@ smallvec = { version = "1.13", features = ["serde"] }
 itertools = "0.14.0"
 rustc-hash = "2"
 blake3 = "1.5"
+tracing = { version = "0.1", default-features = false }
 sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
-wasm4pm-algos = { version = "26.6.5", path = "crates/wasm4pm-algos" }
-wasm4pm-utils = { version = "26.6.5", path = "crates/wasm4pm-utils" }
-# wasm4pm-compat = { version = "26.6.5", path = "../wasm4pm-compat", features = ["wasm4pm"] }
-wasm4pm-cognition = { version = "26.6.5", path = "crates/wasm4pm-cognition" }
-wasm4pm-macros = { version = "26.6.5", path = "crates/wasm4pm-macros" }
-prolog8 = { version = "26.6.5", path = "crates/prolog8" }
-miniml = { version = "26.6.5", path = "crates/miniml-core" }
-ocpq = { version = "26.6.5", path = "crates/ocpq" }
+wasm4pm-compat = { version = "26.6.10", features = ["formats", "strict", "wasm4pm"] }
+wasm4pm = { version = "26.6.10", path = "wasm4pm", features = ["cloud"] }
+wasm4pm-cognition = { version = "26.6.10", path = "crates/wasm4pm-cognition" }
+prolog8 = { version = "26.6.10", path = "crates/prolog8" }
+miniml = { version = "26.6.10", path = "crates/miniml-core" }
+ocpq = { version = "26.6.10", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 tempfile = "3.8"
 
 [profile.release]
 opt-level = "z"
-lto = true
+lto = false
 codegen-units = 1
 panic = "abort"
 strip = "debuginfo"
@@ -44,3 +43,6 @@ strip = "debuginfo"
 [profile.bench]
 opt-level = 3
 lto = false
+
+[patch.crates-io]
+wasm4pm = { path = "wasm4pm" }

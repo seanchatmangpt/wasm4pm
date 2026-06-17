@@ -1,0 +1,30 @@
+{
+  "intent": "classify",
+  "candidates": [
+    {
+      "id": "x",
+      "score": 0.5,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "dl:subclass:A",
+      "value": "B"
+    },
+    {
+      "key": "dl:subclass:B",
+      "value": "C"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "dl:subsumes",
+      "value": "A:C"
+    }
+  ],
+  "state": []
+}

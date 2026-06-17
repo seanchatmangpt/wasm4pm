@@ -1,0 +1,173 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "cbr",
+    "breed": "cbr",
+    "status": "ok",
+    "output": {
+      "breed": "Cbr",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "packet-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ],
+      "selected": "restart-core-switch",
+      "explanation": "CBR best=INC0001 sim=1.000 weighted=0.960",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "build-index",
+          "detail": "index built for 15 cases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "retrieve-candidates",
+          "detail": "retrieved 15 candidates from 15 total cases",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "score-case",
+          "detail": "INC0001 sim=1.000 score=0.960",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "score-case",
+          "detail": "INC0002 sim=0.429 score=0.377",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "score-case",
+          "detail": "INC0003 sim=0.111 score=0.102",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "score-case",
+          "detail": "INC0004 sim=0.250 score=0.188",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "score-case",
+          "detail": "INC0005 sim=0.250 score=0.248",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "score-case",
+          "detail": "INC0006 sim=0.429 score=0.390",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "score-case",
+          "detail": "INC0007 sim=1.000 score=0.940",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "score-case",
+          "detail": "INC0008 sim=0.111 score=0.097",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "score-case",
+          "detail": "INC0009 sim=0.429 score=0.386",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "score-case",
+          "detail": "INC0010 sim=0.111 score=0.092",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "score-case",
+          "detail": "INC0011 sim=0.667 score=0.620",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "score-case",
+          "detail": "INC0012 sim=0.429 score=0.343",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "score-case",
+          "detail": "INC0013 sim=0.250 score=0.213",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "score-case",
+          "detail": "INC0014 sim=0.250 score=0.195",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "score-case",
+          "detail": "INC0015 sim=1.000 score=0.950",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "reuse-adapt",
+          "detail": "INC0001 adapted 0 facts",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "revise-accept",
+          "detail": "INC0001 sim=1.000",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "retain-case",
+          "detail": "retained-feef944b",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "81b813fc414a67496eda17fa17db6518cf4ad1f90a308c91f65820ef20887467",
+    "output_hash": "e5e0afd46e905a0fd5eb9b5f6491f5b7b2704b82066acb135129ca471ee59ff3",
+    "replay_pointer": "e5e0afd46e905a0f",
+    "inference_step_count": 20,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/cbr/.wasm4pm/receipts/81b813fc414a67496eda17fa17db6518cf4ad1f90a308c91f65820ef20887467.json"
+  },
+  "meta": {
+    "run_id": "c991431c-ee82-4f1a-89f6-6db3cfd3d455",
+    "timestamp": "2026-06-11T18:43:40.834Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

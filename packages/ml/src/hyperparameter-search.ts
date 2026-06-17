@@ -18,9 +18,10 @@
  * Returns sorted results by mean score (descending).
  */
 
-import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
-import { classifyTraces } from './classifiers.js';
+import { z } from 'zod';
+import { classifyTraces, regressRemainingTime } from './classifiers.js';
 import { clusterTraces } from './clustering.js';
+import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
 import type { FeatureMatrix } from './types.js';
 
 export type { FeatureMatrix };
@@ -28,35 +29,55 @@ export type { FeatureMatrix };
 /** Search space: maps each hyperparameter to the list of values to try. */
 export type SearchSpace = Record<string, ParamValue[]>;
 
+// ---------------------------------------------------------------------------
+// EvalMetrics
+// ---------------------------------------------------------------------------
+
+export const EvalMetricsSchema = z.object({
+  accuracy: z.number().optional(),
+  f1: z.number().optional(),
+  precision: z.number().optional(),
+  recall: z.number().optional(),
+  silhouetteScore: z.number().optional(),
+  inertia: z.number().optional(),
+  rmse: z.number().optional(),
+  mae: z.number().optional(),
+  cvMeanAccuracy: z.number().optional(),
+  cvStdAccuracy: z.number().optional(),
+  cvFoldAccuracies: z.array(z.number()).optional(),
+  trainingTimeMs: z.number().optional(),
+});
+
 /** Metrics from a single model evaluation. */
-export interface EvalMetrics {
-  accuracy?: number;
-  f1?: number;
-  precision?: number;
-  recall?: number;
-  silhouetteScore?: number;
-  inertia?: number;
-  cvMeanAccuracy?: number;
-  cvStdAccuracy?: number;
-  cvFoldAccuracies?: number[];
-  trainingTimeMs?: number;
-}
+export type EvalMetrics = z.infer<typeof EvalMetricsSchema>;
+
+// ---------------------------------------------------------------------------
+// RankedResult
+// ---------------------------------------------------------------------------
+
+export const RankedResultSchema = z.object({
+  rank: z.number(),
+  params: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  metrics: EvalMetricsSchema,
+});
 
 /** One ranked result from GridSearch. */
-export interface RankedResult {
-  rank: number;
-  params: Record<string, ParamValue>;
-  metrics: EvalMetrics;
-}
+export type RankedResult = z.infer<typeof RankedResultSchema>;
+
+// ---------------------------------------------------------------------------
+// GridSearchOutput
+// ---------------------------------------------------------------------------
+
+export const GridSearchOutputSchema = z.object({
+  bestParams: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  bestMetrics: EvalMetricsSchema,
+  allResults: z.array(RankedResultSchema),
+  evaluatedConfigs: z.number(),
+  totalConfigs: z.number(),
+});
 
 /** Full output from GridSearch.search(). */
-export interface GridSearchOutput {
-  bestParams: Record<string, ParamValue>;
-  bestMetrics: EvalMetrics;
-  allResults: RankedResult[];
-  evaluatedConfigs: number;
-  totalConfigs: number;
-}
+export type GridSearchOutput = z.infer<typeof GridSearchOutputSchema>;
 
 /**
  * Class-based GridSearch that wraps the functional gridSearch() with a richer
@@ -116,7 +137,7 @@ export async function evaluateModel(
     return _evaluateSingle(params, data, task, labels);
   }
 
-  const { trainIndices, testIndices } = stratifiedKFold(
+  const { testIndices } = stratifiedKFold(
     labels.length > 0 ? labels.map((_, i) => i % 2) : Array(n).fill(0),
     actualFolds,
   );
@@ -196,7 +217,30 @@ async function _evaluateSingle(
     return { silhouetteScore: silhouette, inertia, accuracy: Math.max(0, silhouette) };
   }
 
-  // regress: stub returning 0 metrics (no regression evaluator needed for current tests)
+  if (task === 'regress') {
+    if (data.data.length < 2) return { accuracy: 0 };
+    // regressTraces expects Record<string,unknown>[] — build synthetic objects
+    const rows: Record<string, unknown>[] = data.data.map((row, i) => {
+      const obj: Record<string, unknown> = {
+        case_id: data.caseIds[i] ?? `c${i}`,
+        remaining_time: data.targets![i] ?? 0,
+      };
+      (data.featureNames ?? []).forEach((name, fi) => {
+        obj[name] = row[fi];
+      });
+      return obj;
+    });
+    const result = await regressRemainingTime(rows, {
+      method: ((params.method as string) ?? 'linear_regression') as import('./types.js').RegressionMethod,
+      degree: typeof params.degree === 'number' ? params.degree : 2,
+    });
+    return {
+      accuracy: result.rSquared,
+      rmse: result.rmse,
+      mae: result.mae,
+    };
+  }
+
   return { accuracy: 0 };
 }
 
@@ -233,7 +277,7 @@ export function suggestSearchSpace(
 export async function findBestParams(
   task: 'classify' | 'cluster' | 'regress',
   data: FeatureMatrix,
-  labels: string[],
+  _labels: string[],
   searchSpace: SearchSpace,
   cvFolds: number = 3,
 ): Promise<GridSearchOutput> {
@@ -251,28 +295,29 @@ export type ParamValue = number | string | boolean | number[];
  */
 export type ParamGrid = Record<string, ParamValue[]>;
 
+// ---------------------------------------------------------------------------
+// GridSearchResult
+// ---------------------------------------------------------------------------
+
+export const GridSearchResultSchema = z.object({
+  /** Parameter combination tested */
+  params: z.record(z.string(), z.union([z.number(), z.string(), z.boolean(), z.array(z.number())])),
+  /** Mean score across CV folds */
+  meanScore: z.number(),
+  /** Standard deviation of scores */
+  stdDev: z.number(),
+  /** Confidence interval lower bound (95% CI via t-distribution) */
+  ciLower: z.number(),
+  /** Confidence interval upper bound */
+  ciUpper: z.number(),
+  /** Per-fold scores */
+  scores: z.array(z.number()),
+});
+
 /**
  * Single parameter combination result.
  */
-export interface GridSearchResult {
-  /** Parameter combination tested */
-  params: Record<string, ParamValue>;
-
-  /** Mean score across CV folds */
-  meanScore: number;
-
-  /** Standard deviation of scores */
-  stdDev: number;
-
-  /** Confidence interval lower bound (95% CI via t-distribution) */
-  ciLower: number;
-
-  /** Confidence interval upper bound */
-  ciUpper: number;
-
-  /** Per-fold scores */
-  scores: number[];
-}
+export type GridSearchResult = z.infer<typeof GridSearchResultSchema>;
 
 /**
  * Compute t-distribution quantile (approximation for df >= 1).
@@ -286,10 +331,9 @@ export interface GridSearchResult {
  * @param alpha - Significance level (0.05 for 95% CI)
  * @returns t-value
  */
-function tQuantile(df: number, alpha: number = 0.05): number {
-  // Approximation: t(df, alpha/2) ≈ polynomial fit
+function tQuantile(df: number, _alpha: number = 0.05): number {
+  // Approximation: t(df, 0.025) ≈ polynomial fit for 95% CI
   // For df >= 1, use Abramowitz & Stegun approximation
-  const t_alpha = alpha / 2;
   if (df === 1) return 12.706;
   if (df === 2) return 4.303;
   if (df === 3) return 3.182;

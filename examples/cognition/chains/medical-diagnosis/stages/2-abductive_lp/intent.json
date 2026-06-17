@@ -1,0 +1,1 @@
+{"intent": "explain:obs", "facts": [{"key": "alp:abducible:A", "value": "true"}, {"key": "alp:abducible:B", "value": "true"}, {"key": "background:r1_c_b361a105", "value": "obs :- A"}, {"key": "background:r2_c_b361a105", "value": "obs :- A, B"}], "goals": [{"id": "g1", "predicate": "alp:observe", "value": "obs"}], "rules": [], "candidates": [], "cases": [], "state": []}

@@ -1,13 +1,13 @@
 # wasm4pm TypeScript Packages
 
-10 packages forming the TypeScript orchestration layer around the Rust/WASM core.
+9 packages forming the TypeScript orchestration layer around the Rust/WASM core.
 
 ## Dependency Graph
 
 ```
 Application Layer:  apps/wasm4pm/
     ↓
-Orchestration:    engine → planner → swarm → ml
+Orchestration:    engine → planner → ml
     ↓
 Foundation:      kernel → config → contracts → observability
     ↓
@@ -26,7 +26,6 @@ WASM Layer:       wasm4pm/ (Rust/WASM core)
 | `@wasm4pm/observability` | 3-layer: CLI human, JSONL machine, OTEL spans |
 | `@wasm4pm/testing` | Parity, determinism, CLI, OtelCapture, certification gates |
 | `@wasm4pm/ml` | Micro-ML: classify, cluster, forecast, anomaly, regress, PCA |
-| `@wasm4pm/swarm` | Multi-worker coordinator with convergence detection |
 
 ## Build
 

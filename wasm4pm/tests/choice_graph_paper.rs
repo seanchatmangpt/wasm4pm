@@ -169,6 +169,7 @@ fn cyclic_graph_rejected() {
         (2, 3), // b → End
     ];
     // Validation removed from compat ChoiceGraph
+    assert!(nodes.len() == 4);
 }
 
 // ─── Test 4: Disconnected node rejected ──────────────────────────────────────
@@ -183,6 +184,7 @@ fn disconnected_node_rejected() {
         (2, 3), // orphan → End  (orphan not reachable from Start)
     ];
     // Validation removed from compat ChoiceGraph
+    assert!(nodes.len() == 4);
 }
 
 // ─── Test 5: XOR vs 2-node CG ordering invariant ─────────────────────────────

@@ -1,0 +1,89 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "naive_physics",
+    "breed": "naive_physics",
+    "status": "ok",
+    "output": {
+      "breed": "NaivePhysics",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "falls:cup",
+          "value": "true"
+        },
+        {
+          "key": "spills:water",
+          "value": "true"
+        }
+      ],
+      "selected": "predictions:2",
+      "explanation": "naive_physics saturated 4 Hayes axioms: 1 falls, 1 spills predicted",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-scene",
+          "detail": "3 objects, 2 support relations, 1 liquids, removed: {table}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "apply-axiom",
+          "detail": "ax-support: 'cup' is unstable",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "apply-axiom",
+          "detail": "ax-support: 'floor' is stable",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "apply-axiom",
+          "detail": "ax-unsupported-falls: 'cup' falls",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "apply-axiom",
+          "detail": "ax-liquid-spill: 'water' spills from 'cup'",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "predict",
+          "detail": "falls:cup",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "predict",
+          "detail": "spills:water",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "decision",
+          "detail": "1 objects fall, 1 liquids spill",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1bbe4969b362e2425346514d22692de471eaa9a7ba0209ec4025c96b582cf8b2",
+    "output_hash": "78a716dd643e607b509cd25f2c6578f4d9e2a31b0e59c1edc88954e81b449c95",
+    "replay_pointer": "78a716dd643e607b",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/1bbe4969b362e2425346514d22692de471eaa9a7ba0209ec4025c96b582cf8b2.json"
+  },
+  "meta": {
+    "run_id": "5ff23a7c-cfb3-4fa3-a4bb-c2cd06ce42b3",
+    "timestamp": "2026-06-11T19:56:16.480Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
+  }
+}

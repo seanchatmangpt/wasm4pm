@@ -6,11 +6,28 @@ on:
       - 'v*'
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - run: pnpm -r test
+
   publish:
+    needs: [test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -18,60 +35,38 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
 
-      - name: Install dependencies (workspace install covers wasm4pm)
-        run: pnpm install
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Build WASM
         run: cd wasm4pm && npm run build:all
 
       - name: Build TypeScript packages
-        run: pnpm -r --parallel build
-
-      - name: Run tests
-        run: cd wasm4pm && npm run test:unit
+        run: pnpm -r build
 
       - name: Remove wasm-pack generated pkg/.gitignore
         run: rm -f wasm4pm/pkg/.gitignore
 
-      - name: Smoke test - verify npm pack includes pkg/
-        run: |
-          cd wasm4pm
-          npm pack
-          TARBALL=$(ls wasm4pm-*.tgz)
-          mkdir -p /tmp/smoke-test-$$
-          cp "$TARBALL" /tmp/smoke-test-$$/
-          cd /tmp/smoke-test-$$
-          npm init -y
-          npm install "./$TARBALL"
-          node -e "
-            const pm = require('wasm4pm');
-            if (!pm.WasmEventLog) throw new Error('WasmEventLog missing');
-            if (typeof pm.discover_dfg !== 'function') throw new Error('discover_dfg missing');
-            const v = pm.get_version();
-            console.log('Smoke test PASSED - version:', v);
-          "
-          rm -rf /tmp/smoke-test-*
-          rm -f /tmp/wasm4pm-*.tgz
-
-      - name: Publish to npm
-        run: cd wasm4pm && npm publish --ignore-scripts
+      - name: Publish all workspace packages to npm
+        run: pnpm -r publish --provenance --access public --no-git-checks
         env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create Release

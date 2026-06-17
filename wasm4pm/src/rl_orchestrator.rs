@@ -630,6 +630,8 @@ pub struct RlOrchestrator {
     visited_states: HashSet<u32>,
     /// Rolling window of healing actions.
     action_history: ActionHistory,
+    /// Stability monitor — tracks TD error monotonicity, Q-value divergence, reward scaling.
+    stability_monitor: crate::rl_stability_monitor::RlStabilityMonitor,
 }
 
 impl Default for RlOrchestrator {
@@ -656,6 +658,7 @@ impl RlOrchestrator {
             use_linucb_for_selection: false,
             visited_states: HashSet::new(),
             action_history: ActionHistory::new(),
+            stability_monitor: crate::rl_stability_monitor::RlStabilityMonitor::new(0.1),
         }
     }
 
@@ -692,6 +695,7 @@ impl RlOrchestrator {
             use_linucb_for_selection: false,
             visited_states: HashSet::new(),
             action_history: ActionHistory::new(),
+            stability_monitor: crate::rl_stability_monitor::RlStabilityMonitor::new(0.1),
         }
     }
 
@@ -1222,7 +1226,11 @@ impl RlOrchestrator {
             // OBS-GAP-1: per-cycle TD error and Q-value fields — filled via span.record() below
             td_error = tracing::field::Empty,
             q_value_max = tracing::field::Empty,
+            q_value_change = tracing::field::Empty,
+            linucb_weight_delta = tracing::field::Empty,
             convergence_signal = tracing::field::Empty,
+            // Stability monitor: Q-value divergence signal — filled via span.record() below
+            "rl.stability.diverging" = tracing::field::Empty,
             service_name = "wpm",
             status = "ok",
         );
@@ -1383,6 +1391,27 @@ impl RlOrchestrator {
         // Update LinUCB and capture TD error for convergence diagnostics
         let td_error_linucb = self.linucb_update(features, reward);
 
+        // Wire stability monitor: record TD error and reward each cycle.
+        self.stability_monitor.record_td_error(td_error_linucb);
+        self.stability_monitor.record_reward(reward);
+        // Record circuit.decision_impact_on_cycle span for observability
+        {
+            let _cb_span = tracing::info_span!(
+                "circuit.decision_impact_on_cycle",
+                circuit_allowed = circuit_allowed,
+                cycle_index = self.telemetry.cycle_count,
+                impact = if circuit_allowed {
+                    "allowed"
+                } else {
+                    "blocked"
+                },
+                stability_diverging = self.stability_monitor.q_divergence.is_diverging,
+                service_name = "wpm",
+                status = "ok",
+            );
+            let _cb_entered = _cb_span.enter();
+        }
+
         // OBS-GAP-1 FIX: record per-cycle TD error directly on the rl.run_cycle span.
         // Bellman convergence (Rank-1 oracle) can now be proved from a single span
         // without correlating the separate rl.convergence_diagnostics child span.
@@ -1401,9 +1430,19 @@ impl RlOrchestrator {
                     .get_q_value_for_otel(state, &RlAction::Restart);
                 q_continue.abs().max(q_scale.abs()).max(q_restart.abs())
             };
+            let norms_after = self.linucb.weight_norms();
+            let active_norm_after = norms_after[self.active_agent as usize];
+            let weight_delta_final = (active_norm_after - active_norm_before).abs();
+
             tracing::Span::current().record("td_error", td_error_linucb);
             tracing::Span::current().record("q_value_max", q_max);
+            tracing::Span::current().record("q_value_change", weight_delta_final);
+            tracing::Span::current().record("linucb_weight_delta", weight_delta_final);
             tracing::Span::current().record("convergence_signal", conv_signal);
+            tracing::Span::current().record(
+                "rl.stability.diverging",
+                self.stability_monitor.q_divergence.is_diverging,
+            );
         }
 
         // Decay exploration

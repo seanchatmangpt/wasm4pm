@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "18deadcc2697cad4903d72e063b84e1d3cf75dbb",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "production_line",
+  "input": {
+    "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "compute_ewma",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76",
+      "duration_ms": 42.875,
+      "expected_path": {
+        "route_id": "wpm.example.production_line.compute_ewma.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_compute_ewma_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76",
+                "duration_ms": 42.875
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_ewma",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_ewma_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "ac2fb625255d471e8c464f0552f5978902c51d07c51694a09b88207b8215b06f"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_compute_ewma_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:33.117Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:35.616Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:32.883Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:37.077Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:36.242Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76",
+                "duration_ms": 42.875
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:36.628Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:37.891Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:38.166Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_ewma",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:37.326Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_ewma_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:35.334Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_ewma_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_ewma",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_ewma_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "5d02d2e471fb3ad5df04afed3a669c93e3a71542b4f7b333a41e7993ecf6a8ed",
+        "observed_result_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
+        "output_artifact_hash": "a633a293c906a394dcf231eed5bf4a79ae5c4b859b26dbf96715a7df7fd2cd76",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "analyze_variant_complexity",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956",
+      "duration_ms": 48.61,
+      "expected_path": {
+        "route_id": "wpm.example.production_line.analyze_variant_complexity.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_analyze_variant_complexity_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956",
+                "duration_ms": 48.61
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_analyze_variant_complexity",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_analyze_variant_complexity_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "b6fdceaaee84db8d33545cccd9e527cd7f86f6fc3773acb2f38c03c64793957b"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_analyze_variant_complexity_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:32.719Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:33.256Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:33.365Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:36.791Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:36.562Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956",
+                "duration_ms": 48.61
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:34.772Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:34.368Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:37.323Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_analyze_variant_complexity",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:39.608Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_variant_complexity_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:37.513Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_variant_complexity_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_analyze_variant_complexity",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_analyze_variant_complexity_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "38dbafc0fa1d004ba48f37d84818884912ae5f38a5bddee68ad3bbd6d3927285",
+        "observed_result_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
+        "output_artifact_hash": "5bdb26bab35a71525705c167245031191862509a538284c40ba6483846967956",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "compute_activity_transition_matrix",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a",
+      "duration_ms": 56.026,
+      "expected_path": {
+        "route_id": "wpm.example.production_line.compute_activity_transition_matrix.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a",
+                "duration_ms": 56.026
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_activity_transition_matrix",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_activity_transition_matrix_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "b3726bd00d348af9197c74cc568df744e4b5cb32bc47eae473d3611bfa0a1829"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:33.716Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:34.104Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:32.618Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:36.914Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:35.391Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a",
+                "duration_ms": 56.026
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:36.793Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:36.725Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:35.987Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_compute_activity_transition_matrix",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:39.010Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_compute_activity_transition_matrix_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:35.651Z",
+              "relationships": [
+                {
+                  "objectId": "result_compute_activity_transition_matrix_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_compute_activity_transition_matrix",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_compute_activity_transition_matrix_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "1bb3c2e924e0253da5861aca8565bfe8767974ea1d663e75fc833ec212f06c62",
+        "observed_result_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
+        "output_artifact_hash": "5d94753ca1f5d42ad4e0816f8d78a9a66c98c089608339efc759ba534d27659a",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "analyze_process_speedup",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc",
+      "duration_ms": 10.507,
+      "expected_path": {
+        "route_id": "wpm.example.production_line.analyze_process_speedup.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_analyze_process_speedup_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc",
+                "duration_ms": 10.507
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_analyze_process_speedup",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_analyze_process_speedup_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "68a837075925e5b15d77a72b07701e2905d6c3888826319ab18ae66d17ca40ef"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_production_line_analyze_process_speedup_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:33.824Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:31.591Z",
+              "relationships": [
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:31.668Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:33.880Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:37.228Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc",
+                "duration_ms": 10.507
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:35.514Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:34.548Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:38.982Z",
+              "relationships": [
+                {
+                  "objectId": "example_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_analyze_process_speedup",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:38.281Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_production_line_analyze_process_speedup_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:39.421Z",
+              "relationships": [
+                {
+                  "objectId": "result_analyze_process_speedup_production_line",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_production_line",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_production_line",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_production_line",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_analyze_process_speedup",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_analyze_process_speedup_production_line",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_production_line",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "defe61ee08effbee67bc00959ce81c8cba25ce91d8808a9ccd019c79b001e253",
+        "observed_result_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f1abc02382c0a7e7564a59dc3869e862f493cc11ea65123a7c7c754347d3bf35",
+        "output_artifact_hash": "7f9eedcfda814bb9319aeeb4c3c2d9314fe7540425d412f118db750e3de3e8fc",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-11T19:53:30.609Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "e326d6c4bd12ec0ee7ff925cf3340314045b0288757a9dcc532c68b311709f7f"
+}

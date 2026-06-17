@@ -1,0 +1,60 @@
+# Archive Manifest — 2026-06-09
+
+## Reason
+Historical tracking docs, agent work products, and audit snapshots archived on 2026-06-09
+as part of the docs ground-truth rewrite. All files preserved in git history.
+
+## Archived docs/ subdirectories
+List each subdirectory moved: academic, reports, reconciliation, checkpoints, algorithms_evaluation, ggen-oracle, research, papers
+
+## Archived top-level .md files
+- ADMISSION_GATE_RECEIPT.md
+- API_TRUTH_COMPAT_26_6_5.md
+- AUTOML_AUDIT_2026-05-18.md
+- BACKWARD_COMPATIBILITY_REPORT.md
+- benchmark_audit.md
+- CARTOGRAPHY_REPORT.md
+- CERTIFICATE_VALIDATION.md
+- CHANGELOG_RELEASE.md
+- CONFIG_AUDIT_FOOTGUNS.md
+- DETERMINISM_AUDIT_INDEX.md
+- DETERMINISM_AUDIT.md
+- FAILURE_SAMPLE_REPORT.md
+- FIX_DESIGN_PARSEPLAYLOAD_NULL.md
+- GGEN_MIGRATION_CHECKLIST.md
+- GGEN-NEEDS.md
+- KERNEL_REGISTRY_AUDIT.md
+- MTTR_BENCHMARKING.md
+- MTTR_IMPLEMENTATION_SUMMARY.md
+- ORIGINAL_REQUEST.md
+- PARITY_SURFACE_RECONCILIATION.md
+- PARSELOAD_DIAGNOSTIC_REPORT.md
+- PROJECT.md
+- README-TRIAGE-FRAMEWORK.md
+- REGRESSION_TEST_REPORT.md
+- SCOPE_ANALYSIS_TRACK_B1.md
+- TEST_COMPACTION_EXECUTIVE_SUMMARY.md
+- TEST_COMPACTION_IMPLEMENTATION_SPEC.md
+- TEST_COMPACTION_INDEX.md
+- TEST_COMPACTION_QUICKSTART.md
+- TEST_COMPACTION_STRATEGY.md
+- TEST_CONSOLIDATION_EXAMPLES.md
+- TEST_INFRA.md
+- TEST_READY.md
+- TEST_REDUNDANCY_AUDIT.md
+- TRACK_A_RECEIPT.md
+- TRACK_B1_ASSESSMENT_FINAL.md
+- TRACK_B1_SUMMARY.md
+- TRACK-B1-SUMMARY.md
+- TRACKING_JTBD-001.md
+- TRIAGE-FRAMEWORK-TRACK-B1.md
+- TRIAGE-GREP-PATTERNS.md
+- TRUEX-REBRAND-wasm4pm.md
+- WASM_BUILD_OPTIMIZATION_DEEP_DIVE.md
+- WASM_UTILS_DEPLOYMENT_CHECKLIST.md
+- WASM_UTILS_EXPORT_SUMMARY.md
+- WASM_UTILS_TYPESCRIPT_API.md
+- WASM4PM_CAPABILITY_INVENTORY.md
+
+## Active docs (kept in place)
+docs/reference/, docs/tutorials/, docs/how-to/, docs/explanation/, docs/orientation/, docs/primitives/, docs/audits/

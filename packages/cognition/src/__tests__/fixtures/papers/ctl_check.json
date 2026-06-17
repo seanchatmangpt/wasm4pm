@@ -1,0 +1,93 @@
+{
+  "breed": "ctl_check",
+  "provenance": {
+    "paper": "Clarke, E. M., Emerson, E. A., & Sistla, A. P. (1986). Automatic verification of finite-state concurrent systems using temporal logic specifications.",
+    "citation": "Clarke, E. M., Emerson, E. A., & Sistla, A. P. (1986). ACM Transactions on Programming Languages and Systems, 8(2), 244-263.",
+    "locus": "Section 4 (the model-checking algorithm by fixed-point labeling) and Section 5 (two-process mutual exclusion: the safety property AG \u00ac(c1 \u2227 c2)).",
+    "extraction": "instantiated",
+    "notes": "Two-process mutual-exclusion transition system in the style of the paper's example: states track (noncritical/trying/critical) for each process; no reachable state has both processes critical, so AG !(c1 & c2) HOLDS at the initial state."
+  },
+  "input": {
+    "intent": "verify mutual exclusion safety",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "ts:init",
+        "value": "s0"
+      },
+      {
+        "key": "ts:edge:s0",
+        "value": "s1,s3"
+      },
+      {
+        "key": "ts:edge:s1",
+        "value": "s2,s5"
+      },
+      {
+        "key": "ts:edge:s2",
+        "value": "s0"
+      },
+      {
+        "key": "ts:edge:s3",
+        "value": "s4,s5"
+      },
+      {
+        "key": "ts:edge:s4",
+        "value": "s0"
+      },
+      {
+        "key": "ts:edge:s5",
+        "value": "s6,s7"
+      },
+      {
+        "key": "ts:edge:s6",
+        "value": "s3"
+      },
+      {
+        "key": "ts:edge:s7",
+        "value": "s1"
+      },
+      {
+        "key": "ts:label:s1",
+        "value": "t1"
+      },
+      {
+        "key": "ts:label:s2",
+        "value": "c1"
+      },
+      {
+        "key": "ts:label:s3",
+        "value": "t2"
+      },
+      {
+        "key": "ts:label:s4",
+        "value": "c2"
+      },
+      {
+        "key": "ts:label:s5",
+        "value": "t1,t2"
+      },
+      {
+        "key": "ts:label:s6",
+        "value": "c1,t2"
+      },
+      {
+        "key": "ts:label:s7",
+        "value": "t1,c2"
+      },
+      {
+        "key": "ctl:formula",
+        "value": "A G !(c1 & c2)"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "verdict": "holds",
+    "notes": "No state is labeled with both c1 and c2, so the safety property holds at s0; no counterexample steps may be emitted.",
+    "value": "verified"
+  }
+}

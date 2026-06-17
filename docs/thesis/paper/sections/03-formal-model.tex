@@ -1,0 +1,220 @@
+We now develop the formal model: the change universe, the acceptance predicate,
+the state transition law, and the membership theorem, followed by the threat
+model under which the results of Sections~\ref{sec:inaccessibility}
+and~\ref{sec:attacks} hold.
+
+\subsection{The Change Universe and Admitted Set}
+
+Let $\mathcal{A}$ be a set of actors, $\mathcal{E}$ a set of event types,
+$\mathcal{O}$ a set of typed object-relation sets (each element an OCEL~2.0
+event-to-object relation), $\mathcal{S}$ a set of process states, $\mathcal{P}$
+a set of policy versions, $\mathcal{V}$ a set of validator versions,
+$\mathcal{T}$ a set of timestamps, $\mathcal{N}$ a set of nonces, $\mathcal{R}$
+a set of receipts, and $\Sigma$ a set of signatures.
+
+\begin{definition}[Enterprise Change Universe]
+\label{def:omega}
+The \emph{enterprise change universe} is
+\[
+  \Omega_{\mathrm{change}} \;=\; \mathcal{A} \times \mathcal{E} \times
+  \mathcal{O} \times \mathcal{S} \times \mathcal{R} \times \mathcal{P} \times
+  \mathcal{V} \times \mathcal{T} \times \mathcal{N} \times \mathcal{R} \times
+  \Sigma.
+\]
+A \emph{candidate change} is a tuple
+$x = (a, e, O, s, R_{\mathrm{prior}}, p, v, t, n, R, \sigma)$: actor $a$
+proposes event $e$ over object relations $O$ from process state $s$, citing
+prior receipt $R_{\mathrm{prior}}$, under policy version $p$ and validator
+version $v$, at time $t$ with freshness nonce $n$, carrying output receipt $R$
+and signature $\sigma$.
+\end{definition}
+
+The universe is deliberately maximal: \emph{every} mutation an enterprise can
+undergo --- data edits, status updates, approvals, payments, permission
+changes, deployments, configuration and policy updates, document mutations,
+identity changes, model updates, and AI-agent actions --- is representable as a
+candidate change. The framework's discipline consists in what it
+\emph{accepts} from this universe, not in what can be expressed.
+
+In the running P2P example, the legitimate approval of invoice \#4711 is the
+candidate
+\begin{align*}
+  x_{\textsf{appr}} = (&\textsf{emp\_207},\, \textsf{Approve},\,
+  \{\textsf{Inv\#4711}, \textsf{PO\#982}\},\, \textsf{submitted},\\
+  &R_{17},\, p_{3},\, v_{9},\, t,\, n,\, R_{18},\, \sigma),
+\end{align*}
+where $R_{17}$ is the receipt of the preceding \textsf{Submit} and $R_{18}$
+the receipt this approval emits.
+
+\begin{definition}[Valid Receipt]
+\label{def:valid-receipt}
+A receipt $R$ is \emph{valid} for the transition $s \xrightarrow{e} s'$,
+written $\verifyreceipt(R) = 1$, iff all of the following hold:
+\begin{enumerate}[label=(\roman*),leftmargin=2.4em,noitemsep]
+  \item \emph{Substance:} $R$ embeds, or references by content address, the
+        complete expected and observed OCEL~2.0 logs of the transition, in
+        canonical serialisation, such that any holder can recompute every hash
+        in $R$;
+  \item \emph{Chaining:} $R$ carries $h(R_{\mathrm{prior}})$,
+        $h(\textit{in})$, and $h(\textit{out})$, and $h(R_{\mathrm{prior}})$
+        equals the hash of the current chain head;
+  \item \emph{Verifier authority:} the alignment state in $R$ was computed and
+        sealed by the verifier; producer-asserted alignment is rejected;
+  \item \emph{Challenge binding:} a nonce minted before execution appears in
+        the challenge manifest, in the raw runner evidence, and inside the
+        observed OCEL events themselves.
+\end{enumerate}
+\end{definition}
+
+Condition (i) is the formal content of the axiom of receipt substance
+(Section~\ref{sec:bg-receipts}); conditions (iii) and (iv) close the two
+historically exploited shortcuts --- self-certification and fixture replay ---
+that Section~\ref{sec:impl-refusals} enumerates as refusal states.
+
+\begin{definition}[Acceptance Predicate]
+\label{def:accept}
+For a candidate change
+$x = (a, e, O, s, R_{\mathrm{prior}}, p, v, t, n, R, \sigma)$ as in
+Definition~\ref{def:omega}, define
+\begin{align}
+  \accept(x) \;=\;\;
+  &\verifysig\bigl(\sigma,\, h(a \| e \| O \| s \| R_{\mathrm{prior}} \| p \| v \| t \| n)\bigr) \tag{C1}\\
+  \wedge\;\; &\verifyreceipt(R) \tag{C2}\\
+  \wedge\;\; &\operatorname{PolicyAllowed}(a, e, p) \tag{C3}\\
+  \wedge\;\; &\operatorname{ValidatorAllowed}(v) \tag{C4}\\
+  \wedge\;\; &\operatorname{Fresh}(n) \tag{C5}\\
+  \wedge\;\; &B(s, e) = 1 \tag{C6}\\
+  \wedge\;\; &\operatorname{ObjectsValid}(O). \tag{C7}
+\end{align}
+$\operatorname{Fresh}(n)$ holds iff $n$ has not been consumed by any previously
+accepted change. $\operatorname{PolicyAllowed}(a,e,p)$ holds iff policy version
+$p$ is current and grants actor $a$ the authority to emit event type $e$.
+$\operatorname{ValidatorAllowed}(v)$ holds iff $v$ identifies a non-revoked
+verifier build. $\operatorname{ObjectsValid}(O)$ holds iff the event-to-object
+relation $O$ is well-typed against the OCEL~2.0 schema and consistent with the
+object lifecycles recorded in the receipt chain.
+\end{definition}
+
+Each conjunct is independently checkable and independently falsifiable; this
+independence is what powers the decomposition of Section~\ref{sec:attacks}.
+Note also the layering: C1 and C2 are cryptographic, C3--C5 are operational
+bindings, C6 is the process law, and C7 is the object law.
+
+\begin{definition}[Admitted Change Set]
+\label{def:A}
+$\Aent \;=\; \{\, x \in \Omega_{\mathrm{change}} \mid \accept(x) = 1 \,\}$.
+\end{definition}
+
+\begin{theorem}[Acceptance Implies Membership]
+\label{thm:main}
+For every $x \in \Omega_{\mathrm{change}}$:
+$\accept(x) = 1 \Rightarrow x \in \Aent$.
+\end{theorem}
+\begin{proof}
+Immediate from Definition~\ref{def:A}: $\Aent$ is the preimage
+$\accept^{-1}(1)$.
+\end{proof}
+
+Theorem~\ref{thm:main} is definitionally true, and we state it anyway, because
+its force is architectural rather than mathematical: it asserts that
+\emph{there exists no second path} into enterprise state. In conventional
+architectures the analogous statement is false --- state is reachable through
+the ORM, through the admin panel, through the migration script, through the
+integration webhook --- and every such path is an acceptance gate that the
+process model never sees. The theorem is the design obligation that all of
+those paths either emit admitted changes or lose state authority.
+
+\begin{corollary}[Refusal or Residualization]
+\label{cor:refuse}
+For every $x \in \Omega_{\mathrm{change}}$:
+$x \notin \Aent \Rightarrow \refuse(x) \vee \residualize(x)$.
+\end{corollary}
+
+$\refuse(x)$ rejects the change outright, returning the failing conjunct.
+$\residualize(x)$ quarantines it: the candidate is recorded, content-addressed,
+and preserved as investigative evidence, but acquires no state authority.
+Residualization is the lossless refusal mode --- it matters operationally
+because enterprises cannot simply drop nonconforming inputs (a malformed
+payment instruction is itself evidence of something), and it matters for the
+process-mining feedback loop: clusters of similar residuals indicate either an
+attack campaign or a legitimate behaviour the declared model is missing, in
+which case the remedy is an explicit, reviewed extension of the process law ---
+never a silent widening of the gate.
+
+\begin{definition}[State Transition Law]
+\label{def:mu}
+The enterprise state transition function $\mu : \mathcal{S} \times \mathcal{E}
+\to \mathcal{S}$ satisfies
+\[
+  \mu(s, e) \;=\;
+  \begin{cases}
+    s' & \text{if } B(s,e) = 1 \text{ and } \accept(x) = 1
+         \text{ for the change } x \text{ carrying } e,\\[2pt]
+    s  & \text{otherwise.}
+  \end{cases}
+\]
+\end{definition}
+
+\begin{lemma}[Chain Soundness]
+\label{lem:chain}
+If every accepted change satisfies Definition~\ref{def:accept}, then for any
+reachable state $s_n$ there exists a receipt chain
+$R_0 \to \cdots \to R_{n-1}$ such that
+$s_n = \mu(\mu(\cdots\mu(s_0, e_0)\cdots), e_{n-1})$ and each link is
+independently re-verifiable from the receipt substance alone.
+\end{lemma}
+\begin{proof}
+By induction on $n$. The base case is the genesis receipt $R_0$ witnessing
+$s_0$. For the step, the change accepted at position $t$ satisfies C2, so
+$R_t$ embeds the canonical logs and chains to $h(R_{t-1})$
+(Definition~\ref{def:valid-receipt}, i--ii); by the induction hypothesis the
+prefix is re-verifiable, and condition (i) makes the new link re-verifiable
+without reference to any state outside the chain.
+\end{proof}
+
+Lemma~\ref{lem:chain} is what converts the framework from an access-control
+discipline into an \emph{evidence} discipline: current state is not a row that
+happens to exist but the endpoint of a replayable derivation. It is also the
+precondition for retrospective process mining over admitted history ---
+discovery and conformance algorithms~\cite{van_der_aalst_2016_process_mining}
+run over the chain's embedded OCEL logs with the unusual guarantee that the log
+is complete and tamper-evident by construction.
+
+\subsection{Threat Model}
+\label{sec:threat-model}
+
+We state the adversary explicitly. The adversary \textbf{may}: submit arbitrary
+candidate changes at any rate; read all public state, receipts, and policies;
+replay any previously observed message; possess valid credentials for some
+actors (insider); hold administrative privilege in surrounding infrastructure
+(database, message bus, file system); and operate AI agents with write-capable
+tools. The adversary \textbf{may not} (assumption ledger, cf.\
+Section~\ref{sec:attacks}): forge signatures under EUF-CMA of the deployed
+scheme; find BLAKE3 preimages or collisions; compromise the validator's signing
+key; or exploit a defect in the gate implementation. Each ``may not'' is a
+named channel in Theorem~\ref{thm:decomp}, with its own probability term and
+mitigation --- the framework's security claim is exactly the conjunction of
+these assumptions, no more.
+
+Two consequences of the threat model deserve emphasis. First, database
+administrators are \emph{inside} the adversary model: a raw write by a DBA is a
+candidate change like any other and fails C2
+(Proposition~\ref{prop:raw}). The framework therefore does not trust the
+storage layer --- corrupted rows can exist, but they are detectable as
+divergence between stored state and the receipt-chain derivation of
+Lemma~\ref{lem:chain}. Second, the verifier is trusted but \emph{versioned and
+revocable} (C4): a compromised validator build is contained by revoking $v$,
+which retroactively identifies every change it admitted.
+
+\subsection{The Chesterton Fence as a State Law}
+
+Chesterton's principle~\cite{chesterton_orthodoxy_1908} holds that a fence
+should not be removed until its purpose is understood. The boundary predicate
+$B(s,e)$ is this principle expressed as a transition law: every enterprise
+transition is fenced, the fence is versioned and signed, and crossing it
+requires the full witness of Definition~\ref{def:accept}. Crucially, the fence
+does not prevent the \emph{attempt} --- the adversary may submit any
+$x \in \Omega_{\mathrm{change}}$ --- it prevents the attempt from
+\emph{counting}. And symmetrically, the fence cannot be removed silently:
+relaxing $B$ is itself a policy change, hence itself an admitted change with
+its own receipt, reviewable in the chain like any other.

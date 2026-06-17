@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": true,
+  "wasm_export_present": false,
   "positive_cases": [
     {
       "case_id": "heuristic_miner.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "762ca5d5e07661049c09f14ad28464bcdd50f4a217ad452552c58d8de2436cec",
-      "duration_ms": 0.18137500000011642,
-      "receipt_hash": "5481bcf7fb7f1539139e7c417b41d0376af61c02d4a62d372536ecabb926df78"
+      "duration_ms": 0.3467500000006112,
+      "receipt_hash": "7dad3e1ddf6ec3cd7a3a3d0859c69d2442a3a8b5aff7fe632b3c5bfc1afe626c"
     }
   ],
   "negative_cases": [
@@ -49,5 +49,5 @@
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "a9652f0eece41beef8830b1f432f1750e0233830edd8a837a9a5cbdd1ed433f9"
+  "algorithm_evidence_hash": "6e11fcf3e0fdf0213b32818138984bfcf8ee3b1a41cbe5e71194e7ab6d6de961"
 }

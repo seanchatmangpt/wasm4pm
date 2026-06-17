@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/observability",
-  "version": "26.6.8",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -12,6 +12,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./file-span-exporter": {
+      "import": "./dist/file-span-exporter.js",
+      "types": "./dist/file-span-exporter.d.ts"
     }
   },
   "files": [
@@ -25,6 +29,10 @@
     "test:watch": "vitest",
     "test:coverage": "vitest --coverage",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
@@ -40,5 +48,14 @@
     "process-mining"
   ],
   "author": "Sean Chatman",
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "directory": "packages/observability"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  }
 }

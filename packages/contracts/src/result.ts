@@ -6,6 +6,7 @@
  * Supports both simple string errors and structured ErrorDetails objects (PRD §14).
  */
 
+import { z } from 'zod';
 import type { ErrorInfo as ErrorDetails } from './errors.js';
 
 /**
@@ -324,18 +325,20 @@ export function deriveLatencyClass(latency_ms: number): LatencyClass {
  * - All hash fields must be non-empty strings (BLAKE3 hash: 64 hex characters = 256 bits)
  * - A missing or empty `combined_hash` is a schema violation, not a warning
  */
-export interface ProvenanceChain {
-  readonly input_hash: string; // BLAKE3 hash (64 hex chars)
-  readonly config_hash: string; // BLAKE3 hash (64 hex chars)
-  readonly plan_hash: string; // BLAKE3 hash (64 hex chars)
-  readonly output_hash: string; // BLAKE3 hash (64 hex chars)
-  readonly combined_hash: string; // BLAKE3(input_hash + config_hash + plan_hash + output_hash)
-  readonly algorithm_id: string;
-  readonly algorithm_version: string;
-  readonly backend_id: string;
-  readonly kernel_version: string;
-  readonly wasm_build_hash: string;
-}
+export const ProvenanceChainSchema = z.object({
+  input_hash: z.string().min(1), // BLAKE3 hash (64 hex chars)
+  config_hash: z.string().min(1), // BLAKE3 hash (64 hex chars)
+  plan_hash: z.string().min(1), // BLAKE3 hash (64 hex chars)
+  output_hash: z.string().min(1), // BLAKE3 hash (64 hex chars)
+  combined_hash: z.string().min(1), // BLAKE3(input_hash + config_hash + plan_hash + output_hash)
+  algorithm_id: z.string().min(1),
+  algorithm_version: z.string().min(1),
+  backend_id: z.string().min(1),
+  kernel_version: z.string().min(1),
+  wasm_build_hash: z.string().min(1),
+});
+
+export type ProvenanceChain = z.infer<typeof ProvenanceChainSchema>;
 
 /**
  * Typed wrapper around every algorithm output with provenance and metadata.
@@ -385,22 +388,24 @@ export interface ProvenanceChain {
  * }
  * ```
  */
-export interface ResultEnvelope<T = unknown> {
-  readonly run_id: string; // UUID v4
-  readonly status: 'success' | 'partial' | 'failed';
-  readonly payload: T;
-  readonly error?: string; // Only when status != "success"
-  readonly latency_ms: number;
-  readonly latency_class: LatencyClass; // Derived: <1→sub_ms, <100→low_ms, etc.
-  readonly backend_id: string; // wasm, pm4py, ml, null
-  readonly invocation_id: string; // UUID v4, unique per backend call
-  readonly cycle_seq: number; // Monotonic counter from FederationController
-  readonly algorithm_id: string;
-  readonly model_ir?: ModelIR; // Present for discovery results
-  readonly provenance: ProvenanceChain;
-  readonly stale?: boolean; // True if result came from expired cache
-  readonly stale_age_ms?: number; // Age of cached result when returned
-}
+export const ResultEnvelopeSchema = z.object({
+  run_id: z.string().min(1), // UUID v4
+  status: z.enum(['success', 'partial', 'failed']),
+  payload: z.unknown(),
+  error: z.string().optional(), // Only when status != "success"
+  latency_ms: z.number().min(0).finite(),
+  latency_class: z.enum(['sub_ms', 'low_ms', 'high_ms', 'seconds', 'minutes']), // Derived
+  backend_id: z.string().min(1), // wasm, pm4py, ml, null
+  invocation_id: z.string().min(1), // UUID v4, unique per backend call
+  cycle_seq: z.number().int().min(0), // Monotonic counter from FederationController
+  algorithm_id: z.string().min(1),
+  model_ir: z.unknown().optional(), // Present for discovery results
+  provenance: ProvenanceChainSchema,
+  stale: z.boolean().optional(), // True if result came from expired cache
+  stale_age_ms: z.number().min(0).optional(), // Age of cached result when returned
+});
+
+export type ResultEnvelope<T = unknown> = Omit<z.infer<typeof ResultEnvelopeSchema>, 'payload'> & { payload: T };
 
 /**
  * Guard function to check if a value is a valid ProvenanceChain.

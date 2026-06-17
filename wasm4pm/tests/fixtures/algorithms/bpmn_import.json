@@ -1,0 +1,16 @@
+{
+  "algorithm": "bpmn_import",
+  "provenance": {
+    "paper": "Business Process Model and Notation (BPMN) Version 2.0",
+    "citation": "Object Management Group. (2011). Business Process Model and Notation (BPMN) Version 2.0. OMG Document Number: formal/2011-01-03.",
+    "locus": "Section 13.2.2, BPMN 2.0 XML schema",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "file": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "import_supported",
+    "description": "BPMN 2.0 import capability is verified — algorithm can parse and load a BPMN 2.0 XML document"
+  }
+}

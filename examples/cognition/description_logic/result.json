@@ -1,0 +1,80 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "description_logic",
+    "breed": "description_logic",
+    "status": "ok",
+    "output": {
+      "breed": "DescriptionLogic",
+      "candidates": [
+        {
+          "id": "x",
+          "score": 0.5,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "dl:verdict:A:C",
+          "value": "true"
+        }
+      ],
+      "selected": "A⊑C=true",
+      "explanation": "EL completion (CR1–CR4) to fixpoint over 3 concepts; verdicts: A⊑C=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "normalize",
+          "detail": "3 concepts, 2 subclass, 0 conj, 0 exists-rhs, 0 exists-lhs axioms",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "apply-cr1",
+          "detail": "A ⊑ B (via A ⊑ B)",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "apply-cr1",
+          "detail": "B ⊑ C (via B ⊑ C)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "apply-cr1",
+          "detail": "A ⊑ C (via B ⊑ C)",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "fixpoint",
+          "detail": "saturated: 6 subsumptions, 0 role edges",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "classify-verdict",
+          "detail": "A ⊑ C : true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "243d75f2090984e55c343c3ea33f427f3ba12ca59b00a5704b82d44550784448",
+    "output_hash": "91754a8318b67f930b3860c949bf725abea006546c9ece04d94c06844ed4b28d",
+    "replay_pointer": "91754a8318b67f93",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/description_logic/.wasm4pm/receipts/243d75f2090984e55c343c3ea33f427f3ba12ca59b00a5704b82d44550784448.json"
+  },
+  "meta": {
+    "run_id": "2adf533c-ab0c-408d-a594-4cbd8a7fff86",
+    "timestamp": "2026-06-11T18:43:44.401Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

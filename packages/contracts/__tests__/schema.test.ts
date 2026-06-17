@@ -25,7 +25,8 @@ const VALID_HASH = 'a'.repeat(64);
 
 const validReceipt: Receipt = {
   run_id: '550e8400-e29b-41d4-a716-446655440000',
-  schema_version: '1.0',
+  trace_id: 'aabbccddeeff00112233445566778899',
+  schema_version: '1.1',
   config_hash: VALID_HASH,
   input_hash: VALID_HASH,
   plan_hash: VALID_HASH,

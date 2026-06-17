@@ -1,0 +1,119 @@
+(node:13896) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "csp_ac3",
+    "breed": "csp_ac3",
+    "status": "ok",
+    "output": {
+      "breed": "CspAc3",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "csp-var",
+          "value": "X_fc6d1c16:B,G,R"
+        },
+        {
+          "key": "csp-var",
+          "value": "Y_fc6d1c16:B,G,R"
+        },
+        {
+          "key": "csp-var",
+          "value": "Z_fc6d1c16:B,G,R"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "X_fc6d1c16!=Y_fc6d1c16"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "Y_fc6d1c16!=Z_fc6d1c16"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "X_fc6d1c16!=Z_fc6d1c16"
+        },
+        {
+          "key": "csp:assignment:X_fc6d1c16",
+          "value": "B"
+        },
+        {
+          "key": "csp:assignment:Y_fc6d1c16",
+          "value": "G"
+        },
+        {
+          "key": "csp:assignment:Z_fc6d1c16",
+          "value": "R"
+        }
+      ],
+      "selected": "sat",
+      "explanation": "SAT: X_fc6d1c16=B, Y_fc6d1c16=G, Z_fc6d1c16=R",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "csp-init",
+          "detail": "vars=3 constraints=3",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "csp-assign",
+          "detail": "var=X_fc6d1c16 val=B",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "csp-revise",
+          "detail": "x=Y_fc6d1c16 y=X_fc6d1c16 pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "csp-revise",
+          "detail": "x=Z_fc6d1c16 y=X_fc6d1c16 pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "csp-assign",
+          "detail": "var=Y_fc6d1c16 val=G",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "csp-revise",
+          "detail": "x=Z_fc6d1c16 y=Y_fc6d1c16 pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "csp-assign",
+          "detail": "var=Z_fc6d1c16 val=R",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "csp-verdict",
+          "detail": "satisfiable=true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "fbe724e02995b69a8926d4957e25f69a20045750316925901ef0a15ff2b05681",
+    "output_hash": "7bfb6f1b5a451923d0f3b03ba11a3adbbea476af515ceb76616a3e7dc8e68a08",
+    "replay_pointer": "7bfb6f1b5a451923",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/fbe724e02995b69a8926d4957e25f69a20045750316925901ef0a15ff2b05681.json"
+  },
+  "meta": {
+    "run_id": "614ce78a-41b1-4498-9258-cbe1fab5bc5b",
+    "timestamp": "2026-06-11T08:34:58.572Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

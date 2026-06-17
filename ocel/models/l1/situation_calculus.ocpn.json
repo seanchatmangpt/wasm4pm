@@ -1,0 +1,34 @@
+{
+  "model_id": "situation_calculus-l1-v1",
+  "model_level": "L1",
+  "breed_id": "situation_calculus",
+  "object_types": ["axiom", "situation", "decision"],
+  "places": [
+    {"id": "p1", "name": "axioms_pending",   "object_type": "axiom"},
+    {"id": "p2", "name": "axioms_loaded",    "object_type": "axiom"},
+    {"id": "p3", "name": "situation_open",   "object_type": "situation"},
+    {"id": "p4", "name": "situation_final",  "object_type": "situation"},
+    {"id": "p5", "name": "decision_emitted", "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-axioms",   "label": "load-axioms"},
+    {"id": "t2", "name": "regress-step",  "label": "regress-step"},
+    {"id": "t3", "name": "frame-persist", "label": "frame-persist"},
+    {"id": "t4", "name": "decision",      "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1, "p5": 1}]
+}

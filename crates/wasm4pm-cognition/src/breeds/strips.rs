@@ -15,10 +15,12 @@
 //!   * `fact.key == "frame"` encodes: `atom,action1,action2,action3`
 //!   * Meaning: this atom is preserved (not deleted) across these actions.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Goal, Rule, StateAtom, TraceStep,
 };
 use std::collections::{HashMap, HashSet};
+use tracing;
 
 /// STRIPS planner.
 pub struct Strips;
@@ -145,6 +147,7 @@ fn idfs(
         kind: "subgoal".to_string(),
         detail: unsat.clone(),
         depth: (MAX_PLAN_DEPTH - depth) as u32,
+        objects: vec![],
     });
     for action in actions {
         let eff = parse_effect(&action.conclusion);
@@ -154,13 +157,29 @@ fn idfs(
         if !applicable(action, state) {
             continue;
         }
+        tracing::debug!(
+            breed.step = "operator_selected",
+            breed = "strips",
+            "L1 inference step"
+        );
         trace.push(TraceStep {
             step: trace.len(),
             kind: "try-action".to_string(),
             detail: action.id.clone(),
             depth: (MAX_PLAN_DEPTH - depth) as u32,
+            objects: vec![],
         });
+        tracing::debug!(
+            breed.step = "precondition_checked",
+            breed = "strips",
+            "L1 inference step"
+        );
         let next = apply_with_frames(action, state, frame_axioms);
+        tracing::debug!(
+            breed.step = "effect_applied",
+            breed = "strips",
+            "L1 inference step"
+        );
         if let Some(rest) = idfs(&next, goals, actions, depth - 1, trace, frame_axioms) {
             let mut plan = vec![action.id.clone()];
             plan.extend(rest);
@@ -191,6 +210,11 @@ impl CognitionBreed for Strips {
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
         let initial = atoms_of(&input.state);
+        tracing::debug!(
+            breed.step = "state_loaded",
+            breed = "strips",
+            "L1 inference step"
+        );
         let goals = goal_strings(&input.goals);
         let frame_axioms = parse_frame_axioms(&input.facts);
         let mut trace: Vec<TraceStep> = Vec::new();
@@ -206,6 +230,7 @@ impl CognitionBreed for Strips {
                 kind: "check-presatisfied".to_string(),
                 detail: format!("{} goals already satisfied in initial state", goals.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -215,6 +240,7 @@ impl CognitionBreed for Strips {
                 kind: "frame-axioms-loaded".to_string(),
                 detail: format!("{} frame axioms", frame_axioms.len()),
                 depth: 0,
+                objects: vec![],
             });
         }
 
@@ -225,6 +251,7 @@ impl CognitionBreed for Strips {
                 kind: "iterate-depth".to_string(),
                 detail: format!("d={}", d),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(p) = idfs(&initial, &goals, &input.rules, d, &mut trace, &frame_axioms) {
                 plan = Some(p);
@@ -260,8 +287,14 @@ impl CognitionBreed for Strips {
                 kind: "execute".to_string(),
                 detail: action.id.clone(),
                 depth: 0,
+                objects: vec![],
             });
         }
+        tracing::debug!(
+            breed.step = "goal_tested",
+            breed = "strips",
+            "L1 inference step"
+        );
         if !goals_satisfied(&goals, &s) {
             return Err(BreedError {
                 breed: BreedId::Strips,
@@ -287,6 +320,11 @@ impl CognitionBreed for Strips {
             None
         };
 
+        tracing::debug!(
+            breed.step = "plan_emitted",
+            breed = "strips",
+            "L1 inference step"
+        );
         Ok(BreedOutput {
             breed: BreedId::Strips,
             candidates: input.candidates.clone(),
@@ -294,13 +332,13 @@ impl CognitionBreed for Strips {
             selected,
             explanation,
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("STRIPS must record search steps".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }
@@ -426,6 +464,75 @@ mod tests {
         // No action should have been executed since goals were already met.
         assert!(!out.inference_trace.iter().any(|t| t.kind == "execute"));
         assert!(!out.inference_trace.iter().any(|t| t.kind == "try-action"));
+    }
+
+    /// Falsification: Fikes & Nilsson 1971 room-navigation fixture.
+    /// Two-goal problem: turn-on-light then close-door1. The exact plan
+    /// must be ["turn-on-light", "close-door1"] in that order. If the
+    /// forward-search loop or goal ordering is wrong, a different sequence
+    /// or failure results.
+    #[test]
+    fn paper_fixture_fikes_nilsson_1971_two_step_plan() {
+        let input = BreedInput {
+            intent: "turn on the light and close door1".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                Rule {
+                    id: "turn-on-light".into(),
+                    premise: vec!["light=off".into()],
+                    conclusion: "light=on;!light=off".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "close-door1".into(),
+                    premise: vec!["door1=open".into()],
+                    conclusion: "door1=closed;!door1=open".into(),
+                    certainty: 1.0,
+                },
+            ],
+            goals: vec![
+                Goal {
+                    id: "g1".into(),
+                    predicate: "light".into(),
+                    value: "on".into(),
+                },
+                Goal {
+                    id: "g2".into(),
+                    predicate: "door1".into(),
+                    value: "closed".into(),
+                },
+            ],
+            state: vec![
+                StateAtom {
+                    predicate: "light".into(),
+                    value: "off".into(),
+                },
+                StateAtom {
+                    predicate: "door1".into(),
+                    value: "open".into(),
+                },
+            ],
+        };
+        let out = Strips.run(&input).expect("should find a plan");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("turn-on-light,close-door1"),
+            "plan must be exactly [turn-on-light, close-door1] (Fikes & Nilsson 1971)"
+        );
+        // Verify via execute trace steps in correct order
+        let executed: Vec<String> = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "execute")
+            .map(|t| t.detail.clone())
+            .collect();
+        assert_eq!(
+            executed,
+            vec!["turn-on-light", "close-door1"],
+            "execution trace must record exactly the 2 operators in order"
+        );
     }
 
     /// Rank-2: a non-pre-satisfied, achievable goal must return a non-empty

@@ -1,0 +1,307 @@
+(node:14121) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ilp",
+    "breed": "ilp",
+    "status": "ok",
+    "output": {
+      "breed": "Ilp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ilp:rule:0",
+          "value": "daughter(V0,V1) :- parent(V2,V1)"
+        },
+        {
+          "key": "ilp:rule:1",
+          "value": "daughter(V0,V1) :- female(V0), parent(V1,V0)"
+        }
+      ],
+      "selected": "daughter(V0,V1) :- parent(V2,V1)",
+      "explanation": "FOIL induced 2 clause(s) for daughter/2 by information gain",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-example",
+          "detail": "+daughter(eve,tom)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "load-example",
+          "detail": "+daughter(h11a7ed03,tom)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "load-example",
+          "detail": "+daughter(mary,ann)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "load-example",
+          "detail": "-daughter(eve,ann)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "load-example",
+          "detail": "-daughter(tom,ann)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "propose-literal",
+          "detail": "female(V0)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "score-gain",
+          "detail": "female(V0): t=3 p1=3 n1=1 gain=0.9658",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "propose-literal",
+          "detail": "female(V1)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "score-gain",
+          "detail": "female(V1): t=1 p1=1 n1=2 gain=-0.8480",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "score-gain",
+          "detail": "parent(V1,V0): t=3 p1=3 n1=1 gain=0.9658",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V2)",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "score-gain",
+          "detail": "parent(V1,V2): t=3 p1=6 n1=4 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V0)",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "score-gain",
+          "detail": "parent(V2,V0): t=3 p1=3 n1=2 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V1)",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "score-gain",
+          "detail": "parent(V2,V1): t=2 p1=2 n1=0 gain=1.4739",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "add-literal",
+          "detail": "parent(V2,V1) (gain=1.4739)",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "cover-remove",
+          "detail": "+daughter(eve,tom) covered",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "cover-remove",
+          "detail": "+daughter(h11a7ed03,tom) covered",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "emit-clause",
+          "detail": "daughter(V0,V1) :- parent(V2,V1)",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "propose-literal",
+          "detail": "female(V0)",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "score-gain",
+          "detail": "female(V0): t=1 p1=1 n1=1 gain=0.5850",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "propose-literal",
+          "detail": "female(V1)",
+          "depth": 0
+        },
+        {
+          "step": 24,
+          "kind": "score-gain",
+          "detail": "female(V1): t=1 p1=1 n1=2 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 25,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 26,
+          "kind": "score-gain",
+          "detail": "parent(V1,V0): t=1 p1=1 n1=1 gain=0.5850",
+          "depth": 0
+        },
+        {
+          "step": 27,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V2)",
+          "depth": 0
+        },
+        {
+          "step": 28,
+          "kind": "score-gain",
+          "detail": "parent(V1,V2): t=1 p1=2 n1=4 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 29,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V0)",
+          "depth": 0
+        },
+        {
+          "step": 30,
+          "kind": "score-gain",
+          "detail": "parent(V2,V0): t=1 p1=1 n1=2 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 31,
+          "kind": "add-literal",
+          "detail": "female(V0) (gain=0.5850)",
+          "depth": 0
+        },
+        {
+          "step": 32,
+          "kind": "propose-literal",
+          "detail": "female(V1)",
+          "depth": 0
+        },
+        {
+          "step": 33,
+          "kind": "score-gain",
+          "detail": "female(V1): t=1 p1=1 n1=1 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 34,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 35,
+          "kind": "score-gain",
+          "detail": "parent(V1,V0): t=1 p1=1 n1=0 gain=1.0000",
+          "depth": 0
+        },
+        {
+          "step": 36,
+          "kind": "propose-literal",
+          "detail": "parent(V1,V2)",
+          "depth": 0
+        },
+        {
+          "step": 37,
+          "kind": "score-gain",
+          "detail": "parent(V1,V2): t=1 p1=2 n1=2 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 38,
+          "kind": "propose-literal",
+          "detail": "parent(V2,V0)",
+          "depth": 0
+        },
+        {
+          "step": 39,
+          "kind": "score-gain",
+          "detail": "parent(V2,V0): t=1 p1=1 n1=1 gain=0.0000",
+          "depth": 0
+        },
+        {
+          "step": 40,
+          "kind": "add-literal",
+          "detail": "parent(V1,V0) (gain=1.0000)",
+          "depth": 0
+        },
+        {
+          "step": 41,
+          "kind": "cover-remove",
+          "detail": "+daughter(mary,ann) covered",
+          "depth": 0
+        },
+        {
+          "step": 42,
+          "kind": "emit-clause",
+          "detail": "daughter(V0,V1) :- female(V0), parent(V1,V0)",
+          "depth": 0
+        },
+        {
+          "step": 43,
+          "kind": "decision",
+          "detail": "learned 2 clause(s) covering 3 positives, excluding 2 negatives",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "e023b3b0f47ef6519bb409169e7a5badd895ff0318c435ba9fffe5ea98ba51d1",
+    "output_hash": "cd22deaf51441d3a983837510b946d8a725f227195a403448656e7a025237425",
+    "replay_pointer": "cd22deaf51441d3a",
+    "inference_step_count": 44,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/e023b3b0f47ef6519bb409169e7a5badd895ff0318c435ba9fffe5ea98ba51d1.json"
+  },
+  "meta": {
+    "run_id": "43b40448-3249-4037-9196-3ba1b5c553c1",
+    "timestamp": "2026-06-11T08:35:09.024Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
+  }
+}

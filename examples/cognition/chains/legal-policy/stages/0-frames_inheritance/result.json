@@ -1,0 +1,63 @@
+(node:14014) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "frames_inheritance",
+    "breed": "frames_inheritance",
+    "status": "ok",
+    "output": {
+      "breed": "FramesInheritance",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "frame:resolved:SpecificLaw:applies",
+          "value": "true"
+        }
+      ],
+      "selected": "true",
+      "explanation": "resolved SpecificLaw.applies = true at Law (default, distance 1)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "frame-load",
+          "detail": "loaded 2 frames (1 isa links)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "frame-walk",
+          "detail": "walking SpecificLaw",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "frame-walk",
+          "detail": "walking Law",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "frame-resolve",
+          "detail": "SpecificLaw slot applies resolved to true at Law (default)",
+          "depth": 1
+        }
+      ]
+    },
+    "run_id": "2678106e24039508f91e1469d7fd688805a18e2b97637f16847c545842275ee3",
+    "output_hash": "3236d66dcf235dcdd411da619aa64c3e50f975f3b9ac3c61a12c381d11fe21f0",
+    "replay_pointer": "3236d66dcf235dcd",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/2678106e24039508f91e1469d7fd688805a18e2b97637f16847c545842275ee3.json"
+  },
+  "meta": {
+    "run_id": "3c53e250-f1df-4f02-afae-bb7377d177b3",
+    "timestamp": "2026-06-11T08:35:03.986Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

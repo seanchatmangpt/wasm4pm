@@ -1,0 +1,57 @@
+(node:14042) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "sat_cdcl",
+    "breed": "sat_cdcl",
+    "status": "ok",
+    "output": {
+      "breed": "SatCdcl",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "model:1",
+          "value": "true"
+        }
+      ],
+      "selected": "SAT",
+      "explanation": "CDCL verdict SAT after learning 0 clauses over 1 variables",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-clause",
+          "detail": "c0: (-1 1)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "decide",
+          "detail": "decide 1 = true @L1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "decision",
+          "detail": "SAT (1 input clauses, 0 learned)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "ada3c00d300cbc0ee76133c05d83f0d8777091d2ed9cd4b711d255010b2187e6",
+    "output_hash": "0ecd8cca1588046aa0d587eb8541f36ddcf10a3b9c5c4b122dc99a9ba610604a",
+    "replay_pointer": "0ecd8cca1588046a",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/ada3c00d300cbc0ee76133c05d83f0d8777091d2ed9cd4b711d255010b2187e6.json"
+  },
+  "meta": {
+    "run_id": "341a0f38-13ff-461b-bace-56ab63781029",
+    "timestamp": "2026-06-11T08:35:05.437Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "intent": "retrieve the sum of 3 + 4",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "goal",
+      "value": "add"
+    },
+    {
+      "key": "addend1",
+      "value": "3"
+    },
+    {
+      "key": "addend2",
+      "value": "4"
+    }
+  ],
+  "cases": [
+    {
+      "id": "fact34",
+      "intent": "addition fact",
+      "architecture": "declarative-chunk",
+      "outcome_score": 0.5,
+      "facts": [
+        {
+          "key": "addend1",
+          "value": "3"
+        },
+        {
+          "key": "addend2",
+          "value": "4"
+        },
+        {
+          "key": "sum",
+          "value": "7"
+        }
+      ]
+    },
+    {
+      "id": "fact35",
+      "intent": "addition fact",
+      "architecture": "declarative-chunk",
+      "outcome_score": 0.3,
+      "facts": [
+        {
+          "key": "addend1",
+          "value": "3"
+        },
+        {
+          "key": "addend2",
+          "value": "5"
+        },
+        {
+          "key": "sum",
+          "value": "8"
+        }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "p-retrieve-sum",
+      "premise": [
+        "goal=add"
+      ],
+      "conclusion": "retrieve:addend1=3",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [],
+  "state": []
+}

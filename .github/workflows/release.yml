@@ -32,16 +32,20 @@ jobs:
           fetch-depth: 0
 
       # Setup Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: pnpm
 
       # Setup Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       # Cache Rust builds
@@ -53,9 +57,6 @@ jobs:
         run: npm install -g wasm-pack@0.13.1
 
       # Setup pnpm (workspace-aware install — version pinned via package.json packageManager)
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       # Install all workspace dependencies (incl. wasm4pm via pnpm-workspace.yaml)
       - name: Install dependencies
         run: pnpm install
@@ -110,14 +111,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       - name: Cache Rust builds
@@ -125,9 +130,6 @@ jobs:
 
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
 
       - name: Install dependencies
         run: pnpm install
@@ -207,10 +209,13 @@ jobs:
           fetch-depth: 0
 
       # Setup Node.js
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: pnpm
 
@@ -218,6 +223,7 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: wasm32-unknown-unknown
 
       # Cache Rust builds
@@ -233,9 +239,6 @@ jobs:
         run: npm install -g wasm-opt
 
       # Setup pnpm (workspace-aware — version pinned via package.json packageManager)
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-
       # Install dependencies (workspace install covers wasm4pm via pnpm-workspace.yaml)
       - name: Install dependencies
         run: pnpm install

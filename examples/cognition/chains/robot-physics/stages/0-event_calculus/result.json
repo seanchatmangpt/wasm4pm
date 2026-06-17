@@ -1,0 +1,69 @@
+(node:13968) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "event_calculus",
+    "breed": "event_calculus",
+    "status": "ok",
+    "output": {
+      "breed": "EventCalculus",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ec:verdict:lecturer@4",
+          "value": "true"
+        }
+      ],
+      "selected": "lecturer@4=true",
+      "explanation": "Discrete event calculus over 2 events: lecturer@4=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ec-load",
+          "detail": "2 events, 0 initially-fluents",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ec-infer",
+          "detail": "Happens(hire,2) initiates lecturer",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "ec-infer",
+          "detail": "Clipped(2,lecturer,4) = false (inertia)",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(lecturer,4) = true",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "ec-model",
+          "detail": "1 verdict(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "2b2c2d1269128ddc37ae1258672735c6c9b7be53deaba2949d19dfd658ae8f9f",
+    "output_hash": "80d68f8b00d031b0806298762d21e6c77f7d9c84addf1e9aa3d4d2e711724ea3",
+    "replay_pointer": "80d68f8b00d031b0",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/2b2c2d1269128ddc37ae1258672735c6c9b7be53deaba2949d19dfd658ae8f9f.json"
+  },
+  "meta": {
+    "run_id": "d2a806d0-418a-411f-b8d1-68bc507acc19",
+    "timestamp": "2026-06-11T08:35:01.806Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

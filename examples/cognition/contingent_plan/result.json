@@ -1,0 +1,85 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "contingent_plan",
+    "breed": "contingent_plan",
+    "status": "ok",
+    "output": {
+      "breed": "ContingentPlan",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "plan:tree",
+          "value": "(sense check-dirt dirt (act suck (done)) (done))"
+        }
+      ],
+      "selected": "(sense check-dirt dirt (act suck (done)) (done))",
+      "explanation": "Contingent plan over 2 initial world(s): (sense check-dirt dirt (act suck (done)) (done))",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "init-belief",
+          "detail": "2 possible world(s), 1 unknown atom(s)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "or-expand",
+          "detail": "action 'suck': not applicable in all worlds",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "sense-branch",
+          "detail": "sense 'check-dirt' on 'dirt': 1 true-world(s) / 1 false-world(s)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "or-expand",
+          "detail": "action 'suck': applicable in all worlds",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "goal-reached",
+          "detail": "1 world(s) satisfy the goal",
+          "depth": 2
+        },
+        {
+          "step": 5,
+          "kind": "goal-reached",
+          "detail": "1 world(s) satisfy the goal",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "and-join",
+          "detail": "both branches of 'check-dirt' on 'dirt' reach the goal",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "plan-complete",
+          "detail": "(sense check-dirt dirt (act suck (done)) (done))",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4bcdd87c24fc99ce1c9f916e5fe6d9c4b274c164994aaa5983755c03d6e92d30",
+    "output_hash": "3467f6a0049cb80128cb258fecc3d7d2c97c9d8174f7dc55353d4902861b21df",
+    "replay_pointer": "3467f6a0049cb801",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/contingent_plan/.wasm4pm/receipts/4bcdd87c24fc99ce1c9f916e5fe6d9c4b274c164994aaa5983755c03d6e92d30.json"
+  },
+  "meta": {
+    "run_id": "72aa0441-0d2a-45bf-bccb-fafe3d8a21ea",
+    "timestamp": "2026-06-11T18:43:42.276Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

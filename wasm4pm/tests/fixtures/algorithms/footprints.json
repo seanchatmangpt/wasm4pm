@@ -1,0 +1,12 @@
+{
+  "algorithm": "footprints",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Weijters, T., & Maruster, L. (2004). Workflow Mining: Discovering Process Models from Event Logs. IEEE TKDE 16(9):1128-1142.",
+    "locus": "Section 3 — footprint matrix definition for the L1 running-example log",
+    "extraction": "verbatim"
+  },
+  "expected": {
+    "value": "activities=5",
+    "rationale": "Running-example log has 5 distinct activities (a,b,c,d,e); footprint matrix must have exactly 5 rows/cols"
+  }
+}

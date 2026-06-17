@@ -1,0 +1,39 @@
+{
+  "model_id": "prolog-l1-v1",
+  "model_level": "L1",
+  "breed_id": "prolog",
+  "object_types": ["clause", "query", "binding"],
+  "places": [
+    {"id": "p1", "name": "query_ready",           "object_type": "query"},
+    {"id": "p2", "name": "clause_selected",        "object_type": "clause"},
+    {"id": "p3", "name": "unification_attempted",  "object_type": "binding"},
+    {"id": "p4", "name": "substitution_bound",     "object_type": "binding"},
+    {"id": "p5", "name": "resolution_step",        "object_type": "binding"},
+    {"id": "p6", "name": "query_succeeded",        "object_type": "query"},
+    {"id": "p7", "name": "query_refused",          "object_type": "query"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "clause_selected",             "label": "clause_selected"},
+    {"id": "t2", "name": "unification_attempted",       "label": "unification_attempted"},
+    {"id": "t3", "name": "substitution_bound",          "label": "substitution_bound"},
+    {"id": "t4", "name": "resolution_step",             "label": "resolution_step"},
+    {"id": "t5", "name": "query_succeeded",             "label": "query_succeeded_or_refused"},
+    {"id": "t6", "name": "query_refused",               "label": "query_succeeded_or_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"},
+    {"from": "t6", "to": "p7", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}, {"p7": 1}]
+}

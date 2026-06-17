@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm",
-  "version": "26.6.8",
+  "version": "26.6.10",
   "description": "Core kernel and runtime utilities",
   "type": "module",
   "main": "./dist/index.js",
@@ -24,12 +24,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "26.6.8",
-    "@wasm4pm/core": "26.6.8",
-    "@wasm4pm/ml": "26.6.8",
-    "@wasm4pm/planner": "26.6.8"
+    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/core": "workspace:*",
+    "@wasm4pm/ml": "workspace:*",
+    "@wasm4pm/planner": "workspace:*",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@types/node": "^20.10.0",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"

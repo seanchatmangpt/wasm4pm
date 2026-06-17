@@ -21,7 +21,14 @@ export const config = defineCommand({
 
 ${STANDARD_EXIT_CODE_DOCS}`,
   },
-  async run() {
+  async run(ctx) {
+    if (ctx && ctx.rawArgs) {
+      const subCommands = ['show', 'get', 'set', 'validate', 'check', 'verify', 'export', 'env', 'doctor', 'diff', 'reset'];
+      const hasSubcommand = ctx.rawArgs.some(arg => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
     return withSpanRaw('config.help', {}, async () => {
       process.stdout.write(`
   wpm config — Configuration Management

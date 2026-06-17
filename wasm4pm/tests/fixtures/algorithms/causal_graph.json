@@ -1,0 +1,16 @@
+{
+  "algorithm": "causal_graph",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 6, causal dependencies.",
+    "locus": "Chapter 6, causal dependencies section",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "edges=16",
+    "description": "The causal graph has 16 directed edges, matching the 16 directly-follows relationships in the DFG of the running example (including reinitiate request loop)"
+  }
+}

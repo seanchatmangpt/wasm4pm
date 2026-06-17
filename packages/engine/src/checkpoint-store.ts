@@ -3,27 +3,32 @@
  * SQLite-backed persistent checkpoint storage
  */
 
+import { z } from 'zod';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Checkpoint } from './checkpointing.js';
 
-export interface CheckpointMetadata {
-  id: string;
-  runId: string;
-  sequenceNumber: number;
-  createdAt: Date;
-  updatedAt: Date;
-  progress: number;
-  sizeBytes: number;
-}
+export const CheckpointMetadataSchema = z.object({
+  id: z.string(),
+  runId: z.string(),
+  sequenceNumber: z.number(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  progress: z.number(),
+  sizeBytes: z.number(),
+});
 
-export interface RunFilter {
-  runId?: string;
-  minSequence?: number;
-  maxSequence?: number;
-  beforeDate?: Date;
-  afterDate?: Date;
-}
+export type CheckpointMetadata = z.infer<typeof CheckpointMetadataSchema>;
+
+export const RunFilterSchema = z.object({
+  runId: z.string().optional(),
+  minSequence: z.number().optional(),
+  maxSequence: z.number().optional(),
+  beforeDate: z.date().optional(),
+  afterDate: z.date().optional(),
+});
+
+export type RunFilter = z.infer<typeof RunFilterSchema>;
 
 export interface ICheckpointStore {
   save(id: string, checkpoint: Checkpoint): Promise<void>;
@@ -82,6 +87,9 @@ export class FileCheckpointStore implements ICheckpointStore {
 
   constructor(baseDir = '.wasm4pm/checkpoints') {
     this.baseDir = baseDir;
+  }
+
+  private ensureDir(): void {
     if (!fs.existsSync(this.baseDir)) {
       fs.mkdirSync(this.baseDir, { recursive: true });
     }
@@ -93,6 +101,7 @@ export class FileCheckpointStore implements ICheckpointStore {
   }
 
   async save(id: string, checkpoint: Checkpoint): Promise<void> {
+    this.ensureDir();
     const filePath = this.getCheckpointPath(id);
     const data = {
       id: checkpoint.id,
@@ -217,46 +226,5 @@ export class FileCheckpointStore implements ICheckpointStore {
       }
     }
     return deleted;
-  }
-}
-
-export class SqliteCheckpointStore implements ICheckpointStore {
-  private dbPath: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private db: any; // unimplemented: future SQLite client — class is a stub that always throws
-  private initialized = false;
-
-  constructor(dbPath = '.wasm4pm/checkpoints.db') {
-    this.dbPath = dbPath;
-  }
-
-  async init(): Promise<void> {
-    if (this.initialized) return;
-    console.warn('SQLite not configured; use FileCheckpointStore instead');
-    this.initialized = true;
-  }
-
-  async save(): Promise<void> {
-    throw new Error('SQLite store not initialized');
-  }
-
-  async load(): Promise<null> {
-    throw new Error('SQLite store not initialized');
-  }
-
-  async list(): Promise<CheckpointMetadata[]> {
-    throw new Error('SQLite store not initialized');
-  }
-
-  async delete(): Promise<void> {
-    throw new Error('SQLite store not initialized');
-  }
-
-  async deleteByRunId(): Promise<number> {
-    throw new Error('SQLite store not initialized');
-  }
-
-  async close(): Promise<void> {
-    this.initialized = false;
   }
 }

@@ -1,0 +1,16 @@
+{
+  "algorithm": "automl_forecast",
+  "provenance": {
+    "paper": "Efficient and Robust Automated Machine Learning",
+    "citation": "Feurer, M., Klein, A., Eggensperger, K., Springenberg, J.T., Blum, M., Hutter, F. (2015). Efficient and Robust Automated Machine Learning. NeurIPS 2015.",
+    "locus": "Section 3, AutoML pipeline",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "forecast_produced",
+    "description": "AutoML time-series forecasting produces a forecast output over case durations from the running example"
+  }
+}

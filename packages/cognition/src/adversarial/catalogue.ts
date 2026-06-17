@@ -2,6 +2,16 @@
 
 export const ADVERSARIAL_DETECTORS = [
   {
+    code: 'BROKEN_LOGICAL_CLOCK',
+    severity: 'fatal',
+    description: 'Inference trace step order violated (non-monotone step, depth jump, or empty kind)'
+  },
+  {
+    code: 'RECEIPT_FORGERY',
+    severity: 'fatal',
+    description: 'Receipt output_hash does not recompute correctly from breed + output, or orphan receipt with no OCEL corpus entry'
+  },
+  {
     code: 'STUB_GATE_PASS',
     severity: 'fatal',
     description: 'Gate passed with zero evidence items'

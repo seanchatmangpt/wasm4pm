@@ -55,6 +55,9 @@ impl Default for PlayOutParameters {
 
 // ─── Process tree playout ───────────────────────────────────────────────────────
 
+/// Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+const DETERMINISTIC_SEED: u64 = 0xdead_beef;
+
 #[cfg(feature = "powl")]
 /// Recursively play out a `ProcessTree` node and return the sequence of activity
 /// labels produced by this subtree.
@@ -62,6 +65,7 @@ fn playout_process_tree_node(
     label: &Option<String>,
     operator: &Option<PtOperator>,
     children: &[crate::powl_process_tree::ProcessTree],
+    rng: &mut fastrand::Rng,
 ) -> Vec<String> {
     // Leaf node
     if operator.is_none() {
@@ -81,6 +85,7 @@ fn playout_process_tree_node(
                     &child.label,
                     &child.operator,
                     &child.children,
+                    rng,
                 ));
             }
             events
@@ -90,11 +95,12 @@ fn playout_process_tree_node(
             if children.is_empty() {
                 return vec![];
             }
-            let idx = fastrand::usize(..children.len());
+            let idx = rng.usize(..children.len());
             playout_process_tree_node(
                 &children[idx].label,
                 &children[idx].operator,
                 &children[idx].children,
+                rng,
             )
         }
         PtOperator::Parallel => {
@@ -105,6 +111,7 @@ fn playout_process_tree_node(
                     &child.label,
                     &child.operator,
                     &child.children,
+                    rng,
                 ));
             }
             events
@@ -124,14 +131,26 @@ fn playout_process_tree_node(
                 &children[0].label,
                 &children[0].operator,
                 &children[0].children,
+                rng,
             ));
 
             // Optionally redo: 30% chance to loop again
-            while fastrand::f64() < 0.3 {
+            while rng.f64() < 0.3 {
+                // REDO branch
+                if children.len() > 1 {
+                    events.extend(playout_process_tree_node(
+                        &children[1].label,
+                        &children[1].operator,
+                        &children[1].children,
+                        rng,
+                    ));
+                }
+                // DO branch again
                 events.extend(playout_process_tree_node(
                     &children[0].label,
                     &children[0].operator,
                     &children[0].children,
+                    rng,
                 ));
             }
 
@@ -153,11 +172,13 @@ pub fn play_out_tree(
     tree: &crate::powl_process_tree::ProcessTree,
     params: &PlayOutParameters,
 ) -> EventLog {
-    fastrand::seed(42);
+    // Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+    let mut rng = fastrand::Rng::with_seed(DETERMINISTIC_SEED);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
-        let activities = playout_process_tree_node(&tree.label, &tree.operator, &tree.children);
+        let activities =
+            playout_process_tree_node(&tree.label, &tree.operator, &tree.children, &mut rng);
 
         let mut trace = Trace::new();
         let mut timestamp_ms = params.start_timestamp + (trace_idx as i64 * 100_000);
@@ -233,17 +254,19 @@ fn play_out_dfg_with_starts(
     end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
-    fastrand::seed(42);
+    // Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+    let mut rng = fastrand::Rng::with_seed(DETERMINISTIC_SEED);
     let mut log = EventLog::new();
 
     for trace_idx in 0..params.num_traces {
         let mut trace_activities: Vec<String> = Vec::new();
+        let mut retry_counter = 0;
 
         loop {
             trace_activities.clear();
 
             // Pick a random start activity
-            let start = start_names[fastrand::usize(..start_names.len())];
+            let start = start_names[rng.usize(..start_names.len())];
             let mut current = start.to_string();
             trace_activities.push(current.clone());
 
@@ -258,7 +281,7 @@ fn play_out_dfg_with_starts(
                 }
 
                 // If at an end activity, 30% chance to stop early
-                if at_end && fastrand::f64() < 0.3 {
+                if at_end && rng.f64() < 0.3 {
                     break;
                 }
 
@@ -267,7 +290,7 @@ fn play_out_dfg_with_starts(
                     if successors.is_empty() {
                         break;
                     }
-                    let next_idx = fastrand::usize(..successors.len());
+                    let next_idx = rng.usize(..successors.len());
                     current = successors[next_idx].clone();
                     trace_activities.push(current.clone());
                 } else {
@@ -280,7 +303,8 @@ fn play_out_dfg_with_starts(
                 break;
             }
             // Otherwise retry (bounded by a safety limit to prevent infinite loops)
-            if trace_idx > params.num_traces * 10 {
+            retry_counter += 1;
+            if retry_counter > 100 {
                 // Give up and use whatever we have
                 break;
             }
@@ -616,14 +640,21 @@ mod tests {
                 trace.events.len() >= 1,
                 "Loop should produce at least 1 event (do-branch)"
             );
-            // All events should be "A" (do-branch is child 0)
+            // First event should be "A" (do-branch is child 0)
+            let first_name = trace.events[0]
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap();
+            assert_eq!(first_name, "A");
+            // All events should be "A" or "B"
             for event in &trace.events {
                 let name = event
                     .attributes
                     .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap();
-                assert_eq!(name, "A");
+                assert!(name == "A" || name == "B");
             }
         }
     }

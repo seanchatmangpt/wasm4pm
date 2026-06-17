@@ -54,6 +54,7 @@ const POWL_SUBCOMMANDS = [
   'get-children',
   'node-info',
   'freq-analysis',
+  'load',
 ] as const;
 type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
 
@@ -153,6 +154,11 @@ export const powl = defineCommand({
       type: 'string',
       description: 'Input log format: xes or ocel (for discover; default: auto-detect)',
     },
+    v2: {
+      type: 'boolean',
+      description: 'Parse as POWL v2 DSL format (for load subcommand)',
+      default: false,
+    },
     'ocel-variant': {
       type: 'string',
       description: 'OCEL discovery variant: flattening or oc_powl (default: flattening)',
@@ -177,7 +183,7 @@ export const powl = defineCommand({
       const result = makeErrorResult(
         'powl',
         `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-        EXIT_CODES.config_error,
+        EXIT_CODES.source_error,
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });
@@ -203,7 +209,7 @@ export const powl = defineCommand({
       async () => {
         try {
           // Resolve model input (inline string or file)
-          const needsModel = !['discover'].includes(sub);
+          const needsModel = !['discover', 'load'].includes(sub);
           if (needsModel && !modelInput) {
             const modelSubcmds = POWL_SUBCOMMANDS.filter(s => s !== 'discover').join(', ');
             const result = makeErrorResult(
@@ -414,8 +420,9 @@ async function executePowlCommand(
           const raw: string = wasm.powl_to_svg(modelStr);
           return { target, output: raw };
         }
+        default:
+          throw new PowlConfigError(`Unhandled convert target: ${target}`);
       }
-      throw new PowlConfigError(`Unhandled convert target: ${target}`);
     }
 
     case 'diff': {
@@ -584,8 +591,9 @@ async function executePowlCommand(
           const raw = wasm.petri_net_to_powl(fileContent);
           return normalizeResult(raw);
         }
+        default:
+          throw new PowlConfigError(`Unhandled import source: ${source}`);
       }
-      throw new PowlConfigError(`Unhandled import source: ${source}`);
     }
 
     case 'get-children': {
@@ -609,8 +617,7 @@ async function executePowlCommand(
       const activityKey = (args['activity-key'] as string) || 'concept:name';
       const minTraceCount = (args['min-trace-count'] as number) || 1;
       const noiseThreshold = (args['noise-threshold'] as number) || 0.0;
-      const inputFormat = (args['input-format'] as string) || '';
-      const ocelVariant = (args['ocel-variant'] as string) || 'flattening';
+      // inputFormat and ocelVariant reserved for future multi-format OCEL dispatch
 
       // Auto-detect format or use explicit --input-format
       let logJson: string;
@@ -832,6 +839,36 @@ async function executePowlCommand(
         checks,
         warnings,
       };
+    }
+
+    case 'load': {
+      // Load a POWL model from a .powl or .powl2 file (or inline string via --model).
+      // Delegates to load_powl_from_string (v1) or load_powl_v2_from_string (v2 DSL).
+      const fileArg = (args.input as string) || rawInput;
+      if (!fileArg) {
+        throw new PowlSourceError(
+          'Missing required argument: --input or --model (path to .powl file or inline POWL string)',
+          'LOAD_MISSING_INPUT'
+        );
+      }
+      let content: string;
+      try {
+        await fs.access(fileArg);
+        content = await fs.readFile(fileArg, 'utf-8');
+      } catch {
+        // Not a file path — treat as inline POWL string
+        content = fileArg;
+      }
+      const useV2 = Boolean(args.v2);
+      let raw: unknown;
+      if (useV2) {
+        raw = wasm.load_powl_v2_from_string(content);
+      } else {
+        raw = wasm.load_powl_from_string(content);
+      }
+      const loadResult = normalizeResult(raw);
+      loadResult['_v2'] = useV2;
+      return loadResult;
     }
 
     default:
@@ -1442,6 +1479,19 @@ function formatHumanOutput(
       break;
     }
 
+    case 'load': {
+      const dsl = result._v2 ? 'v2 DSL' : 'v1';
+      const handle = (result.handle as string) ?? (result.root !== undefined ? String(result.root) : 'n/a');
+      const nodeCount = result.node_count ?? result.nodes ?? 'n/a';
+      const repr = result.repr ?? result.representation ?? '';
+      projection.log('');
+      projection.log(`  Loaded POWL model (${dsl}):`);
+      projection.log(`    handle=${handle}, nodes=${nodeCount}`);
+      if (repr) projection.log(`    repr=${repr}`);
+      projection.log('');
+      break;
+    }
+
     case 'freq-analysis': {
       // Van der Aalst: frequency semantics are a first-class quality dimension
       // for TaggedPOWL. Showing min/max together avoids the "skippable bool only"
@@ -1502,3 +1552,6 @@ function formatHumanOutput(
     }
   }
 }
+
+/** Named alias used by the task-spec-defined import pattern. */
+export { powl as powlCommand };

@@ -1,0 +1,44 @@
+{
+  "intent": "",
+  "facts": [
+    {
+      "key": "achieved",
+      "value": "sub-goal-0"
+    },
+    {
+      "key": "achieved",
+      "value": "sub-goal-2"
+    }
+  ],
+  "candidates": [],
+  "rules": [],
+  "cases": [],
+  "goals": [
+    {
+      "id": "g0",
+      "predicate": "achieve",
+      "value": "sub-goal-0"
+    },
+    {
+      "id": "g1",
+      "predicate": "achieve",
+      "value": "sub-goal-1"
+    },
+    {
+      "id": "g2",
+      "predicate": "achieve",
+      "value": "sub-goal-2"
+    },
+    {
+      "id": "g3",
+      "predicate": "achieve",
+      "value": "sub-goal-3"
+    },
+    {
+      "id": "g4",
+      "predicate": "achieve",
+      "value": "sub-goal-4"
+    }
+  ],
+  "state": []
+}

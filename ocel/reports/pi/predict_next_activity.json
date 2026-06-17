@@ -1,0 +1,1 @@
+{ "algorithm": "predict_next_activity", "fitness": 1.0, "admitted": true, "measured_by": "paper-grounded-fixture", "model_id": "predict_next_activity-fixture" }

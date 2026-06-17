@@ -1,0 +1,12 @@
+{
+  "algorithm": "streaming_dfg",
+  "provenance": {
+    "paper": "van Zelst, S.J., van Dongen, B.F., van der Aalst, W.M.P. (2018). Online Process Discovery: The Concept Drift Problem. ATAED 2018.",
+    "locus": "Section 3, streaming DFG construction via sliding-window approach",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "nodes_ge_1",
+    "rationale": "A streaming DFG built from at least one event must contain at least one activity node."
+  }
+}

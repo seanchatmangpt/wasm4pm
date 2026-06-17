@@ -1,0 +1,28 @@
+{
+  "model_id": "ltl_monitor-l1-v1",
+  "model_level": "L1",
+  "breed_id": "ltl_monitor",
+  "object_types": ["run"],
+  "places": [
+    {"id": "p0", "name": "ready", "object_type": "run"},
+    {"id": "p1", "name": "monitoring", "object_type": "run"},
+    {"id": "p2", "name": "verdicted", "object_type": "run"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "ltl-init", "label": "ltl-init"},
+    {"id": "t2", "name": "ltl-progress", "label": "ltl-progress"},
+    {"id": "t3", "name": "ltl-verdict", "label": "ltl-verdict"}
+  ],
+  "arcs": [
+    {"from": "p0", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p1", "type": "produce"},
+    
+    {"from": "p1", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p1", "type": "produce"},
+    
+    {"from": "p1", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p2", "type": "produce"}
+  ],
+  "initial_marking": {"p0": 1},
+  "final_markings": [{"p2": 1}]
+}

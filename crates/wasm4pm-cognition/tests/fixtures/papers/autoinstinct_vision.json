@@ -1,0 +1,32 @@
+{
+  "breed": "autoinstinct_vision",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Winograd, T. (1972). Understanding Natural Language. Academic Press. SHRDLU Blocks World: symbolic scene parsing of polyhedra (cubes, pyramids, wedges) with support relationships. find_clear_object identifies the topmost unblocked block.",
+    "locus": "Chapter 2: The Blocks World domain — scene with cube A on table, pyramid B on A, wedge C on table. B is the clear object because nothing rests on it.",
+    "extraction": "adapted",
+    "notes": "parse_polyhedra reads facts where key=shape, value=object_id. Facts 'supported_by:B'='A' record support relationships. Objects sorted by id (A,B,C). find_clear_object iterates in that order: A is blocked by B, B is clear. selected='B'."
+  },
+  "input": {
+    "intent": "blocks-world scene analysis",
+    "facts": [
+      {"key": "cube", "value": "A"},
+      {"key": "pyramid", "value": "B"},
+      {"key": "supported_by:B", "value": "A"},
+      {"key": "wedge", "value": "C"}
+    ],
+    "candidates": [],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "value": "B",
+    "selected": "B",
+    "clear_object": "B",
+    "provenance": "Winograd 1972 Understanding Natural Language",
+    "scene_description": "Cube A on table, pyramid B on top of A (supported_by A), wedge C on table. B is the first clear object in alphabetical scan (A is blocked by B, B has nothing on it).",
+    "algorithm_outcome": "AutoinstinctVision identifies B as the first clear (unblocked) polyhedron in the blocks-world scene via symbolic support-relation traversal (SHRDLU/Winograd 1972 domain)."
+  }
+}

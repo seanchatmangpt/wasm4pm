@@ -78,6 +78,7 @@ function makeReceipt(overrides: Partial<Receipt> = {}): Receipt {
     .setSummary({ traces_processed: 100, objects_processed: 500, variants_discovered: 12 })
     .setAlgorithm({ name: 'dfg', version: '1.0.0' })
     .setModel({ nodes: 8, edges: 15 })
+    .setTraceId('aabbccddeeff00112233445566778899')
     .build();
 
   // Apply overrides at the object level (status, etc.)

@@ -1,0 +1,12 @@
+{
+  "algorithm": "negative_event",
+  "provenance": {
+    "paper": "Chesani, F., Mello, P., Montali, M., Torroni, P. (2009). Compliance Verification of Inter-Organisational Business Processes. AAAI.",
+    "locus": "§3 Negative-event anomaly scoring — anomaly score >= 0.0 for any trace",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "score_nonneg",
+    "rationale": "Anomaly score from score_trace_anomaly must be a non-negative float for any valid DFG and activities list."
+  }
+}

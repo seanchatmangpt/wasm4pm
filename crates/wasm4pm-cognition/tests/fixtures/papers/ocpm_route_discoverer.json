@@ -1,0 +1,38 @@
+{
+  "breed": "ocpm_route_discoverer",
+  "provenance": {
+    "paper": "Object-Centric Process Mining",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence.",
+    "locus": "Route Discovery",
+    "extraction": "verbatim",
+    "notes": "Route discovery for items and orders."
+  },
+  "input": {
+    "intent": "discover object routes",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "event",
+        "value": "id=e1|activity=Create|objects=o1,i1"
+      },
+      {
+        "key": "event",
+        "value": "id=e2|activity=Pay|objects=o1"
+      },
+      {
+        "key": "event",
+        "value": "id=e3|activity=Ship|objects=i1"
+      }
+    ],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "routes": {
+      "route:o1": "Create->Pay",
+      "route:i1": "Create->Ship"
+    }
+  }
+}

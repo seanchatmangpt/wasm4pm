@@ -1,0 +1,83 @@
+(node:13911) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "clp",
+    "breed": "clp",
+    "status": "ok",
+    "output": {
+      "breed": "Clp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "clp:solution:x_6ecab143",
+          "value": "6"
+        },
+        {
+          "key": "clp:solution:y_6ecab143",
+          "value": "3"
+        },
+        {
+          "key": "clp:backtracks",
+          "value": "0"
+        }
+      ],
+      "selected": "x_6ecab143=6,y_6ecab143=3",
+      "explanation": "CLP(FD): 2 constraints posted, 0 backtrack(s), solution found.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "post-constraint",
+          "detail": "c1_6ecab143: x_6ecab143=y_6ecab143+3",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "propagate",
+          "detail": "y_6ecab143: {0,1,2,3,4,5,6,7,8,9} -> {3,4,5,6}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "post-constraint",
+          "detail": "c2_6ecab143: y_6ecab143<4",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "propagate",
+          "detail": "y_6ecab143: {3,4,5,6} -> {3}",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "propagate",
+          "detail": "x_6ecab143: {6,7,8,9} -> {6}",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "solution",
+          "detail": "x_6ecab143=6,y_6ecab143=3",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f8fc06a3268fc5b1c18dce4d7c34f0df2a23f7f2cfca88480db3c5d024fce72e",
+    "output_hash": "85f27d8096f56f8a81dbe43d9778a9a5e08dad3101c7a4ed591de9ba9b579310",
+    "replay_pointer": "85f27d8096f56f8a",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/f8fc06a3268fc5b1c18dce4d7c34f0df2a23f7f2cfca88480db3c5d024fce72e.json"
+  },
+  "meta": {
+    "run_id": "68bbedee-95b9-41c9-aeb6-3cf375e91ad1",
+    "timestamp": "2026-06-11T08:34:59.304Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

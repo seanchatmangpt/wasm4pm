@@ -1,0 +1,256 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_lp",
+    "breed": "abductive_lp",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveLp",
+      "candidates": [
+        {
+          "id": "c",
+          "score": 0.5,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "alp:explanation:0",
+          "value": "{c}"
+        },
+        {
+          "key": "alp:explanation:1",
+          "value": "{a,b}"
+        },
+        {
+          "key": "alp:explanation_count",
+          "value": "2"
+        }
+      ],
+      "selected": "{c}",
+      "explanation": "KKT abduction: 2 minimal explanation(s) of 'g' over 4 abducibles.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-abducibles",
+          "detail": "A={a,b,c,d}, 0 ICs, observe 'g'",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "candidate-delta",
+          "detail": "Δ={}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=0 atoms",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "explain-reject",
+          "detail": "Δ={}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "candidate-delta",
+          "detail": "Δ={a}",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=1 atoms",
+          "depth": 2
+        },
+        {
+          "step": 6,
+          "kind": "explain-reject",
+          "detail": "Δ={a}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "candidate-delta",
+          "detail": "Δ={b}",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=1 atoms",
+          "depth": 2
+        },
+        {
+          "step": 9,
+          "kind": "explain-reject",
+          "detail": "Δ={b}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "candidate-delta",
+          "detail": "Δ={c}",
+          "depth": 1
+        },
+        {
+          "step": 11,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 12,
+          "kind": "explain-accept",
+          "detail": "Δ={c} explains 'g'",
+          "depth": 1
+        },
+        {
+          "step": 13,
+          "kind": "candidate-delta",
+          "detail": "Δ={d}",
+          "depth": 1
+        },
+        {
+          "step": 14,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=1 atoms",
+          "depth": 2
+        },
+        {
+          "step": 15,
+          "kind": "explain-reject",
+          "detail": "Δ={d}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 16,
+          "kind": "candidate-delta",
+          "detail": "Δ={a,b}",
+          "depth": 1
+        },
+        {
+          "step": 17,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=3 atoms",
+          "depth": 2
+        },
+        {
+          "step": 18,
+          "kind": "explain-accept",
+          "detail": "Δ={a,b} explains 'g'",
+          "depth": 1
+        },
+        {
+          "step": 19,
+          "kind": "explain-reject",
+          "detail": "{a,c} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 20,
+          "kind": "explain-reject",
+          "detail": "{b,c} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 21,
+          "kind": "candidate-delta",
+          "detail": "Δ={a,d}",
+          "depth": 1
+        },
+        {
+          "step": 22,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 23,
+          "kind": "explain-reject",
+          "detail": "Δ={a,d}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 24,
+          "kind": "candidate-delta",
+          "detail": "Δ={b,d}",
+          "depth": 1
+        },
+        {
+          "step": 25,
+          "kind": "derive",
+          "detail": "|LM(P∪Δ)|=2 atoms",
+          "depth": 2
+        },
+        {
+          "step": 26,
+          "kind": "explain-reject",
+          "detail": "Δ={b,d}: observation not derived, ICs ok",
+          "depth": 1
+        },
+        {
+          "step": 27,
+          "kind": "explain-reject",
+          "detail": "{c,d} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 28,
+          "kind": "explain-reject",
+          "detail": "{a,b,c} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 29,
+          "kind": "explain-reject",
+          "detail": "{a,b,d} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 30,
+          "kind": "explain-reject",
+          "detail": "{a,c,d} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 31,
+          "kind": "explain-reject",
+          "detail": "{b,c,d} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 32,
+          "kind": "explain-reject",
+          "detail": "{a,b,c,d} non-minimal (superset of accepted Δ)",
+          "depth": 1
+        },
+        {
+          "step": 33,
+          "kind": "minimal-set",
+          "detail": "2 minimal explanation(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "408d0febff06c22d0d3a2276dbad1ed4ac06f765bb6d23aafad6a8a5e618f8df",
+    "output_hash": "1adc2c05fb505dae913d2b470ef15d878f42ec46a87141060b5fc4ace2928568",
+    "replay_pointer": "1adc2c05fb505dae",
+    "inference_step_count": 34,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/abductive_lp/.wasm4pm/receipts/408d0febff06c22d0d3a2276dbad1ed4ac06f765bb6d23aafad6a8a5e618f8df.json"
+  },
+  "meta": {
+    "run_id": "b5153d98-5917-4519-9823-14fa27b0653c",
+    "timestamp": "2026-06-11T18:43:35.545Z",
+    "duration_ms": 21,
+    "version": "26.6.10"
+  }
+}

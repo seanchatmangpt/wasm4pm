@@ -1,0 +1,68 @@
+{
+  "breed": "strips",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Fikes-Nilsson-1971-STRIPS-AIJ.pdf",
+    "citation": "Fikes, R. E., & Nilsson, N. J. (1971). STRIPS: A new approach to the application of theorem proving to problem solving. Artificial Intelligence, 2(3\u20134), 189\u2013208.",
+    "locus": "Section 2 (p. 191) \u2014 world model, goal G, and operators O1..On; ground (Skolemised) encoding of the Section 3 room-navigation domain.",
+    "extraction": "grounded-encoding",
+    "notes": "The STRIPS breed engine matches premise strings exactly against the state atom set (pred=val encoding). Parametric operators require Skolemisation to ground instances before the engine can apply them. This fixture uses a two-goal room-navigation problem: robot must turn on the light (light=off \u2192 light=on) and close door1 (door1=open \u2192 door1=closed). Both operators are immediately applicable in the initial state, giving a 2-step plan within depth 16. Goals are ordered: light=on first, then door1=closed. The engine picks the first unsatisfied goal, finds an applicable operator that adds it, applies it, and recurses \u2014 matching the forward-search semantics of Fikes & Nilsson Section 2."
+  },
+  "input": {
+    "intent": "turn on the light and close door1",
+    "candidates": [],
+    "facts": [],
+    "cases": [],
+    "rules": [
+      {
+        "id": "turn-on-light",
+        "premise": [
+          "light=off"
+        ],
+        "conclusion": "light=on;!light=off",
+        "certainty": 1
+      },
+      {
+        "id": "close-door1",
+        "premise": [
+          "door1=open"
+        ],
+        "conclusion": "door1=closed;!door1=open",
+        "certainty": 1
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "light",
+        "value": "on"
+      },
+      {
+        "id": "g2",
+        "predicate": "door1",
+        "value": "closed"
+      }
+    ],
+    "state": [
+      {
+        "predicate": "light",
+        "value": "off"
+      },
+      {
+        "predicate": "door1",
+        "value": "open"
+      }
+    ]
+  },
+  "expected": {
+    "plan": [
+      "turn-on-light",
+      "close-door1"
+    ],
+    "min_plan_length": 0,
+    "final_state": [
+      "light=on",
+      "door1=closed"
+    ],
+    "note": "A 2-step plan. Each operator is directly applicable in the state where it is tried; no subgoal chaining is needed. This validates the core STRIPS forward-search loop (Fikes & Nilsson 1971, Section 2)."
+  }
+}

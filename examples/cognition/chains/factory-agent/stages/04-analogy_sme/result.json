@@ -1,0 +1,131 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "analogy_sme",
+    "breed": "analogy_sme",
+    "status": "ok",
+    "output": {
+      "breed": "AnalogySme",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "map:planet",
+          "value": "electron"
+        },
+        {
+          "key": "map:sun",
+          "value": "nucleus"
+        },
+        {
+          "key": "inference:0",
+          "value": "(cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))"
+        },
+        {
+          "key": "inference:1",
+          "value": "(greater (temperature nucleus) (temperature electron))"
+        },
+        {
+          "key": "sme:score",
+          "value": "6"
+        }
+      ],
+      "selected": "gmap:6",
+      "explanation": "SME mapped 2 base expressions onto target (systematicity score 6); 2 candidate inferences",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "parse-expr",
+          "detail": "base:0 = (greater (mass sun) (mass planet))",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "parse-expr",
+          "detail": "base:1 = (revolve planet sun)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "parse-expr",
+          "detail": "base:2 = (cause (greater (mass sun) (mass planet)) (revolve planet sun))",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "parse-expr",
+          "detail": "base:3 = (greater (temperature sun) (temperature planet))",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "parse-expr",
+          "detail": "target:0 = (greater (mass nucleus) (mass electron))",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "parse-expr",
+          "detail": "target:1 = (revolve electron nucleus)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "local-match",
+          "detail": "base:0 <-> target:0 (systematicity=5)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "local-match",
+          "detail": "base:1 <-> target:1 (systematicity=1)",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "merge-gmap",
+          "detail": "merged base:0 <-> target:0 (gmap score now 5)",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "merge-gmap",
+          "detail": "merged base:1 <-> target:1 (gmap score now 6)",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "candidate-inference",
+          "detail": "base:2 carried over: (cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "candidate-inference",
+          "detail": "base:3 carried over: (greater (temperature nucleus) (temperature electron))",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "decision",
+          "detail": "gmap score=6; 2 entity correspondences; 2 candidate inferences",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "6fabf471557909a6a5e0e2411ecc77d9ca6c01c9a0164f20620fe56b83e523bf",
+    "output_hash": "1c0c86192c1d10cc6aa70b386507439e863538ed4a97d827aa857e9cbd55fd65",
+    "replay_pointer": "1c0c86192c1d10cc",
+    "inference_step_count": 13,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/6fabf471557909a6a5e0e2411ecc77d9ca6c01c9a0164f20620fe56b83e523bf.json"
+  },
+  "meta": {
+    "run_id": "568f01f9-6332-42f7-99fe-63b4703145c7",
+    "timestamp": "2026-06-11T19:56:02.748Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

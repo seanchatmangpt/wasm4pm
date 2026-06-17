@@ -26,6 +26,7 @@
  * convention where each id-keyed field identifies a process object.
  */
 
+import { z } from 'zod';
 import type { OcelEvent } from './ocel-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -38,14 +39,11 @@ import type { OcelEvent } from './ocel-bridge.js';
  * adaptation. All remaining fields become the OCEL value map or drive object
  * type inference.
  */
-export type MarketplaceEvent = {
-  /** Activity label: verb-phrase describing what happened, e.g. "order.placed" */
-  event_type: string;
-  /** ISO-8601 timestamp string, optionally with timezone offset or trailing Z */
-  ts: string;
-  /** Any additional domain-specific fields */
-  [key: string]: unknown;
-};
+export const MarketplaceEventSchema = z.object({
+  event_type: z.string().min(1),
+  ts: z.string().min(1),
+}).catchall(z.unknown());
+export type MarketplaceEvent = z.infer<typeof MarketplaceEventSchema>;
 
 // ---------------------------------------------------------------------------
 // Object-type inference table

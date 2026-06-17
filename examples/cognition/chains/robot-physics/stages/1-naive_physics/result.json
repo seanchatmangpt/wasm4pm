@@ -1,0 +1,58 @@
+(node:13975) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "naive_physics",
+    "breed": "naive_physics",
+    "status": "ok",
+    "output": {
+      "breed": "NaivePhysics",
+      "candidates": [],
+      "facts": [],
+      "selected": "predictions:0",
+      "explanation": "naive_physics saturated 4 Hayes axioms: 0 falls, 0 spills predicted",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-scene",
+          "detail": "2 objects, 1 support relations, 0 liquids, removed: {}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "apply-axiom",
+          "detail": "ax-support: 'obj_c_80d68f8b' is unstable",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "apply-axiom",
+          "detail": "ax-support: 'table' is unstable",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "decision",
+          "detail": "0 objects fall, 0 liquids spill",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "45baa956b7aaca78d661c5a35a22c354c55d8e549488668bd445649cb7c1ab7e",
+    "output_hash": "6ee3c81bd1de8f6a940ba22756dc825b390887bd934b23e632f731e309cac490",
+    "replay_pointer": "6ee3c81bd1de8f6a",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/45baa956b7aaca78d661c5a35a22c354c55d8e549488668bd445649cb7c1ab7e.json"
+  },
+  "meta": {
+    "run_id": "b9c24855-f81a-4a56-9e94-735df32ecf2d",
+    "timestamp": "2026-06-11T08:35:02.165Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

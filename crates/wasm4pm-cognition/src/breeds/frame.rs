@@ -1,20 +1,23 @@
-//! ELIZA-style frame/pattern matching with pronoun reflection (Weizenbaum 1966).
+//! ELIZA decomposition-reassembly engine (Weizenbaum 1966).
 //!
-//! Patterns use a trivial wildcard grammar:
-//!   `*` = greedy slot capture (one or more whitespace-delimited tokens).
-//! A pattern is matched against `input.intent` lowercased; on first match
-//! (longest-pattern-first), captured slots are bound by position to template
-//! placeholders `${1}`, `${2}`, ... yielding the response.
+//! When `input.rules` is non-empty the full keyword engine runs:
+//!   1. Apply input substitutions (MY→YOUR, ME→YOU, I→YOU) to produce transformed text.
+//!   2. Scan original tokens left-to-right for the first matching keyword.
+//!   3. Follow `=KEYWORD` equivalence chains.
+//!   4. Try each decomposition rule for the resolved keyword; first match wins.
+//!   5. Render the reassembly template — numeric tokens (e.g. `3`) are replaced
+//!      by the corresponding decomposition component capture (1-indexed).
 //!
-//! Pronoun reflection (Weizenbaum's key innovation):
-//!   Captured slots have pronouns swapped reflexively (I↔you, me↔you, my↔your, etc.)
-//!   before insertion into templates, creating illusion of understanding.
+//! When `input.rules` is empty the catch-all wildcard-frame path is used;
+//! unit tests depend on this behavior.
 //!
 //! Patterns can be supplied via `input.facts` with `key == "frame.pattern"`
 //! and `value == "<pattern>||<template>"` (delimited by `||`). If no
 //! patterns are supplied, a built-in Rogerian script is used.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep};
+use std::collections::BTreeMap;
 
 /// Frame / ELIZA breed.
 pub struct Eliza;
@@ -175,6 +178,262 @@ fn render(template: &str, slots: &[String]) -> String {
     out
 }
 
+// ── Keyword engine ────────────────────────────────────────────────────────────
+
+#[derive(Debug, Clone)]
+enum DecompComp {
+    Wildcard,
+    Literal(String),
+    WordSet(Vec<String>),
+}
+
+fn parse_decomp(s: &str) -> Vec<DecompComp> {
+    let inner = s.trim().trim_start_matches('(').trim_end_matches(')');
+    let mut comps: Vec<DecompComp> = Vec::new();
+    let raw: Vec<&str> = inner.split_whitespace().collect();
+    let mut i = 0;
+    while i < raw.len() {
+        let t = raw[i];
+        if t == "0" {
+            comps.push(DecompComp::Wildcard);
+        } else if t.starts_with("(*") || t.starts_with("(/") {
+            // Inline word set: (*WORD1 WORD2 ...) — may span multiple tokens
+            let mut words: Vec<String> = Vec::new();
+            let mut fragment = t
+                .trim_start_matches("(*")
+                .trim_start_matches("(/")
+                .to_string();
+            loop {
+                let closed = fragment.ends_with(')');
+                let word = fragment.trim_end_matches(')').to_uppercase();
+                if !word.is_empty() {
+                    words.push(word);
+                }
+                if closed || i + 1 >= raw.len() {
+                    break;
+                }
+                i += 1;
+                fragment = raw[i].to_string();
+            }
+            comps.push(DecompComp::WordSet(words));
+        } else if t.starts_with('/') {
+            comps.push(DecompComp::WordSet(vec![t[1..].to_uppercase()]));
+        } else {
+            comps.push(DecompComp::Literal(t.to_uppercase()));
+        }
+        i += 1;
+    }
+    // Empty decomp (bare keyword, no pattern) — treat as single wildcard
+    if comps.is_empty() {
+        comps.push(DecompComp::Wildcard);
+    }
+    comps
+}
+
+/// Returns one capture string per component (wildcards hold their match;
+/// literals/word-sets hold the matched token; 1-indexed in reassembly).
+fn match_decomp(comps: &[DecompComp], tokens: &[String]) -> Option<Vec<String>> {
+    let n = comps.len();
+    let mut captures = vec![String::new(); n];
+    fn rec(comps: &[DecompComp], toks: &[String], caps: &mut Vec<String>, idx: usize) -> bool {
+        if comps.is_empty() {
+            return toks.is_empty();
+        }
+        match &comps[0] {
+            DecompComp::Wildcard => {
+                // Greedy: try longest first
+                for len in (0..=toks.len()).rev() {
+                    caps[idx] = toks[..len].join(" ");
+                    if rec(&comps[1..], &toks[len..], caps, idx + 1) {
+                        return true;
+                    }
+                }
+                false
+            }
+            DecompComp::Literal(lit) => {
+                if toks.is_empty() {
+                    return false;
+                }
+                let stripped = toks[0]
+                    .trim_matches(|c: char| matches!(c, ',' | '.' | '?' | '!' | ';'))
+                    .to_uppercase();
+                if stripped == *lit {
+                    caps[idx] = toks[0].clone();
+                    rec(&comps[1..], &toks[1..], caps, idx + 1)
+                } else {
+                    false
+                }
+            }
+            DecompComp::WordSet(words) => {
+                if toks.is_empty() {
+                    return false;
+                }
+                let stripped = toks[0]
+                    .trim_matches(|c: char| matches!(c, ',' | '.' | '?' | '!' | ';'))
+                    .to_uppercase();
+                if words.contains(&stripped) {
+                    caps[idx] = toks[0].clone();
+                    rec(&comps[1..], &toks[1..], caps, idx + 1)
+                } else {
+                    false
+                }
+            }
+        }
+    }
+    if rec(comps, tokens, &mut captures, 0) {
+        Some(captures)
+    } else {
+        None
+    }
+}
+
+fn apply_reassembly(template: &str, slots: &[String]) -> String {
+    let words: Vec<&str> = template.split_whitespace().collect();
+    let mut out: Vec<String> = Vec::new();
+    for w in words {
+        if let Ok(n) = w.parse::<usize>() {
+            if n >= 1 && n <= slots.len() {
+                let s = slots[n - 1].trim().to_string();
+                if !s.is_empty() {
+                    out.push(s);
+                }
+            }
+        } else {
+            out.push(w.to_string());
+        }
+    }
+    out.join(" ")
+}
+
+/// Apply the unconditional input substitutions (Weizenbaum 1966, p. 37):
+/// MY→YOUR, ME→YOU, I→YOU, ARE→AM. Operates word-by-word; preserves
+/// punctuation attached to tokens.
+fn substitute_input(text: &str) -> String {
+    let pairs: &[(&str, &str)] = &[("MY", "YOUR"), ("ME", "YOU"), ("AM", "ARE")];
+    text.split_whitespace()
+        .map(|w| {
+            let stripped = w.trim_matches(|c: char| matches!(c, ',' | '.' | '?' | '!' | ';'));
+            let upper = stripped.to_uppercase();
+            for (from, to) in pairs {
+                if upper == *from {
+                    // Preserve attached punctuation
+                    let prefix = &w[..w.len() - w.trim_start_matches(stripped).len()];
+                    let suffix = &w[w.find(stripped).unwrap_or(0) + stripped.len()..];
+                    let _ = (prefix, suffix); // not needed — stripped is already w without punct
+                    let punct: String = w
+                        .chars()
+                        .filter(|c| matches!(*c, ',' | '.' | '?' | '!' | ';'))
+                        .collect();
+                    return format!("{}{}", to, punct);
+                }
+            }
+            w.to_string()
+        })
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn run_keyword_engine(input: &BreedInput, trace: &mut Vec<TraceStep>) -> Option<(String, String)> {
+    // Build keyword table: keyword(uppercase) → rules in order
+    let mut table: BTreeMap<String, Vec<(Vec<DecompComp>, String)>> = BTreeMap::new();
+    for rule in &input.rules {
+        let keyword = rule
+            .premise
+            .first()
+            .cloned()
+            .unwrap_or_default()
+            .to_uppercase();
+        let decomp_str = rule
+            .premise
+            .get(1)
+            .cloned()
+            .unwrap_or_else(|| "(0)".to_string());
+        let decomp = parse_decomp(&decomp_str);
+        table
+            .entry(keyword)
+            .or_default()
+            .push((decomp, rule.conclusion.clone()));
+    }
+
+    // Apply input substitutions, then tokenize
+    let subst = substitute_input(&input.intent);
+    let tokens: Vec<String> = subst.split_whitespace().map(String::from).collect();
+
+    // Scan original tokens for first matching keyword
+    let orig_tokens: Vec<String> = input.intent.split_whitespace().map(String::from).collect();
+    let mut found_keyword: Option<String> = None;
+    'scan: for tok in &orig_tokens {
+        let clean = tok
+            .trim_matches(|c: char| matches!(c, ',' | '.' | '?' | '!' | ';'))
+            .to_uppercase();
+        if table.contains_key(&clean) {
+            found_keyword = Some(clean);
+            break 'scan;
+        }
+    }
+
+    let mut keyword = found_keyword?;
+    trace.push(TraceStep {
+        step: trace.len(),
+        kind: "keyword-found".to_string(),
+        detail: keyword.clone(),
+        depth: 0,
+        objects: vec![],
+    });
+
+    // Follow equivalence chain (conclusion starts with '=')
+    let mut hops = 0u8;
+    loop {
+        if hops >= 8 {
+            break;
+        }
+        if let Some(rules) = table.get(&keyword) {
+            if rules.len() == 1 && rules[0].1.starts_with('=') {
+                let target = rules[0].1[1..].to_string();
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "equivalence".to_string(),
+                    detail: format!("{}={}", keyword, target),
+                    depth: 0,
+                    objects: vec![],
+                });
+                keyword = target;
+                hops += 1;
+                continue;
+            }
+        }
+        break;
+    }
+
+    // Try decomposition rules in order
+    if let Some(rules) = table.get(&keyword) {
+        for (decomp, reassembly) in rules {
+            if let Some(slots) = match_decomp(decomp, &tokens) {
+                let response = apply_reassembly(reassembly, &slots);
+                trace.push(TraceStep {
+                    step: trace.len(),
+                    kind: "decomp-match".to_string(),
+                    detail: reassembly.clone(),
+                    depth: 0,
+                    objects: vec![],
+                });
+                return Some((keyword, response));
+            }
+        }
+    }
+
+    // NONE fallback
+    if let Some(rules) = table.get("NONE") {
+        if let Some((_, reassembly)) = rules.first() {
+            return Some(("NONE".to_string(), reassembly.clone()));
+        }
+    }
+
+    None
+}
+
+// ── Catch-all wildcard engine (unchanged) ────────────────────────────────────
+
 impl CognitionBreed for Eliza {
     fn id(&self) -> BreedId {
         BreedId::Eliza
@@ -192,9 +451,38 @@ impl CognitionBreed for Eliza {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
+        let mut trace: Vec<TraceStep> = Vec::new();
+
+        // Keyword engine path (Weizenbaum 1966 full algorithm)
+        if !input.rules.is_empty() {
+            if let Some((keyword, response)) = run_keyword_engine(input, &mut trace) {
+                return Ok(BreedOutput {
+                    breed: BreedId::Eliza,
+                    candidates: input.candidates.clone(),
+                    facts: input.facts.clone(),
+                    selected: Some(keyword),
+                    explanation: response,
+                    inference_trace: trace,
+                    ocel_log: None,
+                    retained_cases: vec![],
+                });
+            }
+            // No keyword matched — emit NONE response
+            return Ok(BreedOutput {
+                breed: BreedId::Eliza,
+                candidates: input.candidates.clone(),
+                facts: input.facts.clone(),
+                selected: None,
+                explanation: "PLEASE GO ON".to_string(),
+                inference_trace: trace,
+                ocel_log: None,
+                retained_cases: vec![],
+            });
+        }
+
+        // Catch-all wildcard-frame path
         let frames = parse_frames(input);
         let text = input.intent.to_lowercase();
-        let mut trace: Vec<TraceStep> = Vec::new();
 
         for frame in &frames {
             trace.push(TraceStep {
@@ -202,14 +490,31 @@ impl CognitionBreed for Eliza {
                 kind: "try-pattern".to_string(),
                 detail: frame.pattern.clone(),
                 depth: 0,
+                objects: vec![],
             });
             if let Some(slots) = try_match(&frame.pattern, &text) {
+                tracing::debug!(
+                    breed.step = "pattern_matched",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
+                tracing::debug!(
+                    breed.step = "script_selected",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 let response = render(&frame.template, &slots);
+                tracing::debug!(
+                    breed.step = "template_applied",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 trace.push(TraceStep {
                     step: trace.len(),
                     kind: "match-pattern".to_string(),
                     detail: frame.pattern.clone(),
                     depth: 0,
+                    objects: vec![],
                 });
                 for (i, s) in slots.iter().enumerate() {
                     trace.push(TraceStep {
@@ -217,8 +522,14 @@ impl CognitionBreed for Eliza {
                         kind: "bind-slot".to_string(),
                         detail: format!("${{{}}}={}", i + 1, s),
                         depth: 0,
+                        objects: vec![],
                     });
                 }
+                tracing::debug!(
+                    breed.step = "response_emitted",
+                    breed = "eliza",
+                    "ELIZA L1 step"
+                );
                 return Ok(BreedOutput {
                     breed: BreedId::Eliza,
                     candidates: input.candidates.clone(),
@@ -226,6 +537,8 @@ impl CognitionBreed for Eliza {
                     selected: Some(frame.pattern.clone()),
                     explanation: response,
                     inference_trace: trace,
+                    ocel_log: None,
+                    retained_cases: vec![],
                 });
             }
         }
@@ -237,13 +550,13 @@ impl CognitionBreed for Eliza {
             selected: None,
             explanation: "No pattern matched.".to_string(),
             inference_trace: trace,
+            ocel_log: None,
+            retained_cases: vec![],
         })
     }
 
-    fn postconditions(&self, output: &BreedOutput) -> Result<(), String> {
-        if output.inference_trace.is_empty() {
-            return Err("ELIZA must record at least one pattern attempt".to_string());
-        }
+    fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
+        TraceQuery::from_output(output).require_non_empty()?;
         Ok(())
     }
 }
@@ -468,5 +781,132 @@ mod tests {
         assert_eq!(slots.len(), 2);
         assert_eq!(slots[0], "tired");
         assert_eq!(slots[1], "i worked");
+    }
+
+    // ── Keyword engine tests (Weizenbaum 1966 DOCTOR script) ─────────────────
+
+    fn make_rule(premise: &[&str], conclusion: &str) -> crate::breeds::Rule {
+        crate::breeds::Rule {
+            id: conclusion.to_lowercase().replace(' ', "-"),
+            premise: premise.iter().map(|s| s.to_string()).collect(),
+            conclusion: conclusion.to_string(),
+            certainty: 1.0,
+        }
+    }
+
+    /// Weizenbaum 1966, p. 36, turn 1: "Men are all alike." → "IN WHAT WAY"
+    /// ALIKE (rank 10) equivalences to DIT; DIT decomp (0) → "IN WHAT WAY".
+    #[test]
+    fn eliza_alike_equivalences_to_dit_in_what_way() {
+        let breed = Eliza;
+        let input = BreedInput {
+            intent: "Men are all alike.".to_string(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                make_rule(&["ALIKE"], "=DIT"),
+                make_rule(&["DIT", "(0)"], "IN WHAT WAY"),
+            ],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(
+            output.explanation, "IN WHAT WAY",
+            "ALIKE→=DIT→IN WHAT WAY; got: {}",
+            output.explanation
+        );
+        assert_eq!(output.selected.as_deref(), Some("DIT"));
+    }
+
+    /// Weizenbaum 1966, p. 36, turn 2: "always" → "CAN YOU THINK OF A SPECIFIC EXAMPLE"
+    #[test]
+    fn eliza_always_fires_canthink() {
+        let breed = Eliza;
+        let input = BreedInput {
+            intent: "They're always bugging us about something or other.".to_string(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![make_rule(
+                &["ALWAYS", "(0)"],
+                "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+            )],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(
+            output.explanation, "CAN YOU THINK OF A SPECIFIC EXAMPLE",
+            "got: {}",
+            output.explanation
+        );
+    }
+
+    /// Weizenbaum 1966, p. 36, turn 3: MY→YOUR substitution + slot ref in reassembly.
+    #[test]
+    fn eliza_my_substitution_and_slot_ref() {
+        let breed = Eliza;
+        let input = BreedInput {
+            intent: "Well, my boyfriend made me come here.".to_string(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![make_rule(&["MY", "(0 YOUR 0)"], "YOUR 3")],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        // After MY→YOUR substitution: "Well, YOUR boyfriend made YOU come here."
+        // Decomp (0 YOUR 0): slot1="Well,", slot2=YOUR, slot3="boyfriend made YOU come here."
+        // Reassembly "YOUR 3" → "YOUR boyfriend made YOU come here."
+        assert!(
+            output.explanation.starts_with("YOUR boyfriend"),
+            "Expected 'YOUR boyfriend ...'; got: {}",
+            output.explanation
+        );
+    }
+
+    #[test]
+    fn refuses_empty_intent() {
+        let breed = Eliza;
+        let input = BreedInput {
+            intent: "".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_eliza_keyword_precedence() {
+        let breed = Eliza;
+        let input = BreedInput {
+            intent: "A B C".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![
+                make_rule(&["C"], "C MATCHED"),
+                make_rule(&["B"], "B MATCHED"),
+                make_rule(&["A"], "A MATCHED"),
+            ],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(output.explanation, "A MATCHED");
+    }
+
+    #[test]
+    fn invariant_idempotency_of_reflection() {
+        let first = super::reflect_pronouns("i am my");
+        let second = super::reflect_pronouns(&first);
+        assert_eq!(first, second);
     }
 }

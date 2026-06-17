@@ -82,7 +82,7 @@ if [ $VIOLATIONS_FOUND -gt 0 ]; then
   echo "  • Rank-3 Metamorphic: Input perturbation → output relation"
   echo "  • Rank-4 Statistical: Convergence trends over N trials"
   echo ""
-  echo "See: .claude/rules/chicago-tdd.md (Chicago TDD — Van der Aalst Constitution)"
+  echo "See: .claude/rules/_core/absolute.md (FM-5 rule, Chicago TDD doctrine)"
   exit 1
 else
   echo "   ✓ No FM-5 violations found"

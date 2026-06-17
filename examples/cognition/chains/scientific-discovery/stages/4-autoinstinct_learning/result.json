@@ -1,0 +1,88 @@
+(node:13548) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_learning",
+    "breed": "autoinstinct_learning",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctLearning",
+      "candidates": [
+        {
+          "id": "plan-step-0",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "top_structure",
+          "value": "cyclohexanol"
+        },
+        {
+          "key": "ring_topology_confirmed",
+          "value": "true"
+        },
+        {
+          "key": "oh_orientation",
+          "value": "equatorial"
+        },
+        {
+          "key": "conformation",
+          "value": "chair"
+        },
+        {
+          "key": "ambiguity_remaining",
+          "value": "conformation_only"
+        },
+        {
+          "key": "available_techniques",
+          "value": "NMR_COSY,NMR_NOESY,GCMS,MSMS,optical_rotation"
+        },
+        {
+          "key": "samples_available",
+          "value": "3"
+        },
+        {
+          "key": "experiment_budget_hours",
+          "value": "8"
+        },
+        {
+          "key": "learning_method",
+          "value": "STRIPS_bitwise_HACKER_heuristic"
+        },
+        {
+          "key": "structural_candidates_remaining",
+          "value": "0"
+        }
+      ],
+      "selected": "1 steps to goal",
+      "explanation": "AutoinstinctLearning: 1 plan steps, goal_mask=0b00000111, final_state=0b1111111111, goal_reached=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "plan-step",
+          "detail": "state=0b1111111111 distance=0 action toward goal: flip next missing bit",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9fc18bc9b594bab3cf8c45252bbbae57496b0762241a18325267a9d50b204c57",
+    "output_hash": "63834b783c874f7bf806ce6428cd986bbdc48a28bbbff193a204a91423d3bfed",
+    "replay_pointer": "63834b783c874f7b",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/9fc18bc9b594bab3cf8c45252bbbae57496b0762241a18325267a9d50b204c57.json"
+  },
+  "meta": {
+    "run_id": "4e209de6-8151-4786-b48c-87d5c8393846",
+    "timestamp": "2026-06-11T08:34:36.427Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

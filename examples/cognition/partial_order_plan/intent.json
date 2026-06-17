@@ -1,0 +1,33 @@
+{
+  "intent": "planning",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "pop:op:pickup:pre",
+      "value": "at_depot"
+    },
+    {
+      "key": "pop:op:pickup:add",
+      "value": "holding"
+    },
+    {
+      "key": "pop:op:pickup:del",
+      "value": "at_depot"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "holding",
+      "value": "true"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "at_depot",
+      "value": "true"
+    }
+  ]
+}

@@ -29,7 +29,7 @@ function run(args: string[], timeoutMs = 30000): Promise<CliResult> {
     execFile(
       process.execPath,
       [CLI_PATH, ...args],
-      { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024 },
+      { timeout: timeoutMs, maxBuffer: 10 * 1024 * 1024, cwd: os.tmpdir() },
       (error, stdout, stderr) => {
         const code = error && 'code' in error && typeof error.code === 'number' ? error.code : error ? 1 : 0;
         resolve({ exitCode: code, stdout: stdout ?? '', stderr: stderr ?? '' });

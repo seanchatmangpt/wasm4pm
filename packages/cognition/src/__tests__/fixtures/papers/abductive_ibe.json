@@ -1,0 +1,32 @@
+{
+  "breed": "abductive_ibe",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Thagard 1989"
+  },
+  "input": {
+    "intent": "coherence",
+    "facts": [
+      { "key": "evidence", "value": "E1" },
+      { "key": "evidence", "value": "E2" },
+      { "key": "hypothesis", "value": "H1" },
+      { "key": "hypothesis", "value": "H2" },
+      { "key": "contradicts", "value": "H1,H2" }
+    ],
+    "rules": [
+      { "id": "expl1", "premise": ["H1"], "conclusion": "E1", "certainty": 1.0 },
+      { "id": "expl2", "premise": ["H1"], "conclusion": "E2", "certainty": 1.0 },
+      { "id": "expl3", "premise": ["H2"], "conclusion": "E1", "certainty": 1.0 }
+    ],
+    "candidates": [
+      { "id": "H1", "score": 0.5, "eliminated": false, "elimination_reason": null },
+      { "id": "H2", "score": 0.5, "eliminated": false, "elimination_reason": null }
+    ],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "selected": "H1"
+  }
+}

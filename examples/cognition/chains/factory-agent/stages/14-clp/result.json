@@ -1,0 +1,81 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "clp",
+    "breed": "clp",
+    "status": "ok",
+    "output": {
+      "breed": "Clp",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "clp:solution:x",
+          "value": "6"
+        },
+        {
+          "key": "clp:solution:y",
+          "value": "3"
+        },
+        {
+          "key": "clp:backtracks",
+          "value": "0"
+        }
+      ],
+      "selected": "x=6,y=3",
+      "explanation": "CLP(FD): 2 constraints posted, 0 backtrack(s), solution found.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "post-constraint",
+          "detail": "c1: x=y+3",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "propagate",
+          "detail": "y: {0,1,2,3,4,5,6,7,8,9} -> {3,4,5,6}",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "post-constraint",
+          "detail": "c2: y<4",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "propagate",
+          "detail": "y: {3,4,5,6} -> {3}",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "propagate",
+          "detail": "x: {6,7,8,9} -> {6}",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "solution",
+          "detail": "x=6,y=3",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "6230c20c97ded94aed6130db597e994e8ee30ca2a4d4d1cef88b12c7dd9d81a7",
+    "output_hash": "515f57f16fb98af87352d6bad887c7b567966429666c2b80b123bca6e27b66e5",
+    "replay_pointer": "515f57f16fb98af8",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/6230c20c97ded94aed6130db597e994e8ee30ca2a4d4d1cef88b12c7dd9d81a7.json"
+  },
+  "meta": {
+    "run_id": "52db05eb-11e1-415d-938c-b8d3d4885044",
+    "timestamp": "2026-06-11T19:56:06.814Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

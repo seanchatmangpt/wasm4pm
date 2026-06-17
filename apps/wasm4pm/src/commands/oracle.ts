@@ -7,6 +7,34 @@ import { withSpan } from './_otel.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 
+/**
+ * Structural validation for OCEL JSON output from WASM.
+ * The WASM `export_ocel2_to_json` function produces an object with `events` and `objects` arrays.
+ * Validates at the boundary before any downstream access.
+ */
+function parseOcelJson(raw: string, commandName: string): { events: unknown[]; objects: unknown[] } {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    throw new Error(`${commandName}: WASM returned invalid JSON for OCEL export: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new Error(`${commandName}: WASM OCEL export must be an object, got: ${typeof parsed}`);
+  }
+  const o = parsed as Record<string, unknown>;
+  if (o['events'] !== undefined && !Array.isArray(o['events'])) {
+    throw new Error(`${commandName}: WASM OCEL export 'events' must be an array`);
+  }
+  if (o['objects'] !== undefined && !Array.isArray(o['objects'])) {
+    throw new Error(`${commandName}: WASM OCEL export 'objects' must be an array`);
+  }
+  return {
+    events: Array.isArray(o['events']) ? o['events'] : [],
+    objects: Array.isArray(o['objects']) ? o['objects'] : [],
+  };
+}
+
 export const conform = defineCommand({
   meta: {
     name: 'conform',
@@ -59,17 +87,17 @@ export const conform = defineCommand({
         
         const handle = wasm.load_ocel2_from_ndjson(content);
         const ocelJson = wasm.export_ocel2_to_json(handle);
-        const ocel = JSON.parse(ocelJson);
+        const ocel = parseOcelJson(ocelJson, 'oracle.conform');
 
         const episodeGroups: Record<string, any[]> = {};
-        for (const event of ocel.events || []) {
+        for (const event of ocel.events as any[]) {
           let episodeId: string | undefined;
-          for (const rel of event.relationships || []) {
+          for (const rel of (event as any).relationships || []) {
             if (rel.qualifier === 'episode') {
               episodeId = rel.objectId;
               break;
             }
-            const obj = ocel.objects?.find((o: any) => o.id === rel.objectId);
+            const obj = (ocel.objects as any[])?.find((o: any) => o.id === rel.objectId);
             if (obj && (obj.type === 'episode' || obj.object_type === 'episode')) {
               episodeId = rel.objectId;
               break;
@@ -209,17 +237,17 @@ export const attest = defineCommand({
         
         const handle = wasm.load_ocel2_from_ndjson(content);
         const ocelJson = wasm.export_ocel2_to_json(handle);
-        const ocel = JSON.parse(ocelJson);
+        const ocel = parseOcelJson(ocelJson, 'oracle.attest');
 
         const episodeGroups: Record<string, any[]> = {};
-        for (const event of ocel.events || []) {
+        for (const event of ocel.events as any[]) {
           let episodeId: string | undefined;
-          for (const rel of event.relationships || []) {
+          for (const rel of (event as any).relationships || []) {
             if (rel.qualifier === 'episode') {
               episodeId = rel.objectId;
               break;
             }
-            const obj = ocel.objects?.find((o: any) => o.id === rel.objectId);
+            const obj = (ocel.objects as any[])?.find((o: any) => o.id === rel.objectId);
             if (obj && (obj.type === 'episode' || obj.object_type === 'episode')) {
               episodeId = rel.objectId;
               break;
@@ -274,7 +302,7 @@ export const attest = defineCommand({
             let receiptGateResult = receiptEmittedEvent.attributes?.find((a: any) => a.name === 'gate_result')?.value;
             if (receiptGateResult === undefined) {
               for (const rel of receiptEmittedEvent.relationships || []) {
-                const obj = ocel.objects?.find((o: any) => o.id === rel.objectId);
+                const obj = (ocel.objects as any[]).find((o: any) => o.id === rel.objectId);
                 if (obj && (obj.type?.toLowerCase() === 'receipt' || obj.object_type?.toLowerCase() === 'receipt')) {
                   receiptGateResult = obj.attributes?.find((a: any) => a.name === 'gate_result')?.value;
                   if (receiptGateResult !== undefined) break;

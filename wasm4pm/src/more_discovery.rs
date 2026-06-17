@@ -899,12 +899,29 @@ pub fn extract_process_skeleton(
 
             let mut dfg = DFG::new();
 
-            for activity in &activities {
-                dfg.nodes.push(DFGNode {
-                    id: activity.clone(),
-                    label: activity.clone(),
-                    frequency: 0,
-                });
+            // Calculate activity frequencies and start/end activities
+            let mut activity_freqs = rustc_hash::FxHashMap::default();
+            let mut start_counts = rustc_hash::FxHashMap::default();
+            let mut end_counts = rustc_hash::FxHashMap::default();
+
+            for trace in &log.traces {
+                let mut first = true;
+                let mut last_event: Option<&String> = None;
+
+                for event in &trace.events {
+                    if let Some(AttributeValue::String(act)) = event.attributes.get(activity_key) {
+                        *activity_freqs.entry(act.clone()).or_insert(0) += 1;
+                        if first {
+                            *start_counts.entry(act.clone()).or_insert(0) += 1;
+                            first = false;
+                        }
+                        last_event = Some(act);
+                    }
+                }
+
+                if let Some(act) = last_event {
+                    *end_counts.entry(act.clone()).or_insert(0) += 1;
+                }
             }
 
             // Only include edges above frequency threshold
@@ -918,14 +935,34 @@ pub fn extract_process_skeleton(
                 }
             }
 
-            // Remove nodes with no edges
-            let nodes_with_edges: HashSet<String> = dfg
-                .edges
-                .iter()
-                .flat_map(|e| vec![e.from.clone(), e.to.clone()])
-                .collect();
+            // Remove nodes with no edges, but without allocating multiple strings in flat_map
+            let mut nodes_with_edges: HashSet<&str> = HashSet::new();
+            for e in &dfg.edges {
+                nodes_with_edges.insert(&e.from);
+                nodes_with_edges.insert(&e.to);
+            }
 
-            dfg.nodes.retain(|n| nodes_with_edges.contains(&n.id));
+            for activity in &activities {
+                if nodes_with_edges.contains(activity.as_str()) {
+                    dfg.nodes.push(DFGNode {
+                        id: activity.clone(),
+                        label: activity.clone(),
+                        frequency: *activity_freqs.get(activity).unwrap_or(&0),
+                    });
+                }
+            }
+
+            // Populate start and end activities for the DFG skeleton
+            for (act, count) in start_counts {
+                if nodes_with_edges.contains(act.as_str()) {
+                    dfg.start_activities.insert(act, count);
+                }
+            }
+            for (act, count) in end_counts {
+                if nodes_with_edges.contains(act.as_str()) {
+                    dfg.end_activities.insert(act, count);
+                }
+            }
 
             Ok(dfg)
         }

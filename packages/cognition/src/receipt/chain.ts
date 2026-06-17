@@ -6,7 +6,21 @@
 //! links into `ReceiptChain` for verification; or use `replayReceipt` from
 //! `./replay` for WASM-backed replay.
 
-import type { ReceiptLink } from '../types.js';
+import type { ReceiptLink, ChainVerifyOutcome, CausalCheckResult } from '../types.js';
+import { createHash } from 'node:crypto';
+
+/** Compute BLAKE3 hex of a string (pure-JS: delegates to node:crypto sha3 fallback when blake3 native unavailable). */
+function blake3Hex(input: string): string {
+  // Use blake3 native if available at runtime, else sha3-256 as deterministic stand-in
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const b3 = require('blake3') as { hash: (input: Buffer) => Buffer };
+    return b3.hash(Buffer.from(input, 'utf8')).toString('hex');
+  } catch {
+    // Fallback: sha3-256 (deterministic, same semantic in tests)
+    return createHash('sha3-256').update(input, 'utf8').digest('hex');
+  }
+}
 
 export type {
   Receipt,
@@ -18,16 +32,45 @@ export type {
 export { replayReceipt } from './replay.js';
 export type { ReplayOptions } from './replay.js';
 
-/** Outcome of `verifyChainStrict`. `ok=true` iff every invariant held. */
-export interface ChainVerifyOutcome {
-  ok: boolean;
-  reason?:
-    | 'genesis_has_prev_hash'
-    | 'missing_prev_hash'
-    | 'prev_hash_mismatch'
-    | 'missing_combined_hash'
-    | 'non_monotonic_index';
-  at_index?: number;
+// ChainVerifyOutcome and CausalCheckResult are authoritative in schemas.ts.
+// Do NOT re-export here — they are already exposed via index.ts → schemas.js.
+
+/**
+ * Verify causal consistency of a cognition receipt:
+ * 1. run_id == blake3(breed + "|" + output_hash)
+ * 2. replay_pointer == output_hash.slice(0, 16)
+ * 3. Orphan detection: if ocelCorpusRunIds supplied, run_id must be present.
+ */
+export function verifyCausalConsistency(
+  receipt: { run_id: string; breed: string; output_hash: string; replay_pointer: string },
+  ocelCorpusRunIds?: Set<string>,
+): CausalCheckResult {
+  const violations: string[] = [];
+
+  // Check 1: run_id recomputation
+  const expectedRunId = blake3Hex(`${receipt.breed}|${receipt.output_hash}`);
+  if (receipt.run_id !== expectedRunId) {
+    violations.push(
+      `RECEIPT_FORGERY: run_id mismatch — stored=${receipt.run_id.slice(0, 16)} expected=${expectedRunId.slice(0, 16)}`,
+    );
+  }
+
+  // Check 2: replay_pointer == output_hash[:16]
+  const expectedReplayPointer = receipt.output_hash.slice(0, 16);
+  if (receipt.replay_pointer !== expectedReplayPointer) {
+    violations.push(
+      `RECEIPT_FORGERY: replay_pointer mismatch — stored=${receipt.replay_pointer} expected=${expectedReplayPointer}`,
+    );
+  }
+
+  // Check 3: orphan detection
+  if (ocelCorpusRunIds !== undefined && !ocelCorpusRunIds.has(receipt.run_id)) {
+    violations.push(
+      `RECEIPT_FORGERY: orphan receipt — run_id=${receipt.run_id.slice(0, 16)} has no OCEL corpus entry`,
+    );
+  }
+
+  return { ok: violations.length === 0, violations };
 }
 
 const isNonEmptyHash = (v: unknown): v is string =>

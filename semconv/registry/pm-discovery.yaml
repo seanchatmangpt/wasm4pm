@@ -1,0 +1,175 @@
+groups:
+  - id: pm.discovery
+    type: attribute_group
+    prefix: pm.discovery
+    brief: Process discovery operations
+    attributes:
+      - id: algorithm
+        type: string
+        brief: Discovery algorithm name (dfg, alpha_plus_plus, ilp_optimization, genetic, variants, etc.)
+        requirement_level: required
+      - id: input_format
+        type: string
+        brief: Input event log format (xes, ocel, csv)
+        requirement_level: required
+      - id: model_type
+        type: string
+        brief: Output model type (dfg, petri_net, process_tree, bpmn)
+        requirement_level: required
+      - id: trace_count
+        type: int
+        brief: Number of traces in input log
+        requirement_level: opt_in
+      - id: event_count
+        type: int
+        brief: Total number of events in input log
+        requirement_level: opt_in
+      - id: activity_count
+        type: int
+        brief: Unique number of activities discovered
+        requirement_level: opt_in
+      - id: model_fitness
+        type: double
+        brief: Model fitness score (0-1) if applicable
+        requirement_level: opt_in
+      - id: model_precision
+        type: double
+        brief: Model precision score (0-1) if applicable
+        requirement_level: opt_in
+      - id: execution_time_ms
+        type: int
+        brief: Discovery algorithm execution time in milliseconds
+        requirement_level: recommended
+      - id: timeout_exceeded
+        type: boolean
+        brief: Whether operation hit timeout limit
+        requirement_level: opt_in
+
+  - id: pm.discover.dfg
+    type: span
+    prefix: pm.discover.dfg
+    name: pm.discover.dfg
+    span_kind: internal
+    brief: Discover a Directly-Follows Graph from event log
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+        requirement_level: required
+      - ref: pm.discovery.model_type
+        requirement_level: required
+      - ref: pm.discovery.trace_count
+        requirement_level: opt_in
+      - ref: pm.discovery.event_count
+        requirement_level: opt_in
+      - ref: pm.discovery.activity_count
+        requirement_level: opt_in
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+
+  - id: pm.discover.alpha_plus_plus
+    type: span
+    prefix: pm.discover.alpha_plus_plus
+    name: pm.discover.alpha_plus_plus
+    span_kind: internal
+    brief: Discover Petri Net using Alpha++ algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: required
+      - ref: pm.discovery.input_format
+        requirement_level: opt_in
+      - ref: pm.discovery.model_type
+        requirement_level: opt_in
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+
+  - id: pm.discover.ilp_optimization
+    type: span
+    prefix: pm.discover.ilp_optimization
+    name: pm.discover.ilp_optimization
+    span_kind: internal
+    brief: Discover optimal process model using Integer Linear Programming
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: opt_in
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+      - ref: pm.discovery.timeout_exceeded
+        requirement_level: opt_in
+
+  - id: pm.discover.genetic_algorithm
+    type: span
+    prefix: pm.discover.genetic_algorithm
+    name: pm.discover.genetic_algorithm
+    span_kind: internal
+    brief: Discover process model using evolutionary algorithm
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: opt_in
+      - ref: pm.discovery.execution_time_ms
+        requirement_level: required
+      - id: population_size
+        type: int
+        brief: Genetic algorithm population size
+        requirement_level: opt_in
+      - id: generation_count
+        type: int
+        brief: Number of generations evolved
+        requirement_level: opt_in
+
+  - id: pm.discover.variants
+    type: span
+    prefix: pm.discover.variants
+    name: pm.discover.variants
+    span_kind: internal
+    brief: Discover unique trace variants and their frequencies
+    attributes:
+      - ref: pm.discovery.algorithm
+        requirement_level: opt_in
+      - id: variant_count
+        type: int
+        brief: Number of unique trace variants
+        requirement_level: required
+      - id: most_frequent_variant_support
+        type: double
+        brief: Support of most frequent variant (0-1)
+        requirement_level: opt_in
+
+  - id: pm.analyze.statistics
+    type: span
+    prefix: pm.analyze.statistics
+    name: pm.analyze.statistics
+    span_kind: internal
+    brief: Analyze event log statistics
+    attributes:
+      - ref: pm.analysis.analysis_type
+        requirement_level: required
+      - ref: pm.analysis.metric_name
+        requirement_level: opt_in
+      - ref: pm.discovery.trace_count
+        requirement_level: opt_in
+      - ref: pm.discovery.event_count
+        requirement_level: opt_in
+      - ref: pm.discovery.activity_count
+        requirement_level: opt_in
+
+  - id: pm.analyze.bottleneck
+    type: span
+    prefix: pm.analyze.bottleneck
+    name: pm.analyze.bottleneck
+    span_kind: internal
+    brief: Identify process bottlenecks
+    attributes:
+      - ref: pm.analysis.analysis_type
+        requirement_level: opt_in
+      - ref: pm.analysis.affected_count
+        requirement_level: opt_in
+      - id: bottleneck_activity
+        type: string
+        brief: Activity identified as bottleneck
+        requirement_level: opt_in
+      - id: avg_duration_ms
+        type: int
+        brief: Average duration of bottleneck activity in milliseconds
+        requirement_level: opt_in
+

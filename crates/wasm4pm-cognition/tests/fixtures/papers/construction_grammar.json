@@ -1,0 +1,55 @@
+{
+  "paper": {
+    "authors": "Adele E. Goldberg",
+    "title": "Constructions: A Construction Grammar Approach to Argument Structure",
+    "venue": "University of Chicago Press",
+    "year": 1995,
+    "section": "Ch. 1-2 \u2014 the ditransitive construction (X CAUSES Y to RECEIVE Z); 'Pat faxed Bill the letter' shows the construction (not the verb 'fax') supplying the transfer meaning",
+    "claim": "'pat faxed bill the letter' is licensed by the ditransitive construction; 'fax' is lexically transitive, so the CAUSE-RECEIVE meaning is contributed by the construction (coercion)."
+  },
+  "input": {
+    "intent": "parse a ditransitive",
+    "facts": [
+      {
+        "key": "cxg:utterance",
+        "value": "pat faxed bill the letter"
+      },
+      {
+        "key": "lex:pat:pos",
+        "value": "noun"
+      },
+      {
+        "key": "lex:faxed:pos",
+        "value": "verb"
+      },
+      {
+        "key": "lex:faxed:valence",
+        "value": "transitive"
+      },
+      {
+        "key": "lex:bill:pos",
+        "value": "noun"
+      },
+      {
+        "key": "lex:the:pos",
+        "value": "det"
+      },
+      {
+        "key": "lex:letter:pos",
+        "value": "noun"
+      }
+    ],
+    "candidates": [],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "construction": "ditransitive",
+    "coerced": "true",
+    "meaning_frame": "CAUSE-RECEIVE",
+    "slot_rec": "bill",
+    "slot_theme": "the letter"
+  }
+}

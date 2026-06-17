@@ -1,0 +1,73 @@
+(node:14067) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "episodic_memory",
+    "breed": "episodic_memory",
+    "status": "ok",
+    "output": {
+      "breed": "EpisodicMemory",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "score:ep_c_ea09a433",
+          "value": "1.0000"
+        },
+        {
+          "key": "recalled:ep_c_ea09a433",
+          "value": "true"
+        }
+      ],
+      "selected": "ep_c_ea09a433",
+      "explanation": "episodic recall selected 'ep_c_ea09a433' by Jaccard + temporal kernel over 1 episodes",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "encode-episode",
+          "detail": "'ep_c_ea09a433' t=9 (2 atoms, salience=1.00)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "present-cue",
+          "detail": "cue t=10 with 1 atoms",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "score-episode",
+          "detail": "'ep_c_ea09a433' jaccard=0.5000 temporal=0.5000 score=1.0000",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "recall",
+          "detail": "recalled 'ep_c_ea09a433' (score=1.0000)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "decision",
+          "detail": "episode 'ep_c_ea09a433' wins over 1 candidates",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c65b0a1c2dfe3851d76b862e5454751c564e2c50630d02e48b227dbf686ce567",
+    "output_hash": "1c6f7737786b1a487f7b744a2d2bf0d3e8d5d78f57a453874509026aa76a768c",
+    "replay_pointer": "1c6f7737786b1a48",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c65b0a1c2dfe3851d76b862e5454751c564e2c50630d02e48b227dbf686ce567.json"
+  },
+  "meta": {
+    "run_id": "8b2900dc-d97c-403e-9a9f-e16b45a914f4",
+    "timestamp": "2026-06-11T08:35:06.500Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

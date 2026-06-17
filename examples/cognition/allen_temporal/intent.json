@@ -1,0 +1,18 @@
+{
+  "intent": "propagate temporal constraints",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "relation",
+      "value": "A,B,m"
+    },
+    {
+      "key": "relation",
+      "value": "B,C,d"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

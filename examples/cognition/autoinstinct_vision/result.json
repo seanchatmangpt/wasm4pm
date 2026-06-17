@@ -1,0 +1,152 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_vision",
+    "breed": "autoinstinct_vision",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctVision",
+      "candidates": [
+        {
+          "id": "A",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "B",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "C",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "D",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "E",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "F",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "cube",
+          "value": "A"
+        },
+        {
+          "key": "cube",
+          "value": "B"
+        },
+        {
+          "key": "sphere",
+          "value": "C"
+        },
+        {
+          "key": "pyramid",
+          "value": "D"
+        },
+        {
+          "key": "cylinder",
+          "value": "E"
+        },
+        {
+          "key": "cube",
+          "value": "F"
+        },
+        {
+          "key": "supported_by:B",
+          "value": "A"
+        },
+        {
+          "key": "supported_by:F",
+          "value": "B"
+        },
+        {
+          "key": "supported_by:E",
+          "value": "C"
+        },
+        {
+          "key": "supported_by:D",
+          "value": "F"
+        }
+      ],
+      "selected": "D",
+      "explanation": "AutoinstinctVision: 6 objects observed; first clear object is D",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "observe-object",
+          "detail": "observed A as cube (on table)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "observe-object",
+          "detail": "observed B as cube (supported_by=A)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "observe-object",
+          "detail": "observed C as sphere (on table)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "observe-object",
+          "detail": "observed D as pyramid (supported_by=F)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "observe-object",
+          "detail": "observed E as cylinder (supported_by=C)",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "observe-object",
+          "detail": "observed F as cube (supported_by=B)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "find-clear-object",
+          "detail": "clear object found: D",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "3b3af0105879a81a944decc9fd876145a26dfffcf58c765bd715e7de3798fd9b",
+    "output_hash": "33907d154dbd58be61ef97f4f4ea230222b736988809820778b1c1ac77a26555",
+    "replay_pointer": "33907d154dbd58be",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_vision/.wasm4pm/receipts/3b3af0105879a81a944decc9fd876145a26dfffcf58c765bd715e7de3798fd9b.json"
+  },
+  "meta": {
+    "run_id": "b6b1c616-137f-432e-8dac-a926984b0d3e",
+    "timestamp": "2026-06-11T18:48:16.961Z",
+    "duration_ms": 20,
+    "version": "26.6.10"
+  }
+}

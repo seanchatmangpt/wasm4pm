@@ -1,0 +1,77 @@
+(node:14096) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "version_space",
+    "breed": "version_space",
+    "status": "ok",
+    "output": {
+      "breed": "VersionSpace",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "vs:s",
+          "value": "val1_c_e95b8f9d,val2_c_e95b8f9d"
+        },
+        {
+          "key": "vs:g:0",
+          "value": "?,?"
+        },
+        {
+          "key": "vs:converged",
+          "value": "false"
+        }
+      ],
+      "selected": "val1_c_e95b8f9d,val2_c_e95b8f9d",
+      "explanation": "Candidate elimination over 1 examples: S=<val1_c_e95b8f9d,val2_c_e95b8f9d>, |G|=1, converged=false.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "vs-init",
+          "detail": "S=<0,0>, G={<?,?>}",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "vs-update",
+          "detail": "example 0 <val1_c_e95b8f9d,val2_c_e95b8f9d>",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "vs-update",
+          "detail": "S := <val1_c_e95b8f9d,val2_c_e95b8f9d>",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "vs-update",
+          "detail": "|S|=1 S=<val1_c_e95b8f9d,val2_c_e95b8f9d>, |G|=1",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "vs-verdict",
+          "detail": "S=<val1_c_e95b8f9d,val2_c_e95b8f9d>, G={<?,?>}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "32402f00b5e34e05685c47aaca2a501edf3819eecfd6c1d19e88e12ad287e271",
+    "output_hash": "6a78da93b0004484ea1b1c555e7bff67abc7bd0399972e20f464afcb1e6f24a1",
+    "replay_pointer": "6a78da93b0004484",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/32402f00b5e34e05685c47aaca2a501edf3819eecfd6c1d19e88e12ad287e271.json"
+  },
+  "meta": {
+    "run_id": "eb315362-1941-4fa5-b31f-748a2eae65e3",
+    "timestamp": "2026-06-11T08:35:07.958Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

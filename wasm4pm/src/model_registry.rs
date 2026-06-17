@@ -224,7 +224,8 @@ impl ProcessModelRegistry {
 static REGISTRY: Lazy<Mutex<ProcessModelRegistry>> = Lazy::new(|| {
     let mut registry = ProcessModelRegistry::new(512);
 
-    let payload = include_str!("../../fixtures/models/living_diagnostic_clear_v1.pnml").to_string();
+    let payload =
+        include_str!("../vendored-fixtures/models/living_diagnostic_clear_v1.pnml").to_string();
     let envelope = ProcessModelEnvelope {
         id: "living_diagnostic_clear_v1".to_string(),
         name: "Gall Checkpoint Model".to_string(),
@@ -757,7 +758,7 @@ mod tests {
 
     #[test]
     fn test_living_diagnostic_clear_v1_validation() {
-        let pnml = include_str!("../../fixtures/models/living_diagnostic_clear_v1.pnml");
+        let pnml = include_str!("../vendored-fixtures/models/living_diagnostic_clear_v1.pnml");
         let petri_net = crate::pnml_io::from_pnml(pnml).unwrap();
         assert!(validate_workflow_net(&petri_net).is_ok());
 

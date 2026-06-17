@@ -1,0 +1,42 @@
+{
+  "model_id": "rl_symbolic-l1-v1",
+  "model_level": "L1",
+  "breed_id": "rl_symbolic",
+  "object_types": ["mdp", "qtable", "policy", "decision"],
+  "places": [
+    {"id": "p1", "name": "model_pending",    "object_type": "mdp"},
+    {"id": "p2", "name": "model_loaded",     "object_type": "mdp"},
+    {"id": "p3", "name": "episode_running",  "object_type": "qtable"},
+    {"id": "p4", "name": "episode_done",     "object_type": "qtable"},
+    {"id": "p5", "name": "policy_extracted", "object_type": "policy"},
+    {"id": "p6", "name": "decision_emitted", "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "load-mdp",       "label": "load-mdp"},
+    {"id": "t2", "name": "episode-start",  "label": "episode-start"},
+    {"id": "t3", "name": "q-update",       "label": "q-update"},
+    {"id": "t4", "name": "episode-end",    "label": "episode-end"},
+    {"id": "t5", "name": "extract-policy", "label": "extract-policy"},
+    {"id": "t6", "name": "decision",       "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p5", "type": "produce"},
+    {"from": "p5", "to": "t6", "type": "consume"},
+    {"from": "t6", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

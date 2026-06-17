@@ -1,0 +1,81 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "allen_temporal",
+    "breed": "allen_temporal",
+    "status": "ok",
+    "output": {
+      "breed": "AllenTemporal",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "derived:A,B",
+          "value": "m"
+        },
+        {
+          "key": "derived:A,C",
+          "value": "o|d|s"
+        },
+        {
+          "key": "derived:B,A",
+          "value": "mi"
+        },
+        {
+          "key": "derived:B,C",
+          "value": "d"
+        },
+        {
+          "key": "derived:C,A",
+          "value": "oi|di|si"
+        },
+        {
+          "key": "derived:C,B",
+          "value": "di"
+        }
+      ],
+      "selected": "temporal-consistent",
+      "explanation": "Allen interval network over 3 intervals reached path-consistency fixpoint",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "allen-load",
+          "detail": "rel A,B,m",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "allen-load",
+          "detail": "rel B,C,d",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "allen-compose",
+          "detail": "C via B -> A: oi|di|si",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "allen-verdict",
+          "detail": "path-consistency-fixpoint",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1a0ddceec8448007c5f4b78360988f1f97dd89602623ac21efcb2c9746e9f5f0",
+    "output_hash": "5857df023eaa19ce0a2dbc5b6ab908c207a1f62cb7a0b3416b0f0d02bd4a194c",
+    "replay_pointer": "5857df023eaa19ce",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/allen_temporal/.wasm4pm/receipts/1a0ddceec8448007c5f4b78360988f1f97dd89602623ac21efcb2c9746e9f5f0.json"
+  },
+  "meta": {
+    "run_id": "8be9458c-a5d1-4270-9072-dcad5589cd98",
+    "timestamp": "2026-06-11T18:46:06.849Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

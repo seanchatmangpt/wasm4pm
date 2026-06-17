@@ -1,0 +1,69 @@
+(node:14049) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "tableaux",
+    "breed": "tableaux",
+    "status": "ok",
+    "output": {
+      "breed": "Tableaux",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "tableaux:verdict",
+          "value": "valid"
+        }
+      ],
+      "selected": "valid",
+      "explanation": "Tableaux on '(valid_c_0ecd8cca -> valid_c_0ecd8cca)': VALID (1 expansions)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "parse-formula",
+          "detail": "(valid_c_0ecd8cca -> valid_c_0ecd8cca)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "sign-root",
+          "detail": "F (valid_c_0ecd8cca -> valid_c_0ecd8cca)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "alpha-expand",
+          "detail": "F (valid_c_0ecd8cca -> valid_c_0ecd8cca) => T valid_c_0ecd8cca, F valid_c_0ecd8cca",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "close-branch",
+          "detail": "clash on 'valid_c_0ecd8cca' (F valid_c_0ecd8cca)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "verdict",
+          "detail": "valid (all branches closed)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "5be4333dbd7fe14802663fa6956ad609ec993d6ec457f9deeb32ea7017cd8ce4",
+    "output_hash": "7ebcf0f58d6095152bc25f0a97e1648ee7d5d56fc9a7d8a5423d1fc319940c66",
+    "replay_pointer": "7ebcf0f58d609515",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/5be4333dbd7fe14802663fa6956ad609ec993d6ec457f9deeb32ea7017cd8ce4.json"
+  },
+  "meta": {
+    "run_id": "abb91416-ec38-4e93-bbd1-3f4f09cfe86d",
+    "timestamp": "2026-06-11T08:35:05.797Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

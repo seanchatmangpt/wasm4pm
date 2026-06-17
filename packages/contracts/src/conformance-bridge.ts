@@ -11,18 +11,31 @@
  *   - overall passed = every non-null threshold passes
  */
 
-// ── Core types ────────────────────────────────────────────────────────────────
+import { z } from 'zod';
+
+// ── Zod schemas (source of truth for runtime validation) ──────────────────────
+
+export const ConformanceDimensionSchema = z.enum([
+  'fitness',
+  'precision',
+  'lifecycle',
+  'cardinality',
+  'receipt',
+]);
 
 /**
  * The five conformance dimensions that mcpp ConformanceThresholds tracks.
  * Mirrors the Rust enum variants for Option<f64> fields.
  */
-export type ConformanceDimension =
-  | 'fitness'
-  | 'precision'
-  | 'lifecycle'
-  | 'cardinality'
-  | 'receipt';
+export type ConformanceDimension = z.infer<typeof ConformanceDimensionSchema>;
+
+export const ConformanceThresholdsSchema = z.object({
+  fitness: z.number().min(0).max(1).optional(),
+  precision: z.number().min(0).max(1).optional(),
+  lifecycle: z.number().min(0).max(1).optional(),
+  cardinality: z.number().min(0).max(1).optional(),
+  receipt: z.number().min(0).max(1).optional(),
+});
 
 /**
  * Threshold specification for each conformance dimension.
@@ -30,58 +43,55 @@ export type ConformanceDimension =
  *   - undefined / null → None (dimension not required)
  *   - number (0.0–1.0) → Some(value) (dimension must meet this floor)
  */
-export interface ConformanceThresholds {
-  fitness?: number;
-  precision?: number;
-  lifecycle?: number;
-  cardinality?: number;
-  receipt?: number;
-}
+export type ConformanceThresholds = z.infer<typeof ConformanceThresholdsSchema>;
+
+export const FitnessResultSchema = z.object({
+  avg_trace_fitness: z.number(),
+  avg_trace_precision: z.number(),
+});
 
 /**
  * Mirrors the Rust FitnessResult struct from wasm4pm/src/powl/conformance/token_replay.rs.
  * Both fields are f64 in Rust, number here.
  */
-export interface FitnessResult {
-  avg_trace_fitness: number;
-  avg_trace_precision: number;
-}
+export type FitnessResult = z.infer<typeof FitnessResultSchema>;
 
 // ── Evaluation output ─────────────────────────────────────────────────────────
+
+export const DimensionResultSchema = z.object({
+  threshold: z.number().nullable(),
+  observed: z.number().nullable(),
+  passed: z.boolean(),
+});
 
 /**
  * Per-dimension evaluation detail.
  */
-export interface DimensionResult {
-  /** The required floor, or null if the dimension was not specified. */
-  threshold: number | null;
-  /** The observed value, or null if the signal was not provided (not-applicable). */
-  observed: number | null;
-  /** True when threshold is null (trivially passes) or observed >= threshold. */
-  passed: boolean;
-}
+export type DimensionResult = z.infer<typeof DimensionResultSchema>;
+
+export const ConformanceEvaluationSchema = z.object({
+  passed: z.boolean(),
+  dimensions: z.record(ConformanceDimensionSchema, DimensionResultSchema),
+});
 
 /**
  * Full evaluation of a FitnessResult against a ConformanceThresholds spec.
  */
-export interface ConformanceEvaluation {
-  /** True iff every dimension with a non-null threshold passes. */
-  passed: boolean;
-  /** Per-dimension breakdown. */
-  dimensions: Record<ConformanceDimension, DimensionResult>;
-}
+export type ConformanceEvaluation = z.infer<typeof ConformanceEvaluationSchema>;
 
 // ── Extra signals not carried by FitnessResult ────────────────────────────────
+
+export const ConformanceExtrasSchema = z.object({
+  lifecycle: z.number().optional(),
+  cardinality: z.number().optional(),
+  receipt: z.number().optional(),
+});
 
 /**
  * Additional observed values for the three dimensions not present in FitnessResult.
  * Pass these from your OCEL / receipt chain signals.
  */
-export interface ConformanceExtras {
-  lifecycle?: number;
-  cardinality?: number;
-  receipt?: number;
-}
+export type ConformanceExtras = z.infer<typeof ConformanceExtrasSchema>;
 
 // ── Implementation ────────────────────────────────────────────────────────────
 

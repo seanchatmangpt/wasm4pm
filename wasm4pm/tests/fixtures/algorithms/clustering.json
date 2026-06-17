@@ -1,0 +1,12 @@
+{
+  "algorithm": "clustering",
+  "provenance": {
+    "paper": "Song, M., Gunther, C.W., van der Aalst, W.M.P. (2008). Trace Clustering in Process Mining. BPM 2008 Workshops.",
+    "locus": "Section 3, k-medoids / k-means bitset clustering",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "clusters_ge_1",
+    "rationale": "Clustering the running-example log into k clusters (k>=1) always yields at least one non-empty cluster."
+  }
+}

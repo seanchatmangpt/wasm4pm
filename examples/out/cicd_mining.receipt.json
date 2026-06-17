@@ -1,0 +1,2466 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.6.10",
+  "commit": "18deadcc2697cad4903d72e063b84e1d3cf75dbb",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "cicd_mining",
+  "input": {
+    "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "predict_next_activity",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8",
+      "duration_ms": 15.054,
+      "expected_path": {
+        "route_id": "wpm.example.cicd_mining.predict_next_activity.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_next_activity_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8",
+                "duration_ms": 15.054
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_next_activity",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_next_activity_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "0b84faf83b42897f8595cad1afd085722d50bc435f4a9d523bf3eeabcf2ede74"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_next_activity_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:31.205Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:32.204Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:34.921Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:36.435Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:35.694Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8",
+                "duration_ms": 15.054
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:33.167Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:35.597Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:37.844Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_next_activity",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:38.560Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_next_activity_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:37.476Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_next_activity_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_next_activity",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_next_activity_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "cfa6ad7d49cee70a79ce1af937972927dcc08cf73c351a40e12fb84ffe77f697",
+        "observed_result_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb",
+        "output_artifact_hash": "9e1436d5664b2b603266078f2bb1605a525a9b5ab5cdca435b72d7e33cf705b8",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "predict_remaining_time",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321",
+      "duration_ms": 27.203,
+      "expected_path": {
+        "route_id": "wpm.example.cicd_mining.predict_remaining_time.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321",
+                "duration_ms": 27.203
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_remaining_time",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_remaining_time_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "1eb6e1455d0c59745c29a292c352f917e7392131409391a53cd5124b33833b95"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:34.245Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:31.216Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:33.342Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:35.997Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:34.777Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321",
+                "duration_ms": 27.203
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:33.408Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:35.523Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:38.466Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_remaining_time",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:38.920Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_remaining_time_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:37.926Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_remaining_time_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_remaining_time",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_remaining_time_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "75f7924eee61c2a131b876beec34f8d9dd6e80e6c1435ca61bba3928a0c244de",
+        "observed_result_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb",
+        "output_artifact_hash": "10141e1ef126dea1c4f9042cdcde6c734012ae4418a45741f534213668d2b321",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "predict_outcome",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801",
+      "duration_ms": 30.222,
+      "expected_path": {
+        "route_id": "wpm.example.cicd_mining.predict_outcome.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_outcome_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801",
+                "duration_ms": 30.222
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_outcome",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_outcome_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "0bde641758b946d52d2faca568f59a022f0f0ab357a0dfed3a22ba0caabaa90f"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_predict_outcome_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:34.060Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:35.285Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:36.270Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:35.929Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:35.444Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801",
+                "duration_ms": 30.222
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:36.592Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:34.326Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:37.924Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_predict_outcome",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:34.877Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_predict_outcome_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:39.937Z",
+              "relationships": [
+                {
+                  "objectId": "result_predict_outcome_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_predict_outcome",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_predict_outcome_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "547b4025e33ed6bc324c4beee43b74ac91e0d50115c95a675b44a8c67511db4e",
+        "observed_result_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb",
+        "output_artifact_hash": "4bae44ce6cda8b17d8b463e441632692ca682bb2679ed06038cff1c76b540801",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "detect_drift",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0",
+      "duration_ms": 10.459,
+      "expected_path": {
+        "route_id": "wpm.example.cicd_mining.detect_drift.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_detect_drift_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0",
+                "duration_ms": 10.459
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_detect_drift",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_detect_drift_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "0dea372b2036cfd41e2c5db6e755b1a8de80b5077705fc76f72468f68b341ab7"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_cicd_mining_detect_drift_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-06-11T19:53:33.469Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-06-11T19:53:32.376Z",
+              "relationships": [
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-06-11T19:53:36.386Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-06-11T19:53:34.054Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.6.10",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-06-11T19:53:34.522Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0",
+                "duration_ms": 10.459
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-06-11T19:53:38.064Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-06-11T19:53:34.593Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-06-11T19:53:37.651Z",
+              "relationships": [
+                {
+                  "objectId": "example_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_detect_drift",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-06-11T19:53:38.171Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_cicd_mining_detect_drift_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-06-11T19:53:40.074Z",
+              "relationships": [
+                {
+                  "objectId": "result_detect_drift_cicd_mining",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_cicd_mining",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_cicd_mining",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_cicd_mining",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_detect_drift",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.6.10",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_detect_drift_cicd_mining",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_cicd_mining",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "957c267de833b431c4fbc6efd3de71aed4dea7eb2033190b554b6b7382403f17",
+        "observed_result_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "da91e248d729be3ec7570f662701d0c8b1282793640819d5e19ddfd18e5ec1eb",
+        "output_artifact_hash": "220d1dbd48745b421a2cddad9d71cde78d6096fc706925b86e76b1bb125c96d0",
+        "registry_hash": "d02d79105bf5eb377af9a8217ac517ca348dbdf1a74fb45796b0c326ee5ce026",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 4,
+  "created_at": "2026-06-11T19:53:30.581Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "20aa43af55c4c3b0fb9a98526ed49f4f8405bd0aa5e6fa48f7c19b326fc9ad10"
+}

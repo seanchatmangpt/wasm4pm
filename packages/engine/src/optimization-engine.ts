@@ -3,68 +3,82 @@
  * Recommends algorithms and profiles based on log characteristics
  */
 
+import { z } from 'zod';
+
 /**
  * Deployment profile options
  */
 export type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
 
+const DeploymentProfileSchema = z.enum(['mobile', 'iot', 'edge', 'fog', 'browser']);
+
 /**
  * Algorithm characteristics for selection
  */
-export interface AlgorithmCharacteristics {
-  name: string;
-  speedScore: number;         // 0-100 (faster = higher)
-  qualityScore: number;       // 0-100 (better model = higher)
-  memoryUsageMB: number;
-  supportedProfiles: DeploymentProfile[];
-}
+export const AlgorithmCharacteristicsSchema = z.object({
+  name: z.string(),
+  speedScore: z.number(),
+  qualityScore: z.number(),
+  memoryUsageMB: z.number(),
+  supportedProfiles: z.array(DeploymentProfileSchema),
+});
+
+export type AlgorithmCharacteristics = z.infer<typeof AlgorithmCharacteristicsSchema>;
 
 /**
  * Log characteristics for algorithm selection
  */
-export interface LogCharacteristics {
-  eventCount: number;
-  traceCount: number;
-  uniqueActivities: number;
-  avgTraceLength: number;
-  estimatedMemoryUsageMB: number; // Caller estimates
-}
+export const LogCharacteristicsSchema = z.object({
+  eventCount: z.number(),
+  traceCount: z.number(),
+  uniqueActivities: z.number(),
+  avgTraceLength: z.number(),
+  estimatedMemoryUsageMB: z.number(),
+});
+
+export type LogCharacteristics = z.infer<typeof LogCharacteristicsSchema>;
 
 /**
  * Algorithm recommendation with cost-benefit score
  */
-export interface AlgorithmRecommendation {
-  algorithmName: string;
-  costBenefitScore: number;     // 0-1, higher = better trade-off
-  speedPotential: number;       // 0-1
-  qualityPotential: number;     // 0-1
-  estimatedTimeMs: number;
-  rationale: string;
-}
+export const AlgorithmRecommendationSchema = z.object({
+  algorithmName: z.string(),
+  costBenefitScore: z.number(),
+  speedPotential: z.number(),
+  qualityPotential: z.number(),
+  estimatedTimeMs: z.number(),
+  rationale: z.string(),
+});
+
+export type AlgorithmRecommendation = z.infer<typeof AlgorithmRecommendationSchema>;
 
 /**
  * Profile recommendation with reasoning
  */
-export interface ProfileRecommendation {
-  profile: DeploymentProfile;
-  memoryHeadroom: number;       // MB available after deployment
-  costScore: number;            // 0-1 based on resource fit
-  rationale: string;
-}
+export const ProfileRecommendationSchema = z.object({
+  profile: DeploymentProfileSchema,
+  memoryHeadroom: z.number(),
+  costScore: z.number(),
+  rationale: z.string(),
+});
+
+export type ProfileRecommendation = z.infer<typeof ProfileRecommendationSchema>;
 
 /**
  * Optimization result with action recommendations
  */
-export interface OptimizationResult {
-  recommendedAlgorithm: AlgorithmRecommendation;
-  recommendedProfile: ProfileRecommendation;
-  costBenefitAnalysis: {
-    timeTradeoff: number;       // normalized speed vs quality
-    resourceTradeoff: number;   // normalized CPU vs memory
-    overallScore: number;       // weighted combination
-  };
-  rationale: string;
-}
+export const OptimizationResultSchema = z.object({
+  recommendedAlgorithm: AlgorithmRecommendationSchema,
+  recommendedProfile: ProfileRecommendationSchema,
+  costBenefitAnalysis: z.object({
+    timeTradeoff: z.number(),
+    resourceTradeoff: z.number(),
+    overallScore: z.number(),
+  }),
+  rationale: z.string(),
+});
+
+export type OptimizationResult = z.infer<typeof OptimizationResultSchema>;
 
 /**
  * Algorithm selection based on log characteristics

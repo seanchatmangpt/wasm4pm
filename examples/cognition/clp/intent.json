@@ -1,0 +1,26 @@
+{
+  "intent": "solve arithmetic constraints by propagation (CLP scheme, FD instantiation)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "clp:var:x",
+      "value": "6..9"
+    },
+    {
+      "key": "clp:var:y",
+      "value": "0..9"
+    },
+    {
+      "key": "clp:constraint:c1",
+      "value": "x=y+3"
+    },
+    {
+      "key": "clp:constraint:c2",
+      "value": "y<4"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

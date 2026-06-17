@@ -1,0 +1,16 @@
+{
+  "algorithm": "ml_pca",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 11.",
+    "locus": "Chapter 11, PCA on trace feature vectors",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "components=6",
+    "description": "PCA on running example yields 6 components: min(n_traces=6, n_features) bounded by trace count"
+  }
+}

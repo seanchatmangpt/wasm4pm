@@ -1,0 +1,16 @@
+{
+  "algorithm": "correlation_miner",
+  "provenance": {
+    "paper": "Conformance Checking of Processes Based on Monitoring Real Behavior",
+    "citation": "Rozinat, A., van der Aalst, W.M.P. (2008). Conformance Checking of Processes Based on Monitoring Real Behavior. Information Systems 33(1).",
+    "locus": "Section 4, dependency detection",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "dependencies=6",
+    "description": "Six strong causal dependencies detected: register request→check ticket, examine thoroughly→check ticket, examine casually→check ticket, check ticket→decide, decide→reject request, decide→pay compensation"
+  }
+}

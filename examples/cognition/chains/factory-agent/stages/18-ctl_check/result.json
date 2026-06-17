@@ -1,0 +1,85 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ctl_check",
+    "breed": "ctl_check",
+    "status": "ok",
+    "output": {
+      "breed": "CtlCheck",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ctl:verdict",
+          "value": "holds"
+        }
+      ],
+      "selected": "holds",
+      "explanation": "CTL labeling decided 'A G !(c1 & c2)' holds at 's0' over 8 states",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "parse-formula",
+          "detail": "A G !(c1 & c2) over 8 states (init=s0)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "label-states",
+          "detail": "[c1] holds in 2 states",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "label-states",
+          "detail": "[c2] holds in 2 states",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "label-states",
+          "detail": "[(c1 & c2)] holds in 0 states",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "label-states",
+          "detail": "[!(c1 & c2)] holds in 8 states",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "fixpoint-iterate",
+          "detail": "EU lfp |Z|=0",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "label-states",
+          "detail": "[A G !(c1 & c2)] holds in 8 states",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "decision",
+          "detail": "A G !(c1 & c2) HOLDS at init state s0",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "f3de4ac004bf27ba56d6b0b5aa1406173284437104cad9e3076d8c7193a80b94",
+    "output_hash": "7c3d71e4256fff434079417f4563b99f6358c37bfff249432996b483a0cb4677",
+    "replay_pointer": "7c3d71e4256fff43",
+    "inference_step_count": 8,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/f3de4ac004bf27ba56d6b0b5aa1406173284437104cad9e3076d8c7193a80b94.json"
+  },
+  "meta": {
+    "run_id": "b5c13cbe-1588-4dc7-a15d-3a0ce440adbe",
+    "timestamp": "2026-06-11T19:56:08.409Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

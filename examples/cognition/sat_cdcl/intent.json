@@ -1,0 +1,18 @@
+{
+  "intent": "decide pigeonhole PHP(3,2)",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "clause:0",
+      "value": "1 2"
+    },
+    {
+      "key": "clause:1",
+      "value": "-1 2"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

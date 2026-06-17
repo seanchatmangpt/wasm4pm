@@ -94,3 +94,51 @@ export function saveCommandReceipt(receipt: CommandReceipt, dirRel = '.wasm4pm/r
     throw err;
   }
 }
+
+export interface PiReceipt {
+  algorithm: string;
+  replay_pointer: string;   // first 16 hex chars of output_hash
+  input_hash: string;       // BLAKE3 hex-64
+  output_hash: string;      // BLAKE3 hex-64
+  run_id: string;           // 32 random bytes as hex-64
+  timestamp: string;        // ISO 8601
+}
+
+export function emitPiReceipt(
+  algoId: string,
+  inputJson: string,
+  outputJson: string,
+  dirRel = '.wasm4pm/receipts',
+): PiReceipt {
+  const output_hash = blake3Hex(outputJson);
+  const receipt: PiReceipt = {
+    algorithm: algoId,
+    replay_pointer: output_hash.slice(0, 16),
+    input_hash: blake3Hex(inputJson),
+    output_hash,
+    run_id: randomBytes(32).toString('hex'),
+    timestamp: new Date().toISOString(),
+  };
+  const dir = path.resolve(dirRel);
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const json = JSON.stringify(receipt, null, 2) + '\n';
+    atomicWriteSync(path.join(dir, 'latest.json'), json);
+    atomicWriteSync(path.join(dir, `pi-${algoId}-latest.json`), json);
+  } catch (err: any) {
+    if (err.code === 'EACCES' || err.code === 'EROFS') {
+      throw new Error(`Permission denied writing receipt to ${dir}`);
+    }
+    throw err;
+  }
+  return receipt;
+}
+
+export function emitCrownReceipt(
+  command: string,
+  inputJson: string,
+  outputJson: string,
+  dirRel = '.wasm4pm/receipts',
+): PiReceipt {
+  return emitPiReceipt(command, inputJson, outputJson, dirRel);
+}

@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan, withSpanRaw } from './_otel.js';
+import { WASM_FUNCTION_NAMES } from '@wasm4pm/contracts';
 
 export interface ExplainOptions {
   format?: 'human' | 'json';
@@ -145,6 +146,20 @@ export const explain = defineCommand({
                 return await exitWithFlush(result.exit_code);
               }
 
+              const knownAlgorithms = Object.keys(WASM_FUNCTION_NAMES);
+              for (const [argName, algId] of [['algorithm1', alg1], ['algorithm2', alg2]] as const) {
+                if (!knownAlgorithms.includes(algId)) {
+                  const result = makeErrorResult(
+                    'explain',
+                    `Unknown algorithm for ${argName}: '${algId}'\n\nKnown algorithms: ${knownAlgorithms.join(', ')}`,
+                    EXIT_CODES.config_error,
+                    'UNKNOWN_ALGORITHM'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  return await exitWithFlush(result.exit_code);
+                }
+              }
+
               const comparison = buildAlgorithmComparison(alg1, alg2);
               const result = makeResult('explain', comparison, performance.now() - t0, EXIT_CODES.success);
               emitResult(result, { format, verbose, quiet }, (res, projection) => {
@@ -203,8 +218,8 @@ export const explain = defineCommand({
           if (ctx.args.model) {
             const result = makeErrorResult(
               'explain',
-              'Model-file explanation is not implemented yet',
-              EXIT_CODES.config_error,
+              'Model-file explanation (--model) is not yet implemented in this build',
+              EXIT_CODES.execution_error,
               'NOT_IMPLEMENTED',
               'Use wpm explain <algorithm> for algorithm guidance, or wpm interpret for metric help'
             );
@@ -2175,10 +2190,6 @@ P(G*) ≥ P(G₀) by construction — removing low-probability edges reduces all
     (ALGO_ALIASES[algoKey] ? explanations[ALGO_ALIASES[algoKey]] && ALGO_ALIASES[algoKey] : undefined);
 
   if (!algo || !explanations[algo]) {
-    // Unknown algorithm — throw a typed error so the caller can emit config_error (exit 1).
-    // We use a plain Error with a recognisable code property rather than a custom class
-    // so the existing catch handler in run() can inspect it without importing a new type.
-    // Show canonical registry IDs in the error message, not internal short keys.
     const INTERNAL_TO_CANONICAL: Record<string, string> = {
       simd_dfg: 'simd_streaming_dfg',
       optimized_dfg: 'optimized_dfg',
@@ -2186,17 +2197,13 @@ P(G*) ≥ P(G₀) by construction — removing low-probability edges reduces all
     const available = Object.keys(explanations)
       .map((k) => INTERNAL_TO_CANONICAL[k] ?? k)
       .join(', ');
-    const err = new Error(
-      `Unknown algorithm: '${algorithm}'.\n\n` +
-        `Algorithms with explanations: ${available}\n\n` +
-        `Examples:\n` +
-        `  wpm explain dfg          — simplest/fastest algorithm\n` +
-        `  wpm explain heuristic    — balanced, noise-robust\n` +
-        `  wpm explain ilp          — highest quality\n` +
-        `  wpm explain              — show full algorithm menu`
-    );
-    (err as Error & { code: string }).code = 'UNKNOWN_ALGORITHM';
-    throw err;
+    return `Unknown algorithm: '${algorithm}'.\n\n` +
+      `Algorithms with explanations: ${available}\n\n` +
+      `Examples:\n` +
+      `  wpm explain dfg          — simplest/fastest algorithm\n` +
+      `  wpm explain heuristic    — balanced, noise-robust\n` +
+      `  wpm explain ilp          — highest quality\n` +
+      `  wpm explain              — show full algorithm menu`;
   }
 
   return explanations[algo][level] || explanations[algo].detailed;

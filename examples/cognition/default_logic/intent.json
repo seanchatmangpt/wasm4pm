@@ -1,0 +1,24 @@
+{
+  "intent": "solve default rules",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "bird",
+      "value": "tweety"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r_default",
+      "premise": [
+        "tweety",
+        "unless:non_flying"
+      ],
+      "conclusion": "flies",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}

@@ -1,0 +1,192 @@
+(node:13534) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "prolog",
+    "breed": "prolog",
+    "status": "ok",
+    "output": {
+      "breed": "Prolog",
+      "candidates": [
+        {
+          "id": "cyclohexanol",
+          "score": 0.8799999952316284,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "1_methylcyclopentanol",
+          "score": 0.7400000095367432,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "cis_2_methylcyclopentanol",
+          "score": 0.6899999976158142,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "trans_2_methylcyclopentanol",
+          "score": 0.6899999976158142,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "oxacycloheptane",
+          "score": 0.20999999344348907,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "formula",
+          "value": "C6H12O"
+        },
+        {
+          "key": "functional_group",
+          "value": "alcohol"
+        },
+        {
+          "key": "ring_present",
+          "value": "true"
+        },
+        {
+          "key": "ms_base_peak",
+          "value": "57"
+        },
+        {
+          "key": "ms_water_loss",
+          "value": "true"
+        },
+        {
+          "key": "ir_oh_present",
+          "value": "true"
+        },
+        {
+          "key": "ir_carbonyl_absent",
+          "value": "true"
+        },
+        {
+          "key": "nmr_secondary_carbon_oh",
+          "value": "true"
+        },
+        {
+          "key": "constraint_method",
+          "value": "prolog_horn_clause_resolution"
+        }
+      ],
+      "selected": null,
+      "explanation": "Prolog8 denied query (negative proof nodes: 1, receipt: [b8, de, 23, 6c])",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "intern-fact",
+          "detail": "formula=C6H12O",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "intern-fact",
+          "detail": "functional_group=alcohol",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "intern-fact",
+          "detail": "ring_present=true",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "intern-fact",
+          "detail": "ms_base_peak=57",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "intern-fact",
+          "detail": "ms_water_loss=true",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "intern-fact",
+          "detail": "ir_oh_present=true",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "intern-fact",
+          "detail": "ir_carbonyl_absent=true",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "intern-fact",
+          "detail": "nmr_secondary_carbon_oh=true",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "intern-fact",
+          "detail": "constraint_method=prolog_horn_clause_resolution",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "load-rule",
+          "detail": "r_eliminate_ether",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "load-rule",
+          "detail": "r_secondary_alcohol_nmr",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "load-rule",
+          "detail": "r_water_loss_required",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "load-rule",
+          "detail": "r_valence_4_carbon",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "kernel-query",
+          "detail": "pred_id=1 binding_mask=0b1",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "decision",
+          "detail": "Deny with 1 negative proof nodes",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4f02691e51b10302cbead05a34b7fe582d0d8aa5abfdc3b2b07564927f78f8c7",
+    "output_hash": "9bf3b90f3bfe2efa053555944ff7e88cff85c65692b9027920f77ba63a804556",
+    "replay_pointer": "9bf3b90f3bfe2efa",
+    "inference_step_count": 15,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/4f02691e51b10302cbead05a34b7fe582d0d8aa5abfdc3b2b07564927f78f8c7.json"
+  },
+  "meta": {
+    "run_id": "26da36b4-f30c-429c-9b3d-d43a1fe7b326",
+    "timestamp": "2026-06-11T08:34:35.697Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

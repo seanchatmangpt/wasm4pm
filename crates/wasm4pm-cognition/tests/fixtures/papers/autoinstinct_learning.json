@@ -1,0 +1,35 @@
+{
+  "breed": "autoinstinct_learning",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Sussman-1973-HACKER-MIT-AITR-297.pdf",
+    "citation": "Sussman, Gerald Jay. 'A Computational Model of Skill Acquisition.' MIT AI TR-297, 1973. The HACKER planner represents goal acquisition as a bitwise state search: each curriculum section is a goal bit; initially-known patches are initial-state bits. The planner counts how many steps (bit-flips) remain to reach the goal mask.",
+    "locus": "Chapter II, Sections 1-5: five Scenario curriculum sections as goals; two completed sections (CLEARTOP, bottom-up ordering) as initial state bits.",
+    "extraction": "adapted",
+    "notes": "Fixture encodes 5 curriculum goals as goal bits and 2 achieved sections as initial-state bits. goal_mask=0b11111=31, initial_features=0b11=3. The greedy monotone planner adds lowest missing bit each step: [3,7,15,31] = 4 states (3 bit-flips). selected must equal '4 steps to goal'."
+  },
+  "input": {
+    "intent": "hacker-curriculum-planning",
+    "facts": [
+      {"key": "achieved", "value": "section-1-cleartop"},
+      {"key": "achieved", "value": "section-2-bottom-up-ordering"}
+    ],
+    "candidates": [],
+    "rules": [],
+    "cases": [],
+    "goals": [
+      {"id": "g0", "predicate": "master", "value": "section-1-cleartop"},
+      {"id": "g1", "predicate": "master", "value": "section-2-bottom-up-ordering"},
+      {"id": "g2", "predicate": "master", "value": "section-3-space-allocation-compact"},
+      {"id": "g3", "predicate": "master", "value": "section-4-space-allocation-flush-ordering"},
+      {"id": "g4", "predicate": "master", "value": "section-5-protection-constraints"}
+    ],
+    "state": []
+  },
+  "expected": {
+    "value": "4 steps to goal",
+    "selected": "4 steps to goal",
+    "plan_length": 4,
+    "provenance": "Sussman 1973 HACKER MIT AI TR-297",
+    "rationale": "goal_mask=0b11111 (5 goals), initial_features=0b11 (2 achieved facts). Greedy bitmask planner adds lowest missing bit each step: [3,7,15,31] = 4 states. output.selected must equal '4 steps to goal'."
+  }
+}

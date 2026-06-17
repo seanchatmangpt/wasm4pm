@@ -1,0 +1,55 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "frames_inheritance",
+    "breed": "frames_inheritance",
+    "status": "ok",
+    "output": {
+      "breed": "FramesInheritance",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "frame:resolved:widget_a:weight",
+          "value": "5kg"
+        }
+      ],
+      "selected": "5kg",
+      "explanation": "resolved widget_a.weight = 5kg at widget_a (own, distance 0)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "frame-load",
+          "detail": "loaded 2 frames (1 isa links)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "frame-walk",
+          "detail": "walking widget_a",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "frame-resolve",
+          "detail": "widget_a slot weight resolved to 5kg at widget_a (own)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "88f82be0e10b84bffe22151c196f464f236767f04d5e57ad32f14e1de926808a",
+    "output_hash": "bb366d956f22d895afb2f3df0bd89c223144215d4292591211aee1950d539a57",
+    "replay_pointer": "bb366d956f22d895",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/frames_inheritance/.wasm4pm/receipts/88f82be0e10b84bffe22151c196f464f236767f04d5e57ad32f14e1de926808a.json"
+  },
+  "meta": {
+    "run_id": "a2b3ecfd-f780-4009-84fb-1dfe085f6ef5",
+    "timestamp": "2026-06-11T18:43:46.153Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

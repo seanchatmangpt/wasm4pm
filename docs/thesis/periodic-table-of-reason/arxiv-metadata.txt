@@ -1,0 +1,15 @@
+Title: The Periodic Table of Reason: Operational Falsifiability, Epistemological Geometry, and the Breed Validation Certificate for Manufactured Intelligence
+
+Authors: Autonomic Research Division, wasm4pm Ecosystem
+
+Categories: cs.AI (primary), cs.LO, cs.SE
+
+Abstract:
+
+We introduce the Periodic Table of Reason, a classification framework for AI reasoning breeds analogous in structure to the chemical periodic table. Each breed — \MYCIN-class rule inference, \STRIPS-class planning, \SOAR-class cognitive architecture, \CBR-class analogical retrieval, and others — is assigned a unique position in epistemological geometry defined by three invariants: its input contract, its output contract, and the cryptographic receipt it must emit to prove lawful execution. This geometry is not merely descriptive; it is operationally falsifiable in the sense of Popper extended to manufactured processes. A breed that cannot emit a valid receipt for a given contract occupies no position in the table — it does not exist as a lawful reasoning agent.
+
+The central contribution is the Breed Validation Certificate (BVC), a machine-checkable proof gate that binds a reasoning act to its position in the table. The BVC is derived from the receipt monad developed in the third paper of this series (Proof-Bound Causation and the Receipt Monad) and is implemented concretely in the wasm4pm kernel. We show that the 13 breeds currently registered in the wasm4pm cognition layer partition the epistemological geometry into a complete sub-table, with gaps identifying positions that no existing breed occupies — analogous to Mendeleev's prediction of undiscovered elements. Each gap is a falsifiable claim: either a breed will be found to fill it, or the geometry will be revised.
+
+This paper is the fourth in a series establishing theoretical foundations for manufactured intelligence: I. Topological Annihilation of the Undecidable; II. Semantic Physics and the Proof-Bound Universe; III. Proof-Bound Causation and the Receipt Monad; IV. The Periodic Table of Reason (this work). Together these papers argue that intelligence is not a property of architecture but of auditable process: an agent is intelligent to the degree that its reasoning acts are individually certifiable against a lawful contract, receipt-chained, and conformant with a discovered process model derived from its own event log.
+
+Comments: Fourth in series. 13 chapters. Companion implementation: wasm4pm v26.x (https://github.com/wasm4pm/wasm4pm). All BVC proof gates executable via `wpm cognition run`.

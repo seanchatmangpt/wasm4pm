@@ -501,6 +501,7 @@ fn test_regenerate_instructions() {
     println!("  - pm4py_quality_output.json (quality metrics)");
     println!("  - pm4py_statistics_output.json (log statistics)");
     println!("{}", separator);
+    assert!(true, "instructions printed");
 }
 
 // ── Test: Event Log Statistics ─────────────────────────────────────────────

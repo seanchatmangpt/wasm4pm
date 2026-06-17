@@ -1,0 +1,163 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "construction_grammar",
+    "breed": "construction_grammar",
+    "status": "ok",
+    "output": {
+      "breed": "ConstructionGrammar",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "cxg:construction",
+          "value": "caused-motion"
+        },
+        {
+          "key": "cxg:meaning",
+          "value": "CAUSE-MOVE(he, the napkin, off the table; verb=sneezed)"
+        },
+        {
+          "key": "cxg:coerced",
+          "value": "true"
+        },
+        {
+          "key": "cxg:verb",
+          "value": "sneezed"
+        },
+        {
+          "key": "cxg:slot:subj",
+          "value": "he"
+        },
+        {
+          "key": "cxg:slot:obj",
+          "value": "the napkin"
+        },
+        {
+          "key": "cxg:slot:obl",
+          "value": "off the table"
+        }
+      ],
+      "selected": "caused-motion",
+      "explanation": "Construction grammar: 'he sneezed the napkin off the table' matched caused-motion (CAUSE-MOVE(he, the napkin, off the table; verb=sneezed)) — meaning coerced by construction, not the verb's lexical entry",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "tokenize",
+          "detail": "he sneezed the napkin off the table",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "pos-tag",
+          "detail": "he/pron",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "pos-tag",
+          "detail": "sneezed/verb",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "pos-tag",
+          "detail": "the/det",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "pos-tag",
+          "detail": "napkin/noun",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "pos-tag",
+          "detail": "off/prep",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "pos-tag",
+          "detail": "the/det",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "pos-tag",
+          "detail": "table/noun",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "chunk",
+          "detail": "NP[he]",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "chunk",
+          "detail": "NP[the napkin]",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "chunk",
+          "detail": "PP[off the table]",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "match-construction",
+          "detail": "ditransitive: no-match",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "match-construction",
+          "detail": "caused-motion: match",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "bind-slot",
+          "detail": "subj <- he",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "bind-slot",
+          "detail": "obj <- the napkin (arg 1)",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "bind-slot",
+          "detail": "obl <- off the table (arg 2)",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "fuse-meaning",
+          "detail": "CAUSE-MOVE(he, the napkin, off the table; verb=sneezed) via caused-motion [coerced]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4e1842dee73083beec09d7b19c46e33e4dd1812212e4b13c694907b0a6132a3a",
+    "output_hash": "0f6ab332253254c873233f9fd0e7a4ef512478e5b70d98b37d1b1e49e0e6d028",
+    "replay_pointer": "0f6ab332253254c8",
+    "inference_step_count": 17,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/construction_grammar/.wasm4pm/receipts/4e1842dee73083beec09d7b19c46e33e4dd1812212e4b13c694907b0a6132a3a.json"
+  },
+  "meta": {
+    "run_id": "4a65c476-10dd-4344-9cd8-5cf8e64bd636",
+    "timestamp": "2026-06-11T18:43:41.915Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

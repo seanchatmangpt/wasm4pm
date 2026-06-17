@@ -2,15 +2,18 @@
  * Directed Acyclic Graph (DAG) for execution planning
  */
 
+import { z } from 'zod';
+
 /**
  * Represents a directed acyclic graph for plan execution
  */
-export interface DAG {
+export const DAGSchema = z.object({
   /** List of node identifiers */
-  nodes: string[];
+  nodes: z.array(z.string()),
   /** List of directed edges as [source, target] pairs */
-  edges: [string, string][];
-}
+  edges: z.array(z.tuple([z.string(), z.string()])),
+});
+export type DAG = z.infer<typeof DAGSchema>;
 
 /**
  * Detects if a graph contains a cycle using depth-first search

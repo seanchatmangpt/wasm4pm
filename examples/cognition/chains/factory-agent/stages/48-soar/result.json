@@ -1,0 +1,120 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "soar",
+    "breed": "soar",
+    "status": "ok",
+    "output": {
+      "breed": "Soar",
+      "candidates": [
+        {
+          "id": "op-move-blank-up",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "op-move-blank-down",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "op-move-blank-left",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "op-move-blank-right",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "pref",
+          "value": "acceptable:op-move-blank-up"
+        },
+        {
+          "key": "pref",
+          "value": "acceptable:op-move-blank-down"
+        },
+        {
+          "key": "pref",
+          "value": "acceptable:op-move-blank-left"
+        },
+        {
+          "key": "pref",
+          "value": "acceptable:op-move-blank-right"
+        },
+        {
+          "key": "pref",
+          "value": "best:op-move-blank-up"
+        },
+        {
+          "key": "pref",
+          "value": "worse:op-move-blank-down"
+        },
+        {
+          "key": "tile-above-blank",
+          "value": "5"
+        },
+        {
+          "key": "tile-below-blank",
+          "value": "8"
+        },
+        {
+          "key": "tile-left-of-blank",
+          "value": "4"
+        },
+        {
+          "key": "tile-right-of-blank",
+          "value": "none"
+        },
+        {
+          "key": "goal-position-5",
+          "value": "row1-col2"
+        },
+        {
+          "key": "current-position-5",
+          "value": "row2-col2"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "situation_calculus:03acc09c9ae7eb0eed5b00b04504dbd3c195c84496bb748ff177ac5be58a1e47"
+        },
+        {
+          "key": "chunk.pref",
+          "value": "winner:op-move-blank-up:reason:decisive"
+        }
+      ],
+      "selected": "op-move-blank-up",
+      "explanation": "SOAR decisive selected Some(\"op-move-blank-up\") (best=1, worst=0, require=0, prohibit=0, better-pairs=0)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "evaluate-single",
+          "detail": "op-move-blank-up",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "31d2c230cd3a9980760d23d3b819130acb5c074d9c3d4b64f9d8ab9db1154e60",
+    "output_hash": "c168f575cc450a6fccadfa1fac9631940607c61a4d8983e633c837f05626ecde",
+    "replay_pointer": "c168f575cc450a6f",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/31d2c230cd3a9980760d23d3b819130acb5c074d9c3d4b64f9d8ab9db1154e60.json"
+  },
+  "meta": {
+    "run_id": "f9958d0e-4e7a-41b5-9dce-109f7ca28eb9",
+    "timestamp": "2026-06-11T19:56:20.567Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

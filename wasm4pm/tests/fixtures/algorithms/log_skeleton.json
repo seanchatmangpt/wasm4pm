@@ -1,0 +1,12 @@
+{
+  "algorithm": "log_skeleton",
+  "provenance": {
+    "paper": "Verbeek, H.M.W., & van der Aalst, W.M.P. (2018). Merging alignments for decomposed replay. Application of Petri nets and Concurrency. LNCS 10877.",
+    "locus": "Definition 1 — Log skeleton: set of activity pairs with ordering constraints derived from an event log",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "structural_nonnull",
+    "rationale": "extract_process_skeleton uses WASM state handles; structural assertion confirms non-null result"
+  }
+}

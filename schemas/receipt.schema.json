@@ -1,0 +1,168 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wasm4pm.dev/schemas/receipt-v2.schema.json",
+  "title": "wasm4pm Receipt v2",
+  "description": "BLAKE3-chained provenance receipt emitted by wpm run and wpm cognition run. Captures all inputs, outputs, and identity fields required for deterministic replay and audit.",
+  "$comment": "ocel_hash/model_hash/wasm_hash are PARTIAL — present once M4 L1 is complete. signature/public_key_id are PENDING — present once signing infrastructure is implemented.",
+  "type": "object",
+  "required": [
+    "receipt_version",
+    "breed_id",
+    "breed_version",
+    "registry_id",
+    "run_id",
+    "input_hash",
+    "output_hash",
+    "timestamp",
+    "replay_pointer",
+    "status",
+    "options_profile"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "receipt_version": {
+      "type": "string",
+      "enum": ["2.0"],
+      "description": "Schema version discriminator. Must be '2.0' for this schema."
+    },
+    "breed_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the cognition breed or algorithm that produced this receipt."
+    },
+    "breed_version": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Semver or CalVer of the breed/algorithm at time of manufacture."
+    },
+    "registry_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Kernel registry identifier — links receipt to the algorithm registry snapshot."
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique identifier for this manufacturing run. Used as filename stem for receipt persistence."
+    },
+    "input_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "BLAKE3 hex digest (256-bit, lowercase) of the canonical input payload."
+    },
+    "output_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "BLAKE3 hex digest (256-bit, lowercase) of the canonical output payload."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 UTC timestamp of when the manufacture completed."
+    },
+    "replay_pointer": {
+      "type": "string",
+      "description": "First 16 hex characters of output_hash. Short addressable handle for replay lookup.",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "refused", "error"],
+      "description": "Terminal status of the manufacturing run. 'refused' indicates a policy boundary was triggered."
+    },
+    "options_profile": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Named execution profile used (e.g. 'fast', 'balanced', 'quality', 'stream')."
+    },
+    "boundary_id": {
+      "type": "string",
+      "description": "Optional. Identifier of the policy boundary that triggered a refusal. Present only when status is 'refused'."
+    },
+    "ocel_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "PARTIAL (M4 L1). BLAKE3 hash of the OCEL event log input, when applicable."
+    },
+    "model_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "PARTIAL (M4 L1). BLAKE3 hash of the process model artifact, when applicable."
+    },
+    "wasm_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "PARTIAL (M4 L1). BLAKE3 hash of the WASM binary used during manufacture."
+    },
+    "registry_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "BLAKE3 hash of the algorithm registry snapshot at time of manufacture."
+    },
+    "receipt_hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "BLAKE3 hash of this receipt's canonical serialization (excluding this field). Enables chain integrity verification."
+    },
+    "signature_algorithm": {
+      "type": "string",
+      "enum": ["none", "ed25519"],
+      "description": "PENDING (signing infrastructure). Algorithm used to sign this receipt."
+    },
+    "signature": {
+      "type": "string",
+      "description": "PENDING (signing infrastructure). Base64-encoded signature over the receipt_hash using the declared signature_algorithm."
+    },
+    "public_key_id": {
+      "type": "string",
+      "description": "PENDING (signing infrastructure). Identifier of the public key used to verify the signature."
+    },
+    "refusal_reason": {
+      "type": "string",
+      "description": "Human-readable explanation of why a manufacture was refused. Present only when status is 'refused'."
+    }
+  },
+  "if": {
+    "properties": {
+      "status": { "const": "refused" }
+    },
+    "required": ["status"]
+  },
+  "then": {
+    "required": ["boundary_id"]
+  },
+  "examples": [
+    {
+      "_description": "Accepted receipt — successful manufacture run",
+      "receipt_version": "2.0",
+      "breed_id": "alpha-golem",
+      "breed_version": "v26.6.9a",
+      "registry_id": "wasm4pm-kernel-v26.6.9a",
+      "run_id": "01J5XZ7A3B2C8D4E5F6G7H8I9J",
+      "input_hash": "a3f2e1d4c5b6a7980192837465afbecd1234567890abcdef1234567890abcdef",
+      "output_hash": "deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+      "timestamp": "2026-06-09T14:23:01.000Z",
+      "replay_pointer": "deadbeef12345678",
+      "status": "ok",
+      "options_profile": "balanced",
+      "registry_hash": "9f8e7d6c5b4a3210fedcba9876543210fedcba9876543210fedcba9876543210",
+      "receipt_hash": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b"
+    },
+    {
+      "_description": "Refused receipt — policy boundary triggered",
+      "receipt_version": "2.0",
+      "breed_id": "beta-sentinel",
+      "breed_version": "v26.6.9a",
+      "registry_id": "wasm4pm-kernel-v26.6.9a",
+      "run_id": "01J5XZ8B4C3D9E5F6G7H8I9J0K",
+      "input_hash": "0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff",
+      "output_hash": "ffffeeeeddddccccbbbbaaaa9999888877776666555544443333222211110000",
+      "timestamp": "2026-06-09T14:25:55.000Z",
+      "replay_pointer": "ffffeeeeddddcccc",
+      "status": "refused",
+      "options_profile": "quality",
+      "boundary_id": "policy:no-external-fetch",
+      "refusal_reason": "Input contract references a remote URI. GGEN-YIELD-005 REMOTE_FETCH_PROHIBITED applies."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "breed": "analogy_sme",
+  "provenance": {
+    "paper": "Falkenhainer, B., Forbus, K. D., & Gentner, D. (1989). The Structure-Mapping Engine: algorithm and examples.",
+    "citation": "Falkenhainer, B., Forbus, K. D., & Gentner, D. (1989). Artificial Intelligence, 41(1), 1-63.",
+    "locus": "Section 5.1, Figures 13-15: the solar-system/Rutherford-atom analogy; systematicity selects the causal mass-difference structure and carries over the cause relation as a candidate inference.",
+    "extraction": "instantiated",
+    "notes": "The classic mapping sun\u2192nucleus, planet\u2192electron. The target contains the mass inequality and the revolve relation but NOT the causal connection; SME's candidate inference must carry over the base's cause expression with substituted entities. The temperature attribute expression must NOT map (no matching target structure), reproducing the paper's point that attributes are dropped."
+  },
+  "input": {
+    "intent": "map the solar system onto the Rutherford atom",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "base:0",
+        "value": "(greater (mass sun) (mass planet))"
+      },
+      {
+        "key": "base:1",
+        "value": "(revolve planet sun)"
+      },
+      {
+        "key": "base:2",
+        "value": "(cause (greater (mass sun) (mass planet)) (revolve planet sun))"
+      },
+      {
+        "key": "base:3",
+        "value": "(greater (temperature sun) (temperature planet))"
+      },
+      {
+        "key": "target:0",
+        "value": "(greater (mass nucleus) (mass electron))"
+      },
+      {
+        "key": "target:1",
+        "value": "(revolve electron nucleus)"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "mapping": {
+      "sun": "nucleus",
+      "planet": "electron"
+    },
+    "candidate_inference_contains": "(cause (greater (mass nucleus) (mass electron)) (revolve electron nucleus))",
+    "notes": "base:2 (cause) has no target counterpart but all its entities are mapped, so it is the unique candidate inference; base:3 (temperature attribute) must produce no mapping influence.",
+    "value": "sun->nucleus,planet->electron"
+  }
+}

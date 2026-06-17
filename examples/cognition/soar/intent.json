@@ -1,0 +1,68 @@
+{
+  "intent": "select optimal database query operator",
+  "candidates": [
+    {
+      "id": "op-full-scan",
+      "score": 0.2,
+      "eliminated": false
+    },
+    {
+      "id": "op-index-scan",
+      "score": 0.95,
+      "eliminated": false
+    },
+    {
+      "id": "op-hash-join",
+      "score": 0.82,
+      "eliminated": false
+    },
+    {
+      "id": "op-nested-loop",
+      "score": 0.45,
+      "eliminated": false
+    },
+    {
+      "id": "op-merge-sort-join",
+      "score": 0.78,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "pref",
+      "value": "best:op-index-scan"
+    },
+    {
+      "key": "pref",
+      "value": "prohibit:op-full-scan"
+    },
+    {
+      "key": "pref",
+      "value": "prohibit:op-nested-loop"
+    },
+    {
+      "key": "pref",
+      "value": "acceptable:op-hash-join"
+    },
+    {
+      "key": "pref",
+      "value": "acceptable:op-merge-sort-join"
+    },
+    {
+      "key": "table-size",
+      "value": "large"
+    },
+    {
+      "key": "index-available",
+      "value": "yes"
+    },
+    {
+      "key": "join-type",
+      "value": "equi-join"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

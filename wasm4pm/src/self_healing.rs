@@ -22,6 +22,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tracing::{span, Level};
 
+/// Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
+const DETERMINISTIC_SEED: u64 = 0xdead_beef;
+
 // ---------------------------------------------------------------------------
 // Monotonic clock
 // ---------------------------------------------------------------------------
@@ -799,10 +802,11 @@ impl RetryState {
         self.current_backoff_ms = next_backoff.min(policy.max_backoff_ms);
 
         // Apply jitter (+/-25 %) using fastrand (WASM-safe).
+        // Fixed seed for deterministic replay; callers may pass custom seed for stochastic use.
         let final_backoff = if policy.jitter {
+            let mut rng = fastrand::Rng::with_seed(DETERMINISTIC_SEED);
             let jitter_range = (base_backoff as f64 * 0.25) as u64;
-            let jitter_ms =
-                (fastrand::u64(..) % (2 * jitter_range + 1)) as i64 - jitter_range as i64;
+            let jitter_ms = (rng.u64(..) % (2 * jitter_range + 1)) as i64 - jitter_range as i64;
             let base_ms = base_backoff as i64;
             (base_ms + jitter_ms).max(0) as u64
         } else {

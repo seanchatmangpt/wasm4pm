@@ -1,28 +1,22 @@
 # wasm4pm
 
-High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and nine Old-AI cognition breeds — all through one CLI (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and 39 Old-AI cognition breeds — all through one CLI (`wpm`).
 
 **Old AI is the factory. LLMs are the brochure.**
 
 ## Install
 
-```bash
-npm install -g @wasm4pm/cli
-```
-
-Library for Node/TypeScript:
-
-```bash
-npm install wasm4pm
-```
-
-From the monorepo without a global install:
+`@wasm4pm/cli` is not yet published to npm. Use the monorepo directly:
 
 ```bash
 # CLI requires the Node.js WASM target (once per clone)
 cd wasm4pm && npm run build:nodejs && cd ..
 npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
 ```
+
+> **npm global install coming soon.** `npm install -g @wasm4pm/cli` will be available once the package is published to npmjs.org.
+
+> **Dual-binary caveat:** Installing the Rust crate (`cargo install wasm4pm-cli`) places a second `wpm` binary on your `PATH` that only exposes ~10 commands. It may shadow the TypeScript CLI (`@wasm4pm/cli`, 50+ commands), which is the published source of truth. Run `wpm doctor` to detect binary shadowing and confirm which binary is active.
 
 ## Quick Start
 
@@ -49,23 +43,22 @@ wpm status --format json
 
 The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, cognition, receipts, cell, and utilities). Run `wpm --help` for the full tree.
 
-**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `heuristic_miner`. Run `wpm --help` for the full command tree.
+**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `simd_streaming_dfg`. Run `wpm --help` for the full command tree.
 
 ## Algorithms
 
-wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics. Domains include:
+wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics.
 
 | Domain | Examples |
 |--------|----------|
 | Core discovery | `dfg`, `heuristic_miner`, `inductive_miner`, `genetic_algorithm`, `ilp` |
 | Conformance & quality | `alignments`, `generalization`, `etconformance_precision` |
 | OCEL / object-centric | `ocel_dfg`, `ocel_petri_net`, `ocel_oc_declare` |
-| Prediction | `predict_next_activity`, `detect_drift` (via `wpm predict`) |
-| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` (via `wpm ml` or `wpm run`) |
+| Prediction | `predict_next_activity`, `detect_drift` |
+| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` |
+| Social Network | `handover_network`, `working_together_network` |
 
-List live metadata: `wpm algorithms` or `wpm algorithms --format json`.
-
-Full catalog: [Algorithms Reference](docs/reference/algorithms.md). See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
+Full catalog: [Algorithms Reference](docs/reference/algorithms.md).
 
 ## Programmatic API
 
@@ -80,10 +73,10 @@ const logHandle = wasm.load_eventlog_from_xes(
 const kernel = new Kernel(wasm);
 await kernel.init();
 
-const { output } = await kernel.discover('dfg', logHandle, {
+const { handle, metadata } = await kernel.discover('dfg', logHandle, {
   activity_key: 'concept:name',
 });
-console.log(output);
+console.log(handle, metadata);
 ```
 
 ## Truex — OCEL 2.0 Execution Trust
@@ -111,35 +104,69 @@ Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
 
 ## Cognition (Old AI)
 
-Nine breeds run natively in Rust and are exposed through `wpm cognition`:
+Thirty-nine implemented/admitted breeds run natively in Rust and are exposed through `wpm cognition`:
 
 ```bash
-wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
+wpm cognition run --contract tableaux --input examples/cognition/tableaux/intent.json
 ```
 
-| Breed | Origin | Technique |
-|-------|--------|-----------|
-| ELIZA | 1966 | Pattern matching with slot binding |
-| MYCIN | 1976 | Forward chaining + certainty factors |
-| STRIPS | 1971 | Goal regression planning |
-| Prolog | 1965 | Robinson unification + SLD resolution |
-| CBR | 1992 | Jaccard similarity case retrieval |
-| DENDRAL | 1969 | Constraint-driven enumeration |
-| GPS | 1963 | Means-ends gap reduction |
-| SOAR | 1987 | Preference-based operator selection |
-| Hearsay-II | 1980 | Blackboard consensus fusion |
+| # | Breed ID | Category | Key Technique |
+|---|---|---|---|
+| 1 | `ltl_monitor` | Temporal Logic | LTL runtime monitoring on traces |
+| 2 | `allen_temporal` | Temporal Reasoning | Interval algebra constraint propagation |
+| 3 | `fuzzy_logic` | Uncertain Reasoning | Fuzzy sets & approximate reasoning operators |
+| 4 | `bayesian_network` | Probabilistic | Directed acyclic graph belief propagation |
+| 5 | `csp_ac3` | Constraint Satisfaction | Arc consistency AC-3 constraint network solver |
+| 6 | `default_logic` | Non-monotonic Logic | Reiter's default rules & extension generator |
+| 7 | `htn_planning` | Planning | Hierarchical Task Network decomposition |
+| 8 | `dempster_shafer` | Uncertain Reasoning | Belief functions & Dempster's rule of combination |
+| 9 | `frames_inheritance` | Knowledge Representation | Frame-based slot/filler inheritance hierarchy |
+| 10 | `ebl` | Machine Learning | Explanation-based generalization of proofs |
+| 11 | `asp` | Logic Programming | Answer Set Programming stable model solving |
+| 12 | `description_logic` | Knowledge Representation | ALC description logic subsumption checking |
+| 13 | `abductive_lp` | Logic Programming | Abductive logic programming with integrity constraints |
+| 14 | `abductive_ibe` | Uncertain Reasoning | Inference to the best explanation scoring |
+| 15 | `partial_order_plan` | Planning | Least-commitment partial-order planning |
+| 16 | `event_calculus` | Temporal Reasoning | Event calculus effect reasoning on fluents |
+| 17 | `mdp` | Decision Theory | Markov Decision Process value iteration solver |
+| 18 | `version_space` | Machine Learning | Candidate elimination concept learning |
+| 19 | `belief_merging` | Knowledge Representation | Distance-based propositional belief merging |
+| 20 | `qualitative_reason` | Qualitative Reasoning | Qualitative process theory sign/flow arithmetic |
+| 21 | `script_sam` | Knowledge Representation | Schankian narrative script instantiation |
+| 22 | `clp` | Constraint Programming | Constraint logic programming solver |
+| 23 | `situation_calculus` | Temporal Reasoning | Golog-style situation calculus evaluation |
+| 24 | `circumscription` | Non-monotonic Logic | McCarthy's abnormality predicate minimization |
+| 25 | `analogy_sme` | Analogical Reasoning | Structure Mapping Engine analogy builder |
+| 26 | `act_r` | Cognitive Architecture | Declarative/procedural cognitive step simulation |
+| 27 | `problog` | Probabilistic Logic | Probabilistic logic program query solver |
+| 28 | `sat_cdcl` | Boolean SAT | Conflict-Driven Clause Learning SAT solver |
+| 29 | `episodic_memory` | Cognitive Architecture | Temporal indexing & recall of trace segments |
+| 30 | `rl_symbolic` | Reinforcement Learning | Q-learning over symbolic state transitions |
+| 31 | `ctl_check` | Model Checking | Computation Tree Logic model checking |
+| 32 | `ilp` | Logic Programming | Inductive Logic Programming rule learning |
+| 33 | `naive_physics` | Qualitative Reasoning | Qualitative reasoning on physics equations |
+| 34 | `tableaux` | Logic Programming | Semantic tableaux first-order theorem prover |
+| 35 | `construction_grammar` | Cognitive Systems | Construction grammar sentence parsing & coercion |
+| 36 | `markov_logic` | Probabilistic Logic | Markov Logic Network inference |
+| 37 | `pomdp` | Decision Theory | Partially Observable MDP point-based value iteration |
+| 38 | `contingent_plan` | Planning | Contingent planning with sensing actions |
+| 39 | `meta_reasoning` | Cognitive Systems | Meta-level monitoring & scheduler arbitration |
 
 ## Deployment Profiles
 
-| Profile | Size | Use case |
-|---------|------|----------|
-| `mobile` | ~500KB | Mobile / low bandwidth |
-| `iot` | ~1.0MB | Embedded |
-| `edge` | ~1.5MB | CDN / edge workers |
-| `fog` | ~2.0MB | IoT gateways |
-| `browser` | ~2.7MB | Web + Node.js (default) |
+Optimized WASM bundles for every environment. All profiles currently build to ~5–8 MB; feature-flag-based size reduction is in progress.
 
-Build a profile: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](docs/how-to/edge_deployment.md).
+| Profile | Actual Size | Use case |
+|---------|-------------|----------|
+| `mobile` | ~5.4 MB | Mobile / low bandwidth |
+| `iot` | ~5.4 MB | Embedded |
+| `edge` | ~5.4 MB | CDN / edge workers |
+| `fog` | ~5.4 MB | IoT gateways |
+| `browser` | ~7.6 MB | Web + Node.js (default) |
+
+> **Note:** Non-browser profiles share feature flags with the Node.js target and produce identical binary sizes (~5.4 MB) until per-profile `--features` forwarding is fully wired in the build scripts. Browser target compiles to ~7.6 MB. See [audit 2026-06-09](docs/audits/readme-validation-2026-06-09.md).
+
+Detailed feature mapping and build instructions: [Deployment Profiles Reference](docs/reference/deployment_profiles.md).
 
 ## Documentation
 
@@ -152,6 +179,35 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 
 Release and evidence discipline: [AGENTS.md](AGENTS.md) · [Contributing](CONTRIBUTING.md)
 
+## Versioning
+
+wasm4pm uses **CalVer**: `vYEAR.MONTH.DAY` (e.g. `v26.6.9` = June 9, 2026). PATCH is the day of month (1–31); multiple releases on the same day use letter suffixes (`v26.6.9a`, `v26.6.9b`).
+
+> **Warning:** Pin exact versions. Semver `^` and `~` ranges are unsafe with CalVer — a routine date rollover is not a compatible patch.
+
+## Telemetry
+
+Telemetry is **off by default**. No data leaves your environment without explicit configuration.
+
+Opt in:
+
+```bash
+export WASM4PM_OTEL_ENABLED=1
+export WASM4PM_OTEL_ENDPOINT=https://your-collector:4318
+```
+
+See [OTEL Configuration](docs/how-to/configure_observability.md) for span schema and filtering options.
+
+## Security & Enterprise
+
+- **Security disclosures:** [SECURITY.md](SECURITY.md)
+- **Enterprise deployment guide:** [docs/ENTERPRISE.md](docs/ENTERPRISE.md)
+- **Commercial licensing:** [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md) — contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com)
+
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+**BUSL-1.1.** See [LICENSE](LICENSE).
+
+Production use requires a commercial license. Contact [xpointsh@gmail.com](mailto:xpointsh@gmail.com) or see [COMMERCIAL_LICENSE.md](COMMERCIAL_LICENSE.md).
+
+The license converts to **AGPL-3.0** after the Change Date specified in [LICENSE](LICENSE).

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pnml>
+  <net id="living_diagnostic_clear_v1" type="http://www.pnml.org/version-2009/grammar/pnmlcoremodel">
+    <page id="page1">
+      <place id="p_source">
+        <name><text>p_source</text></name>
+        <initialMarking><text>1</text></initialMarking>
+      </place>
+      <place id="p1">
+        <name><text>p1</text></name>
+      </place>
+      <place id="p2">
+        <name><text>p2</text></name>
+      </place>
+      <place id="p3">
+        <name><text>p3</text></name>
+      </place>
+      <place id="p4">
+        <name><text>p4</text></name>
+      </place>
+      <place id="p5">
+        <name><text>p5</text></name>
+      </place>
+      <place id="ALIVE">
+        <name><text>ALIVE</text></name>
+      </place>
+      <transition id="t_DiagnosticRaised">
+        <name><text>DiagnosticRaised</text></name>
+      </transition>
+      <transition id="t_RouteSelected">
+        <name><text>RouteSelected</text></name>
+      </transition>
+      <transition id="t_RepairSuggested">
+        <name><text>RepairSuggested</text></name>
+      </transition>
+      <transition id="t_RepairApplied">
+        <name><text>RepairApplied</text></name>
+      </transition>
+      <transition id="t_GatePassed">
+        <name><text>GatePassed</text></name>
+      </transition>
+      <transition id="t_GatePassed_p1">
+        <name><text>GatePassed</text></name>
+      </transition>
+      <transition id="t_GatePassed_p2">
+        <name><text>GatePassed</text></name>
+      </transition>
+      <transition id="t_GatePassed_p3">
+        <name><text>GatePassed</text></name>
+      </transition>
+      <transition id="t_ReceiptEmitted">
+        <name><text>ReceiptEmitted</text></name>
+      </transition>
+      <arc id="a1" source="p_source" target="t_DiagnosticRaised"/>
+      <arc id="a2" source="t_DiagnosticRaised" target="p1"/>
+      <arc id="a3" source="p1" target="t_RouteSelected"/>
+      <arc id="a4" source="t_RouteSelected" target="p2"/>
+      <arc id="a5" source="p2" target="t_RepairSuggested"/>
+      <arc id="a6" source="t_RepairSuggested" target="p3"/>
+      <arc id="a7" source="p3" target="t_RepairApplied"/>
+      <arc id="a8" source="t_RepairApplied" target="p4"/>
+      <arc id="a9" source="p4" target="t_GatePassed"/>
+      <arc id="a10" source="t_GatePassed" target="p5"/>
+      <arc id="a13" source="p1" target="t_GatePassed_p1"/>
+      <arc id="a14" source="t_GatePassed_p1" target="p5"/>
+      <arc id="a15" source="p2" target="t_GatePassed_p2"/>
+      <arc id="a16" source="t_GatePassed_p2" target="p5"/>
+      <arc id="a17" source="p3" target="t_GatePassed_p3"/>
+      <arc id="a18" source="t_GatePassed_p3" target="p5"/>
+      <arc id="a11" source="p5" target="t_ReceiptEmitted"/>
+      <arc id="a12" source="t_ReceiptEmitted" target="ALIVE"/>
+    </page>
+  </net>
+</pnml>
+

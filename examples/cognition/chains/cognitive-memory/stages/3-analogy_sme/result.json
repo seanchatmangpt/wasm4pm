@@ -1,0 +1,77 @@
+(node:14081) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "analogy_sme",
+    "breed": "analogy_sme",
+    "status": "ok",
+    "output": {
+      "breed": "AnalogySme",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "map:a",
+          "value": "x"
+        },
+        {
+          "key": "map:b_c_2400c417",
+          "value": "y_c_2400c417"
+        },
+        {
+          "key": "sme:score",
+          "value": "1"
+        }
+      ],
+      "selected": "gmap:1",
+      "explanation": "SME mapped 1 base expressions onto target (systematicity score 1); 0 candidate inferences",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "parse-expr",
+          "detail": "base:1 = (rel a b_c_2400c417)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "parse-expr",
+          "detail": "target:1 = (rel x y_c_2400c417)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "local-match",
+          "detail": "base:1 <-> target:1 (systematicity=1)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "merge-gmap",
+          "detail": "merged base:1 <-> target:1 (gmap score now 1)",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "decision",
+          "detail": "gmap score=1; 2 entity correspondences; 0 candidate inferences",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c86c5e5cfcbd008456add07dcf33ee42f268b503b4f7b68156c4e6c2777b59f3",
+    "output_hash": "eead306a9f1dd58e5e275b5b8e0262d8269ac1fd71dc85fd6080e75da5e66f57",
+    "replay_pointer": "eead306a9f1dd58e",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c86c5e5cfcbd008456add07dcf33ee42f268b503b4f7b68156c4e6c2777b59f3.json"
+  },
+  "meta": {
+    "run_id": "54c48e0a-06b4-4bb0-822a-992207bae9f1",
+    "timestamp": "2026-06-11T08:35:07.234Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

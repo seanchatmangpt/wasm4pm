@@ -1,0 +1,16 @@
+{
+  "algorithm": "compute_activity_transition_matrix",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 3, transition frequencies.",
+    "locus": "Chapter 3, transition frequency matrix section",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "size=8x8",
+    "description": "The transition matrix has dimensions 8x8, one row and column per unique activity in the running example log"
+  }
+}

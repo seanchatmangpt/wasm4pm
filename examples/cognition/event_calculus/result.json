@@ -1,0 +1,67 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "event_calculus",
+    "breed": "event_calculus",
+    "status": "ok",
+    "output": {
+      "breed": "EventCalculus",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "ec:verdict:light_on@3",
+          "value": "true"
+        }
+      ],
+      "selected": "light_on@3=true",
+      "explanation": "Discrete event calculus over 1 events: light_on@3=true",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ec-load",
+          "detail": "1 events, 1 initially-fluents",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "ec-infer",
+          "detail": "Happens(switch_on,2) initiates light_on",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "ec-infer",
+          "detail": "Clipped(2,light_on,3) = false (inertia)",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "ec-infer",
+          "detail": "HoldsAt(light_on,3) = true",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "ec-model",
+          "detail": "1 verdict(s)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "5ad74bdf625251cbbdcc52a8f5e7eedf3541a0e6263cccaef4411da09d5689aa",
+    "output_hash": "6d05956fbc3a42e3e850847ef88cc01bb09a16e0c5fcf33d0eed2b8e3e53bab9",
+    "replay_pointer": "6d05956fbc3a42e3",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/event_calculus/.wasm4pm/receipts/5ad74bdf625251cbbdcc52a8f5e7eedf3541a0e6263cccaef4411da09d5689aa.json"
+  },
+  "meta": {
+    "run_id": "7b981262-8176-4c49-b18d-863c939b8b02",
+    "timestamp": "2026-06-11T18:43:45.789Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

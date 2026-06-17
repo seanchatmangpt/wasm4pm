@@ -1,0 +1,18 @@
+{
+  "intent": "prove the K axiom",
+  "facts": [
+    {
+      "key": "tableaux:formula",
+      "value": "a -> (b -> a)"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "strips:afc7dc6e0552c8044d549298c9e6acb4fd6a12e35fbb6f003d09c804de929f93"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

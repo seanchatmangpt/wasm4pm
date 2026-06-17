@@ -1,0 +1,93 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "situation_calculus",
+    "breed": "situation_calculus",
+    "status": "ok",
+    "output": {
+      "breed": "SituationCalculus",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "holds:clear_a",
+          "value": "true"
+        },
+        {
+          "key": "holds:clear_b",
+          "value": "true"
+        },
+        {
+          "key": "holds:color_b_red",
+          "value": "true"
+        },
+        {
+          "key": "holds:handempty",
+          "value": "true"
+        },
+        {
+          "key": "holds:on_a_table",
+          "value": "true"
+        },
+        {
+          "key": "holds:on_b_table",
+          "value": "true"
+        }
+      ],
+      "selected": "s2",
+      "explanation": "situation_calculus progressed 2 actions; 6 fluents hold in the final situation; 2 fluents persisted by frame inertia",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-axioms",
+          "detail": "S0 |= {clear_a,color_b_red,handempty,on_a_b,on_b_table}; 2 actions; 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "regress-step",
+          "detail": "do(pickup_a, s0) -> s1: +{clear_b,holding_a} -{clear_a,handempty,on_a_b}",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "regress-step",
+          "detail": "do(putdown_a, s1) -> s2: +{clear_a,handempty,on_a_table} -{holding_a}",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "frame-persist",
+          "detail": "fluent 'color_b_red' persists by inertia across 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "frame-persist",
+          "detail": "fluent 'on_b_table' persists by inertia across 2 steps",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "decision",
+          "detail": "final situation |= {clear_a,clear_b,color_b_red,handempty,on_a_table,on_b_table}",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "6bc9f6e876ecda0e8126bc2452c62e2451e12a1138c8f0775fb24f235fe30618",
+    "output_hash": "03acc09c9ae7eb0eed5b00b04504dbd3c195c84496bb748ff177ac5be58a1e47",
+    "replay_pointer": "03acc09c9ae7eb0e",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/6bc9f6e876ecda0e8126bc2452c62e2451e12a1138c8f0775fb24f235fe30618.json"
+  },
+  "meta": {
+    "run_id": "ceffda24-832e-4728-b091-8fe2a181fec3",
+    "timestamp": "2026-06-11T19:56:20.170Z",
+    "duration_ms": 19,
+    "version": "26.6.10"
+  }
+}

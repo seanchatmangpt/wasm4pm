@@ -1,0 +1,16 @@
+{
+  "algorithm": "log_to_trie",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Prefix-tree (trie) representation of event log; each distinct trace is a root-to-leaf path",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "leaves=6",
+    "description": "Log-to-trie on running-example produces a prefix tree with 6 leaf nodes — one per distinct trace in the 6-trace log"
+  }
+}

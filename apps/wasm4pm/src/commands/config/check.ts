@@ -13,6 +13,7 @@ export const configCheck = defineCommand({
   args: {
     format: { type: 'string', description: 'Output format: human (default) or json' },
     quiet: { type: 'boolean', alias: 'q' },
+    config: { type: 'string', description: 'Path to config file' },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -25,7 +26,16 @@ export const configCheck = defineCommand({
       {},
       async () => {
         try {
-          const config = await resolveConfig();
+          const configPath = ctx.args.config;
+          const options: any = {};
+          if (configPath) {
+            const fs = await import('node:fs');
+            if (!fs.existsSync(configPath)) {
+              throw new Error(`Config file not found: ${configPath}`);
+            }
+            options.configSearchPaths = [configPath];
+          }
+          const config = await resolveConfig(options);
           const warnings = checkConfigWarnings(config);
           warningCount = warnings.length;
           const all_clear = warnings.length === 0;

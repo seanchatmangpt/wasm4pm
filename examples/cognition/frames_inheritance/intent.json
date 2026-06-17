@@ -1,0 +1,22 @@
+{
+  "intent": "resolve widget_a weight",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "frame:widget_a:isa",
+      "value": "widget"
+    },
+    {
+      "key": "frame:widget:slot:weight:default",
+      "value": "10kg"
+    },
+    {
+      "key": "frame:widget_a:slot:weight",
+      "value": "5kg"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

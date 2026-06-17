@@ -1,0 +1,24 @@
+{
+  "id": "ocel_frames_inheritance_v1",
+  "name": "Frames Inheritance Lifecycle Model",
+  "phases": [
+    {
+      "name": "load",
+      "kinds": ["frame-load"],
+      "min_occurrences": 1,
+      "max_occurrences": 1
+    },
+    {
+      "name": "walk",
+      "kinds": ["frame-walk"],
+      "min_occurrences": 0,
+      "max_occurrences": 99999
+    },
+    {
+      "name": "resolve",
+      "kinds": ["frame-resolve"],
+      "min_occurrences": 0,
+      "max_occurrences": 1
+    }
+  ]
+}

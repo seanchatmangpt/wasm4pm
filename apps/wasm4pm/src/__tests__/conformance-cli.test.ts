@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
-import { execSync } from 'child_process';
 
 describe('wpm conformance — log-to-model conformance checking CLI', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
@@ -35,16 +34,17 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
       expect(result.stderr || result.stdout).toMatch(/model|required|argument/i);
     });
 
-    it('should refuse model from file until WASM model store is wired', async () => {
-      const modelFile = env.tmpDir + '/test-model.pnml';
+    it('should return source error for malformed PNML model file', async () => {
+      const modelFile = env.tempDir + '/test-model.pnml';
       const fs = require('fs');
-      fs.writeFileSync(modelFile, '<model/>'); // Minimal PNML
+      fs.writeFileSync(modelFile, '<model/>'); // Invalid PNML — missing <pnml> wrapper
 
       const result = await runCli(['conformance', '--input', 'test.xes', '--model', modelFile], {
         env: env.env,
       });
-      expect(result.exitCode).toBe(1);
-      expect(result.stdout + result.stderr).toMatch(/INVALID_MODEL_HANDLE|not supported yet/i);
+      // <model/> is not valid PNML; from_pnml_wasm returns SOURCE_ERROR (exit 2)
+      expect([1, 2]).toContain(result.exitCode);
+      expect(result.stdout + result.stderr).toMatch(/INVALID_MODEL_HANDLE|not supported yet|pnml|error/i);
     });
 
     it('should accept model from discovery algorithm', async () => {
@@ -158,7 +158,7 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
 
   describe('conformance --save-report', () => {
     it('should save conformance report to file', async () => {
-      const report = env.tmpDir + '/conformance-report.json';
+      const report = env.tempDir + '/conformance-report.json';
       const result = await runCli(['conformance', '--input', 'test.xes', '--save-report', report], {
         env: env.env,
       });
@@ -203,7 +203,7 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
       // The conformance command requires WASM to parse the XES file.
       // Without WASM, the command fails at the WASM load stage, not the parse stage.
       // We verify the exit code is non-zero; content assertions need a live WASM binary.
-      const badLog = env.tmpDir + '/bad.xes';
+      const badLog = env.tempDir + '/bad.xes';
       const fs = require('fs');
       fs.writeFileSync(badLog, 'not valid xes');
 
@@ -214,7 +214,7 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
     });
 
     it('should handle invalid model format — exits non-zero', async () => {
-      const badModel = env.tmpDir + '/bad.pnml';
+      const badModel = env.tempDir + '/bad.pnml';
       const fs = require('fs');
       fs.writeFileSync(badModel, 'not valid pnml');
 

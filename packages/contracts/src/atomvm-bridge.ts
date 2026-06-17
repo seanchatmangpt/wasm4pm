@@ -29,6 +29,8 @@
  *   it identifies process IDs that terminated abnormally via `atomvm_proc.crash`.
  */
 
+import { z } from 'zod';
+import { OcelEventSchema } from './ocel-bridge.js';
 import type { OcelEvent } from './ocel-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -41,18 +43,13 @@ import type { OcelEvent } from './ocel-bridge.js';
  * adaptation. All remaining fields (module, function, arity, parent, reason,
  * scheduler, duration_ms, mfa, etc.) become the OCEL value map.
  */
-export type AtomVmProcEvent = {
-  /** Discriminator — must be "atomvm_proc" */
-  tag: 'atomvm_proc';
-  /** Erlang-style process identifier, e.g. "<0.5.0>" */
-  pid: string;
-  /** Lifecycle event name: "spawn" | "running" | "waiting" | "exit" | "crash" */
-  event: string;
-  /** ISO-8601 timestamp string */
-  ts: string;
-  /** Any additional AtomVM-specific fields */
-  [key: string]: unknown;
-};
+export const AtomVmProcEventSchema = z.object({
+  tag: z.literal('atomvm_proc'),
+  pid: z.string().min(1),
+  event: z.string().min(1),
+  ts: z.string().min(1),
+}).catchall(z.unknown());
+export type AtomVmProcEvent = z.infer<typeof AtomVmProcEventSchema>;
 
 // ---------------------------------------------------------------------------
 // isAtomVmProcEvent — type guard
@@ -179,27 +176,16 @@ export function adaptAtomVmProcEvent(evt: AtomVmProcEvent): OcelEvent {
  * `parseErrors`, making data corruption visible without rejecting valid
  * mixed-source streams.
  */
-export interface AtomVmParseResult {
-  /** Successfully converted OCEL events, in input order. */
-  events: OcelEvent[];
-  /**
-   * One entry per line that failed `JSON.parse`.  Blank/whitespace-only lines
-   * are NOT recorded here (they are considered structural NDJSON separators,
-   * not errors).  Lines that are valid JSON but do not satisfy
-   * `isAtomVmProcEvent` (e.g. wrong tag) are also NOT recorded — those are
-   * silently skipped as unrelated telemetry.
-   */
-  parseErrors: Array<{
-    /** 1-based line number in the input string. */
-    line: number;
-    /** The raw string content of the offending line. */
-    raw: string;
-    /** Human-readable description of why the line was rejected. */
-    error: string;
-  }>;
-  /** Total number of non-blank lines examined (successful + skipped + errored). */
-  totalLines: number;
-}
+export const AtomVmParseResultSchema = z.object({
+  events: z.array(OcelEventSchema),
+  parseErrors: z.array(z.object({
+    line: z.number().int().min(1),
+    raw: z.string(),
+    error: z.string(),
+  })),
+  totalLines: z.number().int().min(0),
+});
+export type AtomVmParseResult = z.infer<typeof AtomVmParseResultSchema>;
 
 // ---------------------------------------------------------------------------
 // fromAtomVmJsonl — lenient NDJSON parser (returns AtomVmParseResult)
@@ -341,17 +327,12 @@ export function detectCrashes(events: OcelEvent[]): string[] {
  * Carries the PID, crash reason, and (when available) the MFA string
  * identifying the function where the crash occurred.
  */
-export type CrashDetail = {
-  /** Erlang-style PID of the crashed process, e.g. "<0.5.0>" */
-  pid: string;
-  /** Crash reason string, e.g. "badarg", "noproc", "function_clause" */
-  crash_reason: string;
-  /**
-   * Module:function/arity string of the crash site, e.g. "lists:nth/2".
-   * Empty string when no MFA information is available in the event.
-   */
-  mfa: string;
-};
+export const CrashDetailSchema = z.object({
+  pid: z.string(),
+  crash_reason: z.string(),
+  mfa: z.string(),
+});
+export type CrashDetail = z.infer<typeof CrashDetailSchema>;
 
 /**
  * Returns rich crash detail records — one per unique crashed PID —
@@ -522,22 +503,24 @@ export function toOcel2JsonStandard(events: OcelEvent[], logName = 'atomvm_proc_
  * Uses underscore-delimited field names (distinct from both the WASM camelCase
  * format used by `toOcel2Json` and the IEEE `ocel:` prefix format).
  */
-export type OcelLogEvent = {
-  event_id: string;
-  activity: string;
-  timestamp: string;
-  objects: Array<{ id: string; type: string }>;
-  attributes: Record<string, unknown>;
-};
+export const OcelLogEventSchema = z.object({
+  event_id: z.string(),
+  activity: z.string(),
+  timestamp: z.string(),
+  objects: z.array(z.object({ id: z.string(), type: z.string() })),
+  attributes: z.record(z.string(), z.unknown()),
+});
+export type OcelLogEvent = z.infer<typeof OcelLogEventSchema>;
 
 /**
  * A single object entry in the `OcelLog` format expected by `wpm trace conform`.
  */
-export type OcelLogObject = {
-  id: string;
-  type: string;
-  attributes: Record<string, unknown>;
-};
+export const OcelLogObjectSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  attributes: z.record(z.string(), z.unknown()),
+});
+export type OcelLogObject = z.infer<typeof OcelLogObjectSchema>;
 
 /**
  * The OCEL log shape consumed by `wpm trace conform -m <model> -i <file>`.
@@ -547,12 +530,13 @@ export type OcelLogObject = {
  * - IEEE `ocel:` prefix (`toOcel2JsonStandard`) — for interop with pm4py/ProM
  * - trace.ts underscore (`toOcelLog`)           — for `wpm trace conform`
  */
-export type OcelLog = {
-  ocel_version: string;
-  ocel_global_log: { ocel_attribute_names: string[] };
-  ocel_events: OcelLogEvent[];
-  ocel_objects: OcelLogObject[];
-};
+export const OcelLogSchema = z.object({
+  ocel_version: z.string(),
+  ocel_global_log: z.object({ ocel_attribute_names: z.array(z.string()) }),
+  ocel_events: z.array(OcelLogEventSchema),
+  ocel_objects: z.array(OcelLogObjectSchema),
+});
+export type OcelLog = z.infer<typeof OcelLogSchema>;
 
 // ---------------------------------------------------------------------------
 // toIso8601 — normalise numeric POSIX timestamps (GAP-4c fix)

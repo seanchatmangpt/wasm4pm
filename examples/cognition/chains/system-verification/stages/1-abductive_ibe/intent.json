@@ -1,0 +1,45 @@
+{
+  "intent": "coherence with e_56cf32c6",
+  "candidates": [
+    {
+      "id": "H1",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "H2",
+      "score": 0.5,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "ibe:obs:e_56cf32c6",
+      "value": "true"
+    },
+    {
+      "key": "ibe:obs:E2",
+      "value": "true"
+    },
+    {
+      "key": "ibe:hyp:H1:covers",
+      "value": "e_56cf32c6,E2"
+    },
+    {
+      "key": "ibe:hyp:H1:cost",
+      "value": "1.0"
+    },
+    {
+      "key": "ibe:hyp:H2:covers",
+      "value": "e_56cf32c6"
+    },
+    {
+      "key": "ibe:hyp:H2:cost",
+      "value": "1.0"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

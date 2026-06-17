@@ -1,0 +1,28 @@
+{
+  "breed_id": "ebl",
+  "model_id": "ebl",
+  "model_level": "L1",
+  "report_date": "2026-06-10",
+  "method": "native_dfa_replay",
+  "fitness": 1.0,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay). Conformance gate enforced in run_breed().",
+  "trace_coverage": {
+    "declared_steps": [
+      "ebl-explain",
+      "ebl-generalize",
+      "ebl-operationalize"
+    ],
+    "observed_in_traces": [
+      "ebl-explain",
+      "ebl-generalize",
+      "ebl-operationalize"
+    ],
+    "coverage": 1.0,
+    "coverage_note": "All 3 declared L1 steps appear in accepted trace corpus. Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
+  },
+  "l0_fitness": 1.0,
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate.",
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay)."
+}

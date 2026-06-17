@@ -7,59 +7,46 @@
  * ErrorCode string aliases remain for human-readable usage.
  */
 
+import { z } from 'zod';
+
+export const ErrorCodeSchema = z.enum([
+  'CONFIG_INVALID',
+  'CONFIG_MISSING',
+  'SOURCE_NOT_FOUND',
+  'SOURCE_INVALID',
+  'SOURCE_PERMISSION',
+  'ALGORITHM_FAILED',
+  'ALGORITHM_NOT_FOUND',
+  'CONFORMANCE_FAILED',
+  'SIMULATION_FAILED',
+  'PREDICTION_FAILED',
+  'VALIDATION_FAILED',
+  'IMPORT_FAILED',
+  'WASM_INIT_FAILED',
+  'WASM_MEMORY_EXCEEDED',
+  'SINK_FAILED',
+  'SINK_PERMISSION',
+  'OTEL_FAILED',
+]);
+
 /**
  * Standardized error codes covering all failure modes
  */
-export type ErrorCode =
-  // Configuration errors (2xx exit codes)
-  | 'CONFIG_INVALID'
-  | 'CONFIG_MISSING'
+export type ErrorCode = z.infer<typeof ErrorCodeSchema>;
 
-  // Source/Input errors (3xx exit codes)
-  | 'SOURCE_NOT_FOUND'
-  | 'SOURCE_INVALID'
-  | 'SOURCE_PERMISSION'
-
-  // Algorithm errors (4xx exit codes)
-  | 'ALGORITHM_FAILED'
-  | 'ALGORITHM_NOT_FOUND'
-  | 'CONFORMANCE_FAILED'
-  | 'SIMULATION_FAILED'
-  | 'PREDICTION_FAILED'
-  | 'VALIDATION_FAILED'
-  | 'IMPORT_FAILED'
-
-  // WASM Runtime errors (5xx exit codes)
-  | 'WASM_INIT_FAILED'
-  | 'WASM_MEMORY_EXCEEDED'
-
-  // Sink/Output errors (6xx exit codes)
-  | 'SINK_FAILED'
-  | 'SINK_PERMISSION'
-
-  // Observability errors (7xx exit codes, non-fatal)
-  | 'OTEL_FAILED';
+export const TypedErrorSchema = z.object({
+  schema_version: z.literal('1.0'),
+  code: z.number().int().min(0).max(255),
+  message: z.string(),
+  remediation: z.string(),
+  context: z.record(z.string(), z.unknown()),
+});
 
 /**
  * TypedError — compact error type with numeric code (0-255)
  * for wire format, hashing, and cross-language interop.
  */
-export interface TypedError {
-  /** Schema version */
-  schema_version: '1.0';
-
-  /** Numeric error code (0-255) */
-  code: number;
-
-  /** Human-readable error message */
-  message: string;
-
-  /** Actionable remediation hint */
-  remediation: string;
-
-  /** Additional structured context */
-  context: Record<string, unknown>;
-}
+export type TypedError = z.infer<typeof TypedErrorSchema>;
 
 /**
  * Numeric code mapping (0-255 range) for TypedError
@@ -153,28 +140,19 @@ export const TYPED_ERROR_JSON_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+export const ErrorInfoSchema = z.object({
+  code: ErrorCodeSchema,
+  message: z.string(),
+  context: z.record(z.string(), z.unknown()).optional(),
+  remediation: z.string(),
+  exit_code: z.number().int(),
+  recoverable: z.boolean(),
+});
+
 /**
  * Structured error information with context and remediation
  */
-export interface ErrorInfo {
-  /** Standardized error code */
-  code: ErrorCode;
-
-  /** Human-readable error message */
-  message: string;
-
-  /** Additional context about the error */
-  context?: Record<string, unknown>;
-
-  /** How to fix this error */
-  remediation: string;
-
-  /** Process exit code (per PRD §8) */
-  exit_code: number;
-
-  /** Whether the error is recoverable */
-  recoverable: boolean;
-}
+export type ErrorInfo = z.infer<typeof ErrorInfoSchema>;
 
 /**
  * Remediation guidance database

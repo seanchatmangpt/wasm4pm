@@ -5,6 +5,29 @@
  * Native process intelligence ML — no external ML library dependencies.
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// EmptyInputWarning
+// ---------------------------------------------------------------------------
+
+export const EmptyInputWarningSchema = z.object({
+  /** Stable warning code. Use this for programmatic checks. */
+  code: z.enum([
+    'empty_input',
+    'insufficient_samples',
+    'short_series',
+    'no_valid_features',
+    'no_labels',
+  ]),
+  /** Human-readable explanation. */
+  message: z.string(),
+  /** Number of items the function received. */
+  inputLength: z.number(),
+  /** Minimum number of items required to produce a meaningful result. */
+  minRequired: z.number(),
+});
+
 /**
  * Sentinel metadata attached to ML results when the input was too small or
  * empty to produce a meaningful answer. Callers should treat any result with
@@ -16,37 +39,33 @@
  * `metadata?.warning` to surface the situation instead of silently using
  * sentinel results as if they were valid.
  */
-export interface EmptyInputWarning {
-  /** Stable warning code. Use this for programmatic checks. */
-  code:
-    | 'empty_input'
-    | 'insufficient_samples'
-    | 'short_series'
-    | 'no_valid_features'
-    | 'no_labels';
-  /** Human-readable explanation. */
-  message: string;
-  /** Number of items the function received. */
-  inputLength: number;
-  /** Minimum number of items required to produce a meaningful result. */
-  minRequired: number;
-}
+export type EmptyInputWarning = z.infer<typeof EmptyInputWarningSchema>;
+
+// ---------------------------------------------------------------------------
+// FeatureMatrix
+// ---------------------------------------------------------------------------
+
+export const FeatureMatrixSchema = z.object({
+  /** Rows = traces/observations, cols = features */
+  data: z.array(z.array(z.number())),
+  /** Column headers (original feature names + one-hot encoded names) */
+  featureNames: z.array(z.string()),
+  /** Row identifiers (case IDs or trace indices) */
+  caseIds: z.array(z.string()),
+  /** Numeric target values (e.g., remaining_time) */
+  targets: z.array(z.number()),
+  /** Categorical target labels (e.g., outcome activity name) */
+  labels: z.array(z.string()),
+  /** Set when the input was empty / null / had no valid rows. */
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
 
 /** Numeric feature matrix ready for ML consumption */
-export interface FeatureMatrix {
-  /** Rows = traces/observations, cols = features */
-  data: number[][];
-  /** Column headers (original feature names + one-hot encoded names) */
-  featureNames: string[];
-  /** Row identifiers (case IDs or trace indices) */
-  caseIds: string[];
-  /** Numeric target values (e.g., remaining_time) */
-  targets: number[];
-  /** Categorical target labels (e.g., outcome activity name) */
-  labels: string[];
-  /** Set when the input was empty / null / had no valid rows. */
-  metadata?: { warning: EmptyInputWarning };
-}
+export type FeatureMatrix = z.infer<typeof FeatureMatrixSchema>;
+
+// ---------------------------------------------------------------------------
+// LabelEncoding — kept as plain interface: contains Map<K,V> (not JSON-native)
+// ---------------------------------------------------------------------------
 
 /** Label encoding result for classifiers */
 export interface LabelEncoding {
@@ -70,121 +89,120 @@ export type RegressionMethod =
 /** Clustering method */
 export type ClusteringMethod = 'kmeans' | 'dbscan';
 
-// --- Result interfaces ---
+// --- Result schemas & types ---
 
-export interface ClassificationResult {
-  method: ClassificationMethod;
-  predictions: Array<{ caseId: string; predicted: string; confidence: number }>;
-  modelInfo: Record<string, unknown>;
+export const ClassificationResultSchema = z.object({
+  method: z.enum(['knn', 'logistic_regression', 'decision_tree', 'naive_bayes', 'gradient_boosting']),
+  predictions: z.array(z.object({ caseId: z.string(), predicted: z.string(), confidence: z.number() })),
+  modelInfo: z.record(z.string(), z.unknown()),
   /**
    * Mean cross-validation accuracy over k held-out folds.
    * Present only when crossValidate=true is passed to classifyTraces.
-   * This is the honest accuracy estimate: it is evaluated on data the model
-   * never saw during training, so it will be lower than in-sample accuracy
-   * for methods prone to overfitting (e.g. kNN with small k, deep trees).
    */
-  cv_accuracy?: number;
-  /**
-   * Standard deviation of per-fold accuracy scores.
-   * High std dev signals that the model is sensitive to which data it sees —
-   * a sign of overfitting or insufficient training data.
-   */
-  cv_std_dev?: number;
+  cv_accuracy: z.number().optional(),
+  /** Standard deviation of per-fold accuracy scores. */
+  cv_std_dev: z.number().optional(),
   /** Number of CV folds used (default: 3). */
-  cv_folds?: number;
+  cv_folds: z.number().optional(),
   /** Per-fold accuracy scores for debugging and audit trails. */
-  cv_fold_scores?: number[];
+  cv_fold_scores: z.array(z.number()).optional(),
+  /** Method selected by the data-driven algorithm selector. */
+  suggested_method: z.enum(['knn', 'logistic_regression', 'decision_tree', 'naive_bayes', 'gradient_boosting']).optional(),
+  /** Empty-input refusal metadata. */
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
+
+export type ClassificationResult = z.infer<typeof ClassificationResultSchema>;
+
+export const RegressionResultSchema = z.object({
+  method: z.enum(['linear_regression', 'polynomial_regression', 'exponential_regression']),
+  slope: z.number().optional(),
+  intercept: z.number().optional(),
+  rSquared: z.number(),
+  rmse: z.number(),
+  mae: z.number(),
+  predictions: z.array(z.object({ caseId: z.string(), actual: z.number(), predicted: z.number() })),
+  degree: z.number().optional(),
+  coefficients: z.array(z.number()).optional(),
+  growthRate: z.number().optional(),
+  amplitude: z.number().optional(),
+  doublingTime: z.number().optional(),
+});
+
+export type RegressionResult = z.infer<typeof RegressionResultSchema>;
+
+export const ClusteringResultSchema = z.object({
+  method: z.enum(['kmeans', 'dbscan']),
+  clusterCount: z.number(),
+  noiseCount: z.number(),
+  assignments: z.array(z.object({ caseId: z.string(), cluster: z.number() })),
+  centroids: z.array(z.array(z.number())).optional(),
+  modelInfo: z.record(z.string(), z.unknown()),
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
+
+export type ClusteringResult = z.infer<typeof ClusteringResultSchema>;
+
+const TrendSchema = z.object({ direction: z.string(), slope: z.number(), strength: z.number() });
+const DecompositionSchema = z.object({ trend: z.array(z.number()), seasonal: z.array(z.number()), residual: z.array(z.number()) });
+const SeasonalitySchema = z.object({ period: z.number(), strength: z.number() });
+
+export const ThroughputForecastResultSchema = z.object({
+  eventCounts: z.array(z.number()),
+  windowCount: z.number(),
+  trend: TrendSchema,
+  forecast: z.array(z.number()).optional(),
+  seasonality: SeasonalitySchema.optional(),
+  decomposition: DecompositionSchema.optional(),
+  windowSizeMs: z.number(),
+  exponentialForecast: z.array(z.number()).optional(),
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
+
+export type ThroughputForecastResult = z.infer<typeof ThroughputForecastResultSchema>;
+
+export const SeriesForecastResultSchema = z.object({
+  seriesLength: z.number(),
+  trend: TrendSchema,
+  forecast: z.array(z.number()).optional(),
   /**
-   * Method selected by the data-driven algorithm selector when the user did
-   * not specify --method. Absent when the user explicitly chose a method.
-   */
-  suggested_method?: ClassificationMethod;
-  /** Empty-input refusal metadata — present only when input was too small or empty. */
-  metadata?: { warning: EmptyInputWarning };
-}
-
-export interface RegressionResult {
-  method: RegressionMethod;
-  slope?: number;
-  intercept?: number;
-  rSquared: number;
-  rmse: number;
-  mae: number;
-  predictions: Array<{ caseId: string; actual: number; predicted: number }>;
-  // polynomial-specific
-  degree?: number;
-  coefficients?: number[];
-  // exponential-specific
-  growthRate?: number;
-  amplitude?: number;
-  doublingTime?: number;
-}
-
-export interface ClusteringResult {
-  method: ClusteringMethod;
-  clusterCount: number;
-  noiseCount: number;
-  assignments: Array<{ caseId: string; cluster: number }>;
-  centroids?: number[][];
-  modelInfo: Record<string, unknown>;
-  /** Set when no clustering was performed (empty input). */
-  metadata?: { warning: EmptyInputWarning };
-}
-
-export interface ThroughputForecastResult {
-  eventCounts: number[];
-  windowCount: number;
-  trend: { direction: string; slope: number; strength: number };
-  forecast?: number[];
-  seasonality?: { period: number; strength: number };
-  decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
-  windowSizeMs: number;
-  exponentialForecast?: number[];
-  /** Set when no forecast was produced (no events or fewer than 3 bins). */
-  metadata?: { warning: EmptyInputWarning };
-}
-
-/** Generic series forecast result (for drift distances, any numeric series) */
-export interface SeriesForecastResult {
-  seriesLength: number;
-  trend: { direction: string; slope: number; strength: number };
-  forecast?: number[];
-  /**
-   * R² goodness-of-fit for the linear trend model (fraction of variance explained).
-   * Ranges from -∞ (worse than constant baseline) to 1.0 (perfect fit).
+   * R² goodness-of-fit for the linear trend model.
    * Present when series has ≥ 3 observations.
    */
-  rSquared?: number;
+  rSquared: z.number().optional(),
   /**
-   * 95% confidence intervals for each forecast period (parallel to `forecast`).
-   * Each entry is [lower, upper] at the 95% level, computed from residual
-   * standard error with n-2 degrees of freedom.
+   * 95% confidence intervals for each forecast period.
    * Present when series has ≥ 3 observations and `forecast` is populated.
    */
-  confidenceIntervals?: Array<[number, number]>;
-  seasonality?: { period: number; strength: number };
-  decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
-  exponentialForecast?: number[];
-  /** Set when the input series was shorter than 3 observations. */
-  metadata?: { warning: EmptyInputWarning };
-}
+  confidenceIntervals: z.array(z.tuple([z.number(), z.number()])).optional(),
+  seasonality: SeasonalitySchema.optional(),
+  decomposition: DecompositionSchema.optional(),
+  exponentialForecast: z.array(z.number()).optional(),
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
 
-export interface EnhancedAnomalyResult {
-  peakIndices: number[];
-  peakValues: number[];
-  decomposed?: { trend: number[]; seasonal: number[]; residual: number[] };
-  residualPeaks?: number[];
-  smoothedSeries: number[];
-  originalLength: number;
-  /** Set when the input series was shorter than 3 observations. */
-  metadata?: { warning: EmptyInputWarning };
-}
+/** Generic series forecast result (for drift distances, any numeric series) */
+export type SeriesForecastResult = z.infer<typeof SeriesForecastResultSchema>;
 
-export interface PCAResult {
-  nComponents: number;
-  explainedVariance: number[];
-  transformedData: number[][];
-  components: number[][];
-  originalFeatureCount: number;
-  featureNames: string[];
-}
+export const EnhancedAnomalyResultSchema = z.object({
+  peakIndices: z.array(z.number()),
+  peakValues: z.array(z.number()),
+  decomposed: DecompositionSchema.optional(),
+  residualPeaks: z.array(z.number()).optional(),
+  smoothedSeries: z.array(z.number()),
+  originalLength: z.number(),
+  metadata: z.object({ warning: EmptyInputWarningSchema }).optional(),
+});
+
+export type EnhancedAnomalyResult = z.infer<typeof EnhancedAnomalyResultSchema>;
+
+export const PCAResultSchema = z.object({
+  nComponents: z.number(),
+  explainedVariance: z.array(z.number()),
+  transformedData: z.array(z.array(z.number())),
+  components: z.array(z.array(z.number())),
+  originalFeatureCount: z.number(),
+  featureNames: z.array(z.string()),
+});
+
+export type PCAResult = z.infer<typeof PCAResultSchema>;

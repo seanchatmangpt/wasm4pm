@@ -1,0 +1,56 @@
+We have presented the Enterprise Change Admissibility Framework: a formal
+extension of process mining's admitted-event semantics into a governance law
+for all enterprise state change. Its content is captured by three statements
+of increasing concreteness. Mathematically, acceptance is membership ---
+$\accept(x) \Rightarrow x \in \Aent$ --- and there is no second path into
+enterprise state (Theorem~\ref{thm:main}, Lemma~\ref{lem:chain}).
+Adversarially, eight recurring classes of enterprise mutation --- raw writes,
+state skips, object substitution, backdating, replay, schema-valid fraud,
+rogue administrator edits, and AI-agent hallucinated actions --- are
+inaccessible to acceptance except through seven named, typed, independently
+bounded break channels (Sections~\ref{sec:inaccessibility},
+\ref{sec:attacks}). Practically, the framework is implementable today:
+wasm4pm realises it with deterministic WASM execution, BLAKE3 receipt chains
+over canonical OCEL~2.0, a thirteen-state refusal taxonomy, and
+post-quantum-ready signing (Section~\ref{sec:impl}).
+
+The deeper claim is a temporal one. Process mining has spent two decades
+perfecting the reconstruction of what happened; the machinery it built ---
+event semantics, object-centric logs, conformance measures, boundary
+predicates --- turns out to be exactly the machinery needed to govern what is
+\emph{allowed to happen}. Moving that machinery from after the fact to before
+acceptance changes the question an enterprise system answers, from ``can this
+input be parsed and authorized?'' to ``can this change prove it is a lawful
+step of a declared process?'' Every result in this paper is downstream of
+that single repositioning.
+
+\paragraph{Limitations and future work.}
+Four items delimit the present contribution. \emph{(1) Boundary completeness.}
+The refusal taxonomy is grounded in observed attack patterns; a completeness
+proof against the threat model --- e.g., via reachability analysis of the
+boundary map over the declared workflow
+net~\cite{van_der_aalst_wfnet_soundness_1997} --- would convert the
+boundary-map channel from empirically narrowed to formally bounded.
+\emph{(2) Mechanised proofs.} The propositions of
+Section~\ref{sec:inaccessibility} are short enough to formalise; a mechanised
+development (e.g., in a proof assistant, following the type-safe evidence
+programme of~\cite{type_safe_process_evidence_2024}) would also sharpen the
+gate-defect channel. \emph{(3) Implementation gaps.} Signature integration,
+CLI--WASM trace correlation, and configurable audited seeds are staged work in
+the reference implementation (Section~\ref{sec:impl-eval}). \emph{(4)
+Institutional acceptance.} Receipts carry evidential weight in regulated
+contexts only once audit institutions accept them as compliance artifacts;
+the framework supplies the verifiable object, but the endorsement is
+organisational, and the maturity-model
+literature~\cite{sok_ccmm_2024,nist_ai_rmf_maturity_2024} suggests the
+assessment vocabulary through which it will arrive.
+
+\paragraph{Closing.}
+Every enterprise security question is eventually a change question: who
+changed the role, the invoice, the policy, the model, the permission. Systems
+that answer by reconstruction will always answer too late. The framework
+presented here answers by construction --- no change enters enterprise state
+except through an admitted, signed, object-linked, process-positioned,
+receipt-bearing event --- and it makes the cost of every exception explicit.
+Attackers, insiders, and agents may still submit anything they wish. What they
+can no longer do, short of breaking a named assumption, is make it count.

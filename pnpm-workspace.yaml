@@ -4,5 +4,26 @@ packages:
   - 'packages/*'
   - 'playground'
   - 'lab'
+  - 'examples'
   - 'tests/proof'
   - 'tests/archive'
+
+allowBuilds:
+  '@parcel/watcher': true
+  better-sqlite3: true
+  blake3: true
+  cpu-features: true
+  esbuild: true
+  maplibre-gl: true
+  protobufjs: true
+  ssh2: true
+  unrs-resolver: true
+  vue-demi: true
+
+onlyBuiltDependencies:
+  - better-sqlite3
+  - blake3
+  - cpu-features
+  - esbuild
+  - protobufjs
+  - ssh2

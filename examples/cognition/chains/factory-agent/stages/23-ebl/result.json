@@ -1,0 +1,91 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ebl",
+    "breed": "ebl",
+    "status": "ok",
+    "output": {
+      "breed": "Ebl",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "weight(obj1,light)",
+          "value": "true"
+        },
+        {
+          "key": "weight(obj2,heavy)",
+          "value": "true"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "description_logic:0c7afe958ae08ff82186c65d39811d0ad5c5948501c54e25d3b807d270076b5f"
+        },
+        {
+          "key": "ebl:rule",
+          "value": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)"
+        }
+      ],
+      "selected": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)",
+      "explanation": "EBL operationalized a new rule from the proof of safe_to_stack(obj1,obj2)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ebl-explain",
+          "detail": "fact: weight(obj1,light)",
+          "depth": 30
+        },
+        {
+          "step": 1,
+          "kind": "ebl-explain",
+          "detail": "fact: weight(obj2,heavy)",
+          "depth": 30
+        },
+        {
+          "step": 2,
+          "kind": "ebl-explain",
+          "detail": "rule: r_lighter",
+          "depth": 31
+        },
+        {
+          "step": 3,
+          "kind": "ebl-explain",
+          "detail": "rule: r_safe",
+          "depth": 32
+        },
+        {
+          "step": 4,
+          "kind": "ebl-generalize",
+          "detail": "rule: r_safe",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "ebl-generalize",
+          "detail": "rule: r_lighter",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "ebl-operationalize",
+          "detail": "weight(?x_g1,light), weight(?y_g1,heavy) => safe_to_stack(?x_g1,?y_g1)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "1db1932dc9424cba97fda57e1a56907484a4d35a3541c0bff221ad24e2b2d425",
+    "output_hash": "b829aa409ca0bfdf1ae1aad943e4ef5b49f396e967fd67989cc3d3e1e61a6719",
+    "replay_pointer": "b829aa409ca0bfdf",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/1db1932dc9424cba97fda57e1a56907484a4d35a3541c0bff221ad24e2b2d425.json"
+  },
+  "meta": {
+    "run_id": "55642e17-539e-4177-9987-15d7821a4ecf",
+    "timestamp": "2026-06-11T19:56:10.447Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

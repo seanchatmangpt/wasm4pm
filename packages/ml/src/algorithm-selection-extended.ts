@@ -12,27 +12,31 @@
  * This module provides empirically-validated scaling preferences for each algorithm.
  */
 
+import { z } from 'zod';
 import type { LogCharacteristicsDetection } from './parameter-suggestions.js';
 
 export type ScalingMethod = 'standardize' | 'minmax' | 'robust' | 'mean' | 'none';
+
+// ---------------------------------------------------------------------------
+// AlgorithmScalingPair
+// ---------------------------------------------------------------------------
+
+export const AlgorithmScalingPairSchema = z.object({
+  /** Algorithm choice */
+  algorithm: z.enum(['knn', 'logistic_regression', 'kmeans', 'dbscan', 'linear_regression']),
+  /** Preferred scaling method for this algorithm */
+  scalingMethod: z.enum(['standardize', 'minmax', 'robust', 'mean', 'none']),
+  /** Confidence in this pairing (0-1) */
+  confidence: z.number(),
+  /** Why this pairing is recommended */
+  rationale: z.string(),
+});
 
 /**
  * Algorithm + Scaling preference pairing.
  * Different algorithms benefit from different scaling methods.
  */
-export interface AlgorithmScalingPair {
-  /** Algorithm choice */
-  algorithm: 'knn' | 'logistic_regression' | 'kmeans' | 'dbscan' | 'linear_regression';
-
-  /** Preferred scaling method for this algorithm */
-  scalingMethod: ScalingMethod;
-
-  /** Confidence in this pairing (0-1) */
-  confidence: number;
-
-  /** Why this pairing is recommended */
-  rationale: string;
-}
+export type AlgorithmScalingPair = z.infer<typeof AlgorithmScalingPairSchema>;
 
 /**
  * Empirical baseline: expected accuracy improvement when scaling is applied.
@@ -163,7 +167,7 @@ export function suggestAlgorithmWithScaling(
  */
 function selectClassificationAlgorithm(
   traceCount: number,
-  featureCount: number,
+  _featureCount: number,
   featureQualityScore: number,
   characteristics?: Partial<LogCharacteristicsDetection>,
 ): 'knn' | 'logistic_regression' {
@@ -328,7 +332,7 @@ export function suggestRegressionWithScaling(
   traceCount: number,
   featureCount: number,
   featureQualityScore: number,
-  characteristics?: Partial<LogCharacteristicsDetection>,
+  _characteristics?: Partial<LogCharacteristicsDetection>,
   hasOutliers: boolean = false,
 ): AlgorithmScalingPair {
   const scalingMethod = hasOutliers ? 'robust' : 'standardize';

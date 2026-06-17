@@ -1,10 +1,14 @@
-export interface QualityThresholdProfile {
-  fitness_min: number;
-  precision_min: number;
-  generalization_min: number;
-  simplicity_min: number;
-  rationale: string;
-}
+import { z } from 'zod';
+
+export const QualityThresholdProfileSchema = z.object({
+  fitness_min: z.number(),
+  precision_min: z.number(),
+  generalization_min: z.number(),
+  simplicity_min: z.number(),
+  rationale: z.string(),
+});
+
+export type QualityThresholdProfile = z.infer<typeof QualityThresholdProfileSchema>;
 
 export const ALGORITHM_QUALITY_THRESHOLDS: Record<string, QualityThresholdProfile> = {
   dfg: {

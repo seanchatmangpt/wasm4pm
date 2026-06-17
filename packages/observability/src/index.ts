@@ -86,6 +86,9 @@ export * from './error-span-capture.js';
 // Agent Coordination Log: RL agent actions, SPC alerts, recovery events with OCEL export (Gap-19)
 export * from './agent-coordination-log.js';
 
+// OTLP exporter: production telemetry export via OTLP/HTTP
+export * from './otlp-exporter.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

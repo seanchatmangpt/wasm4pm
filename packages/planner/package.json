@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/planner",
-  "version": "26.6.8",
+  "version": "26.6.10",
   "publishConfig": {
     "access": "public"
   },
@@ -26,9 +26,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "26.6.8",
+    "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -43,5 +44,14 @@
     "optimization"
   ],
   "author": "Sean Chatman",
-  "license": "SEE LICENSE IN LICENSE"
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seanchatmangpt/wasm4pm.git",
+    "directory": "packages/planner"
+  },
+  "homepage": "https://github.com/seanchatmangpt/wasm4pm#readme",
+  "bugs": {
+    "url": "https://github.com/seanchatmangpt/wasm4pm/issues"
+  }
 }

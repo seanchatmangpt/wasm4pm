@@ -1,0 +1,73 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "fuzzy_logic",
+    "breed": "fuzzy_logic",
+    "status": "ok",
+    "output": {
+      "breed": "FuzzyLogic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "fuzzy:temp:hot",
+          "value": "tri:10,30,50"
+        },
+        {
+          "key": "fuzzy:heat:change",
+          "value": "tri:0,25,100"
+        },
+        {
+          "key": "fuzzy:input:temp",
+          "value": "30"
+        },
+        {
+          "key": "fuzzy:output:heat",
+          "value": "41.66667"
+        }
+      ],
+      "selected": null,
+      "explanation": "Mamdani fuzzy inference: min t-norm firing, max aggregation, 101-point centroid",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "fuzzy-fuzzify",
+          "detail": "fuzzy:temp:hot = 1",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "fuzzy-fire",
+          "detail": "rule pc1 fired with strength 1",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "fuzzy-aggregate",
+          "detail": "fuzzy:heat:change max strength = 1",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "fuzzy-defuzz",
+          "detail": "heat = 41.66667",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "ae43509dfbd4061ccf4fa0f0339735eebd00a37d2331c1e62b0c3189c9f74e49",
+    "output_hash": "c1ca20d367d5f6de0f4de30247a49d128d371a84b19a39b5992edc0bc18096f8",
+    "replay_pointer": "c1ca20d367d5f6de",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/fuzzy_logic/.wasm4pm/receipts/ae43509dfbd4061ccf4fa0f0339735eebd00a37d2331c1e62b0c3189c9f74e49.json"
+  },
+  "meta": {
+    "run_id": "31a7cb63-1071-47a8-8e33-372adea0168c",
+    "timestamp": "2026-06-11T18:43:46.512Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

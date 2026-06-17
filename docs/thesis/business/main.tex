@@ -1,0 +1,56 @@
+\documentclass[11pt,a4paper,oneside]{book}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!black,
+  urlcolor=blue!60!black,
+  pdftitle={Business Models Unlocked by wasm4pm},
+  pdfauthor={Sean Chatman}
+}
+
+\title{\Huge Business Models Unlocked by wasm4pm\\[1em]
+\Large A Receipt-Native Process Mining Platform\\
+Compiled to WebAssembly}
+\author{Sean Chatman\\\texttt{info@chatmangpt.com}}
+\date{June 2026}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+
+\chapter*{Abstract}
+wasm4pm is a process mining platform with 60 deterministic algorithms compiled
+from Rust to WebAssembly, wrapped in a TypeScript monorepo, and governed by a
+BLAKE3 receipt chain that makes every analytical result cryptographically
+attributable to its inputs. This document analyzes the business models that
+this architecture unlocks: dual licensing under BUSL-1.1, evidence-as-a-service
+for regulated industries, edge and embedded deployment economics, and an
+ecosystem strategy built on verifiable computation. The thesis throughout is
+that the unit of value is not the algorithm --- algorithms are commodities ---
+but the \emph{receipt}: a portable, verifiable proof that a specific analysis
+ran on specific data and produced a specific result.
+
+\tableofcontents
+
+\mainmatter
+
+\include{chapters/01-platform}
+\include{chapters/02-licensing}
+\include{chapters/03-evidence-as-a-service}
+\include{chapters/04-edge-economics}
+\include{chapters/05-vertical-plays}
+\include{chapters/06-ecosystem}
+\include{chapters/07-risks-and-roadmap}
+
+\end{document}

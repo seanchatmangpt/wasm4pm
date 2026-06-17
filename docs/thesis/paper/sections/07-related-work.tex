@@ -1,0 +1,100 @@
+We position the framework against eight adjacent threads.
+
+\paragraph{Process-aware information systems and workflow theory.}
+Workflow nets and their soundness
+theory~\cite{van_der_aalst_wfnet_soundness_1997,desel_esparza_free_choice_1995}
+established that enterprise processes admit formal transition semantics, and
+the workflow patterns programme~\cite{russell_workflow_patterns_2015}
+catalogued the control-flow vocabulary a declared model may use. PAIS execute
+declared models; what they historically did not do is deny state authority to
+changes arriving \emph{outside} the engine --- the database write behind the
+workflow system's back remains effective. Our framework closes exactly that
+gap: Definition~\ref{def:mu} withholds state authority from any transition the
+declared law does not admit, regardless of arrival path.
+
+\paragraph{Process mining and conformance checking.}
+Discovery and conformance~\cite{van_der_aalst_process_mining_2011,van_der_aalst_2016_process_mining,van_der_aalst_conformance_checking_2018}
+relate completed logs to models via token replay~\cite{rozinat_van_der_aalst_2008}
+and alignments~\cite{adriansyah_et_al_alignments_2011,adriansyah_2014_phd},
+scored on the four quality
+dimensions~\cite{buijs_et_al_quality_dimensions_2012}. We inherit this entire
+toolbox but invert its temporal position: conformance becomes an admission
+gate rather than a measurement, and the boundary-map channel of
+Theorem~\ref{thm:decomp} is bounded by precisely the fitness/precision
+quantities this literature knows how to measure. Compliance-aware predictive
+monitoring~\cite{de_santis_compliance_predictive_2024} moves in the same
+prospective direction --- predicting violations before completion --- but
+remains advisory; our gate is constitutive.
+
+\paragraph{Object-centric process mining.}
+OCEL~\cite{ghahfarokhi_et_al_ocel_2021}, its 2.0
+standard~\cite{berti_et_al_ocel2_spec_2024,ocel_2_standard_2023},
+object-centric Petri nets~\cite{van_der_aalst_berti_2020}, OC-DFGs~\cite{berti_van_der_aalst_oc_dfg_2023},
+and object-centric constraint
+languages~\cite{kuesters_van_der_aalst_ocpq_2025,kuesters_van_der_aalst_oc_declare_2025}
+supply the multi-object event semantics without which
+Proposition~\ref{prop:objsub} cannot even be stated. Van der Aalst's
+``no AI without PI'' argument~\cite{van_der_aalst_no_ai_without_pi_2024}
+holds that object-centric process intelligence must ground enterprise AI;
+our Proposition~\ref{prop:agent} is the enforcement-side complement.
+Semantic enrichments of event data --- knowledge-graph trace
+querying~\cite{process_trace_kg_2024} and OCED/SPARQL
+integration~\cite{ocel_xes_sparql_2024} --- sharpen the object-model channel
+of Section~\ref{sec:channels}.
+
+\paragraph{Blockchain-anchored process execution.}
+Caterpillar~\cite{lopez_pineda_blockchain_2019} and successors execute BPMN on
+Ethereum, obtaining tamper-evidence from consensus. The trilemma
+analysis~\cite{blockchain_trilemma_2024} quantifies what that costs in
+throughput and operational complexity. Our design point differs: integrity
+comes from local hash chains plus signatures, consensus is unnecessary because
+the validator --- not a miner quorum --- is the admission authority, and the
+evidence stays inside the data owner's boundary. The trade is explicit: we
+give up Byzantine fault tolerance among mutually distrusting writers (which
+single-enterprise governance rarely needs) and keep millisecond admission
+latency and data locality.
+
+\paragraph{Access control.}
+ABAC/XACML~\cite{xacml_standard_2013} answers \emph{who may attempt what};
+conjunct C3 embeds exactly such a policy decision. The remaining six conjuncts
+have no access-control analogue: an authorised actor's change still fails on
+receipt substance, freshness, process position, or object consistency. Access
+control and change admissibility compose; neither subsumes the other
+(Proposition~\ref{prop:admin} is the sharpest separation --- privilege widens
+C3 and nothing else).
+
+\paragraph{Anomaly and fraud detection.}
+Statistical detectors over event
+streams~\cite{ko_comuzzi_anomaly_2021,bose_et_al_concept_drift_pm_2014} are
+probabilistic and post-hoc: they score suspicion. Our guarantees are
+categorical at the gate, but the approaches compose rather than compete ---
+detectors running over the residual stream (Corollary~\ref{cor:refuse}) get a
+labelled, complete, tamper-evident input, and what they find feeds the
+boundary-map review loop.
+
+\paragraph{Provenance and evidence engineering.}
+W3C-style provenance over semantic-web
+data~\cite{provenance_semantic_web_2025}, type-safe process-evidence
+construction~\cite{type_safe_process_evidence_2024}, semantic audit models for
+cloud engines~\cite{sargolzaei_audit_cloud_2022}, and structured
+threat-intelligence schemas~\cite{stix_v21_2022} all pursue machine-checkable
+records of what happened. The receipt chain of
+Section~\ref{sec:bg-receipts} is a member of this family with two
+distinguishing commitments: the substance axiom (no hash-only records) and
+pre-admission positioning (the record gates the change instead of describing
+it).
+
+\paragraph{Governance and maturity frameworks.}
+Security and AI maturity
+models~\cite{sok_ccmm_2024,mlsmm_2023,nist_ai_rmf_maturity_2024},
+crypto-agility assessment~\cite{crypto_agility_maturity_2022},
+PQC migration mandates~\cite{presman_govt_pqc_2024}, change-management
+traceability~\cite{change_mgmt_traceability_2016}, and enterprise-architecture
+risk integration~\cite{ea_security_togaf_2017} describe the organisational
+scaffolding into which a deployment of this framework must fit. The
+attack-surface decomposition (Table~\ref{tab:channels}) is designed to be
+legible to exactly these instruments: each channel maps to an assessable
+control domain, and AI-agent governance
+proposals~\cite{ethos_ai_agents_2024,saura_llm_security_policies} obtain in
+Proposition~\ref{prop:agent} a mechanical enforcement substrate for mandates
+that are otherwise procedural.

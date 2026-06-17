@@ -1,0 +1,1061 @@
+\documentclass[11pt,oneside]{report}
+
+\usepackage[margin=1.1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{setspace}
+\usepackage[hidelinks]{hyperref}
+
+\setstretch{1.12}
+
+\definecolor{codebg}{rgb}{0.96,0.96,0.96}
+\definecolor{keyword}{rgb}{0.13,0.29,0.53}
+\definecolor{comment}{rgb}{0.35,0.45,0.35}
+\definecolor{strcol}{rgb}{0.55,0.25,0.25}
+
+\lstdefinelanguage{Rust}{
+  keywords={fn,let,mut,pub,impl,enum,struct,trait,match,if,else,return,use,const,for,in,as,dyn,Self,self,crate,mod,where,move,ref,true,false,Some,None,Ok,Err},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  string=[b]",
+}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{keyword}\bfseries,
+  commentstyle=\color{comment}\itshape,
+  stringstyle=\color{strcol},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  framerule=0pt,
+  breaklines=true,
+  columns=fullflexible,
+  showstringspaces=false,
+  upquote=true,
+  xleftmargin=1em,
+  xrightmargin=1em
+}
+
+\newcommand{\wpm}{\texttt{wpm}}
+\newcommand{\projver}{v26.6.10}
+
+\title{
+  {\Huge \textbf{wasm4pm}}\\[0.6em]
+  {\LARGE A Process-Mining Platform with a Lawful Cognition Layer}\\[0.8em]
+  {\large Technical Monograph, Release \projver}
+}
+\author{Sean Chatman}
+\date{June 10, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+\noindent
+\textbf{wasm4pm} is a process-mining platform built as two cooperating layers:
+a Rust core compiled to WebAssembly that hosts 60 process-mining algorithms,
+and a TypeScript monorepo of twelve packages whose published command-line
+interface, \wpm{}, drives discovery, conformance checking, and predictive
+analysis from event logs. On top of the mining core sits a \emph{cognition
+layer} --- a ``periodic table'' of 52 classical symbolic-AI reasoning
+\emph{breeds}, each reconstructed from its source paper, each gated by an
+anti-cheat oracle calculus, and each forced through a lawful runtime
+lifecycle in which every successful run must yield an inference trace, pass
+postconditions, and replay against an object-centric event-log (OCEL)
+lifecycle model with conformance fitness exactly $1.0$. The platform's
+operating doctrine, after van der Aalst, is \emph{process truth}: if the code
+says it worked but the event log cannot prove a lawful process happened, then
+it did not work. This monograph documents the entire system at release
+\projver{}: architecture, the cognition periodic table and its ten-rung
+standing ladder, the universal anti-cheat oracle calculus (U1--U6) with 52
+oracles and 52 paired adversaries, paper-grounded falsification against 52
+fixture files with bibliographic provenance, the OCEL/OCPN process-truth
+machinery, the BLAKE3 receipt chain, and the release certificate evidencing
+$60/60$ algorithm reachability and $60$ positive, $120$ negative, and $60$
+invariant behavior cases. Every numeric claim in this document was verified
+against the repository at the \projver{} working tree before being written
+down.
+\end{abstract}
+
+\tableofcontents
+
+%=====================================================================
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{What wasm4pm is}
+
+wasm4pm is a process-mining platform. Its purpose is the classical
+process-mining triad --- \emph{discovery} of process models from event logs,
+\emph{conformance} checking of logs against models, and \emph{enhancement}
+of models with performance and predictive information
+\cite{vdaalst2016} --- delivered as a deterministic WebAssembly core that
+runs identically in Node.js, browsers, and embedded hosts.
+
+The repository at release \projver{} contains two principal layers and a
+family of supporting crates:
+
+\begin{enumerate}
+  \item \textbf{The Rust/WASM core} (\texttt{wasm4pm/}). Sixty
+  process-mining algorithms compiled via \texttt{wasm-pack}, exported
+  through \texttt{wasm-bindgen}. The API surface, documented in
+  \texttt{WASM\_API.md}, comprises 335 public Rust$\to$JavaScript exports
+  across more than one hundred source modules, spanning core discovery
+  (DFG, Alpha++, Heuristic, Inductive miners; metaheuristic miners using
+  ACO, PSO, genetic search, A*, hill climbing, simulated annealing, ILP;
+  DECLARE; streaming variants), conformance and alignment, POWL
+  partial-order workflow handling, temporal-profile analysis, social
+  networks, simulation, ML algorithms, and autonomic control loops.
+
+  \item \textbf{The TypeScript monorepo} (\texttt{packages/} and
+  \texttt{apps/}). Twelve workspace packages ---
+  \texttt{agents}, \texttt{cognition}, \texttt{config},
+  \texttt{contracts}, \texttt{engine}, \texttt{kernel}, \texttt{ml},
+  \texttt{observability}, \texttt{planner}, \texttt{supabase},
+  \texttt{testing}, plus the applications --- with the published CLI,
+  \wpm{}, shipping from \texttt{apps/wasm4pm/} as
+  \texttt{@wasm4pm/cli}. A web playground lives at
+  \texttt{apps/playground-web/}. The workspace version at the time of
+  writing is \texttt{26.6.10} (CalVer \texttt{vYY.M.D}).
+
+  \item \textbf{Supporting crates} (\texttt{crates/}):
+  \texttt{prolog8}, a byte-capped deterministic proof engine;
+  \texttt{miniml-core}, a SIMD-accelerated machine-learning core;
+  \texttt{ocpq}, object-centric process querying; \texttt{wasm4pm-cli},
+  a development-only Rust CLI; and \texttt{wasm4pm-cognition}, the
+  cognition layer that is the subject of
+  Chapters~\ref{ch:periodic}--\ref{ch:papers}.
+\end{enumerate}
+
+\section{The doctrine: process truth}
+
+The platform's constitution is borrowed from van der Aalst's program of
+evidence-based process science \cite{vdaalst2016,ocel2}:
+
+\begin{quote}
+\itshape If the code says it worked but the event log cannot prove a lawful
+process happened, then it did not work.
+\end{quote}
+
+This is not a slogan; it is implemented as a runtime gate. Every cognition
+breed execution derives an object-centric event log (OCEL) from its own
+inference trace and replays that log against a declared lifecycle model;
+non-conformance (fitness $< 1.0$) converts an apparently successful run into
+a hard error (Section~\ref{sec:lifecycle}). Every \wpm{} run emits a BLAKE3
+receipt with non-empty input and output hashes. Releases are certified by a
+machine-checked certificate (Chapter~\ref{ch:truth}).
+
+\section{Reading guide}
+
+Chapter~\ref{ch:arch} describes the platform architecture.
+Chapter~\ref{ch:periodic} presents the cognition periodic table: 52
+\textsc{partial\_alive} breeds, the lawful \texttt{run\_breed} lifecycle, and
+the ten-rung standing ladder. Chapter~\ref{ch:anticheat} develops the
+anti-cheat oracle calculus U1--U6 with its paired adversaries.
+Chapter~\ref{ch:papers} documents paper-grounded falsification: every breed
+is tested against a fixture derived from its source publication, and the
+oracle must both \emph{confirm} the published behavior and \emph{refute} a
+deliberately corrupted variant. Chapter~\ref{ch:truth} covers the
+process-truth machinery --- OCPN lifecycle models, measured-fitness reports,
+receipts, and the release certificate. Chapter~\ref{ch:quality} summarizes
+the quality evidence, and Chapter~\ref{ch:conclusion} concludes.
+
+%=====================================================================
+\chapter{Platform Architecture}
+\label{ch:arch}
+
+\section{The Rust/WASM core}
+
+The mining core lives in \texttt{wasm4pm/} and compiles to a single WASM
+binary via \texttt{wasm-pack build --target nodejs}. Its design principles,
+stated in \texttt{WASM\_API.md}, treat the WASM boundary as a
+\emph{sovereign sanctuary}:
+
+\begin{enumerate}
+  \item \textbf{Memory isolation.} Every call executes within linear
+  memory, isolated from host non-determinism.
+  \item \textbf{Deterministic calculus.} Every algorithm must satisfy
+  $f(\mathit{BinaryHash}, \mathit{InputHash}, \mathit{Seed}) \to
+  (\mathit{Output}, \mathit{Receipt})$, with bit-exact identity required
+  for Rank-1 oracles.
+  \item \textbf{Immutable verdicts.} A \texttt{Refused} verdict from the
+  kernel is process law; no administrative layer can overturn it.
+\end{enumerate}
+
+The exported module families (counts as documented and verified in
+\texttt{WASM\_API.md} at the current tree) are summarized in
+Table~\ref{tab:wasmmodules}.
+
+\begin{table}[ht]
+\centering
+\caption{WASM core module families (from \texttt{WASM\_API.md}, 335 total
+exports).}
+\label{tab:wasmmodules}
+\begin{tabular}{lrl}
+\toprule
+Module family & Exports & Purpose \\
+\midrule
+Core Discovery & 15 & DFG, Alpha++, Heuristic, Inductive, ACO, PSO, \\
+ & & genetic, A*, hill climbing, simulated annealing, \\
+ & & ILP, DECLARE, streaming variants \\
+ML Algorithms & 6+ & classification, clustering, forecasting, anomaly \\
+ & & detection, regression, PCA \\
+Streaming & 20+ & real-time DFG, SIMD acceleration, conformance \\
+POWL & 8+ & partial-order workflow parse/simplify/convert \\
+Analysis & 20+ & conformance, simulation, performance, temporal, \\
+ & & social networks \\
+Prolog8 & 3 & query evaluation, proof verification, capabilities \\
+TrueX & 1 & OCEL~2.0 execution-receipt verification \\
+ & & (BLAKE3 + JCS-OCEL canonicalization) \\
+Autonomic & 10+ & RL orchestrator, SPC, circuit breaker, self-healing \\
+AutoMembrane & 25+ & motion classification, actor/object/route/ML/time \\
+ & & envelopes, benchmarking \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Two deliberately documented API quirks illustrate the project's
+verification culture: \texttt{discover\_astar} returns
+\texttt{iterations\_used} (an iteration count, explicitly \emph{not} a
+fitness score), and the metaheuristic miners (\texttt{discover\_aco\_algorithm},
+\texttt{discover\_pso\_algorithm}) return a typed \texttt{Err("no\_edges")}
+rather than fabricating a model when the log has no directly-follows edge
+vocabulary. Refusal is a first-class outcome throughout the system.
+
+\section{The TypeScript monorepo and the \wpm{} CLI}
+
+The monorepo (pnpm workspaces, version \texttt{26.6.10}) layers
+typed contracts and orchestration over the WASM core:
+
+\begin{itemize}
+  \item \texttt{packages/kernel} --- the WASM loader and execution kernel;
+  the published npm tarball \texttt{wasm4pm-26.6.10.tgz} is smoke-tested
+  from \texttt{packages/kernel/} during release certification.
+  \item \texttt{packages/engine}, \texttt{packages/contracts},
+  \texttt{packages/config} --- algorithm orchestration, typed input/output
+  contracts, and configuration (environment prefix
+  \texttt{WASM4PM\_*}; exit codes $0$ ok, $1$ config, $2$ source,
+  $3$ exec, $4$ partial, $5$ system).
+  \item \texttt{packages/cognition} --- the TypeScript face of the
+  cognition layer; field contracts mirror the Rust WASM output exactly
+  (e.g.\ \texttt{cognition\_run} returns
+  \texttt{\{status, breed, run\_id, output\_hash, replay\_pointer,}
+  \texttt{options\_profile, output\}}).
+  \item \texttt{packages/observability} --- OpenTelemetry span emission;
+  project rule: every public operation emits spans with
+  \texttt{service\_name} and a \texttt{status} of \texttt{"ok"} or
+  \texttt{"error"}, and no success claim is accepted without span
+  evidence.
+  \item \texttt{packages/agents}, \texttt{packages/planner},
+  \texttt{packages/ml}, \texttt{packages/supabase},
+  \texttt{packages/testing} --- agent harnesses, planning, ML bindings,
+  persistence, and the shared test harness.
+\end{itemize}
+
+The published CLI, \wpm{} (\texttt{apps/wasm4pm/}, npm package
+\texttt{@wasm4pm/cli}), exposes mining and cognition commands, including
+\texttt{wpm run}, \texttt{wpm cognition run}, and
+\texttt{wpm compile --spec <f.json> [--run]}, a multi-stage compilation
+pipeline in which an unknown breed exits with code~2. Every
+\texttt{wpm run} and \texttt{wpm cognition run} writes a BLAKE3 receipt to
+\texttt{.wasm4pm/receipts/latest.json}; there is deliberately no
+\texttt{--no-receipt} escape hatch.
+
+\section{Supporting crates}
+
+\subsection{prolog8 --- byte-capped proof engine}
+
+\texttt{crates/prolog8} is a compact, deterministic inference engine that
+evaluates queries against fact blocks and Horn rules, emitting typed proof
+DAGs with BLAKE3 receipt chains. It is designed for bounded-memory embedded
+use: hard byte caps (e.g.\ a maximum predicate arity of 8) make worst-case
+resource consumption a static property. Its use cases inside the platform
+are proof-of-admissibility gates in autonomic subsystems and receipt-chain
+validation in the manufacturing-style pipelines. Source modules:
+\texttt{admission.rs}, \texttt{catalog.rs}, \texttt{hash.rs},
+\texttt{kernel.rs}, \texttt{replay.rs}, \texttt{types.rs}, \texttt{wasm.rs}.
+
+\subsection{miniml-core --- SIMD machine learning}
+
+\texttt{crates/miniml-core} (published as \texttt{wminml}) is a minimal
+machine-learning core: 70+ algorithms across 15 families, SIMD-accelerated
+matrix operations using \texttt{v128} intrinsics, zero-copy serde
+serialization, and AutoML via genetic-algorithm feature selection with PSO
+hyperparameter optimization. It backs the ML exports of the WASM core.
+
+\subsection{ocpq --- object-centric process querying}
+
+\texttt{crates/ocpq} implements object-centric process querying in the
+tradition of K\"usters and van der Aalst's OCPQ line of work
+\cite{ocpq}: binding-based queries over OCEL~2.0 logs in which constraints
+range over events \emph{and} objects simultaneously, rather than flattening
+the log to a single case notion. The crate ships with its own test and
+benchmark suites (\texttt{crates/ocpq/tests}, \texttt{crates/ocpq/benches}).
+
+\subsection{wasm4pm-cli and wasm4pm-cognition}
+
+\texttt{crates/wasm4pm-cli} is a development-only Rust CLI (the shipped CLI
+is the TypeScript \wpm{}). \texttt{crates/wasm4pm-cognition} is the
+cognition layer, treated at length in the remainder of this monograph; it
+builds both natively and for \texttt{wasm32-unknown-unknown} (the wasm32
+gate is a required check), and exposes \texttt{cognition\_run},
+\texttt{cognition\_verify}, and \texttt{system\_build} through
+\texttt{wasm-bindgen}.
+
+%=====================================================================
+\chapter{The Cognition Periodic Table}
+\label{ch:periodic}
+
+\section{Breeds as elements}
+
+The cognition layer organizes classical symbolic-AI reasoning systems as
+\emph{breeds} --- each a faithful, deterministic reconstruction of one
+historical reasoning paradigm, normalized behind one trait
+(\texttt{CognitionBreed}) and one WASM export (\texttt{cognition\_run}).
+The metaphor is a periodic table: each breed is an element with a fixed
+identity, a family, a historical ancestor, and a measured standing.
+
+The registry, \texttt{crates/wasm4pm-cognition/breeds/registry.json},
+contains \textbf{55 entries} at \projver{}, of which \textbf{52 carry
+status \textsc{partial\_alive}} and 3 remain \textsc{unsupported}. Each
+entry binds a breed to its schemas, oracle suite, OCEL model, and receipt
+schema. A representative entry:
+
+\begin{lstlisting}[language={}]
+{
+  "breed_id": "mycin",
+  "breed_name": "MYCIN",
+  "historical_ancestor": "MYCIN (Shortliffe, 1976)",
+  "generalized_family": "rule_based_cf",
+  "input_schema": "mycin_input_v1",
+  "output_schema": "mycin_output_v1",
+  "specification_relation": "forward_chaining_cf",
+  "oracle_suite_id": "oracle_mycin_v1",
+  "ocel_model_id": "ocel_mycin_v1",
+  "receipt_schema_id": "receipt_mycin_v1",
+  "wasm_export_name": "cognition_run",
+  "status": "PARTIAL_ALIVE",
+  "standing": "DISPATCHABLE"
+}
+\end{lstlisting}
+
+The standings recorded in the registry at \projver{} are: \textbf{36
+\textsc{dispatchable}}, \textbf{16 \textsc{traceable}}, and \textbf{3
+\textsc{registered}} (the latter being the three \textsc{unsupported}
+entries). The breed source tree, \texttt{src/breeds/}, holds the 52
+implementations plus dispatch, standing, and support modules.
+
+The families span the breadth of symbolic AI: rule-based reasoning with
+certainty factors (MYCIN), heuristic search and means--ends analysis (GPS,
+STRIPS), logic programming and its abductive, inductive, constraint, and
+probabilistic extensions (Prolog, abductive LP, ILP, CLP, ProbLog), answer
+set programming, non-monotonic logics (default logic, circumscription),
+description logic ($\mathcal{EL}$ subsumption), temporal reasoning (Allen's
+interval algebra, event calculus, situation calculus, LTL monitoring, CTL
+model checking), uncertainty calculi (Bayesian networks, Dempster--Shafer,
+fuzzy logic, Markov logic), planning (HTN, partial-order, contingent, MDP,
+POMDP), learning (version spaces, EBL, Q-learning, case-based reasoning),
+cognitive architectures (Soar, ACT-R, episodic memory), language and
+knowledge structures (ELIZA, conceptual-dependency scripts, construction
+grammar, frames), qualitative and naive physics, analogy (SME), blackboard
+architectures (Hearsay-II), SAT solving (CDCL), tableaux proof, belief
+merging, and meta-reasoning.
+
+\section{The lawful lifecycle: \texttt{run\_breed}}
+\label{sec:lifecycle}
+
+No breed is invoked directly. All execution flows through
+\texttt{run\_breed} in \texttt{src/breeds/dispatch.rs}, which enforces a
+five-stage lawful lifecycle:
+
+\begin{enumerate}
+  \item \textbf{Preconditions.} \texttt{b.preconditions(input)} validates
+  the contract and the breed's declared complexity caps; failure is a
+  refusal, not a degraded run.
+  \item \textbf{Run.} \texttt{b.run(input)} executes the algorithm.
+  \item \textbf{FM-5 gate.} A framework-level fraud gate, independent of
+  the breed's own checks: an empty \texttt{inference\_trace} on a
+  ``successful'' run is rejected as an FM-5 fraud signal. A breed cannot
+  claim success without showing its work.
+  \item \textbf{Postconditions.} \texttt{b.postconditions(input, \&output)}
+  verifies output-side invariants.
+  \item \textbf{OCEL derivation and conformance.} The inference trace is
+  converted into an object-centric event log
+  (\texttt{derive\_ocel}); if a lifecycle model is declared for the
+  breed, the log is replayed against it
+  (\texttt{validate\_ocel\_alignment}) and any non-conformance aborts
+  the run with the measured fitness in the error message.
+\end{enumerate}
+
+The decisive excerpt (verbatim from \texttt{dispatch.rs}):
+
+\begin{lstlisting}[language=Rust]
+pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput)
+    -> Result<BreedOutput, String>
+{
+    b.preconditions(input)
+        .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
+    let mut output = b.run(input)
+        .map_err(|e| format!("{}: {}", e.breed, e.message))?;
+    // Framework-level FM-5 gate: a breed cannot claim success without an
+    // inference trace, independent of its own postconditions.
+    if output.inference_trace.is_empty() {
+        return Err(format!(
+            "{}: empty inference trace (FM-5 fraud signal, framework gate)",
+            b.id()));
+    }
+    b.postconditions(input, &output)
+        .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
+
+    // Derive OCEL and validate conformance (van der Aalst doctrine)
+    let breed_id = format!("{}", b.id());
+    let trace_str =
+        serde_json::to_string(&output.inference_trace).unwrap_or_default();
+    let tmp_run_id =
+        blake3::hash(trace_str.as_bytes()).to_hex().to_string();
+    let ocel_log =
+        crate::ocel::derive_ocel(&breed_id, &tmp_run_id,
+                                 &output.inference_trace);
+    if let Some(model) = crate::ocel::lifecycle_model_for(&breed_id) {
+        let conformance =
+            crate::ocel::validate_ocel_alignment(&ocel_log, model);
+        if !conformance.is_conforming {
+            return Err(format!(
+                "{}: OCEL conformance failure (fitness={:.3}): {}",
+                breed_id, conformance.fitness,
+                conformance.refusals.join("; ")));
+        }
+    }
+    output.ocel_log =
+        Some(serde_json::to_value(&ocel_log).unwrap_or(
+             serde_json::Value::Null));
+    Ok(output)
+}
+\end{lstlisting}
+
+Dispatch itself (\texttt{dispatch\_breed}) parses the breed string into the
+\texttt{BreedId} enum and matches \emph{exhaustively}: the Rust compiler
+enforces that every named breed has a dispatch arm, so a breed cannot be
+registered yet silently unreachable.
+
+Determinism is structural: all breed collections are
+\texttt{BTreeMap}/\texttt{BTreeSet} or sorted vectors (hash-map iteration
+order would break determinism and receipts); the only permitted RNG is the
+seeded \texttt{support::rng::seeded\_rng()}; and a shared
+\texttt{assert\_deterministic} harness compares full \texttt{BreedOutput}
+bytes across repeated runs (hand-rolled determinism checks are themselves
+classified as a cheat, code A11).
+
+\section{The ten-rung standing ladder}
+
+A breed's maturity is not a boolean. \texttt{src/breeds/standing.rs}
+defines \texttt{BreedStanding}, a strictly ordered ten-rung ladder; the
+documentation comments on the enum variants are reproduced in
+Table~\ref{tab:ladder}.
+
+\begin{table}[ht]
+\centering
+\caption{The \texttt{BreedStanding} ladder (\texttt{src/breeds/standing.rs}).}
+\label{tab:ladder}
+\begin{tabular}{clp{8.6cm}}
+\toprule
+Rung & Standing & Requirement \\
+\midrule
+1 & \textsc{Named} & \texttt{BreedId} variant exists in the enum and \texttt{BreedId::ALL}. \\
+2 & \textsc{Registered} & Entry present in \texttt{breeds/registry.json} with mandatory fields. \\
+3 & \textsc{Dispatchable} & Dispatch arm exists in \texttt{dispatch\_breed\_id} (compile-enforced). Minimum standing for \textsc{partial\_alive} status. \\
+4 & \textsc{Bounded} & \texttt{complexity\_caps} declared; \texttt{preconditions()} enforces them. \\
+5 & \textsc{Oracled} & Oracle fixture exists; paper \texttt{expected\_value} asserted. \\
+6 & \textsc{Traceable} & \texttt{inference\_trace} non-empty; trace-law checks pass. \\
+7 & \textsc{Canonical} & BLAKE3 receipt deterministic; \texttt{SortedFacts} used throughout. \\
+8 & \textsc{Refusable} & \texttt{CognitionError} variants in use; all refusal paths tested. \\
+9 & \textsc{Replayable} & OCEL conformance fitness $= 1.0$; \texttt{replay\_pointer} valid. \\
+10 & \textsc{Certified} & Ed25519 signature verified; Merkle root anchored; counter-test green. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The constant \texttt{BreedStanding::PARTIAL\_ALIVE\_MINIMUM} is
+\textsc{Dispatchable}: a registry entry may flip from
+\textsc{unsupported} to \textsc{partial\_alive} only after the build and
+test gates are green \emph{and} an OCEL report with measured-fitness
+provenance exists for the breed. At \projver{} the population sits at
+rungs~3--6: 36 breeds at \textsc{dispatchable}, 16 at \textsc{traceable},
+3 (unsupported) at \textsc{registered}. The ladder makes ``how alive is
+this breed?'' a queryable, monotone fact rather than a vibe.
+
+\section{Contracts at the WASM boundary}
+
+The cognition layer's WASM surface (\texttt{src/wasm.rs}) is contract-exact
+and mirrored verbatim into the TypeScript layer:
+
+\begin{itemize}
+  \item \texttt{cognition\_run} input:
+  \verb|{ breed, contract, options?: { profile? } }| ---
+  serde \texttt{deny\_unknown\_fields} rejects bare breed inputs.
+  \item \texttt{cognition\_run} output (\texttt{ContractResult}):
+  \verb|{ status: "ok", breed, run_id, output_hash,|
+  \verb|replay_pointer, options_profile, output }|, where
+  \texttt{replay\_pointer} is the first 16 hex characters of
+  \texttt{output\_hash}.
+  \item \texttt{cognition\_verify} output (\texttt{VerifyResult}):
+  \verb+{ findings, status: "verified" | "has_findings" }+.
+  \item \texttt{system\_build} output:
+  \verb|{ pareto_front, dominated }| --- breed-system composition as
+  multi-objective selection.
+\end{itemize}
+
+Repository hooks (\texttt{cognition-contract-guard.sh},
+\texttt{cognition-wasm-gate.sh}) enforce that no TypeScript consumer
+invents fields the Rust side does not emit.
+
+%=====================================================================
+\chapter{The Anti-Cheat Oracle Calculus}
+\label{ch:anticheat}
+
+\section{Threat model}
+
+The cognition layer assumes its own implementations are adversarial. The
+threat model (\texttt{docs/breeds/anti-cheat-threat-model.md}) catalogs the
+ways a breed could \emph{appear} to implement a classical algorithm while
+actually doing something cheaper: hard-coding answers for known fixtures,
+emitting hollow traces, ignoring its input, never refusing malformed input,
+or faking determinism. Each cheat mode carries an \texttt{AC-*} taxonomy
+code (A1--A11), and each breed is required to have a \emph{counter-test}
+that would catch its most tempting cheat. A representative entry: for
+\texttt{csp\_ac3}, the feared cheat is ``a backtracking-only solver that
+never does arc revision (gets right answers, fakes \texttt{csp-revise}
+steps)''; the counter-test asserts that the $K_3$/2-coloring UNSAT
+instance is refuted by AC-3 \emph{alone} --- the trace must show a
+domain-wipeout \texttt{csp-revise} step and \emph{zero} \texttt{csp-assign}
+steps, cross-checked by a CLP instance that must solve with zero
+backtracks.
+
+\section{The universal laws U1--U6}
+
+\texttt{src/breeds/support/oracle.rs} defines the universal anti-cheat
+calculus. \texttt{run\_universal\_anticheat} executes, in order, U1, U2,
+U2b, U3, U4, U5 and returns exactly six results; all must pass for a breed
+to be \emph{oracle-green}. The mapping from law to cheat mode, taken from
+the module documentation, is given in Table~\ref{tab:ulaws}.
+
+\begin{table}[ht]
+\centering
+\caption{Universal anti-cheat laws (\texttt{support/oracle.rs}).}
+\label{tab:ulaws}
+\begin{tabular}{clp{7.6cm}}
+\toprule
+Law & Targets & Check \\
+\midrule
+U1 & A1, A2 & A \emph{novel} input (not present in any fixture) runs without error --- defeats fixture memorization. \\
+U2 & A4 & \texttt{assert\_intermediate} passes on the novel trace --- the trace must contain the algorithm's real intermediate steps. \\
+U2b & A4 & \texttt{assert\_trace\_values} passes (Surface-3 content check) --- step \emph{values}, not just step kinds, must be meaningful. \\
+U3 & A3, A6 & A boundary pair of inputs must yield different outputs --- defeats constant-output and input-insensitive breeds. \\
+U4 & A5 & A designated refusal input must return \texttt{Err} --- a breed that never refuses is cheating. \\
+U5 & A11 & Determinism over full \texttt{BreedOutput} bytes --- defeats sham determinism. \\
+U6 & meta & Adversary check: a known-cheating implementation must \emph{fail} the oracle --- the oracle itself is tested. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+If U1 fails, U2 and U2b are recorded as failed with the explicit detail
+``skipped because U1 failed'' --- skipping is never silent.
+
+\section{52 oracles, 52 adversaries}
+
+Each of the 52 breeds has a per-breed oracle implementation under
+\texttt{src/breeds/support/oracle\_impls/} (organized by family:
+\texttt{dialogue.rs}, \texttt{learning.rs}, \texttt{logic.rs},
+\texttt{planning.rs}, \texttt{rule\_fact.rs}). Each oracle supplies the
+novel input, intermediate-step assertions, boundary pair, and refusal input
+for its breed --- and, crucially, each oracle is paired with an
+\emph{adversary}: a deliberately cheating implementation carrying its
+\texttt{AC-*} code, used by U6 to verify the oracle has discriminating
+power. The framework ships a generic hollow-trace adversary (cheat code
+\texttt{AC-A4}) that emits a trace of meaningless kinds; the meta-oracle
+asserts not merely that the adversary fails but that the failure detail
+\emph{names the cheat code}:
+
+\begin{lstlisting}[language=Rust]
+assert!(detail.contains("AC-A4"),
+        "detail must name cheat code: {}", detail);
+\end{lstlisting}
+
+This closes the classic self-reference loophole (FM-5): a test suite that
+only ever runs honest implementations can never demonstrate that it would
+catch a dishonest one. Here, for every breed, the suite demonstrably
+rejects a known cheat.
+
+\section{Fresh-name hygiene}
+
+Hidden-oracle inputs use \texttt{uo\_*}-prefixed fresh names (universal
+oracle namespace). A grep gate in \texttt{anti\_fraud\_gate.rs} enforces
+that no \texttt{uo\_*} fresh name appears anywhere in \texttt{src/breeds/}
+--- a breed implementation that special-cases the oracle's secret inputs
+(cheat A8) is caught at test time by textual quarantine, independent of any
+behavioral check.
+
+\section{The integration suite}
+
+\texttt{tests/universal\_anticheat.rs} contains \textbf{54 test
+functions} (verified by counting \verb|#[test]| attributes), covering all
+52 breeds plus framework-level meta-tests. All 54 pass at \projver{}.
+
+%=====================================================================
+\chapter{Paper-Grounded Falsification}
+\label{ch:papers}
+
+\section{Method: confirm and refute}
+
+Every breed must be anchored to its source publication, not to the
+implementer's intuition. \texttt{tests/paper\_falsification.rs} iterates
+over the fixture directory \texttt{tests/fixtures/papers/} --- \textbf{52
+fixture files}, one per \textsc{partial\_alive} breed --- and for each
+fixture performs both directions of a Popperian check:
+
+\begin{enumerate}
+  \item \textbf{Confirm}: dispatch the fixture input through the full
+  lawful path (\texttt{run\_breed}, i.e.\ including the FM-5 gate and OCEL
+  conformance) and assert the published expected value.
+  \item \textbf{Refute}: dispatch a corrupted variant and assert the
+  oracle rejects it --- a fixture that cannot fail is not evidence.
+\end{enumerate}
+
+Each fixture carries a \texttt{provenance} block with a full bibliographic
+citation (and, where the project archive holds the PDF, a path to it), and
+paper-derived fixtures must assert the \emph{published} number --- for
+example, the Bayesian-network fixture asserts Pearl's value
+$0.284171835$ to full precision rather than a rounded approximation, and
+the ProbLog fixture asserts the success probability $0.552$.
+
+\section{Breeds, source papers, and distinguishing assertions}
+
+Table~\ref{tab:papers} samples 18 representative breeds. Citations are
+transcribed from the on-disk fixture provenance blocks; the
+``distinguishing assertion'' column states the fixture's
+\texttt{expected.value} or the behavioral property the oracle pins down.
+
+\begin{small}
+\begin{longtable}{p{2.5cm}p{6.2cm}p{4.9cm}}
+\caption{Paper-grounded fixtures (sample of 18 of 52;
+\texttt{tests/fixtures/papers/*.json}).}
+\label{tab:papers}\\
+\toprule
+Breed & Source paper (fixture provenance) & Distinguishing assertion \\
+\midrule
+\endfirsthead
+\toprule
+Breed & Source paper (fixture provenance) & Distinguishing assertion \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+mycin & Shortliffe \& Buchanan (1975), \emph{A model of inexact reasoning in medicine} \cite{shortliffe1975} & Certainty-factor accumulation across chained rules reproduces the CF-model combination values. \\
+strips & Fikes \& Nilsson (1971), \emph{STRIPS: A new approach to the application of theorem proving to problem solving} \cite{fikes1971} & Plan found via add/delete-list operator application on the published blocks domain. \\
+gps & Newell \& Simon (1963), \emph{GPS, a program that simulates human thought} \cite{newell1963} & Means--ends analysis reduces the published difference table to a solved goal stack. \\
+eliza & Weizenbaum (1966), \emph{ELIZA --- a computer program for the study of natural language communication between man and machine} \cite{weizenbaum1966} & Keyword-rank decomposition/reassembly reproduces script-driven responses. \\
+bayesian\_network & Pearl (1988), \emph{Probabilistic Reasoning in Intelligent Systems} \cite{pearl1988} & Posterior asserted to published precision: $0.284171835$. \\
+dempster\_shafer & Shafer (1976), \emph{A Mathematical Theory of Evidence} \cite{shafer1976} & Combined belief $0.99$ via Dempster's rule on the fixture mass functions. \\
+fuzzy\_logic & Mamdani \& Assilian (1975), \emph{An experiment in linguistic synthesis with a fuzzy logic controller} \cite{mamdani1975} & Defuzzified output $41.66667$ (centroid of clipped consequents). \\
+default\_logic & Reiter (1980), \emph{A logic for default reasoning} \cite{reiter1980} & Extension computation on the canonical default theory. \\
+circumscription & McCarthy (1980), \emph{Circumscription --- a form of non-monotonic reasoning} \cite{mccarthy1980} & Minimal-model result: \texttt{flies\_tweety=true}, \texttt{flies\_opus=false}. \\
+allen\_temporal & Allen (1983), \emph{Maintaining knowledge about temporal intervals} \cite{allen1983} & Path-consistency over the 13 interval relations yields \texttt{temporal-consistent}. \\
+csp\_ac3 & Mackworth (1977), \emph{Consistency in networks of relations} \cite{mackworth1977} & $K_3$/2-coloring refuted by arc revision alone: a \texttt{csp-revise} domain wipeout and zero \texttt{csp-assign} steps. \\
+asp & Gelfond \& Lifschitz (1988), \emph{The stable model semantics for logic programming} \cite{gelfond1988} & Stable models of the published program enumerated exactly. \\
+clp & Jaffar \& Lassez (1987), \emph{Constraint logic programming} \cite{jaffar1987} & Solution \texttt{x=6, y=3} by propagation (zero backtracks on the pure-propagation instance). \\
+version\_space & Mitchell (1982), \emph{Generalization as search} \cite{mitchell1982} & S/G boundary-set convergence on the published example sequence. \\
+rl\_symbolic & Watkins \& Dayan (1992), \emph{Q-learning} \cite{watkins1992} & Q-value convergence verified on the fixture MDP. \\
+analogy\_sme & Falkenhainer, Forbus \& Gentner (1989), \emph{The Structure-Mapping Engine} \cite{falkenhainer1989} & Mapping \texttt{sun$\to$nucleus}, \texttt{planet$\to$electron} for the solar-system/atom analogy. \\
+sat\_cdcl & Marques-Silva \& Sakallah (1999), \emph{GRASP: a search algorithm for propositional satisfiability} \cite{marquessilva1999} & \textsc{unsat} verdict with conflict-driven clause learning on the fixture formula. \\
+problog & De Raedt, Kimmig \& Toivonen (2007), \emph{ProbLog: a probabilistic Prolog and its application in link discovery} \cite{deraedt2007} & Success probability $0.552000$ on the fixture program. \\
+\end{longtable}
+\end{small}
+
+The remaining 34 fixtures follow the same pattern, citing inter alia
+Anderson \& Lebiere (ACT-R), Laird, Newell \& Rosenbloom (Soar)
+\cite{laird1987}, Kowalski (predicate logic as programming language)
+\cite{kowalski1974}, Kakas, Kowalski \& Toni (abductive LP), Quinlan
+(FOIL), Minsky (frames) \cite{minsky1974}, Schank \& Abelson (scripts),
+Erman et al.\ (Hearsay-II), Feigenbaum, Buchanan \& Lederberg (DENDRAL),
+Aamodt \& Plaza (CBR), Clarke, Emerson \& Sistla (CTL), Havelund \& Rosu
+(LTL monitoring), Nau et al.\ (SHOP2 HTN), McAllester \& Rosenblitt
+(systematic nonlinear planning), Kaelbling, Littman \& Cassandra (POMDP),
+Bellman (dynamic programming), Richardson \& Domingos (Markov logic),
+Konieczny \& Pino P\'erez (belief merging), Baader, Brandt \& Lutz
+($\mathcal{EL}$), Smullyan (tableaux), de Kleer \& Brown (qualitative
+physics), Hayes (naive physics), Tulving and Nuxoll \& Laird (episodic
+memory), Goldberg (construction grammar), Marr \& Poggio (stereo
+disparity), Sussman (HACKER), and Cox \& Raja (metareasoning). Several
+fixtures are marked \texttt{citation-only} where no PDF is archived; in
+those cases the citation alone is the provenance and no quoted text is
+asserted.
+
+%=====================================================================
+\chapter{Process Truth: OCEL, Receipts, and the Release Certificate}
+\label{ch:truth}
+
+\section{OCPN lifecycle models}
+
+Each breed declares an L1 lifecycle model as an object-centric Petri net
+in \texttt{ocel/models/l1/<breed\_id>.ocpn.json} --- \textbf{52 models},
+one per \textsc{partial\_alive} breed (verified by directory count). The
+model names the lawful step kinds and their ordering; for MYCIN, for
+example, the declared steps are \texttt{rule\_selected},
+\texttt{premise\_matched}, \texttt{cf\_accumulated},
+\texttt{threshold\_checked}, \texttt{diagnosis\_emitted}.
+
+\section{Measured-fitness reports}
+
+\texttt{ocel/reports/} holds \textbf{52 fitness reports}, one per breed.
+Each records the model ID, model level, report date, method, and the
+measured fitness with provenance. The MYCIN report (verbatim fields):
+
+\begin{lstlisting}[language={}]
+{
+  "breed_id": "mycin",
+  "model_id": "mycin-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-10",
+  "method": "native_dfa_replay",
+  "fitness": 1,
+  "fitness_note": "Alignment fitness = 1.0 measured by
+    validate_ocel_alignment() (native Rust DFA replay).
+    Conformance gate enforced in run_breed()."
+}
+\end{lstlisting}
+
+Project law: fitness above $0.85$ is required for a model to be considered
+valid at all, and route admission into the broader MCPP ecosystem requires
+fitness of exactly $1.0$. Because the conformance check runs \emph{inside}
+\texttt{run\_breed}, the reports are not aspirational documentation --- a
+breed whose traces stopped conforming would start failing at runtime.
+
+\section{The BLAKE3 receipt chain}
+
+Every \texttt{wpm run} and \texttt{wpm cognition run} emits a receipt to
+\texttt{.wasm4pm/receipts/latest.json} with non-empty \texttt{input\_hash}
+and \texttt{output\_hash} (BLAKE3). On the Rust side, the
+\texttt{run\_id} is itself a BLAKE3 hash, and \texttt{replay\_pointer} (the
+first 16 hex characters of \texttt{output\_hash}) lets any consumer
+re-locate and re-verify the exact output later. The TrueX module in the
+WASM core verifies OCEL~2.0 execution receipts using BLAKE3 over a
+JCS-canonicalized OCEL profile, so receipt verification is available inside
+the sandbox, not only in the host.
+
+\section{The release certificate}
+
+\texttt{RELEASE\_CERTIFICATE.v26.6.10.json} is the machine-checked release
+artifact for \projver{}. Its verified contents are summarized in
+Table~\ref{tab:cert}.
+
+\begin{table}[ht]
+\centering
+\caption{Release certificate \projver{}
+(\texttt{RELEASE\_CERTIFICATE.v26.6.10.json}).}
+\label{tab:cert}
+\begin{tabular}{lp{8.6cm}}
+\toprule
+Field & Value \\
+\midrule
+Package & \texttt{wasm4pm} 26.6.10, git commit \texttt{eceacfcb43d5\ldots} \\
+Reachability & 60 of 60 algorithms reachable; reachability hash \texttt{92e0264e\ldots} \\
+Behavior & 60 algorithms $\times$ (60 positive, 120 negative, 60 invariant) cases; \texttt{all\_failed\_correctly: true}; evidence hash \texttt{b79d5e7f\ldots} \\
+Examples & 8 examples, 64 total executions; manifest hash \texttt{86933a9b\ldots} \\
+Artifact & \texttt{wasm4pm-26.6.10.tgz}; sha512 integrity \texttt{A6g+gOqY\ldots}; pack-smoke path \texttt{packages/kernel/}; WASM bundle hash \texttt{d4bc2f40\ldots} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Three properties deserve emphasis. First, \emph{reachability} is asserted
+per algorithm: all 60 mining algorithms are demonstrably callable through
+the published package, not merely compiled in. Second, the behavior
+evidence is dominated by \emph{negative} cases --- 120 negative against 60
+positive --- and the certificate's \texttt{all\_failed\_correctly: true}
+asserts that every injected invalid input was refused with the correct
+error, in line with the negative-testing requirement of the process-truth
+constitution. Third, the certificate pins the exact tarball and WASM
+binary by hash, closing the gap between ``the tests passed'' and ``the
+artifact you installed is the artifact that passed.''
+
+%=====================================================================
+\chapter{Quality Evidence}
+\label{ch:quality}
+
+\section{Test suites at \projver{}}
+
+The evidence base, with each figure verified against the working tree:
+
+\begin{itemize}
+  \item \textbf{Universal anti-cheat}: 54 test functions in
+  \texttt{tests/universal\_anticheat.rs} (counted directly), all green ---
+  every breed passes U1--U5 + U2b, and every paired adversary is rejected
+  by U6 with its cheat code named.
+  \item \textbf{Paper falsification}: \texttt{tests/paper\_falsification.rs}
+  drives all 52 paper fixtures (counted directly in
+  \texttt{tests/fixtures/papers/}) through the confirm-and-refute
+  protocol via the full lawful dispatch path.
+  \item \textbf{Cargo suites}: the cognition crate's unit, integration,
+  and anti-fraud suites are green at the release commit; the \projver{}
+  integration commit records 868 cargo tests and 237 vitest tests passing
+  across the workspace.
+  \item \textbf{wasm32 gate}: \texttt{cargo check --target
+  wasm32-unknown-unknown --features wasm} is a required release gate; the
+  cognition layer builds for the WASM target, and the WASM bundle hash is
+  pinned in the release certificate.
+  \item \textbf{TypeScript}: the monorepo builds and tests under pnpm at
+  workspace version 26.6.10; the FM-5 rule requires at least one
+  cognition integration test to exercise the \emph{real} WASM binary with
+  no mocking of \texttt{init.js}.
+  \item \textbf{Release certification}: $60/60$ reachability,
+  $60/120/60$ behavior cases with \texttt{all\_failed\_correctly},
+  tarball and bundle integrity hashes (Table~\ref{tab:cert}).
+  \item \textbf{OCEL conformance}: 52 measured-fitness reports, each
+  recording fitness $1.0$ by native DFA replay, with the same check
+  enforced at runtime inside \texttt{run\_breed}.
+\end{itemize}
+
+\section{Defense in depth}
+
+The quality argument is layered so that no single artifact has to be
+trusted:
+
+\begin{enumerate}
+  \item The \emph{compiler} enforces dispatch totality (exhaustive enum
+  match) and collection determinism (BTree types).
+  \item The \emph{framework} enforces the FM-5 empty-trace gate and OCEL
+  conformance on every run, in production code, not only in tests.
+  \item The \emph{oracles} enforce behavioral fidelity (U1--U5), and the
+  \emph{adversaries} enforce oracle strength (U6).
+  \item The \emph{papers} anchor expected values to published numbers
+  with bibliographic provenance, and the refute direction proves the
+  fixtures can fail.
+  \item The \emph{receipts and certificate} anchor the shipped artifact
+  to the evidence by cryptographic hash.
+\end{enumerate}
+
+A failure anywhere in this stack is, by project law, an Andon event: the
+line stops on \texttt{error[E}, \texttt{test.*FAILED}, \texttt{FM-5
+violation}, or \texttt{panicked at}, and the defect is fixed before any
+other work proceeds.
+
+%=====================================================================
+\chapter{Conclusion}
+\label{ch:conclusion}
+
+wasm4pm at \projver{} demonstrates that a process-mining platform can hold
+itself to the standard it applies to the processes it mines. The mining
+core supplies 60 algorithms behind a deterministic WASM boundary; the
+cognition layer revives 52 classical reasoning systems as breeds, each
+paper-anchored, oracle-guarded, adversary-tested, and conformance-gated at
+runtime; and the release machinery converts ``it works'' from an assertion
+into a certificate. The discipline throughout is van der Aalst's, applied
+reflexively: the system does not ask to be believed --- it asks to be
+replayed.
+
+Future work tracked in the repository includes advancing breeds up the
+standing ladder toward \textsc{Replayable} and \textsc{Certified}
+(Ed25519-signed, Merkle-anchored), promoting the three remaining
+\textsc{registered} entries, and validating the mining algorithms against
+external real-world XES/OCEL corpora.
+
+%=====================================================================
+\appendix
+\chapter{Full Breed Roster}
+\label{app:roster}
+
+Table~\ref{tab:roster} reproduces the complete registry
+(\texttt{crates/wasm4pm-cognition/breeds/registry.json}, 55 entries) at
+\projver{}, sorted by breed identifier. The \texttt{historical\_ancestor}
+and \texttt{generalized\_family} columns are transcribed verbatim,
+including the literal placeholder string \texttt{TBD} where the registry
+has not yet been enriched for an entry --- these placeholders are
+metadata-completeness debt, not implementation debt; every
+\textsc{dispatchable} and \textsc{traceable} breed below has a full
+implementation, oracle, adversary, paper fixture, OCPN model, and fitness
+report. The three \textsc{registered} entries (\texttt{morphological},
+\texttt{ocpm\_route\_discoverer}, \texttt{triz}) are the
+\textsc{unsupported} breeds awaiting promotion.
+
+\begin{small}
+\begin{longtable}{p{3.4cm}p{5.6cm}p{3.4cm}l}
+\caption{Complete breed registry at \projver{} (55 entries; 36
+\textsc{dispatchable}, 16 \textsc{traceable}, 3 \textsc{registered}).}
+\label{tab:roster}\\
+\toprule
+Breed & Historical ancestor & Family & Standing \\
+\midrule
+\endfirsthead
+\toprule
+Breed & Historical ancestor & Family & Standing \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\texttt{abductive\_ibe} & TBD & TBD & \textsc{traceable} \\
+\texttt{abductive\_lp} & Abduction (Peirce, 1878) (abductive) & R\_generalized\_abductive & \textsc{traceable} \\
+\texttt{act\_r} & TBD & TBD & \textsc{traceable} \\
+\texttt{allen\_temporal} & Temporal Logic (Allen, 1983) (temporal) & R\_generalized\_temporal & \textsc{dispatchable} \\
+\texttt{analogy\_sme} & Structure Mapping (Gentner, 1983) (analogical) & R\_generalized\_analogical & \textsc{dispatchable} \\
+\texttt{asp} & TBD & TBD & \textsc{traceable} \\
+\texttt{autoinstinct\_learning} & autoinstinct\_learning & autoinstinct & \textsc{dispatchable} \\
+\texttt{autoinstinct\_neurosis} & autoinstinct\_neurosis & autoinstinct & \textsc{dispatchable} \\
+\texttt{autoinstinct\_semantics} & autoinstinct\_semantics & autoinstinct & \textsc{dispatchable} \\
+\texttt{autoinstinct\_vision} & autoinstinct\_vision & autoinstinct & \textsc{dispatchable} \\
+\texttt{bayesian\_network} & Bayesian Networks (Pearl, 1985) (bayesian) & R\_generalized\_probabilistic & \textsc{traceable} \\
+\texttt{belief\_merging} & TBD & TBD & \textsc{traceable} \\
+\texttt{cbr} & CBR (Kolodner, 1983) & case\_based\_reasoning & \textsc{dispatchable} \\
+\texttt{circumscription} & TBD & TBD & \textsc{traceable} \\
+\texttt{clp} & TBD & TBD & \textsc{traceable} \\
+\texttt{construction\_grammar} & Construction Grammar (Goldberg, 1995) & grammar\_semantics & \textsc{dispatchable} \\
+\texttt{contingent\_plan} & AND-OR belief-state search (Russell \& Norvig, AIMA \S4.3.2) & planning\_under\_uncertainty & \textsc{dispatchable} \\
+\texttt{csp\_ac3} & CSP (Mackworth, 1977) (constraint) & R\_generalized\_constraint & \textsc{traceable} \\
+\texttt{ctl\_check} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{default\_logic} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{dempster\_shafer} & Dempster-Shafer (Shafer, 1976) (dempster\_shafer) & R\_generalized\_evidential & \textsc{dispatchable} \\
+\texttt{dendral} & DENDRAL (Feigenbaum et al., 1969) & hypothesis\_enumeration & \textsc{dispatchable} \\
+\texttt{description\_logic} & Description Logics (Baader et al., 1991) (ontological) & R\_generalized\_ontological & \textsc{dispatchable} \\
+\texttt{ebl} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{eliza} & ELIZA (Weizenbaum, 1966) & pattern\_matching\_dialogue & \textsc{dispatchable} \\
+\texttt{episodic\_memory} & TBD & TBD & \textsc{traceable} \\
+\texttt{event\_calculus} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{frames\_inheritance} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{fuzzy\_logic} & Fuzzy Sets (Zadeh, 1965) (fuzzy) & R\_generalized\_fuzzy & \textsc{dispatchable} \\
+\texttt{gps} & GPS (Newell \& Simon, 1957) & means\_ends\_analysis & \textsc{dispatchable} \\
+\texttt{hearsay} & Hearsay-II (Erman et al., 1980) & blackboard\_architecture & \textsc{dispatchable} \\
+\texttt{htn\_planning} & SHOP2 (Nau et al., 2003) & hierarchical\_task\_network & \textsc{dispatchable} \\
+\texttt{ilp} & ILP (Muggleton, 1991) (inductive) & R\_generalized\_inductive & \textsc{dispatchable} \\
+\texttt{ltl\_monitor} & LTL Monitor (Havelund \& Ro\c{s}u, 2001) (ltl\_monitor) & R\_generalized\_temporal & \textsc{traceable} \\
+\texttt{markov\_logic} & Markov logic networks (Richardson \& Domingos, 2006) & statistical\_relational & \textsc{dispatchable} \\
+\texttt{mdp} & TBD & TBD & \textsc{traceable} \\
+\texttt{meta\_reasoning} & Metareasoning (Cox \& Raja, 2011) & meta\_level\_control & \textsc{dispatchable} \\
+\texttt{morphological} & TBD & TBD & \textsc{registered} \\
+\texttt{mycin} & MYCIN (Shortliffe, 1976) & rule\_based\_cf & \textsc{dispatchable} \\
+\texttt{naive\_physics} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{ocpm\_route\_discoverer} & TBD & TBD & \textsc{registered} \\
+\texttt{partial\_order\_plan} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{pomdp} & POMDP planning (Kaelbling, Littman \& Cassandra, 1998) & decision\_theoretic & \textsc{traceable} \\
+\texttt{problog} & TBD & TBD & \textsc{traceable} \\
+\texttt{prolog} & Prolog (Colmerauer \& Roussel, 1972) & logic\_programming & \textsc{dispatchable} \\
+\texttt{qualitative\_reason} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{rl\_symbolic} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{sat\_cdcl} & TBD & TBD & \textsc{traceable} \\
+\texttt{script\_sam} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{situation\_calculus} & TBD & TBD & \textsc{dispatchable} \\
+\texttt{soar} & SOAR (Laird, Newell \& Rosenbloom, 1987) & unified\_cognitive\_architecture & \textsc{dispatchable} \\
+\texttt{strips} & STRIPS (Fikes \& Nilsson, 1971) & classical\_planning & \textsc{dispatchable} \\
+\texttt{tableaux} & Analytic tableaux (Smullyan, 1968) & proof\_search & \textsc{dispatchable} \\
+\texttt{triz} & TBD & TBD & \textsc{registered} \\
+\texttt{version\_space} & TBD & TBD & \textsc{traceable} \\
+\end{longtable}
+\end{small}
+
+%=====================================================================
+\begin{thebibliography}{99}
+
+\bibitem{vdaalst2016} W.~M.~P. van der Aalst.
+\emph{Process Mining: Data Science in Action}, 2nd edition. Springer, 2016.
+
+\bibitem{ocel2} W.~M.~P. van der Aalst.
+\emph{Object-Centric Process Mining: Dealing with Divergence and
+Convergence in Event Data}. In: Software Engineering and Formal Methods
+(SEFM), 2019.
+
+\bibitem{ocpq} J.~N. K\"usters and W.~M.~P. van der Aalst.
+\emph{OCPQ: Object-Centric Process Querying}. (Object-centric process
+querying line of work; basis of the \texttt{ocpq} crate.)
+
+\bibitem{shortliffe1975} E.~H. Shortliffe and B.~G. Buchanan.
+\emph{A model of inexact reasoning in medicine}. Mathematical Biosciences,
+23(3--4), 1975.
+
+\bibitem{fikes1971} R.~E. Fikes and N.~J. Nilsson.
+\emph{STRIPS: A new approach to the application of theorem proving to
+problem solving}. Artificial Intelligence, 2(3--4), 1971.
+
+\bibitem{newell1963} A.~Newell and H.~A. Simon.
+\emph{GPS, a program that simulates human thought}. In: Computers and
+Thought, 1963.
+
+\bibitem{weizenbaum1966} J.~Weizenbaum.
+\emph{ELIZA --- a computer program for the study of natural language
+communication between man and machine}. Communications of the ACM, 9(1),
+1966.
+
+\bibitem{pearl1988} J.~Pearl.
+\emph{Probabilistic Reasoning in Intelligent Systems: Networks of
+Plausible Inference}. Morgan Kaufmann, 1988.
+
+\bibitem{shafer1976} G.~Shafer.
+\emph{A Mathematical Theory of Evidence}. Princeton University Press, 1976.
+
+\bibitem{mamdani1975} E.~H. Mamdani and S.~Assilian.
+\emph{An experiment in linguistic synthesis with a fuzzy logic controller}.
+International Journal of Man-Machine Studies, 7(1), 1975.
+
+\bibitem{reiter1980} R.~Reiter.
+\emph{A logic for default reasoning}. Artificial Intelligence, 13(1--2),
+1980.
+
+\bibitem{mccarthy1980} J.~McCarthy.
+\emph{Circumscription --- a form of non-monotonic reasoning}. Artificial
+Intelligence, 13(1--2), 1980.
+
+\bibitem{allen1983} J.~F. Allen.
+\emph{Maintaining knowledge about temporal intervals}. Communications of
+the ACM, 26(11), 1983.
+
+\bibitem{mackworth1977} A.~K. Mackworth.
+\emph{Consistency in networks of relations}. Artificial Intelligence, 8(1),
+1977.
+
+\bibitem{gelfond1988} M.~Gelfond and V.~Lifschitz.
+\emph{The stable model semantics for logic programming}. In: Proceedings of
+the Fifth International Conference and Symposium on Logic Programming,
+1988.
+
+\bibitem{jaffar1987} J.~Jaffar and J.-L. Lassez.
+\emph{Constraint logic programming}. In: Proceedings of the 14th ACM
+SIGACT-SIGPLAN Symposium on Principles of Programming Languages (POPL),
+1987.
+
+\bibitem{mitchell1982} T.~M. Mitchell.
+\emph{Generalization as search}. Artificial Intelligence, 18(2), 1982.
+
+\bibitem{watkins1992} C.~J.~C.~H. Watkins and P.~Dayan.
+\emph{Q-learning}. Machine Learning, 8, 1992.
+
+\bibitem{falkenhainer1989} B.~Falkenhainer, K.~D. Forbus, and D.~Gentner.
+\emph{The Structure-Mapping Engine: algorithm and examples}. Artificial
+Intelligence, 41(1), 1989.
+
+\bibitem{marquessilva1999} J.~P. Marques-Silva and K.~A. Sakallah.
+\emph{GRASP: a search algorithm for propositional satisfiability}. IEEE
+Transactions on Computers, 48(5), 1999.
+
+\bibitem{deraedt2007} L.~De Raedt, A.~Kimmig, and H.~Toivonen.
+\emph{ProbLog: a probabilistic Prolog and its application in link
+discovery}. In: Proceedings of IJCAI, 2007.
+
+\bibitem{laird1987} J.~E. Laird, A.~Newell, and P.~S. Rosenbloom.
+\emph{Soar: an architecture for general intelligence}. Artificial
+Intelligence, 33(1), 1987.
+
+\bibitem{kowalski1974} R.~A. Kowalski.
+\emph{Predicate logic as programming language}. In: IFIP Congress, 1974.
+
+\bibitem{minsky1974} M.~Minsky.
+\emph{A framework for representing knowledge}. MIT AI Laboratory Memo 306,
+1974.
+
+\end{thebibliography}
+
+\end{document}

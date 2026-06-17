@@ -1,0 +1,38 @@
+{
+  "intent": "color the constraint network",
+  "facts": [
+    {
+      "key": "csp-var",
+      "value": "X:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Y:B,G,R"
+    },
+    {
+      "key": "csp-var",
+      "value": "Z:B,G,R"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X!=Y"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "Y!=Z"
+    },
+    {
+      "key": "csp-constraint",
+      "value": "X!=Z"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "contingent_plan:3467f6a0049cb80128cb258fecc3d7d2c97c9d8174f7dc55353d4902861b21df"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

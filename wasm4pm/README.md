@@ -78,7 +78,7 @@ Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases
 > Note: `ml_cluster` is implemented in `fast_discovery.rs` but has no `#[wasm_bindgen]`
 > export and is not callable from JavaScript or the CLI.
 
-**Full algorithm latency reference:** [docs/benchmarks.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/benchmarks.md)
+**Full algorithm latency reference:** [docs/reference/algorithms.md](https://github.com/seanchatmangpt/wasm4pm/blob/main/docs/reference/algorithms.md)
 
 ## Installation
 
@@ -169,4 +169,4 @@ See [`docs/`](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs) for full
 
 ## License
 
-MIT OR Apache-2.0
+BUSL-1.1

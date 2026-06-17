@@ -1,0 +1,16 @@
+{
+  "algorithm": "yawl_export",
+  "provenance": {
+    "paper": "YAWL: Yet Another Workflow Language",
+    "citation": "van der Aalst, W.M.P., ter Hofstede, A.H.M. (2005). YAWL: Yet Another Workflow Language. Information Systems 30(4).",
+    "locus": "Section 3, YAWL net definition",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "export_supported",
+    "description": "Process model discovered from running example can be exported to a valid YAWL workflow specification"
+  }
+}

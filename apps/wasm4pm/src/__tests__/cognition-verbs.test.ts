@@ -8,7 +8,7 @@
  * WASM-calling verbs (run, explain) are not integration-tested here — see packages/cognition.
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -235,5 +235,55 @@ describe('OTEL span emission — withSpan via global sink capture', () => {
       expect(name).toBeTruthy();
       expect(['run','explain','verify','receipt','adversarial','replay','plan','inspect']).toContain(name);
     }
+  });
+});
+
+// ── cognition.run span wiring — service.name and status ─────────────────────
+// Asserts that cognition CLI run.ts passes getGlobalSpanSink() to runContract,
+// so inner "cognition.run" spans carry required service.name and status attributes.
+
+describe('cognition.run span — service.name and status wiring', () => {
+  it('run.ts source imports getGlobalSpanSink and passes it to runContract', async () => {
+    // Read the source file at test time so this assertion tracks actual code.
+    const fs2 = await import('node:fs');
+    const url = await import('node:url');
+    const src = fs2.readFileSync(
+      url.fileURLToPath(new URL('../commands/cognition/run.js', import.meta.url)),
+      'utf8',
+    );
+    // Compiled JS must reference getGlobalSpanSink (import is preserved by esbuild/tsc).
+    expect(src).toMatch(/getGlobalSpanSink/);
+    // spanSink must be passed as part of the runContract call options.
+    expect(src).toMatch(/spanSink/);
+  });
+
+  it('cognition.run span carries service.name="wasm4pm" and status attributes', async () => {
+    // Directly exercise runContract with a global-sink-wired spanSink to verify
+    // the span shape without running the full CLI command.
+    const { runContract } = await import('@wasm4pm/cognition');
+    const { getGlobalSpanSink } = await import('../otel/sink.js');
+
+    const collected: OtelSpan[] = [];
+    setGlobalSpanSink((s) => collected.push(s));
+
+    // runContract will throw because WASM is not loaded in this unit context,
+    // but the finally block ALWAYS emits the span regardless.
+    try {
+      await runContract('eliza', {
+        intent: 'test', candidates: [], facts: [], cases: [], rules: [], goals: [], state: [],
+      }, { spanSink: getGlobalSpanSink() });
+    } catch {
+      // expected — no real WASM in CLI unit tests
+    }
+
+    resetGlobalSpanSink();
+
+    // At least one span must have been emitted even on error.
+    expect(collected.length).toBeGreaterThanOrEqual(1);
+    const cognitionSpan = collected.find((s) => s.name === 'cognition.run');
+    expect(cognitionSpan).toBeDefined();
+    expect(cognitionSpan?.attributes['service.name']).toBe('wasm4pm');
+    expect(cognitionSpan?.status).toBeDefined();
+    expect(['OK', 'ERROR']).toContain(cognitionSpan?.status.code);
   });
 });

@@ -1,0 +1,29 @@
+{
+  "breed_id": "ocpm_route_discoverer",
+  "model_id": "ocpm_route_discoverer-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-11",
+  "method": "native_dfa_replay",
+  "fitness": 1,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay) over the paper fixture trace (tests/fixtures/papers/ocpm_route_discoverer.json). Conformance gate enforced in run_breed().",
+  "trace_coverage": {
+    "declared_steps": [
+      "process-event",
+      "discover-route",
+      "discover-route-empty"
+    ],
+    "observed_in_traces": [
+      "process-event",
+      "discover-route"
+    ],
+    "coverage": 1,
+    "coverage_note": "Both required L1 steps (process-event, discover-route) appear in the accepted trace corpus; discover-route-empty is the declared optional degenerate-input step (min_occurrences 0) and is lawfully absent. Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
+  },
+  "l0_fitness": 1,
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate. This is the fitness=1.0 claim that is measured and admissible.",
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "tests/zz_fitness_ocpm_route_discoverer.rs (cargo test -p wasm4pm-cognition, fitness measured by validate_ocel_alignment replay; printed MEASURED fitness=1 refusals=[] conforming=true)",
+  "measured_on": "2026-06-11"
+}

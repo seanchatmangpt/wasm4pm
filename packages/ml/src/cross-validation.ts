@@ -15,65 +15,55 @@
  */
 
 
+import { z } from 'zod';
+
 // ─────────────────────────────────────────────────────────────────────────────
-// CV result types
+// CV result schemas & types
 // ─────────────────────────────────────────────────────────────────────────────
+
+export const KFoldResultSchema = z.object({
+  scores: z.array(z.number()),
+  mean: z.number(),
+  stdDev: z.number(),
+  confidence: z.number(),
+  foldResults: z.array(z.object({
+    foldIdx: z.number(),
+    score: z.number(),
+    trainSize: z.number(),
+    testSize: z.number(),
+  })),
+});
 
 /**
  * Results from k-fold cross-validation.
- *
- * @property scores - Per-fold accuracy/score values
- * @property mean - Average score across all folds
- * @property stdDev - Standard deviation of fold scores
- * @property confidence - Mean score as a confidence metric [0, 1]
- * @property foldResults - Detailed per-fold metrics (fold index, score, size)
  */
-export interface KFoldResult {
-  scores: number[];
-  mean: number;
-  stdDev: number;
-  confidence: number;
-  foldResults: Array<{
-    foldIdx: number;
-    score: number;
-    trainSize: number;
-    testSize: number;
-  }>;
-}
+export type KFoldResult = z.infer<typeof KFoldResultSchema>;
+
+export const HoldoutResultSchema = z.object({
+  trainAccuracy: z.number(),
+  testAccuracy: z.number(),
+  confidence: z.number(),
+  testSize: z.number(),
+  trainSize: z.number(),
+  overfittingGap: z.number(),
+});
 
 /**
  * Results from holdout validation.
- *
- * @property trainAccuracy - Accuracy on training set
- * @property testAccuracy - Accuracy on test set (honest estimate)
- * @property confidence - testAccuracy as held-out confidence metric
- * @property testSize - Number of samples in test set
- * @property trainSize - Number of samples in training set
- * @property overfittingGap - trainAccuracy - testAccuracy (should be >= 0)
  */
-export interface HoldoutResult {
-  trainAccuracy: number;
-  testAccuracy: number;
-  confidence: number;
-  testSize: number;
-  trainSize: number;
-  overfittingGap: number;
-}
+export type HoldoutResult = z.infer<typeof HoldoutResultSchema>;
+
+export const RegressionCVResultSchema = z.object({
+  rSquared: z.number(),
+  rmse: z.number(),
+  mae: z.number(),
+  confidence: z.number(),
+});
 
 /**
  * Regression CV result.
- *
- * @property rSquared - R² on test set
- * @property rmse - Root mean squared error
- * @property mae - Mean absolute error
- * @property confidence - Goodness-of-fit metric
  */
-export interface RegressionCVResult {
-  rSquared: number;
-  rmse: number;
-  mae: number;
-  confidence: number;
-}
+export type RegressionCVResult = z.infer<typeof RegressionCVResultSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Stratified k-fold partitioning
@@ -238,7 +228,14 @@ export function holdoutSplit(
     const allIndices = Array.from({ length: n }, (_, i) => i);
     // Shuffle (Fisher-Yates)
     for (let i = n - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      let j;
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        j = buf[0] % (i + 1);
+      } else {
+        throw new Error('Cryptographic randomness not available in this environment. Deterministic seeding required.');
+      }
       [allIndices[i], allIndices[j]] = [allIndices[j], allIndices[i]];
     }
 

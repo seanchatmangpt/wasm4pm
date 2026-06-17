@@ -1,0 +1,307 @@
+%% Chapter 4 — OCEL Conformance as a Measure-Theoretic Framework
+
+\chapter{OCEL Conformance as a Measure-Theoretic Framework}
+\label{chap:ocel}
+\label{chap:ocel-conformance}
+
+\epigraph{%
+  ``If you cannot observe the process, you cannot manage the process.''
+}{--- Wil van der Aalst, \textit{Process Mining}, 2016}
+
+Chapter~\ref{chap:oracle} established that the 483-test suite is an
+unfakeable oracle: no algorithmically simpler function can pass it.  But
+test-suite passage is a static guarantee---it certifies behaviour on a fixed
+corpus of inputs.  Runtime executions generate \emph{traces}, and a breed
+that passes every laboratory test could, in principle, follow an unlawful
+execution path during production.  This chapter closes that gap by
+constructing a measure-theoretic framework around the Object-Centric Event
+Log (OCEL) \cite{ocel2standard,kusters2025ocpq} emitted by every \textsc{wasm4pm} execution, proving a
+conformance certificate theorem that links static correctness to dynamic
+fitness, and establishing that the Breed Validation Certificate (BVC)
+machinery enforces \textbf{L0 wrapper fitness} $\varphi_{\mathrm{L0}} = 1.0$ as an
+admission gate for every production execution. L1 breed-inference alignment fitness
+(token replay against the declared breed OCPN) has been measured as step-coverage
+$= 1.0$ for MYCIN, Prolog, and STRIPS; full alignment fitness via planned external validation (pm4py replay)
+is scheduled for proof-pack v2 and currently carries \textsc{partial-alive} standing
+(see \texttt{ocel/reports/\{mycin,prolog,strips\}.json}).
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Breed Lifecycle Object-Centric Petri Net}
+\label{sec:breed-ocpn}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Every execution of a breed $b_i$ passes through a fixed sequence of
+lifecycle states.  We formalise this sequence as an Object-Centric Petri
+Net (OCPN) and show that the OCEL emitted by
+\texttt{crates/wasm4pm-cognition/src/ocel.rs} is the trace language of
+this net.
+
+\begin{definition}[Breed Lifecycle OCPN]
+\label{def:breed-ocpn}
+The \emph{breed lifecycle OCPN} is the tuple
+\[
+  \mathcal{N}_{\mathrm{breed}}
+  \;=\;
+  \bigl(P,\, T,\, F,\, \lambda,\, \mu_0\bigr),
+\]
+where:
+\begin{itemize}
+  \item $P = \{p_{\mathrm{idle}},\, p_{\mathrm{dispatched}},\,
+    p_{\mathrm{executing}},\, p_{\mathrm{verifying}},\,
+    p_{\mathrm{committed}},\, p_{\mathrm{failed}}\}$
+    is the set of \emph{places}, each representing a lifecycle state of a
+    breed execution object;
+  \item $T = \{t_{\mathrm{dispatch}},\, t_{\mathrm{execute}},\,
+    t_{\mathrm{verify}},\, t_{\mathrm{commit}},\, t_{\mathrm{fail}}\}$
+    is the set of \emph{transitions}, each labelled by the corresponding
+    OCEL activity name;
+  \item $F \subseteq (P \times T) \cup (T \times P)$ is the standard
+    flow relation encoding the ordering
+    $p_{\mathrm{idle}} \to t_{\mathrm{dispatch}} \to
+     p_{\mathrm{dispatched}} \to t_{\mathrm{execute}} \to
+     p_{\mathrm{executing}} \to t_{\mathrm{verify}} \to
+     p_{\mathrm{verifying}} \to t_{\mathrm{commit}} \to
+     p_{\mathrm{committed}}$,
+    with the exception arc $t_{\mathrm{fail}}$ reachable from
+    $p_{\mathrm{executing}}$ and $p_{\mathrm{verifying}}$ leading to
+    $p_{\mathrm{failed}}$;
+  \item $\lambda : T \to \Sigma$ maps each transition to its OCEL activity
+    label in the controlled vocabulary
+    $\{\texttt{breed:dispatch},\, \texttt{breed:execute},\,
+      \texttt{breed:verify},\, \texttt{breed:commit},\,
+      \texttt{breed:fail}\}$; and
+  \item $\mu_0 = [p_{\mathrm{idle}}]$ is the initial marking (one token
+    in $p_{\mathrm{idle}}$, all others empty).
+\end{itemize}
+
+Timestamps in the emitted OCEL are \emph{logical}, not wall-clock: the
+epoch anchor is the constant \texttt{1970-01-01T00:00:00Z} and each event
+carries a strictly increasing integer attribute \texttt{logical\_step}.
+This design ensures that OCEL conformance checks are deterministic and
+reproducible across machines and time zones.
+\end{definition}
+
+The implementation in \texttt{ocel.rs} materialises
+$\mathcal{N}_{\mathrm{breed}}$ by emitting one OCEL event per transition
+firing, recording the object identifier (the \texttt{run\_id}), the
+activity label, the logical step, and the output hash at the
+\texttt{breed:commit} transition.  Because \texttt{run\_id} is unique per
+execution, each trace is an independent object lifecycle; the accumulation
+of traces across executions forms the object-centric corpus $\mathcal{L}$
+analysed in Section~\ref{sec:discovery-convergence}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The OCEL Fitness Measure}
+\label{sec:ocel-fitness}
+% ─────────────────────────────────────────────────────────────────────────────
+
+We now define alignment-based fitness in the object-centric setting.
+Alignment-based fitness is the standard measure used in process mining
+\citep{adriansyah2014aligning}: it penalises every move-on-log (event in
+the trace not enabled in the model) and every move-on-model (model
+transition fired without a corresponding event) by assigning unit cost to
+each deviation.
+
+\begin{definition}[Alignment-Based OCEL Fitness]
+\label{def:ocel-fitness}
+Let $\sigma = \langle e_1, \ldots, e_n \rangle$ be an object trace (the
+sequence of OCEL events associated with a single \texttt{run\_id} object).
+An \emph{alignment} of $\sigma$ against $\mathcal{N}_{\mathrm{breed}}$ is
+a sequence of \emph{moves}
+\[
+  \gamma \;=\; \langle m_1, \ldots, m_k \rangle,
+  \qquad
+  m_j \in
+    \bigl(\Sigma \times \{\gg\}\bigr)
+    \cup
+    \bigl(\{\gg\} \times T\bigr)
+    \cup
+    \bigl(\Sigma \times T\bigr),
+\]
+where $(\sigma_j, \gg)$ is a \emph{log move} (cost 1), $(\gg, t_j)$ is a
+\emph{model move} (cost 1), and $(\sigma_j, t_j)$ is a \emph{synchronous
+move} (cost 0), subject to the constraint that the synchronous and model
+moves form a valid firing sequence from $\mu_0$ to a final marking, and the
+log projection of $\gamma$ equals $\sigma$.
+
+The \emph{fitness} of $\sigma$ is
+\[
+  \varphi(\sigma)
+  \;=\;
+  1 - \frac{\mathrm{cost}(\gamma^*(\sigma))}{|\sigma| + |T_{\mathrm{model}}|},
+\]
+where $\gamma^*(\sigma)$ is the minimum-cost alignment of $\sigma$ and
+$T_{\mathrm{model}}$ is the minimal sequence of model-side transitions in
+any complete firing sequence.  The \emph{corpus fitness} is
+\[
+  \Phi(\mathcal{L})
+  \;=\;
+  \frac{1}{|\mathcal{L}|} \sum_{\sigma \in \mathcal{L}} \varphi(\sigma).
+\]
+\end{definition}
+
+\begin{axiom}[BVC Fitness Requirement]
+\label{ax:bvc-fitness}
+Every production execution of a breed $b_i$ must satisfy
+$\varphi(\sigma) = 1.0$; that is, the alignment of its object trace
+against $\mathcal{N}_{\mathrm{breed}}$ must be the identity (no log moves,
+no model moves, only synchronous moves).  An execution that does not satisfy
+this axiom is \emph{non-conforming} and must be refused.
+\end{axiom}
+
+Axiom~\ref{ax:bvc-fitness} is not a statistical target but a hard
+admission criterion.  Its enforcement mechanism is the \texttt{run\_breed}
+choke point described in the next section.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Conformance Certificate Theorem}
+\label{sec:conformance-certificate}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{theorem}[Conformance Certificate]
+\label{thm:conformance-certificate}
+\label{thm:ocel-conformance}
+Let $\mathcal{N}_{\mathrm{breed}}$ be as in Definition~\ref{def:breed-ocpn}
+and let $\mathcal{L}$ be the OCEL corpus emitted by \textsc{wasm4pm}.
+Then:
+
+\begin{enumerate}[label=(\roman*)]
+  \item \textbf{Soundness.}  Every trace $\sigma \in \mathcal{L}$
+    satisfies $\varphi(\sigma) = 1.0$ if and only if the execution that
+    generated $\sigma$ completed the full dispatch--execute--verify--commit
+    path without deviation.
+
+  \item \textbf{Completeness.}  If an execution completes the full path,
+    the OCEL emitter in \texttt{ocel.rs} produces exactly one event per
+    transition in $\mathcal{N}_{\mathrm{breed}}$, so the resulting trace
+    $\sigma$ has a trivial (zero-cost) alignment.
+
+  \item \textbf{Fitness Universality.}  Non-conforming traces---those with
+    $\varphi(\sigma) < 1.0$---are refused at the \texttt{run\_breed} choke
+    point implemented at lines 70--77 of
+    \texttt{crates/wasm4pm-cognition/src/wasm.rs}.  Consequently,
+    $\Phi(\mathcal{L}) = 1.0$ for all production corpora.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+\textbf{Clause (i) --- Soundness.}
+Fitness $\varphi(\sigma) = 1.0$ implies $\mathrm{cost}(\gamma^*) = 0$,
+which in turn implies no log moves and no model moves in the optimal
+alignment.  A zero-cost alignment is a purely synchronous sequence; by the
+definition of $\mathcal{N}_{\mathrm{breed}}$, the unique synchronous
+firing sequence from $\mu_0$ to the final marking visits the transitions in
+the order $t_{\mathrm{dispatch}},\, t_{\mathrm{execute}},\,
+t_{\mathrm{verify}},\, t_{\mathrm{commit}}$.  Conversely, if the execution
+followed this path, the OCEL emitter (clause (ii)) produces exactly the
+events that label these transitions, so the alignment is the identity map
+and the cost is zero.  \qquad $\square_{(i)}$
+
+\medskip\noindent
+\textbf{Clause (ii) --- Completeness.}
+Inspect the control flow of \texttt{ocel.rs}: each of the five OCEL
+activities is emitted precisely once per execution object (the
+\texttt{run\_id} is allocated at dispatch, and subsequent event-emit calls
+reference the same identifier).  The logical step counter is incremented
+atomically before each emit, guaranteeing strict monotonicity.  A trace
+produced by this emitter therefore contains exactly $|T| = 5$ events (or
+4 if the fail transition fires instead of commit) in the order mandated by
+the flow relation $F$.  The minimum-cost alignment of such a trace against
+$\mathcal{N}_{\mathrm{breed}}$ is the identity, giving cost 0 and fitness
+1.0.  \qquad $\square_{(ii)}$
+
+\medskip\noindent
+\textbf{Clause (iii) --- Fitness Universality.}
+The \texttt{run\_breed} function at lines 70--77 of \texttt{wasm.rs}
+evaluates the conformance check synchronously before returning the
+\texttt{ContractResult} to the caller.  If the check determines that the
+pending trace would have $\varphi < 1.0$---for example because a required
+transition was skipped or an unexpected activity was recorded---the function
+returns an error with status \texttt{conformance\_rejected} and does not
+advance the breed execution to the commit state.  The OCEL corpus
+$\mathcal{L}$ therefore contains only traces that passed this gate.  Every
+trace in $\mathcal{L}$ has $\varphi(\sigma) = 1.0$ by clause (i), so
+\[
+  \Phi(\mathcal{L})
+  = \frac{1}{|\mathcal{L}|} \sum_{\sigma \in \mathcal{L}} 1.0
+  = 1.0.
+\]
+\qquad $\square_{(iii)}$
+\end{proof}
+
+\begin{remark}[PTIME decidability]
+Choke-point enforcement escapes Rice's theorem (Axiom~\ref{ax:rice} in Chapter~\ref{chap:imported-axioms}): it does not decide a semantic property over all programs, but checks conformance of one concrete finite trace against a fixed, finite OCPN. Token replay on a trace of length $n$ against a net with $p$ places runs in $O(np)$ time---strictly PTIME, with no halting-problem contact. The decidable-subclass license of Axiom~0.5 applies directly.
+\end{remark}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Process Mining Over the Accumulated Corpus}
+\label{sec:discovery-convergence}
+% ─────────────────────────────────────────────────────────────────────────────
+
+Theorem~\ref{thm:conformance-certificate} guarantees that every trace in
+$\mathcal{L}$ is individually conformant.  A complementary question is
+whether the \emph{discovered} process model---obtained by applying a
+discovery algorithm to $\mathcal{L}$---converges to
+$\mathcal{N}_{\mathrm{breed}}$ as the corpus grows.
+
+\begin{proposition}[Discovery Convergence]
+\label{prop:discovery-convergence}
+Let $\mathcal{L}_n$ denote the OCEL corpus after $n$ production executions,
+all passing the \texttt{run\_breed} gate, and let $\hat{\mathcal{N}}_n$ be
+the Petri net discovered from $\mathcal{L}_n$ by the inductive miner
+\citep{leemans2013discovering}.  Then:
+\[
+  \lim_{n \to \infty} \fitness\bigl(\hat{\mathcal{N}}_n,\, \mathcal{L}_n\bigr)
+  \;=\; 1.0,
+\]
+and for sufficiently large $n$, $\hat{\mathcal{N}}_n$ is isomorphic to
+$\mathcal{N}_{\mathrm{breed}}$ as a labelled Petri net.
+\end{proposition}
+
+\begin{proof}
+By Theorem~\ref{thm:conformance-certificate}(iii), every trace in
+$\mathcal{L}_n$ follows the path
+$t_{\mathrm{dispatch}} \to t_{\mathrm{execute}} \to t_{\mathrm{verify}}
+\to t_{\mathrm{commit}}$ (with the fail path as the only exception arc).
+The inductive miner constructs a process tree by identifying the most
+frequent directly-follows relations; because all conformant traces share
+the same directly-follows structure (the linear chain is the only path to
+commit), the directly-follows graph over $\mathcal{L}_n$ converges to the
+single-path graph of $\mathcal{N}_{\mathrm{breed}}$ as $n \to \infty$.
+Conversion of the converged process tree back to a Petri net via the
+standard tree-to-net transformation \citep{leemans2013discovering} yields a
+net isomorphic to $\mathcal{N}_{\mathrm{breed}}$.  Fitness of the
+discovered net against the corpus from which it was discovered approaches
+1.0 by standard inductive-miner guarantees under the assumption that the
+trace language is a regular superset of the target language---which holds
+here because the trace language is a singleton (one linear path to commit,
+one to fail).
+\end{proof}
+
+Proposition~\ref{prop:discovery-convergence} is the van der Aalst
+constitution in concrete form: the process-truth engine does not merely
+verify static tests; it \emph{discovers} the process from evidence and
+confirms that the discovered model matches the declared model.  Any
+divergence between $\hat{\mathcal{N}}_n$ and $\mathcal{N}_{\mathrm{breed}}$
+is a defect, not a discrepancy.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Summary}
+\label{sec:ocel-summary}
+% ─────────────────────────────────────────────────────────────────────────────
+
+This chapter constructed the breed lifecycle OCPN
+(Definition~\ref{def:breed-ocpn}), defined alignment-based OCEL fitness
+(Definition~\ref{def:ocel-fitness}), and mandated $\varphi = 1.0$ as a
+hard admission criterion (Axiom~\ref{ax:bvc-fitness}).  The Conformance
+Certificate Theorem (Theorem~\ref{thm:conformance-certificate}) established
+soundness, completeness, and fitness universality via the
+\texttt{run\_breed} choke point in \texttt{wasm.rs}.  Proposition~\ref{prop:discovery-convergence}
+showed that the discovered process model converges to the declared model as
+the corpus grows, closing the loop between static specification and dynamic
+evidence.  Together, Chapters~\ref{chap:oracle} and~\ref{chap:ocel}
+provide the full verification stack: unfakeable tests certify algorithmic
+correctness at commit time, and OCEL conformance certifies execution
+correctness at runtime.  Chapter~\ref{chap:bvc} constructs the Breed
+Validation Certificate that aggregates both layers into a single
+cryptographically bound receipt.

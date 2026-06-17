@@ -1,0 +1,83 @@
+(node:13882) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "allen_temporal",
+    "breed": "allen_temporal",
+    "status": "ok",
+    "output": {
+      "breed": "AllenTemporal",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "derived:A,B_91da8cfb",
+          "value": "m"
+        },
+        {
+          "key": "derived:A,C",
+          "value": "o|d|s"
+        },
+        {
+          "key": "derived:B_91da8cfb,A",
+          "value": "mi"
+        },
+        {
+          "key": "derived:B_91da8cfb,C",
+          "value": "d"
+        },
+        {
+          "key": "derived:C,A",
+          "value": "oi|di|si"
+        },
+        {
+          "key": "derived:C,B_91da8cfb",
+          "value": "di"
+        }
+      ],
+      "selected": "temporal-consistent",
+      "explanation": "Allen interval network over 3 intervals reached path-consistency fixpoint",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "allen-load",
+          "detail": "rel A,B_91da8cfb,m",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "allen-load",
+          "detail": "rel B_91da8cfb,C,d",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "allen-compose",
+          "detail": "C via B_91da8cfb -> A: oi|di|si",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "allen-verdict",
+          "detail": "path-consistency-fixpoint",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "28802a818f80fbd2aa8f0fb7de2d9f34e379aeaeb370ee7187de2cc6c07cdb9d",
+    "output_hash": "6bce1b0bee62ce6b0abc411f4b068491e713e75265c2cf41a5117314e3b11fb5",
+    "replay_pointer": "6bce1b0bee62ce6b",
+    "inference_step_count": 4,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/28802a818f80fbd2aa8f0fb7de2d9f34e379aeaeb370ee7187de2cc6c07cdb9d.json"
+  },
+  "meta": {
+    "run_id": "ffde488d-46de-4383-810c-34ec2a2173df",
+    "timestamp": "2026-06-11T08:34:57.850Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

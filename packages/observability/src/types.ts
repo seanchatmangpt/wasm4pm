@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 /**
  * Event type definitions for the three-layer observability system
  * Layer 1: CLI (human-readable)
@@ -53,37 +55,51 @@ export interface OtelEvent {
 }
 
 /**
- * OTEL configuration for exporter
+ * Zod schema for OtelConfig read from config files / env vars.
+ * Validates exporter type, endpoint URL format, and numeric bounds.
  */
-export interface OtelConfig {
-  enabled: boolean;
-  exporter: 'otlp_http' | 'otlp_grpc';
-  endpoint: string; // e.g., "http://localhost:4317"
-  required: boolean; // if false, OTEL errors don't fail execution
-  timeout_ms?: number; // default: 5000
-  max_queue_size?: number; // default: 1000
-  batch_size?: number; // default: 100
-}
+export const OtelConfigSchema = z.object({
+  enabled: z.boolean(),
+  exporter: z.enum(['otlp_http', 'otlp_grpc']),
+  endpoint: z.string().url(),
+  required: z.boolean().default(false),
+  timeout_ms: z.number().int().positive().optional(),
+  max_queue_size: z.number().int().positive().optional(),
+  batch_size: z.number().int().positive().optional(),
+});
+
+/** OTEL configuration for exporter */
+export type OtelConfig = z.infer<typeof OtelConfigSchema>;
 
 /**
- * JSON writer configuration
+ * Zod schema for JsonConfig read from config files / env vars.
+ * Ensures dest is a non-empty string and rotation bounds are positive.
  */
-export interface JsonConfig {
-  enabled: boolean;
-  dest: string; // file path or 'stdout'
-  rotation?: {
-    max_bytes?: number;
-    max_files?: number;
-  };
-}
+export const JsonConfigSchema = z.object({
+  enabled: z.boolean(),
+  dest: z.string().min(1),
+  rotation: z
+    .object({
+      max_bytes: z.number().int().positive().optional(),
+      max_files: z.number().int().positive().optional(),
+    })
+    .optional(),
+});
+
+/** JSON writer configuration */
+export type JsonConfig = z.infer<typeof JsonConfigSchema>;
 
 /**
- * Complete observability configuration
+ * Zod schema for the complete observability configuration block.
+ * Used when parsing configuration from TOML, JSON, or environment.
  */
-export interface ObservabilityConfig {
-  json?: JsonConfig;
-  otel?: OtelConfig;
-}
+export const ObservabilityConfigSchema = z.object({
+  json: JsonConfigSchema.optional(),
+  otel: OtelConfigSchema.optional(),
+});
+
+/** Complete observability configuration */
+export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;
 
 /**
  * OTEL attributes required by PRD §18.2-3

@@ -1,0 +1,49 @@
+{
+  "breed": "version_space",
+  "provenance": {
+    "citation": "Mitchell, T. M. (1982). Generalization as Search. Artificial Intelligence, 18(2), 203\u2013226.",
+    "locus": "The candidate-elimination algorithm (Sections 3\u20134) with the conjunctive attribute hypothesis language; the EnjoySport training sequence is the canonical worked instance of this algorithm (presented in full in Mitchell, Machine Learning, McGraw-Hill 1997, Ch. 2, Tables 2.1/2.5, which credits the 1982 paper).",
+    "extraction": "verbatim",
+    "notes": "Four examples over six attributes (sky, airtemp, humidity, wind, water, forecast). Hand-derived boundary evolution: after the negative example 3, G3 has 3 members {<Sunny,?,?,?,?,?>, <?,Warm,?,?,?,?>, <?,?,?,?,?,Same>}; the final positive example 4 prunes the forecast hypothesis, leaving G4 with 2 members and S4 = <Sunny,Warm,?,Strong,?,?>."
+  },
+  "input": {
+    "intent": "learn the EnjoySport concept by candidate elimination",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "vs:attrs",
+        "value": "sky,airtemp,humidity,wind,water,forecast"
+      },
+      {
+        "key": "vs:example:1",
+        "value": "Sunny,Warm,Normal,Strong,Warm,Same:+"
+      },
+      {
+        "key": "vs:example:2",
+        "value": "Sunny,Warm,High,Strong,Warm,Same:+"
+      },
+      {
+        "key": "vs:example:3",
+        "value": "Rainy,Cold,High,Strong,Warm,Change:-"
+      },
+      {
+        "key": "vs:example:4",
+        "value": "Sunny,Warm,High,Strong,Cool,Change:+"
+      }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "s": "Sunny,Warm,?,Strong,?,?",
+    "g": [
+      "Sunny,?,?,?,?,?",
+      "?,Warm,?,?,?,?"
+    ],
+    "intermediate_g_size": 3,
+    "converged": "false",
+    "notes": "S4 and G4 exactly as published; |G3| = 3 after the negative example."
+  }
+}

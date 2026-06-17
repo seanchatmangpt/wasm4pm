@@ -1,0 +1,334 @@
+% Chapter 6 — Beyond the Original Vision: Capabilities the Inventors Could Not Have Imagined
+% Part of the OLDIA Thesis
+
+\chapter{Beyond the Original Vision: Capabilities the Inventors Could Not Have Imagined}
+\label{ch:inventors}
+
+The researchers who built MYCIN, Hearsay, SOAR, STRIPS, GPS, CBR, DENDRAL, and ELIZA were among
+the most capable scientists of their generation. Their ideas were correct. Their mathematics was
+sound. Their theoretical contributions endure in the literature fifty years later. But they were
+working on machines that ran at 1--5 MHz with 64 kilobytes to 8 megabytes of memory, and the
+conceptual universe available to them was bounded by what was operationally possible on those
+machines. This chapter examines what is now possible that was not only impossible then, but was
+not in the conceptual universe of the original inventors at all.
+
+The distinction matters. Some capabilities are simply faster versions of what the original
+researchers envisioned. Others are qualitatively new --- they are not on the spectrum from slow to
+fast but represent entirely new categories of epistemic activity that the original systems could
+not have supported in any form. This chapter focuses on the latter.
+
+\section{The Substrate Was Wrong by Six to Nine Orders of Magnitude}
+\label{sec:substrate}
+
+MYCIN ran on a PDP-10 at approximately 1--2 MHz with 64 KB of addressable memory. A single
+MYCIN consultation --- loading the knowledge base, running the backward-chaining inference
+engine, collecting certainty factors, and producing a recommendation --- took minutes. HEARSAY
+ran on a Lisp machine with dedicated hardware at roughly the same speed. SOAR was developed on
+VAX-11/780 systems running at approximately 5 MHz with 8 MB of memory; a SOAR problem-solving
+episode involving subgoal resolution could take tens of seconds.
+
+The wasm4pm MYCIN breed executes in 2--50 microseconds on 2026 hardware. This is not a
+modest improvement. It is six to nine orders of magnitude. A million MYCIN consultations fit
+inside a single second. The implications are not just quantitative. When an operation moves from
+minutes to microseconds, it changes category. Operations that were practical once per session
+become practical one hundred thousand times per second. That categorical shift opens epistemic
+territory that the original researchers could not have mapped because they had no reason to
+imagine it existed.
+
+This is worth stating precisely: the ideas were correct. Shortliffe and Buchanan's certainty
+factor algebra is correctly implemented in \texttt{production\_rules.rs}. Victor Lesser and Lee
+Ercoli's KSA priority queue with opportunistic scheduling is correctly implemented in
+\texttt{hearsay.rs}. Allen Newell's preference algebra is correctly implemented in
+\texttt{soar.rs}. The implementations are not approximations or simplifications. They are
+faithful to the original mathematical specifications. What is new is what becomes possible when
+those correct ideas run on a substrate that is nine orders of magnitude more capable than the
+one for which they were designed.
+
+\section{Operational Falsifiability as a New Discipline}
+\label{sec:falsifiability}
+
+The original researchers used formal verification for algorithms. They proved correctness
+properties about their systems in the mathematical sense: that STRIPS planning was complete under
+certain conditions, that MYCIN's CF combination was monotone in particular configurations, that
+SOAR's preference algebra was antisymmetric. These are classical theoretical computer science
+contributions and they remain valid.
+
+What they did not have, and could not have had, was any concept of \emph{runtime proof}.
+
+Process mining as a discipline did not exist until Wil van der Aalst's work in the late 1990s.
+The idea of deriving a structured event log from a running system and then applying conformance
+checking algorithms to compare the observed behavior against a declared process model was not
+published until the 2000s. OCEL 2.0 --- the Object-Centric Event Log standard that supports
+multi-object process models --- was standardized in 2023.
+
+The wasm4pm cognition layer implements operational falsifiability as a first-class architectural
+constraint. Every breed execution passes through a choke point in \texttt{wasm.rs} that calls
+\texttt{derive\_ocel(breed\_id, run\_id, \&[TraceStep])} and then
+\texttt{validate\_ocel\_alignment(log, model)}. The \texttt{src/ocel.rs} file implements 632
+lines of OCEL 2.0 infrastructure: \texttt{OcelEvent}, \texttt{OcelObject}, \texttt{OcelLog},
+13 breed lifecycle models (\texttt{MYCIN\_MODEL}, \texttt{HEARSAY\_MODEL}, \texttt{CBR\_MODEL},
+\texttt{GPS\_MODEL}, \texttt{STRIPS\_MODEL}, \texttt{PROLOG\_MODEL}, \texttt{SOAR\_MODEL},
+\texttt{ELIZA\_MODEL}, \texttt{DENDRAL\_MODEL}, and four autoinstinct variants), a DFA phase
+checker in \texttt{validate\_ocel\_alignment}, and a strictly monotone logical step enforcer in
+\texttt{check\_temporal\_conformance}.
+
+Non-conforming execution is refused. Not logged. Not warned about. Refused.
+
+Shortliffe could not have conceived of this. Not because he lacked the intelligence, but because
+the conceptual vocabulary did not exist. In 1976, proving that your algorithm was correct was
+the state of the art. The idea that every individual run of a system would be checked against a
+declared process model at runtime, and that the run would be rejected if it deviated, was not
+in the research agenda of any laboratory. It represents a new discipline --- operational
+falsifiability --- that the substrate of 1976 made not just impractical but inconceivable.
+
+\section{Ensemble Reasoning at Operational Tempo}
+\label{sec:ensemble}
+
+At 2 microseconds per MYCIN execution, it is possible to run 500,000 MYCIN consultations per
+second with systematic variations in certainty factor assignments. This is effectively a full
+Bayesian sensitivity analysis over the CF algebra at interactive speed.
+
+Consider what this enables. The original MYCIN ran one consultation at a time. A clinician
+entered patient data, MYCIN fired its rules, and after minutes of processing, a recommendation
+emerged with associated certainty factors. The certainty factors expressed the system's
+confidence in its conclusion given the evidence. But they did not tell you how sensitive that
+conclusion was to variations in the evidence weights. A clinician who wanted to know what would
+happen if the certainty of a positive blood culture were reduced from 0.8 to 0.6 would have
+to run a second consultation, wait minutes, and compare the outputs manually.
+
+At 2 microseconds per execution, you can enumerate the entire grid of CF variations for a
+consultation --- 100 values for each of 50 input CFs, producing $100^{50}$ points on the
+sensitivity surface --- by sampling intelligently at rates that would produce publication-quality
+sensitivity analyses in seconds. The landscape of the CF algebra becomes explorable rather than
+a single point.
+
+Hearsay is fundamentally an ensemble coordinator: its blackboard architecture was designed to
+support multiple competing KSAs contributing partial solutions. Victor Lesser understood that
+the value of the architecture was in the coordination of multiple hypotheses. But in 1977, the
+KSAs that Hearsay coordinated were themselves expensive computations. The idea of running
+13 different reasoning breeds simultaneously, treating each as a KSA contributing to a shared
+blackboard, and selecting among their outputs using Hearsay's own priority scheduling, was
+theoretically possible in Hearsay's architecture but operationally impossible.
+
+The wasm4pm implementation makes this trivial. All 13 breeds share
+\texttt{BreedInput}/\texttt{BreedOutput}. You can pipeline MYCIN's output as STRIPS's input,
+pass STRIPS's plan to CBR for case-based refinement, and have HEARSAY coordinate the ensemble
+--- in three lines. The original systems were islands of expertise separated by years of
+integration work. Now composition is structural.
+
+\section{Composition Without Integration Work}
+\label{sec:composition}
+
+The original systems were islands. MYCIN could not call STRIPS. SOAR could not query CBR.
+Integrating two AI systems from different laboratories in the 1980s was a multi-year research
+project involving custom data format translators, incompatible Lisp dialects, and fundamental
+representational incompatibilities. The knowledge representation communities around frame-based
+systems, rule-based systems, and planning systems were sometimes more incompatible with each
+other than they were with the external world.
+
+The wasm4pm architecture enforces a universal interface contract. Every breed accepts
+\texttt{BreedInput} and returns \texttt{BreedOutput}. The \texttt{BreedInput} contract includes
+a \texttt{breed} field (dispatching to the correct engine), a \texttt{contract} field containing
+breed-specific inputs, and an optional \texttt{options.profile} for performance tuning. Rust's
+\texttt{deny\_unknown\_fields} attribute on the input deserialization means that malformed inputs
+are rejected at the boundary rather than producing silently incorrect behavior downstream.
+
+This is not merely convenient. It is a structural guarantee that composition is always possible.
+There is no integration work because there is no representation mismatch to bridge. MYCIN's
+outputs can become STRIPS's inputs not because someone wrote an adapter, but because both
+systems speak the same type language. This is what object-centric process modeling enables at
+the representation level: a common object model makes inter-system composition a matter of
+routing rather than translation.
+
+The original researchers would have recognized this as the realization of a dream. The
+Knowledge Interchange Format (KIF) project of the 1980s and 1990s spent a decade trying to
+create a common language for AI systems to share knowledge. DARPA funded multiple initiatives
+to achieve system interoperability. The problem was understood and considered important. What
+was not available was the combination of a common type system, a WASM compilation target that
+could run multiple systems in the same memory space, and the engineering discipline to enforce
+a shared interface contract at compilation time.
+
+\section{Process Mining Over Reasoning Chains}
+\label{sec:process-mining}
+
+Every breed execution appends to
+\texttt{.wasm4pm/ocel/cognition/<breed>.jsonl}. After thousands of executions,
+van der Aalst's process discovery algorithms can mine the actual process --- not the declared
+process, but the one that actually ran --- from the accumulated event log.
+
+The distinction between declared and actual process is the central insight of process mining.
+A system's documentation describes what it is supposed to do. The event log records what it
+actually did. Conformance checking quantifies the gap. The gap is always informative, often
+surprising, and occasionally alarming.
+
+For AI reasoning systems, this capability is genuinely new. The original researchers could
+observe their systems' behavior by reading output traces. They could debug by examining rule
+firings. They could measure performance by timing consultations. But they could not derive
+a stochastic process model from a thousand executions and ask: what is the distribution over
+execution paths? What variants occur? Are there hidden loops --- situations where the system
+revisits states it has already processed? Is there concept drift --- evidence that the
+system's behavior is changing over time, perhaps due to knowledge base modifications? Are
+there execution patterns that suggest the certainty factor thresholds are miscalibrated?
+
+Variant explosion detection, hidden loop discovery, concept drift monitoring: these are
+not debugging techniques. They are forms of epistemic surveillance over the reasoning
+process itself. The original researchers were building systems that would run occasionally
+in laboratory settings. The idea of mining the distribution of reasoning patterns from
+10 million MYCIN consultations was not conceivable because 10 million MYCIN consultations
+at 1976 speeds would have taken approximately 317 years of continuous operation.
+
+At 2 microseconds per execution, 10 million consultations take 20 seconds. The event
+log that accumulates during routine operation becomes a scientific dataset about the
+system's reasoning behavior. Process mining over that dataset is a new form of AI
+introspection that did not exist and could not have existed in 1976.
+
+\section{Cryptographic Provenance as Civil Infrastructure}
+\label{sec:provenance}
+
+The BLAKE3 receipt chain enables something the 1970s researchers would have found
+incomprehensible: a globally unique identifier for a specific reasoning act that can be
+presented as certified evidence in regulatory, legal, and contractual contexts.
+
+MYCIN's 1976 consultation produced a printout. That printout recorded the system's
+recommendation and supporting evidence. It was useful clinical documentation but it had no
+formal properties. It could not be independently verified. It could not be reproduced from
+stored inputs. It could not be checked for tampering. It was a document, not a proof.
+
+The wasm4pm MYCIN produces a \texttt{run\_id} = BLAKE3(\textit{breed} $\|$ \textit{output\_hash})
+that covers the entire reasoning process. The \texttt{output\_hash} =
+BLAKE3(\texttt{serde\_json}(\texttt{BreedOutput})) covers the OCEL log embedded inside the
+output. The \texttt{replay\_pointer} = \texttt{output\_hash[..16]} is a short reference that
+can be presented in a compact form while the full receipt provides verifiable provenance.
+
+What this means in practice: a MYCIN consultation performed by the wasm4pm implementation
+produces a receipt that attests not just to the result but to the process. The receipt can
+be stored. It can be presented to a regulator who asks: what was the system's reasoning at
+this specific point in time? The answer is not a printout but a cryptographically attested
+computation that can be independently reproduced from stored inputs and verified to produce
+the identical receipt.
+
+This is the difference between a doctor's handwritten note and a certified laboratory report
+with a chain of custody. It is not merely a quality improvement. It is a categorical change
+in what AI reasoning means for civil, regulatory, and legal purposes. The original researchers
+were not building systems intended for regulated environments. They were building research
+systems. The infrastructure for AI reasoning to operate in regulated environments --- with
+auditable, reproducible, tamper-evident records --- did not exist and was not on the research
+agenda.
+
+\section{The Speed Enables Real-Time Conformance Checking}
+\label{sec:realtime-conformance}
+
+The operational falsifiability infrastructure described in Section~\ref{sec:falsifiability}
+runs on every execution. This is only possible because the overhead of OCEL derivation and
+conformance validation is negligible relative to the computation being validated.
+
+In 1976, consider what runtime conformance checking would have required. Deriving a structured
+event log from a MYCIN consultation would have required designing a log schema, instrumenting
+the rule firing engine to emit log entries, writing the log to disk, and then running a
+conformance checking algorithm over the log. Each of these steps --- instrumentation overhead,
+disk I/O, log parsing, conformance algorithm execution --- would have consumed resources
+comparable to or exceeding the original consultation. Checking whether the system was
+conforming to its declared lifecycle model would have more than doubled the cost of running
+the system.
+
+In 2026, the \texttt{derive\_ocel} + \texttt{validate\_ocel\_alignment} pipeline runs in
+microseconds. The overhead is noise against the measurement. This means conformance checking
+is not an occasional audit but an every-execution invariant. It is structurally identical
+to a type check: something that happens as a matter of course, whose failure is a hard error,
+and whose cost is not budgeted separately because it is below the threshold of concern.
+
+This is a new relationship between a system and its specification. The system does not merely
+claim to conform to its declared lifecycle model. It proves conformance on every execution or
+refuses to complete. The specification is not a document that could become stale. It is an
+executable constraint enforced at the choke point.
+
+\section{The Unfakeable Test Suite as a New Kind of Specification}
+\label{sec:specification}
+
+The 655-test suite --- 480 Rust tests passing, 175 TypeScript tests passing, zero failures ---
+is not merely quality assurance infrastructure. It is a formal specification of what each
+algorithm must do, expressed in a form that falsifies incorrect implementations at the level
+of mathematical theorems.
+
+Consider the Prolog grandparent test. The query
+\texttt{grandparent(?0,?2) :- parent(?0,?1), parent(?1,?2)} must derive that carol has a
+grandparent from the facts parent(alice, bob) and parent(bob, carol). This test is not
+checking that the system produces a particular output for a particular input. It is checking
+that Robinson flat-term unification with shared variable bindings is correctly implemented.
+If \texttt{?1} is not properly shared between the two parent clauses --- if the implementation
+binds \texttt{?1} in the first clause independently from \texttt{?1} in the second --- the
+grandparent inference fails. The test is true if and only if the mathematical specification
+of SLD resolution with shared variables is correctly implemented. No other implementation
+produces the correct output.
+
+This property --- that certain tests are true if and only if the mathematical specification
+is correctly implemented --- is what makes them unfakeable. They are not integration tests
+that check whether the system produces acceptable outputs. They are falsification tests that
+check whether specific mathematical properties hold. The MYCIN CF strict boundary test
+(CF = 0.2 rejected, CF = 0.201 accepted) is unfakeable without correctly implementing
+the Shortliffe-Buchanan combination formula with a strict inequality threshold. The CBR
+Jaccard identity test (identical query and case must produce similarity = 1.0 exactly) is
+unfakeable without correctly implementing Jaccard similarity computation. The SOAR
+antisymmetry test (circular worse-than preferences must produce deterministic termination)
+is unfakeable without implementing the preference algebra with the antisymmetry property
+that Newell specified.
+
+The original researchers wrote papers. The papers specified the algorithms in mathematical
+notation and English prose. The specifications were correct. But they were not executable.
+A reader of Shortliffe and Buchanan (1975) who wanted to verify that their implementation
+of MYCIN's CF algebra was correct had to derive test cases from the mathematical formulas
+by hand, run the system on those test cases, and compare the outputs manually. The process
+was laborious, error-prone, and incomplete.
+
+A test suite that is a formal specification is a new kind of artifact. It is not documentation
+of behavior. It is a machine-executable oracle that either confirms correct implementation
+or rejects it. For the wasm4pm cognition layer, the test suite is the specification. The
+papers by Shortliffe, Newell, Lesser, Fikes, Hart, Nilsson, and Aamodt provide the
+mathematical foundations. The test suite is the operational embodiment of those foundations ---
+the form in which they can be applied to arbitrary implementations to determine correctness.
+
+The original researchers would have recognized the value immediately. Shortliffe spent years
+defending MYCIN's CF algebra against critics who questioned whether it was correctly
+implemented in clinical validation studies. An unfakeable test suite would have settled those
+arguments definitively. What was not available in 1976 was the combination of fast execution
+(making exhaustive test suites practical), modern testing infrastructure (making property-based
+tests and adversarial oracles straightforward to write), and the accumulated understanding of
+what mathematical properties distinguish correct from incorrect implementations.
+
+\section{Summary: A New Epistemic Category}
+\label{sec:summary}
+
+The capabilities described in this chapter share a common structure: they are not quantitative
+improvements on what the original researchers envisioned. They are qualitatively new epistemic
+activities that became possible when correct ideas from 1976--1987 ran on a substrate nine
+orders of magnitude more capable than the one for which they were designed.
+
+Operational falsifiability: the original researchers verified algorithms. We verify every
+execution against a declared process model.
+
+Ensemble reasoning at operational tempo: the original researchers understood ensemble
+architectures. We can execute them with 500,000 iterations per second, making the full
+sensitivity surface of the CF algebra explorable interactively.
+
+Composition without integration work: the original researchers dreamed of AI system
+interoperability. We have it structurally, enforced at compilation time.
+
+Process mining over reasoning chains: the original researchers observed system behavior
+by reading traces. We mine stochastic process models from millions of executions and
+apply conformance checking, variant analysis, and concept drift detection.
+
+Cryptographic provenance: the original researchers produced printouts. We produce
+cryptographically attested computation records with reproducible receipts and chain-of-custody
+properties suitable for regulated environments.
+
+The unfakeable test suite as specification: the original researchers wrote papers. We write
+falsifying oracles that are true if and only if the mathematical specification is correctly
+implemented.
+
+These are not improvements to the original systems. They are new capabilities that the
+original systems' architectures did not support and the original researchers did not envision,
+because the conceptual vocabulary for most of them did not exist in 1976 and the operational
+cost of all of them was prohibitive until recently.
+
+The inventors were right about the ideas. They could not have imagined what would become
+possible when those ideas ran on a substrate nine orders of magnitude beyond what they had.

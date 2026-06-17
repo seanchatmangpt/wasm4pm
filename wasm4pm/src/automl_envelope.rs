@@ -164,6 +164,7 @@ fn extract_motion_features(
         // Feature 4: event_density — events per hour
         let duration_ms = compute_trace_duration_ms(trace);
         let event_density = trace_len as f64 / (duration_ms / 3_600_000.0 + 1.0);
+        let event_density = event_density.min(100.0);
 
         // Feature 5: variant_frequency
         let vf = variant_freq[i];
@@ -282,7 +283,16 @@ pub fn build_automl_envelope(log_handle: &str, activity_key: &str) -> Result<JsV
             &training_labels,
             n_samples,
             N_FEATURES,
-        );
+        )
+        .map_err(|e| {
+            wasm_err(
+                codes::INTERNAL_ERROR,
+                format!(
+                    "auto_fit_classification failed: {}",
+                    e.as_string().unwrap_or_else(|| "automl error".to_string())
+                ),
+            )
+        })?;
 
         let model = AutomlEnvelopeModel {
             envelope_type: AUTOML_ENVELOPE_TYPE.to_string(),

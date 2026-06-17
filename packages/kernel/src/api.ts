@@ -14,6 +14,12 @@ import { hashOutput, hashAlgorithmResult } from './hashing.js';
 import { KernelError, wrapKernelCall } from './errors.js';
 import { validateKernelResult } from './validation.js';
 import { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
+import {
+  DFGSchema,
+} from '@wasm4pm/contracts';
+import { validateWasmPayload } from './zod-validators.js';
+import { z } from 'zod';
+
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
 export { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
@@ -250,6 +256,13 @@ export interface KernelWasmModule extends Omit<WasmModule,
   discover_working_together_network?(log_handle: string, resource_key: string): string;
   discover_dfg_simd?(eventlog_handle: string, activity_key: string): string;
   encode_ocel_as_text?(ocel_handle: string): string;
+
+  // ── Parser functions ──────────────────────────────────────────────────────────
+  load_ocel_from_csv?(csv: string): string;
+  load_eventlog_from_xes_gz?(bytes: Uint8Array): string;
+  load_dfg_from_text?(content: string): string;
+  load_powl_from_string?(powl: string): string;
+  load_powl_v2_from_string?(dsl: string): string;
 
   // ── Incremental Token-Replay Prefix Conformance API ──────────────────────────
   store_petri_net_from_json?(pn_json: string): string;
@@ -495,7 +508,30 @@ export class Kernel {
       );
     }
     const resultStr = this.wasm.query_provenance_traversal(ocelHandle, JSON.stringify(query));
-    return JSON.parse(resultStr);
+    const parsed = JSON.parse(resultStr);
+    const provenanceQuerySchema = z.object({
+      paths: z.array(
+        z.array(
+          z.object({
+            type: z.enum(['object', 'event']),
+            id: z.string(),
+            object_type: z.string().optional(),
+            event_type: z.string().optional(),
+          })
+        )
+      ),
+    });
+    const validation = provenanceQuerySchema.safeParse(parsed);
+    if (!validation.success) {
+      const issues = validation.error.issues
+        .map((i) => `${i.path.join('.')}: ${i.message}`)
+        .join('; ');
+      throw new KernelError(
+        `WASM query_provenance_traversal output validation failed: ${issues}`,
+        'SOURCE_ERROR' as any
+      );
+    }
+    return validation.data;
   }
 
   /**
@@ -763,6 +799,171 @@ export class Kernel {
   }
 
   /**
+   * Load an event log from XES XML content.
+   *
+   * @param xesContent - The raw XML content of the XES file.
+   * @returns A handle to the loaded event log in WASM memory.
+   * @throws KernelError if parsing fails or WASM function is not available.
+   */
+  async loadEventLog(xesContent: string): Promise<string> {
+    this.assertInitialized();
+
+    if (!xesContent || xesContent.trim() === '') {
+      throw new KernelError('XES content is empty', 'EMPTY_INPUT' as any);
+    }
+
+    if (!this.wasm.load_eventlog_from_xes) {
+      throw new KernelError(
+        'load_eventlog_from_xes is not available in this WASM build',
+        'ALGORITHM_NOT_FOUND' as any
+      );
+    }
+
+    const handle = await wrapKernelCall(
+      async () => this.wasm.load_eventlog_from_xes!(xesContent),
+      { step: 'load_xes' }
+    );
+
+    if (!handle) {
+      throw new KernelError('Failed to parse XES event log', 'PARSE_FAILED' as any);
+    }
+
+    this._handles.add(handle);
+    return handle;
+  }
+
+  /**
+   * Load an Object-Centric Event Log (OCEL 2.0) from JSON content.
+   *
+   * @param ocelJson - The raw JSON content of the OCEL file.
+   * @returns A handle to the loaded OCEL in WASM memory.
+   * @throws KernelError if parsing fails or WASM function is not available.
+   */
+  async loadOcel(ocelJson: string): Promise<string> {
+    this.assertInitialized();
+
+    if (!ocelJson || ocelJson.trim() === '') {
+      throw new KernelError('OCEL content is empty', 'EMPTY_INPUT' as any);
+    }
+
+    if (!this.wasm.load_ocel_from_json) {
+      throw new KernelError(
+        'load_ocel_from_json is not available in this WASM build',
+        'ALGORITHM_NOT_FOUND' as any
+      );
+    }
+
+    const handle = await wrapKernelCall(
+      async () => this.wasm.load_ocel_from_json!(ocelJson),
+      { step: 'load_ocel' }
+    );
+
+    if (!handle) {
+      throw new KernelError('Failed to parse OCEL event log', 'PARSE_FAILED' as any);
+    }
+
+    this._handles.add(handle);
+    return handle;
+  }
+
+  /**
+   * Load an Object-Centric Event Log from CSV content.
+   *
+   * @param csv - The raw CSV content of the OCEL CSV file.
+   * @returns A handle to the loaded OCEL in WASM memory.
+   */
+  async loadOcelFromCsv(csv: string): Promise<string> {
+    this.assertInitialized();
+    if (!this.wasm.load_ocel_from_csv) {
+      throw new KernelError('load_ocel_from_csv is not available in this WASM build', 'ALGORITHM_NOT_FOUND' as any);
+    }
+    const handle = await wrapKernelCall(
+      async () => this.wasm.load_ocel_from_csv!(csv),
+      { step: 'load_ocel_csv' }
+    );
+    if (!handle) throw new KernelError('Failed to parse OCEL CSV', 'PARSE_FAILED' as any);
+    this._handles.add(handle);
+    return handle;
+  }
+
+  /**
+   * Load an event log from a gzip-compressed XES file.
+   *
+   * @param bytes - The raw bytes of the .xes.gz file.
+   * @returns A handle to the loaded event log in WASM memory.
+   */
+  async loadEventlogFromXesGz(bytes: Uint8Array): Promise<string> {
+    this.assertInitialized();
+    if (!this.wasm.load_eventlog_from_xes_gz) {
+      throw new KernelError('load_eventlog_from_xes_gz is not available in this WASM build', 'ALGORITHM_NOT_FOUND' as any);
+    }
+    const handle = await wrapKernelCall(
+      async () => this.wasm.load_eventlog_from_xes_gz!(bytes),
+      { step: 'load_xes_gz' }
+    );
+    if (!handle) throw new KernelError('Failed to parse XES GZ event log', 'PARSE_FAILED' as any);
+    this._handles.add(handle);
+    return handle;
+  }
+
+  /**
+   * Load a Directly-Follows Graph from text content.
+   *
+   * @param content - The text encoding of the DFG.
+   * @returns A JSON string representing the parsed DFG.
+   */
+  async loadDfgFromText(content: string): Promise<string> {
+    this.assertInitialized();
+    if (!this.wasm.load_dfg_from_text) {
+      throw new KernelError('load_dfg_from_text is not available in this WASM build', 'ALGORITHM_NOT_FOUND' as any);
+    }
+    const result = await wrapKernelCall(
+      async () => this.wasm.load_dfg_from_text!(content),
+      { step: 'load_dfg_text' }
+    );
+    if (!result) throw new KernelError('Failed to parse DFG from text', 'PARSE_FAILED' as any);
+    return result;
+  }
+
+  /**
+   * Load a POWL model from a string representation.
+   *
+   * @param powl - The POWL string.
+   * @returns A JSON string representing the parsed POWL model.
+   */
+  async loadPowlFromString(powl: string): Promise<string> {
+    this.assertInitialized();
+    if (!this.wasm.load_powl_from_string) {
+      throw new KernelError('load_powl_from_string is not available in this WASM build', 'ALGORITHM_NOT_FOUND' as any);
+    }
+    const result = await wrapKernelCall(
+      async () => this.wasm.load_powl_from_string!(powl),
+      { step: 'load_powl' }
+    );
+    if (!result) throw new KernelError('Failed to parse POWL from string', 'PARSE_FAILED' as any);
+    return result;
+  }
+
+  /**
+   * Load a POWL v2 model from a DSL string.
+   *
+   * @param dsl - The POWL v2 DSL string.
+   * @returns A JSON string representing the parsed POWL v2 model.
+   */
+  async loadPowlV2FromString(dsl: string): Promise<string> {
+    this.assertInitialized();
+    if (!this.wasm.load_powl_v2_from_string) {
+      throw new KernelError('load_powl_v2_from_string is not available in this WASM build', 'ALGORITHM_NOT_FOUND' as any);
+    }
+    const result = await wrapKernelCall(
+      async () => this.wasm.load_powl_v2_from_string!(dsl),
+      { step: 'load_powl_v2' }
+    );
+    if (!result) throw new KernelError('Failed to parse POWL v2 from DSL string', 'PARSE_FAILED' as any);
+    return result;
+  }
+
+  /**
    * Free a handle from WASM memory
    * Safe to call multiple times on the same handle
    */
@@ -877,12 +1078,24 @@ export class Kernel {
           const tracesRaw: unknown = this.wasm.get_traces
             ? this.wasm.get_traces(eventLogHandle, activityKey)
             : null;
-          const traces: string[][] =
+          const tracesSchema = z.array(z.array(z.string()));
+          const rawTracesValue =
             tracesRaw != null
               ? typeof tracesRaw === 'string'
-                ? (JSON.parse(tracesRaw) as string[][])
-                : (tracesRaw as string[][])
+                ? JSON.parse(tracesRaw)
+                : tracesRaw
               : [];
+          const tracesValidation = tracesSchema.safeParse(rawTracesValue);
+          if (!tracesValidation.success) {
+            const issues = tracesValidation.error.issues
+              .map((i) => `${i.path.join('.')}: ${i.message}`)
+              .join('; ');
+            throw new KernelError(
+              `WASM get_traces output validation failed: ${issues}`,
+              'SOURCE_ERROR' as any
+            );
+          }
+          const traces: string[][] = tracesValidation.data;
 
           const streamHandle: number = this.wasm.create_streaming_log();
           try {
@@ -917,7 +1130,7 @@ export class Kernel {
         const traces = this.wasm.get_traces ? this.wasm.get_traces(eventLogHandle, activityKey) : [];
         const resultJson = this.wasm.smart_engine_run
           ? this.wasm.smart_engine_run(engineHandle, (params.algorithm as string) ?? 'dfg', JSON.stringify(traces))
-          : await this.wasm.discover_dfg(eventLogHandle, activityKey);
+          : this.wasm.discover_dfg(eventLogHandle, activityKey);
 
         if (typeof resultJson === 'string' && resultJson.startsWith('{')) {
           return { handle: resultJson };
@@ -967,6 +1180,9 @@ export class Kernel {
         );
         const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
         const tree = parseWasmOutput<Record<string, unknown>>(json);
+        if (tree !== null && typeof tree === 'object' && !(tree instanceof Promise)) {
+          validateWasmPayload('inductive_miner', tree);
+        }
         return {
           ...(tree && typeof tree === 'object' ? tree : {}),
           handle: virtualHandle,
@@ -1222,7 +1438,7 @@ export class Kernel {
       }
 
       case 'yawl_export': {
-        const xml = await this.wasm.powl_to_yawl_string((params.powl_string as string)!);
+        const xml = this.wasm.powl_to_yawl_string((params.powl_string as string)!);
         return { handle: `yawl_${Date.now()}`, ...parseWasmOutput<any>(xml) };
       }
 
@@ -1292,9 +1508,33 @@ export class Kernel {
         }
         const queryJson = (params.query_json as string) ?? JSON.stringify(params.query ?? {});
         const res = this.wasm.query_provenance_traversal(eventLogHandle, queryJson);
+        const provenanceRaw = JSON.parse(res);
+        // Validate provenance traversal result — must have a paths array.
+        const provenanceSchema = z.object({
+          paths: z.array(
+            z.array(
+              z.object({
+                type: z.enum(['object', 'event']),
+                id: z.string(),
+                object_type: z.string().optional(),
+                event_type: z.string().optional(),
+              })
+            )
+          ),
+        });
+        const provenanceValidation = provenanceSchema.safeParse(provenanceRaw);
+        if (!provenanceValidation.success) {
+          const issues = provenanceValidation.error.issues
+            .map((i) => `${i.path.join('.')}: ${i.message}`)
+            .join('; ');
+          throw new KernelError(
+            `WASM provenance_traversal output validation failed: ${issues}`,
+            'SOURCE_ERROR' as any
+          );
+        }
         return {
           handle: `provenance_${Date.now()}`,
-          metadata: { result: JSON.parse(res) }
+          metadata: { result: provenanceValidation.data }
         } as any;
       }
 
@@ -1333,14 +1573,14 @@ export class Kernel {
         const fn = this.wasm.discover_oc_declare_wasm;
         if (!fn) throw new KernelError('discover_oc_declare_wasm is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         const thresh = (params.noise_threshold as number) ?? 0.1;
-        await fn.call(this.wasm, eventLogHandle, thresh);
+        fn.call(this.wasm, eventLogHandle, thresh);
         return { handle: `ocel_oc_declare_${Date.now()}` };
       }
 
       case 'ocel_encode': {
         const fn = this.wasm.encode_ocel_as_text;
         if (!fn) throw new KernelError('encode_ocel_as_text is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
-        await fn.call(this.wasm, eventLogHandle);
+        fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_encode_${Date.now()}` };
       }
 
@@ -1596,6 +1836,17 @@ function storeDfgDiscoveryResult(wasm: KernelWasmModule, dfgJson: unknown): Reco
 
   if (parsed && typeof parsed === 'object') {
     if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+      // Validate DFG structure at the WASM output boundary.
+      const dfgValidation = DFGSchema.safeParse(parsed);
+      if (!dfgValidation.success) {
+        const issues = dfgValidation.error.issues
+          .map((i) => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
+        throw new KernelError(
+          `WASM DFG output validation failed: ${issues}`,
+          'SOURCE_ERROR' as any
+        );
+      }
       return { ...parsed, handle };
     }
     const nodes =

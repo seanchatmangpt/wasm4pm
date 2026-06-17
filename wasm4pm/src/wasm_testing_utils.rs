@@ -384,6 +384,7 @@ fn run_discovery_algorithm(
             let js_val = crate::discovery::discover_dfg(handle, activity_key)?;
             serde_wasm_bindgen::from_value(js_val).map_err(|e| JsValue::from_str(&e.to_string()))
         }
+        #[cfg(feature = "discovery_advanced")]
         "im" | "inductive" => {
             let js_val = crate::more_discovery::discover_inductive_miner(handle, activity_key)?;
             serde_wasm_bindgen::from_value(js_val).map_err(|e| JsValue::from_str(&e.to_string()))

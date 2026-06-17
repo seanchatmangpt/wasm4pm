@@ -27,7 +27,7 @@ interface Envelope { command: string; status: 'ok' | 'error'; exit_code: number;
 interface Env { tempDir: string; xesPath: string; cleanup: () => void; }
 
 function runCli(args: string[], opts: { cwd?: string; timeoutMs?: number } = {}): Promise<CliResult> {
-  const { cwd = path.resolve(__dirname, '../..'), timeoutMs = 30000 } = opts;
+  const { cwd = os.tmpdir(), timeoutMs = 30000 } = opts;
   return new Promise((resolve) => {
     const child = execFile(
       process.execPath,
@@ -219,8 +219,10 @@ describe('JTBD-C: Discovery and analysis commands', () => {
       expect(p['status']).toBe('success');
       expect(typeof p['algorithm']).toBe('string');
       const model = p['model'] as Record<string, unknown>;
-      expect(typeof model['nodes']).toBe('number');
-      expect((model['nodes'] as number)).toBeGreaterThan(0);
+      const nodesVal = model['nodes'];
+      const nodesCount = Array.isArray(nodesVal) ? nodesVal.length : (nodesVal as number);
+      expect(typeof nodesVal === 'number' || Array.isArray(nodesVal)).toBe(true);
+      expect(nodesCount).toBeGreaterThan(0);
       expect(Array.isArray(model['edges']) || typeof model['edges'] === 'number').toBe(true);
     } else {
       // WASM unavailable — must still return a structured error, not a crash

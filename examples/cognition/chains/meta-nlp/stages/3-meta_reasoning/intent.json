@@ -1,0 +1,26 @@
+{
+  "intent": "arbitrate with h2 ebd1649d",
+  "facts": [
+    {
+      "key": "breed:mycin:conclusion",
+      "value": "therapy=ebd1649d"
+    },
+    {
+      "key": "breed:mycin:confidence",
+      "value": "0.9"
+    },
+    {
+      "key": "breed:prolog:conclusion",
+      "value": "therapy=none"
+    },
+    {
+      "key": "breed:prolog:confidence",
+      "value": "0.4"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

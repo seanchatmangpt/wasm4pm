@@ -577,6 +577,32 @@ pub fn xes_format_info() -> String {
 }
 
 // ============================================================================
+// GZ DECOMPRESSION ENTRY POINT
+// ============================================================================
+
+/// Accept raw bytes, auto-detect gzip (magic bytes 0x1f 0x8b), decompress if
+/// needed, then delegate to the string-based `load_eventlog_from_xes` parser.
+///
+/// This allows callers to pass either a plain `.xes` file or a `.xes.gz` file
+/// without knowing ahead of time which format it is.
+#[wasm_bindgen]
+pub fn load_eventlog_from_xes_gz(bytes: &[u8]) -> Result<String, JsValue> {
+    use std::io::Read;
+    let content = if bytes.len() >= 2 && bytes[0] == 0x1f && bytes[1] == 0x8b {
+        let mut decoder = flate2::read::GzDecoder::new(bytes);
+        let mut s = String::new();
+        decoder
+            .read_to_string(&mut s)
+            .map_err(|e| crate::error::js_val(&format!("gz decompress failed: {}", e)))?;
+        s
+    } else {
+        // Plain UTF-8 XES — no decompression needed
+        String::from_utf8_lossy(bytes).into_owned()
+    };
+    load_eventlog_from_xes(&content)
+}
+
+// ============================================================================
 // INLINE UNIT TESTS: XES Strict Validation
 // ============================================================================
 

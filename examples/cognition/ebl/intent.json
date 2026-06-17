@@ -1,0 +1,42 @@
+{
+  "intent": "learn",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "has_handle(obj1)",
+      "value": "true"
+    },
+    {
+      "key": "concave(obj1)",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r1",
+      "premise": [
+        "cup(?x)"
+      ],
+      "conclusion": "drinkable(?x)",
+      "certainty": 1.0
+    },
+    {
+      "id": "r2",
+      "premise": [
+        "has_handle(?y)",
+        "concave(?y)"
+      ],
+      "conclusion": "cup(?y)",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "drinkable(obj1)",
+      "value": "true"
+    }
+  ],
+  "state": []
+}

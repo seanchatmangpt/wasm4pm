@@ -1,0 +1,34 @@
+{
+  "intent": "vacuum world contingent plan",
+  "facts": [
+    {
+      "key": "cp:unknown",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:goal:dirt",
+      "value": "false"
+    },
+    {
+      "key": "cp:act:suck:pre",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:act:suck:del",
+      "value": "dirt"
+    },
+    {
+      "key": "cp:sense:check-dirt",
+      "value": "dirt"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "construction_grammar:391261ee6ea3b91fe9b5afcf2ae2b7aadedbbb6d468f555c5a713fdbc12f7772"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

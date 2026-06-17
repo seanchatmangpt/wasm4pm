@@ -1,0 +1,22 @@
+{
+  "intent": "learning",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "vs:attrs",
+      "value": "Color"
+    },
+    {
+      "key": "vs:example:1",
+      "value": "Red:+"
+    },
+    {
+      "key": "vs:example:2",
+      "value": "Blue:-"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

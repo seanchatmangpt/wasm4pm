@@ -1,0 +1,87 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ebl",
+    "breed": "ebl",
+    "status": "ok",
+    "output": {
+      "breed": "Ebl",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "has_handle(obj1)",
+          "value": "true"
+        },
+        {
+          "key": "concave(obj1)",
+          "value": "true"
+        },
+        {
+          "key": "ebl:rule",
+          "value": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)"
+        }
+      ],
+      "selected": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)",
+      "explanation": "EBL operationalized a new rule from the proof of drinkable(obj1)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "ebl-explain",
+          "detail": "fact: has_handle(obj1)",
+          "depth": 30
+        },
+        {
+          "step": 1,
+          "kind": "ebl-explain",
+          "detail": "fact: concave(obj1)",
+          "depth": 30
+        },
+        {
+          "step": 2,
+          "kind": "ebl-explain",
+          "detail": "rule: r2",
+          "depth": 31
+        },
+        {
+          "step": 3,
+          "kind": "ebl-explain",
+          "detail": "rule: r1",
+          "depth": 32
+        },
+        {
+          "step": 4,
+          "kind": "ebl-generalize",
+          "detail": "rule: r1",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "ebl-generalize",
+          "detail": "rule: r2",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "ebl-operationalize",
+          "detail": "has_handle(?y_g1), concave(?y_g1) => drinkable(?y_g1)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9129185e22f5627dfe36ab27ea2c03e6109e51c80e9e1914862d7bdda1dd3d32",
+    "output_hash": "c500fe22e557ecd0c16bf966cfe676437953b4e7ea7daa4a0f70a4181d8b0961",
+    "replay_pointer": "c500fe22e557ecd0",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/ebl/.wasm4pm/receipts/9129185e22f5627dfe36ab27ea2c03e6109e51c80e9e1914862d7bdda1dd3d32.json"
+  },
+  "meta": {
+    "run_id": "dc04544b-0aab-449c-b1ca-25df2fceada3",
+    "timestamp": "2026-06-11T18:43:44.754Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

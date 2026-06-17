@@ -371,10 +371,13 @@ impl AutoMLEngine {
     }
 
     /// Automated algorithm selection using cross-validation (with DX improvements)
-    pub fn select_algorithm(&self, x: &[Vec<f64>], y: &[f64]) -> AutoMLResult {
+    pub fn select_algorithm(&self, x: &[Vec<f64>], y: &[f64]) -> Result<AutoMLResult, MlError> {
         // Validate input first
         if let Err(e) = self.validate_input(x, y) {
-            panic!("AutoML input validation failed: {}", e);
+            return Err(MlError::new(format!(
+                "AutoML input validation failed: {}",
+                e
+            )));
         }
 
         self.emit_progress(ProgressStage::Initializing, 0, 1);
@@ -433,7 +436,7 @@ impl AutoMLEngine {
 
         self.emit_progress(ProgressStage::Complete, total, total);
 
-        AutoMLResult {
+        Ok(AutoMLResult {
             best_algorithm: best_algorithm_name,
             best_score,
             evaluations: algorithm_scores.len(),
@@ -443,7 +446,7 @@ impl AutoMLEngine {
             original_features: x[0].len(),
             feature_selection_performed: false,
             problem_type: problem_type.to_string(),
-        }
+        })
     }
 
     fn evaluate_algorithm_cv(&self, algorithm: AlgorithmType, x: &[Vec<f64>], y: &[f64]) -> f64 {
@@ -649,10 +652,13 @@ impl AutoMLEngine {
     }
 
     /// Full AutoML pipeline (with DX improvements)
-    pub fn optimize_pipeline(&self, x: &[Vec<f64>], y: &[f64]) -> AutoMLResult {
+    pub fn optimize_pipeline(&self, x: &[Vec<f64>], y: &[f64]) -> Result<AutoMLResult, MlError> {
         // Validate input first
         if let Err(e) = self.validate_input(x, y) {
-            panic!("AutoML input validation failed: {}", e);
+            return Err(MlError::new(format!(
+                "AutoML input validation failed: {}",
+                e
+            )));
         }
 
         let original_features = x[0].len();
@@ -676,7 +682,7 @@ impl AutoMLEngine {
 
         // Step 3: Algorithm selection
         self.emit_progress(ProgressStage::PipelineOptimization, 1, 2);
-        let mut result = self.select_algorithm(&subset_x, y);
+        let mut result = self.select_algorithm(&subset_x, y)?;
 
         // Update result with feature selection info
         result.selected_features = selected_features;
@@ -685,14 +691,22 @@ impl AutoMLEngine {
 
         self.emit_progress(ProgressStage::Complete, 2, 2);
 
-        result
+        Ok(result)
     }
 }
 
-/// One-liner AutoML: The simplest way to get started
-pub fn auto_fit(x: &[Vec<f64>], y: &[f64]) -> AutoMLResult {
+/// One-liner AutoML: The simplest way to get started.
+/// x_json: JSON array of arrays (Vec<Vec<f64>>), y_json: JSON array of f64
+#[wasm_bindgen]
+pub fn auto_fit(x_json: &str, y_json: &str) -> Result<AutoMLResult, JsValue> {
+    let x: Vec<Vec<f64>> = serde_json::from_str(x_json)
+        .map_err(|e| JsValue::from_str(&format!("x parse error: {e}")))?;
+    let y: Vec<f64> = serde_json::from_str(y_json)
+        .map_err(|e| JsValue::from_str(&format!("y parse error: {e}")))?;
     let engine = AutoMLEngine::new(AutoMLOptions::default());
-    engine.optimize_pipeline(x, y)
+    engine
+        .optimize_pipeline(&x, &y)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// PSO-based hyperparameter optimization
@@ -1006,7 +1020,7 @@ fn train_algorithm(
 
     // Create a simple AutoML result
     let engine = AutoMLEngine::new(AutoMLOptions::default());
-    let result = engine.select_algorithm(&x_matrix, targets);
+    let result = engine.select_algorithm(&x_matrix, targets)?;
     Ok(result)
 }
 
@@ -1017,7 +1031,7 @@ pub fn auto_fit_regression(
     y: &[f64],
     n_samples: usize,
     n_features: usize,
-) -> AutoMLResult {
+) -> Result<AutoMLResult, JsValue> {
     let mut x_matrix = Vec::with_capacity(n_samples);
     for i in 0..n_samples {
         let start = i * n_features;
@@ -1026,7 +1040,9 @@ pub fn auto_fit_regression(
     }
 
     let engine = AutoMLEngine::new(AutoMLOptions::default());
-    engine.optimize_pipeline(&x_matrix, y)
+    engine
+        .optimize_pipeline(&x_matrix, y)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Convenience function: automated classification
@@ -1036,7 +1052,7 @@ pub fn auto_fit_classification(
     y: &[f64],
     n_samples: usize,
     n_features: usize,
-) -> AutoMLResult {
+) -> Result<AutoMLResult, JsValue> {
     let mut x_matrix = Vec::with_capacity(n_samples);
     for i in 0..n_samples {
         let start = i * n_features;
@@ -1045,7 +1061,9 @@ pub fn auto_fit_classification(
     }
 
     let engine = AutoMLEngine::new(AutoMLOptions::default());
-    engine.optimize_pipeline(&x_matrix, y)
+    engine
+        .optimize_pipeline(&x_matrix, y)
+        .map_err(|e| JsValue::from_str(&e.to_string()))
 }
 
 /// Get algorithm recommendation based on data characteristics
@@ -1236,7 +1254,7 @@ mod tests {
         let x: Vec<Vec<f64>> = (1..=10).map(|i| vec![i as f64, (i + 1) as f64]).collect();
         let y: Vec<f64> = (1..=10).map(|i| 2.0 * i as f64 + 1.0).collect();
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         assert_eq!(result.evaluations, 2); // Linear + Polynomial
         assert!(result.best_score > 0.0);
@@ -1280,7 +1298,7 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = auto_fit_regression(&x_flat, &y, 5, 2);
+        let result = auto_fit_regression(&x_flat, &y, 5, 2).unwrap();
 
         // Early stopping may reduce evaluations
         assert!(result.evaluations >= 1 && result.evaluations <= 2);
@@ -1298,7 +1316,9 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = auto_fit(&x, &y);
+        let x_json = serde_json::to_string(&x).unwrap();
+        let y_json = serde_json::to_string(&y).unwrap();
+        let result = auto_fit(&x_json, &y_json).unwrap();
 
         assert!(!result.best_algorithm.is_empty());
         assert!(result.best_score >= 0.0);
@@ -1317,7 +1337,9 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = auto_fit(&x, &y);
+        let x_json = serde_json::to_string(&x).unwrap();
+        let y_json = serde_json::to_string(&y).unwrap();
+        let result = auto_fit(&x_json, &y_json).unwrap();
         let summary = result.summary();
 
         assert!(summary.contains("AutoML Results"));
@@ -1336,7 +1358,9 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = auto_fit(&x, &y);
+        let x_json = serde_json::to_string(&x).unwrap();
+        let y_json = serde_json::to_string(&y).unwrap();
+        let result = auto_fit(&x_json, &y_json).unwrap();
 
         // Should be able to look up scores
         if let Some(score) = result.algorithm_score("LinearRegression") {
@@ -1403,7 +1427,7 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = engine.optimize_pipeline(&x, &y);
+        let result = engine.optimize_pipeline(&x, &y).unwrap();
 
         // Should have a rationale
         assert!(!result.rationale.is_empty());
@@ -1427,7 +1451,7 @@ mod tests {
         ];
         let y = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let result = engine.optimize_pipeline(&x, &y);
+        let result = engine.optimize_pipeline(&x, &y).unwrap();
 
         assert_eq!(result.original_features, 3);
         assert!(result.selected_features.len() <= result.original_features);
@@ -1457,7 +1481,7 @@ mod tests {
         ];
         let y = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         assert_eq!(result.problem_type, "classification");
         assert!(
@@ -1475,7 +1499,7 @@ mod tests {
         let x: Vec<Vec<f64>> = (1..=15).map(|i| vec![i as f64]).collect();
         let y: Vec<f64> = (1..=15).map(|i| 3.0 * i as f64 + 2.0).collect();
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         assert_eq!(result.problem_type, "regression");
         assert!(
@@ -1517,7 +1541,7 @@ mod tests {
             1.0, 1.0, 1.0,
         ];
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         let scores: Vec<f64> = result
             .algorithm_scores
@@ -1542,7 +1566,7 @@ mod tests {
         let x: Vec<Vec<f64>> = (1..=15).map(|i| vec![i as f64, (i as f64) * 0.5]).collect();
         let y: Vec<f64> = (1..=15).map(|i| 2.0 * i as f64 + 1.0).collect();
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         assert_eq!(
             result.evaluations, 2,
@@ -1563,13 +1587,13 @@ mod tests {
         let y_cls = vec![
             0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0,
         ];
-        let result_cls = engine.select_algorithm(&x, &y_cls);
+        let result_cls = engine.select_algorithm(&x, &y_cls).unwrap();
         assert_eq!(result_cls.problem_type, "classification");
         assert_eq!(result_cls.evaluations, 5);
 
         // Regression: continuous labels
         let y_reg: Vec<f64> = (1..=15).map(|i| 2.5 * i as f64 + 0.3).collect();
-        let result_reg = engine.select_algorithm(&x, &y_reg);
+        let result_reg = engine.select_algorithm(&x, &y_reg).unwrap();
         assert_eq!(result_reg.problem_type, "regression");
         assert_eq!(result_reg.evaluations, 2);
     }
@@ -1586,12 +1610,12 @@ mod tests {
         let mut opts_5 = AutoMLOptions::default();
         opts_5.cv_folds = 5;
         let engine_5 = AutoMLEngine::new(opts_5).with_early_stopping(false);
-        let result_5 = engine_5.select_algorithm(&x, &y);
+        let result_5 = engine_5.select_algorithm(&x, &y).unwrap();
 
         let mut opts_2 = AutoMLOptions::default();
         opts_2.cv_folds = 2;
         let engine_2 = AutoMLEngine::new(opts_2).with_early_stopping(false);
-        let result_2 = engine_2.select_algorithm(&x, &y);
+        let result_2 = engine_2.select_algorithm(&x, &y).unwrap();
 
         assert_ne!(
             result_5.best_score, result_2.best_score,
@@ -1608,7 +1632,7 @@ mod tests {
         let x: Vec<Vec<f64>> = (1..=20).map(|i| vec![i as f64]).collect();
         let y: Vec<f64> = (1..=20).map(|i| (i as f64).powi(2)).collect();
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         assert!(
             result.best_score >= 0.5,
@@ -1625,7 +1649,7 @@ mod tests {
         let x: Vec<Vec<f64>> = (1..=15).map(|i| vec![i as f64]).collect();
         let y: Vec<f64> = (1..=15).map(|i| 0.5 * (i as f64).powi(2)).collect();
 
-        let result = engine.select_algorithm(&x, &y);
+        let result = engine.select_algorithm(&x, &y).unwrap();
 
         let lin_score = result.algorithm_score("LinearRegression");
         let poly_score = result.algorithm_score("PolynomialRegression");

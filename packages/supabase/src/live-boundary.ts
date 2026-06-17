@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { z } from 'zod';
 import { hashJsonString } from '@wasm4pm/contracts';
 import {
   assertSupabaseResponse,
@@ -19,44 +20,68 @@ export const DEFAULT_RUNTIME_RECEIPT_PATH = '.wasm4pm/receipts/supabase_runtime.
 
 export type SupabaseDoctorStatus = 'prepublish_only' | 'configured' | 'live_verified';
 
-export interface SupabaseLiveCheckResults {
-  command_receipt_upsert: boolean;
-  command_receipt_read: boolean;
-  deadletter_write: boolean;
-  edge_function_ingest: boolean;
-}
+// ---------------------------------------------------------------------------
+// SupabaseLiveCheckResults
+// ---------------------------------------------------------------------------
 
-export interface SupabaseRuntimeReceipt {
-  kind: 'supabase_runtime_receipt';
-  status: 'live_verified';
-  boundary: 'supabase';
-  package_version: string;
-  git_commit?: string;
-  supabase_host: string;
-  probe_run_id: string;
-  checks: SupabaseLiveCheckResults;
-  verified_at: string;
-  receipt_hash: string;
-}
+export const SupabaseLiveCheckResultsSchema = z.object({
+  command_receipt_upsert: z.boolean(),
+  command_receipt_read: z.boolean(),
+  deadletter_write: z.boolean(),
+  edge_function_ingest: z.boolean(),
+});
 
-export interface SupabaseLiveVerificationResult {
-  checks: SupabaseLiveCheckResults;
-  probeRunId: string;
-  runtimeReceipt: SupabaseRuntimeReceipt;
-}
+export type SupabaseLiveCheckResults = z.infer<typeof SupabaseLiveCheckResultsSchema>;
 
-export interface SupabaseDoctorReport {
-  status: SupabaseDoctorStatus;
-  reachable: boolean;
-  migrationsApplied: boolean;
-  serviceRoleConfigured: boolean;
-  runtimeReceiptPresent: boolean;
-  runtimeReceiptValid: boolean;
-  commandReceiptsTable: string;
-  truexEnvelopesTable: string;
-  runtimeReceiptPath: string;
-  message: string;
-}
+// ---------------------------------------------------------------------------
+// SupabaseRuntimeReceipt
+// ---------------------------------------------------------------------------
+
+export const SupabaseRuntimeReceiptSchema = z.object({
+  kind: z.literal('supabase_runtime_receipt'),
+  status: z.literal('live_verified'),
+  boundary: z.literal('supabase'),
+  package_version: z.string(),
+  git_commit: z.string().optional(),
+  supabase_host: z.string(),
+  probe_run_id: z.string(),
+  checks: SupabaseLiveCheckResultsSchema,
+  verified_at: z.string(),
+  receipt_hash: z.string(),
+});
+
+export type SupabaseRuntimeReceipt = z.infer<typeof SupabaseRuntimeReceiptSchema>;
+
+// ---------------------------------------------------------------------------
+// SupabaseLiveVerificationResult
+// ---------------------------------------------------------------------------
+
+export const SupabaseLiveVerificationResultSchema = z.object({
+  checks: SupabaseLiveCheckResultsSchema,
+  probeRunId: z.string(),
+  runtimeReceipt: SupabaseRuntimeReceiptSchema,
+});
+
+export type SupabaseLiveVerificationResult = z.infer<typeof SupabaseLiveVerificationResultSchema>;
+
+// ---------------------------------------------------------------------------
+// SupabaseDoctorReport
+// ---------------------------------------------------------------------------
+
+export const SupabaseDoctorReportSchema = z.object({
+  status: z.enum(['prepublish_only', 'configured', 'live_verified']),
+  reachable: z.boolean(),
+  migrationsApplied: z.boolean(),
+  serviceRoleConfigured: z.boolean(),
+  runtimeReceiptPresent: z.boolean(),
+  runtimeReceiptValid: z.boolean(),
+  commandReceiptsTable: z.string(),
+  truexEnvelopesTable: z.string(),
+  runtimeReceiptPath: z.string(),
+  message: z.string(),
+});
+
+export type SupabaseDoctorReport = z.infer<typeof SupabaseDoctorReportSchema>;
 
 function supabaseHost(url: string): string {
   try {

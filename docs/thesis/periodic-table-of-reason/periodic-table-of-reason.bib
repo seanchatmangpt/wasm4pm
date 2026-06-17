@@ -1,0 +1,441 @@
+%% Bibliography for The Periodic Table of Reason
+%% Autonomic Research Division — wasm4pm Ecosystem
+%% Group A: Process mining canon (keys match usage in chapter files)
+%% Group B: Classical AI, category theory, cryptography, probability
+%% Group C: Own prior work
+
+%% ── Group A: Process Mining Canon ───────────────────────────────────────────
+
+@book{vanderaalst2016,
+  author    = {van der Aalst, Wil M. P.},
+  title     = {Process Mining: Data Science in Action},
+  publisher = {Springer},
+  year      = {2016},
+  edition   = {2nd},
+  doi       = {10.1007/978-3-662-49851-4},
+  note      = {The definitive text on process mining. Introduces alignment-based
+               conformance checking, discovery algorithms, and the Process Mining
+               Manifesto. Second edition adds predictive and prescriptive mining.}
+}
+
+@phdthesis{adriansyah2014aligning,
+  author  = {Adriansyah, Arya},
+  title   = {Aligning Observed and Modeled Behavior},
+  school  = {Technische Universiteit Eindhoven},
+  year    = {2014},
+  type    = {{PhD} thesis},
+  doi     = {10.6100/IR770080},
+  note    = {Full formal treatment of alignment-based conformance checking.
+             Defines the alignment cost function used in Definition~4.2 of
+             this dissertation. 252 pages.}
+}
+
+@inproceedings{leemans2013discovering,
+  author    = {Leemans, Sander J. J. and Fahland, Dirk and van der Aalst, Wil M. P.},
+  title     = {Discovering Block-Structured Process Models from Event Logs ---
+               A Constructive Approach},
+  booktitle = {Application and Theory of Petri Nets and Concurrency (Petri Nets 2013)},
+  series    = {Lecture Notes in Computer Science},
+  volume    = {7927},
+  pages     = {311--329},
+  publisher = {Springer},
+  year      = {2013},
+  doi       = {10.1007/978-3-642-38697-8_17},
+  note      = {The Inductive Miner algorithm. Guarantees fitness $\geq 0.5$
+               and soundness of discovered models. Used in Proposition~4.1.}
+}
+
+@misc{ocel2standard,
+  author        = {Berti, Alessandro and Koren, Isabelle and Adams, Jan Niklas
+                   and Park, Gyunam and others},
+  title         = {{OCEL} 2.0 Specification},
+  howpublished  = {arXiv:2403.01975v1 [cs.DB]},
+  year          = {2024},
+  url           = {https://arxiv.org/abs/2403.01975},
+  note          = {Adds O2O relationships, dynamic object attributes, and three
+                   exchange formats: SQLite, XML, JSON. Foundation of
+                   Definition~4.1.}
+}
+
+@inproceedings{kusters2025ocpq,
+  author    = {K{\"u}sters, Aaron and van der Aalst, Wil M. P.},
+  title     = {{OCPQ}: Object-Centric Process Querying \& Constraints},
+  booktitle = {19th International Conference on Research Challenges in
+               Information Science (RCIS 2025)},
+  year      = {2025},
+  note      = {arXiv:2506.11541. Formal Definitions~1--9 for OCPQ query tree
+               semantics over object-centric event logs.}
+}
+
+@phdthesis{petri1962,
+  author  = {Petri, Carl Adam},
+  title   = {Kommunikation mit Automaten},
+  school  = {Universit{\"a}t Hamburg},
+  year    = {1962},
+  note    = {Original Petri net formalism. Foundation of workflow-net soundness
+             and all OCPN constructions in Chapter~4.}
+}
+
+@book{vanderaalst2011,
+  author    = {van der Aalst, Wil M. P.},
+  title     = {Process Mining: Discovery, Conformance and Enhancement of
+               Business Processes},
+  publisher = {Springer},
+  year      = {2011},
+  edition   = {1st},
+  doi       = {10.1007/978-3-642-19345-3},
+  note      = {First edition. Introduces WF-net soundness criteria and the
+               $\alpha$-algorithm. Foundational for Chapters~4 and~7.}
+}
+
+%% ── Group B: Classical AI Architectures ─────────────────────────────────────
+
+@book{shortliffe1976,
+  author    = {Shortliffe, Edward H.},
+  title     = {Computer-Based Medical Consultations: {MYCIN}},
+  publisher = {Elsevier / American Elsevier},
+  year      = {1976},
+  address   = {New York},
+  note      = {Original MYCIN monograph. Defines the Certainty Factor calculus
+               and the threshold $\tau = 0.2$ used in the unfakeable oracle
+               (Theorem~3.1, clause~(i)). Shortliffe's PhD dissertation at
+               Stanford.}
+}
+
+@article{laird1987soar,
+  author  = {Laird, John E. and Newell, Allen and Rosenbloom, Paul S.},
+  title   = {{SOAR}: An Architecture for General Intelligence},
+  journal = {Artificial Intelligence},
+  volume  = {33},
+  number  = {1},
+  pages   = {1--64},
+  year    = {1987},
+  doi     = {10.1016/0004-3702(87)90050-6},
+  note    = {Introduces impasse-driven subgoaling and chunking. Foundational
+             for the \textsc{soar} breed antisymmetry proof (Theorem~3.1,
+             clause~(iv)) and the epistemological space vector.}
+}
+
+@article{erman1980hearsay,
+  author  = {Erman, Lee D. and Hayes-Roth, Frederick and Lesser, Victor R.
+             and Reddy, D. Raj},
+  title   = {The {Hearsay-II} Speech-Understanding System: Integrating
+             Knowledge to Resolve Uncertainty},
+  journal = {ACM Computing Surveys},
+  volume  = {12},
+  number  = {2},
+  pages   = {213--253},
+  year    = {1980},
+  doi     = {10.1145/356810.356816},
+  note    = {Defines the blackboard architecture and KSAR opportunistic
+             scheduling used in the \textsc{hearsay} breed
+             (Theorem~3.1, clause~(vi)).}
+}
+
+@incollection{feigenbaum1971dendral,
+  author    = {Feigenbaum, Edward A. and Buchanan, Bruce G. and Lederberg, Joshua},
+  title     = {On Generality and Problem Solving: A Case Study Using the
+               {DENDRAL} Program},
+  booktitle = {Machine Intelligence},
+  volume    = {6},
+  editor    = {Meltzer, B. and Michie, D.},
+  pages     = {165--190},
+  publisher = {Edinburgh University Press},
+  year      = {1971},
+  note      = {Constrained structure generation with forbid/require rules.
+               Foundation for the \textsc{dendral} breed (Theorem~3.1,
+               clause~(vii)).}
+}
+
+@article{aamodt1994cbr,
+  author  = {Aamodt, Agnar and Plaza, Enric},
+  title   = {Case-Based Reasoning: Foundational Issues, Methodological
+             Variations, and System Approaches},
+  journal = {AI Communications},
+  volume  = {7},
+  number  = {1},
+  pages   = {39--59},
+  year    = {1994},
+  note    = {Defines the Retrieve--Reuse--Revise--Retain cycle. Foundational
+             for the \textsc{cbr} breed Jaccard identity proof
+             (Theorem~3.1, clause~(v)).}
+}
+
+@article{robinson1965,
+  author  = {Robinson, J. Alan},
+  title   = {A Machine-Oriented Logic Based on the Resolution Principle},
+  journal = {Journal of the ACM},
+  volume  = {12},
+  number  = {1},
+  pages   = {23--41},
+  year    = {1965},
+  doi     = {10.1145/321250.321253},
+  note    = {Introduces Robinson unification (most general unifier) and SLD
+             resolution. Foundation for the \textsc{prolog} breed grandparent
+             derivation proof (Theorem~3.1, clause~(ii)).}
+}
+
+@article{fikes1971strips,
+  author  = {Fikes, Richard E. and Nilsson, Nils J.},
+  title   = {{STRIPS}: A New Approach to the Application of Theorem Proving
+             to Problem Solving},
+  journal = {Artificial Intelligence},
+  volume  = {2},
+  number  = {3--4},
+  pages   = {189--208},
+  year    = {1971},
+  doi     = {10.1016/0004-3702(71)90010-5},
+  note    = {Introduces the STRIPS planning formalism with closed-world
+             assumption, preconditions, and add/delete effects. Foundation
+             for the \textsc{strips} breed plan-soundness proof
+             (Theorem~3.1, clause~(iii)).}
+}
+
+@incollection{newell1963gps,
+  author    = {Newell, Allen and Simon, Herbert A.},
+  title     = {{GPS}, a Program that Simulates Human Thought},
+  booktitle = {Computers and Thought},
+  editor    = {Feigenbaum, Edward A. and Feldman, Julian},
+  pages     = {279--293},
+  publisher = {McGraw-Hill},
+  year      = {1963},
+  address   = {New York},
+  note      = {Introduces means-ends analysis and the difference-reduction
+               table. Foundation for the \textsc{gps} breed
+               (Theorem~3.1, clause~(viii)).}
+}
+
+@article{weizenbaum1966eliza,
+  author  = {Weizenbaum, Joseph},
+  title   = {{ELIZA}---A Computer Program for the Study of Natural Language
+             Communication Between Man and Machine},
+  journal = {Communications of the ACM},
+  volume  = {9},
+  number  = {1},
+  pages   = {36--45},
+  year    = {1966},
+  doi     = {10.1145/365153.365168},
+  note    = {Defines the keystack pattern-matching architecture with priority
+             scores. Foundation for the \textsc{eliza} breed
+             (Theorem~3.1, clause~(ix)).}
+}
+
+@inproceedings{kowalski1974prolog,
+  author    = {Kowalski, Robert},
+  title     = {Predicate Logic as a Programming Language},
+  booktitle = {Proceedings of the IFIP Congress 1974},
+  pages     = {569--574},
+  year      = {1974},
+  publisher = {North-Holland},
+  note      = {Introduces logic programming and establishes the procedural
+               interpretation of Horn clauses. Co-foundational with
+               Robinson~(1965) for the \textsc{prolog} breed.}
+}
+
+%% ── Group B: Epistemology ────────────────────────────────────────────────────
+
+@book{popper1959,
+  author    = {Popper, Karl R.},
+  title     = {The Logic of Scientific Discovery},
+  publisher = {Hutchinson},
+  year      = {1959},
+  address   = {London},
+  note      = {German original: \textit{Logik der Forschung}, 1934. Introduces
+               falsifiability as the demarcation criterion for scientific
+               theories. Foundational for Definitions~1.1--1.2 and the
+               epigraph of Chapter~3.}
+}
+
+@book{popper1963,
+  author    = {Popper, Karl R.},
+  title     = {Conjectures and Refutations: The Growth of Scientific Knowledge},
+  publisher = {Routledge and Kegan Paul},
+  year      = {1963},
+  address   = {London},
+  note      = {Extends falsifiability to the growth-of-knowledge framework.
+               Source of the Chapter~1 epigraph.}
+}
+
+%% ── Group B: Category Theory ─────────────────────────────────────────────────
+
+@book{maclane1971,
+  author    = {Mac Lane, Saunders},
+  title     = {Categories for the Working Mathematician},
+  publisher = {Springer},
+  year      = {1971},
+  series    = {Graduate Texts in Mathematics},
+  volume    = {5},
+  doi       = {10.1007/978-1-4757-4721-8},
+  note      = {The standard reference for category theory. The compact-open
+               topology (Chapter~2), Kleisli categories, and functors are
+               drawn from this source.}
+}
+
+@book{maclane1992sheaves,
+  author    = {Mac Lane, Saunders and Moerdijk, Ieke},
+  title     = {Sheaves in Geometry and Logic: A First Introduction to Topos Theory},
+  publisher = {Springer},
+  year      = {1992},
+  series    = {Universitext},
+  doi       = {10.1007/978-1-4612-0927-0},
+  note      = {Defines the sheaf condition (locality + gluing) used in
+               Proposition~7.1 (BVC as a sheaf over the pipeline graph).}
+}
+
+@article{moggi1991monads,
+  author  = {Moggi, Eugenio},
+  title   = {Notions of Computation and Monads},
+  journal = {Information and Computation},
+  volume  = {93},
+  number  = {1},
+  pages   = {55--92},
+  year    = {1991},
+  doi     = {10.1016/0890-5401(91)90052-4},
+  note    = {Introduces computational monads as a categorical framework for
+             effects. The writer monad over the free monoid of BLAKE3 digests
+             (Definition~9.3, Receipt Functor) is an instance of this
+             framework.}
+}
+
+%% ── Group B: Cryptography ─────────────────────────────────────────────────────
+
+@misc{blake3_2020,
+  author        = {O'Connor, Jack and Aumasson, Jean-Philippe and Neves, Samuel
+                   and Wilcox-O'Hearn, Zooko},
+  title         = {{BLAKE3}: One Function, Fast Everywhere},
+  howpublished  = {arXiv:2012.04616},
+  year          = {2020},
+  url           = {https://github.com/BLAKE3-team/BLAKE3-specs/blob/master/blake3.pdf},
+  note          = {Design and security analysis of BLAKE3. Describes the ARX
+                   permutation, Merkle tree structure, and collision resistance
+                   guarantees used in Definition~9.1 and Theorem~9.1.}
+}
+
+%% ── Group B: Probability Theory ──────────────────────────────────────────────
+
+@article{berry1941,
+  author  = {Berry, Andrew C.},
+  title   = {The Accuracy of the {Gaussian} Approximation to the Sum of
+             Independent Variates},
+  journal = {Transactions of the American Mathematical Society},
+  volume  = {49},
+  number  = {1},
+  pages   = {122--136},
+  year    = {1941},
+  doi     = {10.2307/1990053},
+  note    = {Establishes the rate $C/\sqrt{k}$ for the Kolmogorov--Smirnov
+             distance between empirical and Gaussian distributions. Used in
+             Theorem~8.1 (Berry-Esseen bound for Bayesian sensitivity analysis).}
+}
+
+@book{feller1968,
+  author    = {Feller, William},
+  title     = {An Introduction to Probability Theory and Its Applications},
+  volume    = {2},
+  publisher = {Wiley},
+  year      = {1968},
+  edition   = {2nd},
+  address   = {New York},
+  note      = {Standard graduate probability reference. Contains the
+               Berry-Esseen theorem in the form used in Theorem~8.1,
+               establishing the phase-transition latency bound $\tau^*_\varepsilon$.}
+}
+
+%% ── Group B: Machine Learning Theory ─────────────────────────────────────────
+
+@article{wolpert1997nfl,
+  author  = {Wolpert, David H. and Macready, William G.},
+  title   = {No Free Lunch Theorems for Optimization},
+  journal = {IEEE Transactions on Evolutionary Computation},
+  volume  = {1},
+  number  = {1},
+  pages   = {67--82},
+  year    = {1997},
+  doi     = {10.1109/4235.585893},
+  note    = {Proves that no finite set of structural checks over a wrapper
+             can certify the correctness of an arbitrary inner function.
+             Used in the No-Free-Lunch argument of Theorem~7.1 (Fourth
+             Constraint Necessity).}
+}
+
+%% ── Group C: Own Prior Work ───────────────────────────────────────────────────
+
+@techreport{chatman2025proofbound,
+  author      = {Chatman, Sean},
+  title       = {Proof-Bound Enterprise Change},
+  institution = {Autonomic Research Division},
+  year        = {2025},
+  note        = {Third in the \textit{wasm4pm} series.  Introduces the
+                 receipt monad, BLAKE3 chain continuity ($C_1$), and the
+                 causal completeness of input\_hash-covered receipts.
+                 File: \texttt{\textasciitilde/Documents/Papers/Proof-Bound
+                 Enterprise Change.pdf}.}
+}
+
+@techreport{chatman2025typesafe,
+  author      = {Chatman, Sean},
+  title       = {Type-Safe Process-Evidence Engineering},
+  institution = {Autonomic Research Division},
+  year        = {2025},
+  note        = {Companion to \cite{chatman2025proofbound}. Establishes the
+                 type-theoretic foundations for process evidence at the WASM
+                 boundary.  File: \texttt{\textasciitilde/Documents/Papers/
+                 Type-Safe Process-Evidence Engineering.pdf}.}
+}
+
+@book{goodenoughandgerhart1975,
+  author    = {Goodenough, John B. and Gerhart, Susan L.},
+  title     = {Toward a Theory of Test Data Selection},
+  booktitle = {Proceedings of the International Conference on Reliable Software},
+  year      = {1975},
+  publisher = {ACM},
+  pages     = {493--510},
+  note      = {Foundational paper on test adequacy criteria.}
+}
+
+@inproceedings{necula1997pcc,
+  author    = {Necula, George C.},
+  title     = {Proof-Carrying Code},
+  booktitle = {Proceedings of the 24th ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages (POPL)},
+  year      = {1997},
+  pages     = {106--119},
+  publisher = {ACM}
+}
+
+@article{leucker2009rv,
+  author    = {Leucker, Martin and Schallhart, Christian},
+  title     = {A Brief Account of Runtime Verification},
+  journal   = {Journal of Logic and Algebraic Programming},
+  volume    = {78},
+  number    = {5},
+  pages     = {293--303},
+  year      = {2009},
+  publisher = {Elsevier}
+}
+
+@inproceedings{moreau2013prov,
+  author    = {Moreau, Luc and Missier, Paolo and others},
+  title     = {{PROV-DM}: The {PROV} Data Model},
+  booktitle = {W3C Recommendation},
+  year      = {2013},
+  note      = {\url{https://www.w3.org/TR/prov-dm/}}
+}
+
+@techreport{webassembly2019,
+  author      = {{WebAssembly Community Group}},
+  title       = {{WebAssembly} Core Specification},
+  institution = {W3C},
+  year        = {2019},
+  note        = {Version 1.0. \url{https://webassembly.github.io/spec/core/}}
+}
+
+@article{schank1972,
+  author    = {Schank, Roger C.},
+  title     = {Conceptual Dependency: A Theory of Natural Language Understanding},
+  journal   = {Cognitive Psychology},
+  volume    = {3},
+  number    = {4},
+  pages     = {552--631},
+  year      = {1972},
+  note      = {Foundational CD theory paper; cited for ELIZA/autoinstinct-semantics breed provenance.}
+}

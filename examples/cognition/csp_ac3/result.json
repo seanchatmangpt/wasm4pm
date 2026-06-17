@@ -1,0 +1,83 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "csp_ac3",
+    "breed": "csp_ac3",
+    "status": "ok",
+    "output": {
+      "breed": "CspAc3",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "csp-var",
+          "value": "V1:R,G,B"
+        },
+        {
+          "key": "csp-var",
+          "value": "V2:R,G,B"
+        },
+        {
+          "key": "csp-constraint",
+          "value": "V1!=V2"
+        },
+        {
+          "key": "csp:assignment:V1",
+          "value": "B"
+        },
+        {
+          "key": "csp:assignment:V2",
+          "value": "G"
+        }
+      ],
+      "selected": "sat",
+      "explanation": "SAT: V1=B, V2=G",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "csp-init",
+          "detail": "vars=2 constraints=1",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "csp-assign",
+          "detail": "var=V1 val=B",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "csp-revise",
+          "detail": "x=V2 y=V1 pruned=1",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "csp-assign",
+          "detail": "var=V2 val=G",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "csp-verdict",
+          "detail": "satisfiable=true",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "af2cb29c52a12df073e1bb012ab516666b5118aac8a068b2d0d4f568feaaaa27",
+    "output_hash": "7ed2f98a659172145fc4a57fa79317ef66a451e3975e6b60da2f44ee0fd958a0",
+    "replay_pointer": "7ed2f98a65917214",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/csp_ac3/.wasm4pm/receipts/af2cb29c52a12df073e1bb012ab516666b5118aac8a068b2d0d4f568feaaaa27.json"
+  },
+  "meta": {
+    "run_id": "be685756-9745-4855-95cd-6b15e3a7b4a4",
+    "timestamp": "2026-06-11T18:43:42.628Z",
+    "duration_ms": 16,
+    "version": "26.6.10"
+  }
+}

@@ -1,0 +1,83 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "act_r",
+    "breed": "act_r",
+    "status": "ok",
+    "output": {
+      "breed": "ActR",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "retrieved",
+          "value": "fact34"
+        },
+        {
+          "key": "sum",
+          "value": "7"
+        }
+      ],
+      "selected": "fact34",
+      "explanation": "ACT-R ran 1 productions with activation-based retrieval (last retrieved: Some(\"fact34\"))",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-chunk",
+          "detail": "chunk 'fact34' B=0.500 (3 slots)",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "load-chunk",
+          "detail": "chunk 'fact35' B=0.300 (3 slots)",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "match-production",
+          "detail": "'p-retrieve-sum' matched (utility=0.900, 0 competitors)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "fire-production",
+          "detail": "fired 'p-retrieve-sum'",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "retrieval-request",
+          "detail": "pattern addend1=3",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "retrieve-chunk",
+          "detail": "retrieved 'fact34' A=1.0000 (tau=0.00)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "decision",
+          "detail": "1 productions fired; last retrieval: Some(\"fact34\")",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "4d9c3dbdad4dcdfb85c023e3db23b7526a51d95b94dd2d417fc906e3ec941f88",
+    "output_hash": "498890b04458408a36d1360b0d616bbed2d4fb85df8487e3e34818a3bc4242a2",
+    "replay_pointer": "498890b04458408a",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/4d9c3dbdad4dcdfb85c023e3db23b7526a51d95b94dd2d417fc906e3ec941f88.json"
+  },
+  "meta": {
+    "run_id": "adde9f72-1e96-4f61-972a-05eee4a25d8b",
+    "timestamp": "2026-06-11T19:56:01.911Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

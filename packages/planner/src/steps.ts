@@ -2,6 +2,8 @@
  * Execution plan steps for wasm4pm process mining pipeline
  */
 
+import { z } from 'zod';
+
 /**
  * Type of execution step
  */
@@ -92,34 +94,35 @@ export enum PlanStepType {
 /**
  * Execution plan step
  */
-export interface PlanStep {
+export const PlanStepSchema = z.object({
   /** Unique identifier for this step */
-  id: string;
+  id: z.string(),
 
   /** Type of step */
-  type: PlanStepType;
+  type: z.nativeEnum(PlanStepType),
 
   /** Human-readable description */
-  description: string;
+  description: z.string(),
 
   /** Whether this step must complete before proceeding */
-  required: boolean;
+  required: z.boolean(),
 
   /** Parameters for this step */
-  parameters: Record<string, unknown>;
+  parameters: z.record(z.unknown()),
 
   /** IDs of steps that must complete before this one */
-  dependsOn: string[];
+  dependsOn: z.array(z.string()),
 
   /** Whether this step can be parallelized with others */
-  parallelizable: boolean;
+  parallelizable: z.boolean(),
 
   /** Estimated execution time in milliseconds */
-  estimatedDurationMs?: number;
+  estimatedDurationMs: z.number().optional(),
 
   /** Memory estimate in MB */
-  estimatedMemoryMB?: number;
-}
+  estimatedMemoryMB: z.number().optional(),
+});
+export type PlanStep = z.infer<typeof PlanStepSchema>;
 
 /**
  * Creates a bootstrap step

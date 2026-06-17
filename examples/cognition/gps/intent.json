@@ -1,0 +1,65 @@
+{
+  "intent": "manufacture and deliver product from raw material to customer",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "op-machine",
+      "premise": [
+        "material-state=raw"
+      ],
+      "conclusion": "material-state=processed;!material-state=raw",
+      "certainty": 1.0
+    },
+    {
+      "id": "op-qc",
+      "premise": [
+        "material-state=processed",
+        "quality-checked=no"
+      ],
+      "conclusion": "quality-checked=yes;!quality-checked=no",
+      "certainty": 1.0
+    },
+    {
+      "id": "op-ship",
+      "premise": [
+        "location=warehouse",
+        "quality-checked=yes"
+      ],
+      "conclusion": "location=customer;!location=warehouse",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g-processed",
+      "predicate": "material-state",
+      "value": "processed"
+    },
+    {
+      "id": "g-qc",
+      "predicate": "quality-checked",
+      "value": "yes"
+    },
+    {
+      "id": "g-shipped",
+      "predicate": "location",
+      "value": "customer"
+    }
+  ],
+  "state": [
+    {
+      "predicate": "material-state",
+      "value": "raw"
+    },
+    {
+      "predicate": "location",
+      "value": "warehouse"
+    },
+    {
+      "predicate": "quality-checked",
+      "value": "no"
+    }
+  ]
+}

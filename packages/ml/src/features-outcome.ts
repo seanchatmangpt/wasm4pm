@@ -6,7 +6,26 @@
  * based on process characteristics and patterns.
  */
 
+import { z } from 'zod';
 import type { FeatureMatrix } from './types.js';
+
+// ---------------------------------------------------------------------------
+// OutcomeFeatures
+// ---------------------------------------------------------------------------
+
+export const OutcomeFeaturesSchema = z.object({
+  case_id: z.string(),
+  trace_length: z.number(),
+  elapsed_time: z.number(),
+  activity_frequencies: z.array(z.number()),
+  avg_inter_event_time: z.number(),
+  rework_ratio: z.number(),
+  cycle_count: z.number(),
+  resource_variance: z.number(),
+  unique_activities: z.number(),
+  /** Target label (success, failure, anomalous, normal, etc.) */
+  outcome: z.string().optional(),
+});
 
 /**
  * Outcome feature definition.
@@ -21,18 +40,7 @@ import type { FeatureMatrix } from './types.js';
  * - resource_variance: Diversity of resources handling the trace (0-1)
  * - unique_activities: Count of distinct activities in trace
  */
-export interface OutcomeFeatures {
-  case_id: string;
-  trace_length: number;
-  elapsed_time: number;
-  activity_frequencies: number[];
-  avg_inter_event_time: number;
-  rework_ratio: number;
-  cycle_count: number;
-  resource_variance: number;
-  unique_activities: number;
-  outcome?: string; // Target label (success, failure, anomalous, normal, etc.)
-}
+export type OutcomeFeatures = z.infer<typeof OutcomeFeaturesSchema>;
 
 /**
  * Extract features optimized for outcome prediction.
@@ -238,13 +246,16 @@ export function normalizeOutcomeFeatures(featureMatrix: FeatureMatrix): FeatureM
  * @param featureMatrix - Feature matrix with labels (outcomes)
  * @returns Array of feature quality objects
  */
-export interface OutcomeFeatureQualityMetric {
-  feature: string;
-  variance: number;
-  coverage: number;
-  classVariability: number;
-  quality: 'high' | 'medium' | 'low'; // Based on variance + class separability
-}
+export const OutcomeFeatureQualityMetricSchema = z.object({
+  feature: z.string(),
+  variance: z.number(),
+  coverage: z.number(),
+  classVariability: z.number(),
+  /** Based on variance + class separability */
+  quality: z.enum(['high', 'medium', 'low']),
+});
+
+export type OutcomeFeatureQualityMetric = z.infer<typeof OutcomeFeatureQualityMetricSchema>;
 
 export function assessOutcomeFeatureQuality(
   featureMatrix: FeatureMatrix

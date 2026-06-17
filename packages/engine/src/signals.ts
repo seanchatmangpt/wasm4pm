@@ -4,17 +4,20 @@
  * Integrates crash detection with engine lifecycle
  */
 
+import { z } from 'zod';
 import { Engine } from './engine.js';
 import { CrashDetector, AutonomicRecovery } from './crash-detector.js';
 import { CheckpointManager } from './checkpointing.js';
 import { ICheckpointStore } from './checkpoint-store.js';
 
-export interface SignalHandlerConfig {
-  runId: string;
-  checkpointStore?: ICheckpointStore;
-  lockDir?: string;
-  enabled?: boolean;
-}
+export const SignalHandlerConfigSchema = z.object({
+  runId: z.string(),
+  checkpointStore: z.unknown().optional() as z.ZodOptional<z.ZodType<ICheckpointStore>>,
+  lockDir: z.string().optional(),
+  enabled: z.boolean().optional(),
+});
+
+export type SignalHandlerConfig = z.infer<typeof SignalHandlerConfigSchema>;
 
 /**
  * Manages signal handlers and graceful shutdown for an engine

@@ -1,0 +1,43 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "triz",
+    "breed": "triz",
+    "status": "ok",
+    "output": {
+      "breed": "Triz",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "resolved_technical:weight:strength",
+          "value": "principles=40,26"
+        }
+      ],
+      "selected": "principles=40,26",
+      "explanation": "TRIZ evaluated 1 improving × 1 worsening features. Selected principles: Some(\"principles=40,26\")",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "technical-contradiction",
+          "detail": "matrix lookup: weight vs strength -> principles=40,26",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "24befd674bd07778993ed6415bac34016e074cc0880122886fc40e0c2f24afc0",
+    "output_hash": "7a50c54aaa369aa94a85b10faf5f4ee06650cb5cb5659e2b27d3cd25734dbc10",
+    "replay_pointer": "7a50c54aaa369aa9",
+    "inference_step_count": 1,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/24befd674bd07778993ed6415bac34016e074cc0880122886fc40e0c2f24afc0.json"
+  },
+  "meta": {
+    "run_id": "356404ae-6e02-4655-8f07-c6f036d8eafb",
+    "timestamp": "2026-06-11T19:56:22.589Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

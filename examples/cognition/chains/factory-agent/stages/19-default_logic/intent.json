@@ -1,0 +1,44 @@
+{
+  "intent": "does tweety fly",
+  "facts": [
+    {
+      "key": "obs:tweety",
+      "value": "penguin"
+    },
+    {
+      "key": "prior_stage_hash",
+      "value": "ctl_check:7c3d71e4256fff434079417f4563b99f6358c37bfff249432996b483a0cb4677"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_isa",
+      "premise": [
+        "penguin"
+      ],
+      "conclusion": "bird",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_penguin",
+      "premise": [
+        "penguin"
+      ],
+      "conclusion": "not_flies",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_birds_fly",
+      "premise": [
+        "bird",
+        "unless:not_flies"
+      ],
+      "conclusion": "flies",
+      "certainty": 0.9
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

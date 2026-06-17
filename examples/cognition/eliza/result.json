@@ -1,0 +1,74 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "eliza",
+    "breed": "eliza",
+    "status": "ok",
+    "output": {
+      "breed": "Eliza",
+      "candidates": [],
+      "facts": [],
+      "selected": "*",
+      "explanation": "Please go on.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "try-pattern",
+          "detail": "i am * because *",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "try-pattern",
+          "detail": "i feel *",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "try-pattern",
+          "detail": "i need *",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "try-pattern",
+          "detail": "i am *",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "try-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "match-pattern",
+          "detail": "*",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "bind-slot",
+          "detail": "${1}=i have been feeling overwhelmed lately. my mother keeps telling me i should be working harder, but i cannot seem to focus on anything. sometimes i think nobody really understands what i am going through.",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "143735be006dfbb8d60f8cf11efd9669d660363fea39b9ffbf5ba78a6ef01d83",
+    "output_hash": "132cb3675d95b5d2dc2e7a67606197c0c11e17eb5cd0a38d72f8d3a5e9565f71",
+    "replay_pointer": "132cb3675d95b5d2",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/eliza/.wasm4pm/receipts/143735be006dfbb8d60f8cf11efd9669d660363fea39b9ffbf5ba78a6ef01d83.json"
+  },
+  "meta": {
+    "run_id": "4f41f175-bba6-47f2-b002-cac73e61c99f",
+    "timestamp": "2026-06-11T19:27:22.207Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

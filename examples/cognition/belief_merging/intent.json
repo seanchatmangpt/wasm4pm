@@ -1,0 +1,34 @@
+{
+  "intent": "merge conflicting belief bases under sum aggregation",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "bm:atoms",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:1",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:2",
+      "value": "p,q"
+    },
+    {
+      "key": "bm:base:3",
+      "value": "-p,-q"
+    },
+    {
+      "key": "bm:ic",
+      "value": "true"
+    },
+    {
+      "key": "bm:operator",
+      "value": "sum"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

@@ -69,6 +69,8 @@
  * ```
  */
 
+import { z } from 'zod';
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 /** Maximum predicate arity (ARD FR-3). */
@@ -100,60 +102,76 @@ export const FeatureBit = {
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+const args8Schema = z.tuple([
+  z.number(), z.number(), z.number(), z.number(),
+  z.number(), z.number(), z.number(), z.number(),
+]);
+
 /** Atom8 JSON shape as expected by the WASM boundary. */
-export interface Atom8Json {
-  pred_id: number;
-  arity: number;
+export const Atom8JsonSchema = z.object({
+  pred_id: z.number(),
+  arity: z.number(),
   /** Always exactly 8 elements; positions ≥ arity are TERM_SENTINEL (0). */
-  args: [number, number, number, number, number, number, number, number];
-  binding_mask: number;
-}
+  args: args8Schema,
+  binding_mask: z.number(),
+});
+export type Atom8Json = z.infer<typeof Atom8JsonSchema>;
 
 /** Rule8 JSON shape as expected by the WASM boundary (`prolog8_query`). */
-export interface Rule8Json {
-  rule_id: { 0: number };
-  head: Atom8Json;
+export const Rule8JsonSchema = z.object({
+  rule_id: z.object({ 0: z.number() }),
+  head: Atom8JsonSchema,
   /** Always exactly 8 elements; elements ≥ body_len are sentinel atoms. */
-  body: [Atom8Json, Atom8Json, Atom8Json, Atom8Json, Atom8Json, Atom8Json, Atom8Json, Atom8Json];
-  body_len: number;
-  body_mask: number;
-  negation_mask: number;
-  builtin_mask: number;
-  var_count: number;
-  var_live_mask: number;
-  feature_mask: number;
-  proof_mask: number;
-  plan_id: { 0: number };
-}
-
-/** FactBlock JSON shape for a single predicate. */
-export interface FactBlockJson {
-  pred_id: number;
-  arity: number;
-  rows: FactRowJson[];
-}
+  body: z.tuple([
+    Atom8JsonSchema, Atom8JsonSchema, Atom8JsonSchema, Atom8JsonSchema,
+    Atom8JsonSchema, Atom8JsonSchema, Atom8JsonSchema, Atom8JsonSchema,
+  ]),
+  body_len: z.number(),
+  body_mask: z.number(),
+  negation_mask: z.number(),
+  builtin_mask: z.number(),
+  var_count: z.number(),
+  var_live_mask: z.number(),
+  feature_mask: z.number(),
+  proof_mask: z.number(),
+  plan_id: z.object({ 0: z.number() }),
+});
+export type Rule8Json = z.infer<typeof Rule8JsonSchema>;
 
 /** FactRow JSON shape. */
-export interface FactRowJson {
-  pred_id: number;
-  arity: number;
+export const FactRowJsonSchema = z.object({
+  pred_id: z.number(),
+  arity: z.number(),
   /** Exactly `arity` elements, all TermId ≥ 1 (constants). */
-  args: number[];
-  source_id: number;
-}
+  args: z.array(z.number()),
+  source_id: z.number(),
+});
+export type FactRowJson = z.infer<typeof FactRowJsonSchema>;
+
+/** FactBlock JSON shape for a single predicate. */
+export const FactBlockJsonSchema = z.object({
+  pred_id: z.number(),
+  arity: z.number(),
+  rows: z.array(FactRowJsonSchema),
+});
+export type FactBlockJson = z.infer<typeof FactBlockJsonSchema>;
 
 /** Predicate descriptor for a Prolog8 catalog. */
-export interface PredicateDescriptor {
-  label: string;
-  arity: number;
-  proofPolicy?: 'Always' | 'OnRequest' | 'Never';
-}
+export const PredicateDescriptorSchema = z.object({
+  label: z.string(),
+  arity: z.number(),
+  proofPolicy: z.enum(['Always', 'OnRequest', 'Never']).optional(),
+});
+export type PredicateDescriptor = z.infer<typeof PredicateDescriptorSchema>;
 
 /**
  * The intern table maps string labels to their assigned numeric TermIds.
  *
  * IDs are assigned deterministically starting at 1, in the order terms were
  * first seen by `internTerms()`. TermId 0 is reserved as sentinel.
+ *
+ * Note: Map<> is not directly representable in Zod; this interface is kept
+ * as a TypeScript-only construct (runtime Maps, not serialised).
  */
 export interface TermInternTable {
   /** term label → TermId (1-based, never 0) */
@@ -162,21 +180,24 @@ export interface TermInternTable {
   labelByTerm: Map<number, string>;
 }
 
+const PredicateEntrySchema = z.object({
+  pred_id: z.number(),
+  label: z.string(),
+  arity: z.number(),
+  proof_policy: z.string(),
+  materialized: z.boolean(),
+  access_orders: z.array(z.unknown()),
+});
+
 /** A compiled Prolog8 catalog ready to pass to `prolog8_query`. */
-export interface Prolog8Catalog {
-  catalog_id: number;
-  predicates: Record<string, {
-    pred_id: number;
-    label: string;
-    arity: number;
-    proof_policy: string;
-    materialized: boolean;
-    access_orders: unknown[];
-  }>;
-  term_labels: Record<string, string>;
-  predicate_by_label: Record<string, number>;
-  term_by_label: Record<string, number>;
-}
+export const Prolog8CatalogSchema = z.object({
+  catalog_id: z.number(),
+  predicates: z.record(z.string(), PredicateEntrySchema),
+  term_labels: z.record(z.string(), z.string()),
+  predicate_by_label: z.record(z.string(), z.number()),
+  term_by_label: z.record(z.string(), z.number()),
+});
+export type Prolog8Catalog = z.infer<typeof Prolog8CatalogSchema>;
 
 // ── Intern helpers ────────────────────────────────────────────────────────────
 
@@ -327,24 +348,13 @@ export function buildFact8(
 /**
  * A single body atom specification for `buildRule8`.
  */
-export interface BodyAtomSpec {
-  /** Predicate ID from the catalog. */
-  predId: number;
-  /** Arity of this predicate. */
-  arity: number;
-  /**
-   * Argument terms for this atom. Use TERM_SENTINEL (0) for unbound variable
-   * positions; use a TermId ≥ 1 for ground/bound constants.
-   */
-  args: number[];
-  /**
-   * Bit mask for bound (ground) argument positions.
-   * Bit i = 1 means args[i] is a ground constant from the intern table.
-   * Bit i = 0 means args[i] is an unbound variable (sentinel).
-   * Defaults to 0 (all positions unbound).
-   */
-  bindingMask?: number;
-}
+export const BodyAtomSpecSchema = z.object({
+  predId: z.number(),
+  arity: z.number(),
+  args: z.array(z.number()),
+  bindingMask: z.number().optional(),
+});
+export type BodyAtomSpec = z.infer<typeof BodyAtomSpecSchema>;
 
 /**
  * Build a Rule8Json for a Horn rule.

@@ -1,0 +1,134 @@
+{
+  "intent": "Select treatment operators via means-ends analysis for influenza",
+  "candidates": [
+    {
+      "id": "administer_antiviral",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "prescribe_rest",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "prescribe_fluids",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "prescribe_antipyretic",
+      "score": 0.0,
+      "eliminated": false
+    },
+    {
+      "id": "hospitalize",
+      "score": 0.0,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "diagnosis",
+      "value": "influenza"
+    },
+    {
+      "key": "certainty_factor",
+      "value": "0.5"
+    },
+    {
+      "key": "symptom_fever",
+      "value": "confirmed"
+    },
+    {
+      "key": "symptom_cough",
+      "value": "confirmed"
+    },
+    {
+      "key": "urgency_level",
+      "value": "high"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_select_antiviral",
+      "premise": [],
+      "conclusion": "antiviral=selected",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_select_antipyretic",
+      "premise": [],
+      "conclusion": "antipyretic=selected",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_select_fluids",
+      "premise": [],
+      "conclusion": "fluids=selected",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_select_rest",
+      "premise": [],
+      "conclusion": "rest=selected",
+      "certainty": 1.0
+    },
+    {
+      "id": "r_treatment_plan_ready",
+      "premise": [
+        "antiviral=selected",
+        "antipyretic=selected"
+      ],
+      "conclusion": "treatment_plan=ready",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_treatment_plan",
+      "predicate": "treatment_plan",
+      "value": "ready"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_flu_treatment",
+      "intent": "flu treatment planning",
+      "architecture": "gps",
+      "outcome_score": 0.88,
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "influenza"
+        }
+      ]
+    },
+    {
+      "id": "case_mild_treatment",
+      "intent": "mild illness treatment",
+      "architecture": "gps",
+      "outcome_score": 0.9,
+      "facts": [
+        {
+          "key": "diagnosis",
+          "value": "common_cold"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "current_state",
+      "value": "patient_sick_influenza"
+    },
+    {
+      "predicate": "goal_state",
+      "value": "patient_healthy"
+    },
+    {
+      "predicate": "operators_applied",
+      "value": "none"
+    }
+  ]
+}

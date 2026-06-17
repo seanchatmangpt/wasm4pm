@@ -4,6 +4,7 @@
  * Loads WASM, initializes kernel, validates readiness
  */
 
+import { z } from 'zod';
 import { EngineError } from '@wasm4pm/contracts';
 import { WasmLoader, WasmModule, WasmLoadError } from './wasm-loader.js';
 
@@ -15,13 +16,15 @@ export interface BootstrapKernel {
   isReady(): boolean;
 }
 
+export const BootstrapResultSchema = z.object({
+  wasmModule: z.unknown() as z.ZodType<WasmModule>,
+  durationMs: z.number(),
+});
+
 /**
  * Result of a bootstrap operation
  */
-export interface BootstrapResult {
-  wasmModule: WasmModule;
-  durationMs: number;
-}
+export type BootstrapResult = z.infer<typeof BootstrapResultSchema>;
 
 /**
  * Bootstraps the engine by loading WASM and initializing the kernel.

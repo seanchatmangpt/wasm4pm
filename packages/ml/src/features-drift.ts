@@ -7,7 +7,24 @@
  * Pattern: Same as remaining-time + outcome integrations
  */
 
+import { z } from 'zod';
 import { detectEnhancedAnomalies } from './anomaly.js';
+
+// ---------------------------------------------------------------------------
+// DriftFeatures
+// ---------------------------------------------------------------------------
+
+export const DriftFeaturesSchema = z.object({
+  window_index: z.number(),
+  mean_distance: z.number(),
+  max_distance: z.number(),
+  std_distance: z.number(),
+  trend_slope: z.number(),
+  autocorr_lag1: z.number(),
+  peak_count: z.number(),
+  residual_anomaly_score: z.number(),
+  is_anomalous: z.boolean(),
+});
 
 /**
  * Drift feature definition.
@@ -21,17 +38,7 @@ import { detectEnhancedAnomalies } from './anomaly.js';
  * - peak_count: Number of detected peaks
  * - residual_anomaly_score: Anomaly score from residual decomposition
  */
-export interface DriftFeatures {
-  window_index: number;
-  mean_distance: number;
-  max_distance: number;
-  std_distance: number;
-  trend_slope: number;
-  autocorr_lag1: number;
-  peak_count: number;
-  residual_anomaly_score: number;
-  is_anomalous: boolean;
-}
+export type DriftFeatures = z.infer<typeof DriftFeaturesSchema>;
 
 /**
  * Compute simple statistics on a numeric series.

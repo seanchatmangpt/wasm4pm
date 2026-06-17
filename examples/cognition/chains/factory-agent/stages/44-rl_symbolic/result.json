@@ -1,0 +1,3687 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "rl_symbolic",
+    "breed": "rl_symbolic",
+    "status": "ok",
+    "output": {
+      "breed": "RlSymbolic",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "policy:s0",
+          "value": "go"
+        },
+        {
+          "key": "q:s0:go",
+          "value": "1.000000"
+        },
+        {
+          "key": "q:s0:stay",
+          "value": "0.900000"
+        }
+      ],
+      "selected": "go",
+      "explanation": "Q-learning converged over 300 episodes; greedy policy extracted for 1 states",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "load-mdp",
+          "detail": "2 states, 2 (s,a) pairs, gamma=0.9, 300 episodes",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "episode-start",
+          "detail": "episode 0",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "q-update",
+          "detail": "Q(s0,go) 0.0000 -> 0.5000 (r=1, s'=goal)",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "episode-end",
+          "detail": "episode 0 max-delta=0.500000",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "episode-start",
+          "detail": "episode 1",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "q-update",
+          "detail": "Q(s0,stay) 0.0000 -> 0.2250 (r=0, s'=s0)",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "q-update",
+          "detail": "Q(s0,go) 0.5000 -> 0.7500 (r=1, s'=goal)",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "episode-end",
+          "detail": "episode 1 max-delta=0.250000",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "episode-start",
+          "detail": "episode 2",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "q-update",
+          "detail": "Q(s0,go) 0.7500 -> 0.8750 (r=1, s'=goal)",
+          "depth": 0
+        },
+        {
+          "step": 10,
+          "kind": "episode-end",
+          "detail": "episode 2 max-delta=0.125000",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "episode-start",
+          "detail": "episode 3",
+          "depth": 0
+        },
+        {
+          "step": 12,
+          "kind": "episode-end",
+          "detail": "episode 3 max-delta=0.281250",
+          "depth": 0
+        },
+        {
+          "step": 13,
+          "kind": "episode-start",
+          "detail": "episode 4",
+          "depth": 0
+        },
+        {
+          "step": 14,
+          "kind": "episode-end",
+          "detail": "episode 4 max-delta=0.168750",
+          "depth": 0
+        },
+        {
+          "step": 15,
+          "kind": "episode-start",
+          "detail": "episode 5",
+          "depth": 0
+        },
+        {
+          "step": 16,
+          "kind": "episode-end",
+          "detail": "episode 5 max-delta=0.015625",
+          "depth": 0
+        },
+        {
+          "step": 17,
+          "kind": "episode-start",
+          "detail": "episode 6",
+          "depth": 0
+        },
+        {
+          "step": 18,
+          "kind": "episode-end",
+          "detail": "episode 6 max-delta=0.007812",
+          "depth": 0
+        },
+        {
+          "step": 19,
+          "kind": "episode-start",
+          "detail": "episode 7",
+          "depth": 0
+        },
+        {
+          "step": 20,
+          "kind": "episode-end",
+          "detail": "episode 7 max-delta=0.003906",
+          "depth": 0
+        },
+        {
+          "step": 21,
+          "kind": "episode-start",
+          "detail": "episode 8",
+          "depth": 0
+        },
+        {
+          "step": 22,
+          "kind": "episode-end",
+          "detail": "episode 8 max-delta=0.001953",
+          "depth": 0
+        },
+        {
+          "step": 23,
+          "kind": "episode-start",
+          "detail": "episode 9",
+          "depth": 0
+        },
+        {
+          "step": 24,
+          "kind": "episode-end",
+          "detail": "episode 9 max-delta=0.000977",
+          "depth": 0
+        },
+        {
+          "step": 25,
+          "kind": "episode-start",
+          "detail": "episode 10",
+          "depth": 0
+        },
+        {
+          "step": 26,
+          "kind": "episode-end",
+          "detail": "episode 10 max-delta=0.000488",
+          "depth": 0
+        },
+        {
+          "step": 27,
+          "kind": "episode-start",
+          "detail": "episode 11",
+          "depth": 0
+        },
+        {
+          "step": 28,
+          "kind": "episode-end",
+          "detail": "episode 11 max-delta=0.000244",
+          "depth": 0
+        },
+        {
+          "step": 29,
+          "kind": "episode-start",
+          "detail": "episode 12",
+          "depth": 0
+        },
+        {
+          "step": 30,
+          "kind": "episode-end",
+          "detail": "episode 12 max-delta=0.000122",
+          "depth": 0
+        },
+        {
+          "step": 31,
+          "kind": "episode-start",
+          "detail": "episode 13",
+          "depth": 0
+        },
+        {
+          "step": 32,
+          "kind": "episode-end",
+          "detail": "episode 13 max-delta=0.000061",
+          "depth": 0
+        },
+        {
+          "step": 33,
+          "kind": "episode-start",
+          "detail": "episode 14",
+          "depth": 0
+        },
+        {
+          "step": 34,
+          "kind": "episode-end",
+          "detail": "episode 14 max-delta=0.000031",
+          "depth": 0
+        },
+        {
+          "step": 35,
+          "kind": "episode-start",
+          "detail": "episode 15",
+          "depth": 0
+        },
+        {
+          "step": 36,
+          "kind": "episode-end",
+          "detail": "episode 15 max-delta=0.000015",
+          "depth": 0
+        },
+        {
+          "step": 37,
+          "kind": "episode-start",
+          "detail": "episode 16",
+          "depth": 0
+        },
+        {
+          "step": 38,
+          "kind": "episode-end",
+          "detail": "episode 16 max-delta=0.112493",
+          "depth": 0
+        },
+        {
+          "step": 39,
+          "kind": "episode-start",
+          "detail": "episode 17",
+          "depth": 0
+        },
+        {
+          "step": 40,
+          "kind": "episode-end",
+          "detail": "episode 17 max-delta=0.000004",
+          "depth": 0
+        },
+        {
+          "step": 41,
+          "kind": "episode-start",
+          "detail": "episode 18",
+          "depth": 0
+        },
+        {
+          "step": 42,
+          "kind": "episode-end",
+          "detail": "episode 18 max-delta=0.056252",
+          "depth": 0
+        },
+        {
+          "step": 43,
+          "kind": "episode-start",
+          "detail": "episode 19",
+          "depth": 0
+        },
+        {
+          "step": 44,
+          "kind": "episode-end",
+          "detail": "episode 19 max-delta=0.000001",
+          "depth": 0
+        },
+        {
+          "step": 45,
+          "kind": "episode-start",
+          "detail": "episode 20",
+          "depth": 0
+        },
+        {
+          "step": 46,
+          "kind": "episode-end",
+          "detail": "episode 20 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 47,
+          "kind": "episode-start",
+          "detail": "episode 21",
+          "depth": 0
+        },
+        {
+          "step": 48,
+          "kind": "episode-end",
+          "detail": "episode 21 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 49,
+          "kind": "episode-start",
+          "detail": "episode 22",
+          "depth": 0
+        },
+        {
+          "step": 50,
+          "kind": "episode-end",
+          "detail": "episode 22 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 51,
+          "kind": "episode-start",
+          "detail": "episode 23",
+          "depth": 0
+        },
+        {
+          "step": 52,
+          "kind": "episode-end",
+          "detail": "episode 23 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 53,
+          "kind": "episode-start",
+          "detail": "episode 24",
+          "depth": 0
+        },
+        {
+          "step": 54,
+          "kind": "episode-end",
+          "detail": "episode 24 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 55,
+          "kind": "episode-start",
+          "detail": "episode 25",
+          "depth": 0
+        },
+        {
+          "step": 56,
+          "kind": "episode-end",
+          "detail": "episode 25 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 57,
+          "kind": "episode-start",
+          "detail": "episode 26",
+          "depth": 0
+        },
+        {
+          "step": 58,
+          "kind": "episode-end",
+          "detail": "episode 26 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 59,
+          "kind": "episode-start",
+          "detail": "episode 27",
+          "depth": 0
+        },
+        {
+          "step": 60,
+          "kind": "episode-end",
+          "detail": "episode 27 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 61,
+          "kind": "episode-start",
+          "detail": "episode 28",
+          "depth": 0
+        },
+        {
+          "step": 62,
+          "kind": "episode-end",
+          "detail": "episode 28 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 63,
+          "kind": "episode-start",
+          "detail": "episode 29",
+          "depth": 0
+        },
+        {
+          "step": 64,
+          "kind": "episode-end",
+          "detail": "episode 29 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 65,
+          "kind": "episode-start",
+          "detail": "episode 30",
+          "depth": 0
+        },
+        {
+          "step": 66,
+          "kind": "episode-end",
+          "detail": "episode 30 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 67,
+          "kind": "episode-start",
+          "detail": "episode 31",
+          "depth": 0
+        },
+        {
+          "step": 68,
+          "kind": "episode-end",
+          "detail": "episode 31 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 69,
+          "kind": "episode-start",
+          "detail": "episode 32",
+          "depth": 0
+        },
+        {
+          "step": 70,
+          "kind": "episode-end",
+          "detail": "episode 32 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 71,
+          "kind": "episode-start",
+          "detail": "episode 33",
+          "depth": 0
+        },
+        {
+          "step": 72,
+          "kind": "episode-end",
+          "detail": "episode 33 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 73,
+          "kind": "episode-start",
+          "detail": "episode 34",
+          "depth": 0
+        },
+        {
+          "step": 74,
+          "kind": "episode-end",
+          "detail": "episode 34 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 75,
+          "kind": "episode-start",
+          "detail": "episode 35",
+          "depth": 0
+        },
+        {
+          "step": 76,
+          "kind": "episode-end",
+          "detail": "episode 35 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 77,
+          "kind": "episode-start",
+          "detail": "episode 36",
+          "depth": 0
+        },
+        {
+          "step": 78,
+          "kind": "episode-end",
+          "detail": "episode 36 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 79,
+          "kind": "episode-start",
+          "detail": "episode 37",
+          "depth": 0
+        },
+        {
+          "step": 80,
+          "kind": "episode-end",
+          "detail": "episode 37 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 81,
+          "kind": "episode-start",
+          "detail": "episode 38",
+          "depth": 0
+        },
+        {
+          "step": 82,
+          "kind": "episode-end",
+          "detail": "episode 38 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 83,
+          "kind": "episode-start",
+          "detail": "episode 39",
+          "depth": 0
+        },
+        {
+          "step": 84,
+          "kind": "episode-end",
+          "detail": "episode 39 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 85,
+          "kind": "episode-start",
+          "detail": "episode 40",
+          "depth": 0
+        },
+        {
+          "step": 86,
+          "kind": "episode-end",
+          "detail": "episode 40 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 87,
+          "kind": "episode-start",
+          "detail": "episode 41",
+          "depth": 0
+        },
+        {
+          "step": 88,
+          "kind": "episode-end",
+          "detail": "episode 41 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 89,
+          "kind": "episode-start",
+          "detail": "episode 42",
+          "depth": 0
+        },
+        {
+          "step": 90,
+          "kind": "episode-end",
+          "detail": "episode 42 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 91,
+          "kind": "episode-start",
+          "detail": "episode 43",
+          "depth": 0
+        },
+        {
+          "step": 92,
+          "kind": "episode-end",
+          "detail": "episode 43 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 93,
+          "kind": "episode-start",
+          "detail": "episode 44",
+          "depth": 0
+        },
+        {
+          "step": 94,
+          "kind": "episode-end",
+          "detail": "episode 44 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 95,
+          "kind": "episode-start",
+          "detail": "episode 45",
+          "depth": 0
+        },
+        {
+          "step": 96,
+          "kind": "episode-end",
+          "detail": "episode 45 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 97,
+          "kind": "episode-start",
+          "detail": "episode 46",
+          "depth": 0
+        },
+        {
+          "step": 98,
+          "kind": "episode-end",
+          "detail": "episode 46 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 99,
+          "kind": "episode-start",
+          "detail": "episode 47",
+          "depth": 0
+        },
+        {
+          "step": 100,
+          "kind": "episode-end",
+          "detail": "episode 47 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 101,
+          "kind": "episode-start",
+          "detail": "episode 48",
+          "depth": 0
+        },
+        {
+          "step": 102,
+          "kind": "episode-end",
+          "detail": "episode 48 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 103,
+          "kind": "episode-start",
+          "detail": "episode 49",
+          "depth": 0
+        },
+        {
+          "step": 104,
+          "kind": "episode-end",
+          "detail": "episode 49 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 105,
+          "kind": "episode-start",
+          "detail": "episode 50",
+          "depth": 0
+        },
+        {
+          "step": 106,
+          "kind": "episode-end",
+          "detail": "episode 50 max-delta=0.028128",
+          "depth": 0
+        },
+        {
+          "step": 107,
+          "kind": "episode-start",
+          "detail": "episode 51",
+          "depth": 0
+        },
+        {
+          "step": 108,
+          "kind": "episode-end",
+          "detail": "episode 51 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 109,
+          "kind": "episode-start",
+          "detail": "episode 52",
+          "depth": 0
+        },
+        {
+          "step": 110,
+          "kind": "episode-end",
+          "detail": "episode 52 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 111,
+          "kind": "episode-start",
+          "detail": "episode 53",
+          "depth": 0
+        },
+        {
+          "step": 112,
+          "kind": "episode-end",
+          "detail": "episode 53 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 113,
+          "kind": "episode-start",
+          "detail": "episode 54",
+          "depth": 0
+        },
+        {
+          "step": 114,
+          "kind": "episode-end",
+          "detail": "episode 54 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 115,
+          "kind": "episode-start",
+          "detail": "episode 55",
+          "depth": 0
+        },
+        {
+          "step": 116,
+          "kind": "episode-end",
+          "detail": "episode 55 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 117,
+          "kind": "episode-start",
+          "detail": "episode 56",
+          "depth": 0
+        },
+        {
+          "step": 118,
+          "kind": "episode-end",
+          "detail": "episode 56 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 119,
+          "kind": "episode-start",
+          "detail": "episode 57",
+          "depth": 0
+        },
+        {
+          "step": 120,
+          "kind": "episode-end",
+          "detail": "episode 57 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 121,
+          "kind": "episode-start",
+          "detail": "episode 58",
+          "depth": 0
+        },
+        {
+          "step": 122,
+          "kind": "episode-end",
+          "detail": "episode 58 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 123,
+          "kind": "episode-start",
+          "detail": "episode 59",
+          "depth": 0
+        },
+        {
+          "step": 124,
+          "kind": "episode-end",
+          "detail": "episode 59 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 125,
+          "kind": "episode-start",
+          "detail": "episode 60",
+          "depth": 0
+        },
+        {
+          "step": 126,
+          "kind": "episode-end",
+          "detail": "episode 60 max-delta=0.014064",
+          "depth": 0
+        },
+        {
+          "step": 127,
+          "kind": "episode-start",
+          "detail": "episode 61",
+          "depth": 0
+        },
+        {
+          "step": 128,
+          "kind": "episode-end",
+          "detail": "episode 61 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 129,
+          "kind": "episode-start",
+          "detail": "episode 62",
+          "depth": 0
+        },
+        {
+          "step": 130,
+          "kind": "episode-end",
+          "detail": "episode 62 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 131,
+          "kind": "episode-start",
+          "detail": "episode 63",
+          "depth": 0
+        },
+        {
+          "step": 132,
+          "kind": "episode-end",
+          "detail": "episode 63 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 133,
+          "kind": "episode-start",
+          "detail": "episode 64",
+          "depth": 0
+        },
+        {
+          "step": 134,
+          "kind": "episode-end",
+          "detail": "episode 64 max-delta=0.007032",
+          "depth": 0
+        },
+        {
+          "step": 135,
+          "kind": "episode-start",
+          "detail": "episode 65",
+          "depth": 0
+        },
+        {
+          "step": 136,
+          "kind": "episode-end",
+          "detail": "episode 65 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 137,
+          "kind": "episode-start",
+          "detail": "episode 66",
+          "depth": 0
+        },
+        {
+          "step": 138,
+          "kind": "episode-end",
+          "detail": "episode 66 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 139,
+          "kind": "episode-start",
+          "detail": "episode 67",
+          "depth": 0
+        },
+        {
+          "step": 140,
+          "kind": "episode-end",
+          "detail": "episode 67 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 141,
+          "kind": "episode-start",
+          "detail": "episode 68",
+          "depth": 0
+        },
+        {
+          "step": 142,
+          "kind": "episode-end",
+          "detail": "episode 68 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 143,
+          "kind": "episode-start",
+          "detail": "episode 69",
+          "depth": 0
+        },
+        {
+          "step": 144,
+          "kind": "episode-end",
+          "detail": "episode 69 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 145,
+          "kind": "episode-start",
+          "detail": "episode 70",
+          "depth": 0
+        },
+        {
+          "step": 146,
+          "kind": "episode-end",
+          "detail": "episode 70 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 147,
+          "kind": "episode-start",
+          "detail": "episode 71",
+          "depth": 0
+        },
+        {
+          "step": 148,
+          "kind": "episode-end",
+          "detail": "episode 71 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 149,
+          "kind": "episode-start",
+          "detail": "episode 72",
+          "depth": 0
+        },
+        {
+          "step": 150,
+          "kind": "episode-end",
+          "detail": "episode 72 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 151,
+          "kind": "episode-start",
+          "detail": "episode 73",
+          "depth": 0
+        },
+        {
+          "step": 152,
+          "kind": "episode-end",
+          "detail": "episode 73 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 153,
+          "kind": "episode-start",
+          "detail": "episode 74",
+          "depth": 0
+        },
+        {
+          "step": 154,
+          "kind": "episode-end",
+          "detail": "episode 74 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 155,
+          "kind": "episode-start",
+          "detail": "episode 75",
+          "depth": 0
+        },
+        {
+          "step": 156,
+          "kind": "episode-end",
+          "detail": "episode 75 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 157,
+          "kind": "episode-start",
+          "detail": "episode 76",
+          "depth": 0
+        },
+        {
+          "step": 158,
+          "kind": "episode-end",
+          "detail": "episode 76 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 159,
+          "kind": "episode-start",
+          "detail": "episode 77",
+          "depth": 0
+        },
+        {
+          "step": 160,
+          "kind": "episode-end",
+          "detail": "episode 77 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 161,
+          "kind": "episode-start",
+          "detail": "episode 78",
+          "depth": 0
+        },
+        {
+          "step": 162,
+          "kind": "episode-end",
+          "detail": "episode 78 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 163,
+          "kind": "episode-start",
+          "detail": "episode 79",
+          "depth": 0
+        },
+        {
+          "step": 164,
+          "kind": "episode-end",
+          "detail": "episode 79 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 165,
+          "kind": "episode-start",
+          "detail": "episode 80",
+          "depth": 0
+        },
+        {
+          "step": 166,
+          "kind": "episode-end",
+          "detail": "episode 80 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 167,
+          "kind": "episode-start",
+          "detail": "episode 81",
+          "depth": 0
+        },
+        {
+          "step": 168,
+          "kind": "episode-end",
+          "detail": "episode 81 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 169,
+          "kind": "episode-start",
+          "detail": "episode 82",
+          "depth": 0
+        },
+        {
+          "step": 170,
+          "kind": "episode-end",
+          "detail": "episode 82 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 171,
+          "kind": "episode-start",
+          "detail": "episode 83",
+          "depth": 0
+        },
+        {
+          "step": 172,
+          "kind": "episode-end",
+          "detail": "episode 83 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 173,
+          "kind": "episode-start",
+          "detail": "episode 84",
+          "depth": 0
+        },
+        {
+          "step": 174,
+          "kind": "episode-end",
+          "detail": "episode 84 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 175,
+          "kind": "episode-start",
+          "detail": "episode 85",
+          "depth": 0
+        },
+        {
+          "step": 176,
+          "kind": "episode-end",
+          "detail": "episode 85 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 177,
+          "kind": "episode-start",
+          "detail": "episode 86",
+          "depth": 0
+        },
+        {
+          "step": 178,
+          "kind": "episode-end",
+          "detail": "episode 86 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 179,
+          "kind": "episode-start",
+          "detail": "episode 87",
+          "depth": 0
+        },
+        {
+          "step": 180,
+          "kind": "episode-end",
+          "detail": "episode 87 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 181,
+          "kind": "episode-start",
+          "detail": "episode 88",
+          "depth": 0
+        },
+        {
+          "step": 182,
+          "kind": "episode-end",
+          "detail": "episode 88 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 183,
+          "kind": "episode-start",
+          "detail": "episode 89",
+          "depth": 0
+        },
+        {
+          "step": 184,
+          "kind": "episode-end",
+          "detail": "episode 89 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 185,
+          "kind": "episode-start",
+          "detail": "episode 90",
+          "depth": 0
+        },
+        {
+          "step": 186,
+          "kind": "episode-end",
+          "detail": "episode 90 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 187,
+          "kind": "episode-start",
+          "detail": "episode 91",
+          "depth": 0
+        },
+        {
+          "step": 188,
+          "kind": "episode-end",
+          "detail": "episode 91 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 189,
+          "kind": "episode-start",
+          "detail": "episode 92",
+          "depth": 0
+        },
+        {
+          "step": 190,
+          "kind": "episode-end",
+          "detail": "episode 92 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 191,
+          "kind": "episode-start",
+          "detail": "episode 93",
+          "depth": 0
+        },
+        {
+          "step": 192,
+          "kind": "episode-end",
+          "detail": "episode 93 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 193,
+          "kind": "episode-start",
+          "detail": "episode 94",
+          "depth": 0
+        },
+        {
+          "step": 194,
+          "kind": "episode-end",
+          "detail": "episode 94 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 195,
+          "kind": "episode-start",
+          "detail": "episode 95",
+          "depth": 0
+        },
+        {
+          "step": 196,
+          "kind": "episode-end",
+          "detail": "episode 95 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 197,
+          "kind": "episode-start",
+          "detail": "episode 96",
+          "depth": 0
+        },
+        {
+          "step": 198,
+          "kind": "episode-end",
+          "detail": "episode 96 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 199,
+          "kind": "episode-start",
+          "detail": "episode 97",
+          "depth": 0
+        },
+        {
+          "step": 200,
+          "kind": "episode-end",
+          "detail": "episode 97 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 201,
+          "kind": "episode-start",
+          "detail": "episode 98",
+          "depth": 0
+        },
+        {
+          "step": 202,
+          "kind": "episode-end",
+          "detail": "episode 98 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 203,
+          "kind": "episode-start",
+          "detail": "episode 99",
+          "depth": 0
+        },
+        {
+          "step": 204,
+          "kind": "episode-end",
+          "detail": "episode 99 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 205,
+          "kind": "episode-start",
+          "detail": "episode 100",
+          "depth": 0
+        },
+        {
+          "step": 206,
+          "kind": "episode-end",
+          "detail": "episode 100 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 207,
+          "kind": "episode-start",
+          "detail": "episode 101",
+          "depth": 0
+        },
+        {
+          "step": 208,
+          "kind": "episode-end",
+          "detail": "episode 101 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 209,
+          "kind": "episode-start",
+          "detail": "episode 102",
+          "depth": 0
+        },
+        {
+          "step": 210,
+          "kind": "episode-end",
+          "detail": "episode 102 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 211,
+          "kind": "episode-start",
+          "detail": "episode 103",
+          "depth": 0
+        },
+        {
+          "step": 212,
+          "kind": "episode-end",
+          "detail": "episode 103 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 213,
+          "kind": "episode-start",
+          "detail": "episode 104",
+          "depth": 0
+        },
+        {
+          "step": 214,
+          "kind": "episode-end",
+          "detail": "episode 104 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 215,
+          "kind": "episode-start",
+          "detail": "episode 105",
+          "depth": 0
+        },
+        {
+          "step": 216,
+          "kind": "episode-end",
+          "detail": "episode 105 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 217,
+          "kind": "episode-start",
+          "detail": "episode 106",
+          "depth": 0
+        },
+        {
+          "step": 218,
+          "kind": "episode-end",
+          "detail": "episode 106 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 219,
+          "kind": "episode-start",
+          "detail": "episode 107",
+          "depth": 0
+        },
+        {
+          "step": 220,
+          "kind": "episode-end",
+          "detail": "episode 107 max-delta=0.003516",
+          "depth": 0
+        },
+        {
+          "step": 221,
+          "kind": "episode-start",
+          "detail": "episode 108",
+          "depth": 0
+        },
+        {
+          "step": 222,
+          "kind": "episode-end",
+          "detail": "episode 108 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 223,
+          "kind": "episode-start",
+          "detail": "episode 109",
+          "depth": 0
+        },
+        {
+          "step": 224,
+          "kind": "episode-end",
+          "detail": "episode 109 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 225,
+          "kind": "episode-start",
+          "detail": "episode 110",
+          "depth": 0
+        },
+        {
+          "step": 226,
+          "kind": "episode-end",
+          "detail": "episode 110 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 227,
+          "kind": "episode-start",
+          "detail": "episode 111",
+          "depth": 0
+        },
+        {
+          "step": 228,
+          "kind": "episode-end",
+          "detail": "episode 111 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 229,
+          "kind": "episode-start",
+          "detail": "episode 112",
+          "depth": 0
+        },
+        {
+          "step": 230,
+          "kind": "episode-end",
+          "detail": "episode 112 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 231,
+          "kind": "episode-start",
+          "detail": "episode 113",
+          "depth": 0
+        },
+        {
+          "step": 232,
+          "kind": "episode-end",
+          "detail": "episode 113 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 233,
+          "kind": "episode-start",
+          "detail": "episode 114",
+          "depth": 0
+        },
+        {
+          "step": 234,
+          "kind": "episode-end",
+          "detail": "episode 114 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 235,
+          "kind": "episode-start",
+          "detail": "episode 115",
+          "depth": 0
+        },
+        {
+          "step": 236,
+          "kind": "episode-end",
+          "detail": "episode 115 max-delta=0.001758",
+          "depth": 0
+        },
+        {
+          "step": 237,
+          "kind": "episode-start",
+          "detail": "episode 116",
+          "depth": 0
+        },
+        {
+          "step": 238,
+          "kind": "episode-end",
+          "detail": "episode 116 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 239,
+          "kind": "episode-start",
+          "detail": "episode 117",
+          "depth": 0
+        },
+        {
+          "step": 240,
+          "kind": "episode-end",
+          "detail": "episode 117 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 241,
+          "kind": "episode-start",
+          "detail": "episode 118",
+          "depth": 0
+        },
+        {
+          "step": 242,
+          "kind": "episode-end",
+          "detail": "episode 118 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 243,
+          "kind": "episode-start",
+          "detail": "episode 119",
+          "depth": 0
+        },
+        {
+          "step": 244,
+          "kind": "episode-end",
+          "detail": "episode 119 max-delta=0.000439",
+          "depth": 0
+        },
+        {
+          "step": 245,
+          "kind": "episode-start",
+          "detail": "episode 120",
+          "depth": 0
+        },
+        {
+          "step": 246,
+          "kind": "episode-end",
+          "detail": "episode 120 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 247,
+          "kind": "episode-start",
+          "detail": "episode 121",
+          "depth": 0
+        },
+        {
+          "step": 248,
+          "kind": "episode-end",
+          "detail": "episode 121 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 249,
+          "kind": "episode-start",
+          "detail": "episode 122",
+          "depth": 0
+        },
+        {
+          "step": 250,
+          "kind": "episode-end",
+          "detail": "episode 122 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 251,
+          "kind": "episode-start",
+          "detail": "episode 123",
+          "depth": 0
+        },
+        {
+          "step": 252,
+          "kind": "episode-end",
+          "detail": "episode 123 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 253,
+          "kind": "episode-start",
+          "detail": "episode 124",
+          "depth": 0
+        },
+        {
+          "step": 254,
+          "kind": "episode-end",
+          "detail": "episode 124 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 255,
+          "kind": "episode-start",
+          "detail": "episode 125",
+          "depth": 0
+        },
+        {
+          "step": 256,
+          "kind": "episode-end",
+          "detail": "episode 125 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 257,
+          "kind": "episode-start",
+          "detail": "episode 126",
+          "depth": 0
+        },
+        {
+          "step": 258,
+          "kind": "episode-end",
+          "detail": "episode 126 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 259,
+          "kind": "episode-start",
+          "detail": "episode 127",
+          "depth": 0
+        },
+        {
+          "step": 260,
+          "kind": "episode-end",
+          "detail": "episode 127 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 261,
+          "kind": "episode-start",
+          "detail": "episode 128",
+          "depth": 0
+        },
+        {
+          "step": 262,
+          "kind": "episode-end",
+          "detail": "episode 128 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 263,
+          "kind": "episode-start",
+          "detail": "episode 129",
+          "depth": 0
+        },
+        {
+          "step": 264,
+          "kind": "episode-end",
+          "detail": "episode 129 max-delta=0.000220",
+          "depth": 0
+        },
+        {
+          "step": 265,
+          "kind": "episode-start",
+          "detail": "episode 130",
+          "depth": 0
+        },
+        {
+          "step": 266,
+          "kind": "episode-end",
+          "detail": "episode 130 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 267,
+          "kind": "episode-start",
+          "detail": "episode 131",
+          "depth": 0
+        },
+        {
+          "step": 268,
+          "kind": "episode-end",
+          "detail": "episode 131 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 269,
+          "kind": "episode-start",
+          "detail": "episode 132",
+          "depth": 0
+        },
+        {
+          "step": 270,
+          "kind": "episode-end",
+          "detail": "episode 132 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 271,
+          "kind": "episode-start",
+          "detail": "episode 133",
+          "depth": 0
+        },
+        {
+          "step": 272,
+          "kind": "episode-end",
+          "detail": "episode 133 max-delta=0.000110",
+          "depth": 0
+        },
+        {
+          "step": 273,
+          "kind": "episode-start",
+          "detail": "episode 134",
+          "depth": 0
+        },
+        {
+          "step": 274,
+          "kind": "episode-end",
+          "detail": "episode 134 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 275,
+          "kind": "episode-start",
+          "detail": "episode 135",
+          "depth": 0
+        },
+        {
+          "step": 276,
+          "kind": "episode-end",
+          "detail": "episode 135 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 277,
+          "kind": "episode-start",
+          "detail": "episode 136",
+          "depth": 0
+        },
+        {
+          "step": 278,
+          "kind": "episode-end",
+          "detail": "episode 136 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 279,
+          "kind": "episode-start",
+          "detail": "episode 137",
+          "depth": 0
+        },
+        {
+          "step": 280,
+          "kind": "episode-end",
+          "detail": "episode 137 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 281,
+          "kind": "episode-start",
+          "detail": "episode 138",
+          "depth": 0
+        },
+        {
+          "step": 282,
+          "kind": "episode-end",
+          "detail": "episode 138 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 283,
+          "kind": "episode-start",
+          "detail": "episode 139",
+          "depth": 0
+        },
+        {
+          "step": 284,
+          "kind": "episode-end",
+          "detail": "episode 139 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 285,
+          "kind": "episode-start",
+          "detail": "episode 140",
+          "depth": 0
+        },
+        {
+          "step": 286,
+          "kind": "episode-end",
+          "detail": "episode 140 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 287,
+          "kind": "episode-start",
+          "detail": "episode 141",
+          "depth": 0
+        },
+        {
+          "step": 288,
+          "kind": "episode-end",
+          "detail": "episode 141 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 289,
+          "kind": "episode-start",
+          "detail": "episode 142",
+          "depth": 0
+        },
+        {
+          "step": 290,
+          "kind": "episode-end",
+          "detail": "episode 142 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 291,
+          "kind": "episode-start",
+          "detail": "episode 143",
+          "depth": 0
+        },
+        {
+          "step": 292,
+          "kind": "episode-end",
+          "detail": "episode 143 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 293,
+          "kind": "episode-start",
+          "detail": "episode 144",
+          "depth": 0
+        },
+        {
+          "step": 294,
+          "kind": "episode-end",
+          "detail": "episode 144 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 295,
+          "kind": "episode-start",
+          "detail": "episode 145",
+          "depth": 0
+        },
+        {
+          "step": 296,
+          "kind": "episode-end",
+          "detail": "episode 145 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 297,
+          "kind": "episode-start",
+          "detail": "episode 146",
+          "depth": 0
+        },
+        {
+          "step": 298,
+          "kind": "episode-end",
+          "detail": "episode 146 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 299,
+          "kind": "episode-start",
+          "detail": "episode 147",
+          "depth": 0
+        },
+        {
+          "step": 300,
+          "kind": "episode-end",
+          "detail": "episode 147 max-delta=0.000055",
+          "depth": 0
+        },
+        {
+          "step": 301,
+          "kind": "episode-start",
+          "detail": "episode 148",
+          "depth": 0
+        },
+        {
+          "step": 302,
+          "kind": "episode-end",
+          "detail": "episode 148 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 303,
+          "kind": "episode-start",
+          "detail": "episode 149",
+          "depth": 0
+        },
+        {
+          "step": 304,
+          "kind": "episode-end",
+          "detail": "episode 149 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 305,
+          "kind": "episode-start",
+          "detail": "episode 150",
+          "depth": 0
+        },
+        {
+          "step": 306,
+          "kind": "episode-end",
+          "detail": "episode 150 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 307,
+          "kind": "episode-start",
+          "detail": "episode 151",
+          "depth": 0
+        },
+        {
+          "step": 308,
+          "kind": "episode-end",
+          "detail": "episode 151 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 309,
+          "kind": "episode-start",
+          "detail": "episode 152",
+          "depth": 0
+        },
+        {
+          "step": 310,
+          "kind": "episode-end",
+          "detail": "episode 152 max-delta=0.000027",
+          "depth": 0
+        },
+        {
+          "step": 311,
+          "kind": "episode-start",
+          "detail": "episode 153",
+          "depth": 0
+        },
+        {
+          "step": 312,
+          "kind": "episode-end",
+          "detail": "episode 153 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 313,
+          "kind": "episode-start",
+          "detail": "episode 154",
+          "depth": 0
+        },
+        {
+          "step": 314,
+          "kind": "episode-end",
+          "detail": "episode 154 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 315,
+          "kind": "episode-start",
+          "detail": "episode 155",
+          "depth": 0
+        },
+        {
+          "step": 316,
+          "kind": "episode-end",
+          "detail": "episode 155 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 317,
+          "kind": "episode-start",
+          "detail": "episode 156",
+          "depth": 0
+        },
+        {
+          "step": 318,
+          "kind": "episode-end",
+          "detail": "episode 156 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 319,
+          "kind": "episode-start",
+          "detail": "episode 157",
+          "depth": 0
+        },
+        {
+          "step": 320,
+          "kind": "episode-end",
+          "detail": "episode 157 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 321,
+          "kind": "episode-start",
+          "detail": "episode 158",
+          "depth": 0
+        },
+        {
+          "step": 322,
+          "kind": "episode-end",
+          "detail": "episode 158 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 323,
+          "kind": "episode-start",
+          "detail": "episode 159",
+          "depth": 0
+        },
+        {
+          "step": 324,
+          "kind": "episode-end",
+          "detail": "episode 159 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 325,
+          "kind": "episode-start",
+          "detail": "episode 160",
+          "depth": 0
+        },
+        {
+          "step": 326,
+          "kind": "episode-end",
+          "detail": "episode 160 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 327,
+          "kind": "episode-start",
+          "detail": "episode 161",
+          "depth": 0
+        },
+        {
+          "step": 328,
+          "kind": "episode-end",
+          "detail": "episode 161 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 329,
+          "kind": "episode-start",
+          "detail": "episode 162",
+          "depth": 0
+        },
+        {
+          "step": 330,
+          "kind": "episode-end",
+          "detail": "episode 162 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 331,
+          "kind": "episode-start",
+          "detail": "episode 163",
+          "depth": 0
+        },
+        {
+          "step": 332,
+          "kind": "episode-end",
+          "detail": "episode 163 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 333,
+          "kind": "episode-start",
+          "detail": "episode 164",
+          "depth": 0
+        },
+        {
+          "step": 334,
+          "kind": "episode-end",
+          "detail": "episode 164 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 335,
+          "kind": "episode-start",
+          "detail": "episode 165",
+          "depth": 0
+        },
+        {
+          "step": 336,
+          "kind": "episode-end",
+          "detail": "episode 165 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 337,
+          "kind": "episode-start",
+          "detail": "episode 166",
+          "depth": 0
+        },
+        {
+          "step": 338,
+          "kind": "episode-end",
+          "detail": "episode 166 max-delta=0.000014",
+          "depth": 0
+        },
+        {
+          "step": 339,
+          "kind": "episode-start",
+          "detail": "episode 167",
+          "depth": 0
+        },
+        {
+          "step": 340,
+          "kind": "episode-end",
+          "detail": "episode 167 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 341,
+          "kind": "episode-start",
+          "detail": "episode 168",
+          "depth": 0
+        },
+        {
+          "step": 342,
+          "kind": "episode-end",
+          "detail": "episode 168 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 343,
+          "kind": "episode-start",
+          "detail": "episode 169",
+          "depth": 0
+        },
+        {
+          "step": 344,
+          "kind": "episode-end",
+          "detail": "episode 169 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 345,
+          "kind": "episode-start",
+          "detail": "episode 170",
+          "depth": 0
+        },
+        {
+          "step": 346,
+          "kind": "episode-end",
+          "detail": "episode 170 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 347,
+          "kind": "episode-start",
+          "detail": "episode 171",
+          "depth": 0
+        },
+        {
+          "step": 348,
+          "kind": "episode-end",
+          "detail": "episode 171 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 349,
+          "kind": "episode-start",
+          "detail": "episode 172",
+          "depth": 0
+        },
+        {
+          "step": 350,
+          "kind": "episode-end",
+          "detail": "episode 172 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 351,
+          "kind": "episode-start",
+          "detail": "episode 173",
+          "depth": 0
+        },
+        {
+          "step": 352,
+          "kind": "episode-end",
+          "detail": "episode 173 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 353,
+          "kind": "episode-start",
+          "detail": "episode 174",
+          "depth": 0
+        },
+        {
+          "step": 354,
+          "kind": "episode-end",
+          "detail": "episode 174 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 355,
+          "kind": "episode-start",
+          "detail": "episode 175",
+          "depth": 0
+        },
+        {
+          "step": 356,
+          "kind": "episode-end",
+          "detail": "episode 175 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 357,
+          "kind": "episode-start",
+          "detail": "episode 176",
+          "depth": 0
+        },
+        {
+          "step": 358,
+          "kind": "episode-end",
+          "detail": "episode 176 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 359,
+          "kind": "episode-start",
+          "detail": "episode 177",
+          "depth": 0
+        },
+        {
+          "step": 360,
+          "kind": "episode-end",
+          "detail": "episode 177 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 361,
+          "kind": "episode-start",
+          "detail": "episode 178",
+          "depth": 0
+        },
+        {
+          "step": 362,
+          "kind": "episode-end",
+          "detail": "episode 178 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 363,
+          "kind": "episode-start",
+          "detail": "episode 179",
+          "depth": 0
+        },
+        {
+          "step": 364,
+          "kind": "episode-end",
+          "detail": "episode 179 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 365,
+          "kind": "episode-start",
+          "detail": "episode 180",
+          "depth": 0
+        },
+        {
+          "step": 366,
+          "kind": "episode-end",
+          "detail": "episode 180 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 367,
+          "kind": "episode-start",
+          "detail": "episode 181",
+          "depth": 0
+        },
+        {
+          "step": 368,
+          "kind": "episode-end",
+          "detail": "episode 181 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 369,
+          "kind": "episode-start",
+          "detail": "episode 182",
+          "depth": 0
+        },
+        {
+          "step": 370,
+          "kind": "episode-end",
+          "detail": "episode 182 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 371,
+          "kind": "episode-start",
+          "detail": "episode 183",
+          "depth": 0
+        },
+        {
+          "step": 372,
+          "kind": "episode-end",
+          "detail": "episode 183 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 373,
+          "kind": "episode-start",
+          "detail": "episode 184",
+          "depth": 0
+        },
+        {
+          "step": 374,
+          "kind": "episode-end",
+          "detail": "episode 184 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 375,
+          "kind": "episode-start",
+          "detail": "episode 185",
+          "depth": 0
+        },
+        {
+          "step": 376,
+          "kind": "episode-end",
+          "detail": "episode 185 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 377,
+          "kind": "episode-start",
+          "detail": "episode 186",
+          "depth": 0
+        },
+        {
+          "step": 378,
+          "kind": "episode-end",
+          "detail": "episode 186 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 379,
+          "kind": "episode-start",
+          "detail": "episode 187",
+          "depth": 0
+        },
+        {
+          "step": 380,
+          "kind": "episode-end",
+          "detail": "episode 187 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 381,
+          "kind": "episode-start",
+          "detail": "episode 188",
+          "depth": 0
+        },
+        {
+          "step": 382,
+          "kind": "episode-end",
+          "detail": "episode 188 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 383,
+          "kind": "episode-start",
+          "detail": "episode 189",
+          "depth": 0
+        },
+        {
+          "step": 384,
+          "kind": "episode-end",
+          "detail": "episode 189 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 385,
+          "kind": "episode-start",
+          "detail": "episode 190",
+          "depth": 0
+        },
+        {
+          "step": 386,
+          "kind": "episode-end",
+          "detail": "episode 190 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 387,
+          "kind": "episode-start",
+          "detail": "episode 191",
+          "depth": 0
+        },
+        {
+          "step": 388,
+          "kind": "episode-end",
+          "detail": "episode 191 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 389,
+          "kind": "episode-start",
+          "detail": "episode 192",
+          "depth": 0
+        },
+        {
+          "step": 390,
+          "kind": "episode-end",
+          "detail": "episode 192 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 391,
+          "kind": "episode-start",
+          "detail": "episode 193",
+          "depth": 0
+        },
+        {
+          "step": 392,
+          "kind": "episode-end",
+          "detail": "episode 193 max-delta=0.000007",
+          "depth": 0
+        },
+        {
+          "step": 393,
+          "kind": "episode-start",
+          "detail": "episode 194",
+          "depth": 0
+        },
+        {
+          "step": 394,
+          "kind": "episode-end",
+          "detail": "episode 194 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 395,
+          "kind": "episode-start",
+          "detail": "episode 195",
+          "depth": 0
+        },
+        {
+          "step": 396,
+          "kind": "episode-end",
+          "detail": "episode 195 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 397,
+          "kind": "episode-start",
+          "detail": "episode 196",
+          "depth": 0
+        },
+        {
+          "step": 398,
+          "kind": "episode-end",
+          "detail": "episode 196 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 399,
+          "kind": "episode-start",
+          "detail": "episode 197",
+          "depth": 0
+        },
+        {
+          "step": 400,
+          "kind": "episode-end",
+          "detail": "episode 197 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 401,
+          "kind": "episode-start",
+          "detail": "episode 198",
+          "depth": 0
+        },
+        {
+          "step": 402,
+          "kind": "episode-end",
+          "detail": "episode 198 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 403,
+          "kind": "episode-start",
+          "detail": "episode 199",
+          "depth": 0
+        },
+        {
+          "step": 404,
+          "kind": "episode-end",
+          "detail": "episode 199 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 405,
+          "kind": "episode-start",
+          "detail": "episode 200",
+          "depth": 0
+        },
+        {
+          "step": 406,
+          "kind": "episode-end",
+          "detail": "episode 200 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 407,
+          "kind": "episode-start",
+          "detail": "episode 201",
+          "depth": 0
+        },
+        {
+          "step": 408,
+          "kind": "episode-end",
+          "detail": "episode 201 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 409,
+          "kind": "episode-start",
+          "detail": "episode 202",
+          "depth": 0
+        },
+        {
+          "step": 410,
+          "kind": "episode-end",
+          "detail": "episode 202 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 411,
+          "kind": "episode-start",
+          "detail": "episode 203",
+          "depth": 0
+        },
+        {
+          "step": 412,
+          "kind": "episode-end",
+          "detail": "episode 203 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 413,
+          "kind": "episode-start",
+          "detail": "episode 204",
+          "depth": 0
+        },
+        {
+          "step": 414,
+          "kind": "episode-end",
+          "detail": "episode 204 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 415,
+          "kind": "episode-start",
+          "detail": "episode 205",
+          "depth": 0
+        },
+        {
+          "step": 416,
+          "kind": "episode-end",
+          "detail": "episode 205 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 417,
+          "kind": "episode-start",
+          "detail": "episode 206",
+          "depth": 0
+        },
+        {
+          "step": 418,
+          "kind": "episode-end",
+          "detail": "episode 206 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 419,
+          "kind": "episode-start",
+          "detail": "episode 207",
+          "depth": 0
+        },
+        {
+          "step": 420,
+          "kind": "episode-end",
+          "detail": "episode 207 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 421,
+          "kind": "episode-start",
+          "detail": "episode 208",
+          "depth": 0
+        },
+        {
+          "step": 422,
+          "kind": "episode-end",
+          "detail": "episode 208 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 423,
+          "kind": "episode-start",
+          "detail": "episode 209",
+          "depth": 0
+        },
+        {
+          "step": 424,
+          "kind": "episode-end",
+          "detail": "episode 209 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 425,
+          "kind": "episode-start",
+          "detail": "episode 210",
+          "depth": 0
+        },
+        {
+          "step": 426,
+          "kind": "episode-end",
+          "detail": "episode 210 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 427,
+          "kind": "episode-start",
+          "detail": "episode 211",
+          "depth": 0
+        },
+        {
+          "step": 428,
+          "kind": "episode-end",
+          "detail": "episode 211 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 429,
+          "kind": "episode-start",
+          "detail": "episode 212",
+          "depth": 0
+        },
+        {
+          "step": 430,
+          "kind": "episode-end",
+          "detail": "episode 212 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 431,
+          "kind": "episode-start",
+          "detail": "episode 213",
+          "depth": 0
+        },
+        {
+          "step": 432,
+          "kind": "episode-end",
+          "detail": "episode 213 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 433,
+          "kind": "episode-start",
+          "detail": "episode 214",
+          "depth": 0
+        },
+        {
+          "step": 434,
+          "kind": "episode-end",
+          "detail": "episode 214 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 435,
+          "kind": "episode-start",
+          "detail": "episode 215",
+          "depth": 0
+        },
+        {
+          "step": 436,
+          "kind": "episode-end",
+          "detail": "episode 215 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 437,
+          "kind": "episode-start",
+          "detail": "episode 216",
+          "depth": 0
+        },
+        {
+          "step": 438,
+          "kind": "episode-end",
+          "detail": "episode 216 max-delta=0.000003",
+          "depth": 0
+        },
+        {
+          "step": 439,
+          "kind": "episode-start",
+          "detail": "episode 217",
+          "depth": 0
+        },
+        {
+          "step": 440,
+          "kind": "episode-end",
+          "detail": "episode 217 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 441,
+          "kind": "episode-start",
+          "detail": "episode 218",
+          "depth": 0
+        },
+        {
+          "step": 442,
+          "kind": "episode-end",
+          "detail": "episode 218 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 443,
+          "kind": "episode-start",
+          "detail": "episode 219",
+          "depth": 0
+        },
+        {
+          "step": 444,
+          "kind": "episode-end",
+          "detail": "episode 219 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 445,
+          "kind": "episode-start",
+          "detail": "episode 220",
+          "depth": 0
+        },
+        {
+          "step": 446,
+          "kind": "episode-end",
+          "detail": "episode 220 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 447,
+          "kind": "episode-start",
+          "detail": "episode 221",
+          "depth": 0
+        },
+        {
+          "step": 448,
+          "kind": "episode-end",
+          "detail": "episode 221 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 449,
+          "kind": "episode-start",
+          "detail": "episode 222",
+          "depth": 0
+        },
+        {
+          "step": 450,
+          "kind": "episode-end",
+          "detail": "episode 222 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 451,
+          "kind": "episode-start",
+          "detail": "episode 223",
+          "depth": 0
+        },
+        {
+          "step": 452,
+          "kind": "episode-end",
+          "detail": "episode 223 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 453,
+          "kind": "episode-start",
+          "detail": "episode 224",
+          "depth": 0
+        },
+        {
+          "step": 454,
+          "kind": "episode-end",
+          "detail": "episode 224 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 455,
+          "kind": "episode-start",
+          "detail": "episode 225",
+          "depth": 0
+        },
+        {
+          "step": 456,
+          "kind": "episode-end",
+          "detail": "episode 225 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 457,
+          "kind": "episode-start",
+          "detail": "episode 226",
+          "depth": 0
+        },
+        {
+          "step": 458,
+          "kind": "episode-end",
+          "detail": "episode 226 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 459,
+          "kind": "episode-start",
+          "detail": "episode 227",
+          "depth": 0
+        },
+        {
+          "step": 460,
+          "kind": "episode-end",
+          "detail": "episode 227 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 461,
+          "kind": "episode-start",
+          "detail": "episode 228",
+          "depth": 0
+        },
+        {
+          "step": 462,
+          "kind": "episode-end",
+          "detail": "episode 228 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 463,
+          "kind": "episode-start",
+          "detail": "episode 229",
+          "depth": 0
+        },
+        {
+          "step": 464,
+          "kind": "episode-end",
+          "detail": "episode 229 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 465,
+          "kind": "episode-start",
+          "detail": "episode 230",
+          "depth": 0
+        },
+        {
+          "step": 466,
+          "kind": "episode-end",
+          "detail": "episode 230 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 467,
+          "kind": "episode-start",
+          "detail": "episode 231",
+          "depth": 0
+        },
+        {
+          "step": 468,
+          "kind": "episode-end",
+          "detail": "episode 231 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 469,
+          "kind": "episode-start",
+          "detail": "episode 232",
+          "depth": 0
+        },
+        {
+          "step": 470,
+          "kind": "episode-end",
+          "detail": "episode 232 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 471,
+          "kind": "episode-start",
+          "detail": "episode 233",
+          "depth": 0
+        },
+        {
+          "step": 472,
+          "kind": "episode-end",
+          "detail": "episode 233 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 473,
+          "kind": "episode-start",
+          "detail": "episode 234",
+          "depth": 0
+        },
+        {
+          "step": 474,
+          "kind": "episode-end",
+          "detail": "episode 234 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 475,
+          "kind": "episode-start",
+          "detail": "episode 235",
+          "depth": 0
+        },
+        {
+          "step": 476,
+          "kind": "episode-end",
+          "detail": "episode 235 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 477,
+          "kind": "episode-start",
+          "detail": "episode 236",
+          "depth": 0
+        },
+        {
+          "step": 478,
+          "kind": "episode-end",
+          "detail": "episode 236 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 479,
+          "kind": "episode-start",
+          "detail": "episode 237",
+          "depth": 0
+        },
+        {
+          "step": 480,
+          "kind": "episode-end",
+          "detail": "episode 237 max-delta=0.000002",
+          "depth": 0
+        },
+        {
+          "step": 481,
+          "kind": "episode-start",
+          "detail": "episode 238",
+          "depth": 0
+        },
+        {
+          "step": 482,
+          "kind": "episode-end",
+          "detail": "episode 238 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 483,
+          "kind": "episode-start",
+          "detail": "episode 239",
+          "depth": 0
+        },
+        {
+          "step": 484,
+          "kind": "episode-end",
+          "detail": "episode 239 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 485,
+          "kind": "episode-start",
+          "detail": "episode 240",
+          "depth": 0
+        },
+        {
+          "step": 486,
+          "kind": "episode-end",
+          "detail": "episode 240 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 487,
+          "kind": "episode-start",
+          "detail": "episode 241",
+          "depth": 0
+        },
+        {
+          "step": 488,
+          "kind": "episode-end",
+          "detail": "episode 241 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 489,
+          "kind": "episode-start",
+          "detail": "episode 242",
+          "depth": 0
+        },
+        {
+          "step": 490,
+          "kind": "episode-end",
+          "detail": "episode 242 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 491,
+          "kind": "episode-start",
+          "detail": "episode 243",
+          "depth": 0
+        },
+        {
+          "step": 492,
+          "kind": "episode-end",
+          "detail": "episode 243 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 493,
+          "kind": "episode-start",
+          "detail": "episode 244",
+          "depth": 0
+        },
+        {
+          "step": 494,
+          "kind": "episode-end",
+          "detail": "episode 244 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 495,
+          "kind": "episode-start",
+          "detail": "episode 245",
+          "depth": 0
+        },
+        {
+          "step": 496,
+          "kind": "episode-end",
+          "detail": "episode 245 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 497,
+          "kind": "episode-start",
+          "detail": "episode 246",
+          "depth": 0
+        },
+        {
+          "step": 498,
+          "kind": "episode-end",
+          "detail": "episode 246 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 499,
+          "kind": "episode-start",
+          "detail": "episode 247",
+          "depth": 0
+        },
+        {
+          "step": 500,
+          "kind": "episode-end",
+          "detail": "episode 247 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 501,
+          "kind": "episode-start",
+          "detail": "episode 248",
+          "depth": 0
+        },
+        {
+          "step": 502,
+          "kind": "episode-end",
+          "detail": "episode 248 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 503,
+          "kind": "episode-start",
+          "detail": "episode 249",
+          "depth": 0
+        },
+        {
+          "step": 504,
+          "kind": "episode-end",
+          "detail": "episode 249 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 505,
+          "kind": "episode-start",
+          "detail": "episode 250",
+          "depth": 0
+        },
+        {
+          "step": 506,
+          "kind": "episode-end",
+          "detail": "episode 250 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 507,
+          "kind": "episode-start",
+          "detail": "episode 251",
+          "depth": 0
+        },
+        {
+          "step": 508,
+          "kind": "episode-end",
+          "detail": "episode 251 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 509,
+          "kind": "episode-start",
+          "detail": "episode 252",
+          "depth": 0
+        },
+        {
+          "step": 510,
+          "kind": "episode-end",
+          "detail": "episode 252 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 511,
+          "kind": "episode-start",
+          "detail": "episode 253",
+          "depth": 0
+        },
+        {
+          "step": 512,
+          "kind": "episode-end",
+          "detail": "episode 253 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 513,
+          "kind": "episode-start",
+          "detail": "episode 254",
+          "depth": 0
+        },
+        {
+          "step": 514,
+          "kind": "episode-end",
+          "detail": "episode 254 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 515,
+          "kind": "episode-start",
+          "detail": "episode 255",
+          "depth": 0
+        },
+        {
+          "step": 516,
+          "kind": "episode-end",
+          "detail": "episode 255 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 517,
+          "kind": "episode-start",
+          "detail": "episode 256",
+          "depth": 0
+        },
+        {
+          "step": 518,
+          "kind": "episode-end",
+          "detail": "episode 256 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 519,
+          "kind": "episode-start",
+          "detail": "episode 257",
+          "depth": 0
+        },
+        {
+          "step": 520,
+          "kind": "episode-end",
+          "detail": "episode 257 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 521,
+          "kind": "episode-start",
+          "detail": "episode 258",
+          "depth": 0
+        },
+        {
+          "step": 522,
+          "kind": "episode-end",
+          "detail": "episode 258 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 523,
+          "kind": "episode-start",
+          "detail": "episode 259",
+          "depth": 0
+        },
+        {
+          "step": 524,
+          "kind": "episode-end",
+          "detail": "episode 259 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 525,
+          "kind": "episode-start",
+          "detail": "episode 260",
+          "depth": 0
+        },
+        {
+          "step": 526,
+          "kind": "episode-end",
+          "detail": "episode 260 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 527,
+          "kind": "episode-start",
+          "detail": "episode 261",
+          "depth": 0
+        },
+        {
+          "step": 528,
+          "kind": "episode-end",
+          "detail": "episode 261 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 529,
+          "kind": "episode-start",
+          "detail": "episode 262",
+          "depth": 0
+        },
+        {
+          "step": 530,
+          "kind": "episode-end",
+          "detail": "episode 262 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 531,
+          "kind": "episode-start",
+          "detail": "episode 263",
+          "depth": 0
+        },
+        {
+          "step": 532,
+          "kind": "episode-end",
+          "detail": "episode 263 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 533,
+          "kind": "episode-start",
+          "detail": "episode 264",
+          "depth": 0
+        },
+        {
+          "step": 534,
+          "kind": "episode-end",
+          "detail": "episode 264 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 535,
+          "kind": "episode-start",
+          "detail": "episode 265",
+          "depth": 0
+        },
+        {
+          "step": 536,
+          "kind": "episode-end",
+          "detail": "episode 265 max-delta=0.000001",
+          "depth": 0
+        },
+        {
+          "step": 537,
+          "kind": "episode-start",
+          "detail": "episode 266",
+          "depth": 0
+        },
+        {
+          "step": 538,
+          "kind": "episode-end",
+          "detail": "episode 266 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 539,
+          "kind": "episode-start",
+          "detail": "episode 267",
+          "depth": 0
+        },
+        {
+          "step": 540,
+          "kind": "episode-end",
+          "detail": "episode 267 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 541,
+          "kind": "episode-start",
+          "detail": "episode 268",
+          "depth": 0
+        },
+        {
+          "step": 542,
+          "kind": "episode-end",
+          "detail": "episode 268 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 543,
+          "kind": "episode-start",
+          "detail": "episode 269",
+          "depth": 0
+        },
+        {
+          "step": 544,
+          "kind": "episode-end",
+          "detail": "episode 269 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 545,
+          "kind": "episode-start",
+          "detail": "episode 270",
+          "depth": 0
+        },
+        {
+          "step": 546,
+          "kind": "episode-end",
+          "detail": "episode 270 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 547,
+          "kind": "episode-start",
+          "detail": "episode 271",
+          "depth": 0
+        },
+        {
+          "step": 548,
+          "kind": "episode-end",
+          "detail": "episode 271 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 549,
+          "kind": "episode-start",
+          "detail": "episode 272",
+          "depth": 0
+        },
+        {
+          "step": 550,
+          "kind": "episode-end",
+          "detail": "episode 272 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 551,
+          "kind": "episode-start",
+          "detail": "episode 273",
+          "depth": 0
+        },
+        {
+          "step": 552,
+          "kind": "episode-end",
+          "detail": "episode 273 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 553,
+          "kind": "episode-start",
+          "detail": "episode 274",
+          "depth": 0
+        },
+        {
+          "step": 554,
+          "kind": "episode-end",
+          "detail": "episode 274 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 555,
+          "kind": "episode-start",
+          "detail": "episode 275",
+          "depth": 0
+        },
+        {
+          "step": 556,
+          "kind": "episode-end",
+          "detail": "episode 275 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 557,
+          "kind": "episode-start",
+          "detail": "episode 276",
+          "depth": 0
+        },
+        {
+          "step": 558,
+          "kind": "episode-end",
+          "detail": "episode 276 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 559,
+          "kind": "episode-start",
+          "detail": "episode 277",
+          "depth": 0
+        },
+        {
+          "step": 560,
+          "kind": "episode-end",
+          "detail": "episode 277 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 561,
+          "kind": "episode-start",
+          "detail": "episode 278",
+          "depth": 0
+        },
+        {
+          "step": 562,
+          "kind": "episode-end",
+          "detail": "episode 278 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 563,
+          "kind": "episode-start",
+          "detail": "episode 279",
+          "depth": 0
+        },
+        {
+          "step": 564,
+          "kind": "episode-end",
+          "detail": "episode 279 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 565,
+          "kind": "episode-start",
+          "detail": "episode 280",
+          "depth": 0
+        },
+        {
+          "step": 566,
+          "kind": "episode-end",
+          "detail": "episode 280 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 567,
+          "kind": "episode-start",
+          "detail": "episode 281",
+          "depth": 0
+        },
+        {
+          "step": 568,
+          "kind": "episode-end",
+          "detail": "episode 281 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 569,
+          "kind": "episode-start",
+          "detail": "episode 282",
+          "depth": 0
+        },
+        {
+          "step": 570,
+          "kind": "episode-end",
+          "detail": "episode 282 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 571,
+          "kind": "episode-start",
+          "detail": "episode 283",
+          "depth": 0
+        },
+        {
+          "step": 572,
+          "kind": "episode-end",
+          "detail": "episode 283 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 573,
+          "kind": "episode-start",
+          "detail": "episode 284",
+          "depth": 0
+        },
+        {
+          "step": 574,
+          "kind": "episode-end",
+          "detail": "episode 284 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 575,
+          "kind": "episode-start",
+          "detail": "episode 285",
+          "depth": 0
+        },
+        {
+          "step": 576,
+          "kind": "episode-end",
+          "detail": "episode 285 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 577,
+          "kind": "episode-start",
+          "detail": "episode 286",
+          "depth": 0
+        },
+        {
+          "step": 578,
+          "kind": "episode-end",
+          "detail": "episode 286 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 579,
+          "kind": "episode-start",
+          "detail": "episode 287",
+          "depth": 0
+        },
+        {
+          "step": 580,
+          "kind": "episode-end",
+          "detail": "episode 287 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 581,
+          "kind": "episode-start",
+          "detail": "episode 288",
+          "depth": 0
+        },
+        {
+          "step": 582,
+          "kind": "episode-end",
+          "detail": "episode 288 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 583,
+          "kind": "episode-start",
+          "detail": "episode 289",
+          "depth": 0
+        },
+        {
+          "step": 584,
+          "kind": "episode-end",
+          "detail": "episode 289 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 585,
+          "kind": "episode-start",
+          "detail": "episode 290",
+          "depth": 0
+        },
+        {
+          "step": 586,
+          "kind": "episode-end",
+          "detail": "episode 290 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 587,
+          "kind": "episode-start",
+          "detail": "episode 291",
+          "depth": 0
+        },
+        {
+          "step": 588,
+          "kind": "episode-end",
+          "detail": "episode 291 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 589,
+          "kind": "episode-start",
+          "detail": "episode 292",
+          "depth": 0
+        },
+        {
+          "step": 590,
+          "kind": "episode-end",
+          "detail": "episode 292 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 591,
+          "kind": "episode-start",
+          "detail": "episode 293",
+          "depth": 0
+        },
+        {
+          "step": 592,
+          "kind": "episode-end",
+          "detail": "episode 293 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 593,
+          "kind": "episode-start",
+          "detail": "episode 294",
+          "depth": 0
+        },
+        {
+          "step": 594,
+          "kind": "episode-end",
+          "detail": "episode 294 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 595,
+          "kind": "episode-start",
+          "detail": "episode 295",
+          "depth": 0
+        },
+        {
+          "step": 596,
+          "kind": "episode-end",
+          "detail": "episode 295 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 597,
+          "kind": "episode-start",
+          "detail": "episode 296",
+          "depth": 0
+        },
+        {
+          "step": 598,
+          "kind": "episode-end",
+          "detail": "episode 296 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 599,
+          "kind": "episode-start",
+          "detail": "episode 297",
+          "depth": 0
+        },
+        {
+          "step": 600,
+          "kind": "episode-end",
+          "detail": "episode 297 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 601,
+          "kind": "episode-start",
+          "detail": "episode 298",
+          "depth": 0
+        },
+        {
+          "step": 602,
+          "kind": "episode-end",
+          "detail": "episode 298 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 603,
+          "kind": "episode-start",
+          "detail": "episode 299",
+          "depth": 0
+        },
+        {
+          "step": 604,
+          "kind": "episode-end",
+          "detail": "episode 299 max-delta=0.000000",
+          "depth": 0
+        },
+        {
+          "step": 605,
+          "kind": "extract-policy",
+          "detail": "pi(s0) = go (Q=1.0000)",
+          "depth": 0
+        },
+        {
+          "step": 606,
+          "kind": "decision",
+          "detail": "learned policy over 1 states after 300 episodes (final max-delta=0.000000)",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "9e47ac1805768f931032047d1c3b279256eae5989ea83a395b2096ea9e42d465",
+    "output_hash": "c0ef95c1524fababd4db4ca1855438f22a8545ae179773b276e856a3c1582579",
+    "replay_pointer": "c0ef95c1524fabab",
+    "inference_step_count": 607,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/9e47ac1805768f931032047d1c3b279256eae5989ea83a395b2096ea9e42d465.json"
+  },
+  "meta": {
+    "run_id": "c1f1421f-cfd2-4045-ae86-0497354c99d4",
+    "timestamp": "2026-06-11T19:56:18.930Z",
+    "duration_ms": 33,
+    "version": "26.6.10"
+  }
+}

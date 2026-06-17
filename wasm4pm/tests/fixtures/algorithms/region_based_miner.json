@@ -1,0 +1,16 @@
+{
+  "algorithm": "region_based_miner",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Rubin, V., Verbeek, H.M.W., van Dongen, B.F., Kindler, E., Günther, C.W. (2010). Process Mining: A Two-Step Approach to Balance Between Underfitting and Overfitting. Software and System Modeling 9(1). Springer.",
+    "locus": "Section 4 — Region theory; ILP miner is the region-based algorithm in this codebase",
+    "extraction": "computed"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "places_nonneg",
+    "min": 1,
+    "rationale": "Region-based miner (ILP) produces at least one place for the running-example log."
+  }
+}

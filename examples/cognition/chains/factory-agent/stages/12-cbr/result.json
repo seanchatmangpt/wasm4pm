@@ -1,0 +1,130 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "cbr",
+    "breed": "cbr",
+    "status": "ok",
+    "output": {
+      "breed": "Cbr",
+      "candidates": [
+        {
+          "id": "CASE-PHYSICIAN-2WK",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-DRILLING-BLOWOUT-A",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-DRILLING-BLOWOUT-B",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-CREDIT-TROUBLED-CO",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "CASE-PHYSICIAN-6MO",
+          "score": 0,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "domain",
+          "value": "medical"
+        },
+        {
+          "key": "symptom_primary",
+          "value": "fever"
+        },
+        {
+          "key": "symptom_secondary",
+          "value": "cough"
+        },
+        {
+          "key": "urgency",
+          "value": "moderate"
+        },
+        {
+          "key": "patient_status",
+          "value": "current"
+        },
+        {
+          "key": "prior_stage_hash",
+          "value": "belief_merging:c3e82c3d29ade8c3ea925fa7465bf44847d51af3df2d9da13c137f332070b8ab"
+        }
+      ],
+      "selected": "antibiotic-course",
+      "explanation": "CBR best=CASE-PHYSICIAN-2WK sim=0.571 weighted=0.543",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "build-index",
+          "detail": "index built for 5 cases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "retrieve-candidates",
+          "detail": "retrieved 2 candidates from 5 total cases",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "score-case",
+          "detail": "CASE-PHYSICIAN-2WK sim=0.571 score=0.543",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "score-case",
+          "detail": "CASE-PHYSICIAN-6MO sim=0.222 score=0.160",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "reuse-adapt",
+          "detail": "CASE-PHYSICIAN-2WK adapted 0 facts",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "revise-accept",
+          "detail": "CASE-PHYSICIAN-2WK sim=1.000",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "retain-case",
+          "detail": "retained-908a1737",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "d1224047ff2fa161fc543bfefacff1feb6b8cd37724b849abea8e25128cd7189",
+    "output_hash": "7df2f6ef5b0044eef608cfb06dedaf08c27f1c1f6d694c706c2d51b664724d3c",
+    "replay_pointer": "7df2f6ef5b0044ee",
+    "inference_step_count": 7,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/d1224047ff2fa161fc543bfefacff1feb6b8cd37724b849abea8e25128cd7189.json"
+  },
+  "meta": {
+    "run_id": "d42575dd-a1a2-465e-84b7-5438672dae64",
+    "timestamp": "2026-06-11T19:56:06.008Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

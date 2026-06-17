@@ -189,10 +189,11 @@ mod tests {
         use crate::powl_parser::parse_powl_model_string;
         let mut arena1 = PowlArena::new();
         let root1 = parse_powl_model_string("X ( A, B )", &mut arena1).unwrap();
-        let pt = to_process_tree::apply(&arena1, root1);
+        let pt = to_process_tree::apply(&arena1, root1).unwrap();
         let pt_json = serde_json::to_string(&pt).unwrap();
         let (arena2, root2) = process_tree_to_powl(&pt_json).unwrap();
         let repr = arena2.to_repr(root2);
+        eprintln!("ROUNDTRIP REPR: {}", repr);
         assert!(repr.contains("A") && repr.contains("B"));
     }
 }

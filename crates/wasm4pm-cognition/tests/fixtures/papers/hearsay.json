@@ -1,0 +1,300 @@
+{
+  "breed": "hearsay",
+  "provenance": {
+    "paper": "/Users/sac/Documents/Papers/AI_LLM/Erman-et-al-1980-Hearsay-II-CSUR.pdf",
+    "citation": "Erman, L. D., Hayes-Roth, F., Lesser, V. R., and Reddy, D. R. (1980). The Hearsay-II speech-understanding system: Integrating knowledge to resolve uncertainty. ACM Computing Surveys, 12(2), 213\u2013253.",
+    "locus": "Section 1 \"An Example of Recognition\", \u00a71.1\u2013\u00a71.2, Figures 2, 3, 5a\u20135h, Steps 1\u201338 (pp. 222\u2013232, Computing Surveys Vol. 12 No. 2 June 1980)",
+    "extraction": "adapted",
+    "notes": "The existing fixture used the fictional utterance 'the quick brown fox' with a made-up syllable level. This extraction grounds the example in the paper's actual Section 1 worked example. The utterance 'ARE ANY BY FEIGENBAUM AND FELDMAN?' (duration 2.25 seconds = 225 centiseconds) is processed through 38 documented steps. Key paper data: Figure 2 gives all KS names and the six blackboard levels (parameter, segment, syllable, word, word-sequence, phrase). Figure 3 gives functional descriptions. Steps 1-38 in \u00a71.2 give exact credibility ratings in format credibility(begin:end) e.g. ARE*(97, 0:28). The BreedInput uses facts to encode bottom-up hypotheses at each level, rules to encode the 13 named KSs (SEG, POM, MOW, WORD-CTL, WORD-SEQ-CTL, WORD-SEQ, PARSE, PREDICT, VERIFY, CONCAT, RPOL, STOP, SEMANT), state to encode utterance metadata, and goals to encode the recognition objective. Credibility ratings are on a 0-100 scale per paper convention; normalized to 0.0-1.0 where stored in Rule.certainty fields."
+  },
+  "input": {
+    "intent": "ARE ANY BY FEIGENBAUM AND FELDMAN",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "segment",
+        "value": "silence:0:5"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-peak:5:28"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-nonpeak:28:48"
+      },
+      {
+        "key": "segment",
+        "value": "fricative:48:72"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-peak:72:100"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-nonpeak:100:145"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-peak:145:157"
+      },
+      {
+        "key": "segment",
+        "value": "fricative:157:175"
+      },
+      {
+        "key": "segment",
+        "value": "sonorant-peak:175:225"
+      },
+      {
+        "key": "syllable-class",
+        "value": "A:5:28:85"
+      },
+      {
+        "key": "syllable-class",
+        "value": "I:28:48:72"
+      },
+      {
+        "key": "syllable-class",
+        "value": "U:48:72:65"
+      },
+      {
+        "key": "syllable-class",
+        "value": "A:72:100:80"
+      },
+      {
+        "key": "syllable-class",
+        "value": "N:100:145:75"
+      },
+      {
+        "key": "syllable-class",
+        "value": "A:145:225:88"
+      },
+      {
+        "key": "word",
+        "value": "ARE:0:28:85"
+      },
+      {
+        "key": "word",
+        "value": "ANY:24:49:65"
+      },
+      {
+        "key": "word",
+        "value": "BY:52:72:80"
+      },
+      {
+        "key": "word",
+        "value": "FEIGENBAUM:80:150:80"
+      },
+      {
+        "key": "word",
+        "value": "AND:145:175:75"
+      },
+      {
+        "key": "word",
+        "value": "FELDMAN:175:225:85"
+      },
+      {
+        "key": "word-sequence",
+        "value": "[-ARE*]:0:28:97"
+      },
+      {
+        "key": "word-sequence",
+        "value": "[AND+FELDMAN-]*:145:225:90"
+      },
+      {
+        "key": "word-sequence",
+        "value": "EIGHT:48:57:85"
+      },
+      {
+        "key": "word-sequence",
+        "value": "SHAW-AND-MARVIN:72:157:75"
+      },
+      {
+        "key": "phrase",
+        "value": "[+ARE*]:0:28:97"
+      },
+      {
+        "key": "phrase",
+        "value": "AND+FELDMAN+]*:145:225:90"
+      },
+      {
+        "key": "phrase",
+        "value": "FEIGENBAUM+AND+FELDMAN+]*:80:225:83"
+      },
+      {
+        "key": "phrase",
+        "value": "BY+FEIGENBAUM+AND+FELDMAN+]*:52:225:84"
+      },
+      {
+        "key": "phrase",
+        "value": "ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:24:225:82"
+      },
+      {
+        "key": "phrase",
+        "value": "[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*:0:225:85"
+      }
+    ],
+    "rules": [
+      {
+        "id": "KS-SEG",
+        "premise": [
+          "acoustic-signal"
+        ],
+        "conclusion": "segment-hypotheses",
+        "certainty": 1
+      },
+      {
+        "id": "KS-POM",
+        "premise": [
+          "segment-hypotheses"
+        ],
+        "conclusion": "syllable-class-hypotheses",
+        "certainty": 0.85
+      },
+      {
+        "id": "KS-MOW",
+        "premise": [
+          "syllable-class-hypotheses"
+        ],
+        "conclusion": "word-hypotheses",
+        "certainty": 0.88
+      },
+      {
+        "id": "KS-WORD-CTL",
+        "premise": [
+          "start-of-processing"
+        ],
+        "conclusion": "word-level-goal-hypotheses",
+        "certainty": 1
+      },
+      {
+        "id": "KS-WORD-SEQ-CTL",
+        "premise": [
+          "start-of-processing"
+        ],
+        "conclusion": "word-sequence-level-goal-hypotheses",
+        "certainty": 1
+      },
+      {
+        "id": "KS-WORD-SEQ",
+        "premise": [
+          "word-hypotheses"
+        ],
+        "conclusion": "word-sequence-hypotheses",
+        "certainty": 0.9
+      },
+      {
+        "id": "KS-PARSE",
+        "premise": [
+          "word-sequence-hypotheses"
+        ],
+        "conclusion": "phrase-hypotheses",
+        "certainty": 0.97
+      },
+      {
+        "id": "KS-PREDICT",
+        "premise": [
+          "phrase-hypotheses"
+        ],
+        "conclusion": "predicted-word-attributes-on-phrase",
+        "certainty": 0.8
+      },
+      {
+        "id": "KS-VERIFY",
+        "premise": [
+          "phrase-hypotheses",
+          "predicted-word-attributes-on-phrase"
+        ],
+        "conclusion": "verified-word-hypotheses",
+        "certainty": 0.85
+      },
+      {
+        "id": "KS-CONCAT",
+        "premise": [
+          "phrase-hypotheses",
+          "verified-word-hypotheses"
+        ],
+        "conclusion": "extended-phrase-hypotheses",
+        "certainty": 0.85
+      },
+      {
+        "id": "KS-RPOL",
+        "premise": [
+          "any-new-or-modified-hypothesis"
+        ],
+        "conclusion": "credibility-rating-updated",
+        "certainty": 1
+      },
+      {
+        "id": "KS-STOP",
+        "premise": [
+          "complete-spanning-phrase-hypothesis"
+        ],
+        "conclusion": "recognition-result-selected",
+        "certainty": 0.85
+      },
+      {
+        "id": "KS-SEMANT",
+        "premise": [
+          "accepted-phrase-hypothesis"
+        ],
+        "conclusion": "unambiguous-database-interpretation",
+        "certainty": 0.9
+      }
+    ],
+    "cases": [],
+    "goals": [
+      {
+        "id": "g-recognize-utterance",
+        "predicate": "phrase",
+        "value": "complete-sentence:0:225"
+      }
+    ],
+    "state": [
+      {
+        "predicate": "utterance-duration-cs",
+        "value": "225"
+      },
+      {
+        "predicate": "vocabulary-size",
+        "value": "1011"
+      },
+      {
+        "predicate": "blackboard-levels",
+        "value": "parameter,segment,syllable,word,word-sequence,phrase"
+      },
+      {
+        "predicate": "microphone",
+        "value": "Electro-Voice-RE51"
+      },
+      {
+        "predicate": "environment-noise-db",
+        "value": "65"
+      },
+      {
+        "predicate": "sample-rate-khz",
+        "value": "10"
+      },
+      {
+        "predicate": "acoustic-params",
+        "value": "ZAPDASH"
+      }
+    ]
+  },
+  "expected": {
+    "final_phrase": "[+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]*",
+    "credibility": 85,
+    "time_span_cs": "0:225",
+    "accepted_by_ks": "STOP",
+    "step_count": 38,
+    "correct_words_hypothesized": [
+      "ARE",
+      "BY",
+      "AND",
+      "FELDMAN"
+    ],
+    "note": "Four of six correct words were hypothesized by MOW (Figure 5e, Step 5). 'ARE ANY BY FEIGENBAUM AND FELDMAN' is a complete spanning sentence selected at Step 38 when STOP fires on the phrase [+ARE+ANY+BY+FEIGENBAUM+AND+FELDMAN+]* (85, 0:225) after the search via PREDICT/VERIFY/CONCAT extends [+ARE*] leftward through ANY, BY, FEIGENBAUM, AND, FELDMAN. The system correctly interprets this as a query to an information-retrieval database of computer science abstracts."
+  }
+}

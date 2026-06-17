@@ -1,0 +1,86 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "autoinstinct_neurosis",
+    "breed": "autoinstinct_neurosis",
+    "status": "ok",
+    "output": {
+      "breed": "AutoinstinctNeurosis",
+      "candidates": [
+        {
+          "id": "default_stimulus",
+          "score": 1,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "belief:safety",
+          "value": "0.9"
+        },
+        {
+          "key": "belief:control",
+          "value": "0.2"
+        },
+        {
+          "key": "belief:social_approval",
+          "value": "0.6"
+        },
+        {
+          "key": "belief:competence",
+          "value": "0.4"
+        },
+        {
+          "key": "belief:health",
+          "value": "0.75"
+        },
+        {
+          "key": "belief:future_outcomes",
+          "value": "0.35"
+        },
+        {
+          "key": "belief:worthiness",
+          "value": "0.55"
+        }
+      ],
+      "selected": "{\"fear\":0.000,\"anger\":0.000,\"mistrust\":0.050,\"belief_count\":8}",
+      "explanation": "AutoinstinctNeurosis: processed 1 stimuli over 7 beliefs; dominant affect=mistrust; fear=0.000 anger=0.000 mistrust=0.050",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "seed-beliefs",
+          "detail": "seeded 7 beliefs from facts",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "curious",
+          "detail": "stimulus=\"default_stimulus\" strength=0.500 Δfear=+0.000 Δanger=+0.000 Δmistrust=+0.050",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "affect-snapshot",
+          "detail": "fear=0.000 anger=0.000 mistrust=0.050 beliefs=8",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "72c91ab26311fd8a3b3d8ee814b90380bbb06806be9913f7450716488ae1dde1",
+    "output_hash": "ddb68d72a0c5ac18020e361043f0737838e94464431d75ed5bc3b2dd77bab5f2",
+    "replay_pointer": "ddb68d72a0c5ac18",
+    "inference_step_count": 3,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_neurosis/.wasm4pm/receipts/72c91ab26311fd8a3b3d8ee814b90380bbb06806be9913f7450716488ae1dde1.json"
+  },
+  "meta": {
+    "run_id": "b533dfec-f92b-49ce-976c-0c00f88791c5",
+    "timestamp": "2026-06-11T18:48:16.309Z",
+    "duration_ms": 15,
+    "version": "26.6.10"
+  }
+}

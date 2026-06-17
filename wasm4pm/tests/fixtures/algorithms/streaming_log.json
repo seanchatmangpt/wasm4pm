@@ -1,0 +1,16 @@
+{
+  "algorithm": "streaming_log",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Online/streaming event log processing; statistics derivable from single-pass traversal",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8,traces=6",
+    "description": "Streaming log on running-example produces statistics: 8 distinct activities and 6 traces observed in a single pass"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "intent": "resolve SpecificLaw applies",
+  "facts": [
+    {
+      "key": "frame:Law:slot:applies:default",
+      "value": "true"
+    },
+    {
+      "key": "frame:SpecificLaw:isa",
+      "value": "Law"
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "query",
+      "value": "SpecificLaw:applies"
+    }
+  ],
+  "rules": [],
+  "candidates": [],
+  "cases": [],
+  "state": []
+}

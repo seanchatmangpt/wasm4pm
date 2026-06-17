@@ -1,0 +1,12 @@
+{
+  "algorithm": "anti_alignment",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Adriansyah, A., van Dongen, B. (2012). Replaying History on Process Models for Conformance Checking and Performance Analysis. WIREs Data Mining and Knowledge Discovery 2(2):182–192.",
+    "locus": "§4 Anti-alignment — distance-maximising trace found by alignment_fitness on running-example net",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "fitness_nonneg",
+    "rationale": "Anti-alignment fitness (alignment_fitness on a maximally-deviating trace) must be a non-negative float; running-example net always has fitness >= 0.0."
+  }
+}

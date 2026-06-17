@@ -1,0 +1,42 @@
+{
+  "breed": "autoinstinct_neurosis",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Colby, K.M., Weber, S., & Hilf, F.D. (1971). Artificial Paranoia. Artificial Intelligence, 2(1), 1-25. Colby's PARRY model: high-conviction beliefs (strength 1.0) trigger maximal defensive response (anger, fear, mistrust) when challenged by opposing-strength stimuli (strength 0.0).",
+    "locus": "Section 3: Conflict detection — input strength conflicts with seeded belief strength by delta > 0.5 → paranoid defensive response.",
+    "extraction": "adapted",
+    "notes": "Six beliefs seeded at conviction 1.0. Six stimuli challenge each at strength 0.0, producing conflict=1.0 > 0.5, triggering 'defensive' response for each. All 6 candidates are eliminated. Trace has seed-beliefs + 6 defensive steps + affect-snapshot = 8 steps total."
+  },
+  "input": {
+    "intent": "paranoid belief conflict simulation",
+    "facts": [
+      {"key": "belief:authority", "value": "1.0"},
+      {"key": "belief:security", "value": "1.0"},
+      {"key": "belief:loyalty", "value": "1.0"},
+      {"key": "belief:conspiracy", "value": "1.0"},
+      {"key": "belief:persecution", "value": "1.0"},
+      {"key": "belief:betrayal", "value": "1.0"}
+    ],
+    "candidates": [
+      {"id": "authority", "score": 0.0, "eliminated": false},
+      {"id": "security", "score": 0.0, "eliminated": false},
+      {"id": "loyalty", "score": 0.0, "eliminated": false},
+      {"id": "conspiracy", "score": 0.0, "eliminated": false},
+      {"id": "persecution", "score": 0.0, "eliminated": false},
+      {"id": "betrayal", "score": 0.0, "eliminated": false}
+    ],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "value": 6,
+    "eliminated_count": 6,
+    "defensive_response_count": 6,
+    "expected_status": "has_findings",
+    "expected_finding_count_min": 6,
+    "provenance": "Colby et al. 1971 Artificial Paranoia",
+    "description": "All 6 stimuli conflict with seeded beliefs at delta=1.0 > 0.5 → 6 defensive responses, 6 eliminated candidates. Colby PARRY 1971: maximum paranoid conflict triggers maximum defensive output."
+  }
+}

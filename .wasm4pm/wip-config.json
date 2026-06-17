@@ -1,0 +1,6 @@
+{
+  "max_concurrent_prs": 3,
+  "max_review_hours": 24,
+  "escalation_hours": 48,
+  "merge_block_hours": 72
+}

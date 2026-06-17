@@ -1,0 +1,81 @@
+{
+  "breed": "autoinstinct_semantics",
+  "provenance": {
+    "paper": "citation-only",
+    "citation": "Schank, R. C. (1972). Conceptual dependency: A theory of natural language understanding. Cognitive Psychology, 3(4), 552\u2013631. https://doi.org/10.1016/0010-0285(72)90022-9",
+    "locus": "Section 3 \"The Primitive Acts\", Table 1 \"CD Representation of Transfer Sentences\", canonical example: \"John gave Mary a book\" (pp. 567\u2013571). The ATRANS primitive is the canonical worked example for abstract-object transfer (ownership change) throughout the paper.",
+    "extraction": "secondary-source",
+    "notes": "No PDF was available; extraction is from well-documented secondary sources and the original paper's citation record. The Schank 1972 Cognitive Psychology paper is the definitive primary source for CD theory. The \"John gave Mary a book\" example is the single most-cited canonical example throughout that paper and all CD literature. The facts array encodes all five mandatory CD slots (primitive, actor, object, from, to) plus the optional instrument slot showing chained ATRANS for ownership. The goals array encodes the parse task as the autoinstinct_semantics breed expects: a target predicate with the sentence as value. The existing fixture at line 817-830 of breed-inputs-real.ts uses only intent with no structured facts or goals \u2014 this extraction adds the full slot-filling that CD theory requires and that the breed is designed to exercise."
+  },
+  "input": {
+    "intent": "John give book to Mary",
+    "facts": [
+      {
+        "key": "cd_primitive",
+        "value": "ATRANS"
+      },
+      {
+        "key": "actor",
+        "value": "John"
+      },
+      {
+        "key": "object",
+        "value": "book"
+      },
+      {
+        "key": "from",
+        "value": "John"
+      },
+      {
+        "key": "to",
+        "value": "Mary"
+      },
+      {
+        "key": "instrument",
+        "value": "ATRANS(actor=John,object=ownership,from=John,to=Mary)"
+      },
+      {
+        "key": "tense",
+        "value": "past"
+      },
+      {
+        "key": "mode",
+        "value": "positive"
+      }
+    ],
+    "candidates": [],
+    "rules": [],
+    "cases": [],
+    "goals": [
+      {
+        "id": "g-parse",
+        "predicate": "parse_sentence",
+        "value": "John give book to Mary"
+      },
+      {
+        "id": "g-primitive",
+        "predicate": "identify_cd_primitive",
+        "value": "ATRANS"
+      },
+      {
+        "id": "g-actor",
+        "predicate": "identify_actor",
+        "value": "John"
+      },
+      {
+        "id": "g-recipient",
+        "predicate": "identify_recipient",
+        "value": "Mary"
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "cd_primitive": "Atrans",
+    "actor": "John",
+    "object": "book",
+    "from_role": "John",
+    "to_role": "Mary",
+    "description": "Schank 1972 canonical ATRANS: abstract transfer of ownership of the book from John to Mary. The act ATRANS covers any change in abstract relationship (ownership, possession, control) between a person/institution and an object. The instrument slot is optionally filled by a PTRANS (physical transfer) if the book also physically moved. In the paper's notation: ATRANS(actor=John, object=book, from=John, to=Mary) with optional PTRANS(actor=John, object=book, from=John_location, to=Mary_location) as instrument."
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "intent": "Enumerate all chemically plausible molecular structures consistent with formula C6H12O and functional-group constraints (alcohol, ring=true, carbonyl=false) derived from hearsay hypothesis",
+  "candidates": [
+    {
+      "id": "d",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "e",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "g",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "r",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "cyclohexanol",
+      "score": 0.55,
+      "eliminated": false
+    },
+    {
+      "id": "1_methylcyclopentanol",
+      "score": 0.55,
+      "eliminated": false
+    },
+    {
+      "id": "cis_2_methylcyclopentanol",
+      "score": 0.55,
+      "eliminated": false
+    },
+    {
+      "id": "trans_2_methylcyclopentanol",
+      "score": 0.55,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "formula",
+      "value": "C6H12O"
+    },
+    {
+      "key": "functional_group",
+      "value": "alcohol"
+    },
+    {
+      "key": "ring_present",
+      "value": "true"
+    },
+    {
+      "key": "degree_of_unsaturation",
+      "value": "1"
+    },
+    {
+      "key": "carbonyl_absent",
+      "value": "true"
+    },
+    {
+      "key": "hearsay_top_candidate",
+      "value": "d"
+    },
+    {
+      "key": "hearsay_confidence",
+      "value": "0.72"
+    },
+    {
+      "key": "enumeration_method",
+      "value": "DENDRAL_graph_generator"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_valence_carbon",
+      "premise": [
+        "atom is carbon"
+      ],
+      "conclusion": "valence must equal 4",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_valence_oxygen",
+      "premise": [
+        "atom is oxygen",
+        "functional_group is alcohol"
+      ],
+      "conclusion": "valence must equal 2",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_ring_closure",
+      "premise": [
+        "degree_of_unsaturation == 1",
+        "no_double_bond"
+      ],
+      "conclusion": "exactly one ring must close",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_symmetry_pruning",
+      "premise": [
+        "two structures are graph_isomorphic"
+      ],
+      "conclusion": "retain only canonical form",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_enumerate_all_isomers",
+      "predicate": "all_C6H12O_ring_alcohol_isomers_generated",
+      "value": "true"
+    },
+    {
+      "id": "g_score_by_hearsay_fit",
+      "predicate": "candidates_scored_against_hearsay_facts",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_dendral_ring_alcohol",
+      "intent": "dendral ring alcohol enumeration",
+      "architecture": "ring_alcohol_isomers_enumerated",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "formula",
+          "value": "C6H12O"
+        },
+        {
+          "key": "ring",
+          "value": "true"
+        },
+        {
+          "key": "oh_groups",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "pipeline_stage",
+      "value": "2_dendral_enumeration"
+    },
+    {
+      "predicate": "hearsay_hypothesis",
+      "value": "cyclic_alcohol"
+    },
+    {
+      "predicate": "enumeration_complete",
+      "value": "false"
+    },
+    {
+      "predicate": "source_stage",
+      "value": "hearsay"
+    }
+  ]
+}

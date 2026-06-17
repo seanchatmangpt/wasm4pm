@@ -1,0 +1,79 @@
+{
+  "intent": "identify molecular structure from mass-spectrometry fragmentation constraints",
+  "candidates": [
+    {
+      "id": "structure-A-aminopyridine",
+      "score": 0.88,
+      "eliminated": false
+    },
+    {
+      "id": "structure-B-pyrimidine-OH",
+      "score": 0.76,
+      "eliminated": false
+    },
+    {
+      "id": "structure-C-benzene-NH2",
+      "score": 0.65,
+      "eliminated": false
+    },
+    {
+      "id": "structure-D-furan-methyl",
+      "score": 0.71,
+      "eliminated": false
+    },
+    {
+      "id": "structure-E-imidazole",
+      "score": 0.83,
+      "eliminated": false
+    },
+    {
+      "id": "structure-F-alkyl-chain",
+      "score": 0.42,
+      "eliminated": false
+    },
+    {
+      "id": "structure-G-naphthalene",
+      "score": 0.55,
+      "eliminated": false
+    },
+    {
+      "id": "structure-H-phenol",
+      "score": 0.69,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "constraint",
+      "value": "require:pyridine"
+    },
+    {
+      "key": "constraint",
+      "value": "require:amino"
+    },
+    {
+      "key": "constraint",
+      "value": "forbid:furan-methyl"
+    },
+    {
+      "key": "constraint",
+      "value": "forbid:alkyl-chain"
+    },
+    {
+      "key": "constraint",
+      "value": "forbid:naphthalene"
+    },
+    {
+      "key": "constraint",
+      "value": "min-score:0.6"
+    },
+    {
+      "key": "constraint",
+      "value": "max-score:0.95"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

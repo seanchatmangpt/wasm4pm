@@ -1,0 +1,43 @@
+{
+  "breed": "dempster_shafer",
+  "provenance": {
+    "paper": "Shafer-1976-Mathematical-Theory-of-Evidence.pdf",
+    "citation": "G. Shafer (1976). A Mathematical Theory of Evidence. Princeton University Press.",
+    "locus": "Chapter 3, Dempster's Rule of Combination",
+    "extraction": "grounded"
+  },
+  "input": {
+    "intent": "evaluate belief",
+    "candidates": [],
+    "facts": [],
+    "cases": [],
+    "rules": [
+      {
+        "id": "source1",
+        "premise": [],
+        "conclusion": "flim",
+        "certainty": 0.6
+      },
+      {
+        "id": "source2",
+        "premise": [],
+        "conclusion": "flam",
+        "certainty": 0.7
+      }
+    ],
+    "goals": [
+      {
+        "id": "query",
+        "predicate": "query",
+        "value": "flim"
+      }
+    ],
+    "candidates": [],
+    "facts": [],
+    "cases": [],
+    "state": []
+  },
+  "expected": {
+    "belief": 0.310344
+  }
+}

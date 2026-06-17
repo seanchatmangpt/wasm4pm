@@ -1,0 +1,56 @@
+\chapter{Vertical Plays}
+\label{ch:verticals}
+
+The horizontal platform (Chapters~\ref{ch:licensing}--\ref{ch:edge})
+monetizes breadth. Verticals monetize \emph{opinionation}: pre-built process
+models, conformance rule packs, and receipt schemas for one industry's
+workflows. Each vertical below is the same platform plus a domain pack ---
+high-margin content layered on the existing engine.
+
+\section{CI/CD process assurance (the proven test case)}
+
+The repository already practices this on itself: proof gates run sixteen
+receipt-backed tests on every push, and the development constitution treats
+a model-versus-log mismatch as a defect. Productized, this is
+\textbf{pipeline conformance for software delivery}: mine the OTel traces of
+a CI/CD system into OCEL event logs, verify that every release followed the
+declared pipeline (no skipped stages, no out-of-band deploys), and emit
+receipts that map directly onto SOC\,2 change-management controls and SLSA
+provenance requirements. Buyers: platform engineering and compliance at
+software-heavy enterprises. The DevOps toolchain integration surface (GitHub
+Actions, GitLab) is cheap to build because the CLI already exists.
+
+\section{Healthcare pathway conformance}
+
+Clinical pathways are declared process models; EHR audit trails are event
+logs. The browser profile means PHI never leaves the hospital network ---
+the entire analysis runs inside the clinician portal. Receipts provide the
+HIPAA audit-control artifact. This vertical is gated on HL7/FHIR event
+adapters, not on algorithm work.
+
+\section{Financial transaction monitoring}
+
+KYC/AML processes are legally mandated sequences. The edge profile placed
+in the payment path can check conformance per transaction batch and emit
+TrueX envelopes as regulator-facing evidence. The determinism guarantee
+matters doubly here: model-risk-management frameworks (SR~11-7) require
+reproducible model behavior, which stochastic incumbent scoring cannot
+provide and wasm4pm provides by construction.
+
+\section{Manufacturing and Industry 4.0}
+
+OCEL~2.0 object-centric logs are the natural model for a shop floor, where
+one order touches many machines and one machine touches many orders. The
+IoT profile mines locally; receipts roll up to the MES. The sale is
+``digital thread with proof'': every unit shipped carries a verifiable
+history of the process that produced it. This composes with the OEM model
+of Chapter~\ref{ch:edge} --- the equipment vendor embeds, the manufacturer
+subscribes to the receipt store.
+
+\section{Sequencing}
+
+CI/CD assurance should lead: the domain knowledge is already in-house, the
+buyer is technical (short sales cycle), and every deal seeds the
+horizontal evidence platform that the regulated verticals --- healthcare,
+finance, manufacturing --- then justify with mandatory budgets and longer
+cycles.

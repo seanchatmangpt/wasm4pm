@@ -28,7 +28,7 @@ cat > "$SCHEMA_DIR/openapi.json" << 'EOF'
       "url": "https://github.com/seanchatmangpt/wasm4pm"
     },
     "license": {
-      "name": "MIT OR Apache-2.0"
+      "name": "BUSL-1.1"
     }
   },
   "servers": [

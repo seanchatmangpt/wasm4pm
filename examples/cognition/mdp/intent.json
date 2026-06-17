@@ -1,0 +1,26 @@
+{
+  "intent": "reinforcement_learning",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "mdp:gamma",
+      "value": "0.5"
+    },
+    {
+      "key": "mdp:trans:s0:go",
+      "value": "s1:1.0"
+    },
+    {
+      "key": "mdp:trans:s1:go",
+      "value": "s1:1.0"
+    },
+    {
+      "key": "mdp:reward:s0:go",
+      "value": "10.0"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

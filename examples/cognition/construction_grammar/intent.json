@@ -1,0 +1,42 @@
+{
+  "intent": "parse a caused motion sentence with coercion",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "cxg:utterance",
+      "value": "he sneezed the napkin off the table"
+    },
+    {
+      "key": "lex:he:pos",
+      "value": "pron"
+    },
+    {
+      "key": "lex:sneezed:pos",
+      "value": "verb"
+    },
+    {
+      "key": "lex:sneezed:valence",
+      "value": "intransitive"
+    },
+    {
+      "key": "lex:the:pos",
+      "value": "det"
+    },
+    {
+      "key": "lex:napkin:pos",
+      "value": "noun"
+    },
+    {
+      "key": "lex:off:pos",
+      "value": "prep"
+    },
+    {
+      "key": "lex:table:pos",
+      "value": "noun"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

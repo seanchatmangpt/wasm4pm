@@ -1,0 +1,16 @@
+{
+  "algorithm": "process_skeleton",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Minimal skeleton DFG retaining only essential directly-follows relations",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8",
+    "description": "Process skeleton on running-example contains all 8 activities from the log; skeleton edges reduce to the minimal spanning structure"
+  }
+}

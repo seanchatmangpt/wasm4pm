@@ -2,6 +2,7 @@
 fn check_working_directory() {
     let wd = std::env::current_dir().unwrap();
     println!("Working directory during test: {:?}", wd);
+    assert!(wd.to_string_lossy().len() > 0);
 
     let paths = vec![
         "wasm4pm/tests/fixtures/BPI_2020_Travel_Permits_Actual.xes",

@@ -1,0 +1,32 @@
+{
+  "breed_id": "mdp",
+  "model_id": "mdp-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-10",
+  "method": "native_dfa_replay",
+  "fitness": 1,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay) in tests/ocel_conformance.rs::p2_conformance::p2_fitness_is_one_for_every_breed on the Bellman 1957 closed-form fixture. Conformance gate enforced in breeds::dispatch::run_breed().",
+  "trace_coverage": {
+    "declared_steps": [
+      "validate-model",
+      "sweep",
+      "converged",
+      "extract-policy"
+    ],
+    "observed_in_traces": [
+      "validate-model",
+      "sweep",
+      "converged",
+      "extract-policy"
+    ],
+    "coverage": 1,
+    "coverage_note": "All 4 declared L1 steps appear in the accepted trace corpus; V = R/(1-gamma) closed form and Bellman residual < 1e-4 asserted in oracles. Step ordering verified by validate_ocel_alignment() (fitness=1.0)."
+  },
+  "l0_fitness": 1,
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate.",
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "tests/ocel_conformance.rs (cargo test -p wasm4pm-cognition, fitness measured by validate_ocel_alignment replay)",
+  "measured_on": "2026-06-10"
+}

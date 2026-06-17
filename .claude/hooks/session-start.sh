@@ -52,7 +52,7 @@ DEFECTS=$((WARN + FAIL))
 if [ "$HEALTHY" = "true" ]; then
   echo "✓ wasm4pm environment: HEALTHY ($OK ok, 0 defects)"
 else
-  echo "✗ wasm4pm environment: DEGRADED ($OK ok, $DEFECTS defects: $WARN warning, $FAIL fail)"
+  echo "✗ wasm4pm environment: DEGRADED ($OK ok, $DEFECTS defects)"
   echo ""
   echo "Defects requiring attention:"
   echo "$DOCTOR_OUTPUT" | jq -r '.payload.checks[] | select(.severity == "WARNING" or .severity == "STOP_THE_LINE") | "  • [\(.severity)] \(.name): \(.message)\n    Fix: \(.fix // "(no fix recorded)")"'

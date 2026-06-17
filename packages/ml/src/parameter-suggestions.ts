@@ -9,35 +9,36 @@
  * users to understand the underlying ML algorithms.
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// LogCharacteristicsDetection
+// ---------------------------------------------------------------------------
+
+export const LogCharacteristicsDetectionSchema = z.object({
+  /** Fraction of unique trace variants (0-1). High variance: >0.7 */
+  variantRatio: z.number(),
+  /** Is this a high-variance log (>70% unique traces)? */
+  isHighVariance: z.boolean(),
+  /** Number of distinct activities */
+  activityCount: z.number(),
+  /** Is this a high-activity log (>50 distinct activities)? */
+  isHighActivity: z.boolean(),
+  /** Estimated noise level (0-1). High noise: >0.3 */
+  estimatedNoiseLevel: z.number(),
+  /** Is this a noisy log (>30% noise)? */
+  isNoisy: z.boolean(),
+  /** Average trace length in events */
+  averageTraceLengthMs: z.number().optional(),
+  /** Is the log time-heavy (large average traces)? */
+  isTimeTrending: z.boolean().optional(),
+});
+
 /**
  * Log characteristics detection result.
  * Identifies observable patterns in the event log for algorithm/parameter suggestion.
  */
-export interface LogCharacteristicsDetection {
-  /** Fraction of unique trace variants (0-1). High variance: >0.7 */
-  variantRatio: number;
-
-  /** Is this a high-variance log (>70% unique traces)? */
-  isHighVariance: boolean;
-
-  /** Number of distinct activities */
-  activityCount: number;
-
-  /** Is this a high-activity log (>50 distinct activities)? */
-  isHighActivity: boolean;
-
-  /** Estimated noise level (0-1). High noise: >0.3 */
-  estimatedNoiseLevel: number;
-
-  /** Is this a noisy log (>30% noise)? */
-  isNoisy: boolean;
-
-  /** Average trace length in events */
-  averageTraceLengthMs?: number;
-
-  /** Is the log time-heavy (large average traces)? */
-  isTimeTrending?: boolean;
-}
+export type LogCharacteristicsDetection = z.infer<typeof LogCharacteristicsDetectionSchema>;
 
 /**
  * Analyze log characteristics to guide algorithm and parameter selection.
@@ -105,7 +106,7 @@ export function detectLogCharacteristics(
  */
 export function suggestClusteringK(
   traceCount: number,
-  activityCount: number,
+  _activityCount: number,
   characteristics?: Partial<LogCharacteristicsDetection>,
 ): number {
   if (traceCount <= 0) return 2;
@@ -395,7 +396,7 @@ export function suggestForecastHorizon(windowCount: number): number {
  */
 export function suggestClassificationAlgorithm(
   traceCount: number,
-  featureCount: number,
+  _featureCount: number,
   featureQualityScore: number,
   characteristics?: Partial<LogCharacteristicsDetection>,
 ): 'knn' | 'logistic_regression' {
@@ -426,18 +427,22 @@ export function suggestClassificationAlgorithm(
 // suggestParameters + pickBestAlgorithm — high-level recommendation API
 // ─────────────────────────────────────────────────────────────────────────────
 
-export interface AlgorithmSuggestion {
-  name: string;
-  confidence: number;
-  reason: string;
-  suggestedParameters: Record<string, unknown>;
-}
+export const AlgorithmSuggestionSchema = z.object({
+  name: z.string(),
+  confidence: z.number(),
+  reason: z.string(),
+  suggestedParameters: z.record(z.string(), z.unknown()),
+});
 
-export interface ParameterSuggestions {
-  classification: AlgorithmSuggestion[];
-  regression: AlgorithmSuggestion[];
-  clustering: AlgorithmSuggestion[];
-}
+export type AlgorithmSuggestion = z.infer<typeof AlgorithmSuggestionSchema>;
+
+export const ParameterSuggestionsSchema = z.object({
+  classification: z.array(AlgorithmSuggestionSchema),
+  regression: z.array(AlgorithmSuggestionSchema),
+  clustering: z.array(AlgorithmSuggestionSchema),
+});
+
+export type ParameterSuggestions = z.infer<typeof ParameterSuggestionsSchema>;
 
 /**
  * Suggest algorithms and parameters for all three ML tasks given a FeatureMatrix.

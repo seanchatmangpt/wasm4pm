@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
+  emitCrownReceipt,
   blake3Hex,
   newReceipt,
   type CommandReceipt,
@@ -441,29 +442,29 @@ export const simulate = defineCommand({
 
               // ── Receipt ─────────────────────────────────────────────────────
               if (!ctx.args['no-save']) {
-                try {
-                  const inputBytes = await fs
-                    .readFile(inputPath!)
-                    .catch(() => Buffer.from(inputPath!));
-                  const receipt: CommandReceipt = {
-                    ...newReceipt('simulate'),
-                    command: 'simulate',
-                    input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
-                    status: 'success',
-                    summary: {
-                      cases_simulated: payload.simulation.casesCompleted,
-                      avg_sojourn_time_ms: payload.statistics.avgSojournTimeMs,
-                      seed,
-                      model_kind: 'monte-carlo',
-                      variant_count: simulatedVariantCount,
-                      ...(exportPath && { exported_xes: exportPath }),
-                    },
-                  };
-                  saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
-                }
+                const inputBytes = await fs.readFile(inputPath!);
+                const receipt: CommandReceipt = {
+                  ...newReceipt('simulate'),
+                  command: 'simulate',
+                  input_hash: blake3Hex(inputBytes),
+                  output_hash: blake3Hex(JSON.stringify(payload)),
+                  status: 'success',
+                  summary: {
+                    cases_simulated: payload.simulation.casesCompleted,
+                    avg_sojourn_time_ms: payload.statistics.avgSojournTimeMs,
+                    seed,
+                    model_kind: 'monte-carlo',
+                    variant_count: simulatedVariantCount,
+                    input_file: inputPath,
+                    ...(exportPath && { exported_xes: exportPath }),
+                  },
+                };
+                saveCommandReceipt(receipt);
+                emitCrownReceipt(
+                  'simulate',
+                  JSON.stringify(inputBytes),
+                  JSON.stringify(payload),
+                );
               }
 
               return await exitWithFlush(result.exit_code);
@@ -554,32 +555,48 @@ function computeActualLogStats(
   let totalActivities = 0;
   let uniqueVariants = 1;
 
-  try {
-    const rawDfg = wasm.discover_dfg(logHandle, activityKey);
-    const dfg =
-      typeof rawDfg === 'string'
-        ? (JSON.parse(rawDfg) as Record<string, unknown>)
-        : (rawDfg as Record<string, unknown>);
+  const rawDfg = wasm.discover_dfg(logHandle, activityKey);
+  const dfg =
+    typeof rawDfg === 'string'
+      ? (JSON.parse(rawDfg) as Record<string, unknown>)
+      : (rawDfg as Record<string, unknown>);
 
-    // Extract activity frequencies from DFG node frequencies
+  // Extract activity frequencies from DFG nodes list
+  const nodes = dfg['nodes'] as Array<{ id: string; label: string; frequency: number }> | undefined;
+  if (nodes) {
+    for (const node of nodes) {
+      const label = node.label || node.id;
+      activityFrequencies[label] = node.frequency;
+      totalActivities += node.frequency;
+    }
+  } else {
+    // Fallback if node_frequencies exists
     const nodeFreq = dfg['node_frequencies'] as Record<string, number> | undefined;
     if (nodeFreq) {
       activityFrequencies = nodeFreq;
       totalActivities = Object.values(nodeFreq).reduce((a, b) => a + b, 0);
     }
-
-    // Trace count from DFG metadata or fallback
-    const cases = dfg['case_count'] as number | undefined;
-    traceCount = cases ?? 1;
-
-    // Edge count as proxy for variant diversity
-    const edges = dfg['edges'] as Array<unknown> | undefined;
-    uniqueVariants = edges ? Math.max(1, Math.floor(Math.sqrt(edges.length))) : 1;
-  } catch {
-    // WASM unavailable — use minimal defaults
-    traceCount = 1;
-    uniqueVariants = 1;
   }
+
+  // Trace count from DFG start_activities or metadata
+  const starts = dfg['start_activities'] as Record<string, number> | undefined;
+  if (starts) {
+    traceCount = Object.values(starts).reduce((a, b) => a + b, 0);
+  } else {
+    const cases = dfg['case_count'] as number | undefined;
+    if (cases !== undefined) {
+      traceCount = cases;
+    } else {
+      throw new Error('Simulation failed: could not extract case_count from process model.');
+    }
+  }
+
+  // Edge count as proxy for variant diversity
+  const edges = dfg['edges'] as Array<unknown> | undefined;
+  if (!edges || edges.length === 0) {
+    throw new Error('Simulation failed: process model contains no edges.');
+  }
+  uniqueVariants = Math.max(1, Math.floor(Math.sqrt(edges.length)));
 
   const avgActivitiesPerCase = traceCount > 0 ? totalActivities / traceCount : 0;
 

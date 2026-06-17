@@ -1,0 +1,71 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "htn_planning",
+    "breed": "htn_planning",
+    "status": "ok",
+    "output": {
+      "breed": "HtnPlanning",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "prior_stage_hash",
+          "value": "hearsay:f0af85a2f1d2eba4ce4c573060a552a8656c970a0492a015ae618b44af1daf89"
+        },
+        {
+          "key": "htn:plan",
+          "value": "op:load,op:drive,op:unload"
+        }
+      ],
+      "selected": "op:load,op:drive,op:unload",
+      "explanation": "HTN plan found with 3 steps after 4 expansions (replay self-audit passed)",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "htn-decompose",
+          "detail": "method:deliver:by_truck",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "htn-apply",
+          "detail": "op:load",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "htn-apply",
+          "detail": "op:drive",
+          "depth": 2
+        },
+        {
+          "step": 3,
+          "kind": "htn-apply",
+          "detail": "op:unload",
+          "depth": 3
+        },
+        {
+          "step": 4,
+          "kind": "htn-plan",
+          "detail": "op:load,op:drive,op:unload",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c9939ee50fae670770f48d0f948cbb782a5fbb70cc48a65403e484de37f29391",
+    "output_hash": "c48f545c27f2287903d644cca55284c44ed667fa9e9fd836db814fa565ff32a9",
+    "replay_pointer": "c48f545c27f22879",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/c9939ee50fae670770f48d0f948cbb782a5fbb70cc48a65403e484de37f29391.json"
+  },
+  "meta": {
+    "run_id": "9b8a006c-257b-4f56-a9cf-068199aee5a7",
+    "timestamp": "2026-06-11T19:56:13.665Z",
+    "duration_ms": 18,
+    "version": "26.6.10"
+  }
+}

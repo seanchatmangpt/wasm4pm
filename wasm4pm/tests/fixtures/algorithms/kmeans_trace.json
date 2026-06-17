@@ -1,0 +1,12 @@
+{
+  "algorithm": "kmeans_trace",
+  "provenance": {
+    "paper": "Song, M., Gunther, C.W., van der Aalst, W.M.P. (2008). Trace Clustering in Process Mining. BPM 2008 Workshops.",
+    "locus": "Section 3.2, k-means internal algorithm (kmeans_internal)",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "clusters_ge_1",
+    "rationale": "K-means trace clustering on the running-example 12-trace log with k=3 produces exactly 3 non-empty clusters."
+  }
+}

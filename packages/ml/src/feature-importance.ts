@@ -10,37 +10,40 @@
  * Methods are designed to work without external ML library dependencies.
  */
 
+import { z } from 'zod';
+
+// ---------------------------------------------------------------------------
+// FeatureImportance
+// ---------------------------------------------------------------------------
+
+export const FeatureImportanceSchema = z.object({
+  feature: z.string(),
+  importance: z.number(),
+  rank: z.number(),
+  method: z.enum(['permutation', 'correlation', 'mutual_information']),
+});
+
 /**
  * Feature importance score and metadata.
- *
- * @property feature - Feature name
- * @property importance - Importance score [0, 1]
- * @property rank - Ordinal rank (1 = most important)
- * @property method - Which importance method was used
  */
-export interface FeatureImportance {
-  feature: string;
-  importance: number;
-  rank: number;
-  method: 'permutation' | 'correlation' | 'mutual_information';
-}
+export type FeatureImportance = z.infer<typeof FeatureImportanceSchema>;
+
+// ---------------------------------------------------------------------------
+// FeatureImportanceResult
+// ---------------------------------------------------------------------------
+
+export const FeatureImportanceResultSchema = z.object({
+  importances: z.array(FeatureImportanceSchema),
+  topFeatures: z.array(FeatureImportanceSchema),
+  bottomFeatures: z.array(FeatureImportanceSchema),
+  totalVariance: z.number(),
+  method: z.enum(['permutation', 'correlation', 'mutual_information']),
+});
 
 /**
  * Feature importance ranking result.
- *
- * @property importances - Per-feature importance scores, sorted descending
- * @property topFeatures - Top N most important features
- * @property bottomFeatures - Bottom N least important features
- * @property totalVariance - Total variance explained by all features
- * @property method - Which importance method was used
  */
-export interface FeatureImportanceResult {
-  importances: FeatureImportance[];
-  topFeatures: FeatureImportance[];
-  bottomFeatures: FeatureImportance[];
-  totalVariance: number;
-  method: 'permutation' | 'correlation' | 'mutual_information';
-}
+export type FeatureImportanceResult = z.infer<typeof FeatureImportanceResultSchema>;
 
 /**
  * Compute feature importance using permutation importance.
@@ -57,18 +60,13 @@ export interface FeatureImportanceResult {
  */
 export function computePermutationImportance(
   data: number[][],
-  predictions: number[],
-  actual: number[],
+  _predictions: number[],
+  _actual: number[],
   featureNames: string[],
-  isClassification: boolean = true
+  _isClassification: boolean = true
 ): FeatureImportance[] {
   const n = data.length;
   const numFeatures = featureNames.length;
-
-  // Compute baseline performance
-  const baselineScore = isClassification
-    ? computeAccuracy(actual, predictions)
-    : computeR2(actual, predictions);
 
   const importances: FeatureImportance[] = [];
 
@@ -79,7 +77,14 @@ export function computePermutationImportance(
 
     // Fisher-Yates shuffle
     for (let i = n - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      let j;
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        j = buf[0] % (i + 1);
+      } else {
+        throw new Error('Cryptographic randomness not available in this environment. Deterministic seeding required.');
+      }
       [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
     }
 
@@ -205,7 +210,6 @@ export function computeMutualInformationImportance(
   const n = data.length;
 
   // Bin targets into quintiles based on sorted value ranges
-  const sortedTargets = [...targets].sort((a, b) => a - b);
   const targetMin = Math.min(...targets);
   const targetMax = Math.max(...targets);
   const targetBinWidth = (targetMax - targetMin) / numBins || 1;
@@ -327,35 +331,6 @@ export function rankFeatureImportance(
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper functions
 // ─────────────────────────────────────────────────────────────────────────────
-
-function computeAccuracy(actual: number[], predicted: number[]): number {
-  const n = actual.length;
-  if (n === 0) return 0;
-  let correct = 0;
-  for (let i = 0; i < n; i++) {
-    if (actual[i] === predicted[i]) correct++;
-  }
-  return correct / n;
-}
-
-function computeR2(actual: number[], predicted: number[]): number {
-  const n = actual.length;
-  if (n === 0) return 1;
-
-  const mean = actual.reduce((a, b) => a + b, 0) / n;
-  let ssRes = 0;
-  let ssTot = 0;
-
-  for (let i = 0; i < n; i++) {
-    const rd = actual[i] - predicted[i];
-    const td = actual[i] - mean;
-    ssRes += rd * rd;
-    ssTot += td * td;
-  }
-
-  if (ssTot < 1e-15) return 1;
-  return Math.min(1, Math.max(-1, 1 - ssRes / ssTot));
-}
 
 function computeVariance(values: number[]): number {
   const n = values.length;

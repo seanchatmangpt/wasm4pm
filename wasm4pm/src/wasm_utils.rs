@@ -12,6 +12,7 @@
 
 use crate::cache::{cache_stats as internal_cache_stats, hash_xes_content as internal_hash_xes};
 use crate::models::AttributeValue;
+#[cfg(feature = "ml")]
 use crate::prediction_drift::{
     ewma_series as internal_ewma_series, jaccard_distance as internal_jaccard_distance,
 };
@@ -84,6 +85,7 @@ pub fn hash_xes_content(xes_content: &str) -> String {
 /// let dist = jaccard_distance(r#"["A", "B"]"#, r#"["B", "C"]"#).unwrap();
 /// assert!((dist - 0.6666666666666667).abs() < 1e-10);
 /// ```
+#[cfg(feature = "ml")]
 #[wasm_bindgen]
 pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<f64, JsValue> {
     let set1: HashSet<String> = serde_json::from_str(set1_json)
@@ -113,6 +115,7 @@ pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<f64, JsValue
 ///
 /// # Theory
 /// `s[i] = α · x[i] + (1 - α) · s[i-1]` with `s[0] = x[0]`
+#[cfg(feature = "ml")]
 #[wasm_bindgen]
 pub fn ewma_series(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
     let values: Vec<f64> = serde_json::from_str(values_json)

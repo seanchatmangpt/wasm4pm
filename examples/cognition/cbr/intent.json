@@ -1,32 +1,447 @@
 {
-  "intent": "best-recipe",
+  "intent": "resolve network incident with packet-loss in production API",
   "candidates": [],
   "facts": [
-    { "key": "ingredient", "value": "flour" },
-    { "key": "ingredient", "value": "egg" },
-    { "key": "prep_time", "value": "5min" }
+    {
+      "key": "category",
+      "value": "network"
+    },
+    {
+      "key": "symptom",
+      "value": "packet-loss"
+    },
+    {
+      "key": "urgency",
+      "value": "high"
+    },
+    {
+      "key": "affected-service",
+      "value": "production-api"
+    },
+    {
+      "key": "environment",
+      "value": "production"
+    }
   ],
   "cases": [
     {
-      "id": "pancakes",
-      "intent": "best-recipe",
-      "architecture": "pancakes",
-      "outcome_score": 0.9,
+      "id": "INC0001",
+      "intent": "network packet loss in production",
+      "architecture": "restart-core-switch",
+      "outcome_score": 0.96,
       "facts": [
-        { "key": "ingredient", "value": "flour" },
-        { "key": "ingredient", "value": "egg" },
-        { "key": "ingredient", "value": "milk" }
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "packet-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
       ]
     },
     {
-      "id": "scones",
-      "intent": "best-recipe",
-      "architecture": "scones",
-      "outcome_score": 0.7,
+      "id": "INC0002",
+      "intent": "database connection pool exhaustion",
+      "architecture": "increase-pool-size",
+      "outcome_score": 0.88,
       "facts": [
-        { "key": "ingredient", "value": "flour" },
-        { "key": "ingredient", "value": "butter" },
-        { "key": "prep_time", "value": "30min" }
+        {
+          "key": "category",
+          "value": "database"
+        },
+        {
+          "key": "symptom",
+          "value": "connection-timeout"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0003",
+      "intent": "disk full on application server",
+      "architecture": "purge-logs-expand-volume",
+      "outcome_score": 0.92,
+      "facts": [
+        {
+          "key": "category",
+          "value": "storage"
+        },
+        {
+          "key": "symptom",
+          "value": "disk-full"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "affected-service",
+          "value": "app-server"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0004",
+      "intent": "memory leak in java application",
+      "architecture": "rolling-restart-tuning",
+      "outcome_score": 0.75,
+      "facts": [
+        {
+          "key": "category",
+          "value": "application"
+        },
+        {
+          "key": "symptom",
+          "value": "out-of-memory"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "java-middleware"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0005",
+      "intent": "SSL certificate expiry",
+      "architecture": "renew-certificate",
+      "outcome_score": 0.99,
+      "facts": [
+        {
+          "key": "category",
+          "value": "security"
+        },
+        {
+          "key": "symptom",
+          "value": "ssl-error"
+        },
+        {
+          "key": "urgency",
+          "value": "critical"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0006",
+      "intent": "load balancer misconfiguration",
+      "architecture": "revert-lb-config",
+      "outcome_score": 0.91,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "high-latency"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "load-balancer"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0007",
+      "intent": "network switch port flapping causes packet loss",
+      "architecture": "replace-switch-port",
+      "outcome_score": 0.94,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "packet-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0008",
+      "intent": "NTP drift causing auth failures",
+      "architecture": "sync-ntp-servers",
+      "outcome_score": 0.87,
+      "facts": [
+        {
+          "key": "category",
+          "value": "authentication"
+        },
+        {
+          "key": "symptom",
+          "value": "auth-failure"
+        },
+        {
+          "key": "urgency",
+          "value": "medium"
+        },
+        {
+          "key": "affected-service",
+          "value": "identity-service"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0009",
+      "intent": "DNS resolution failure for external dependencies",
+      "architecture": "update-dns-forwarders",
+      "outcome_score": 0.9,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "dns-failure"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "external-gateway"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0010",
+      "intent": "CPU throttling on containerized workload",
+      "architecture": "adjust-resource-limits",
+      "outcome_score": 0.83,
+      "facts": [
+        {
+          "key": "category",
+          "value": "compute"
+        },
+        {
+          "key": "symptom",
+          "value": "high-cpu"
+        },
+        {
+          "key": "urgency",
+          "value": "medium"
+        },
+        {
+          "key": "affected-service",
+          "value": "container-cluster"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0011",
+      "intent": "firewall rule blocking inter-service traffic",
+      "architecture": "update-firewall-acl",
+      "outcome_score": 0.93,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "connection-refused"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0012",
+      "intent": "backup job monopolising network bandwidth",
+      "architecture": "throttle-backup-schedule",
+      "outcome_score": 0.8,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "packet-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "medium"
+        },
+        {
+          "key": "affected-service",
+          "value": "backup-service"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0013",
+      "intent": "queue backlog causing processing delay",
+      "architecture": "scale-queue-consumers",
+      "outcome_score": 0.85,
+      "facts": [
+        {
+          "key": "category",
+          "value": "messaging"
+        },
+        {
+          "key": "symptom",
+          "value": "queue-backlog"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "message-broker"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0014",
+      "intent": "kubernetes pod eviction due to resource pressure",
+      "architecture": "add-nodes-tune-limits",
+      "outcome_score": 0.78,
+      "facts": [
+        {
+          "key": "category",
+          "value": "compute"
+        },
+        {
+          "key": "symptom",
+          "value": "pod-eviction"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "container-cluster"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
+      ]
+    },
+    {
+      "id": "INC0015",
+      "intent": "network interface duplex mismatch causing retransmissions",
+      "architecture": "force-full-duplex",
+      "outcome_score": 0.95,
+      "facts": [
+        {
+          "key": "category",
+          "value": "network"
+        },
+        {
+          "key": "symptom",
+          "value": "packet-loss"
+        },
+        {
+          "key": "urgency",
+          "value": "high"
+        },
+        {
+          "key": "affected-service",
+          "value": "production-api"
+        },
+        {
+          "key": "environment",
+          "value": "production"
+        }
       ]
     }
   ],

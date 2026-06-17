@@ -1,0 +1,12 @@
+{
+  "algorithm": "bottleneck_miner",
+  "provenance": {
+    "paper": "van der Aalst et al. (2011) Time-oriented Sequential Pattern Mining for Process Mining — Proc. CIDM; bottleneck detection via activity duration outliers",
+    "locus": "§3 — duration threshold-based bottleneck identification",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "result_ok",
+    "rationale": "Bottleneck detection on running-example log must succeed and return a JSON result without error."
+  }
+}

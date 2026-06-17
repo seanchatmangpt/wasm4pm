@@ -1,0 +1,16 @@
+{
+  "algorithm": "heuristic_miner",
+  "provenance": {
+    "paper": "Process Mining with the HeuristicsMiner Algorithm",
+    "citation": "Weijters, A.J.M.M., van der Aalst, W.M.P., De Medeiros, A.K.A. (2006). Process Mining with the HeuristicsMiner Algorithm. BETA Working Paper Series WP 166. Eindhoven University of Technology.",
+    "locus": "Section 3 — Heuristics net construction; dependency thresholds on running-example log",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "places=13,transitions=15,arcs=35",
+    "description": "Heuristic Miner on running-example produces a heuristics net converted to Petri net with 13 places, 15 transitions, and 35 arcs"
+  }
+}

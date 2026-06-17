@@ -26,7 +26,7 @@ interface ComparisonEntry {
   generalization: number | null;
   simplicity: number | null;
   overall_quality: number | null;
-  verdict: 'excellent' | 'good' | 'acceptable' | 'poor' | null;
+  verdict: 'excellent' | 'good' | 'acceptable' | 'poor' | 'NOT_MEASURED' | 'ERROR' | null;
 }
 
 interface QualityPayload {
@@ -51,7 +51,7 @@ interface QualityPayload {
   /** Weighted overall quality: 0.4*fitness + 0.3*precision + 0.2*gen + 0.1*simplicity */
   overall_quality: number | null;
   /** Verdict based on overall_quality thresholds */
-  verdict: 'excellent' | 'good' | 'acceptable' | 'poor' | null;
+  verdict: 'excellent' | 'good' | 'acceptable' | 'poor' | 'NOT_MEASURED' | 'ERROR' | null;
   /** Actionable recommendations based on dimension scores */
   recommendations: string[];
   /** Per-dimension breakdown with interpretations */
@@ -227,8 +227,9 @@ export const quality = defineCommand({
                   `    wpm quality log.xes --metrics fitness,precision  # selected metrics\n\n` +
                   `  Run "wpm quality --help" for details.`
               ),
-              EXIT_CODES.config_error,
-              'INVALID_METRICS'
+              EXIT_CODES.source_error,
+              'SOURCE_ERROR',
+              `Verify the metrics passed to the --metrics parameter are valid.`
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
@@ -818,69 +819,34 @@ async function runCompare(
         }
       }
 
-      // Precision heuristic — algorithm-specific known characteristics
-      const precisionMap: Record<string, number> = {
-        dfg: 0.45,
-        process_skeleton: 0.40,
-        alpha_plus_plus: 0.55,
-        heuristic_miner: 0.60,
-        inductive_miner: 0.72,
-        hill_climbing: 0.65,
-        declare: 0.70,
-        simulated_annealing: 0.75,
-        a_star: 0.78,
-        aco: 0.76,
-        pso: 0.76,
-        genetic_algorithm: 0.82,
-        optimized_dfg: 0.55,
-        ilp_petri_net: baselineScores.precision ?? 0.88,
-      };
+      // Precision check: use baseline if available, otherwise null
       if (compScores.precision === undefined) {
-        compScores.precision = precisionMap[algo] ?? 0.60;
+        compScores.precision = baselineScores.precision ?? null;
       }
 
-      // Generalization heuristic
-      const generalizationMap: Record<string, number> = {
-        dfg: 0.80,
-        heuristic_miner: 0.75,
-        inductive_miner: 0.85,
-        genetic_algorithm: 0.70,
-        ilp_petri_net: baselineScores.generalization ?? 0.65,
-      };
-      compScores.generalization = generalizationMap[algo] ?? 0.72;
+      // Generalization: use baseline if available, otherwise null
+      compScores.generalization = baselineScores.generalization ?? null;
 
-      // Simplicity heuristic
-      const simplicityMap: Record<string, number> = {
-        dfg: 0.75,
-        process_skeleton: 0.80,
-        heuristic_miner: 0.70,
-        inductive_miner: 0.72,
-        genetic_algorithm: 0.55,
-        ilp_petri_net: baselineScores.simplicity ?? 0.60,
-      };
-      compScores.simplicity = simplicityMap[algo] ?? 0.65;
+      // Simplicity: use baseline if available, otherwise null
+      compScores.simplicity = baselineScores.simplicity ?? null;
 
-      // Fallback fitness
+      // Fitness check
       if (compScores.fitness === undefined) {
-        compScores.fitness = baselineScores.fitness ?? 0.80;
+        compScores.fitness = baselineScores.fitness ?? null;
       }
 
       const oq = computeOverallQuality(compScores);
       entries.push({
         algorithm: algo,
-        fitness: compScores.fitness ?? null,
+        fitness: compScores.fitness,
         precision: compScores.precision ?? null,
-        generalization: compScores.generalization ?? null,
-        simplicity: compScores.simplicity ?? null,
+        generalization: compScores.generalization,
+        simplicity: compScores.simplicity,
         overall_quality: oq,
-        verdict: computeVerdict(
-          oq ??
-            (Object.values(compScores).reduce((a, b) => a + b, 0) /
-              Math.max(1, Object.values(compScores).length))
-        ),
+        verdict: oq !== null ? computeVerdict(oq) : 'NOT_MEASURED',
       });
-    } catch {
-      // Comparison for this algorithm is best-effort
+    } catch (e: any) {
+      // Comparison for this algorithm failed honestly
       entries.push({
         algorithm: algo,
         fitness: null,
@@ -888,8 +854,9 @@ async function runCompare(
         generalization: null,
         simplicity: null,
         overall_quality: null,
-        verdict: null,
-      });
+        verdict: 'ERROR',
+        error: e.message
+      } as any);
     }
   }
 

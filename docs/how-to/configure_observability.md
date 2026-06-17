@@ -18,3 +18,13 @@ Configure OpenTelemetry (OTEL) for autonomic monitoring and adversarial probe de
    level = "trace"
    ```
 3. Run your mining job. The telemetry will automatically include adversarial gate metrics.
+
+## Example
+
+`examples/observability-setup.ts` demonstrates a full OTEL setup: endpoint configuration, span verification, and OTLP export:
+
+```bash
+tsx examples/observability-setup.ts
+```
+
+For edge telemetry with Truex capture, see `examples/truex-capture-otlp.ts`.

@@ -48,6 +48,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   // Extension check — accept XES and JSON-based logs (not OCEL; those are handled
@@ -68,6 +69,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   // WASM init — failure is a WASM runtime error (exit 3), not a source error
@@ -90,6 +92,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
   const wasm = loader.get() as Record<string, unknown>;
 
@@ -128,6 +131,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   const xesContent = await fs.readFile(inputPath, 'utf-8');
@@ -150,6 +154,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   const looksLikeXes = xesContent.includes('<log') || xesContent.includes('<trace') || xesContent.includes('<event');
@@ -170,6 +175,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   const isWellFormed = xesContent.includes('</log>') || xesContent.includes('</trace>');
@@ -189,6 +195,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   const logHandle = (wasm['load_eventlog_from_xes'] as (s: string) => string)(xesContent);
@@ -208,6 +215,7 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   const traceCount = (xesContent.match(/<trace[\s>]/g) ?? []).length;
@@ -226,16 +234,13 @@ export async function withLogSession<T>(
     );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
+    return undefined as any;
   }
 
   // Execute with guaranteed handle cleanup
   try {
     return await fn(wasm, logHandle);
   } finally {
-    try {
-      (wasm['delete_object'] as (h: string) => void)(logHandle);
-    } catch {
-      // Best-effort cleanup — do not mask the original error
-    }
+    (wasm['delete_object'] as (h: string) => void)(logHandle);
   }
 }

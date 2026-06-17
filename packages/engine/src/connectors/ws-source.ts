@@ -6,6 +6,7 @@
  * Supports reconnection with exponential backoff.
  */
 
+import { z } from 'zod';
 import { createHash } from 'crypto';
 import {
   SourceAdapter,
@@ -19,20 +20,16 @@ import { ok, err, isOk } from '@wasm4pm/contracts';
 /**
  * Configuration for WebSocketSourceAdapter
  */
-export interface WebSocketSourceConfig {
-  /** WebSocket server URL (ws:// or wss://) */
-  url: string;
-  /** Reconnection attempts (default: 5) */
-  maxReconnectAttempts?: number;
-  /** Initial reconnect delay in ms (default: 1000) */
-  reconnectDelayMs?: number;
-  /** Maximum reconnect delay in ms (default: 30000) */
-  maxReconnectDelayMs?: number;
-  /** Custom headers for the WebSocket handshake (if supported) */
-  headers?: Record<string, string>;
-  /** Label for fingerprinting */
-  label?: string;
-}
+export const WebSocketSourceConfigSchema = z.object({
+  url: z.string(),
+  maxReconnectAttempts: z.number().optional(),
+  reconnectDelayMs: z.number().optional(),
+  maxReconnectDelayMs: z.number().optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  label: z.string().optional(),
+});
+
+export type WebSocketSourceConfig = z.infer<typeof WebSocketSourceConfigSchema>;
 
 /**
  * EventStream implementation that reads from a WebSocket connection.
@@ -48,7 +45,7 @@ class WebSocketEventStream implements EventStream {
 
   constructor(
     private url: string,
-    private config: WebSocketSourceConfig
+    _config: WebSocketSourceConfig
   ) {}
 
   /**

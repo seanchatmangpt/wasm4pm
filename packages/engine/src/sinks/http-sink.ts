@@ -5,6 +5,7 @@
  * authentication and retry logic.
  */
 
+import { z } from 'zod';
 import {
   SinkAdapter,
   ArtifactType,
@@ -20,20 +21,22 @@ import { createError } from '@wasm4pm/contracts';
 /**
  * Configuration for HttpSinkAdapter
  */
-export interface HttpSinkConfig {
-  url: string;
-  method?: 'POST' | 'PUT';
-  headers?: Record<string, string>;
-  timeoutMs?: number;
-  auth?: {
-    type: 'none' | 'bearer' | 'basic';
-    token?: string;
-    username?: string;
-    password?: string;
-  };
-  onExists?: ExistsBehavior;
-  failureMode?: FailureMode;
-}
+export const HttpSinkConfigSchema = z.object({
+  url: z.string(),
+  method: z.enum(['POST', 'PUT']).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  timeoutMs: z.number().optional(),
+  auth: z.object({
+    type: z.enum(['none', 'bearer', 'basic']),
+    token: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+  }).optional(),
+  onExists: z.string().optional() as z.ZodOptional<z.ZodType<ExistsBehavior>>,
+  failureMode: z.string().optional() as z.ZodOptional<z.ZodType<FailureMode>>,
+});
+
+export type HttpSinkConfig = z.infer<typeof HttpSinkConfigSchema>;
 
 /**
  * HttpSinkAdapter - Sends artifacts to a remote HTTP endpoint

@@ -106,10 +106,10 @@ for breed in crates/wasm4pm-cognition/src/breeds/*.rs; do
   base="$(basename "$breed")"
   [ "$base" = "mod.rs" ] && continue
   BODY_LEN=$(awk '
-    /fn run\(/ { in_fn=1; depth=0; opened=0; next }
+    /fn run\(/ { in_fn=1; depth=0; opened=0 }
     in_fn {
-      n=gsub(/{/, "{"); depth += n; opened += n
-      m=gsub(/}/, "}"); depth -= m
+      n = gsub(/\{/, "{"); depth += n; opened += n
+      m = gsub(/\}/, "}"); depth -= m
       if (NF > 0 && $0 !~ /^\s*$/ && $0 !~ /^\s*\/\//) lines++
       if (opened > 0 && depth <= 0) { exit }
     }

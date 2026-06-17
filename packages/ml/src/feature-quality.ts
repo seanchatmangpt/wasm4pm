@@ -9,13 +9,17 @@
  * Returns quality score (0-1) + actionable warnings.
  */
 
-export interface QualityReport {
-  qualityScore: number; // 0-1, higher is better
-  zeroVarianceColumns: number;
-  correlatedPairs: Array<{ col1: number; col2: number; correlation: number }>;
-  warnings: string[];
-  recommendations: string[];
-}
+import { z } from 'zod';
+
+export const QualityReportSchema = z.object({
+  qualityScore: z.number(),
+  zeroVarianceColumns: z.number(),
+  correlatedPairs: z.array(z.object({ col1: z.number(), col2: z.number(), correlation: z.number() })),
+  warnings: z.array(z.string()),
+  recommendations: z.array(z.string()),
+});
+
+export type QualityReport = z.infer<typeof QualityReportSchema>;
 
 /**
  * Compute variance (standard deviation squared) for a column.

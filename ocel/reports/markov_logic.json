@@ -1,0 +1,9 @@
+{
+  "breed_id": "markov_logic",
+  "model_id": "markov_logic-l1-v1",
+  "fitness": 1,
+  "admitted": true,
+  "measured_by": "tests/ocel_conformance.rs::markov_logic_ocel_fitness_one",
+  "negative_injection": "reversed trace rejected (is_conforming=false)",
+  "measured_on": "2026-06-10"
+}

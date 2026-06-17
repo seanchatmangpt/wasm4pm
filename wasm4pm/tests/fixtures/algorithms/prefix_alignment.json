@@ -1,0 +1,12 @@
+{
+  "algorithm": "prefix_alignment",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Adriansyah, A., & van Dongen, B. (2012). Replaying history on process models for conformance checking and performance analysis. WIREs Data Mining and Knowledge Discovery, 2(2), 182-192.",
+    "locus": "Section 5 — prefix-based alignment fitness for online conformance checking",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "fitness_nonneg",
+    "rationale": "Alignment fitness on running-example log against inductive-miner net is non-negative"
+  }
+}

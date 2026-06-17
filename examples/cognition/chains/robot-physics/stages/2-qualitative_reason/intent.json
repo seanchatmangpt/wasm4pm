@@ -1,0 +1,30 @@
+{
+  "intent": "envision the pressure-regulator valve confluence with injected hash var h_6ee3c81b",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "qr:confluence:valve",
+      "value": "+p,+a,-q"
+    },
+    {
+      "key": "qr:sign:p",
+      "value": "+"
+    },
+    {
+      "key": "qr:sign:a",
+      "value": "-"
+    },
+    {
+      "key": "qr:confluence:dyn",
+      "value": "+h_6ee3c81b,-dyn_v"
+    },
+    {
+      "key": "qr:sign:h_6ee3c81b",
+      "value": "+"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

@@ -1,0 +1,32 @@
+{
+  "model_id": "hearsay-l1-v1",
+  "model_level": "L1",
+  "breed_id": "hearsay",
+  "object_types": ["hypothesis", "knowledge_source", "blackboard"],
+  "places": [
+    {"id": "p1", "name": "hypothesis_evaluated",        "object_type": "hypothesis"},
+    {"id": "p2", "name": "hypothesis_posted",           "object_type": "blackboard"},
+    {"id": "p3", "name": "knowledge_source_triggered",  "object_type": "knowledge_source"},
+    {"id": "p4", "name": "consensus_reached",           "object_type": "blackboard"},
+    {"id": "p5", "name": "consensus_refused",           "object_type": "blackboard"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "hypothesis_evaluated",       "label": "hypothesis_evaluated"},
+    {"id": "t2", "name": "hypothesis_posted",          "label": "hypothesis_posted"},
+    {"id": "t3", "name": "knowledge_source_triggered", "label": "knowledge_source_triggered"},
+    {"id": "t4", "name": "consensus_reached",          "label": "consensus_reached"},
+    {"id": "t5", "name": "consensus_refused",          "label": "consensus_refused"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p4": 1}, {"p5": 1}]
+}

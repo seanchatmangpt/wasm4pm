@@ -1,0 +1,28 @@
+{
+  "intent": "evaluate belief",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "source1",
+      "premise": [],
+      "conclusion": "flim",
+      "certainty": 0.6
+    },
+    {
+      "id": "source2",
+      "premise": [],
+      "conclusion": "flam",
+      "certainty": 0.7
+    }
+  ],
+  "goals": [
+    {
+      "id": "query",
+      "predicate": "query",
+      "value": "flim"
+    }
+  ],
+  "state": []
+}

@@ -1,0 +1,16 @@
+{
+  "algorithm": "smart_engine",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 5.",
+    "locus": "Chapter 5 — Algorithm selection and meta-mining; smart engine delegates to best-fit algorithm based on log characteristics",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "algorithm=heuristic_miner",
+    "description": "Smart engine selects heuristic_miner as the best algorithm for the running-example log based on log size and structure heuristics"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "intent": "abduce",
+  "candidates": [
+    {
+      "id": "c",
+      "score": 0.5,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "alp:abducible:a",
+      "value": "true"
+    },
+    {
+      "key": "alp:abducible:b",
+      "value": "true"
+    },
+    {
+      "key": "alp:abducible:c",
+      "value": "true"
+    },
+    {
+      "key": "alp:abducible:d",
+      "value": "true"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r1",
+      "premise": [
+        "a",
+        "b"
+      ],
+      "conclusion": "g",
+      "certainty": 1.0
+    },
+    {
+      "id": "r2",
+      "premise": [
+        "c"
+      ],
+      "conclusion": "g",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [
+    {
+      "id": "g1",
+      "predicate": "alp:observe",
+      "value": "g"
+    }
+  ],
+  "state": []
+}

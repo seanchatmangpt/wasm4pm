@@ -13,6 +13,7 @@
  * the collector is unreachable or slow — reduce batch_size or increase max_queue_size.
  */
 
+import { z } from 'zod';
 import { NoopTracer } from './noop.js';
 import { LiveSpan, type Span, type Tracer, type SpanKind } from './spans.js';
 import { RequiredFields } from './fields.js';
@@ -25,26 +26,34 @@ import { SpanContext, generateSpanId } from './context.js';
  * spans under a stale scope version, making reproducing past runs impossible.
  */
 export const OBSERVABILITY_SCOPE_NAME = '@wasm4pm/observability';
-export const OBSERVABILITY_SCOPE_VERSION = '26.6.5';
+export const OBSERVABILITY_SCOPE_VERSION = '26.6.9';
 
 // ---- Configuration ----
 
-export interface OtelConfig {
+/**
+ * Zod schema for OtelConfig.
+ * Validates OTEL configuration read from env vars, TOML, or JSON config files.
+ * Catches invalid collector endpoints, bad exporter types, and out-of-range
+ * numeric options at startup rather than at export time.
+ */
+export const OtelConfigSchema = z.object({
   /** Master switch. Default: false. */
-  enabled: boolean;
+  enabled: z.boolean(),
   /** OTLP exporter transport. */
-  exporter: 'otlp_http' | 'otlp_grpc';
+  exporter: z.enum(['otlp_http', 'otlp_grpc']),
   /** Collector endpoint URL. */
-  endpoint: string;
+  endpoint: z.string().url(),
   /** If true, export failures throw instead of warning. Default: false. */
-  required: boolean;
+  required: z.boolean().default(false),
   /** HTTP timeout in ms. Default: 5000. */
-  timeout_ms?: number;
+  timeout_ms: z.number().int().positive().optional(),
   /** Max queued spans before dropping oldest. Default: 1000. */
-  max_queue_size?: number;
+  max_queue_size: z.number().int().positive().optional(),
   /** Spans per export batch. Default: 100. */
-  batch_size?: number;
-}
+  batch_size: z.number().int().positive().optional(),
+});
+
+export type OtelConfig = z.infer<typeof OtelConfigSchema>;
 
 // ---- OtelTracer (real implementation) ----
 

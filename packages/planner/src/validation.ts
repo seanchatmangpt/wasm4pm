@@ -2,6 +2,7 @@
  * Plan validation utilities
  */
 
+import { z } from 'zod';
 import type { ExecutionPlan } from './planner.js';
 import { validateDAG } from './dag.js';
 import { PlanStepType } from './steps.js';
@@ -15,19 +16,20 @@ const KNOWN_SINK_FORMATS = new Set(['json', 'parquet', 'csv', 'html', 'mermaid',
 /**
  * Validation error
  */
-export interface ValidationError {
+export const ValidationErrorSchema = z.object({
   /** Field or aspect that failed validation */
-  path: string;
+  path: z.string(),
 
   /** Error message */
-  message: string;
+  message: z.string(),
 
   /** Suggested fix if available */
-  suggestion?: string;
+  suggestion: z.string().optional(),
 
   /** Severity level */
-  severity: 'error' | 'warning' | 'info';
-}
+  severity: z.enum(['error', 'warning', 'info']),
+});
+export type ValidationError = z.infer<typeof ValidationErrorSchema>;
 
 /**
  * Validates an execution plan for structural correctness and consistency

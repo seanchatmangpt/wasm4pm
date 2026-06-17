@@ -1,0 +1,31 @@
+{
+  "intent": "steam controller heat change",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "fuzzy:temp:hot",
+      "value": "tri:10,30,50"
+    },
+    {
+      "key": "fuzzy:heat:change",
+      "value": "tri:0,25,100"
+    },
+    {
+      "key": "fuzzy:input:temp",
+      "value": "30"
+    }
+  ],
+  "cases": [],
+  "rules": [
+    {
+      "id": "pc1",
+      "premise": [
+        "fuzzy:temp:hot"
+      ],
+      "conclusion": "fuzzy:heat:change",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}

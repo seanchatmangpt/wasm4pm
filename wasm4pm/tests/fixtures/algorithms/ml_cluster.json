@@ -1,0 +1,16 @@
+{
+  "algorithm": "ml_cluster",
+  "provenance": {
+    "paper": "Trace Clustering in Process Mining",
+    "citation": "Song, M., Günther, C.W., van der Aalst, W.M.P. (2008). Trace Clustering in Process Mining. BPM 2008 Workshops.",
+    "locus": "Section 3, k-medoids clustering",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "clusters_ge_1",
+    "description": "k-medoids clustering on running example traces produces at least 1 cluster"
+  }
+}

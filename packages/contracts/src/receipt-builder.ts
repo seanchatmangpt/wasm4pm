@@ -12,6 +12,7 @@ import { hashData } from './hash.js';
  * All setters return the builder for method chaining
  */
 export class ReceiptBuilder {
+  private traceId: string = '';
   private runId: string = '';
   private configHash: string = '';
   private inputHash: string = '';
@@ -52,6 +53,16 @@ export class ReceiptBuilder {
    */
   setRunId(id: string): this {
     this.runId = id;
+    return this;
+  }
+
+  /**
+   * Set the OTEL trace ID to correlate this receipt with a distributed trace
+   * @param id Trace ID string
+   * @returns This builder for chaining
+   */
+  setTraceId(id: string): this {
+    this.traceId = id;
     return this;
   }
 
@@ -187,7 +198,8 @@ export class ReceiptBuilder {
 
     const receipt: Receipt = {
       run_id: this.runId,
-      schema_version: '1.0',
+      trace_id: this.traceId,
+      schema_version: '1.1',
       config_hash: this.configHash,
       input_hash: this.inputHash,
       plan_hash: this.planHash,

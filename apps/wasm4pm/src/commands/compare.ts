@@ -511,6 +511,10 @@ export const compare = defineCommand({
       type: 'boolean',
       description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
+    'cohort': {
+      type: 'string' as const,
+      description: 'Partition traces by case attribute for cohort comparison (e.g. --cohort org:resource)',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human' | 'csv') ?? 'human';
@@ -779,7 +783,7 @@ export const compare = defineCommand({
                 input: string;
                 activityKey: string;
                 /** Array of algorithm name strings that were compared. */
-                algorithms: string[];
+                algorithms: any[];
                 /** Per-algorithm comparison results (one entry per algorithm). */
                 comparisons: ModelStats[];
                 /** Algorithm with the highest quality tier, or null if fewer than 2 succeeded. */
@@ -790,7 +794,7 @@ export const compare = defineCommand({
                 status: 'ok' as const,
                 input: inputPath,
                 activityKey,
-                algorithms: algos,
+                algorithms: stats,
                 comparisons: stats,
                 winner,
                 recommendation,

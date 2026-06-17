@@ -2,7 +2,7 @@
  * Tests for Receipt types and serialization
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Receipt, isReceipt } from '../src/receipt';
 import { ReceiptBuilder } from '../src/receipt-builder';
 
@@ -25,6 +25,7 @@ describe('Receipt types', () => {
       })
       .setAlgorithm({ name: 'test-algo', version: '1.0' })
       .setModel({ nodes: 5, edges: 8 })
+      .setTraceId('aabbccddeeff00112233445566778899')
       .build();
   });
 
@@ -103,6 +104,7 @@ describe('Receipt types', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       const json = JSON.stringify(receiptWithError);
@@ -130,13 +132,14 @@ describe('Receipt types', () => {
         .setAlgorithm({
           name: 'complex-algo',
           version: '1.0',
-          parameters: Array(100).fill({ key: 'value' }),
+          parameters: Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`k${i}`, 'v'])),
         })
         .setModel({
           nodes: 10000,
           edges: 50000,
           artifacts: { output: '/path/to/model' },
         })
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       const json = JSON.stringify(largeReceipt);
@@ -177,6 +180,7 @@ describe('Receipt types', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(failedReceipt.error).toBeDefined();
@@ -201,6 +205,7 @@ describe('Receipt types', () => {
             dfg: '/output/model.dfg',
           },
         })
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receiptWithArtifacts.model.artifacts).toBeDefined();
@@ -230,6 +235,7 @@ describe('Receipt types', () => {
         .setSummary({})
         .setAlgorithm({ name: 'test', version: '1.0' })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(receiptWithContext.error?.context?.field).toBe('event_id');
@@ -271,6 +277,7 @@ describe('Receipt types', () => {
           },
         })
         .setModel({})
+        .setTraceId('aabbccddeeff00112233445566778899')
         .build();
 
       expect(

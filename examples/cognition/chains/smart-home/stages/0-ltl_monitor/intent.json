@@ -1,0 +1,30 @@
+{
+  "intent": "monitor smart home traffic light safety",
+  "facts": [
+    {
+      "key": "ltl:formula",
+      "value": "G (red -> !green)"
+    },
+    {
+      "key": "trace:0",
+      "value": "red"
+    },
+    {
+      "key": "trace:1",
+      "value": "green"
+    },
+    {
+      "key": "trace:2",
+      "value": "red"
+    },
+    {
+      "key": "trace:3",
+      "value": "green"
+    }
+  ],
+  "candidates": [],
+  "cases": [],
+  "rules": [],
+  "goals": [],
+  "state": []
+}

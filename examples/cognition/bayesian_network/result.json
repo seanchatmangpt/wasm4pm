@@ -1,0 +1,121 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "bayesian_network",
+    "breed": "bayesian_network",
+    "status": "ok",
+    "output": {
+      "breed": "BayesianNetwork",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "cpt:B",
+          "value": "0.001"
+        },
+        {
+          "key": "cpt:E",
+          "value": "0.002"
+        },
+        {
+          "key": "cpt:A|B,E",
+          "value": "0.001,0.29,0.94,0.95"
+        },
+        {
+          "key": "cpt:J|A",
+          "value": "0.05,0.90"
+        },
+        {
+          "key": "cpt:M|A",
+          "value": "0.01,0.70"
+        },
+        {
+          "key": "evidence:J",
+          "value": "true"
+        },
+        {
+          "key": "evidence:M",
+          "value": "true"
+        }
+      ],
+      "selected": "prob:B=0.284171835",
+      "explanation": "prob:B=0.284171835",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "bn-load-cpt",
+          "detail": "B",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "bn-load-cpt",
+          "detail": "E",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "bn-load-cpt",
+          "detail": "A|B,E",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "bn-load-cpt",
+          "detail": "J|A",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "bn-load-cpt",
+          "detail": "M|A",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "bn-observe",
+          "detail": "J=true",
+          "depth": 0
+        },
+        {
+          "step": 6,
+          "kind": "bn-observe",
+          "detail": "M=true",
+          "depth": 0
+        },
+        {
+          "step": 7,
+          "kind": "bn-eliminate",
+          "detail": "A",
+          "depth": 0
+        },
+        {
+          "step": 8,
+          "kind": "bn-eliminate",
+          "detail": "E",
+          "depth": 0
+        },
+        {
+          "step": 9,
+          "kind": "bn-verdict",
+          "detail": "prob:B=0.284171835",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "d2a0dbdd0fdaf7c7cecb663e955e30361c1839dac0d62bda3789f0dd03d6f7de",
+    "output_hash": "73439e7ebb9120de5c8bcf132033b21c0d58c9a9da49d18f6cba4a324a078b3a",
+    "replay_pointer": "73439e7ebb9120de",
+    "inference_step_count": 10,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/bayesian_network/.wasm4pm/receipts/d2a0dbdd0fdaf7c7cecb663e955e30361c1839dac0d62bda3789f0dd03d6f7de.json"
+  },
+  "meta": {
+    "run_id": "55fbe5cd-73bb-4601-936f-ce4209230f57",
+    "timestamp": "2026-06-11T18:43:39.976Z",
+    "duration_ms": 26,
+    "version": "26.6.10"
+  }
+}

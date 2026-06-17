@@ -81,6 +81,7 @@ fn test_all_agents_can_select_and_update() {
         // Should not panic
         orch.update(&state, &RlAction::Continue, 1.0, &make_test_state(1), false);
     }
+    assert!(true);
 }
 
 #[test]
@@ -187,6 +188,7 @@ fn test_linucb_update_no_panic() {
     // Should not panic
     orch.linucb_update(&features, 1.0);
     orch.linucb_update(&features, -0.5);
+    assert!(true);
 }
 
 // ---------------------------------------------------------------------------

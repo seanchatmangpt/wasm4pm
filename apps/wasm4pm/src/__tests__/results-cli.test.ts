@@ -524,7 +524,7 @@ describe('wpm results --verify: exit codes and JSON contract', () => {
     expect(parsed.status).toBe('error');
   });
 
-  it('--verify when stored output_hash mismatches exits 3 (execution_error)', async () => {
+  it('--verify when stored output_hash mismatches exits 4 (partial_failure)', async () => {
     // Write a fixture with a deliberately wrong output_hash (tamper simulation)
     await fs.mkdir(env.resultsDir, { recursive: true });
     const tamperedFixture = {
@@ -541,8 +541,8 @@ describe('wpm results --verify: exit codes and JSON contract', () => {
     await fs.writeFile(fp, JSON.stringify(tamperedFixture), 'utf-8');
 
     const r = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
-    // execution_error = 3: tampered payload detected
-    expect(r.exitCode).toBe(3);
+    // partial_failure = 4: tampered payload detected
+    expect(r.exitCode).toBe(4);
   });
 
   it('--verify payload includes verified boolean field', async () => {
@@ -593,7 +593,7 @@ describe('wpm results --verify: exit codes and JSON contract', () => {
     );
 
     const r = await runCli(['results', '--verify', '1', '--format', 'json'], env.tempDir);
-    expect(r.exitCode).toBe(3);
+    expect(r.exitCode).toBe(4);
     const parsed = JSON.parse(r.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
     expect(payload.verified).toBe(false);

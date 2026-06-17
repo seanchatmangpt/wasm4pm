@@ -1,0 +1,55 @@
+\chapter{Risks, Honest Limitations, and Roadmap}
+\label{ch:risks}
+
+\section{Risks stated plainly}
+
+\begin{description}[leftmargin=2em]
+  \item[Commodity algorithms.] pm4py is free, mature, and academically
+    canonical. Any pitch resting on algorithm access loses. Mitigation:
+    every commercial motion in this document prices receipts, deployment
+    profiles, embedding rights, or domain packs --- never algorithms.
+  \item[BUSL backlash.] License changes have cost projects community trust
+    (HashiCorp's relicensing produced the OpenTofu fork). Mitigation:
+    wasm4pm relicensed early, before a large external contributor base
+    existed, and the AGPL conversion date is mechanically legible via
+    CalVer.
+  \item[Evidence without endorsement.] Receipts only carry audit weight if
+    auditors accept them. Until a Big Four firm or a regulator references
+    receipt-based process evidence, Chapter~\ref{ch:eaas} is a thesis, not
+    a market. Mitigation: target SOC\,2 auditors first --- they are the
+    most innovation-tolerant of the audit populations --- and publish the
+    verification spec openly.
+  \item[Single-maintainer concentration.] Enterprise procurement scores
+    bus factor. Mitigation: the Fortune-5 readiness work (governance
+    files, SECURITY.md, signed releases, provenance) addresses the
+    paper-trail dimension; the organizational dimension requires hiring or
+    a foundation arrangement and cannot be fixed in the repository.
+  \item[Known technical gaps.] CLI$\leftrightarrow$WASM trace correlation
+    is deferred (spans appear disconnected in APM tools); stochastic
+    algorithm seeds are fixed but not yet configurable. Both are
+    documented in \texttt{docs/ENTERPRISE.md} --- the discipline of
+    shipping a Known Limitations section is itself a trust signal.
+\end{description}
+
+\section{Sequenced roadmap}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lX}
+\toprule
+\textbf{Horizon} & \textbf{Motion} \\
+\midrule
+Now--6 months & Land the dual-license funnel: publish all packages with provenance, convert BUSL-overage users to commercial licenses, ship the CI/CD assurance pack as the first vertical. \\
+6--18 months & Stand up the hosted receipt store (Evidence-as-a-Service); pursue one design-partner auditor; release the MCP/agent tool surface as a metered channel. \\
+18--36 months & OEM motion into gateway, MES, and agent-platform vendors; open the marketplace for third-party domain packs; push the receipt schema toward standardization. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Closing argument}
+
+Every durable software business owns a verb. Stripe owns \emph{charge};
+Docker owned \emph{containerize}. The architecture documented here ---
+deterministic WASM execution, BLAKE3 receipt chains, conformance envelopes,
+customer-boundary deployment --- positions wasm4pm to own \emph{prove}: not
+``our dashboard says the process is compliant,'' but ``here is a receipt
+anyone can verify.'' Insight is a feature; evidence is a business.

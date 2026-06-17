@@ -1,0 +1,38 @@
+{
+  "model_id": "analogy_sme-l1-v1",
+  "model_level": "L1",
+  "breed_id": "analogy_sme",
+  "object_types": ["expression", "gmap", "decision"],
+  "places": [
+    {"id": "p1", "name": "expressions_raw",     "object_type": "expression"},
+    {"id": "p2", "name": "expressions_parsed",  "object_type": "expression"},
+    {"id": "p3", "name": "matches_open",        "object_type": "gmap"},
+    {"id": "p4", "name": "gmap_merged",         "object_type": "gmap"},
+    {"id": "p5", "name": "inferences_proposed", "object_type": "gmap"},
+    {"id": "p6", "name": "decision_emitted",    "object_type": "decision"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "parse-expr",          "label": "parse-expr"},
+    {"id": "t2", "name": "local-match",         "label": "local-match"},
+    {"id": "t3", "name": "merge-gmap",          "label": "merge-gmap"},
+    {"id": "t4", "name": "candidate-inference", "label": "candidate-inference"},
+    {"id": "t5", "name": "decision",            "label": "decision"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "p2", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t2", "type": "consume"},
+    {"from": "t2", "to": "p3", "type": "produce"},
+    {"from": "p3", "to": "t3", "type": "consume"},
+    {"from": "t3", "to": "p4", "type": "produce"},
+    {"from": "p4", "to": "t4", "type": "consume"},
+    {"from": "t4", "to": "p5", "type": "produce"},
+    {"from": "p4", "to": "t5", "type": "consume"},
+    {"from": "p5", "to": "t5", "type": "consume"},
+    {"from": "t5", "to": "p6", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p6": 1}]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "csp_ac3",
+  "name": "CSP AC-3 + MAC Backtracking",
+  "places": [
+    { "id": "p_start" },
+    { "id": "p_solving" },
+    { "id": "p_end" }
+  ],
+  "transitions": [
+    {
+      "id": "t_init",
+      "label": "csp-init",
+      "arcs_in": ["p_start"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_revise",
+      "label": "csp-revise",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_assign",
+      "label": "csp-assign",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_backtrack",
+      "label": "csp-backtrack",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_solving"]
+    },
+    {
+      "id": "t_verdict",
+      "label": "csp-verdict",
+      "arcs_in": ["p_solving"],
+      "arcs_out": ["p_end"]
+    }
+  ],
+  "initial_marking": ["p_start"],
+  "final_markings": [["p_end"]]
+}

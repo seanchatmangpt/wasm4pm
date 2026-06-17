@@ -1,0 +1,98 @@
+(node:14114) ExperimentalWarning: Importing JSON modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "abductive_ibe",
+    "breed": "abductive_ibe",
+    "status": "ok",
+    "output": {
+      "breed": "AbductiveIbe",
+      "candidates": [
+        {
+          "id": "H1",
+          "score": 1.899999976158142,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "H1+H2",
+          "score": 1.7999999523162842,
+          "eliminated": false,
+          "elimination_reason": null
+        },
+        {
+          "id": "H2",
+          "score": 0.8999999761581421,
+          "eliminated": false,
+          "elimination_reason": null
+        }
+      ],
+      "facts": [
+        {
+          "key": "ibe:best",
+          "value": "H1"
+        },
+        {
+          "key": "ibe:score",
+          "value": "1.9000"
+        }
+      ],
+      "selected": "H1",
+      "explanation": "IBE over 3 candidate sets: best explanation 'H1' with score 1.9000 (coverage − 0.1·cost).",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "collect-observations",
+          "detail": "2 observations [E2,e_56cf32c6], 2 hypotheses",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "score-hypothesis",
+          "detail": "H1 score=1.9000",
+          "depth": 1
+        },
+        {
+          "step": 2,
+          "kind": "compare",
+          "detail": "new best H1 (1.9000)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "score-hypothesis",
+          "detail": "H2 score=0.9000",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "score-hypothesis",
+          "detail": "H1+H2 score=1.8000",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "best-explanation",
+          "detail": "H1 score=1.9000",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "c6fdbce800ec186be3196feef1ec2d3135b1bccd99e0fb3f9e98a7a5c167f75b",
+    "output_hash": "11a7ed03888d18fcc0b2dcbe36609d3ca001d1636edb1424f01dd03078a357d8",
+    "replay_pointer": "11a7ed03888d18fc",
+    "inference_step_count": 6,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/.wasm4pm/receipts/c6fdbce800ec186be3196feef1ec2d3135b1bccd99e0fb3f9e98a7a5c167f75b.json"
+  },
+  "meta": {
+    "run_id": "fa9669a5-6ee7-4c17-b71b-2e37e5cb91d4",
+    "timestamp": "2026-06-11T08:35:08.656Z",
+    "duration_ms": 14,
+    "version": "26.6.10"
+  }
+}

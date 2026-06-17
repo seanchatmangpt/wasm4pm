@@ -1,0 +1,16 @@
+{
+  "algorithm": "optimized_dfg",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Directly-Follows Graph; optimized variant preserves same graph structure as standard DFG",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8,edges=10",
+    "description": "Optimized DFG on running-example has 8 activity nodes and 10 directly-follows edges after score-threshold filtering (fitness_weight=1.0, simplicity_weight=1.0, score>0.1 gate removes low-frequency edges)"
+  }
+}

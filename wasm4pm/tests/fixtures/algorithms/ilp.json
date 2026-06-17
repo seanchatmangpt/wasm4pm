@@ -1,0 +1,16 @@
+{
+  "algorithm": "ilp",
+  "provenance": {
+    "paper": "Process Mining: A Two-Step Approach to Balance Between Underfitting and Overfitting",
+    "citation": "van der Aalst, W.M.P., Rubin, V., Verbeek, H.M.W., van Dongen, B.F., Kindler, E., Günther, C.W. (2010). Process Mining: A Two-Step Approach to Balance Between Underfitting and Overfitting. Software and System Modeling 9(1). Springer.",
+    "locus": "Section 4 — ILP-based region miner Petri net synthesis from event log footprints",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "places=5,transitions=5",
+    "description": "ILP miner on the 5-activity running-example (a,b,c,d,e) synthesises a Petri net with 5 places and 5 transitions via integer linear programming region theory (van der Aalst et al. 2010 §4)"
+  }
+}

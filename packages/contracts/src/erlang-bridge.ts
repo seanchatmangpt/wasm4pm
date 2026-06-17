@@ -34,6 +34,7 @@
  *   itself terminated.
  */
 
+import { z } from 'zod';
 import type { OcelEvent } from './ocel-bridge.js';
 
 // ---------------------------------------------------------------------------
@@ -44,55 +45,67 @@ import type { OcelEvent } from './ocel-bridge.js';
  * A single event node in a TraceGraph JSON-LD document produced by
  * `wpm trace ingest --from erlang --format json`.
  */
-export type TraceGraphEvent = {
-  '@id': string;
-  '@type': 'ocel:Event';
-  'ocel:activity': string;
-  'ocel:relatedObject': Array<{ '@id': string; '@type': string }>;
-  'trace:frame': {
-    'trace:language': string;
-    'trace:function': string;
-    'trace:file'?: string;
-    'trace:line'?: number;
-  };
-};
+export const TraceGraphEventSchema = z.object({
+  '@id': z.string(),
+  '@type': z.literal('ocel:Event'),
+  'ocel:activity': z.string(),
+  'ocel:relatedObject': z.array(z.object({ '@id': z.string(), '@type': z.string() })),
+  'trace:frame': z.object({
+    'trace:language': z.string(),
+    'trace:function': z.string(),
+    'trace:file': z.string().optional(),
+    'trace:line': z.number().optional(),
+  }),
+});
+export type TraceGraphEvent = z.infer<typeof TraceGraphEventSchema>;
 
 /**
  * TraceGraph JSON-LD document — output of `wpm trace ingest --format json`.
  * Contains a set of stack-frame-derived OCEL events and source file objects.
  */
-export type TraceGraphOutput = {
-  '@context': Record<string, string>;
-  '@id': string;
-  '@type': 'trace:TraceRun';
-  'trace:language': string;
-  'trace:source': string;
-  'trace:events': TraceGraphEvent[];
-  'trace:objects': Array<{ '@id': string; '@type': string; 'trace:path'?: string }>;
-};
+export const TraceGraphOutputSchema = z.object({
+  '@context': z.record(z.string(), z.string()),
+  '@id': z.string(),
+  '@type': z.literal('trace:TraceRun'),
+  'trace:language': z.string(),
+  'trace:source': z.string(),
+  'trace:events': z.array(TraceGraphEventSchema),
+  'trace:objects': z.array(z.object({
+    '@id': z.string(),
+    '@type': z.string(),
+    'trace:path': z.string().optional(),
+  })),
+});
+export type TraceGraphOutput = z.infer<typeof TraceGraphOutputSchema>;
 
 /**
  * A single event in the local OCEL log format used by `wpm trace conform`.
  * Uses plain keys (not the `ocel:` prefix format used by `wpm run`/OCEL 2.0 wire format).
  */
-export type OcelLogEvent = {
-  event_id: string;
-  activity: string;
-  timestamp: string;
-  objects: Array<{ id: string; type: string }>;
-  attributes: Record<string, unknown>;
-};
+export const OcelLogEventSchema = z.object({
+  event_id: z.string(),
+  activity: z.string(),
+  timestamp: z.string(),
+  objects: z.array(z.object({ id: z.string(), type: z.string() })),
+  attributes: z.record(z.string(), z.unknown()),
+});
+export type OcelLogEvent = z.infer<typeof OcelLogEventSchema>;
 
 /**
  * Local OCEL log format consumed by `wpm trace conform -i <file>`.
  * This is the wasm4pm-internal OCEL representation (not the OCEL 2.0 wire format).
  */
-export type OcelLog = {
-  ocel_version: string;
-  ocel_global_log: { ocel_attribute_names: string[] };
-  ocel_events: OcelLogEvent[];
-  ocel_objects: Array<{ id: string; type: string; attributes: Record<string, unknown> }>;
-};
+export const OcelLogSchema = z.object({
+  ocel_version: z.string(),
+  ocel_global_log: z.object({ ocel_attribute_names: z.array(z.string()) }),
+  ocel_events: z.array(OcelLogEventSchema),
+  ocel_objects: z.array(z.object({
+    id: z.string(),
+    type: z.string(),
+    attributes: z.record(z.string(), z.unknown()),
+  })),
+});
+export type OcelLog = z.infer<typeof OcelLogSchema>;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,79 +115,50 @@ export type OcelLog = {
  * A single frame extracted from an Erlang crash dump or exception tuple.
  * Represents one entry in the process stack trace.
  */
-export type ErlangFrame = {
+export const ErlangFrameSchema = z.object({
   /** Module name, e.g. "supervisor" */
-  module: string;
+  module: z.string(),
   /** Function name, e.g. "handle_info" */
-  function: string;
+  function: z.string(),
   /** Arity (number of arguments), e.g. 2 */
-  arity: number;
+  arity: z.number(),
   /** Source file name, e.g. "supervisor.erl" (may be absent in minified builds) */
-  file?: string;
+  file: z.string().optional(),
   /** Line number in source file (may be absent) */
-  line?: number;
-};
+  line: z.number().optional(),
+});
+export type ErlangFrame = z.infer<typeof ErlangFrameSchema>;
 
 /**
  * A parsed Erlang process crash event. Derived from any of the three
  * supported crash dump formats.
  */
-export type ErlangCrashEvent = {
-  /**
-   * Erlang process identifier in "<A.B.C>" notation, e.g. "<0.101.0>".
-   * May be synthetic (e.g. "proc:0") when the crash dump lacks PID context.
-   */
-  pid: string;
-  /**
-   * Module:function/arity of the crashing function, e.g.
-   * "supervisor:handle_info/2". Derived from the top frame in the crash stack.
-   */
-  mfa: string;
-  /**
-   * Exit reason as reported by OTP. Common values: "normal", "shutdown",
-   * "badarg", "noproc", "{badmatch,_}", "killed".
-   * May be undefined if the crash dump does not include exit context.
-   */
-  exit_reason?: string;
-  /** Source file of the crash site, e.g. "supervisor.erl" */
-  file?: string;
-  /** Line number of the crash site */
-  line?: number;
-  /** All frames extracted from the crash trace, in stack order (top first) */
-  frames: ErlangFrame[];
-  /**
-   * ISO-8601 timestamp. Populated from crash dump metadata when available;
-   * defaults to the moment `parseCrashDump` was called.
-   */
-  timestamp: string;
-};
+export const ErlangCrashEventSchema = z.object({
+  pid: z.string(),
+  mfa: z.string(),
+  exit_reason: z.string().optional(),
+  file: z.string().optional(),
+  line: z.number().optional(),
+  frames: z.array(ErlangFrameSchema),
+  timestamp: z.string(),
+});
+export type ErlangCrashEvent = z.infer<typeof ErlangCrashEventSchema>;
 
 /**
  * A parsed SASL supervisor error report.
  * Supervisor reports have richer context than raw crash frames — they include
  * the supervisor identity, restart strategy context, and offender metadata.
  */
-export type ErlangSupervisorReport = {
-  /** Supervisor name in "{local, my_sup}" or "{global, my_sup}" notation */
-  supervisor: string;
-  /**
-   * SASL error context:
-   *   "child_terminated"   — child exited with non-normal reason
-   *   "start_error"        — child could not be started
-   *   "shutdown_error"     — child did not respond to shutdown in time
-   */
-  error_context: string;
-  /** Exit reason of the offending child, e.g. "normal" or "{badarg,[...]}" */
-  reason: string;
-  /** PID of the offending child process */
-  child_pid?: string;
-  /** Registered name of the offending child */
-  child_name?: string;
-  /** MFA of the offending child's start function, e.g. "my_worker:start_link/1" */
-  child_mfa?: string;
-  /** ISO-8601 timestamp */
-  timestamp: string;
-};
+export const ErlangSupervisorReportSchema = z.object({
+  supervisor: z.string(),
+  error_context: z.string(),
+  reason: z.string(),
+  child_pid: z.string().optional(),
+  child_name: z.string().optional(),
+  child_mfa: z.string().optional(),
+  timestamp: z.string(),
+});
+export type ErlangSupervisorReport = z.infer<typeof ErlangSupervisorReportSchema>;
 
 // ---------------------------------------------------------------------------
 // Crash dump parser

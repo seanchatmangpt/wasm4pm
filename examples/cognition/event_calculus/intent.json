@@ -1,0 +1,32 @@
+{
+  "intent": "reasoning",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "ec:initially",
+      "value": "light_off"
+    },
+    {
+      "key": "ec:happens:2",
+      "value": "switch_on"
+    },
+    {
+      "key": "ec:initiates:switch_on",
+      "value": "light_on"
+    },
+    {
+      "key": "ec:terminates:switch_on",
+      "value": "light_off"
+    }
+  ],
+  "cases": [],
+  "rules": [],
+  "goals": [
+    {
+      "id": "q1",
+      "predicate": "ec:holdsat",
+      "value": "light_on@3"
+    }
+  ],
+  "state": []
+}

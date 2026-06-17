@@ -457,7 +457,7 @@ export const social = defineCommand({
             const result = makeErrorResult(
               'social',
               `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`,
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'INVALID_METRIC'
             );
             emitResult(result, { format, verbose, quiet });
@@ -467,10 +467,10 @@ export const social = defineCommand({
           if (metric === 'similar-task') {
             const result = makeErrorResult(
               'social',
-              'similar-task network mining is not implemented in the WASM binary yet',
+              'similar-task (--metric similar-task) is not yet implemented in this WASM build',
               EXIT_CODES.execution_error,
               'NOT_IMPLEMENTED',
-              'Use --metric handover or --metric working-together until discover_similar_task_network is exported'
+              'Use --metric handover or --metric working-together until discover_similar_task_network is exported from WASM'
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
@@ -736,27 +736,21 @@ export const social = defineCommand({
               });
 
               if (!ctx.args['no-save']) {
-                try {
-                  const inputBytes = await fs
-                    .readFile(inputPath!)
-                    .catch(() => Buffer.from(inputPath!));
-                  const receipt: CommandReceipt = {
-                    ...newReceipt('social'),
-                    command: 'social',
-                    input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
-                    status: 'success',
-                    summary: {
-                      metric,
-                      resources_count: payload.network.nodes.length,
-                      edges_count: payload.network.edges.length,
-                      bottleneck_count: payload.bottleneckResources.length,
-                    },
-                  };
-                  saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
-                }
+                const inputBytes = await fs.readFile(inputPath!);
+                const receipt: CommandReceipt = {
+                  ...newReceipt('social'),
+                  command: 'social',
+                  input_hash: blake3Hex(inputBytes),
+                  output_hash: blake3Hex(JSON.stringify(payload)),
+                  status: 'success',
+                  summary: {
+                    metric,
+                    resources_count: payload.network.nodes.length,
+                    edges_count: payload.network.edges.length,
+                    bottleneck_count: payload.bottleneckResources.length,
+                  },
+                };
+                saveCommandReceipt(receipt);
               }
 
               return await exitWithFlush(result.exit_code);
@@ -781,29 +775,6 @@ export const social = defineCommand({
   },
 });
 
-function networkToGraphML(network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> }): string {
-  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-  xml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
-  xml += '  <key id="weight" for="edge" attr.name="weight" attr.type="long"/>\n';
-  xml += '  <graph edgedefault="undirected">\n';
-
-  for (const node of network.nodes) {
-    xml += `    <node id="${escapeXml(node.id)}"`;
-    if (node.label) {
-      xml += ` label="${escapeXml(node.label)}"`;
-    }
-    xml += '/>\n';
-  }
-
-  for (const edge of network.edges) {
-    xml += `    <edge source="${escapeXml(edge.from)}" target="${escapeXml(edge.to)}">\n`;
-    xml += `      <data key="weight">${edge.weight ?? 1}</data>\n`;
-    xml += '    </edge>\n';
-  }
-
-  xml += '  </graph>\n</graphml>\n';
-  return xml;
-}
 
 function networkToCSV(network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> }): string {
   let csv = 'from,to,weight\n';
@@ -811,15 +782,6 @@ function networkToCSV(network: { nodes: Array<{ id: string; label?: string }>; e
     csv += `${edge.from},${edge.to},${edge.weight ?? 1}\n`;
   }
   return csv;
-}
-
-function escapeXml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 function printHumanSocial(

@@ -1,0 +1,160 @@
+{
+  "intent": "Apply logical valence constraints and spectral consistency predicates to prune 5 DENDRAL candidates for C6H12O to conforming structures only",
+  "candidates": [
+    {
+      "id": "cyclohexanol",
+      "score": 0.88,
+      "eliminated": false
+    },
+    {
+      "id": "1_methylcyclopentanol",
+      "score": 0.74,
+      "eliminated": false
+    },
+    {
+      "id": "cis_2_methylcyclopentanol",
+      "score": 0.69,
+      "eliminated": false
+    },
+    {
+      "id": "trans_2_methylcyclopentanol",
+      "score": 0.69,
+      "eliminated": false
+    },
+    {
+      "id": "oxacycloheptane",
+      "score": 0.21,
+      "eliminated": false
+    }
+  ],
+  "facts": [
+    {
+      "key": "formula",
+      "value": "C6H12O"
+    },
+    {
+      "key": "functional_group",
+      "value": "alcohol"
+    },
+    {
+      "key": "ring_present",
+      "value": "true"
+    },
+    {
+      "key": "ms_base_peak",
+      "value": "57"
+    },
+    {
+      "key": "ms_water_loss",
+      "value": "true"
+    },
+    {
+      "key": "ir_oh_present",
+      "value": "true"
+    },
+    {
+      "key": "ir_carbonyl_absent",
+      "value": "true"
+    },
+    {
+      "key": "nmr_secondary_carbon_oh",
+      "value": "true"
+    },
+    {
+      "key": "constraint_method",
+      "value": "prolog_horn_clause_resolution"
+    }
+  ],
+  "rules": [
+    {
+      "id": "r_eliminate_ether",
+      "premise": [
+        "ir_carbonyl_absent == true",
+        "ring_oxygen_present"
+      ],
+      "conclusion": "eliminate ether ring structures",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_secondary_alcohol_nmr",
+      "premise": [
+        "nmr_secondary_carbon_oh == true"
+      ],
+      "conclusion": "tertiary and primary alcohols inconsistent",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_water_loss_required",
+      "premise": [
+        "ms_water_loss == true"
+      ],
+      "conclusion": "candidate must support E1 dehydration",
+      "certainty": 0.9
+    },
+    {
+      "id": "r_valence_4_carbon",
+      "premise": [
+        "carbon_atom_in_candidate"
+      ],
+      "conclusion": "carbon valence must be exactly 4",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [
+    {
+      "id": "g_eliminate_impossible",
+      "predicate": "structurally_impossible_candidates_eliminated",
+      "value": "true"
+    },
+    {
+      "id": "g_eliminate_inconsistent",
+      "predicate": "spectrally_inconsistent_candidates_eliminated",
+      "value": "true"
+    },
+    {
+      "id": "g_retain_conforming",
+      "predicate": "conforming_candidates_count_ge_1",
+      "value": "true"
+    }
+  ],
+  "cases": [
+    {
+      "id": "case_ether_elimination",
+      "intent": "prolog ether elimination by spectral constraint",
+      "architecture": "ether_structure_eliminated",
+      "outcome_score": 0.9,
+      "facts": [
+        {
+          "key": "formula",
+          "value": "C6H12O"
+        },
+        {
+          "key": "ring_o",
+          "value": "true"
+        },
+        {
+          "key": "oh_absent",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "state": [
+    {
+      "predicate": "pipeline_stage",
+      "value": "3_prolog_constraint_pruning"
+    },
+    {
+      "predicate": "candidates_in",
+      "value": "5"
+    },
+    {
+      "predicate": "pruning_complete",
+      "value": "false"
+    },
+    {
+      "predicate": "source_stage",
+      "value": "dendral"
+    }
+  ]
+}

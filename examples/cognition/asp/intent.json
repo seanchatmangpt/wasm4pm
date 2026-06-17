@@ -1,0 +1,37 @@
+{
+  "intent": "solve",
+  "candidates": [
+    {
+      "id": "a",
+      "score": 0.5,
+      "eliminated": false
+    },
+    {
+      "id": "b",
+      "score": 0.5,
+      "eliminated": false
+    }
+  ],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "r1",
+      "premise": [
+        "not b"
+      ],
+      "conclusion": "a",
+      "certainty": 1.0
+    },
+    {
+      "id": "r2",
+      "premise": [
+        "not a"
+      ],
+      "conclusion": "b",
+      "certainty": 1.0
+    }
+  ],
+  "goals": [],
+  "state": []
+}

@@ -1,0 +1,1 @@
+{"intent": "merge", "facts": [{"key": "bm:atoms", "value": "lawful_c_858ba719,fair"}, {"key": "bm:base:1", "value": "lawful_c_858ba719,fair"}, {"key": "bm:base:2", "value": "lawful_c_858ba719,-fair"}, {"key": "bm:ic:1", "value": "fair"}], "rules": [], "candidates": [], "cases": [], "goals": [], "state": []}

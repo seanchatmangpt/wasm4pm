@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_oc_declare",
+  "provenance": {
+    "paper": "Compliant and Flexible Business Processes with Declarative Object-Centric Models",
+    "citation": "De Smedt, J., De Weerdt, J., Vanthienen, J. (2021). Compliant and Flexible Business Processes with Declarative Object-Centric Models. Business Process Management Journal.",
+    "locus": "Section 3, OC-Declare mining",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "constraints_discovered",
+    "description": "Object-centric Declare constraints are discovered from the log; non-empty constraint set confirms the miner found at least one temporal or existential constraint"
+  }
+}

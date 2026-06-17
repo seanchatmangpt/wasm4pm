@@ -1,0 +1,337 @@
+%% Chapter 1 — Introduction
+%% OLDIA Thesis: Operational Lifecycle Determinism in Intelligent Architectures
+%% Verified implementation facts as of 2026-06-09
+
+\chapter{Introduction}
+\label{chap:introduction}
+
+\epigraph{%
+  ``The question is not whether a machine can think, but whether we can \emph{prove} it thought
+  correctly while it was doing so.''
+}{--- paraphrase of the operational falsifiability problem}
+
+Classical artificial intelligence produced architectures of genuine intellectual beauty.
+MYCIN's certainty-factor algebra, Hearsay-II's blackboard, STRIPS's precondition--effect
+formalism, and SOAR's preference-based decision cycle each resolved a hard theoretical
+problem.
+Yet every one of these systems shipped as a black box.
+The 1976 MYCIN deployment had no audit trail.
+Hearsay-II's knowledge-source activation record was discarded at runtime.
+A correct diagnosis and an incorrect one looked identical from outside the process.
+The epistemological gap between \emph{theoretical soundness} and \emph{operational
+verifiability} was, for forty years, accepted as a fact of life.
+
+This thesis argues that the gap is no longer necessary and that closing it changes the
+economics of deploying certified reasoning at Fortune-5 scale.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\section{The Epistemological Crisis in Deployed AI}
+\label{sec:epistemological-crisis}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Theory without operational proof}
+
+Shortliffe and Buchanan's certainty-factor formula~\cite{shortliffe1975mycin} is
+mathematically well-defined.
+Given two independent evidence items $e_1$ and $e_2$ and a hypothesis $h$, the combined
+certainty factor obeys:
+\[
+  \mathrm{CF}(h, e_1 \wedge e_2) =
+  \begin{cases}
+    \mathrm{CF}_1 + \mathrm{CF}_2\,(1 - \mathrm{CF}_1) & \text{if both positive} \\
+    \mathrm{CF}_1 + \mathrm{CF}_2\,(1 + \mathrm{CF}_2) & \text{if both negative} \\
+    \dfrac{\mathrm{CF}_1 + \mathrm{CF}_2}{1 - \min(|\mathrm{CF}_1|, |\mathrm{CF}_2|)} & \text{otherwise}
+  \end{cases}
+\]
+The formula is sound.
+What it does not provide is any mechanism for an external auditor to verify, after the
+fact, that the running system applied this formula to the correct inputs in the correct
+order, that no rule was silently skipped, and that the final recommendation was derived
+from a process consistent with the declared model.
+
+This is not a criticism of Shortliffe and Buchanan.
+Runtime process provability was not a design goal in 1976 because there was no
+infrastructure to support it.
+The insight of this thesis is that such infrastructure now exists --- in the form of
+object-centric event logs, WebAssembly's deterministic execution model, and
+cryptographic receipt chains --- and that retrofitting it onto classical architectures
+reveals both their robustness and the depth of the original design decisions.
+
+\subsection{The deployment gap in practice}
+
+The gap between theory and deployment shows up in three ways that matter to practitioners.
+
+\textbf{Silent deviation.}
+A rule-based system that has been modified, patched, or ported may execute a different
+process than its specification describes.
+Without a conformance check, operators cannot distinguish a correct execution from a
+deviant one.
+Van der Aalst's work on process mining~\cite{vanderaalst2016process} formalised this
+problem for business processes; this thesis applies the same discipline to AI reasoning
+architectures.
+
+\textbf{Unstable audit trails.}
+Regulated industries (finance, pharmaceutical, critical infrastructure) require audit
+evidence that a decision process conformed to a declared model.
+Classical AI systems produce result logs, not process logs.
+A result log proves that a recommendation was emitted; it does not prove that the
+recommendation was reached by the declared reasoning process.
+
+\textbf{Unverifiable latency claims.}
+Microsecond-latency AI is increasingly demanded in high-frequency trading, real-time
+threat detection, and autonomous systems.
+A system that achieves low latency by skipping reasoning steps --- rather than by
+executing them efficiently --- is operationally indistinguishable from one that does not,
+unless the execution process is independently verified.
+
+All three problems share a common structure: the \emph{output} is observable, but the
+\emph{process} that produced it is not.
+This thesis proposes and validates a framework that makes the process observable, falsifiable,
+and cryptographically attested.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\section{The Research Questions}
+\label{sec:research-questions}
+%%─────────────────────────────────────────────────────────────────────────────
+
+Three research questions organise this investigation.
+
+\begin{description}
+
+\item[\textbf{RQ1}] \emph{Can classical AI reasoning be made operationally falsifiable ---
+not just tested at development time, but continuously proven conforming at runtime?}
+
+This question requires distinguishing two kinds of evidence.
+A test suite proves that the implementation behaved correctly on a finite set of inputs
+under controlled conditions.
+Operational falsifiability means that, for every execution in production, an independent
+artifact --- the OCEL event log and its associated BLAKE3 receipt --- can be presented to
+an auditor who had no prior knowledge of the system and who can verify, from that artifact
+alone, that the execution followed the declared lifecycle model.
+Chapter~\ref{chap:ocel-provability} presents the formal model; Chapter~\ref{chap:validation}
+presents evidence from 655 tests that the implementation meets the specification.
+
+\item[\textbf{RQ2}] \emph{Does operational falsifiability change the deployment economics
+for Fortune-5 enterprises?}
+
+The hypothesis is that certified reasoning --- reasoning for which conformance evidence
+is continuously produced and cryptographically attested --- commands a qualitatively
+different position in the enterprise procurement conversation than uncertified reasoning
+of equal accuracy.
+Chapter~\ref{chap:deployment-patterns} develops a taxonomy of eight deployment patterns
+that become commercially accessible when reasoning latency drops below 50 microseconds
+and every execution produces a signed receipt.
+The chapter argues that the combination of latency and provability unlocks markets that
+are currently closed to AI: real-time regulatory compliance, intraday risk certification,
+and autonomous systems with insurance-grade audit trails.
+
+\item[\textbf{RQ3}] \emph{What becomes possible at 2--50 microsecond latency that the
+original inventors could not have imagined?}
+
+MYCIN was a batch consultation system.
+Hearsay-II processed speech in near-real-time on 1970s hardware.
+Neither system was designed for continuous, high-frequency production deployment.
+When the same reasoning architectures execute in 2--50 microseconds inside a WebAssembly
+sandbox, new application classes emerge: per-transaction fraud scoring with interpretable
+rule traces, per-packet network policy reasoning with signed receipts, and per-event
+process monitoring that emits OCEL conformance reports faster than the underlying business
+process can advance.
+Chapter~\ref{chap:deployment-patterns} catalogues these patterns and the conditions under
+which they are achievable.
+
+\end{description}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\section{Contributions}
+\label{sec:contributions}
+%%─────────────────────────────────────────────────────────────────────────────
+
+This thesis makes five original contributions.
+
+\subsection{The wasm4pm cognition breed framework}
+
+The central artifact of this thesis is a collection of thirteen validated, operationally
+falsifiable implementations of classical AI architectures, compiled to WebAssembly and
+exposed through a uniform \texttt{cognition\_run} interface.
+The thirteen \emph{breeds} are: MYCIN (certainty-factor production rules), Hearsay-II
+(blackboard with KSAR priority queue), SOAR (preference-algebra decision cycle with
+chunking), CBR (case-based reasoning with full 4R cycle), Prolog (Robinson unification
+with bounded SLD resolution), STRIPS (precondition--effect planning with soundness
+verification), GPS (general problem solver with means--ends analysis), DENDRAL
+(hypothesis generation with forbidden-candidate elimination), ELIZA (pattern-directed
+dialogue), and four Autoinstinct breeds (vision, semantics, neurosis, learning).
+
+Each breed is implemented from primary sources --- Shortliffe and Buchanan for MYCIN,
+Newell for SOAR and GPS, Fikes and Nilsson for STRIPS, and so on --- and validated
+against mathematical invariants that rule out stub implementations.
+The Prolog breed, for example, must derive \texttt{grandparent(?0,?2)} from
+\texttt{parent(?0,?1) :- ...} chains using genuine shared-variable unification; no
+pattern-matching shortcut can satisfy this test.
+The full test suite comprises 655 tests (480 Rust, 175 TypeScript), all passing as of
+2026-06-09.
+
+\subsection{The OCEL provability layer}
+
+Every breed execution produces an OCEL 2.0~\cite{ghahfarokhi2021ocel} event log
+capturing the reasoning trace as a sequence of typed events over named objects.
+Thirteen lifecycle models --- one per breed --- define the lawful sequences of event types
+for that architecture.
+A DFA-based conformance checker (\texttt{validate\_ocel\_alignment}) verifies, at the
+execution choke point in \texttt{wasm.rs}, that every emitted trace conforms to the
+declared model before the result is returned to the caller.
+Non-conforming executions are refused, not logged for later review.
+
+The OCEL layer is implemented in \texttt{crates/wasm4pm-cognition/src/ocel.rs} (632
+lines).
+Logical-step attributes rather than wall-clock timestamps ensure that conformance
+evidence is independent of hardware timing and replayable in any environment.
+
+\subsection{The BLAKE3 receipt chain}
+
+Every successful execution emits a cryptographic receipt.
+The \texttt{output\_hash} is \texttt{blake3(serde\_json(BreedOutput))}, where
+\texttt{BreedOutput} contains the OCEL log.
+The receipt therefore attests to \emph{process}, not just result: an auditor who holds
+the receipt can verify that the output was produced by a specific reasoning trace, not
+merely that some output was produced.
+The \texttt{run\_id} is \texttt{blake3(breed~||~output\_hash)}, making receipts
+cross-breed comparable.
+The \texttt{replay\_pointer} (the first 16 hex characters of \texttt{output\_hash})
+provides a compact, stable identifier suitable for embedding in external audit systems.
+
+\subsection{The unfakeable oracle test suite}
+
+The 655-test suite is designed so that no stub implementation --- no implementation that
+returns hardcoded outputs without executing the declared algorithm --- can pass.
+This property, which we call \emph{oracle unfakeability}, is achieved by testing
+mathematical invariants rather than specific output values.
+MYCIN tests the strict boundary at CF = 0.2 (rejected) and CF = 0.201 (accepted), which
+requires the continuous formula to be evaluated.
+CBR tests that identical query and case produce Jaccard similarity of exactly 1.0.
+SOAR tests that circular worse-than preferences produce deterministic termination, which
+requires the full preference algebra to execute.
+AutoinstinctLearning tests that plan-step distance to goal is non-increasing, which
+requires genuine planning.
+
+\subsection{A taxonomy of Fortune-5 deployment patterns}
+
+Chapter~\ref{chap:deployment-patterns} presents eight deployment patterns enabled by the
+combination of microsecond latency and operational provability.
+The patterns are grounded in the verified timing characteristics of the breed framework
+(2--50 microseconds per execution on 2026 hardware) and in the structural requirements
+of the OCEL provability and BLAKE3 receipt layers.
+Each pattern is described in terms of the reasoning architecture it employs, the
+conformance evidence it produces, and the commercial context in which it is valuable.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\section{Document Structure}
+\label{sec:document-structure}
+%%─────────────────────────────────────────────────────────────────────────────
+
+The remainder of this thesis is organised as follows.
+
+Chapter~\ref{chap:background} reviews the classical AI architectures that form the
+substrate of the breed framework, the process mining literature that motivates the OCEL
+provability layer, and prior work on certified AI and runtime verification.
+
+Chapter~\ref{chap:breed-framework} describes the thirteen breed implementations in
+detail: their theoretical foundations, their Rust/WASM implementations, and the
+design decisions that make them simultaneously faithful to the originals and amenable
+to operational falsifiability.
+
+Chapter~\ref{chap:ocel-provability} presents the OCEL provability layer: the
+object-centric event log schema, the thirteen lifecycle models, the DFA conformance
+checker, and the temporal conformance enforcement mechanism.
+
+Chapter~\ref{chap:receipt-chain} presents the BLAKE3 receipt chain: its construction,
+its relationship to the OCEL log, and its properties as an audit instrument.
+
+Chapter~\ref{chap:validation} presents the validation evidence: the 655-test suite,
+the oracle unfakeability argument, and the timing measurements that establish the
+microsecond-latency claims.
+
+Chapter~\ref{chap:deployment-patterns} presents the taxonomy of Fortune-5 deployment
+patterns and argues that operational falsifiability is a necessary condition for
+their commercial viability.
+
+Chapter~\ref{chap:conclusion} summarises the contributions, states the limitations of
+the current implementation, and identifies directions for future work.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\section{Terminology}
+\label{sec:terminology}
+%%─────────────────────────────────────────────────────────────────────────────
+
+The following terms are used with precise meanings throughout this thesis.
+
+\begin{description}
+
+\item[\textbf{Breed.}]
+A \emph{breed} is a validated, operationally falsifiable implementation of a classical AI
+reasoning architecture, compiled to WebAssembly and exposed through the uniform
+\texttt{cognition\_run} interface.
+The term \emph{breed} is preferred over \emph{algorithm} or \emph{agent} because each
+implementation encompasses both the reasoning procedure and the lifecycle model against
+which its execution is continuously verified.
+Thirteen breeds are implemented in this thesis.
+
+\item[\textbf{OCEL.}]
+\emph{OCEL} (Object-Centric Event Log)~\cite{ghahfarokhi2021ocel} is a log format in
+which events are related to multiple objects of multiple types, rather than to a single
+case identifier.
+OCEL 2.0 extends the original format with typed attributes on event--object relationships.
+This thesis uses OCEL 2.0 as the provability substrate: each breed execution emits an
+OCEL log in which the reasoning objects (rules, knowledge sources, goals, cases) are
+first-class entities with traceable lifecycles.
+
+\item[\textbf{Lifecycle model.}]
+A \emph{lifecycle model} is a finite automaton that defines the lawful sequences of event
+types for a given breed.
+For example, the MYCIN lifecycle model requires that every execution begin with
+\texttt{rule\_evaluate} events, followed by \texttt{cf\_combine} events, and conclude
+with a \texttt{threshold\_check} event.
+A trace that omits the \texttt{threshold\_check} or emits events in the wrong order is
+non-conforming and is refused at the execution choke point.
+
+\item[\textbf{Conformance.}]
+\emph{Conformance} is the binary property of an OCEL trace with respect to a lifecycle
+model: a trace either conforms or it does not.
+This thesis does not use graded conformance metrics (fitness, precision) in the
+execution-time path; those metrics appear in the validation chapter where the test suite
+is analysed.
+At the choke point, conformance is a gate: non-conforming traces are refused.
+
+\item[\textbf{Receipt chain.}]
+The \emph{receipt chain} is the sequence of BLAKE3-hashed receipts produced by successive
+executions of a breed.
+Each receipt's \texttt{output\_hash} covers the OCEL log, making the chain a
+tamper-evident record of the reasoning process, not merely of the results.
+The term \emph{chain} reflects the structural dependency: \texttt{run\_id} is derived
+from \texttt{output\_hash}, which is derived from the \texttt{BreedOutput}, which
+contains the OCEL log.
+
+\item[\textbf{Unfakeable oracle.}]
+An \emph{unfakeable oracle} is a test assertion that can only be satisfied by an
+implementation that executes the declared algorithm.
+It is distinct from a value-equality assertion (which tests a specific output) and from
+a property-based assertion (which tests a statistical distribution of outputs).
+An unfakeable oracle tests a mathematical invariant that is \emph{structurally impossible}
+to satisfy without executing the algorithm: for example, the Jaccard identity invariant
+for CBR, or the shared-variable unification requirement for Prolog.
+
+\item[\textbf{KSAR.}]
+A \emph{KSAR} (Knowledge Source Activation Record) is the scheduling primitive of the
+Hearsay-II blackboard architecture~\cite{erman1980hearsay}.
+When a knowledge source detects a triggering condition on the blackboard, it creates a
+KSAR recording its identity, the triggering evidence, and an estimated priority
+(\texttt{rating = certainty * trigger\_cf}).
+The blackboard scheduler selects the highest-rated pending KSAR for execution.
+In the wasm4pm implementation, KSARs are managed in a priority queue using
+\texttt{f32::total\_cmp} for deterministic ordering, and stale KSARs are re-rated when
+the blackboard state changes.
+
+\end{description}
+
+%%─────────────────────────────────────────────────────────────────────────────
+%% End of Chapter 1
+%%─────────────────────────────────────────────────────────────────────────────

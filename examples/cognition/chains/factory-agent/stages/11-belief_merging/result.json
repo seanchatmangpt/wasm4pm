@@ -1,0 +1,113 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "belief_merging",
+    "breed": "belief_merging",
+    "status": "ok",
+    "output": {
+      "breed": "BeliefMerging",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "bm:model:0",
+          "value": "p,q"
+        },
+        {
+          "key": "bm:model_count",
+          "value": "1"
+        }
+      ],
+      "selected": "p,q",
+      "explanation": "Σ merging of 3 bases over 2 atoms: 1 model(s) in the merged belief.",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "enumerate-worlds",
+          "detail": "2 atoms -> 4 worlds, 3 bases",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "filter-ic",
+          "detail": "4 IC-worlds of 4",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "distance",
+          "detail": "w=(-p,-q) d=(2,2,0)",
+          "depth": 1
+        },
+        {
+          "step": 3,
+          "kind": "aggregate",
+          "detail": "w=(-p,-q) sum=4",
+          "depth": 1
+        },
+        {
+          "step": 4,
+          "kind": "distance",
+          "detail": "w=(p,-q) d=(1,1,1)",
+          "depth": 1
+        },
+        {
+          "step": 5,
+          "kind": "aggregate",
+          "detail": "w=(p,-q) sum=3",
+          "depth": 1
+        },
+        {
+          "step": 6,
+          "kind": "distance",
+          "detail": "w=(-p,q) d=(1,1,1)",
+          "depth": 1
+        },
+        {
+          "step": 7,
+          "kind": "aggregate",
+          "detail": "w=(-p,q) sum=3",
+          "depth": 1
+        },
+        {
+          "step": 8,
+          "kind": "distance",
+          "detail": "w=(p,q) d=(0,0,2)",
+          "depth": 1
+        },
+        {
+          "step": 9,
+          "kind": "aggregate",
+          "detail": "w=(p,q) sum=2",
+          "depth": 1
+        },
+        {
+          "step": 10,
+          "kind": "select-min",
+          "detail": "1 minimal world(s) under Σ",
+          "depth": 0
+        },
+        {
+          "step": 11,
+          "kind": "merged-belief",
+          "detail": "[(p,q)]",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "57d7a9d771cdad93af6d9575ba3f3f513a1ab534a8e9be1202eb82b18000ad06",
+    "output_hash": "c3e82c3d29ade8c3ea925fa7465bf44847d51af3df2d9da13c137f332070b8ab",
+    "replay_pointer": "c3e82c3d29ade8c3",
+    "inference_step_count": 12,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/57d7a9d771cdad93af6d9575ba3f3f513a1ab534a8e9be1202eb82b18000ad06.json"
+  },
+  "meta": {
+    "run_id": "74766ee3-c754-4a7e-b6e4-67eb3146a02b",
+    "timestamp": "2026-06-11T19:56:05.602Z",
+    "duration_ms": 17,
+    "version": "26.6.10"
+  }
+}

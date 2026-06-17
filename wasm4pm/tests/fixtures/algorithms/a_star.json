@@ -1,0 +1,16 @@
+{
+  "algorithm": "a_star",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 9.",
+    "locus": "Chapter 9 — shortest path conformance/discovery via A* search",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "places=5,transitions=5,arcs=8",
+    "description": "A* on the 5-activity running-example (a,b,c,d,e) produces a DFG with 5 activity nodes; Petri-net counts reflect the 5-activity topology (van der Aalst 2016 ch.9)"
+  }
+}

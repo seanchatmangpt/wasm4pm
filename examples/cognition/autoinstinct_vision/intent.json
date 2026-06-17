@@ -1,0 +1,50 @@
+{
+  "intent": "",
+  "facts": [
+    {
+      "key": "cube",
+      "value": "A"
+    },
+    {
+      "key": "cube",
+      "value": "B"
+    },
+    {
+      "key": "sphere",
+      "value": "C"
+    },
+    {
+      "key": "pyramid",
+      "value": "D"
+    },
+    {
+      "key": "cylinder",
+      "value": "E"
+    },
+    {
+      "key": "cube",
+      "value": "F"
+    },
+    {
+      "key": "supported_by:B",
+      "value": "A"
+    },
+    {
+      "key": "supported_by:F",
+      "value": "B"
+    },
+    {
+      "key": "supported_by:E",
+      "value": "C"
+    },
+    {
+      "key": "supported_by:D",
+      "value": "F"
+    }
+  ],
+  "candidates": [],
+  "rules": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

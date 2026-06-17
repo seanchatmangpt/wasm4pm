@@ -1,105 +1,47 @@
 /**
- * Example — Dimensionality reduction with PCA
- *
- * Demonstrates:
- *   1. Building feature matrix from event log
- *   2. Running PCA to reduce dimensionality
- *   3. Analyzing explained variance
- *   4. Visualizing principal components
- *
- * Run:
- *   tsx examples/ml-pca.ts ./sample.xes
- *   tsx examples/ml-pca.ts ./sample.xes 3  # reduce to 3 components
- *
- * Docs:
- *   docs/ml-algorithms.md
+ * Example: ML PCA (Principal Component Analysis)
+ * 
+ * Demonstrates how to run dimensional reduction on an event log.
  */
+import assert from 'node:assert/strict';
+import * as fs from 'node:fs';
+import { join } from 'node:path';
+import { Kernel } from 'wasm4pm';
+import * as core from '@wasm4pm/core';
+import { logger } from './utils/logger.js';
 
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+async function runPcaExample(): Promise<void> {
+  logger.header('📊', 'ML PCA Example', 'Nanosecond Dimensionality Reduction');
+  
+  // Initialize the WASM module via its default export
+  if (typeof (core as any).default === 'function') {
+    await (core as any).default();
+  }
+  const kernel = new Kernel(core as any);
+  await kernel.init();
 
-import { getRegistry } from 'wasm4pm';
-import {
-  buildFeatureMatrix,
-  reduceFeaturesPCA,
-  type PCAResult,
-} from '@wasm4pm/ml';
+  logger.step(1, 2, 'Loading Real Event Data');
+  const xesPath = join(process.cwd(), fs.existsSync('data') ? '' : '..', 'data/small-example.xes');
+  const xes = fs.readFileSync(xesPath, 'utf8');
+  const logHandle = core.load_eventlog_from_xes(xes);
+  assert.ok(logHandle, 'Failed to load log');
+  logger.success('Log ingested successfully.');
 
-async function main(logPath: string, nComponents: string = '3'): Promise<void> {
-  const xes = readFileSync(resolve(logPath), 'utf8');
-  const registry = getRegistry();
-
-  // 1. Load the log
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
-
-  // 2. Build feature matrix
-  const matrix = await buildFeatureMatrix(handle, {
-    activityKey: 'concept:name',
-    timestampKey: 'time:timestamp',
-  });
-
-  console.log(`Original feature space: ${matrix.data.length} traces × ${matrix.featureNames.length} features`);
-  console.log(`Feature names: ${matrix.featureNames.slice(0, 5).join(', ')}${matrix.featureNames.length > 5 ? ', ...' : ''}`);
-
-  // 3. Run PCA
-  const n = Math.max(1, Math.min(Math.floor(matrix.featureNames.length / 2), parseInt(nComponents, 10)));
-  const pcaResult: PCAResult = await reduceFeaturesPCA(matrix.data, {
-    nComponents: n,
-  });
-
-  console.log(`\nPCA Results (${n} components):`);
-
-  // 4. Explained variance analysis
-  console.log(`\nExplained Variance Ratio:`);
-  const cumulativeVariance: number[] = [];
-  let cumsum = 0;
-  pcaResult.explainedVariance.forEach((variance, idx) => {
-    cumsum += variance;
-    cumulativeVariance.push(cumsum);
-    const pct = (variance * 100).toFixed(1);
-    const cumPct = (cumsum * 100).toFixed(1);
-    console.log(
-      `  PC${idx + 1}: ${pct.padStart(5)}% (cumulative: ${cumPct.padStart(5)}%)`
-    );
-  });
-
-  // 5. Loadings (feature contributions to principal components)
-  console.log(`\nPrincipal Component Loadings (top features per component):`);
-  pcaResult.components.forEach((component, idx) => {
-    const loadings = component
-      .map((value, featureIdx) => ({
-        feature: pcaResult.featureNames[featureIdx],
-        loading: Math.abs(value),
-        direction: value > 0 ? '+' : '-',
-      }))
-      .sort((a, b) => b.loading - a.loading)
-      .slice(0, 3);
-
-    console.log(`\n  PC${idx + 1}:`);
-    loadings.forEach(({ feature, direction, loading }) => {
-      const bar = '█'.repeat(Math.round(loading * 20));
-      console.log(`    ${direction}${feature.padEnd(20)} ${bar} ${loading.toFixed(3)}`);
-    });
-  });
-
-  // 6. Data transformation summary
-  console.log(`\nTransformed Data Shape:`);
-  console.log(`  Original: ${matrix.data.length} × ${matrix.featureNames.length}`);
-  console.log(`  Reduced:  ${pcaResult.transformedData.length} × ${n}`);
-  const reductionRatio = (1 - n / matrix.featureNames.length) * 100;
-  console.log(`  Dimensionality reduced by ${reductionRatio.toFixed(1)}%`);
-
-  // 7. Interpretation guide
-  console.log(`\nInterpretation:`);
-  console.log(`  - Use first 2-3 PCs if cumulative variance > 70%`);
-  console.log(`  - Each PC represents a linear combination of original features`);
-  console.log(`  - Loadings show which original features drive each PC`);
-  console.log(`  - Reduced data useful for visualization, clustering, downstream ML`);
+  logger.step(2, 2, 'Executing PCA Analysis');
+  // @ts-ignore - discover_ml_pca is a direct WASM export not in kernel.run registry yet
+  const resultJson = core.discover_ml_pca(logHandle, 'concept:name');
+  const result = JSON.parse(resultJson);
+  
+  logger.data('PCA Result', result);
+  
+  assert.strictEqual(result.algorithm, 'ml_pca', 'Algorithm ID mismatch');
+  assert.ok(Array.isArray(result.explained_variance), 'Should return explained variance array');
+  
+  logger.success(`PCA complete. Total variance: ${result.total_variance.toFixed(4)}`);
+  logger.info(`Top component explains ${(result.explained_variance[0] * 100).toFixed(1)}% of variance.`);
 }
 
-const logPath = process.argv[2] ?? './sample.xes';
-const nComponents = process.argv[3] ?? '3';
-main(logPath, nComponents).catch(err => {
-  console.error('PCA failed:', err);
+runPcaExample().catch((error: Error) => {
+  logger.error(error.message);
   process.exit(1);
 });
