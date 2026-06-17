@@ -1124,3 +1124,22 @@ fn naive_physics_determinism() {
     assert_eq!(out1.selected, out2.selected);
     assert_eq!(out1.inference_trace, out2.inference_trace);
 }
+
+#[test]
+fn meta_reasoning_determinism() {
+    let input = wasm4pm_cognition::breeds::BreedInput {
+        intent: "determinism test".into(),
+        candidates: vec![],
+        facts: vec![
+            wasm4pm_cognition::breeds::Fact { key: "breed:test1:conclusion".into(), value: "x=1".into() },
+            wasm4pm_cognition::breeds::Fact { key: "breed:test2:conclusion".into(), value: "x=2".into() },
+            wasm4pm_cognition::breeds::Fact { key: "breed:test1:confidence".into(), value: "0.8".into() },
+            wasm4pm_cognition::breeds::Fact { key: "breed:test2:confidence".into(), value: "0.8".into() },
+        ],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+    assert_deterministic("meta_reasoning", &input);
+}

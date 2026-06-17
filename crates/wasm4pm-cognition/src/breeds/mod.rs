@@ -93,6 +93,8 @@ pub mod partial_order_plan;
 
 pub mod support;
 
+pub mod meta_reasoning;
+
 pub use dispatch::{dispatch_breed, dispatch_breed_test};
 
 /// Unique identifier for each old-AI breed system.

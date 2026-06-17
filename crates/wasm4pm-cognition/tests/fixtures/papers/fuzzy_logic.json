@@ -3,22 +3,33 @@
   "provenance": {
     "paper": "Mamdani-1975-Fuzzy-Logic-Inference.pdf",
     "citation": "E. H. Mamdani, S. Assilian (1975). An Experiment in Linguistic Synthesis with a Fuzzy Logic Controller. International Journal of Man-Machine Studies, Vol. 7, No. 1, pp. 1-13.",
-    "locus": "§4 Controller Design and Rule Evaluation",
+    "locus": "\u00a74 Controller Design and Rule Evaluation",
     "extraction": "grounded"
   },
   "input": {
     "intent": "Fuzzy control inference",
     "candidates": [],
     "facts": [
-      {"key": "temperature", "value": "25.0"},
-      {"key": "fuzzy_set:temperature:warm", "value": "triangular 20,25,30"},
-      {"key": "fuzzy_set:ventilation:medium", "value": "triangular 10,50,90"}
+      {
+        "key": "temperature",
+        "value": "25.0"
+      },
+      {
+        "key": "fuzzy_set:temperature:warm",
+        "value": "triangular 20,25,30"
+      },
+      {
+        "key": "fuzzy_set:ventilation:medium",
+        "value": "triangular 10,50,90"
+      }
     ],
     "cases": [],
     "rules": [
       {
         "id": "r1",
-        "premise": ["temperature is warm"],
+        "premise": [
+          "temperature is warm"
+        ],
         "conclusion": "ventilation is medium",
         "certainty": 1.0
       }

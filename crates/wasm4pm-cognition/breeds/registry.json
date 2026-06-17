@@ -686,7 +686,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "ADMITTED"
   },
   {
     "breed_id": "construction_grammar",
