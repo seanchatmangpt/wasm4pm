@@ -1041,3 +1041,17 @@ fn partial_order_plan_determinism_test() {
     let o2 = wasm4pm_cognition::breeds::dispatch_breed_test("partial_order_plan", &input).unwrap();
     assert_eq!(o1.selected, o2.selected);
 }
+
+#[test]
+fn test_analogy_sme_determinism() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/analogy_sme.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    assert_deterministic("analogy_sme", &input);
+}
+
+#[test]
+fn test_act_r_determinism() {
+    let fixture_str = std::fs::read_to_string("tests/fixtures/papers/act_r.json").unwrap();
+    let input: wasm4pm_cognition::breeds::BreedInput = serde_json::from_str(&fixture_str).unwrap();
+    assert_deterministic("act_r", &input);
+}
