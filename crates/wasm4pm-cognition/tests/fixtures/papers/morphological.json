@@ -1,0 +1,51 @@
+{
+  "breed": "morphological",
+  "provenance": {
+    "paper": "Discovery, Invention, Research Through the Morphological Approach",
+    "citation": "Zwicky, F. (1969). Discovery, Invention, Research Through the Morphological Approach. Macmillan.",
+    "locus": "Propulsive system morphology",
+    "extraction": "verbatim",
+    "notes": "Zwicky's 1947 jet engine field."
+  },
+  "input": {
+    "intent": "solve",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "morph:param:chemical-reactions",
+        "value": "self-contained|air-propelled|water-propelled|earth-propelled"
+      },
+      {
+        "key": "morph:param:thrust-augmentation-1",
+        "value": "no-motion|translatory-motion|rotary-motion|oscillatory-motion"
+      },
+      {
+        "key": "morph:param:thrust-augmentation-2",
+        "value": "no-augmentation|internal-augmentation|external-augmentation"
+      },
+      {
+        "key": "morph:param:propellant-state",
+        "value": "gaseous|liquid|solid"
+      },
+      {
+        "key": "morph:param:operating-mode",
+        "value": "continuous|intermittent"
+      },
+      {
+        "key": "morph:param:reactivity",
+        "value": "self-igniting|external-ignition"
+      },
+      {
+        "key": "morph:exclude",
+        "value": "chemical-reactions=self-contained|thrust-augmentation-1=no-motion"
+      }
+    ],
+    "rules": [],
+    "cases": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "selected": "chemical-reactions=self-contained;operating-mode=continuous;propellant-state=gaseous;reactivity=self-igniting;thrust-augmentation-1=translatory-motion;thrust-augmentation-2=no-augmentation"
+  }
+}

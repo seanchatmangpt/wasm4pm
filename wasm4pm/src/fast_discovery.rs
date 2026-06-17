@@ -218,6 +218,9 @@ pub fn discover_astar_from_log(
     let activities = log.get_activities(activity_key);
     let directly_follows = log.get_directly_follows(activity_key);
 
+    let total_pairs: usize = directly_follows.iter().map(|(_, _, freq)| freq).sum();
+    let total_df = directly_follows.len().max(1);
+
     let mut best_dfg = DFG::new();
     for activity in &activities {
         best_dfg.nodes.push(DFGNode {
@@ -237,7 +240,10 @@ pub fn discover_astar_from_log(
             Some(item) => item,
             None => break,
         };
-        let total_df = directly_follows.len().max(1);
+
+        let current_covered_pairs: usize = current_dfg.edges.iter().map(|e| e.frequency).sum();
+        let current_edge_count = current_dfg.edges.len();
+
         let new_candidates: Vec<(DFG, f64)> = directly_follows
             .iter()
             .filter(|(from, to, _)| {
@@ -247,16 +253,33 @@ pub fn discover_astar_from_log(
                     .any(|e| &e.from == from && &e.to == to)
             })
             .filter_map(|(from, to, freq)| {
-                let mut new_dfg = current_dfg.clone();
-                new_dfg.edges.push(DirectlyFollowsRelation {
-                    from: from.clone(),
-                    to: to.clone(),
-                    frequency: *freq,
-                });
-                let fitness = evaluate_dfg_partial_fitness(&new_dfg, log, activity_key);
-                // Normalize penalty by df vocabulary size — avoids the hard cap at 100 edges.
-                let edge_penalty = new_dfg.edges.len() as f64 / total_df as f64;
-                (fitness > 0.0).then(|| (new_dfg, fitness.mul_add(0.8, -edge_penalty * 0.2)))
+                // Incremental fitness calculation
+                let new_covered_pairs = current_covered_pairs + freq;
+                let new_edge_count = current_edge_count + 1;
+
+                let coverage = if total_pairs == 0 {
+                    1.0
+                } else {
+                    new_covered_pairs as f64 / total_pairs as f64
+                };
+                let relative_density = new_edge_count as f64 / total_pairs.max(1) as f64;
+                let simplicity = 1.0 / (1.0 + relative_density);
+                let fitness = coverage.mul_add(0.8, simplicity * 0.2);
+
+                let edge_penalty = new_edge_count as f64 / total_df as f64;
+                let candidate_score = fitness.mul_add(0.8, -edge_penalty * 0.2);
+
+                if fitness > 0.0 {
+                    let mut new_dfg = current_dfg.clone();
+                    new_dfg.edges.push(DirectlyFollowsRelation {
+                        from: from.clone(),
+                        to: to.clone(),
+                        frequency: *freq,
+                    });
+                    Some((new_dfg, candidate_score))
+                } else {
+                    None
+                }
             })
             .collect();
         // Track best across NEW candidates (where the actual scores live), not the

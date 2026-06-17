@@ -92,3 +92,22 @@ packages/agents/src/**/*.d.ts.map
 
 # orphan dir from unset test tmpDir
 undefined/
+
+# ggen Ed25519 receipt-signing keys: private key NEVER committed (auto-regenerated
+# by ggen sync). The public verifying.key IS committed so CI can verify signatures.
+.ggen/keys/signing.key
+
+# ggen local sync receipts (not release provenance)
+.ggen/receipts/
+
+# Temporary test artifacts
+.gc_test*.txt
+run1.json
+run2.json
+apps/wasm4pm/nul
+
+# Backup files from editor sessions
+*.backup
+
+# Scratch run outputs
+soar-output*.json

@@ -193,7 +193,8 @@ impl CognitionBreed for CspAc3 {
 
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         self.assert_verdict_valid(output)?;
-        TraceQuery::from_output(output).require_non_empty_with_kinds(&["csp-init", "csp-verdict"])?;
+        TraceQuery::from_output(output)
+            .require_non_empty_with_kinds(&["csp-init", "csp-verdict"])?;
         Ok(())
     }
 }

@@ -33,7 +33,9 @@ const META_KEYS: &[&str] = &[
 fn fixture_input(json: &serde_json::Value) -> BreedInput {
     // Fixtures may omit fields; fill defaults before strict deserialization.
     let mut inp = json["input"].clone();
-    let obj = inp.as_object_mut().expect("fixture input must be an object");
+    let obj = inp
+        .as_object_mut()
+        .expect("fixture input must be an object");
     obj.entry("intent").or_insert(serde_json::json!(""));
     for k in ["candidates", "facts", "cases", "rules", "goals", "state"] {
         obj.entry(k).or_insert(serde_json::json!([]));
@@ -65,7 +67,9 @@ fn haystack(output: &BreedOutput) -> String {
 /// Extract every parseable f64 from the haystack.
 fn numbers_in(h: &str) -> Vec<f64> {
     let re = regex::Regex::new(r"-?\d+(?:\.\d+)?").unwrap();
-    re.find_iter(h).filter_map(|m| m.as_str().parse::<f64>().ok()).collect()
+    re.find_iter(h)
+        .filter_map(|m| m.as_str().parse::<f64>().ok())
+        .collect()
 }
 
 /// Collect substantive expected leaves: (path, string) and (path, number).
@@ -110,14 +114,30 @@ fn collect_leaves(
 /// sessions, alternative violating inputs, narrative groupings).
 const BREED_SKIPS: &[(&str, &[&str])] = &[
     ("mycin", &["therapy_cf", "min_certainty"]),
-    ("autoinstinct_learning", &["next_prerequisite", "achieved_goals", "unachieved_goals"]),
+    (
+        "autoinstinct_learning",
+        &["next_prerequisite", "achieved_goals", "unachieved_goals"],
+    ),
     (
         "autoinstinct_vision",
-        &["stable_grouping", "grouping_label", "depth_relations", "algorithm_outcome"],
+        &[
+            "stable_grouping",
+            "grouping_label",
+            "depth_relations",
+            "algorithm_outcome",
+        ],
     ),
     ("hearsay", &["accepted_by_ks"]),
     // Weizenbaum 1966 fixture encodes a multi-turn session; the breed runs one turn.
-    ("eliza", &["turn_", "detected_theme", "dominant_keywords_by_rank", "decomposition"]),
+    (
+        "eliza",
+        &[
+            "turn_",
+            "detected_theme",
+            "dominant_keywords_by_rank",
+            "decomposition",
+        ],
+    ),
 ];
 
 fn breed_skipped(stem: &str, path: &str) -> bool {
@@ -226,9 +246,13 @@ fn every_paper_fixture_is_confirmed_and_falsifiable() {
             }
         }
         for (p, f) in &numbers {
-            let confirmed = nums.iter().any(|n| (n - f).abs() <= tol.max(f.abs() * 1e-6));
+            let confirmed = nums
+                .iter()
+                .any(|n| (n - f).abs() <= tol.max(f.abs() * 1e-6));
             if !confirmed {
-                failures.push(format!("{stem}: {p}={f} not within tol={tol} of any output number"));
+                failures.push(format!(
+                    "{stem}: {p}={f} not within tol={tol} of any output number"
+                ));
             }
         }
 
@@ -236,7 +260,9 @@ fn every_paper_fixture_is_confirmed_and_falsifiable() {
         for (p, s) in &strings {
             let mutant = format!("{s}__falsified__");
             if h.contains(&mutant) {
-                failures.push(format!("{stem}: {p} mutant {mutant:?} also evidenced — vacuous"));
+                failures.push(format!(
+                    "{stem}: {p} mutant {mutant:?} also evidenced — vacuous"
+                ));
             }
         }
         for (p, f) in &numbers {
@@ -258,5 +284,8 @@ fn every_paper_fixture_is_confirmed_and_falsifiable() {
         failures.len(),
         failures.join("\n")
     );
-    assert!(checked >= 50, "expected ≥50 paper fixtures, checked {checked}");
+    assert!(
+        checked >= 50,
+        "expected ≥50 paper fixtures, checked {checked}"
+    );
 }

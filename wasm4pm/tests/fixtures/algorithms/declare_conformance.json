@@ -1,0 +1,12 @@
+{
+  "algorithm": "declare_conformance",
+  "provenance": {
+    "paper": "Pesic, M., Schonenberg, H., & van der Aalst, W.M.P. (2007). DECLARE: Full Support for Loosely-Structured Processes. EDOC 2007.",
+    "locus": "Section 4 — Declare constraint conformance checking; compliance ratio definition",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "structural_nonnull",
+    "rationale": "check_declare_conformance uses WASM state handles; structural assertion confirms non-null result"
+  }
+}

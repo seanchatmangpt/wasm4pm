@@ -1,0 +1,12 @@
+{
+  "algorithm": "case_duration",
+  "provenance": {
+    "paper": "van der Aalst (2016) Process Mining: Data Science in Action, Springer — Ch. 4: Case duration statistics from event logs",
+    "locus": "Ch. 4 — case duration analysis: mean, median, min, max",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "case_count=12",
+    "rationale": "Running-example log has 12 traces (5+4+3); case_count must equal 12."
+  }
+}

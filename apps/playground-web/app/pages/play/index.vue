@@ -302,7 +302,7 @@ const outputTabs = computed(() => {
         <UButton
           v-if="!isCognitionMode"
           :loading="running"
-          :disabled="!ready"
+          :disabled="!ready || !xesInput"
           color="primary"
           icon="i-lucide-play"
           size="sm"

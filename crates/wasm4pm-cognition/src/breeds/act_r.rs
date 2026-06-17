@@ -21,9 +21,11 @@
 //! (HEARSAY_MODEL precedent). Caps: ≤32 cycles, ≤64 chunks (refusals).
 
 use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
-use std::collections::BTreeSet;
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
+use std::collections::BTreeSet;
 
 /// ACT-R production/retrieval cycle.
 pub struct ActR;
@@ -97,7 +99,12 @@ impl CognitionBreed for ActR {
             push(
                 &mut trace,
                 "load-chunk",
-                format!("chunk '{}' B={:.3} ({} slots)", c.id, c.outcome_score, c.facts.len()),
+                format!(
+                    "chunk '{}' B={:.3} ({} slots)",
+                    c.id,
+                    c.outcome_score,
+                    c.facts.len()
+                ),
             );
         }
 
@@ -125,12 +132,25 @@ impl CognitionBreed for ActR {
             push(
                 &mut trace,
                 "match-production",
-                format!("'{}' matched (utility={:.3}, {} competitors)", rule.id, rule.certainty, applicable.len() - 1),
+                format!(
+                    "'{}' matched (utility={:.3}, {} competitors)",
+                    rule.id,
+                    rule.certainty,
+                    applicable.len() - 1
+                ),
             );
-            push(&mut trace, "fire-production", format!("fired '{}'", rule.id));
+            push(
+                &mut trace,
+                "fire-production",
+                format!("fired '{}'", rule.id),
+            );
 
             if let Some(pattern) = rule.conclusion.strip_prefix("retrieve:") {
-                push(&mut trace, "retrieval-request", format!("pattern {}", pattern));
+                push(
+                    &mut trace,
+                    "retrieval-request",
+                    format!("pattern {}", pattern),
+                );
                 let (pk, pv) = match pattern.split_once('=') {
                     Some(kv) => kv,
                     None => {
@@ -243,5 +263,223 @@ impl CognitionBreed for ActR {
         let tq = TraceQuery::from_output(output);
         tq.require_non_empty_with_kinds(&["fire-production"])?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Case, Fact, Rule};
+
+    #[test]
+    fn refuses_empty_rules() {
+        let breed = ActR;
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let result = breed.preconditions(&input);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .contains("requires at least one production rule"));
+    }
+
+    #[test]
+    fn falsification_gate_act_r_retrieval_threshold() {
+        let breed = ActR;
+        let c1 = Case {
+            id: "c1".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 0.5,
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v1".into(),
+            }],
+        };
+        let r1 = Rule {
+            id: "r1".into(),
+            premise: vec![],
+            conclusion: "retrieve:slot=v1".into(),
+            certainty: 1.0,
+        };
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "actr:threshold".into(),
+                value: "1.0".into(),
+            }],
+            cases: vec![c1],
+            rules: vec![r1],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert!(output
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "retrieval-failure"));
+        assert!(output.selected.is_none());
+    }
+
+    #[test]
+    fn invariant_monotonicity_of_activation() {
+        let breed = ActR;
+        let c1 = Case {
+            id: "c1_high".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 0.9,
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v".into(),
+            }],
+        };
+        let c2 = Case {
+            id: "c2_low".into(),
+            intent: "".into(),
+            architecture: "".into(),
+            outcome_score: 0.1,
+            facts: vec![Fact {
+                key: "slot".into(),
+                value: "v".into(),
+            }],
+        };
+        let r1 = Rule {
+            id: "r1".into(),
+            premise: vec![],
+            conclusion: "retrieve:slot=v".into(),
+            certainty: 1.0,
+        };
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![c1.clone(), c2.clone()],
+            rules: vec![r1.clone()],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(output.selected.unwrap(), "c1_high");
+
+        let input2 = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![c2, c1],
+            rules: vec![r1],
+            goals: vec![],
+            state: vec![],
+        };
+        let output2 = breed.run(&input2).expect("run ok");
+        assert_eq!(output2.selected.unwrap(), "c1_high");
+    }
+
+    /// Anderson & Lebiere 1998 Ch. 9: retrieve addition fact 3+4.
+    ///
+    /// WM = {goal=add, addend1=3, addend2=4}  n=3
+    /// fact34: B=0.5, slots {addend1=3, addend2=4, sum=7} → 2 WM matches → A = 0.5 + 2/3 ≈ 1.1667
+    /// fact35: B=0.3, slots {addend1=3, addend2=5, sum=8} → 1 WM match  → A = 0.3 + 1/3 ≈ 0.6333
+    /// The activation equation must prefer fact34.
+    #[test]
+    fn paper_activation_equation_selects_fact34() {
+        let breed = ActR;
+        let input = BreedInput {
+            intent: "retrieve 3+4".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "goal".into(),
+                    value: "add".into(),
+                },
+                Fact {
+                    key: "addend1".into(),
+                    value: "3".into(),
+                },
+                Fact {
+                    key: "addend2".into(),
+                    value: "4".into(),
+                },
+            ],
+            cases: vec![
+                Case {
+                    id: "fact34".into(),
+                    intent: "addition fact".into(),
+                    architecture: "declarative-chunk".into(),
+                    outcome_score: 0.5,
+                    facts: vec![
+                        Fact {
+                            key: "addend1".into(),
+                            value: "3".into(),
+                        },
+                        Fact {
+                            key: "addend2".into(),
+                            value: "4".into(),
+                        },
+                        Fact {
+                            key: "sum".into(),
+                            value: "7".into(),
+                        },
+                    ],
+                },
+                Case {
+                    id: "fact35".into(),
+                    intent: "addition fact".into(),
+                    architecture: "declarative-chunk".into(),
+                    outcome_score: 0.3,
+                    facts: vec![
+                        Fact {
+                            key: "addend1".into(),
+                            value: "3".into(),
+                        },
+                        Fact {
+                            key: "addend2".into(),
+                            value: "5".into(),
+                        },
+                        Fact {
+                            key: "sum".into(),
+                            value: "8".into(),
+                        },
+                    ],
+                },
+            ],
+            rules: vec![Rule {
+                id: "p-retrieve-sum".into(),
+                premise: vec!["goal=add".into()],
+                conclusion: "retrieve:addend1=3".into(),
+                certainty: 0.9,
+            }],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("fact34"),
+            "fact34 must win retrieval; A(fact34)≈1.1667 > A(fact35)≈0.6333"
+        );
+        let retrieve_step = out
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "retrieve-chunk")
+            .expect("must have a retrieve-chunk trace step");
+        assert!(
+            retrieve_step.detail.contains("A=1.1667"),
+            "trace must record A=1.1667 per the paper formula; got: {}",
+            retrieve_step.detail
+        );
+        // sum=7 (from fact34's slots) must appear in output facts.
+        assert!(
+            out.facts.iter().any(|f| f.key == "sum" && f.value == "7"),
+            "sum=7 from fact34 must propagate into working memory / output facts"
+        );
     }
 }

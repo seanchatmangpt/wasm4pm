@@ -2,6 +2,7 @@
 //!
 //! Frame ≤8 hypotheses as u8 subset bitmasks. Dempster pairwise fold with K-normalization.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };

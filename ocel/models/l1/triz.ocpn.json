@@ -1,0 +1,26 @@
+{
+  "model_id": "triz-l1-v1",
+  "model_level": "L1",
+  "breed_id": "triz",
+  "object_types": ["contradiction", "principle"],
+  "places": [
+    {"id": "p1", "name": "contradiction_ready",   "object_type": "contradiction"},
+    {"id": "p2", "name": "contradiction_resolved", "object_type": "principle"},
+    {"id": "p3", "name": "contradiction_unresolved", "object_type": "contradiction"}
+  ],
+  "transitions": [
+    {"id": "t1", "name": "physical-contradiction",  "label": "physical-contradiction"},
+    {"id": "t2", "name": "technical-contradiction", "label": "technical-contradiction"},
+    {"id": "t3", "name": "no-matrix-entry",         "label": "no-matrix-entry"}
+  ],
+  "arcs": [
+    {"from": "p1", "to": "t1", "type": "consume"},
+    {"from": "p1", "to": "t2", "type": "consume"},
+    {"from": "p1", "to": "t3", "type": "consume"},
+    {"from": "t1", "to": "p2", "type": "produce"},
+    {"from": "t2", "to": "p2", "type": "produce"},
+    {"from": "t3", "to": "p3", "type": "produce"}
+  ],
+  "initial_marking": {"p1": 1},
+  "final_markings": [{"p2": 1}, {"p3": 1}]
+}

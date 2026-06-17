@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
+  emitCrownReceipt,
   blake3Hex,
   newReceipt,
   type CommandReceipt,
@@ -459,6 +460,11 @@ export const simulate = defineCommand({
                   },
                 };
                 saveCommandReceipt(receipt);
+                emitCrownReceipt(
+                  'simulate',
+                  JSON.stringify(inputBytes),
+                  JSON.stringify(payload),
+                );
               }
 
               return await exitWithFlush(result.exit_code);
@@ -555,19 +561,35 @@ function computeActualLogStats(
       ? (JSON.parse(rawDfg) as Record<string, unknown>)
       : (rawDfg as Record<string, unknown>);
 
-  // Extract activity frequencies from DFG node frequencies
-  const nodeFreq = dfg['node_frequencies'] as Record<string, number> | undefined;
-  if (nodeFreq) {
-    activityFrequencies = nodeFreq;
-    totalActivities = Object.values(nodeFreq).reduce((a, b) => a + b, 0);
+  // Extract activity frequencies from DFG nodes list
+  const nodes = dfg['nodes'] as Array<{ id: string; label: string; frequency: number }> | undefined;
+  if (nodes) {
+    for (const node of nodes) {
+      const label = node.label || node.id;
+      activityFrequencies[label] = node.frequency;
+      totalActivities += node.frequency;
+    }
+  } else {
+    // Fallback if node_frequencies exists
+    const nodeFreq = dfg['node_frequencies'] as Record<string, number> | undefined;
+    if (nodeFreq) {
+      activityFrequencies = nodeFreq;
+      totalActivities = Object.values(nodeFreq).reduce((a, b) => a + b, 0);
+    }
   }
 
-  // Trace count from DFG metadata
-  const cases = dfg['case_count'] as number | undefined;
-  if (cases === undefined) {
-    throw new Error('Simulation failed: could not extract case_count from process model.');
+  // Trace count from DFG start_activities or metadata
+  const starts = dfg['start_activities'] as Record<string, number> | undefined;
+  if (starts) {
+    traceCount = Object.values(starts).reduce((a, b) => a + b, 0);
+  } else {
+    const cases = dfg['case_count'] as number | undefined;
+    if (cases !== undefined) {
+      traceCount = cases;
+    } else {
+      throw new Error('Simulation failed: could not extract case_count from process model.');
+    }
   }
-  traceCount = cases;
 
   // Edge count as proxy for variant diversity
   const edges = dfg['edges'] as Array<unknown> | undefined;

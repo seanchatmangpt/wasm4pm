@@ -1,0 +1,12 @@
+{
+  "algorithm": "batch_mining",
+  "provenance": {
+    "paper": "Mannhardt et al. (2016) Balanced Multi-Perspective Checking of Process Conformance — ACM TISSM; batch activity detection via temporal clustering of executions",
+    "locus": "§4.2 — batch detection from event log",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "result_ok",
+    "rationale": "Batch mining on running-example log must succeed; result may have zero batches if no concurrent executions detected."
+  }
+}

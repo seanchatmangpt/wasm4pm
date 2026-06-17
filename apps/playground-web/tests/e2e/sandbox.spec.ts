@@ -17,15 +17,15 @@ test.describe('Sandbox — algorithm runner', () => {
     const otel = createOtelCollector(page)
     await page.goto('/play')
     // Wait for WASM to init — Run ⌘↵ button becomes enabled
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
     otel.assertSpan('wasm.init', { service_name: 'playground-web', status: 'ok' })
   })
 
   test('run DFG algorithm on small-example preset and emits wasm.run OTEL span', async ({ page }) => {
     const otel = createOtelCollector(page)
     await page.goto('/play?algo=dfg&preset=small-example')
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /^Run/i }).click()
     // JSON output appears — use .first() to handle strict mode (multiple pre elements)
     await expect(page.locator('pre').first()).toBeVisible({ timeout: 10000 })
     const text = await page.locator('pre').first().textContent()
@@ -38,8 +38,8 @@ test.describe('Sandbox — algorithm runner', () => {
 
   test('receipt tab appears after successful run', async ({ page }) => {
     await page.goto('/play?algo=dfg')
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
-    await page.getByRole('button', { name: /Run ⌘/i }).click()
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
+    await page.getByRole('button', { name: /^Run/i }).click()
     await expect(page.getByRole('tab', { name: /Receipt/i })).toBeVisible({ timeout: 10000 })
   })
 
@@ -53,7 +53,7 @@ test.describe('Sandbox — algorithm runner', () => {
   test('cmd+enter keyboard shortcut triggers run', async ({ page }) => {
     await page.goto('/play?algo=dfg&preset=small-example')
     // Wait for WASM ready before triggering shortcut
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
     // Click the page body to ensure focus is in the document (not devtools)
     await page.locator('main').click()
     await page.keyboard.press('Meta+Enter')
@@ -63,7 +63,7 @@ test.describe('Sandbox — algorithm runner', () => {
   test('sample preset buttons load different logs', async ({ page }) => {
     await page.goto('/play')
     // Wait for WASM and initial preset to load
-    await expect(page.getByRole('button', { name: /Run ⌘/i })).toBeEnabled({ timeout: 15000 })
+    await expect(page.getByRole('button', { name: /^Run/i })).toBeEnabled({ timeout: 15000 })
     await page.getByRole('button', { name: /Road Traffic/i }).click()
     // After clicking, running Road Traffic with dfg should succeed
     await page.waitForTimeout(1500)
@@ -74,12 +74,12 @@ test.describe('Sandbox — algorithm runner', () => {
   test('drag-and-drop zone is visible', async ({ page }) => {
     await page.goto('/play')
     // The drop-file hint is always visible in the input panel header
-    await expect(page.getByText(/drop file to load/i)).toBeVisible({ timeout: 10000 })
+    await expect(page.getByText(/drop file/i)).toBeVisible({ timeout: 10000 })
   })
 
   test('algorithm sidebar filter narrows list', async ({ page }) => {
     await page.goto('/play')
-    const searchInput = page.getByPlaceholder(/Filter algorithms/i)
+    const searchInput = page.getByPlaceholder(/Filter/i)
     await searchInput.fill('inductive')
     await expect(page.getByRole('button', { name: /Inductive Miner/i })).toBeVisible()
     await expect(page.getByRole('button', { name: /Alpha Miner/i })).not.toBeVisible()

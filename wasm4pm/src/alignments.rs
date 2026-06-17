@@ -153,9 +153,9 @@ fn compute_trace_alignment(
         }
 
         // Create deterministic state key by sorting marking entries
-        let mut marking_vec: Vec<_> = state.marking.iter().collect();
-        marking_vec.sort_by_key(|(k, _)| k.as_str());
-        let state_key = (state.trace_index, format!("{:?}", marking_vec));
+        let mut marking_vec: Vec<_> = state.marking.iter().map(|(k, v)| (k.clone(), *v)).collect();
+        marking_vec.sort_by(|a, b| a.0.cmp(&b.0));
+        let state_key = (state.trace_index, marking_vec);
         if closed_set.contains(&state_key) {
             continue;
         }

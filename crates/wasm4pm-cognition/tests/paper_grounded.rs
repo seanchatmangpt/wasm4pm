@@ -19,8 +19,16 @@ use wasm4pm_cognition::breeds::*;
 #[test]
 fn mycin_paper_grounded() {
     let path = "tests/fixtures/papers/mycin.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -104,20 +112,68 @@ fn mycin_paper_grounded() {
                 "MYCIN must have fired at least one rule (streptococcus chain from paper)"
             );
 
-            // Paper-expected: organism=streptococcus CF=0.7 must appear in trace conclusions
             let exp = &json["expected"];
-            if let Some(organism) = exp.get("organism").and_then(|v| v.as_str()) {
-                assert!(
-                    output
-                        .inference_trace
-                        .iter()
-                        .any(|t| t.detail.contains(organism)),
-                    "MYCIN must derive '{}' per Shortliffe & Buchanan 1975 p.238",
-                    organism
-                );
-            }
+
+            // Paper-grounded NUMERIC assertion: organism=streptococcus is derived at
+            // CF=0.7 (Shortliffe & Buchanan 1975, p.247, MB[h,e]=0.7). The CF is
+            // emitted in the fire-rule trace detail as "(cf=0.700)".
+            let organism = exp
+                .get("organism")
+                .and_then(|v| v.as_str())
+                .expect("fixture must declare expected.organism");
+            let organism_cf =
+                exp.get("organism_cf")
+                    .and_then(|v| v.as_f64())
+                    .expect("fixture must declare expected.organism_cf") as f32;
+            let organism_detail = output
+                .inference_trace
+                .iter()
+                .find(|t| t.detail.contains(&format!("organism={}", organism)))
+                .unwrap_or_else(|| {
+                    panic!("MYCIN must derive organism={organism} per Shortliffe & Buchanan 1975 p.247")
+                });
+            let derived_cf = parse_cf(&organism_detail.detail);
+            assert!(
+                (derived_cf - organism_cf).abs() < 1e-3,
+                "MYCIN organism CF must equal paper value {organism_cf} (Shortliffe & Buchanan 1975 p.247); got {derived_cf}"
+            );
+
+            // The diagnostic answer (selected) is the terminal therapy recommendation,
+            // not an intermediate organism or echoed input fact.
+            let top = exp
+                .get("top_conclusion")
+                .and_then(|v| v.as_str())
+                .expect("fixture must declare expected.top_conclusion");
+            assert_eq!(
+                output.selected.as_deref(),
+                Some(top),
+                "MYCIN selected must be the terminal conclusion {top}"
+            );
         }
     }
+}
+
+/// Extract the certainty factor from a MYCIN fire-rule trace detail of the form
+/// "RULE… ⇒ conclusion (cf=0.700)". Returns 0.0 if no CF token is present.
+fn parse_cf(detail: &str) -> f32 {
+    detail
+        .rsplit_once("cf=")
+        .and_then(|(_, rest)| rest.trim_end_matches(')').parse::<f32>().ok())
+        .unwrap_or(0.0)
+}
+
+/// Extract a similarity score from a CBR score-case trace detail.
+/// Accepts formats like "score=0.80" or "CASE-ID score=0.80" or "(score=0.80)".
+/// Returns 0.0 if no score token is present.
+fn parse_cbr_score(detail: &str) -> f32 {
+    detail
+        .split_whitespace()
+        .find_map(|tok| {
+            let tok = tok.trim_matches(|c| c == '(' || c == ')' || c == ',');
+            tok.strip_prefix("score=")
+                .and_then(|v| v.parse::<f32>().ok())
+        })
+        .unwrap_or(0.0)
 }
 
 // ============================================================================
@@ -127,8 +183,16 @@ fn mycin_paper_grounded() {
 #[test]
 fn cbr_paper_grounded() {
     let path = "tests/fixtures/papers/cbr.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -220,23 +284,58 @@ fn cbr_paper_grounded() {
                 "CBR must emit score-case trace steps"
             );
 
-            // Paper-expected: CASE-PHYSICIAN-2WK should be retrieved (highest Jaccard)
+            // Paper-grounded assertion: CASE-PHYSICIAN-2WK has the highest Jaccard similarity
+            // (4 of 5 features match: domain, symptom_primary, symptom_secondary, urgency).
+            // Aamodt & Plaza 1994 p.2 states the physician is reminded of the patient treated
+            // two weeks ago. Assert retrieval unconditionally — no if-let guard.
             let exp = &json["expected"];
-            if let Some(retrieved) = exp.get("retrieved_case").and_then(|v| v.as_str()) {
-                // selected or trace should reference the best-scoring case
-                let found_in_trace = output
-                    .inference_trace
-                    .iter()
-                    .any(|t| t.detail.contains(retrieved));
-                let found_in_selected = output
-                    .selected
-                    .as_deref()
-                    .map(|s| s.contains(retrieved))
-                    .unwrap_or(false);
+            let retrieved = exp["retrieved_case"]
+                .as_str()
+                .expect("fixture must declare expected.retrieved_case");
+            // selected or trace should reference the best-scoring case
+            let found_in_trace = output
+                .inference_trace
+                .iter()
+                .any(|t| t.detail.contains(retrieved));
+            let found_in_selected = output
+                .selected
+                .as_deref()
+                .map(|s| s.contains(retrieved))
+                .unwrap_or(false);
+            assert!(
+                found_in_trace || found_in_selected,
+                "CBR must retrieve '{}' (highest Jaccard: 4/5 features match) \
+                 per Aamodt & Plaza 1994 physician reminding example p.2; \
+                 selected={:?}",
+                retrieved,
+                output.selected
+            );
+            // Assert the highest-scoring case scored above others in the trace
+            let score_steps: Vec<_> = output
+                .inference_trace
+                .iter()
+                .filter(|t| t.kind == "score-case")
+                .collect();
+            assert!(
+                !score_steps.is_empty(),
+                "CBR must emit score-case trace steps for each candidate"
+            );
+            // CASE-PHYSICIAN-2WK must have a higher score trace than CASE-CREDIT-TROUBLED-CO
+            // (different domain: medical vs finance — zero matching features)
+            let physician_2wk_score = score_steps
+                .iter()
+                .find(|t| t.detail.contains("CASE-PHYSICIAN-2WK"))
+                .map(|t| parse_cbr_score(&t.detail));
+            let credit_score = score_steps
+                .iter()
+                .find(|t| t.detail.contains("CASE-CREDIT-TROUBLED-CO"))
+                .map(|t| parse_cbr_score(&t.detail));
+            if let (Some(p2wk), Some(credit)) = (physician_2wk_score, credit_score) {
                 assert!(
-                    found_in_trace || found_in_selected,
-                    "CBR must retrieve '{}' per Aamodt & Plaza 1994 physician reminding example",
-                    retrieved
+                    p2wk > credit,
+                    "CBR: CASE-PHYSICIAN-2WK score ({}) must exceed CASE-CREDIT-TROUBLED-CO score ({}) \
+                     — different domain means zero feature overlap",
+                    p2wk, credit
                 );
             }
         }
@@ -250,8 +349,16 @@ fn cbr_paper_grounded() {
 #[test]
 fn gps_paper_grounded() {
     let path = "tests/fixtures/papers/gps.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -351,6 +458,38 @@ fn gps_paper_grounded() {
                 }),
                 "GPS must emit gap-reduction or operator-application steps"
             );
+
+            // Paper-grounded assertion: Fig. 4 of Newell & Simon P-2257 shows exactly
+            // two operators applied (R6 then R12) to transform L1 → L0.
+            let exp = &json["expected"];
+            let solution_steps = exp["solution_steps"]
+                .as_array()
+                .expect("fixture must declare expected.solution_steps");
+            for op_id in solution_steps {
+                let op = op_id.as_str().expect("solution_steps must be strings");
+                let applied = output.inference_trace.iter().any(|t| {
+                    (t.kind == "apply-operator" || t.kind == "reduce-gap") && t.detail.contains(op)
+                });
+                assert!(
+                    applied,
+                    "GPS must apply operator '{}' per Newell & Simon 1961 Fig. 4 trace",
+                    op
+                );
+            }
+            // The final state must satisfy the goal (expr=L0 reached)
+            let goal_satisfied = output.inference_trace.iter().any(|t| {
+                t.kind == "check-presatisfied"
+                    || t.detail.contains("L0")
+                    || output
+                        .selected
+                        .as_deref()
+                        .map(|s| s.contains("L0"))
+                        .unwrap_or(false)
+            }) || output.explanation.contains("L0");
+            assert!(
+                goal_satisfied,
+                "GPS must reach goal state expr=L0 per Newell & Simon 1961 Fig. 4"
+            );
         }
     }
 }
@@ -362,8 +501,16 @@ fn gps_paper_grounded() {
 #[test]
 fn soar_paper_grounded() {
     let path = "tests/fixtures/papers/soar.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -452,8 +599,16 @@ fn soar_paper_grounded() {
 #[test]
 fn strips_paper_grounded() {
     let path = "tests/fixtures/papers/strips.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut rules = Vec::new();
@@ -550,24 +705,42 @@ fn strips_paper_grounded() {
                 "STRIPS trace must be non-empty"
             );
 
-            // Paper-expected: plan must have at least 4 steps per Fikes & Nilsson 1971 p.202
+            // Paper-grounded assertion: fixture encodes a 2-step plan (turn-on-light, close-door1).
+            // Fikes & Nilsson 1971 Section 2 validates the forward-search STRIPS loop with
+            // exactly the number of operators in the plan sequence.
             let exp = &json["expected"];
-            if let Some(min_len) = exp.get("min_plan_length").and_then(|v| v.as_u64()) {
-                let plan_steps = output
-                    .inference_trace
-                    .iter()
-                    .filter(|t| t.kind == "apply-operator" || t.kind == "plan-step")
-                    .count();
-                // The plan steps in the trace should be >= min_plan_length if the problem is solved
-                // (graceful: just assert non-zero if min_len > 0)
-                if min_len > 0 {
-                    assert!(
-                        plan_steps > 0,
-                        "STRIPS paper problem must produce at least one plan step; \
-                         paper states min {} steps (Fikes & Nilsson 1971 p.202)",
-                        min_len
-                    );
-                }
+            let expected_plan = exp["plan"]
+                .as_array()
+                .expect("fixture must declare expected.plan");
+            let expected_step_count = expected_plan.len();
+            assert!(
+                expected_step_count > 0,
+                "STRIPS fixture plan must have at least one step"
+            );
+            // STRIPS trace uses kind="execute" for each operator execution step.
+            // Count execute steps in the trace to verify the plan length.
+            let execute_steps = output
+                .inference_trace
+                .iter()
+                .filter(|t| t.kind == "execute")
+                .count();
+            assert_eq!(
+                execute_steps, expected_step_count,
+                "STRIPS must produce exactly {} execute steps (turn-on-light, close-door1) \
+                 per Fikes & Nilsson 1971 Section 2 two-goal room-navigation problem; got {}",
+                expected_step_count, execute_steps
+            );
+            // Assert each operator in the plan appears in the trace (execute or try-action steps)
+            for op_id in expected_plan {
+                let op = op_id.as_str().expect("plan must be strings");
+                let applied = output.inference_trace.iter().any(|t| {
+                    (t.kind == "execute" || t.kind == "try-action") && t.detail.contains(op)
+                });
+                assert!(
+                    applied,
+                    "STRIPS plan must contain operator '{}' per fixture expected.plan",
+                    op
+                );
             }
         }
     }
@@ -580,8 +753,16 @@ fn strips_paper_grounded() {
 #[test]
 fn hearsay_paper_grounded() {
     let path = "tests/fixtures/papers/hearsay.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -664,34 +845,68 @@ fn hearsay_paper_grounded() {
                 "Hearsay must seed or post hypotheses from KS activations"
             );
 
-            // Paper-expected: at least one of the correct words should be found in output facts
+            // Paper-grounded assertions from Erman et al. 1980 Section 1.
             let exp = &json["expected"];
-            if let Some(correct_words) = exp
-                .get("correct_words_hypothesized")
-                .and_then(|v| v.as_array())
-            {
-                let found_any = correct_words.iter().any(|w| {
-                    w.as_str()
-                        .map(|word| {
-                            output
-                                .facts
+
+            // Assert final phrase and credibility (Erman & Lesser 1980 Step 38, Fig. 5h)
+            let final_phrase = exp["final_phrase"]
+                .as_str()
+                .expect("fixture must declare expected.final_phrase");
+            let expected_credibility = exp["credibility"]
+                .as_u64()
+                .expect("fixture must declare expected.credibility")
+                as u32;
+            let found_phrase = output
+                .inference_trace
+                .iter()
+                .any(|t| t.detail.contains(final_phrase))
+                || output.explanation.contains(final_phrase)
+                || output
+                    .selected
+                    .as_deref()
+                    .map(|s| s.contains(final_phrase))
+                    .unwrap_or(false);
+            assert!(
+                found_phrase,
+                "Hearsay must produce final phrase '{}' per Erman et al. 1980 Step 38",
+                final_phrase
+            );
+            // Credibility 85 must appear in trace or explanation
+            let cred_str = expected_credibility.to_string();
+            let credibility_found = output
+                .inference_trace
+                .iter()
+                .any(|t| t.detail.contains(&cred_str))
+                || output.explanation.contains(&cred_str);
+            assert!(
+                credibility_found,
+                "Hearsay credibility {} must appear in trace or explanation per Erman et al. 1980",
+                expected_credibility
+            );
+
+            // Assert correct words hypothesized (unconditional — no is_empty guard)
+            let correct_words = exp["correct_words_hypothesized"]
+                .as_array()
+                .expect("fixture must declare expected.correct_words_hypothesized");
+            let found_any = correct_words.iter().any(|w| {
+                w.as_str()
+                    .map(|word| {
+                        output
+                            .facts
+                            .iter()
+                            .any(|f| f.value.to_uppercase().contains(word))
+                            || output
+                                .inference_trace
                                 .iter()
-                                .any(|f| f.value.to_uppercase().contains(word))
-                                || output
-                                    .inference_trace
-                                    .iter()
-                                    .any(|t| t.detail.to_uppercase().contains(word))
-                        })
-                        .unwrap_or(false)
-                });
-                // Graceful: only assert if the breed produced hypotheses at all
-                if !output.facts.is_empty() {
-                    assert!(
-                        found_any,
-                        "Hearsay must hypothesize at least one correct word from Erman & Lesser 1980 Fig 5e"
-                    );
-                }
-            }
+                                .any(|t| t.detail.to_uppercase().contains(word))
+                    })
+                    .unwrap_or(false)
+            });
+            assert!(
+                found_any,
+                "Hearsay must hypothesize at least one correct word (ARE/BY/AND/FELDMAN) \
+                 per Erman et al. 1980 Fig. 5e Step 5 MOW output"
+            );
         }
     }
 }
@@ -703,8 +918,16 @@ fn hearsay_paper_grounded() {
 #[test]
 fn prolog_paper_grounded() {
     let path = "tests/fixtures/papers/prolog.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -806,32 +1029,37 @@ fn prolog_paper_grounded() {
                 "Prolog must emit intern-fact / kernel-query / decision trace steps"
             );
 
-            // Paper-expected: SLD-resolution binds x:=a and x:=b (Fig. 2)
+            // Paper-grounded assertion: Kowalski 1974 Fig. 2 — parent(bob,ann) is a direct
+            // fact lookup. The Prolog8 kernel must return selected='bob-ann' containing 'ann'.
             let exp = &json["expected"];
-            if let Some(bindings) = exp.get("resolved_bindings").and_then(|v| v.as_array()) {
-                // At least one binding should appear in the explanation or trace
-                let explanation_lc = output.explanation.to_lowercase();
-                let trace_details: String = output
-                    .inference_trace
-                    .iter()
-                    .map(|t| t.detail.to_lowercase())
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                let found = bindings.iter().any(|b| {
-                    b.as_str()
-                        .map(|s| {
-                            let sl = s.to_lowercase();
-                            explanation_lc.contains(&sl) || trace_details.contains(&sl)
-                        })
-                        .unwrap_or(false)
-                });
-                // Graceful: only assert if the breed produced non-trivial output
-                if output.selected.is_some() {
-                    assert!(
-                        found,
-                        "Prolog must resolve at least one binding from Robinson 1965 Fig.2 Member example"
-                    );
-                }
+            let bindings = exp["resolved_bindings"]
+                .as_array()
+                .expect("fixture must declare expected.resolved_bindings");
+            // selected must be Some — no is_some guard; unwrap directly
+            let selected = output.selected.as_deref().expect(
+                "Prolog must produce a selected binding for parent(bob,ann) \
+                          per Kowalski 1974 Fig. 2 direct fact lookup",
+            );
+            let explanation_lc = output.explanation.to_lowercase();
+            let trace_details: String = output
+                .inference_trace
+                .iter()
+                .map(|t| t.detail.to_lowercase())
+                .collect::<Vec<_>>()
+                .join(" ");
+            let selected_lc = selected.to_lowercase();
+            for binding in bindings {
+                let b = binding.as_str().expect("resolved_bindings must be strings");
+                let bl = b.to_lowercase();
+                assert!(
+                    selected_lc.contains(&bl)
+                        || explanation_lc.contains(&bl)
+                        || trace_details.contains(&bl),
+                    "Prolog must resolve binding '{}' per Kowalski 1974 Fig. 2 parent/ancestor program; \
+                     selected='{}'",
+                    b,
+                    selected
+                );
             }
         }
     }
@@ -844,8 +1072,16 @@ fn prolog_paper_grounded() {
 #[test]
 fn dendral_paper_grounded() {
     let path = "tests/fixtures/papers/dendral.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut candidates = Vec::new();
@@ -960,25 +1196,19 @@ fn dendral_paper_grounded() {
 #[test]
 fn eliza_paper_grounded() {
     let path = "tests/fixtures/papers/eliza.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-            let inp = &json["input"];
-
-            let intent = inp
-                .get("intent")
-                .and_then(|v| v.as_str())
-                .unwrap_or("Men are all alike.")
-                .to_string();
-
-            let input = BreedInput {
-                intent,
-                candidates: vec![],
-                facts: vec![],
-                cases: vec![],
-                rules: vec![],
-                goals: vec![],
-                state: vec![],
-            };
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
+            // Use serde deserialization to ensure rules, facts, goals, state all load from fixture
+            let input: BreedInput = serde_json::from_value(json["input"].clone())
+                .unwrap_or_else(|e| panic!("ELIZA fixture input parse: {}", e));
 
             let breed = frame::Eliza;
             assert!(
@@ -994,32 +1224,60 @@ fn eliza_paper_grounded() {
                 !output.explanation.is_empty(),
                 "ELIZA explanation must be non-empty"
             );
+            // When rules are present, the keyword engine runs (emitting "keyword-found" steps).
+            // The traditional "try-pattern" path only runs when no keyword engine rules are loaded.
             assert!(
                 output
                     .inference_trace
                     .iter()
-                    .any(|t| t.kind == "try-pattern"),
-                "ELIZA must emit try-pattern trace steps"
+                    .any(|t| t.kind == "try-pattern" || t.kind == "keyword-found"),
+                "ELIZA must emit try-pattern (traditional) or keyword-found (keyword engine) trace steps"
             );
 
-            // Paper-expected: first turn triggers ALIKE keyword → "IN WHAT WAY" response
+            // Paper-grounded assertion: Weizenbaum 1966 p.36 opening dialogue turn 1.
+            // "Men are all alike." → ALIKE (rank 10, equiv DIT) → "IN WHAT WAY"
             let exp = &json["expected"];
-            if let Some(turn1) = exp.get("turn_1") {
-                if let Some(keyword) = turn1.get("keyword_triggered").and_then(|v| v.as_str()) {
-                    // Keyword name appears somewhere in trace details
-                    let kw_base = keyword.split_whitespace().next().unwrap_or(keyword);
-                    let kw_lc = kw_base.to_lowercase();
-                    let found = output
-                        .inference_trace
-                        .iter()
-                        .any(|t| t.detail.to_lowercase().contains(&kw_lc));
-                    assert!(
-                        found,
-                        "ELIZA must trigger '{}' keyword per Weizenbaum 1966 dialogue transcript",
-                        kw_base
-                    );
-                }
-            }
+            let turn1 = exp["turn_1"]
+                .as_object()
+                .expect("fixture must declare expected.turn_1");
+
+            // Assert ALIKE keyword was triggered (unconditional — no if-let guard)
+            let keyword_triggered = turn1["keyword_triggered"]
+                .as_str()
+                .expect("fixture turn_1 must declare keyword_triggered");
+            let kw_base = keyword_triggered
+                .split_whitespace()
+                .next()
+                .unwrap_or(keyword_triggered);
+            let kw_lc = kw_base.to_lowercase();
+            let keyword_found = output
+                .inference_trace
+                .iter()
+                .any(|t| t.detail.to_lowercase().contains(&kw_lc));
+            assert!(
+                keyword_found,
+                "ELIZA must trigger '{}' keyword per Weizenbaum 1966 p.36 opening dialogue",
+                kw_base
+            );
+
+            // Assert the verbatim response "IN WHAT WAY" per Weizenbaum 1966 p.36.
+            // The Eliza breed emits the response in output.explanation (the reassembly result);
+            // selected holds the keyword name that was triggered.
+            let expected_response = turn1["eliza_response"]
+                .as_str()
+                .expect("fixture turn_1 must declare eliza_response");
+            let explanation_uc = output.explanation.to_uppercase();
+            let response_found = explanation_uc.contains(expected_response)
+                || output
+                    .inference_trace
+                    .iter()
+                    .any(|t| t.detail.to_uppercase().contains(expected_response));
+            assert!(
+                response_found,
+                "ELIZA first response must be '{}' per Weizenbaum 1966 p.36 verbatim transcript; \
+                 explanation='{}'",
+                expected_response, output.explanation
+            );
         }
     }
 }
@@ -1031,8 +1289,16 @@ fn eliza_paper_grounded() {
 #[test]
 fn autoinstinct_learning_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_learning.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1110,19 +1376,14 @@ fn autoinstinct_learning_paper_grounded() {
                 "AutoinstinctLearning must emit plan-step trace events"
             );
 
-            // Paper-expected: goals g0 and g1 are achieved (2 facts true), g2..g4 unachieved
+            // Paper-expected: bitmask plan length must match fixture expected.selected
             let exp = &json["expected"];
-            if let Some(achieved) = exp.get("achieved_goals").and_then(|v| v.as_array()) {
-                let selected_str = output.selected.as_deref().unwrap_or("");
-                // step count = total goals - achieved; extract from "N steps to goal"
-                let achieved_count = achieved.len();
-                let total_goals = output
-                    .inference_trace
-                    .iter()
-                    .filter(|t| t.kind == "plan-step")
-                    .count();
-                // At minimum, the plan should have fewer steps than if zero goals were achieved
-                let _ = (achieved_count, total_goals, selected_str); // used for context
+            if let Some(expected_selected) = exp.get("selected").and_then(|v| v.as_str()) {
+                assert_eq!(
+                    output.selected.as_deref(),
+                    Some(expected_selected),
+                    "AutoinstinctLearning: selected must match fixture expected.selected (Sussman 1973 HACKER bitmask plan length)"
+                );
             }
         }
     }
@@ -1135,8 +1396,16 @@ fn autoinstinct_learning_paper_grounded() {
 #[test]
 fn autoinstinct_neurosis_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_neurosis.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1210,7 +1479,7 @@ fn autoinstinct_neurosis_paper_grounded() {
                 .get("expected_finding_count_min")
                 .and_then(|v| v.as_u64())
             {
-                // The trace should contain at least min_findings defensive or accepting response steps
+                // The trace should contain at least min_findings defensive response steps
                 let response_steps = output
                     .inference_trace
                     .iter()
@@ -1219,10 +1488,16 @@ fn autoinstinct_neurosis_paper_grounded() {
                     })
                     .count();
                 assert!(
-                    response_steps >= 1,
-                    "AutoinstinctNeurosis must emit response steps for conflict pairs; \
-                     paper expects at least {} findings (Boden 1977)",
+                    response_steps >= min_findings as usize,
+                    "AutoinstinctNeurosis must emit at least {} defensive/accepting response steps for conflict pairs; \
+                     Colby PARRY 1971 expects full paranoid conflict",
                     min_findings
+                );
+                let eliminated = output.candidates.iter().filter(|c| c.eliminated).count();
+                assert!(
+                    eliminated >= 6,
+                    "AutoinstinctNeurosis: all 6 high-conflict stimuli must produce eliminated candidates; got {}",
+                    eliminated
                 );
             }
         }
@@ -1236,8 +1511,16 @@ fn autoinstinct_neurosis_paper_grounded() {
 #[test]
 fn autoinstinct_vision_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_vision.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let mut facts = Vec::new();
@@ -1308,6 +1591,13 @@ fn autoinstinct_vision_paper_grounded() {
                     algo_outcome
                 );
             }
+            if let Some(expected_id) = exp.get("selected").and_then(|v| v.as_str()) {
+                assert_eq!(
+                    output.selected.as_deref(),
+                    Some(expected_id),
+                    "AutoinstinctVision must select the correct clear object from the blocks-world scene"
+                );
+            }
         }
     }
 }
@@ -1319,8 +1609,16 @@ fn autoinstinct_vision_paper_grounded() {
 #[test]
 fn autoinstinct_semantics_paper_grounded() {
     let path = "tests/fixtures/papers/autoinstinct_semantics.json";
-    if let Ok(content) = fs::read_to_string(path) {
-        if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+    let content = fs::read_to_string(path).unwrap_or_else(|_| {
+        panic!(
+            "MISSING FIXTURE: {} — paper-grounded tests must not skip",
+            path
+        )
+    });
+    {
+        let json = serde_json::from_str::<serde_json::Value>(&content)
+            .unwrap_or_else(|e| panic!("UNPARSEABLE FIXTURE {}: {}", path, e));
+        {
             let inp = &json["input"];
 
             let intent = inp

@@ -1,0 +1,22 @@
+{
+  "intent": "discover object routes",
+  "candidates": [],
+  "facts": [
+    {
+      "key": "event",
+      "value": "id=e1|activity=Create|objects=o1,i1"
+    },
+    {
+      "key": "event",
+      "value": "id=e2|activity=Pay|objects=o1"
+    },
+    {
+      "key": "event",
+      "value": "id=e3|activity=Ship|objects=i1"
+    }
+  ],
+  "rules": [],
+  "cases": [],
+  "goals": [],
+  "state": []
+}

@@ -1,10 +1,10 @@
 [package]
 name = "wasm4pm-cognition"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "26.6.10"
+edition = "2021"
+license = "BUSL-1.1"
 authors = ["Sean Chatman"]
-repository.workspace = true
+repository = "https://github.com/seanchatmangpt/wasm4pm"
 description = "AutoSystems old-AI cognition kernel for wasm4pm: frames, production rules, Prolog, STRIPS, Hearsay-II blackboard, BLAKE3 receipt chain, adversarial gates"
 
 [lib]

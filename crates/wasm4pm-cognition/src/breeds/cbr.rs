@@ -9,12 +9,12 @@
 //! 6. Select the case with the maximum score (lex-tiebreak on case id).
 //! 7. Recommend `selected = best_case.architecture`.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Case, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// Case-Based Reasoning breed.
 pub struct Cbr;
@@ -547,5 +547,182 @@ mod tests {
             output.selected.is_none(),
             "Should select none when no candidates found"
         );
+    }
+
+    /// Falsification gate: two competing cases with different Jaccard scores.
+    /// A broken jaccard formula (e.g. inverted, zero, or ignoring union) would
+    /// select the wrong case. Aamodt & Plaza 1994 physician vignette (fixture).
+    #[test]
+    fn falsification_gate_higher_jaccard_wins_over_lower() {
+        let breed = Cbr;
+        // Query: 5 features
+        let query = vec![
+            Fact {
+                key: "domain".into(),
+                value: "medical".into(),
+            },
+            Fact {
+                key: "symptom_primary".into(),
+                value: "fever".into(),
+            },
+            Fact {
+                key: "symptom_secondary".into(),
+                value: "cough".into(),
+            },
+            Fact {
+                key: "urgency".into(),
+                value: "moderate".into(),
+            },
+            Fact {
+                key: "patient_status".into(),
+                value: "current".into(),
+            },
+        ];
+        // HIGH-SIM: shares 4/6 features with query → Jaccard 4/6 ≈ 0.667, score 0.633
+        let high_sim = Case {
+            id: "CASE-PHYSICIAN-2WK".into(),
+            intent: "physician 2-week case".into(),
+            architecture: "antibiotic-course".into(),
+            outcome_score: 0.95,
+            facts: vec![
+                Fact {
+                    key: "domain".into(),
+                    value: "medical".into(),
+                },
+                Fact {
+                    key: "symptom_primary".into(),
+                    value: "fever".into(),
+                },
+                Fact {
+                    key: "symptom_secondary".into(),
+                    value: "cough".into(),
+                },
+                Fact {
+                    key: "urgency".into(),
+                    value: "moderate".into(),
+                },
+                Fact {
+                    key: "patient_status".into(),
+                    value: "past".into(),
+                },
+            ],
+        };
+        // LOW-SIM: shares 2/8 features with query → Jaccard 2/8 = 0.25, score 0.18
+        let low_sim = Case {
+            id: "CASE-PHYSICIAN-6MO".into(),
+            intent: "physician 6-month case".into(),
+            architecture: "antiviral-course".into(),
+            outcome_score: 0.72,
+            facts: vec![
+                Fact {
+                    key: "domain".into(),
+                    value: "medical".into(),
+                },
+                Fact {
+                    key: "symptom_primary".into(),
+                    value: "fever".into(),
+                },
+                Fact {
+                    key: "symptom_secondary".into(),
+                    value: "rash".into(),
+                },
+                Fact {
+                    key: "urgency".into(),
+                    value: "low".into(),
+                },
+                Fact {
+                    key: "patient_status".into(),
+                    value: "past".into(),
+                },
+            ],
+        };
+        let input = BreedInput {
+            intent: "diagnose current patient".into(),
+            candidates: vec![],
+            facts: query,
+            cases: vec![high_sim, low_sim],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        assert_eq!(
+            output.selected.as_deref(),
+            Some("antibiotic-course"),
+            "Higher-Jaccard case must win; got: {:?}",
+            output.selected
+        );
+        // Verify Jaccard values are in the trace
+        let score_steps: Vec<&TraceStep> = output
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "score-case")
+            .collect();
+        assert_eq!(score_steps.len(), 2, "Both candidates must be scored");
+        assert!(
+            score_steps
+                .iter()
+                .any(|t| t.detail.contains("CASE-PHYSICIAN-2WK") && t.detail.contains("sim=0.667")),
+            "2WK case must show sim≈0.667; trace: {:?}",
+            score_steps.iter().map(|t| &t.detail).collect::<Vec<_>>()
+        );
+    }
+
+    #[test]
+    fn refuses_cbr_empty_facts() {
+        let breed = Cbr;
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![Case {
+                id: "c1".into(),
+                intent: "test".into(),
+                architecture: "arch1".into(),
+                outcome_score: 0.9,
+                facts: vec![Fact {
+                    key: "k".into(),
+                    value: "v".into(),
+                }],
+            }],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        assert!(breed.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn invariant_identity_jaccard() {
+        let breed = Cbr;
+        let case1 = Case {
+            id: "c1".into(),
+            intent: "test".into(),
+            architecture: "arch1".into(),
+            outcome_score: 1.0,
+            facts: vec![Fact {
+                key: "k1".into(),
+                value: "v1".into(),
+            }],
+        };
+        let input = BreedInput {
+            intent: "test".into(),
+            candidates: vec![],
+            facts: vec![Fact {
+                key: "k1".into(),
+                value: "v1".into(),
+            }],
+            cases: vec![case1],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let output = breed.run(&input).expect("run ok");
+        let score_step = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "score-case")
+            .unwrap();
+        assert!(score_step.detail.contains("sim=1.000"));
     }
 }

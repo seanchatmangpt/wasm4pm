@@ -18,7 +18,9 @@
 
 use crate::breeds::support::sexpr::Sexpr;
 use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep};
+use crate::breeds::{
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
+};
 use std::collections::BTreeMap;
 
 /// SME greedy-merge structure mapper.
@@ -63,8 +65,10 @@ fn align(b: &Sexpr, t: &Sexpr) -> Option<(Vec<(String, String)>, u64)> {
 /// Check 1:1 consistency of a set of entity pairs (both directions).
 fn consistent(mapping: &BTreeMap<String, String>, pairs: &[(String, String)]) -> bool {
     let mut fwd = mapping.clone();
-    let mut rev: BTreeMap<String, String> =
-        mapping.iter().map(|(k, v)| (v.clone(), k.clone())).collect();
+    let mut rev: BTreeMap<String, String> = mapping
+        .iter()
+        .map(|(k, v)| (v.clone(), k.clone()))
+        .collect();
     for (b, t) in pairs {
         if let Some(existing) = fwd.get(b) {
             if existing != t {
@@ -117,7 +121,9 @@ impl CognitionBreed for AnalogySme {
         let base = collect(input, "base:")?;
         let target = collect(input, "target:")?;
         if base.is_empty() || target.is_empty() {
-            return Err("analogy_sme requires at least one base: and one target: expression".to_string());
+            return Err(
+                "analogy_sme requires at least one base: and one target: expression".to_string(),
+            );
         }
         if base.len() > 32 || target.len() > 32 {
             return Err(format!(
@@ -189,7 +195,9 @@ impl CognitionBreed for AnalogySme {
             }
         }
         if mhs.is_empty() {
-            return Err(err("no structurally consistent local match between base and target".to_string()));
+            return Err(err(
+                "no structurally consistent local match between base and target".to_string(),
+            ));
         }
 
         // Greedy merge in descending score order (lex tiebreak).
@@ -217,7 +225,10 @@ impl CognitionBreed for AnalogySme {
                 push(
                     &mut trace,
                     "merge-gmap",
-                    format!("merged {} <-> {} (gmap score now {})", mh.bkey, mh.tkey, gmap_score),
+                    format!(
+                        "merged {} <-> {} (gmap score now {})",
+                        mh.bkey, mh.tkey, gmap_score
+                    ),
                 );
             }
         }
@@ -289,5 +300,98 @@ impl CognitionBreed for AnalogySme {
     fn postconditions(&self, _input: &BreedInput, output: &BreedOutput) -> Result<(), String> {
         TraceQuery::from_output(output).require_non_empty_with_kinds(&["local-match"])?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fact(key: &str, value: &str) -> Fact {
+        Fact {
+            key: key.into(),
+            value: value.into(),
+        }
+    }
+
+    fn solar_atom_input() -> BreedInput {
+        // Falkenhainer, Forbus & Gentner 1989 §5.1 solar-system/Rutherford-atom analogy.
+        // Base: mass inequality, revolve relation, causal link, temperature attribute.
+        // Target: mass inequality, revolve relation (no cause, no temperature).
+        BreedInput {
+            intent: "map the solar system onto the Rutherford atom".into(),
+            candidates: vec![],
+            facts: vec![
+                fact("base:0", "(greater (mass sun) (mass planet))"),
+                fact("base:1", "(revolve planet sun)"),
+                fact(
+                    "base:2",
+                    "(cause (greater (mass sun) (mass planet)) (revolve planet sun))",
+                ),
+                fact("base:3", "(greater (temperature sun) (temperature planet))"),
+                fact("target:0", "(greater (mass nucleus) (mass electron))"),
+                fact("target:1", "(revolve electron nucleus)"),
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        }
+    }
+
+    /// Falkenhainer et al. 1989: SME must map sun→nucleus and planet→electron.
+    /// Systematicity selects the causal chain (cause+greater+revolve) over the
+    /// temperature attribute (shallow, no target structure).
+    #[test]
+    fn paper_solar_atom_entity_mapping() {
+        let out = AnalogySme.run(&solar_atom_input()).expect("run ok");
+        // Winning mapping must include sun→nucleus and planet→electron.
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == "map:sun" && f.value == "nucleus"),
+            "sun must map to nucleus; facts: {:?}",
+            out.facts
+        );
+        assert!(
+            out.facts
+                .iter()
+                .any(|f| f.key == "map:planet" && f.value == "electron"),
+            "planet must map to electron; facts: {:?}",
+            out.facts
+        );
+    }
+
+    /// The cause expression (base:2) has no counterpart in the target but all its
+    /// entities are covered by the winning mapping → it must be emitted as a
+    /// candidate inference carrying over the causal structure.
+    #[test]
+    fn paper_causal_candidate_inference() {
+        let out = AnalogySme.run(&solar_atom_input()).expect("run ok");
+        let inference = out
+            .facts
+            .iter()
+            .find(|f| f.key.starts_with("inference:"))
+            .map(|f| f.value.as_str())
+            .unwrap_or("");
+        assert!(
+            inference.contains("cause")
+                && inference.contains("nucleus")
+                && inference.contains("electron"),
+            "candidate inference must carry over causal chain with substituted entities; got: {:?}",
+            inference
+        );
+    }
+
+    /// Temperature attribute (base:3) has no matching target structure (different
+    /// entities — temperature vs. mass/revolve functors don't align) so it must NOT
+    /// produce a mapping fact.
+    #[test]
+    fn temperature_attribute_not_mapped() {
+        let out = AnalogySme.run(&solar_atom_input()).expect("run ok");
+        assert!(
+            !out.facts.iter().any(|f| f.key == "map:temperature"),
+            "temperature must not be mapped (attribute match dropped by systematicity)"
+        );
     }
 }

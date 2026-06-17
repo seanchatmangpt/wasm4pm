@@ -17,7 +17,10 @@ use wasm4pm_cognition::breeds::{
 };
 
 fn fact(key: &str, value: &str) -> Fact {
-    Fact { key: key.to_string(), value: value.to_string() }
+    Fact {
+        key: key.to_string(),
+        value: value.to_string(),
+    }
 }
 
 fn main() {
@@ -27,22 +30,18 @@ fn main() {
         facts: vec![
             // Discount factor
             fact("mdp:gamma", "0.9"),
-
             // Transitions from "office"
             // move: 90% → corridor, 10% → stay in office
             fact("mdp:trans:office:move", "corridor:0.9;office:0.1"),
             // wait: stay in office with certainty
             fact("mdp:trans:office:wait", "office:1.0"),
-
             // Transitions from "corridor"
             // move: deterministically reach goal
             fact("mdp:trans:corridor:move", "goal:1.0"),
             // back: deterministically return to office
             fact("mdp:trans:corridor:back", "office:1.0"),
-
             // Absorbing goal state (terminal)
             fact("mdp:trans:goal:wait", "goal:1.0"),
-
             // Rewards
             fact("mdp:reward:office:wait", "0.1"),
             fact("mdp:reward:corridor:move", "10.0"),
@@ -65,12 +64,16 @@ fn main() {
             println!();
 
             // Print per-state values and optimal actions
-            let mut values: Vec<_> = output.facts.iter()
+            let mut values: Vec<_> = output
+                .facts
+                .iter()
                 .filter(|f| f.key.starts_with("mdp:value:"))
                 .collect();
             values.sort_by(|a, b| a.key.cmp(&b.key));
 
-            let mut policies: Vec<_> = output.facts.iter()
+            let mut policies: Vec<_> = output
+                .facts
+                .iter()
                 .filter(|f| f.key.starts_with("mdp:policy:"))
                 .collect();
             policies.sort_by(|a, b| a.key.cmp(&b.key));

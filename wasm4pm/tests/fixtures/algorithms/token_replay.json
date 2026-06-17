@@ -1,0 +1,12 @@
+{
+  "algorithm": "token_replay",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., Adriansyah, A., & van Dongen, B. (2012). Replaying history on process models for conformance checking and performance analysis. WIREs Data Mining and Knowledge Discovery, 2(2), 182-192.",
+    "locus": "Section 3 — token-based replay fitness definition; running-example log is perfectly fitting",
+    "extraction": "verbatim"
+  },
+  "expected": {
+    "value": "fitness=1.0",
+    "rationale": "Running-example log discovered via inductive miner; replaying that log against its own discovered net yields perfect fitness=1.0"
+  }
+}

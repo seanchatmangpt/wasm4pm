@@ -1,0 +1,16 @@
+{
+  "algorithm": "handover_network",
+  "provenance": {
+    "paper": "Discovering Social Networks from Event Logs",
+    "citation": "van der Aalst, W.M.P., Reijers, H.A., Song, M. (2005). Discovering Social Networks from Event Logs. CSCW 14(6).",
+    "locus": "Table 2, handover-of-work metric",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "resources=6",
+    "description": "The handover-of-work social network spans 6 unique resources: Pete, Mike, Ellen, Sara, Sean, and Sue (all org:resource values in running-example.xes)"
+  }
+}

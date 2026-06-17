@@ -9,6 +9,14 @@ const navLinks = [{
   to: '/learn/tutorials/getting-started',
   icon: 'i-lucide-book-open'
 }, {
+  label: 'Periodic Table',
+  to: '/periodic-table',
+  icon: 'i-heroicons-sparkles'
+}, {
+  label: 'Workbench',
+  to: '/workbench',
+  icon: 'i-heroicons-cpu-chip'
+}, {
   label: 'Sandbox',
   to: '/play',
   icon: 'i-lucide-flask-conical'

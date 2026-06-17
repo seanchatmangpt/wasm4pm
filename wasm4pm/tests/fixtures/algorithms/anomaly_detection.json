@@ -1,0 +1,12 @@
+{
+  "algorithm": "anomaly_detection",
+  "provenance": {
+    "paper": "Bezerra, F., Wainer, J., van der Aalst, W.M.P. (2009). Anomaly Detection Using Process Mining. EIS 2009.",
+    "locus": "Section 4, isolation forest application to event logs",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "anomalies=0",
+    "rationale": "The running-example log has no anomalous traces under isolation-forest DFG scoring."
+  }
+}

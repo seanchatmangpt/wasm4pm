@@ -108,7 +108,10 @@ impl BreedOracle for SatCdcl {
             .detail_of("propagate")
             .ok_or("missing 'propagate' step — unit propagation skipped")?;
         if !prop.contains("forces 5") {
-            return Err(format!("propagate detail must force literal 5, got '{}'", prop));
+            return Err(format!(
+                "propagate detail must force literal 5, got '{}'",
+                prop
+            ));
         }
         let dec = tq.detail_of("decision").ok_or("missing decision detail")?;
         if dec != "SAT (3 input clauses, 0 learned)" {
@@ -172,7 +175,10 @@ impl BreedOracle for Tableaux {
             return Err(format!("close-branch must clash on uo_p, got '{}'", cb));
         }
         if tq.detail_of("verdict") != Some("valid (all branches closed)") {
-            return Err(format!("verdict detail wrong: {:?}", tq.detail_of("verdict")));
+            return Err(format!(
+                "verdict detail wrong: {:?}",
+                tq.detail_of("verdict")
+            ));
         }
         Ok(())
     }
@@ -224,7 +230,9 @@ impl BreedOracle for CtlCheck {
     /// Values: labelling counts match the 2-state model and the verdict
     /// matches the computed truth (AG uo_live HOLDS from uo_s0).
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
-        let pf = tq.detail_of("parse-formula").ok_or("missing parse-formula")?;
+        let pf = tq
+            .detail_of("parse-formula")
+            .ok_or("missing parse-formula")?;
         if !pf.contains("A G uo_live over 2 states (init=uo_s0)") {
             return Err(format!("parse-formula detail wrong: '{}'", pf));
         }
@@ -240,7 +248,10 @@ impl BreedOracle for CtlCheck {
         }
         let dec = tq.detail_of("decision").ok_or("missing decision detail")?;
         if dec != "A G uo_live HOLDS at init state uo_s0" {
-            return Err(format!("decision must report HOLDS at uo_s0, got '{}'", dec));
+            return Err(format!(
+                "decision must report HOLDS at uo_s0, got '{}'",
+                dec
+            ));
         }
         Ok(())
     }
@@ -292,11 +303,18 @@ impl BreedOracle for LtlMonitor {
     /// state per event (details differ across steps), verdict matches truth.
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
         if tq.detail_of("ltl-init") != Some("G uo_ok") {
-            return Err(format!("ltl-init detail wrong: {:?}", tq.detail_of("ltl-init")));
+            return Err(format!(
+                "ltl-init detail wrong: {:?}",
+                tq.detail_of("ltl-init")
+            ));
         }
         tq.require_count("ltl-progress", 3)?;
-        let p0 = tq.detail_kth("ltl-progress", 0).ok_or("missing ltl-progress[0]")?;
-        let p2 = tq.detail_kth("ltl-progress", 2).ok_or("missing ltl-progress[2]")?;
+        let p0 = tq
+            .detail_kth("ltl-progress", 0)
+            .ok_or("missing ltl-progress[0]")?;
+        let p2 = tq
+            .detail_kth("ltl-progress", 2)
+            .ok_or("missing ltl-progress[2]")?;
         if !p0.contains("trace:0 -> Always(Atom(\"uo_ok\"))") {
             return Err(format!("ltl-progress[0] detail wrong: '{}'", p0));
         }
@@ -368,11 +386,17 @@ impl BreedOracle for DescriptionLogic {
             .iter()
             .any(|t| t.kind == "apply-cr1" && t.detail == derived)
         {
-            return Err(format!("missing derived CR1 composition step '{}'", derived));
+            return Err(format!(
+                "missing derived CR1 composition step '{}'",
+                derived
+            ));
         }
         let fp = tq.detail_of("fixpoint").ok_or("missing fixpoint")?;
         if !fp.contains("6 subsumptions") {
-            return Err(format!("fixpoint must saturate to 6 subsumptions, got '{}'", fp));
+            return Err(format!(
+                "fixpoint must saturate to 6 subsumptions, got '{}'",
+                fp
+            ));
         }
         if tq.detail_of("classify-verdict") != Some("uo_Cat ⊑ uo_Animal : true") {
             return Err(format!(
@@ -445,7 +469,10 @@ impl BreedOracle for Circumscription {
         }
         let mz = tq.detail_of("minimize").ok_or("missing minimize step")?;
         if !mz.contains("pruned S={ab_uo_wing}") {
-            return Err(format!("minimize must prune ab_uo_wing model, got '{}'", mz));
+            return Err(format!(
+                "minimize must prune ab_uo_wing model, got '{}'",
+                mz
+            ));
         }
         if tq.detail_of("entail") != Some("uo_glides |= true in 1/1 minimal models -> true") {
             return Err(format!("entail detail wrong: {:?}", tq.detail_of("entail")));
@@ -589,7 +616,9 @@ impl BreedOracle for AbductiveLp {
     /// Values: the MINIMAL explanation {uo_leak} wins, the superset
     /// {uo_leak,uo_surge} is rejected as non-minimal, and the count matches.
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
-        let la = tq.detail_of("load-abducibles").ok_or("missing load-abducibles")?;
+        let la = tq
+            .detail_of("load-abducibles")
+            .ok_or("missing load-abducibles")?;
         if !la.contains("A={uo_leak,uo_surge}") || !la.contains("observe 'uo_alarm'") {
             return Err(format!("load-abducibles detail wrong: '{}'", la));
         }
@@ -599,15 +628,16 @@ impl BreedOracle for AbductiveLp {
                 tq.detail_of("explain-accept")
             ));
         }
-        if !tq
-            .as_slice()
-            .iter()
-            .any(|t| t.kind == "explain-reject" && t.detail.contains("non-minimal (superset of accepted Δ)"))
-        {
+        if !tq.as_slice().iter().any(|t| {
+            t.kind == "explain-reject" && t.detail.contains("non-minimal (superset of accepted Δ)")
+        }) {
             return Err("missing non-minimal superset rejection step".into());
         }
         if tq.detail_of("minimal-set") != Some("1 minimal explanation(s)") {
-            return Err(format!("minimal-set detail wrong: {:?}", tq.detail_of("minimal-set")));
+            return Err(format!(
+                "minimal-set detail wrong: {:?}",
+                tq.detail_of("minimal-set")
+            ));
         }
         Ok(())
     }
@@ -685,8 +715,14 @@ impl BreedOracle for AbductiveIbe {
             return Err("missing 'uo_lean score=1.8000' score-hypothesis step".into());
         }
         let cmp = tq.last_of("compare").ok_or("missing compare")?;
-        if !cmp.detail.contains("new best uo_lean (1.8000 beats uo_grand 0.5000)") {
-            return Err(format!("compare must rank uo_lean over uo_grand, got '{}'", cmp.detail));
+        if !cmp
+            .detail
+            .contains("new best uo_lean (1.8000 beats uo_grand 0.5000)")
+        {
+            return Err(format!(
+                "compare must rank uo_lean over uo_grand, got '{}'",
+                cmp.detail
+            ));
         }
         if tq.detail_of("best-explanation") != Some("uo_lean score=1.8000") {
             return Err(format!(
@@ -754,14 +790,15 @@ impl BreedOracle for Problog {
     /// P = 0.3 + 0.2 - 0.06 = 0.44 (not a degenerate 0 / 0.5 / 1).
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
         if tq.detail_of("load-pfact") != Some("0.300000::uo_burst") {
-            return Err(format!("load-pfact[0] wrong: {:?}", tq.detail_of("load-pfact")));
+            return Err(format!(
+                "load-pfact[0] wrong: {:?}",
+                tq.detail_of("load-pfact")
+            ));
         }
-        if !tq
-            .as_slice()
-            .iter()
-            .any(|t| t.kind == "enumerate-world"
-                && t.detail == "world {uo_burst,uo_quake} w=0.060000 |= uo_alarm : true")
-        {
+        if !tq.as_slice().iter().any(|t| {
+            t.kind == "enumerate-world"
+                && t.detail == "world {uo_burst,uo_quake} w=0.060000 |= uo_alarm : true"
+        }) {
             return Err("missing joint world {uo_burst,uo_quake} with weight 0.06".into());
         }
         let sw = tq.last_of("sum-weight").ok_or("missing sum-weight")?;
@@ -801,7 +838,9 @@ impl BreedOracle for Clp {
         let mut wipeout = base("uo_clp_wipeout");
         wipeout.facts.push(fact("clp:var:uo_x", "4..4"));
         wipeout.facts.push(fact("clp:var:uo_y", "1..3"));
-        wipeout.facts.push(fact("clp:constraint:uo_c0", "uo_x<uo_y"));
+        wipeout
+            .facts
+            .push(fact("clp:constraint:uo_c0", "uo_x<uo_y"));
         (solvable, wipeout)
     }
 
@@ -876,29 +915,19 @@ impl BreedOracle for AllenTemporal {
     fn boundary_pair() -> (BreedInput, BreedInput) {
         let mut before = base("uo_allen_before");
         before.facts.push(fact("relation", "uo_a,uo_b,p"));
-        before
-            .state
-            .push(state_atom("interval", "uo_a,1,2"));
-        before
-            .state
-            .push(state_atom("interval", "uo_b,3,4"));
+        before.state.push(state_atom("interval", "uo_a,1,2"));
+        before.state.push(state_atom("interval", "uo_b,3,4"));
         let mut after = base("uo_allen_after");
         after.facts.push(fact("relation", "uo_a,uo_b,pi"));
-        after
-            .state
-            .push(state_atom("interval", "uo_a,3,4"));
-        after
-            .state
-            .push(state_atom("interval", "uo_b,1,2"));
+        after.state.push(state_atom("interval", "uo_a,3,4"));
+        after.state.push(state_atom("interval", "uo_b,1,2"));
         (before, after)
     }
 
     /// Relation fact with no valid relation symbols is refused.
     fn refusal_input() -> BreedInput {
         let mut input = base("uo_allen_refuse");
-        input
-            .facts
-            .push(fact("relation", "uo_a,uo_b,uo_notarel"));
+        input.facts.push(fact("relation", "uo_a,uo_b,uo_notarel"));
         input
     }
 
@@ -915,7 +944,10 @@ impl BreedOracle for AllenTemporal {
     /// uo_c {pi} uo_a (a single relation, not the vacuous full set).
     fn assert_trace_values(tq: &TraceQuery<'_>) -> Result<(), String> {
         if tq.detail_of("allen-load") != Some("rel uo_a,uo_b,p") {
-            return Err(format!("allen-load[0] wrong: {:?}", tq.detail_of("allen-load")));
+            return Err(format!(
+                "allen-load[0] wrong: {:?}",
+                tq.detail_of("allen-load")
+            ));
         }
         tq.require_count("allen-load", 2)?;
         if tq.detail_of("allen-compose") != Some("uo_c via uo_b -> uo_a: pi") {
@@ -1027,9 +1059,15 @@ impl BreedAdversary for CheatDescriptionLogic {
         uo_cheat_output(
             BreedId::DescriptionLogic,
             &[
-                ("normalize", "3 concepts, 2 subclass, 0 conj, 0 exists-rhs, 0 exists-lhs axioms"),
+                (
+                    "normalize",
+                    "3 concepts, 2 subclass, 0 conj, 0 exists-rhs, 0 exists-lhs axioms",
+                ),
                 ("apply-cr1", "uo_Cat ⊑ uo_Mammal (via uo_Cat ⊑ uo_Mammal)"),
-                ("apply-cr1", "uo_Mammal ⊑ uo_Animal (via uo_Mammal ⊑ uo_Animal)"),
+                (
+                    "apply-cr1",
+                    "uo_Mammal ⊑ uo_Animal (via uo_Mammal ⊑ uo_Animal)",
+                ),
                 ("fixpoint", "saturated: 5 subsumptions, 0 role edges"),
                 ("classify-verdict", "uo_Cat ⊑ uo_Animal : true"),
             ],
@@ -1052,7 +1090,10 @@ impl BreedAdversary for CheatCircumscription {
                 ("enumerate-model", "uo_hollow"),
                 ("enumerate-model", "uo_hollow"),
                 ("entail", "uo_glides |= true in 1/1 minimal models -> true"),
-                ("decision", "1 minimal models; cautiously entailed: {uo_glides}"),
+                (
+                    "decision",
+                    "1 minimal models; cautiously entailed: {uo_glides}",
+                ),
             ],
         )
     }
@@ -1092,7 +1133,10 @@ impl BreedAdversary for CheatAbductiveLp {
         uo_cheat_output(
             BreedId::AbductiveLp,
             &[
-                ("load-abducibles", "A={uo_leak,uo_surge}, 0 ICs, observe 'uo_alarm'"),
+                (
+                    "load-abducibles",
+                    "A={uo_leak,uo_surge}, 0 ICs, observe 'uo_alarm'",
+                ),
                 ("candidate-delta", "Δ={uo_leak,uo_surge}"),
                 ("explain-accept", "Δ={uo_leak,uo_surge} explains 'uo_alarm'"),
                 ("minimal-set", "1 minimal explanation(s)"),
@@ -1112,7 +1156,10 @@ impl BreedAdversary for CheatAbductiveIbe {
         uo_cheat_output(
             BreedId::AbductiveIbe,
             &[
-                ("collect-observations", "3 observations [uo_o1,uo_o2,uo_o3], 2 hypotheses"),
+                (
+                    "collect-observations",
+                    "3 observations [uo_o1,uo_o2,uo_o3], 2 hypotheses",
+                ),
                 ("score-hypothesis", "uo_grand score=0.5000"),
                 ("compare", "new best uo_grand (0.5000)"),
                 ("score-hypothesis", "uo_lean score=1.8000"),
@@ -1182,7 +1229,10 @@ impl BreedAdversary for CheatAllenTemporal {
             &[
                 ("allen-load", "rel uo_a,uo_b,p"),
                 ("allen-load", "rel uo_b,uo_c,p"),
-                ("allen-compose", "uo_c via uo_b -> uo_a: p,pi,d,di,o,oi,m,mi,s,si,f,fi,e"),
+                (
+                    "allen-compose",
+                    "uo_c via uo_b -> uo_a: p,pi,d,di,o,oi,m,mi,s,si,f,fi,e",
+                ),
                 ("allen-verdict", "path-consistency-fixpoint"),
             ],
         )
@@ -1211,7 +1261,10 @@ mod tests {
             .unwrap_or_else(|e| panic!("{}: novel_input run failed: {}", name, e));
         let tq = TraceQuery::new(&out.inference_trace);
         if let Err(e) = B::assert_trace_values(&tq) {
-            panic!("{}: assert_trace_values rejected the REAL trace: {}", name, e);
+            panic!(
+                "{}: assert_trace_values rejected the REAL trace: {}",
+                name, e
+            );
         }
     }
 

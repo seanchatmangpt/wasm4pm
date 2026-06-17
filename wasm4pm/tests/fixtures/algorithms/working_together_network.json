@@ -1,0 +1,16 @@
+{
+  "algorithm": "working_together_network",
+  "provenance": {
+    "paper": "Discovering Social Networks from Event Logs",
+    "citation": "van der Aalst, W.M.P., Reijers, H.A., Song, M. (2005). Discovering Social Networks from Event Logs. CSCW 14(6).",
+    "locus": "Table 3, working-together metric",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "resources=6",
+    "description": "The working-together co-worker collaboration network spans 6 unique resources: Pete, Mike, Ellen, Sara, Sean, and Sue (all org:resource values in running-example.xes)"
+  }
+}

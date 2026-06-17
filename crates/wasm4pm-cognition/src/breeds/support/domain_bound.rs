@@ -118,12 +118,12 @@ pub trait BoundedBreed: CognitionBreed {
             };
         }
 
-        cap!(measure.facts,       bound.max_facts,       "facts");
-        cap!(measure.rules,       bound.max_rules,       "rules");
-        cap!(measure.cases,       bound.max_cases,       "cases");
-        cap!(measure.goals,       bound.max_goals,       "goals");
+        cap!(measure.facts, bound.max_facts, "facts");
+        cap!(measure.rules, bound.max_rules, "rules");
+        cap!(measure.cases, bound.max_cases, "cases");
+        cap!(measure.goals, bound.max_goals, "goals");
         cap!(measure.state_atoms, bound.max_state_atoms, "state_atoms");
-        cap!(measure.candidates,  bound.max_candidates,  "candidates");
+        cap!(measure.candidates, bound.max_candidates, "candidates");
 
         if let Some(err) = self.custom_check(input) {
             return Err(err);
@@ -141,12 +141,17 @@ mod tests {
     struct TinyBreed;
 
     impl CognitionBreed for TinyBreed {
-        fn id(&self) -> BreedId { BreedId::Mycin }
+        fn id(&self) -> BreedId {
+            BreedId::Mycin
+        }
         fn preconditions(&self, input: &BreedInput) -> Result<(), String> {
             self.check_domain_bounds(input).map_err(|e| e.to_string())
         }
         fn run(&self, _input: &BreedInput) -> Result<BreedOutput, BreedError> {
-            unimplemented!()
+            Err(BreedError {
+                breed: BreedId::Mycin,
+                message: "TinyBreed::run is a test stub — not intended to be called".to_string(),
+            })
         }
         fn postconditions(&self, _i: &BreedInput, _o: &BreedOutput) -> Result<(), String> {
             Ok(())
@@ -154,9 +159,14 @@ mod tests {
     }
 
     impl BoundedBreed for TinyBreed {
-        fn breed_name(&self) -> &'static str { "tiny" }
+        fn breed_name(&self) -> &'static str {
+            "tiny"
+        }
         fn domain_bound(&self) -> DomainBound {
-            DomainBound { max_facts: 2, ..DomainBound::default() }
+            DomainBound {
+                max_facts: 2,
+                ..DomainBound::default()
+            }
         }
     }
 
@@ -164,7 +174,10 @@ mod tests {
         use crate::breeds::Fact;
         let mut input = BreedInput::default();
         for i in 0..n {
-            input.facts.push(Fact { key: format!("k{}", i), value: "v".to_string() });
+            input.facts.push(Fact {
+                key: format!("k{}", i),
+                value: "v".to_string(),
+            });
         }
         input
     }

@@ -1,5 +1,6 @@
 {
   "intent": "MAP inference on the smokes/friends MLN",
+  "candidates": [],
   "facts": [
     {
       "key": "mln:clause:smoke-cancer-a",
@@ -26,7 +27,6 @@
       "value": "true"
     }
   ],
-  "candidates": [],
   "cases": [],
   "rules": [],
   "goals": [],

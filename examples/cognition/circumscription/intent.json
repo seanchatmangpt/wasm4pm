@@ -24,7 +24,7 @@
         "not_ab_bird_tweety"
       ],
       "conclusion": "flies_tweety",
-      "certainty": 1.0
+      "certainty": 1
     },
     {
       "id": "r-fly-opus",
@@ -33,7 +33,7 @@
         "not_ab_bird_opus"
       ],
       "conclusion": "flies_opus",
-      "certainty": 1.0
+      "certainty": 1
     },
     {
       "id": "r-penguin-ab",
@@ -41,7 +41,7 @@
         "penguin_opus"
       ],
       "conclusion": "ab_bird_opus",
-      "certainty": 1.0
+      "certainty": 1
     }
   ],
   "goals": [

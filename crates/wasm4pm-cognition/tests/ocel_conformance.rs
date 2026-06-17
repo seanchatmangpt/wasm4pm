@@ -9,7 +9,8 @@ use wasm4pm_cognition::breeds::{
     TraceStep,
 };
 use wasm4pm_cognition::ocel::{
-    check_temporal_conformance, derive_ocel, lifecycle_model_for, validate_ocel_alignment, OcelEvent, OcelLog,
+    check_temporal_conformance, derive_ocel, lifecycle_model_for, validate_ocel_alignment,
+    OcelEvent, OcelLog,
 };
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -246,13 +247,13 @@ fn ocel_log_logical_steps_monotone() {
 // ── all 13 breeds must produce fitness==1.0 ──────────────────────────────────
 
 use rand::seq::SliceRandom;
-use rand::{SeedableRng, rngs::SmallRng};
+use rand::{rngs::SmallRng, SeedableRng};
 
 fn assert_breed_conforming(breed: &str) {
     let fixture_path = format!("tests/fixtures/papers/{}.json", breed);
     let fixture_data = std::fs::read_to_string(&fixture_path)
         .unwrap_or_else(|_| panic!("Failed to read fixture: {}", fixture_path));
-    
+
     let fixture: serde_json::Value = serde_json::from_str(&fixture_data).unwrap();
     let input: BreedInput = if fixture.get("input").is_some() {
         serde_json::from_value(fixture["input"].clone()).unwrap()
@@ -293,15 +294,16 @@ fn assert_breed_conforming(breed: &str) {
             let mut shuffled_trace = output.inference_trace.clone();
             let mut rng = SmallRng::seed_from_u64(42);
             shuffled_trace.shuffle(&mut rng);
-            
+
             let shuffled_log = derive_ocel(breed, &run_id, &shuffled_trace);
             let shuffled_result = validate_ocel_alignment(&shuffled_log, model);
-            
+
             // Either temporal fails, or fitness is < 1.0, or refusals exist
             let temporal_ok = check_temporal_conformance(&shuffled_log).is_ok();
             assert!(
                 !temporal_ok || !shuffled_result.is_conforming || shuffled_result.fitness < 1.0,
-                "{}: Shuffled trace must not have 1.0 fitness and be conforming", breed
+                "{}: Shuffled trace must not have 1.0 fitness and be conforming",
+                breed
             );
         }
     }
@@ -309,10 +311,10 @@ fn assert_breed_conforming(breed: &str) {
 
 #[test]
 fn all_admitted_breeds_ocel_conforming() {
-    let registry_data = std::fs::read_to_string("breeds/registry.json")
-        .expect("failed to read registry.json");
-    let registry: Vec<serde_json::Value> = serde_json::from_str(&registry_data)
-        .expect("failed to parse registry.json");
+    let registry_data =
+        std::fs::read_to_string("breeds/registry.json").expect("failed to read registry.json");
+    let registry: Vec<serde_json::Value> =
+        serde_json::from_str(&registry_data).expect("failed to parse registry.json");
 
     for entry in registry {
         let breed_id = entry["breed_id"].as_str().expect("missing breed_id");
@@ -348,7 +350,10 @@ fn assert_p1_fitness_one(breed: &str, input: &BreedInput) {
 }
 
 fn p1_fact(key: &str, value: &str) -> Fact {
-    Fact { key: key.into(), value: value.into() }
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
 }
 
 fn p1_rule(id: &str, premise: Vec<&str>, conclusion: &str, certainty: f32) -> Rule {
@@ -389,7 +394,12 @@ fn fuzzy_logic_fitness_one() {
         p1_fact("fuzzy:gwib:out", "tri:0,50,100"),
         p1_fact("fuzzy:input:zlorp", "3.7"),
     ];
-    input.rules = vec![p1_rule("r1", vec!["fuzzy:zlorp:mid"], "fuzzy:gwib:out", 1.0)];
+    input.rules = vec![p1_rule(
+        "r1",
+        vec!["fuzzy:zlorp:mid"],
+        "fuzzy:gwib:out",
+        1.0,
+    )];
     assert_p1_fitness_one("fuzzy_logic", &input);
 }
 
@@ -402,7 +412,11 @@ fn bayesian_network_fitness_one() {
         p1_fact("cpt:S|R", "0.1,0.7"),
         p1_fact("evidence:Q", "true"),
     ];
-    input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "prob:S".into() }];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "query".into(),
+        value: "prob:S".into(),
+    }];
     assert_p1_fitness_one("bayesian_network", &input);
 }
 
@@ -427,7 +441,12 @@ fn default_logic_fitness_one() {
     input.rules = vec![
         p1_rule("r_isa", vec!["penguin"], "bird", 1.0),
         p1_rule("r_penguin", vec!["penguin"], "not_flies", 1.0),
-        p1_rule("r_birds_fly", vec!["bird", "unless:not_flies"], "flies", 0.9),
+        p1_rule(
+            "r_birds_fly",
+            vec!["bird", "unless:not_flies"],
+            "flies",
+            0.9,
+        ),
     ];
     assert_p1_fitness_one("default_logic", &input);
 }
@@ -436,15 +455,45 @@ fn default_logic_fitness_one() {
 fn htn_planning_fitness_one() {
     let mut input = minimal_input();
     input.state = vec![
-        StateAtom { predicate: "pkg".into(), value: "at_depot".into() },
-        StateAtom { predicate: "truck".into(), value: "at_depot".into() },
+        StateAtom {
+            predicate: "pkg".into(),
+            value: "at_depot".into(),
+        },
+        StateAtom {
+            predicate: "truck".into(),
+            value: "at_depot".into(),
+        },
     ];
-    input.goals = vec![Goal { id: "g1".into(), predicate: "task".into(), value: "deliver".into() }];
+    input.goals = vec![Goal {
+        id: "g1".into(),
+        predicate: "task".into(),
+        value: "deliver".into(),
+    }];
     input.rules = vec![
-        p1_rule("method:deliver:by_truck", vec!["pkg=at_depot"], "op:load;op:drive;op:unload", 1.0),
-        p1_rule("op:load", vec!["pkg=at_depot", "truck=at_depot"], "!pkg=at_depot;pkg=in_truck", 1.0),
-        p1_rule("op:drive", vec!["truck=at_depot"], "!truck=at_depot;truck=at_dest", 1.0),
-        p1_rule("op:unload", vec!["pkg=in_truck", "truck=at_dest"], "!pkg=in_truck;pkg=at_dest", 1.0),
+        p1_rule(
+            "method:deliver:by_truck",
+            vec!["pkg=at_depot"],
+            "op:load;op:drive;op:unload",
+            1.0,
+        ),
+        p1_rule(
+            "op:load",
+            vec!["pkg=at_depot", "truck=at_depot"],
+            "!pkg=at_depot;pkg=in_truck",
+            1.0,
+        ),
+        p1_rule(
+            "op:drive",
+            vec!["truck=at_depot"],
+            "!truck=at_depot;truck=at_dest",
+            1.0,
+        ),
+        p1_rule(
+            "op:unload",
+            vec!["pkg=in_truck", "truck=at_dest"],
+            "!pkg=in_truck;pkg=at_dest",
+            1.0,
+        ),
     ];
     assert_p1_fitness_one("htn_planning", &input);
 }
@@ -456,7 +505,11 @@ fn dempster_shafer_fitness_one() {
         p1_rule("witnessA", vec![], "flim", 0.5),
         p1_rule("witnessB", vec![], "flam", 0.75),
     ];
-    input.goals = vec![Goal { id: "query".into(), predicate: "query".into(), value: "flim".into() }];
+    input.goals = vec![Goal {
+        id: "query".into(),
+        predicate: "query".into(),
+        value: "flim".into(),
+    }];
     assert_p1_fitness_one("dempster_shafer", &input);
 }
 
@@ -480,7 +533,12 @@ fn ebl_fitness_one() {
     ];
     input.rules = vec![
         p1_rule("r1", vec!["lighter(?x,?y)"], "safe_to_stack(?x,?y)", 1.0),
-        p1_rule("r2", vec!["weight(?x,light)", "weight(?y,heavy)"], "lighter(?x,?y)", 1.0),
+        p1_rule(
+            "r2",
+            vec!["weight(?x,light)", "weight(?y,heavy)"],
+            "lighter(?x,?y)",
+            1.0,
+        ),
     ];
     input.goals = vec![Goal {
         id: "g1".into(),
@@ -501,7 +559,10 @@ fn ltl_monitor_shuffled_trace_not_conforming() {
     let log = derive_ocel("ltl_monitor", "neg-run", &steps);
     let model = wasm4pm_cognition::ocel::lifecycle_model_for("ltl_monitor").unwrap();
     let result = validate_ocel_alignment(&log, model);
-    assert!(!result.is_conforming, "missing ltl-init must break conformance");
+    assert!(
+        !result.is_conforming,
+        "missing ltl-init must break conformance"
+    );
     assert!(result.fitness < 1.0);
 }
 
@@ -516,7 +577,10 @@ fn csp_verdict_before_init_not_conforming() {
     let log = derive_ocel("csp_ac3", "neg-run", &steps);
     let model = wasm4pm_cognition::ocel::lifecycle_model_for("csp_ac3").unwrap();
     let result = validate_ocel_alignment(&log, model);
-    assert!(!result.is_conforming, "verdict-before-init must break conformance");
+    assert!(
+        !result.is_conforming,
+        "verdict-before-init must break conformance"
+    );
 }
 // P2 tier — OCEL conformance: measured fitness 1.0 per breed on its paper
 // fixture input, plus negative injection (shuffled trace must not be 1.0).
@@ -556,8 +620,8 @@ mod p2_conformance {
     fn p2_fitness_is_one_for_every_breed() {
         for breed in P2_BREEDS {
             let input = fixture_input(breed);
-            let out = dispatch_breed_test(breed, &input)
-                .unwrap_or_else(|e| panic!("{}: {}", breed, e));
+            let out =
+                dispatch_breed_test(breed, &input).unwrap_or_else(|e| panic!("{}: {}", breed, e));
             let log = derive_ocel(breed, "p2conformance", &out.inference_trace);
             let model = lifecycle_model_for(breed)
                 .unwrap_or_else(|| panic!("{}: missing lifecycle model", breed));
@@ -600,8 +664,8 @@ mod p2_conformance {
             assert!(lifecycle_model_for(breed).is_some(), "{}: lifecycle", breed);
             let src = wasm4pm_cognition::ocel::model_sources::model_source(breed)
                 .unwrap_or_else(|| panic!("{}: OCPN source", breed));
-            let parsed: serde_json::Value = serde_json::from_str(src)
-                .unwrap_or_else(|e| panic!("{}: OCPN parse {}", breed, e));
+            let parsed: serde_json::Value =
+                serde_json::from_str(src).unwrap_or_else(|e| panic!("{}: OCPN parse {}", breed, e));
             assert_eq!(parsed["breed_id"].as_str(), Some(breed));
         }
     }
@@ -613,7 +677,10 @@ mod p2_conformance {
 // ===========================================================================
 
 fn p3f(key: &str, value: &str) -> Fact {
-    Fact { key: key.into(), value: value.into() }
+    Fact {
+        key: key.into(),
+        value: value.into(),
+    }
 }
 
 /// Valid representative input per P3 breed.
@@ -641,10 +708,24 @@ fn p3_input(breed: &str) -> BreedInput {
         "circumscription" => {
             input.facts = vec![p3f("bird_pip", "true"), p3f("ostrich_pip", "true")];
             input.rules = vec![
-                Rule { id: "r1".into(), premise: vec!["bird_pip".into(), "not_ab_pip".into()], conclusion: "flies_pip".into(), certainty: 1.0 },
-                Rule { id: "r2".into(), premise: vec!["ostrich_pip".into()], conclusion: "ab_pip".into(), certainty: 1.0 },
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["bird_pip".into(), "not_ab_pip".into()],
+                    conclusion: "flies_pip".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["ostrich_pip".into()],
+                    conclusion: "ab_pip".into(),
+                    certainty: 1.0,
+                },
             ];
-            input.goals = vec![Goal { id: "g1".into(), predicate: "entail".into(), value: "flies_pip".into() }];
+            input.goals = vec![Goal {
+                id: "g1".into(),
+                predicate: "entail".into(),
+                value: "flies_pip".into(),
+            }];
         }
         "analogy_sme" => {
             input.facts = vec![
@@ -655,18 +736,40 @@ fn p3_input(breed: &str) -> BreedInput {
         "act_r" => {
             input.facts = vec![p3f("goal", "lookup")];
             input.cases = vec![Case {
-                id: "chunk-1".into(), intent: "x".into(), architecture: "chunk".into(),
-                outcome_score: 0.7, facts: vec![p3f("slot", "val")],
+                id: "chunk-1".into(),
+                intent: "x".into(),
+                architecture: "chunk".into(),
+                outcome_score: 0.7,
+                facts: vec![p3f("slot", "val")],
             }];
-            input.rules = vec![Rule { id: "p1".into(), premise: vec!["goal=lookup".into()], conclusion: "retrieve:slot=val".into(), certainty: 0.9 }];
+            input.rules = vec![Rule {
+                id: "p1".into(),
+                premise: vec!["goal=lookup".into()],
+                conclusion: "retrieve:slot=val".into(),
+                certainty: 0.9,
+            }];
         }
         "problog" => {
             input.facts = vec![p3f("pfact:burglary", "0.1"), p3f("pfact:quake", "0.2")];
             input.rules = vec![
-                Rule { id: "r1".into(), premise: vec!["burglary".into()], conclusion: "alarm".into(), certainty: 1.0 },
-                Rule { id: "r2".into(), premise: vec!["quake".into()], conclusion: "alarm".into(), certainty: 1.0 },
+                Rule {
+                    id: "r1".into(),
+                    premise: vec!["burglary".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
+                Rule {
+                    id: "r2".into(),
+                    premise: vec!["quake".into()],
+                    conclusion: "alarm".into(),
+                    certainty: 1.0,
+                },
             ];
-            input.goals = vec![Goal { id: "g1".into(), predicate: "query".into(), value: "alarm".into() }];
+            input.goals = vec![Goal {
+                id: "g1".into(),
+                predicate: "query".into(),
+                value: "alarm".into(),
+            }];
         }
         "sat_cdcl" => {
             input.facts = vec![
@@ -684,8 +787,20 @@ fn p3_input(breed: &str) -> BreedInput {
                 p3f("episode:ep-b:t", "1"),
             ];
             input.cases = vec![
-                Case { id: "ep-a".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
-                Case { id: "ep-b".into(), intent: "x".into(), architecture: "episode".into(), outcome_score: 0.5, facts: vec![p3f("scene", "garden")] },
+                Case {
+                    id: "ep-a".into(),
+                    intent: "x".into(),
+                    architecture: "episode".into(),
+                    outcome_score: 0.5,
+                    facts: vec![p3f("scene", "garden")],
+                },
+                Case {
+                    id: "ep-b".into(),
+                    intent: "x".into(),
+                    architecture: "episode".into(),
+                    outcome_score: 0.5,
+                    facts: vec![p3f("scene", "garden")],
+                },
             ];
         }
         "rl_symbolic" => {
@@ -731,16 +846,24 @@ fn p3_input(breed: &str) -> BreedInput {
 }
 
 const P3_BREEDS: [&str; 11] = [
-    "situation_calculus", "circumscription", "analogy_sme", "act_r", "problog",
-    "sat_cdcl", "episodic_memory", "rl_symbolic", "ctl_check", "ilp", "naive_physics",
+    "situation_calculus",
+    "circumscription",
+    "analogy_sme",
+    "act_r",
+    "problog",
+    "sat_cdcl",
+    "episodic_memory",
+    "rl_symbolic",
+    "ctl_check",
+    "ilp",
+    "naive_physics",
 ];
 
 #[test]
 fn p3_breeds_ocel_fitness_one() {
     for breed in P3_BREEDS {
         let input = p3_input(breed);
-        let out = dispatch_breed_test(breed, &input)
-            .unwrap_or_else(|e| panic!("{}: {}", breed, e));
+        let out = dispatch_breed_test(breed, &input).unwrap_or_else(|e| panic!("{}: {}", breed, e));
         let log = derive_ocel(breed, "p3runfixture", &out.inference_trace);
         let model = wasm4pm_cognition::ocel::lifecycle_model_for(breed)
             .unwrap_or_else(|| panic!("{}: lifecycle model missing", breed));
@@ -784,8 +907,14 @@ fn p3_breeds_have_model_sources() {
         let json: serde_json::Value = serde_json::from_str(src).expect("OCPN must be valid JSON");
         assert_eq!(json["breed_id"].as_str(), Some(breed));
         assert_eq!(json["model_level"].as_str(), Some("L1"));
-        assert!(json["places"].as_array().map(|a| !a.is_empty()).unwrap_or(false));
-        assert!(json["transitions"].as_array().map(|a| !a.is_empty()).unwrap_or(false));
+        assert!(json["places"]
+            .as_array()
+            .map(|a| !a.is_empty())
+            .unwrap_or(false));
+        assert!(json["transitions"]
+            .as_array()
+            .map(|a| !a.is_empty())
+            .unwrap_or(false));
     }
 }
 
@@ -826,7 +955,11 @@ fn assert_p4_fitness_one(breed: &str, input: &BreedInput) {
     let log = derive_ocel(breed, "fitness-check-run", &out.inference_trace);
     let model = lifecycle_model_for(breed).expect("lifecycle model registered");
     let result = validate_ocel_alignment(&log, model);
-    assert_eq!(result.fitness, 1.0, "{} fitness: {:?}", breed, result.refusals);
+    assert_eq!(
+        result.fitness, 1.0,
+        "{} fitness: {:?}",
+        breed, result.refusals
+    );
     assert!(result.is_conforming);
 
     // Negative injection (van der Aalst constitution): a reversed trace must

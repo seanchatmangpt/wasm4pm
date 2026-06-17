@@ -1,5 +1,5 @@
 {
-  "intent": "prove parent(bob, ann) from the family fact base (Kowalski 1974)",
+  "intent": "query family relationships via Horn-clause resolution",
   "candidates": [],
   "facts": [
     {
@@ -8,21 +8,125 @@
     },
     {
       "key": "parent",
+      "value": "tom-liz"
+    },
+    {
+      "key": "parent",
       "value": "bob-ann"
     },
     {
       "key": "parent",
       "value": "bob-pat"
-    }
-  ],
-  "rules": [],
-  "goals": [
+    },
     {
-      "id": "g1",
-      "predicate": "parent",
-      "value": "bob-ann"
+      "key": "parent",
+      "value": "pat-jim"
+    },
+    {
+      "key": "parent",
+      "value": "pat-dee"
+    },
+    {
+      "key": "parent",
+      "value": "liz-sue"
+    },
+    {
+      "key": "parent",
+      "value": "liz-dan"
+    },
+    {
+      "key": "parent",
+      "value": "ann-chris"
+    },
+    {
+      "key": "male",
+      "value": "tom"
+    },
+    {
+      "key": "male",
+      "value": "bob"
+    },
+    {
+      "key": "male",
+      "value": "pat"
+    },
+    {
+      "key": "male",
+      "value": "dan"
+    },
+    {
+      "key": "male",
+      "value": "jim"
+    },
+    {
+      "key": "male",
+      "value": "chris"
+    },
+    {
+      "key": "female",
+      "value": "liz"
+    },
+    {
+      "key": "female",
+      "value": "ann"
+    },
+    {
+      "key": "female",
+      "value": "dee"
+    },
+    {
+      "key": "female",
+      "value": "sue"
+    },
+    {
+      "key": "parent",
+      "value": "jim-ed"
+    },
+    {
+      "key": "male",
+      "value": "ed"
     }
   ],
   "cases": [],
+  "rules": [
+    {
+      "id": "ancestor-base",
+      "premise": [
+        "parent"
+      ],
+      "conclusion": "ancestor",
+      "certainty": 1
+    },
+    {
+      "id": "ancestor-rec",
+      "premise": [
+        "ancestor",
+        "parent"
+      ],
+      "conclusion": "ancestor",
+      "certainty": 1
+    },
+    {
+      "id": "sibling",
+      "premise": [
+        "parent",
+        "parent"
+      ],
+      "conclusion": "sibling",
+      "certainty": 1
+    }
+  ],
+  "goals": [
+    {
+      "id": "g-tom-bob",
+      "predicate": "parent",
+      "value": "tom"
+    },
+    {
+      "id": "g-pat-ancestor",
+      "predicate": "ancestor",
+      "value": "pat"
+    }
+  ],
   "state": []
 }

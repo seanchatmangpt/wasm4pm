@@ -1,0 +1,16 @@
+{
+  "algorithm": "powl_to_process_tree",
+  "provenance": {
+    "paper": "POWL: Partially Ordered Workflow Language",
+    "citation": "Kourani, H., van der Aalst, W.M.P. (2023). POWL: Partially Ordered Workflow Language. BPM 2023.",
+    "locus": "Section 4, POWL to tree translation",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "conversion_supported",
+    "description": "POWL model discovered from running example can be converted to an equivalent process tree representation"
+  }
+}

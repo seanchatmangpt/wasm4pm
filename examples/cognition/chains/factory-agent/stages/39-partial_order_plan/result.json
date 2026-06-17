@@ -207,9 +207,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/f755911123fd70cd882622aa652624c4b06415f3f38e901de57bfd4500450c06.json"
   },
   "meta": {
-    "run_id": "0d28a3a5-272b-4579-8756-18c9117fbcb0",
-    "timestamp": "2026-06-11T08:38:27.319Z",
-    "duration_ms": 20,
+    "run_id": "6ae6f1f8-4c37-4006-832f-cff83eda2b94",
+    "timestamp": "2026-06-11T19:56:16.893Z",
+    "duration_ms": 19,
     "version": "26.6.10"
   }
 }

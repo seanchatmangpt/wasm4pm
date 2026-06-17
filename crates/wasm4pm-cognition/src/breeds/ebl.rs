@@ -9,6 +9,7 @@
 //! 3. Operationalize: Extract the leaves of the generalized proof as preconditions,
 //!    emitting a new operational `ebl:rule` fact.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, Rule, TraceStep,
 };
@@ -214,7 +215,13 @@ fn generalize_proof(
             for (i, child) in children.iter().enumerate() {
                 let premise_term = rename_vars(&Term::parse(&rule.premise[i]), &format!("_g{}", depth));
                 let gen_subgoal = apply_subst_term(&premise_term, gen_subst);
-                leaves.extend(generalize_proof(child, &gen_subgoal, gen_subst, trace, depth + 1));
+                leaves.extend(generalize_proof(
+                    child,
+                    &gen_subgoal,
+                    gen_subst,
+                    trace,
+                    depth + 1,
+                ));
             }
             leaves
         }

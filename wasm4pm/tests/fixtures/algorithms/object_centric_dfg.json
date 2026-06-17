@@ -1,0 +1,12 @@
+{
+  "algorithm": "object_centric_dfg",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019.",
+    "locus": "Section 4, OC-DFG construction from OCEL",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "object_types=1",
+    "rationale": "The minimal OCEL fixture has exactly 1 object type; the OC-DFG is built across that single type."
+  }
+}

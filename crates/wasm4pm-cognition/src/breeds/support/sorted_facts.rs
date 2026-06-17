@@ -99,7 +99,10 @@ mod tests {
     use super::*;
 
     fn fact(key: &str, value: &str) -> Fact {
-        Fact { key: key.to_string(), value: value.to_string() }
+        Fact {
+            key: key.to_string(),
+            value: value.to_string(),
+        }
     }
 
     #[test]

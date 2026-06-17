@@ -13,6 +13,7 @@ import {
   saveCommandReceipt,
   blake3Hex,
   newReceipt,
+  emitCrownReceipt,
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -161,7 +162,7 @@ export const predict = defineCommand({
                   `  wpm predict remaining-time -i process.xes --prefix "A,B"\n\n` +
                   `Run 'wpm predict --help' for full task descriptions.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'INVALID_TASK'
             );
             emitResult(result, { format, verbose, quiet });
@@ -431,6 +432,11 @@ export const predict = defineCommand({
                   },
                 };
                 saveCommandReceipt(receipt);
+                emitCrownReceipt(
+                  task ?? 'predict',
+                  JSON.stringify({ input: inputPath, activityKey, topK, ngramOrder, driftWindow }),
+                  JSON.stringify(payload),
+                );
               }
 
               return await exitWithFlush(result.exit_code);

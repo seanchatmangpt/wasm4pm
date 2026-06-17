@@ -10,18 +10,18 @@
 //! 5. Loop terminates when no further rule is applicable, or after
 //!    `2 * rules.len()` iterations (cycle defence).
 
+use crate::breeds::support::certainty::combine_cf;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
-use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::support::certainty::combine_cf;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use tracing;
 
 /// MYCIN production-rule engine.
 pub struct Mycin;
 
-fn premise_satisfied(premise: &str, working_memory: &HashMap<String, f32>) -> Option<f32> {
+fn premise_satisfied(premise: &str, working_memory: &BTreeMap<String, f32>) -> Option<f32> {
     working_memory.get(premise).copied().filter(|cf| *cf > 0.2)
 }
 
@@ -45,14 +45,18 @@ impl CognitionBreed for Mycin {
     }
 
     fn run(&self, input: &BreedInput) -> Result<BreedOutput, BreedError> {
-        let mut working_memory: HashMap<String, f32> = HashMap::new();
+        let mut working_memory: BTreeMap<String, f32> = BTreeMap::new();
         for f in &input.facts {
             let key = format!("{}={}", f.key, f.value);
             working_memory.insert(key, 1.0);
             working_memory.insert(f.value.clone(), 1.0);
         }
 
-        let mut fired: HashSet<String> = HashSet::new();
+        let mut fired: BTreeSet<String> = BTreeSet::new();
+        // Keys derived by rule conclusions (distinguishes inferences from seed facts).
+        let mut derived: BTreeSet<String> = BTreeSet::new();
+        // Premises consumed by fired rules (a conclusion used downstream is not terminal).
+        let mut consumed_premises: BTreeSet<String> = BTreeSet::new();
         let mut trace: Vec<TraceStep> = Vec::new();
         let max_iters = input.rules.len().saturating_mul(2);
 
@@ -105,6 +109,10 @@ impl CognitionBreed for Mycin {
             let prev = working_memory.get(&rule.conclusion).copied().unwrap_or(0.0);
             let new_cf = combine_cf(prev, inferred_cf);
             working_memory.insert(rule.conclusion.clone(), new_cf);
+            derived.insert(rule.conclusion.clone());
+            for p in &rule.premise {
+                consumed_premises.insert(p.clone());
+            }
 
             tracing::debug!(breed.step = "cf_accumulated", "MYCIN L1 step");
 
@@ -117,16 +125,27 @@ impl CognitionBreed for Mycin {
             });
         }
 
-        // Pick selected: highest-CF conclusion (k=v format); tiebreak = smallest key (deterministic).
-        let mut candidates: Vec<(String, f32)> = working_memory
-            .iter()
-            .filter(|(k, v)| k.contains('=') && **v > 0.0)
-            .map(|(k, v)| (k.clone(), *v))
-            .collect();
-        candidates.sort_by(|(ak, av), (bk, bv)| bv.total_cmp(av).then_with(|| ak.cmp(bk)));
-        let selected = candidates.into_iter().next().map(|(k, _)| k);
+        // Pick selected: the diagnostic answer is the terminal conclusion of the
+        // inference chain — a rule-derived conclusion that is NOT itself consumed as
+        // a premise by any fired rule (e.g. therapy=penicillin, not the intermediate
+        // organism=streptococcus). Seed facts are excluded entirely. Among terminal
+        // conclusions, highest CF wins; tiebreak = smallest key (deterministic).
+        // Fallback: if every derived conclusion feeds another rule (cyclic/no leaf),
+        // select the highest-CF derived conclusion outright.
+        let select_from = |only_terminal: bool| -> Option<String> {
+            let mut candidates: Vec<(String, f32)> = working_memory
+                .iter()
+                .filter(|(k, _)| derived.contains(*k))
+                .filter(|(k, _)| !only_terminal || !consumed_premises.contains(*k))
+                .filter(|(_, v)| **v > 0.0)
+                .map(|(k, v)| (k.clone(), *v))
+                .collect();
+            candidates.sort_by(|(ak, av), (bk, bv)| bv.total_cmp(av).then_with(|| ak.cmp(bk)));
+            candidates.into_iter().next().map(|(k, _)| k)
+        };
+        let selected = select_from(true).or_else(|| select_from(false));
 
-        let original: HashSet<String> = input
+        let original: BTreeSet<String> = input
             .facts
             .iter()
             .map(|f| format!("{}={}", f.key, f.value))
@@ -299,6 +318,88 @@ mod tests {
             output.selected.as_deref(),
             Some("a=winner"),
             "smallest key must win tie"
+        );
+    }
+
+    /// Shortliffe & Buchanan 1975, §11.2 (p.238) + §11.4 (p.247):
+    /// RULE050: gram-positive + coccus + chains → organism=streptococcus (CF 0.7)
+    /// RULE071: organism=streptococcus + allergy-penicillin=no → therapy=penicillin (CF 0.9)
+    /// Combined: organism_cf = 0.7 (direct rule); therapy_cf = 0.9 × 0.7 = 0.63
+    #[test]
+    fn shortliffe_1975_organism_cf_07_therapy_cf_063() {
+        use crate::breeds::support::certainty::combine_cf;
+        let input = make_input(
+            vec![
+                Fact {
+                    key: "gram-stain".into(),
+                    value: "gram-positive".into(),
+                },
+                Fact {
+                    key: "morphology".into(),
+                    value: "coccus".into(),
+                },
+                Fact {
+                    key: "growth-conformation".into(),
+                    value: "chains".into(),
+                },
+                Fact {
+                    key: "site".into(),
+                    value: "blood".into(),
+                },
+                Fact {
+                    key: "allergy-penicillin".into(),
+                    value: "no".into(),
+                },
+            ],
+            vec![
+                Rule {
+                    id: "RULE050-class".into(),
+                    premise: vec!["gram-positive".into(), "coccus".into(), "chains".into()],
+                    conclusion: "organism=streptococcus".into(),
+                    certainty: 0.7,
+                },
+                Rule {
+                    id: "RULE071-class".into(),
+                    premise: vec![
+                        "organism=streptococcus".into(),
+                        "allergy-penicillin=no".into(),
+                    ],
+                    conclusion: "therapy=penicillin".into(),
+                    certainty: 0.9,
+                },
+            ],
+        );
+        let output = Mycin.run(&input).expect("run ok");
+
+        // organism_cf = 0.7 (rule certainty * min premise CF = 0.7 * 1.0)
+        let organism_cf = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "fire-rule" && t.detail.contains("organism=streptococcus"))
+            .expect("RULE050 must fire");
+        assert!(
+            organism_cf.detail.contains("0.700"),
+            "organism CF must be 0.700, got: {}",
+            organism_cf.detail
+        );
+
+        // therapy_cf = 0.9 * 0.7 = 0.63 (rule certainty * premise CF)
+        let therapy_step = output
+            .inference_trace
+            .iter()
+            .find(|t| t.kind == "fire-rule" && t.detail.contains("therapy=penicillin"))
+            .expect("RULE071 must fire");
+        assert!(
+            therapy_step.detail.contains("0.630"),
+            "therapy CF must be 0.630, got: {}",
+            therapy_step.detail
+        );
+
+        // The terminal conclusion is therapy=penicillin (not the intermediate organism)
+        assert_eq!(
+            output.selected.as_deref(),
+            Some("therapy=penicillin"),
+            "terminal conclusion must be therapy=penicillin"
         );
     }
 

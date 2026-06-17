@@ -38,7 +38,9 @@ pub trait VerifierBreed: CognitionBreed {
             Some(v) if self.valid_verdicts().contains(&v.as_str()) => Ok(()),
             Some(v) => Err(format!(
                 "{}: verdict '{}' not in valid set {:?}",
-                self.id(), v, self.valid_verdicts()
+                self.id(),
+                v,
+                self.valid_verdicts()
             )),
         }
     }
@@ -59,7 +61,8 @@ pub trait PlannerBreed: CognitionBreed {
             if !output.inference_trace.iter().any(|t| t.kind == *kind) {
                 return Err(format!(
                     "{}: PlannerBreed requires trace kind '{}' (AC-FLAT guard)",
-                    self.id(), kind
+                    self.id(),
+                    kind
                 ));
             }
         }
@@ -84,7 +87,10 @@ pub trait ClassifierBreed: CognitionBreed {
                 return Err(format!(
                     "{}: ClassifierBreed candidates not sorted by score descending \
                      (index {} score={:.6} > prev={:.6})",
-                    self.id(), i, c.score, prev
+                    self.id(),
+                    i,
+                    c.score,
+                    prev
                 ));
             }
             prev = c.score;
@@ -113,7 +119,8 @@ pub trait OptimizerBreed: CognitionBreed {
         } else {
             Err(format!(
                 "{}: OptimizerBreed requires fact with prefix '{}' (AC-STUB-POLICY guard)",
-                self.id(), key
+                self.id(),
+                key
             ))
         }
     }

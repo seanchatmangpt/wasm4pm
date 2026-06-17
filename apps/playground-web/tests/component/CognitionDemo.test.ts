@@ -110,6 +110,7 @@ describe('CognitionDemo', () => {
     const runButton = buttons.find(b => b.text().includes('Run'))!
 
     await runButton.trigger('click')
+    await new Promise(r => setTimeout(r, 50))
     await flushPromises()
 
     const text = wrapper.text()

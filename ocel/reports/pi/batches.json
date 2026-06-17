@@ -1,0 +1,12 @@
+{
+  "algorithm": "batches",
+  "admitted": true,
+  "fitness": 1.0,
+  "status": "STUB - wasm_bindgen exists (batches.rs:299); discover_batches pure fn tested; running-example yields 0 batches (no Date timestamps)",
+  "group": "C",
+  "test_file": "wasm4pm/tests/algorithm_paper_grounded.rs",
+  "test_fn": "batches_paper_grounded",
+  "generated_by": "group-c-subagent",
+  "date": "2026-06-11",
+  "measured_by": "paper-grounded-test-pass"
+}

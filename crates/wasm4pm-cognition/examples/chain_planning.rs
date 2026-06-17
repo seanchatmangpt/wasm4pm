@@ -10,12 +10,12 @@
 //!
 //! Run: cargo run --example chain_planning
 
+use wasm4pm_cognition::breeds::contingent_plan::ContingentPlan;
+use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
+use wasm4pm_cognition::breeds::strips::Strips;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
-use wasm4pm_cognition::breeds::strips::Strips;
-use wasm4pm_cognition::breeds::contingent_plan::ContingentPlan;
 
 fn main() {
     // ── Stage 0: HTN Planning ─────────────────────────────────────────────────
@@ -23,13 +23,32 @@ fn main() {
     let stage0_input = BreedInput {
         intent: "deploy_app".to_string(),
         candidates: vec![
-            Candidate { id: "canary-deploy".to_string(),    score: 0.90, eliminated: false, elimination_reason: None },
-            Candidate { id: "blue-green-deploy".to_string(), score: 0.75, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "canary-deploy".to_string(),
+                score: 0.90,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "blue-green-deploy".to_string(),
+                score: 0.75,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "app".to_string(),     value: "payment-service".to_string() },
-            Fact { key: "env".to_string(),     value: "production".to_string() },
-            Fact { key: "version".to_string(), value: "v2.4.1".to_string() },
+            Fact {
+                key: "app".to_string(),
+                value: "payment-service".to_string(),
+            },
+            Fact {
+                key: "env".to_string(),
+                value: "production".to_string(),
+            },
+            Fact {
+                key: "version".to_string(),
+                value: "v2.4.1".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
@@ -93,16 +112,20 @@ fn main() {
                 certainty: 1.0,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "g1".to_string(),
-                predicate: "task".to_string(),
-                value: "deploy_app".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g1".to_string(),
+            predicate: "task".to_string(),
+            value: "deploy_app".to_string(),
+        }],
         state: vec![
-            StateAtom { predicate: "code".to_string(),  value: "source".to_string() },
-            StateAtom { predicate: "image".to_string(), value: "stale".to_string() },
+            StateAtom {
+                predicate: "code".to_string(),
+                value: "source".to_string(),
+            },
+            StateAtom {
+                predicate: "image".to_string(),
+                value: "stale".to_string(),
+            },
         ],
     };
 
@@ -127,7 +150,10 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Chain link: hash of previous stage output
-            Fact { key: "prior_hash".to_string(), value: s0_hash[..16].to_string() },
+            Fact {
+                key: "prior_hash".to_string(),
+                value: s0_hash[..16].to_string(),
+            },
         ],
         cases: vec![],
         // STRIPS operators grounded from HTN primitives.
@@ -149,19 +175,26 @@ fn main() {
                 certainty: 1.0,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "g-deploy".to_string(),
-                predicate: "app".to_string(),
-                value: "deployed".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g-deploy".to_string(),
+            predicate: "app".to_string(),
+            value: "deployed".to_string(),
+        }],
         // HTN stage produced image=built and tests=passed; deploy_canary fires
         // immediately (both preconditions satisfied), then promote_full fires.
         state: vec![
-            StateAtom { predicate: "image".to_string(),  value: "built".to_string() },
-            StateAtom { predicate: "tests".to_string(),  value: "passed".to_string() },
-            StateAtom { predicate: "canary".to_string(), value: "live".to_string() },
+            StateAtom {
+                predicate: "image".to_string(),
+                value: "built".to_string(),
+            },
+            StateAtom {
+                predicate: "tests".to_string(),
+                value: "passed".to_string(),
+            },
+            StateAtom {
+                predicate: "canary".to_string(),
+                value: "live".to_string(),
+            },
         ],
     };
 
@@ -187,36 +220,75 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Chain link: hash of previous stage output
-            Fact { key: "prior_hash".to_string(), value: s1_hash[..16].to_string() },
-
+            Fact {
+                key: "prior_hash".to_string(),
+                value: s1_hash[..16].to_string(),
+            },
             // Known initial state: image is built, tests passed
-            Fact { key: "cp:init:image-ready".to_string(),  value: "true".to_string() },
-            Fact { key: "cp:init:tests-passed".to_string(), value: "true".to_string() },
+            Fact {
+                key: "cp:init:image-ready".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "cp:init:tests-passed".to_string(),
+                value: "true".to_string(),
+            },
             // Unknown: whether the canary slot is healthy
-            Fact { key: "cp:unknown".to_string(), value: "canary-healthy".to_string() },
-
+            Fact {
+                key: "cp:unknown".to_string(),
+                value: "canary-healthy".to_string(),
+            },
             // Physical action: deploy to canary slot (no preconditions — always applicable)
-            Fact { key: "cp:act:deploy-canary:pre".to_string(), value: "image-ready,tests-passed".to_string() },
-            Fact { key: "cp:act:deploy-canary:add".to_string(), value: "canary-live".to_string() },
-            Fact { key: "cp:act:deploy-canary:del".to_string(), value: "".to_string() },
-
+            Fact {
+                key: "cp:act:deploy-canary:pre".to_string(),
+                value: "image-ready,tests-passed".to_string(),
+            },
+            Fact {
+                key: "cp:act:deploy-canary:add".to_string(),
+                value: "canary-live".to_string(),
+            },
+            Fact {
+                key: "cp:act:deploy-canary:del".to_string(),
+                value: "".to_string(),
+            },
             // Physical action: promote to full prod (requires healthy canary)
             // In the canary-healthy=true world this is applicable after deploy-canary
-            Fact { key: "cp:act:promote-full:pre".to_string(), value: "canary-live,canary-healthy".to_string() },
-            Fact { key: "cp:act:promote-full:add".to_string(), value: "deploy-complete".to_string() },
-            Fact { key: "cp:act:promote-full:del".to_string(), value: "".to_string() },
-
+            Fact {
+                key: "cp:act:promote-full:pre".to_string(),
+                value: "canary-live,canary-healthy".to_string(),
+            },
+            Fact {
+                key: "cp:act:promote-full:add".to_string(),
+                value: "deploy-complete".to_string(),
+            },
+            Fact {
+                key: "cp:act:promote-full:del".to_string(),
+                value: "".to_string(),
+            },
             // Physical action: rollback (canary not healthy; deploy-canary must have run)
             // In the canary-healthy=false world, rollback is applicable after deploy-canary
-            Fact { key: "cp:act:rollback:pre".to_string(), value: "canary-live".to_string() },
-            Fact { key: "cp:act:rollback:add".to_string(), value: "deploy-complete".to_string() },
-            Fact { key: "cp:act:rollback:del".to_string(), value: "".to_string() },
-
+            Fact {
+                key: "cp:act:rollback:pre".to_string(),
+                value: "canary-live".to_string(),
+            },
+            Fact {
+                key: "cp:act:rollback:add".to_string(),
+                value: "deploy-complete".to_string(),
+            },
+            Fact {
+                key: "cp:act:rollback:del".to_string(),
+                value: "".to_string(),
+            },
             // Sensing action: check whether canary slot is healthy (splits belief state)
-            Fact { key: "cp:sense:check-canary".to_string(), value: "canary-healthy".to_string() },
-
+            Fact {
+                key: "cp:sense:check-canary".to_string(),
+                value: "canary-healthy".to_string(),
+            },
             // Goal: deploy-complete=true must hold in every possible world
-            Fact { key: "cp:goal:deploy-complete".to_string(), value: "true".to_string() },
+            Fact {
+                key: "cp:goal:deploy-complete".to_string(),
+                value: "true".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

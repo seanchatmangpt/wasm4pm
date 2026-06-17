@@ -320,6 +320,7 @@ struct StreamingDfgStats {
 }
 
 /// Create a new streaming DFG, store it in global state, and return its handle.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn new_streaming_dfg() -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
@@ -330,6 +331,7 @@ pub fn new_streaming_dfg() -> Result<String, JsValue> {
 /// Process a single event on the streaming DFG identified by `handle`.
 ///
 /// `activity_id` is an integer activity identifier.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_process_event(handle: &str, activity_id: u32) -> Result<(), JsValue> {
     let app_state = state::get_or_init_state();
@@ -353,6 +355,7 @@ pub fn streaming_dfg_process_event(handle: &str, activity_id: u32) -> Result<(),
 }
 
 /// End the current trace on the streaming DFG identified by `handle`.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_end_trace(handle: &str) -> Result<(), JsValue> {
     let app_state = state::get_or_init_state();
@@ -373,6 +376,7 @@ pub fn streaming_dfg_end_trace(handle: &str) -> Result<(), JsValue> {
 }
 
 /// Get the current DFG snapshot as a JSON string.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn incremental_dfg_snapshot(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
@@ -398,6 +402,7 @@ pub fn incremental_dfg_snapshot(handle: &str) -> Result<String, JsValue> {
 }
 
 /// Get streaming DFG stats as JSON: `{"total_events":N,"unique_activities":N,"unique_edges":N}`.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn incremental_dfg_stats(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
@@ -432,6 +437,7 @@ pub fn incremental_dfg_stats(handle: &str) -> Result<String, JsValue> {
 // ---------------------------------------------------------------------------
 
 /// Create a new string-based StreamingDFG, store it in global state, return handle.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_string_new() -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();
@@ -440,6 +446,7 @@ pub fn streaming_dfg_string_new() -> Result<String, JsValue> {
 }
 
 /// Process a single event by activity name (auto-interns strings).
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_string_event(handle: &str, activity: &str) -> Result<JsValue, JsValue> {
     state::get_or_init_state().with_object_mut(handle, |obj| match obj {
@@ -459,6 +466,7 @@ pub fn streaming_dfg_string_event(handle: &str, activity: &str) -> Result<JsValu
 }
 
 /// End the current trace.
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> {
     state::get_or_init_state().with_object_mut(handle, |obj| match obj {
@@ -475,6 +483,7 @@ pub fn streaming_dfg_string_end_trace(handle: &str) -> Result<JsValue, JsValue> 
 }
 
 /// Get the current DFG snapshot as JSON (with human-readable activity labels).
+#[cfg(feature = "streaming_basic")]
 #[wasm_bindgen]
 pub fn streaming_dfg_string_snapshot(handle: &str) -> Result<String, JsValue> {
     let app_state = state::get_or_init_state();

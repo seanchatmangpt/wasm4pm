@@ -24,51 +24,51 @@
         },
         {
           "key": "actor",
-          "value": "John"
+          "value": "Mary"
         },
         {
           "key": "object",
-          "value": "book"
+          "value": "large"
         },
         {
           "key": "to",
-          "value": "Mary"
+          "value": "John"
         }
       ],
-      "selected": "{\"act\":\"Atrans\",\"actor\":\"John\",\"object\":\"book\",\"to\":\"Mary\",\"from\":null}",
-      "explanation": "AutoinstinctSemantics extracted CD primitive Atrans (transfer of abstract relationship (e.g. give)) from actor=John object=book",
+      "selected": "{\"act\":\"Atrans\",\"actor\":\"Mary\",\"object\":\"large\",\"to\":\"John\",\"from\":null}",
+      "explanation": "AutoinstinctSemantics extracted CD primitive Atrans (transfer of abstract relationship (e.g. give)) from actor=Mary object=large",
       "inference_trace": [
         {
           "step": 0,
           "kind": "init-parser",
-          "detail": "SemanticParser created; parsing intent: \"John give book to Mary\"",
+          "detail": "SemanticParser created; parsing intent: \"Mary give large book to John because John ask Mary\"",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "extract-act",
-          "detail": "rule=sem-ATRANS act=Atrans actor=John object=book",
+          "detail": "rule=sem-ATRANS act=Atrans actor=Mary object=large",
           "depth": 0
         },
         {
           "step": 2,
           "kind": "extract-recipient",
-          "detail": "to=Mary",
+          "detail": "to=John",
           "depth": 0
         }
       ]
     },
-    "run_id": "dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5",
-    "output_hash": "936d32763f36fd871016eb8a4f15b928de058a8a63799e3bcdab54054216c343",
-    "replay_pointer": "936d32763f36fd87",
+    "run_id": "59db4379d15fbc02b12968573187f51bb5f296e81f3ef7d8c72a53c85897d004",
+    "output_hash": "de18678822c2d2381cc0b558f5c4c22205ebaba2a564110d5a3fd6bc4c6a2b30",
+    "replay_pointer": "de18678822c2d238",
     "inference_step_count": 3,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_semantics/.wasm4pm/receipts/dbd182755b530e977546fce2fbd449917b83802d41467d96166e882db9efd6c5.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/autoinstinct_semantics/.wasm4pm/receipts/59db4379d15fbc02b12968573187f51bb5f296e81f3ef7d8c72a53c85897d004.json"
   },
   "meta": {
-    "run_id": "d4a52175-975c-4229-9513-61877682b0d2",
-    "timestamp": "2026-06-11T07:02:55.939Z",
-    "duration_ms": 15,
+    "run_id": "aa92b8ae-915a-45d0-886d-71e9cfed44b7",
+    "timestamp": "2026-06-11T18:48:16.628Z",
+    "duration_ms": 14,
     "version": "26.6.10"
   }
 }

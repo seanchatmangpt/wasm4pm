@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Intercept cargo arguments to translate --out-dir to --artifact-dir
+
+# Exclude our wrapper directory from PATH to find the real cargo
+REAL_PATH=""
+IFS=':' read -ra ADDR <<< "$PATH"
+for i in "${ADDR[@]}"; do
+    if [[ "$i" != "/Users/sac/wasm4pm/scratch/bin" && "$i" != "/Users/sac/wasm4pm/scratch/bin/" ]]; then
+        if [ -x "$i/cargo" ]; then
+            REAL_PATH="$i/cargo"
+            break
+        fi
+    fi
+done
+
+if [ -z "$REAL_PATH" ]; then
+    REAL_PATH=$(which -a cargo | grep -v "/Users/sac/wasm4pm/scratch/bin" | head -n 1)
+fi
+
+# Rewrite arguments: replace --out-dir with --artifact-dir
+new_args=()
+has_artifact_dir=false
+has_unstable_options=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --out-dir)
+            new_args+=("--artifact-dir")
+            has_artifact_dir=true
+            shift
+            ;;
+        unstable-options)
+            new_args+=("$1")
+            has_unstable_options=true
+            shift
+            ;;
+        *)
+            new_args+=("$1")
+            shift
+            ;;
+    esac
+done
+
+if [ "$has_artifact_dir" = true ] && [ "$has_unstable_options" = false ]; then
+    new_args+=("-Z" "unstable-options")
+fi
+
+exec "$REAL_PATH" "${new_args[@]}"

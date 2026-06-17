@@ -119,9 +119,9 @@ fn forward_chain(
 fn match_premises(
     facts: &[(String, Vec<String>)],
     premises: &[(String, Vec<String>)],
-) -> Vec<std::collections::HashMap<usize, String>> {
-    let mut results: Vec<std::collections::HashMap<usize, String>> =
-        vec![std::collections::HashMap::new()];
+) -> Vec<std::collections::BTreeMap<usize, String>> {
+    let mut results: Vec<std::collections::BTreeMap<usize, String>> =
+        vec![std::collections::BTreeMap::new()];
     for (pred, args) in premises {
         let mut next_results = Vec::new();
         for bindings in &results {
@@ -817,6 +817,48 @@ mod tests {
             .filter(|t| t.kind == "intern-fact")
             .count();
         assert_eq!(interned, 2, "both facts must be interned");
+    }
+
+    /// Falsification: Kowalski 1974 Fig.2 parent/ancestor fixture.
+    /// Facts: parent(tom-bob), parent(bob-ann), parent(bob-pat).
+    /// Goal: parent(bob-ann) → must resolve to selected = "bob-ann".
+    /// If unification or the kernel lookup is broken, selected will be None
+    /// or a different value.
+    #[test]
+    fn paper_fixture_kowalski_1974_parent_resolution() {
+        let breed = Prolog;
+        let input = BreedInput {
+            intent: "parent".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "parent".into(),
+                    value: "tom-bob".into(),
+                },
+                Fact {
+                    key: "parent".into(),
+                    value: "bob-ann".into(),
+                },
+                Fact {
+                    key: "parent".into(),
+                    value: "bob-pat".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![Goal {
+                id: "g1".into(),
+                predicate: "parent".into(),
+                value: "bob-ann".into(),
+            }],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("bob-ann"),
+            "Prolog8 must resolve parent(bob-ann) to selected='bob-ann' (Kowalski 1974 Fig.2)"
+        );
     }
 
     #[test]

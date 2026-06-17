@@ -81,17 +81,21 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
 
 #[wasm_bindgen]
 pub fn discover_ml_anomaly(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    // Generate DFG implicitly if we just have log handle
     let state = get_or_init_state();
 
-    // 1. Generate DFG using existing fast discovery
-    let dfg_json = crate::discovery::discover_dfg(log_handle, activity_key)?;
+    // 1. Generate DFG directly by accessing the stored EventLog in state
+    let dfg = state.with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let admitted =
+                wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            let dfg = crate::discovery::discover_dfg_from_log(&admitted, activity_key);
+            Ok(dfg)
+        }
+        Some(_) => Err(crate::error::js_val("log_handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
+    })?;
 
     // 2. Store it
-    let dfg: crate::models::DFG =
-        serde_json::from_str(&dfg_json.as_string().unwrap_or_default())
-            .map_err(|e| crate::error::js_val(&format!("Failed to parse dfg: {}", e)))?;
-
     let dfg_handle = state
         .store_object(StoredObject::DFG(dfg))
         .map_err(|_| crate::error::js_val("Failed to store DFG"))?;

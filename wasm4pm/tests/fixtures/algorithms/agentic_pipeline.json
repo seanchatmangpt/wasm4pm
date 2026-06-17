@@ -1,0 +1,16 @@
+{
+  "algorithm": "agentic_pipeline",
+  "provenance": {
+    "paper": "Process Mining: A 360 Degree Overview",
+    "citation": "van der Aalst, W.M.P. (2023). Process Mining: A 360 Degree Overview. Springer.",
+    "locus": "Chapter 14, agentic process mining",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "pipeline_stages_gt_0",
+    "description": "Multi-step agentic process mining pipeline completes at least one stage (discovery, conformance, or analysis) on the running example"
+  }
+}

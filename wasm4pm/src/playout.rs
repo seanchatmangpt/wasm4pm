@@ -136,6 +136,16 @@ fn playout_process_tree_node(
 
             // Optionally redo: 30% chance to loop again
             while rng.f64() < 0.3 {
+                // REDO branch
+                if children.len() > 1 {
+                    events.extend(playout_process_tree_node(
+                        &children[1].label,
+                        &children[1].operator,
+                        &children[1].children,
+                        rng,
+                    ));
+                }
+                // DO branch again
                 events.extend(playout_process_tree_node(
                     &children[0].label,
                     &children[0].operator,
@@ -250,6 +260,7 @@ fn play_out_dfg_with_starts(
 
     for trace_idx in 0..params.num_traces {
         let mut trace_activities: Vec<String> = Vec::new();
+        let mut retry_counter = 0;
 
         loop {
             trace_activities.clear();
@@ -292,7 +303,8 @@ fn play_out_dfg_with_starts(
                 break;
             }
             // Otherwise retry (bounded by a safety limit to prevent infinite loops)
-            if trace_idx > params.num_traces * 10 {
+            retry_counter += 1;
+            if retry_counter > 100 {
                 // Give up and use whatever we have
                 break;
             }
@@ -628,14 +640,21 @@ mod tests {
                 trace.events.len() >= 1,
                 "Loop should produce at least 1 event (do-branch)"
             );
-            // All events should be "A" (do-branch is child 0)
+            // First event should be "A" (do-branch is child 0)
+            let first_name = trace.events[0]
+                .attributes
+                .get("concept:name")
+                .and_then(|v| v.as_string())
+                .unwrap();
+            assert_eq!(first_name, "A");
+            // All events should be "A" or "B"
             for event in &trace.events {
                 let name = event
                     .attributes
                     .get("concept:name")
                     .and_then(|v| v.as_string())
                     .unwrap();
-                assert_eq!(name, "A");
+                assert!(name == "A" || name == "B");
             }
         }
     }

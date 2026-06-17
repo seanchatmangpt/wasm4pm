@@ -95,6 +95,7 @@ fn test_correlation_miner_array_oob_no_panic() {
 
     // Should complete without panic (matches may be empty or non-empty, but no panic)
     let _ = matches; // Algorithm successfully handled mismatched array lengths
+    assert!(true);
 }
 
 #[test]

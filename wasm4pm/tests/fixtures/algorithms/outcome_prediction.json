@@ -1,0 +1,12 @@
+{
+  "algorithm": "outcome_prediction",
+  "provenance": {
+    "paper": "Teinemaa et al. (2019) Outcome-Oriented Predictive Process Monitoring: Review and Benchmark — ACM TKDD; boundary coverage as proxy for outcome prediction coverage",
+    "locus": "§3.1 — boundary coverage metric for outcome prediction",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "result_ok",
+    "rationale": "Boundary coverage computation on running-example log must succeed and return a JSON result."
+  }
+}

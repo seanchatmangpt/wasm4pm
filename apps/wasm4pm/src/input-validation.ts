@@ -11,6 +11,7 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { getRegistry } from 'wasm4pm';
 
 export interface FileValidationResult {
   valid: boolean;
@@ -93,8 +94,7 @@ export function validateAlgorithm(algoName: string): AlgorithmValidationResult {
     };
   }
 
-  // Lazy import to avoid WASM initialization in tests
-  const { getRegistry } = require('wasm4pm');
+  // Static import used to avoid WASM initialization issues in CommonJS require
   const registry = getRegistry();
   const allAlgos = registry.list();
   const algoIds = (allAlgos as { id: string }[]).map((a) => a.id);

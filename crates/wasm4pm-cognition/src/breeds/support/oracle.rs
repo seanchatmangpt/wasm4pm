@@ -15,9 +15,9 @@
 //! [`run_adversary_check`] additionally executes U6 (meta-oracle): the
 //! oracle must reject an intentionally wrong [`BreedAdversary`].
 
-use crate::breeds::{BreedId, BreedInput, BreedOutput};
 use crate::breeds::dispatch::dispatch_breed_id;
 use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{BreedId, BreedInput, BreedOutput};
 
 /// Anti-cheat oracle contract for a single breed.
 ///
@@ -130,7 +130,10 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
             let tq = TraceQuery::new(&out.inference_trace);
             match B::assert_intermediate(0, &tq) {
                 Ok(()) => results.push(AntiCheatResult::Pass { test_id: "U2" }),
-                Err(e) => results.push(AntiCheatResult::Fail { test_id: "U2", detail: e }),
+                Err(e) => results.push(AntiCheatResult::Fail {
+                    test_id: "U2",
+                    detail: e,
+                }),
             }
         }
         None => results.push(AntiCheatResult::Fail {
@@ -145,7 +148,10 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
             let tq = TraceQuery::new(&out.inference_trace);
             match B::assert_trace_values(&tq) {
                 Ok(()) => results.push(AntiCheatResult::Pass { test_id: "U2b" }),
-                Err(e) => results.push(AntiCheatResult::Fail { test_id: "U2b", detail: e }),
+                Err(e) => results.push(AntiCheatResult::Fail {
+                    test_id: "U2b",
+                    detail: e,
+                }),
             }
         }
         None => results.push(AntiCheatResult::Fail {
@@ -201,7 +207,8 @@ pub fn run_universal_anticheat<B: BreedOracle>() -> Vec<AntiCheatResult> {
                         test_id: "U5",
                         detail: format!(
                             "double-run produced different bytes ({} vs {})",
-                            s1.len(), s2.len()
+                            s1.len(),
+                            s2.len()
                         ),
                     });
                 }
@@ -323,7 +330,11 @@ mod tests {
         assert!(r.is_fail(), "weak oracle accepted the cheat but U6 passed");
         assert_eq!(r.test_id(), "U6");
         if let AntiCheatResult::Fail { detail, .. } = &r {
-            assert!(detail.contains("AC-A4"), "detail must name cheat code: {}", detail);
+            assert!(
+                detail.contains("AC-A4"),
+                "detail must name cheat code: {}",
+                detail
+            );
         }
     }
 

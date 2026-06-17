@@ -1,0 +1,12 @@
+{
+  "algorithm": "fitness_token_replay",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P., et al. (2012). Replaying History on Process Models for Conformance Checking and Performance Analysis. WIREs DMKD 2(2).",
+    "locus": "§3.1 Token-based replay fitness — running-example log is perfectly fitting",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "fitness=1.0",
+    "rationale": "Running-example log was used to construct the alpha++ net; token replay fitness must be 1.0."
+  }
+}

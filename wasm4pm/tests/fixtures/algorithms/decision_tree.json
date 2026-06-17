@@ -1,0 +1,12 @@
+{
+  "algorithm": "decision_tree",
+  "provenance": {
+    "paper": "de Leoni, M., van der Aalst, W.M.P., Dees, M. (2016). A General Process Mining Framework for Correlating, Predicting and Clustering Dynamic Behavior Based on Event Logs. IS 2016.",
+    "locus": "Section 5, random-forest / decision-tree next-activity prediction",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "prediction_nonnull",
+    "rationale": "RF model trained and queried on the running-example log must return at least one predicted activity."
+  }
+}

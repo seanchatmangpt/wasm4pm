@@ -1,0 +1,12 @@
+{
+  "algorithm": "drift_detection",
+  "provenance": {
+    "paper": "Bose, R.P.J.C., van der Aalst, W.M.P., Zliobaite, I., Pechenizkiy, M. (2011). Handling Concept Drift in Process Mining. CAiSE 2011.",
+    "locus": "Section 3, Jaccard-distance drift detection algorithm",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "drift_points=0",
+    "rationale": "A uniform log with identical activity sets across all windows yields Jaccard distance 0.0 everywhere, so no drift threshold is exceeded."
+  }
+}

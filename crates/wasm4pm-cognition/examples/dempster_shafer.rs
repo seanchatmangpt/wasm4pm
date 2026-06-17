@@ -6,10 +6,10 @@
 //!
 //! Run: cargo run --example dempster_shafer
 
+use wasm4pm_cognition::breeds::dempster_shafer::DempsterShafer;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::dempster_shafer::DempsterShafer;
 
 fn main() {
     // Source 1: Lab test — strong evidence for Flu, some mass on Cold
@@ -19,9 +19,18 @@ fn main() {
         intent: "diagnose-patient".to_string(),
         candidates: vec![],
         facts: vec![
-            Fact { key: "patient".to_string(), value: "P-001".to_string() },
-            Fact { key: "symptom".to_string(), value: "fever".to_string() },
-            Fact { key: "symptom".to_string(), value: "cough".to_string() },
+            Fact {
+                key: "patient".to_string(),
+                value: "P-001".to_string(),
+            },
+            Fact {
+                key: "symptom".to_string(),
+                value: "fever".to_string(),
+            },
+            Fact {
+                key: "symptom".to_string(),
+                value: "cough".to_string(),
+            },
         ],
         cases: vec![],
         // Rules encode basic probability assignments (BPA):
@@ -56,13 +65,11 @@ fn main() {
                 certainty: 0.2,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "query".to_string(),
-                predicate: "query".to_string(),
-                value: "Flu".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "query".to_string(),
+            predicate: "query".to_string(),
+            value: "Flu".to_string(),
+        }],
         state: vec![],
     };
 
@@ -78,9 +85,11 @@ fn main() {
             println!("  {}", output.explanation);
 
             // Print the emitted belief/plausibility facts for easy inspection.
-            for fact in output.facts.iter().filter(|f| {
-                f.key.starts_with("belief:") || f.key.starts_with("plausibility:")
-            }) {
+            for fact in output
+                .facts
+                .iter()
+                .filter(|f| f.key.starts_with("belief:") || f.key.starts_with("plausibility:"))
+            {
                 println!("  {} = {}", fact.key, fact.value);
             }
         }

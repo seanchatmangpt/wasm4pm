@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_ocla",
+  "provenance": {
+    "paper": "Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019. Section 6.",
+    "locus": "Section 6, object-centric log abstraction",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "abstraction_computed",
+    "description": "Object-centric log abstraction analytics are successfully computed; non-empty abstraction output confirms the algorithm completed on the running example OCEL log"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_encode",
+  "provenance": {
+    "paper": "Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019. Section 5.",
+    "locus": "Section 5, feature encoding",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "features_encoded",
+    "description": "The OCEL log is successfully encoded into a feature matrix; non-empty matrix output confirms encoding completed without error"
+  }
+}

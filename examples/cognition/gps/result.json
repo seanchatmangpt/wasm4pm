@@ -11,46 +11,58 @@
       "breed": "Gps",
       "candidates": [],
       "facts": [],
-      "selected": "R6,R12",
-      "explanation": "GPS plan (2 ops): R6 → R12",
+      "selected": "op-machine,op-qc,op-ship",
+      "explanation": "GPS plan (3 ops): op-machine → op-qc → op-ship",
       "inference_trace": [
         {
           "step": 0,
           "kind": "reduce-gap",
-          "detail": "expr=L0",
+          "detail": "material-state=processed",
           "depth": 0
         },
         {
           "step": 1,
-          "kind": "reduce-gap",
-          "detail": "expr=L2",
-          "depth": 1
+          "kind": "apply-operator",
+          "detail": "op-machine",
+          "depth": 0
         },
         {
           "step": 2,
-          "kind": "apply-operator",
-          "detail": "R6",
-          "depth": 1
+          "kind": "reduce-gap",
+          "detail": "quality-checked=yes",
+          "depth": 0
         },
         {
           "step": 3,
           "kind": "apply-operator",
-          "detail": "R12",
+          "detail": "op-qc",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "reduce-gap",
+          "detail": "location=customer",
+          "depth": 0
+        },
+        {
+          "step": 5,
+          "kind": "apply-operator",
+          "detail": "op-ship",
           "depth": 0
         }
       ]
     },
-    "run_id": "4ab385053d606adc516118257d882b97ab767d41570637fe5061ba896f746167",
-    "output_hash": "80fd9b7528bb883d506d02b35037f80633dff1326ea7282a0d098a9a1ce4e680",
-    "replay_pointer": "80fd9b7528bb883d",
-    "inference_step_count": 4,
+    "run_id": "f0181c12f3bfa648c8d29f9387292de69f6b35937061a9396d151f6b1e375ca5",
+    "output_hash": "30c7c682bc145711561d424adf620f8de9fdbdd22a1b3298d0837fa6b237cca2",
+    "replay_pointer": "30c7c682bc145711",
+    "inference_step_count": 6,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/gps/.wasm4pm/receipts/4ab385053d606adc516118257d882b97ab767d41570637fe5061ba896f746167.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/gps/.wasm4pm/receipts/f0181c12f3bfa648c8d29f9387292de69f6b35937061a9396d151f6b1e375ca5.json"
   },
   "meta": {
-    "run_id": "07298e31-79a4-4fd0-af71-1e3768ef40f9",
-    "timestamp": "2026-06-11T07:03:10.491Z",
-    "duration_ms": 14,
+    "run_id": "a2bd50c7-5b0d-452d-af39-7a049be21e20",
+    "timestamp": "2026-06-11T18:43:46.858Z",
+    "duration_ms": 15,
     "version": "26.6.10"
   }
 }

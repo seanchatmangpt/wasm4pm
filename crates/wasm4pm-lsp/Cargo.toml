@@ -1,0 +1,25 @@
+[package]
+name = "wasm4pm-lsp"
+version = "26.6.9"
+edition = "2021"
+publish = false
+
+[dependencies]
+lsp-max = { path = "../../../lsp-max", features = ["proposed"] }
+tokio = { version = "1.0", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+dashmap = "5"
+toml = "0.8"
+url = "2"
+wasm4pm = { workspace = true }
+wasm4pm-compat = { workspace = true, features = ["formats", "strict", "wasm4pm"] }
+ocpq = { workspace = true }
+
+[[bin]]
+name = "wasm4pm-lsp"
+path = "src/main.rs"
+
+[dev-dependencies]
+tempfile = "3"
+url = "2"

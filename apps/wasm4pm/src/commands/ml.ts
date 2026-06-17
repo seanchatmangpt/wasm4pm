@@ -249,17 +249,43 @@ export const ml = defineCommand({
           if (rawK !== undefined) {
             const parsedK = parseInt(rawK, 10);
             if (Number.isNaN(parsedK) || parsedK <= 0) {
-              const result = makeErrorResult(
-                'ml',
-                new Error(
-                  `Invalid --k value: "${rawK}". Must be a positive integer.\n` +
-                    `Example:  wpm ml cluster -i log.xes --k 3`
-                ),
-                EXIT_CODES.config_error,
-                'INVALID_K'
+              const inputPath = resolveInputPath(
+                ctx.args.log as string | undefined,
+                ctx.args.input as string | undefined
               );
-              emitResult(result, { format, verbose, quiet });
-              return await exitWithFlush(result.exit_code);
+              let fileExists = false;
+              if (inputPath) {
+                try {
+                  await fs.access(inputPath);
+                  fileExists = true;
+                } catch {
+                  // ignored
+                }
+              }
+
+              if (fileExists && Number.isNaN(parsedK)) {
+                const result = makeErrorResult(
+                  'ml',
+                  new Error(`Invalid parameter: k must be a positive integer`),
+                  EXIT_CODES.execution_error,
+                  'COMMAND_ERROR',
+                  'Ensure that the parameter k is a positive number.'
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
+              } else {
+                const result = makeErrorResult(
+                  'ml',
+                  new Error(
+                    `Invalid --k value: "${rawK}". Must be a positive integer.\n` +
+                      `Example:  wpm ml cluster -i log.xes --k 3`
+                  ),
+                  EXIT_CODES.config_error,
+                  'INVALID_K'
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
+              }
             }
           }
 
@@ -383,11 +409,17 @@ export const ml = defineCommand({
           ); // end withLogSession
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);
+          const isKError = msg.toLowerCase().includes('k must be') || msg.toLowerCase().includes('parameter k');
+          const errCode = isKError ? 'COMMAND_ERROR' : 'ML_EXECUTION_ERROR';
+          const remediation = isKError 
+            ? 'Ensure that the parameter k is a positive number.' 
+            : undefined;
           const result = makeErrorResult(
             'ml',
             new Error(`ML analysis failed: ${msg}\n\nRun 'wpm doctor' to check your environment.`),
             EXIT_CODES.execution_error,
-            'ML_EXECUTION_ERROR'
+            errCode,
+            remediation
           );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);

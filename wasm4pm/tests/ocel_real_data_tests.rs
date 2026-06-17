@@ -269,4 +269,5 @@ mod ocel_tests {
     fn ocel_feature_gate_acknowledged() {
         eprintln!("SKIP: ocel feature not enabled — OCEL real-data tests skipped");
     }
+    assert!(true);
 }

@@ -7,21 +7,37 @@
 //!
 //! Run: cargo run --example htn_planning
 
+use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::htn_planning::HtnPlanning;
 
 fn main() {
     let input = BreedInput {
         intent: "deliver-package".to_string(),
         candidates: vec![
-            Candidate { id: "route-A".to_string(), score: 0.85, eliminated: false, elimination_reason: None },
-            Candidate { id: "route-B".to_string(), score: 0.65, eliminated: false, elimination_reason: None },
+            Candidate {
+                id: "route-A".to_string(),
+                score: 0.85,
+                eliminated: false,
+                elimination_reason: None,
+            },
+            Candidate {
+                id: "route-B".to_string(),
+                score: 0.65,
+                eliminated: false,
+                elimination_reason: None,
+            },
         ],
         facts: vec![
-            Fact { key: "package".to_string(), value: "PKG-001".to_string() },
-            Fact { key: "destination".to_string(), value: "customer-site".to_string() },
+            Fact {
+                key: "package".to_string(),
+                value: "PKG-001".to_string(),
+            },
+            Fact {
+                key: "destination".to_string(),
+                value: "customer-site".to_string(),
+            },
         ],
         cases: vec![],
         // Domain rules: methods decompose compound tasks; op: rules are primitives.
@@ -83,16 +99,20 @@ fn main() {
                 certainty: 1.0,
             },
         ],
-        goals: vec![
-            Goal {
-                id: "g1".to_string(),
-                predicate: "task".to_string(),
-                value: "deliver".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "g1".to_string(),
+            predicate: "task".to_string(),
+            value: "deliver".to_string(),
+        }],
         state: vec![
-            StateAtom { predicate: "at".to_string(), value: "warehouse".to_string() },
-            StateAtom { predicate: "package".to_string(), value: "loaded".to_string() },
+            StateAtom {
+                predicate: "at".to_string(),
+                value: "warehouse".to_string(),
+            },
+            StateAtom {
+                predicate: "package".to_string(),
+                value: "loaded".to_string(),
+            },
         ],
     };
 
@@ -107,10 +127,7 @@ fn main() {
                 &output_hash[..16]
             );
             println!("  {}", output.explanation);
-            println!(
-                "  trace steps: {}",
-                output.inference_trace.len()
-            );
+            println!("  trace steps: {}", output.inference_trace.len());
         }
         Err(e) => {
             eprintln!("htn_planning error: {e}");

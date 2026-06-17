@@ -752,6 +752,7 @@ describe('wpm diff', () => {
       'diff', log1Path, log1Path,
       '--format', 'human',
       '--no-save',
+      '--deep',
     ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(0);

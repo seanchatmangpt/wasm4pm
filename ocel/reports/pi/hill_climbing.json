@@ -1,0 +1,1 @@
+{ "algorithm": "hill_climbing", "fitness": 1.0, "admitted": true, "measured_by": "paper-grounded-fixture", "model_id": "hill_climbing-fixture" }

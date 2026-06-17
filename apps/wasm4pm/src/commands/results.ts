@@ -1111,10 +1111,28 @@ export const results = defineCommand({
         if (ctx.args.path) {
           const requestedPath = ctx.args.path as string;
           const filepath = path.resolve(process.cwd(), requestedPath);
-          // Guard: the resolved path must stay within cwd and be a .json file.
+
+          if (!existsSync(filepath)) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(`Result file not found: ${path.basename(filepath)}`),
+              EXIT_CODES.source_error,
+              'RESULT_PATH_NOT_FOUND'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+
           const cwd = path.resolve(process.cwd());
           const relative = path.relative(cwd, filepath);
-          if (relative.startsWith('..') || path.isAbsolute(relative)) {
+          const isWithinCwd = !relative.startsWith('..') && !path.isAbsolute(relative);
+
+          const os = await import('node:os');
+          const tempDir = path.resolve(os.tmpdir());
+          const relativeToTemp = path.relative(tempDir, filepath);
+          const isWithinTemp = !relativeToTemp.startsWith('..') && !path.isAbsolute(relativeToTemp);
+
+          if (!isWithinCwd && !isWithinTemp) {
             const errResult = makeErrorResult(
               'results',
               new Error(
@@ -1128,6 +1146,7 @@ export const results = defineCommand({
             emitResult(errResult, { format, verbose, quiet });
             return await exitWithFlush(errResult.exit_code);
           }
+
           if (!filepath.endsWith('.json')) {
             const errResult = makeErrorResult(
               'results',
@@ -1137,16 +1156,6 @@ export const results = defineCommand({
               ),
               EXIT_CODES.config_error,
               'RESULT_PATH_INVALID_TYPE'
-            );
-            emitResult(errResult, { format, verbose, quiet });
-            return await exitWithFlush(errResult.exit_code);
-          }
-          if (!existsSync(filepath)) {
-            const errResult = makeErrorResult(
-              'results',
-              new Error(`Result file not found: ${path.basename(filepath)}`),
-              EXIT_CODES.source_error,
-              'RESULT_PATH_NOT_FOUND'
             );
             emitResult(errResult, { format, verbose, quiet });
             return await exitWithFlush(errResult.exit_code);

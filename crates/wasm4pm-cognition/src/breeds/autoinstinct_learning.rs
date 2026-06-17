@@ -12,11 +12,11 @@
 //! 8. BreedOutput.candidates holds each plan-step state as a string.
 
 use crate::autoinstinct::learning::{HeuristicPlanner, ProblemState};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctLearning breed: STRIPS/HACKER heuristic planning via bitwise goal state search.
 pub struct AutoinstinctLearning;
@@ -257,7 +257,9 @@ mod tests {
             ocel_log: None,
             retained_cases: vec![],
         };
-        assert!(breed.postconditions(&empty_input(vec![], vec![]), &bad_output).is_err());
+        assert!(breed
+            .postconditions(&empty_input(vec![], vec![]), &bad_output)
+            .is_err());
     }
 
     #[test]
@@ -321,7 +323,9 @@ mod tests {
         let breed = AutoinstinctLearning;
         let input = empty_input(make_goals(3), make_facts(1));
         let output = breed.run(&input).expect("run ok");
-        assert!(breed.postconditions(&empty_input(vec![], vec![]), &output).is_ok());
+        assert!(breed
+            .postconditions(&empty_input(vec![], vec![]), &output)
+            .is_ok());
     }
 
     /// B4-1: goal is reachable — run succeeds and final plan step has distance == 0

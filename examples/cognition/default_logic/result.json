@@ -12,64 +12,48 @@
       "candidates": [],
       "facts": [
         {
-          "key": "ext:bird",
-          "value": "bird"
+          "key": "ext:flies",
+          "value": "flies"
         },
         {
-          "key": "ext:not_flies",
-          "value": "not_flies"
-        },
-        {
-          "key": "ext:penguin",
-          "value": "penguin"
+          "key": "ext:tweety",
+          "value": "tweety"
         }
       ],
-      "selected": "bird, not_flies, penguin",
-      "explanation": "default logic extension with 3 atoms (2 fired, 1 blocked)",
+      "selected": "flies, tweety",
+      "explanation": "default logic extension with 2 atoms (1 fired, 0 blocked)",
       "inference_trace": [
         {
           "step": 0,
           "kind": "default-load",
-          "detail": "loaded 3 rules over 1 facts",
+          "detail": "loaded 1 rules over 1 facts",
           "depth": 0
         },
         {
           "step": 1,
           "kind": "default-fire",
-          "detail": "fired rule r_isa inferring bird",
+          "detail": "fired rule r_default inferring flies",
           "depth": 0
         },
         {
           "step": 2,
-          "kind": "default-fire",
-          "detail": "fired rule r_penguin inferring not_flies",
-          "depth": 0
-        },
-        {
-          "step": 3,
-          "kind": "default-block",
-          "detail": "rule r_birds_fly blocked by violator not_flies",
-          "depth": 0
-        },
-        {
-          "step": 4,
           "kind": "default-extension",
-          "detail": "extension: bird, not_flies, penguin",
+          "detail": "extension: flies, tweety",
           "depth": 0
         }
       ]
     },
-    "run_id": "cb08da93eaf4760dfb518f019b27120db55dbd2e0cafd6c0321850790b1fb473",
-    "output_hash": "a5497eeb4c461bbf0b53836d608c319af31f1d2524ac8dd930c63e1d5e56cf50",
-    "replay_pointer": "a5497eeb4c461bbf",
-    "inference_step_count": 5,
+    "run_id": "c3ceedcac4ab8088c455018f0ece5a91340d0358cc2e4c440085304ed038cd4f",
+    "output_hash": "604d6b6e30e4634c48749e7191b5f3fb667fd75405a82a12b9a22d70a17b8df0",
+    "replay_pointer": "604d6b6e30e4634c",
+    "inference_step_count": 3,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/default_logic/.wasm4pm/receipts/cb08da93eaf4760dfb518f019b27120db55dbd2e0cafd6c0321850790b1fb473.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/default_logic/.wasm4pm/receipts/c3ceedcac4ab8088c455018f0ece5a91340d0358cc2e4c440085304ed038cd4f.json"
   },
   "meta": {
-    "run_id": "2eaf5720-30e7-4629-9f94-a20ed7865b71",
-    "timestamp": "2026-06-11T07:03:03.545Z",
-    "duration_ms": 21,
+    "run_id": "e0745a03-7b55-4c41-8736-c0d6d19a4ba7",
+    "timestamp": "2026-06-11T18:43:43.343Z",
+    "duration_ms": 15,
     "version": "26.6.10"
   }
 }

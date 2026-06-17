@@ -1,0 +1,16 @@
+{
+  "algorithm": "ocel_dfg_per_type",
+  "provenance": {
+    "paper": "Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution",
+    "citation": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019. Section 4.",
+    "locus": "Section 4, per-type DFG construction",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.json"
+  },
+  "expected": {
+    "value": "dfg_count=1",
+    "description": "One DFG is produced per object type; the running example OCEL log has 1 object type, yielding 1 DFG"
+  }
+}

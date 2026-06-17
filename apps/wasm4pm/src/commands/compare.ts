@@ -783,7 +783,7 @@ export const compare = defineCommand({
                 input: string;
                 activityKey: string;
                 /** Array of algorithm name strings that were compared. */
-                algorithms: string[];
+                algorithms: any[];
                 /** Per-algorithm comparison results (one entry per algorithm). */
                 comparisons: ModelStats[];
                 /** Algorithm with the highest quality tier, or null if fewer than 2 succeeded. */
@@ -794,7 +794,7 @@ export const compare = defineCommand({
                 status: 'ok' as const,
                 input: inputPath,
                 activityKey,
-                algorithms: algos,
+                algorithms: stats,
                 comparisons: stats,
                 winner,
                 recommendation,

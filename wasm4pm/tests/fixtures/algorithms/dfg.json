@@ -1,0 +1,16 @@
+{
+  "algorithm": "dfg",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Directly-Follows Graph construction from event log; Figure 4.3 running-example DFG",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8,edges=15",
+    "description": "DFG on running-example has 8 activity nodes and 15 directly-follows edges — matches footprints fixture"
+  }
+}

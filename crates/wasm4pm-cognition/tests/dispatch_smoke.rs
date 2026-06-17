@@ -39,6 +39,29 @@ fn minimal_input() -> BreedInput {
     }
 }
 
+/// Create a BreedInput for Eliza: intent contains the keyword "FEEL" which matches rule premise[0].
+fn input_for_eliza() -> BreedInput {
+    BreedInput {
+        intent: "I feel sad today".into(),
+        candidates: vec![Candidate {
+            id: "candidate-1".into(),
+            score: 0.5,
+            eliminated: false,
+            elimination_reason: None,
+        }],
+        facts: vec![],
+        cases: vec![],
+        rules: vec![Rule {
+            id: "feel-rule".into(),
+            premise: vec!["FEEL".into(), "(0) * you (0)".into()],
+            conclusion: "Tell me more about your feelings.".into(),
+            certainty: 1.0,
+        }],
+        goals: vec![],
+        state: vec![],
+    }
+}
+
 /// Create a BreedInput with cases for CBR testing.
 fn input_with_cases() -> BreedInput {
     let mut input = minimal_input();
@@ -115,7 +138,7 @@ fn input_with_evidence() -> BreedInput {
 
 #[test]
 fn dispatch_eliza_routes() {
-    let input = minimal_input();
+    let input = input_for_eliza();
     let output = dispatch_breed_test("eliza", &input).expect("eliza dispatch failed");
 
     assert_eq!(output.breed, BreedId::Eliza, "breed mismatch");
@@ -435,6 +458,7 @@ fn multi_breed_pipeline_smoke_test() {
             "cbr" => input_with_cases(),
             "mycin" => input_with_evidence(),
             "strips" | "gps" => input_with_reachable_goals(),
+            "eliza" => input_for_eliza(),
             _ => minimal_input(),
         };
 

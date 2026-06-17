@@ -1,10 +1,10 @@
 [package]
 name = "prolog8"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-authors.workspace = true
-repository.workspace = true
+version = "26.6.10"
+edition = "2021"
+license = "BUSL-1.1"
+authors = ["Sean Chatman"]
+repository = "https://github.com/seanchatmangpt/wasm4pm"
 description = "Prolog8 — byte-capped proof engine for policy, workflow, and agent action admission"
 
 [lib]

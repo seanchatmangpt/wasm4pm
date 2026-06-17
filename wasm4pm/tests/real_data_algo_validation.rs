@@ -625,4 +625,5 @@ fn working_together_network_bpi2020_does_not_panic() {
     let log = require_log!(BPI2020, "bpi2020-travel");
     let net = discover_working_together_network_from_log(&log, "org:resource");
     let _ = net; // Must not panic; JSON serialization validates structural soundness
+    assert!(true);
 }

@@ -1,0 +1,16 @@
+{
+  "algorithm": "analyze_process_speedup",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 8.",
+    "locus": "Performance analysis section, Chapter 8",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "speedup_identified",
+    "description": "Speedup potential is identified; always positive for this log because the reinitiate request loop creates rework that can be eliminated"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "algorithm": "transition_system",
+  "provenance": {
+    "paper": "Process Mining: Data Science in Action",
+    "citation": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 4.",
+    "locus": "Chapter 4 — Transition system construction from prefix abstractions; Figure 4.6 running-example transition system",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "states=24",
+    "description": "Transition system on running-example with window=2 forward abstraction has 24 unique prefix states across all 6 traces (including reinitiate request loops)"
+  }
+}

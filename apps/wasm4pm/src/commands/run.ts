@@ -17,6 +17,7 @@ import { withSpan, withWasmSpan } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import {
   saveCommandReceipt,
+  emitPiReceipt,
   blake3Hex,
   newReceipt,
   type CommandReceipt,
@@ -453,7 +454,7 @@ export const run = defineCommand({
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
               EXIT_CODES.source_error,
-              'CONFIG_ALGORITHM_NOT_FOUND'
+              'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
@@ -1286,6 +1287,35 @@ export const run = defineCommand({
               // Normalise result (WASM may return string or object)
               const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
+              // Normalise nodes/edges for Petri Net models
+              if (resultData && typeof resultData === 'object') {
+                const rData = resultData as Record<string, any>;
+                const hasPetriNetFields =
+                  typeof rData.places === 'number' ||
+                  Array.isArray(rData.places) ||
+                  typeof rData.transitions === 'number' ||
+                  Array.isArray(rData.transitions) ||
+                  typeof rData.arcs === 'number' ||
+                  Array.isArray(rData.arcs);
+                if (hasPetriNetFields) {
+                  if (typeof rData.nodes === 'undefined') {
+                    const numPlaces = typeof rData.places === 'number'
+                      ? rData.places
+                      : (Array.isArray(rData.places) ? rData.places.length : 0);
+                    const numTransitions = typeof rData.transitions === 'number'
+                      ? rData.transitions
+                      : (Array.isArray(rData.transitions) ? rData.transitions.length : 0);
+                    rData.nodes = numPlaces + numTransitions;
+                  }
+                  if (typeof rData.edges === 'undefined') {
+                    const numArcs = typeof rData.arcs === 'number'
+                      ? rData.arcs
+                      : (Array.isArray(rData.arcs) ? rData.arcs.length : 0);
+                    rData.edges = numArcs;
+                  }
+                }
+              }
+
               // Surface K: add `count` alias for `frequency` so consumers can read either name.
               // Truth lives in WASM (frequency is authoritative); count is a presentation alias.
               if (resultData && Array.isArray((resultData as { edges?: unknown[] }).edges)) {
@@ -1451,6 +1481,15 @@ export const run = defineCommand({
                     },
                   };
                   saveCommandReceipt(receipt);
+                  try {
+                    emitPiReceipt(
+                      resolvedAlgoFinal ?? resolvedAlgo ?? 'unknown',
+                      inputBytes.toString('utf-8'),
+                      JSON.stringify(payload ?? {}),
+                    );
+                  } catch (_piReceiptErr) {
+                    // receipt write must never break the command
+                  }
                 } catch (receiptErr) {
                   // receipt write must never break the command, but MUST leave evidence
                   try {
@@ -1903,7 +1942,7 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
 
   const { WasmLoader } = await import('@wasm4pm/engine');
   const { exitWithFlush: exitFlush } = await import('../otel/exit.js');
-  const { saveCommandReceipt, blake3Hex, newReceipt } = await import('../receipts/_shared.js');
+  const { saveCommandReceipt, emitPiReceipt, blake3Hex, newReceipt } = await import('../receipts/_shared.js');
 
   // File existence
   try {
@@ -2121,6 +2160,34 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
   // Normalise result
   const resultData: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
+  if (resultData && typeof resultData === 'object') {
+    const rData = resultData as Record<string, any>;
+    const hasPetriNetFields =
+      typeof rData.places === 'number' ||
+      Array.isArray(rData.places) ||
+      typeof rData.transitions === 'number' ||
+      Array.isArray(rData.transitions) ||
+      typeof rData.arcs === 'number' ||
+      Array.isArray(rData.arcs);
+    if (hasPetriNetFields) {
+      if (typeof rData.nodes === 'undefined') {
+        const numPlaces = typeof rData.places === 'number'
+          ? rData.places
+          : (Array.isArray(rData.places) ? rData.places.length : 0);
+        const numTransitions = typeof rData.transitions === 'number'
+          ? rData.transitions
+          : (Array.isArray(rData.transitions) ? rData.transitions.length : 0);
+        rData.nodes = numPlaces + numTransitions;
+      }
+      if (typeof rData.edges === 'undefined') {
+        const numArcs = typeof rData.arcs === 'number'
+          ? rData.arcs
+          : (Array.isArray(rData.arcs) ? rData.arcs.length : 0);
+        rData.edges = numArcs;
+      }
+    }
+  }
+
   // Cleanup WASM handle
   try {
     (wasm['delete_object'] as ((h: string) => void) | undefined)?.(ocelHandle);
@@ -2176,6 +2243,15 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       },
     };
     saveCommandReceipt(receipt);
+    try {
+      emitPiReceipt(
+        discoveryAlgo ?? 'unknown',
+        inputBytes.toString('utf-8'),
+        JSON.stringify(semanticPayload ?? {}),
+      );
+    } catch (_piReceiptErr) {
+      // receipt write must never break the command
+    }
   }
 
   // Output

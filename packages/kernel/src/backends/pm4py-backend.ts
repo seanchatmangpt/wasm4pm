@@ -40,9 +40,9 @@ export class Pm4pyBackend implements MiningBackend {
   private ready = false;
 
   async init(): Promise<void> {
-    // In production this would start the Python bridge process.
-    // In CI/test environments it remains uninitialized (requiresPython: true).
-    this.ready = true;
+    // Python bridge is not available in this build. Always fails fast.
+    this.ready = false;
+    throw new Error('Pm4pyBackend: Python bridge is not available in this build');
   }
 
   async shutdown(): Promise<void> {

@@ -1,0 +1,54 @@
+// Algorithm contracts — generated from wasm4pm pi ontology. Regenerate with: ggen sync
+
+import type { AlgorithmId } from './algorithm-ids';
+import { ALGORITHM_IDS, ALGORITHM_CLI_ALIASES } from './algorithm-ids';
+
+export { ALGORITHM_IDS };
+
+/**
+ * Maps algorithm registry ID to WASM export function name.
+ * Generated from pi:wasmExport in ggen/ontology/algorithms.ttl.
+ */
+export const WASM_FUNCTION_NAMES: Record<AlgorithmId, string> = {
+{% for row in sparql_results %}  {{ row.algorithm_id | json_encode }}: {{ row.wasm_export | json_encode }},
+{% endfor %}};
+
+/**
+ * Maps algorithm registry ID to process model output type.
+ * Generated from pi:outputType in ggen/ontology/algorithms.ttl.
+ */
+export const ALGORITHM_OUTPUT_TYPES: Record<AlgorithmId, string> = {
+{% for row in sparql_results %}  {{ row.algorithm_id | json_encode }}: {{ row.output_type | json_encode }},
+{% endfor %}};
+
+/**
+ * Maps algorithm registry ID to functional category.
+ * Generated from pi:category in ggen/ontology/algorithms.ttl.
+ */
+export const ALGORITHM_CATEGORIES: Record<AlgorithmId, string> = {
+{% for row in sparql_results %}  {{ row.algorithm_id | json_encode }}: {{ row.category | json_encode }},
+{% endfor %}};
+
+function normalizeToken(value: string): string {
+  return value.trim().toLowerCase().replace(/[+_]/g, '-');
+}
+
+/**
+ * Resolve a user-provided algorithm name to a canonical registry ID.
+ * Resolution order: exact match → CLI alias → normalized token match.
+ */
+export function resolveAlgorithmId(
+  input: string,
+  registryIds: readonly string[] = ALGORITHM_IDS
+): AlgorithmId | undefined {
+  const trimmed = input.trim();
+  if (!trimmed) return undefined;
+  if (registryIds.includes(trimmed)) return trimmed as AlgorithmId;
+  const norm = normalizeToken(trimmed);
+  for (const [alias, id] of Object.entries(ALGORITHM_CLI_ALIASES)) {
+    if (normalizeToken(alias) === norm || normalizeToken(id) === norm) {
+      if (registryIds.includes(id)) return id;
+    }
+  }
+  return registryIds.find(id => normalizeToken(id) === norm) as AlgorithmId | undefined;
+}

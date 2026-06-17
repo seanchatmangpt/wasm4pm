@@ -1,0 +1,12 @@
+{
+  "algorithm": "temporal_profile",
+  "provenance": {
+    "paper": "Stertz, Rinderle-Ma & Dustdar (2021) Temporal Conformance Checking at Runtime based on Time-infused Process Models — IEEE TKDE",
+    "locus": "Definition 4 — temporal profile as mean/stdev of time between activity pairs",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "profile_nonempty",
+    "rationale": "Running-example log with timestamps produces at least one temporal pair (a→b, a→c, etc.)."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "algorithm": "alpha_plus_plus",
+  "provenance": {
+    "paper": "Workflow Mining: Discovering Process Models from Event Logs",
+    "citation": "van der Aalst, W.M.P., Weijters, T., Maruster, L. (2004). Workflow Mining: Discovering Process Models from Event Logs. IEEE Transactions on Knowledge and Data Engineering 16(9).",
+    "locus": "Section IV — Alpha algorithm applied to running-example log; Table II footprint matrix",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "places_ge=4,transitions_ge=3,arcs_ge=6",
+    "description": "Alpha++ on the L1 running-example log must produce a non-trivial Petri net with at least 4 places (source, sink, plus internal), at least 3 transitions (activities), and at least 6 arcs — van der Aalst et al. 2004 §IV"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "breed_id": "morphological",
+  "model_id": "morphological-l1-v1",
+  "model_level": "L1",
+  "report_date": "2026-06-11",
+  "method": "native_dfa_replay",
+  "fitness": 1,
+  "fitness_note": "Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay) over the Zwicky 1947 jet-engine paper fixture (tests/fixtures/papers/morphological.json). Conformance gate enforced in run_breed().",
+  "trace_coverage": {
+    "declared_steps": [
+      "define-parameter",
+      "compute-field-size",
+      "cca-assess",
+      "synthesize-solution-space"
+    ],
+    "observed_in_traces": [
+      "define-parameter",
+      "compute-field-size",
+      "cca-assess",
+      "synthesize-solution-space"
+    ],
+    "coverage": 1,
+    "coverage_note": "All 4 declared L1 steps appear in the accepted trace corpus (Tracer pushes in breeds/morphological.rs). cca-assess is conditional (min_occurrences 0; fires only when morph:exclude judgments exist) and is observed because the fixture carries one exclusion. Step ordering verified by validate_ocel_alignment() native DFA replay (fitness=1.0)."
+  },
+  "l0_fitness": 1,
+  "l0_fitness_note": "L0 wrapper lifecycle (dispatch→execute→verify→commit) enforced structurally by the BVC admission gate. This is the fitness=1.0 claim that is measured and admissible.",
+  "status": "ADMITTED",
+  "admitted": true,
+  "admitted_note": "L1 step coverage complete. Alignment fitness = 1.0 measured by validate_ocel_alignment() (native Rust DFA replay).",
+  "measured_by": "cargo test -p wasm4pm-cognition (dispatch_breed conformance gate + validate_ocel_alignment replay over tests/fixtures/papers/morphological.json)",
+  "measured_on": "2026-06-11"
+}

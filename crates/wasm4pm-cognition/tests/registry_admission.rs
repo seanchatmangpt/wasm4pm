@@ -42,7 +42,11 @@ fn every_entry_has_lawful_standing() {
     let mut seen = BTreeSet::new();
     for entry in entries {
         let id = entry["breed_id"].as_str().expect("breed_id");
-        assert!(seen.insert(id.to_string()), "duplicate registry entry: {}", id);
+        assert!(
+            seen.insert(id.to_string()),
+            "duplicate registry entry: {}",
+            id
+        );
 
         let raw = entry["standing"]
             .as_str()
@@ -69,7 +73,9 @@ fn every_entry_has_lawful_standing() {
 
         if standing >= BreedStanding::Bounded {
             assert!(
-                entry.get("complexity_caps").map_or(false, |c| c.is_object()),
+                entry
+                    .get("complexity_caps")
+                    .map_or(false, |c| c.is_object()),
                 "{} claims {:?} without complexity_caps (BOUNDED unearned)",
                 id,
                 standing
@@ -107,12 +113,10 @@ fn uo_oracle_names_absent_from_breed_sources() {
         }
     }
 
-    let support_mod =
-        std::fs::read_to_string("src/breeds/support/mod.rs").expect("support/mod.rs");
+    let support_mod = std::fs::read_to_string("src/breeds/support/mod.rs").expect("support/mod.rs");
     assert!(
-        support_mod.contains(
-            "#[cfg(all(not(target_arch = \"wasm32\"), feature = \"breed-oracles\"))]"
-        ),
+        support_mod
+            .contains("#[cfg(all(not(target_arch = \"wasm32\"), feature = \"breed-oracles\"))]"),
         "oracle_impls must remain gated behind the breed-oracles feature"
     );
 }
@@ -131,12 +135,41 @@ fn vendored_ocpn_models_match_canonical() {
         let entry = entry.unwrap();
         let name = entry.file_name();
         let canon = canonical.join(&name);
-        assert!(canon.exists(), "{:?} vendored but missing canonically", name);
+        assert!(
+            canon.exists(),
+            "{:?} vendored but missing canonically",
+            name
+        );
         assert_eq!(
             std::fs::read(entry.path()).unwrap(),
             std::fs::read(&canon).unwrap(),
             "{:?} drifted from canonical ocel/models/l1 copy",
             name
+        );
+    }
+}
+
+/// Drill-4 lock: the consumer ontology must never hand-assert breedStatus —
+/// status is derived exclusively by the alive-gate CONSTRUCT from
+/// ocel/reports/evidence.ttl. A hand-asserted status in breeds.ttl leaks
+/// straight into BreedId::ALL and registry.json (verified by tamper drill);
+/// this gate plus every_alive_breed_has_ocpn_and_measured_report close it.
+#[test]
+fn consumer_ontology_never_asserts_breed_status() {
+    for path in [
+        "../../ggen/ontology/breeds.ttl",
+        "../../ocel/reports/evidence.ttl",
+    ] {
+        let ttl = std::fs::read_to_string(path)
+            .unwrap_or_else(|_| panic!("consumer ontology {} must exist", path));
+        let asserts_status = ttl
+            .lines()
+            .filter(|l| !l.trim_start().starts_with('#'))
+            .any(|l| l.contains("breedStatus"));
+        assert!(
+            !asserts_status,
+            "{} hand-asserts breedStatus — status must be CONSTRUCT-derived from fitness evidence only",
+            path
         );
     }
 }

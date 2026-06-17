@@ -11,13 +11,14 @@
  */
 
 import { describe, test } from 'vitest';
-import { createJaegerClient, wrapJaegerExpect } from '@un-test/otel';
 import { runCli } from '@wasm4pm/testing';
 
 describe('CLI OTEL spans (OTEL_TESTCONTAINERS)', () => {
   test.skipIf(!process.env.OTEL_TESTCONTAINERS)(
     'wpm algorithms emits spans to Jaeger',
     async () => {
+      // @ts-ignore
+      const { createJaegerClient, wrapJaegerExpect } = await import('@un-test/otel');
       // Preserve original env so we can restore after the test
       const origEnv = { ...process.env };
 

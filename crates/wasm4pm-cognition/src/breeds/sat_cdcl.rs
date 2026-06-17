@@ -40,7 +40,11 @@ impl BoundedBreed for SatCdcl {
     fn custom_check(&self, input: &BreedInput) -> Option<CognitionError> {
         // One parsed clause per `clause:*` fact, so counting facts matches
         // the original `parse_clauses(input)?.len()` semantics exactly.
-        let clause_count = input.facts.iter().filter(|f| f.key.starts_with("clause:")).count();
+        let clause_count = input
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("clause:"))
+            .count();
         if clause_count > 256 {
             return Some(CognitionError::ComplexityCap {
                 breed: self.breed_name(),
@@ -151,7 +155,11 @@ impl CognitionBreed for SatCdcl {
             });
         };
         for (i, c) in db.iter().enumerate() {
-            push(&mut trace, "load-clause", format!("c{}: ({})", i, fmt_clause(c)));
+            push(
+                &mut trace,
+                "load-clause",
+                format!("c{}: ({})", i, fmt_clause(c)),
+            );
         }
 
         // Solver state.
@@ -306,8 +314,15 @@ impl CognitionBreed for SatCdcl {
                         "learn-clause",
                         format!(
                             "learned=[] from=[{}] pivots=[{}] (empty clause)",
-                            from.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","),
-                            pivots.iter().map(|v| (v + 1).to_string()).collect::<Vec<_>>().join(",")
+                            from.iter()
+                                .map(|i| i.to_string())
+                                .collect::<Vec<_>>()
+                                .join(","),
+                            pivots
+                                .iter()
+                                .map(|v| (v + 1).to_string())
+                                .collect::<Vec<_>>()
+                                .join(",")
                         ),
                     );
                     break 'solve;
@@ -334,8 +349,15 @@ impl CognitionBreed for SatCdcl {
                     format!(
                         "learned=[{}] from=[{}] pivots=[{}]",
                         fmt_clause(&learned),
-                        from.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(","),
-                        pivots.iter().map(|v| (v + 1).to_string()).collect::<Vec<_>>().join(",")
+                        from.iter()
+                            .map(|i| i.to_string())
+                            .collect::<Vec<_>>()
+                            .join(","),
+                        pivots
+                            .iter()
+                            .map(|v| (v + 1).to_string())
+                            .collect::<Vec<_>>()
+                            .join(",")
                     ),
                 );
                 learned_facts.push(Fact {
@@ -407,7 +429,11 @@ impl CognitionBreed for SatCdcl {
                 &mut reason_of,
                 &mut trail,
             );
-            push(&mut trace, "decide", format!("decide {} = true @L{}", var + 1, level));
+            push(
+                &mut trace,
+                "decide",
+                format!("decide {} = true @L{}", var + 1, level),
+            );
         }
 
         let mut facts = learned_facts;
@@ -422,7 +448,10 @@ impl CognitionBreed for SatCdcl {
         push(
             &mut trace,
             "decision",
-            format!("{} ({} input clauses, {} learned)", verdict, n_input, learn_count),
+            format!(
+                "{} ({} input clauses, {} learned)",
+                verdict, n_input, learn_count
+            ),
         );
 
         Ok(BreedOutput {
@@ -444,5 +473,147 @@ impl CognitionBreed for SatCdcl {
         TraceQuery::from_output(output).require_non_empty()?;
         self.assert_verdict_valid(output)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_sat(clauses: &[&str]) -> BreedInput {
+        let mut facts = Vec::new();
+        for (i, c) in clauses.iter().enumerate() {
+            facts.push(Fact {
+                key: format!("clause:{}", i),
+                value: c.to_string(),
+            });
+        }
+        BreedInput {
+            facts,
+            candidates: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            intent: String::new(),
+            state: vec![],
+        }
+    }
+
+    #[test]
+    fn refuses_over_256_clauses() {
+        let mut facts = Vec::new();
+        for i in 0..257 {
+            facts.push(Fact {
+                key: format!("clause:{}", i),
+                value: "1".to_string(),
+            });
+        }
+        let input = BreedInput {
+            facts,
+            candidates: vec![],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            intent: String::new(),
+            state: vec![],
+        };
+        let res = SatCdcl.run(&input);
+        assert!(res
+            .unwrap_err()
+            .message
+            .contains("complexity cap exceeded: 257 clauses > 256"));
+    }
+
+    #[test]
+    fn refuses_variable_over_64() {
+        let input = make_sat(&["65"]);
+        let res = SatCdcl.run(&input);
+        assert!(res
+            .unwrap_err()
+            .message
+            .contains("exceeds the 64-variable cap"));
+    }
+
+    #[test]
+    fn refuses_literal_zero() {
+        let input = make_sat(&["1 0 2"]);
+        let res = SatCdcl.run(&input);
+        assert!(res.unwrap_err().message.contains("contains literal 0"));
+    }
+
+    #[test]
+    fn refuses_empty_clause() {
+        let input = make_sat(&[""]);
+        let res = SatCdcl.run(&input);
+        assert!(res.unwrap_err().message.contains("is empty"));
+    }
+
+    #[test]
+    fn falsification_gate_unsat_conflict() {
+        let input = make_sat(&["1 2", "-1 2", "1 -2", "-1 -2"]);
+        let out = SatCdcl.run(&input).expect("should succeed");
+        assert_eq!(out.selected.unwrap(), "UNSAT");
+        assert!(out.inference_trace.iter().any(|s| s.kind == "learn-clause"));
+    }
+
+    /// Falsification: PHP(3,2) pigeonhole formula from Marques-Silva & Sakallah 1999.
+    /// This is the canonical UNSAT benchmark; must yield UNSAT verdict AND at least
+    /// one learned clause (conflict analysis must fire). If the CDCL loop or
+    /// conflict analysis is broken, the solver may infinite-loop or return SAT.
+    #[test]
+    fn paper_fixture_php32_unsat_with_learned_clause() {
+        let input = make_sat(&[
+            "1 2",   // pigeon 1 in hole 1 or 2
+            "3 4",   // pigeon 2 in hole 1 or 2
+            "5 6",   // pigeon 3 in hole 1 or 2
+            "-1 -3", // hole 1 has at most 1 pigeon (1 and 2)
+            "-1 -5", // hole 1 has at most 1 pigeon (1 and 3)
+            "-3 -5", // hole 1 has at most 1 pigeon (2 and 3)
+            "-2 -4", // hole 2 has at most 1 pigeon (1 and 2)
+            "-2 -6", // hole 2 has at most 1 pigeon (1 and 3)
+            "-4 -6", // hole 2 has at most 1 pigeon (2 and 3)
+        ]);
+        let out = SatCdcl.run(&input).expect("should run without error");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("UNSAT"),
+            "PHP(3,2) is UNSAT (Marques-Silva & Sakallah 1999)"
+        );
+        let learned_count = out
+            .facts
+            .iter()
+            .filter(|f| f.key.starts_with("learned:"))
+            .count();
+        assert!(
+            learned_count >= 1,
+            "CDCL must learn at least 1 clause on PHP(3,2); got {} (Marques-Silva & Sakallah 1999)",
+            learned_count
+        );
+    }
+
+    #[test]
+    fn invariant_sat_model_satisfies_all_clauses() {
+        let input = make_sat(&["1 2", "-1 3"]);
+        let out = SatCdcl.run(&input).expect("should run");
+        assert_eq!(out.selected.as_deref(), Some("SAT"));
+
+        let mut model_zero = std::collections::BTreeMap::new();
+        for f in &out.facts {
+            if let Some(v_str) = f.key.strip_prefix("model:") {
+                let v_one_based: u32 = v_str.parse().unwrap();
+                let is_true = f.value == "true";
+                model_zero.insert(v_one_based - 1, is_true);
+            }
+        }
+
+        let parsed = parse_clauses(&input).unwrap();
+        for c in parsed {
+            assert_eq!(
+                c.eval(&model_zero),
+                Some(true),
+                "Clause {:?} not satisfied",
+                c
+            );
+        }
     }
 }

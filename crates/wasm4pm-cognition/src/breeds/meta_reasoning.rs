@@ -49,10 +49,9 @@ fn parse_reports(input: &BreedInput) -> Result<Vec<Report>, String> {
             if let Some(id) = rest.strip_suffix(":conclusion") {
                 conclusions.insert(id.to_string(), f.value.clone());
             } else if let Some(id) = rest.strip_suffix(":confidence") {
-                let c: f64 = f
-                    .value
-                    .parse()
-                    .map_err(|_| format!("confidence for '{}' is not a number: '{}'", id, f.value))?;
+                let c: f64 = f.value.parse().map_err(|_| {
+                    format!("confidence for '{}' is not a number: '{}'", id, f.value)
+                })?;
                 if !(0.0..=1.0).contains(&c) {
                     return Err(format!("confidence for '{}' out of [0,1]: {}", id, c));
                 }
@@ -139,7 +138,10 @@ impl CognitionBreed for MetaReasoning {
         for r in &reports {
             push(
                 "ingest-report",
-                format!("{}: {}={} (confidence {:.6})", r.breed, r.key, r.value, r.confidence),
+                format!(
+                    "{}: {}={} (confidence {:.6})",
+                    r.breed, r.key, r.value, r.confidence
+                ),
                 &mut trace,
             );
         }
@@ -351,7 +353,11 @@ mod tests {
                 .count(),
             0
         );
-        let c = out.facts.iter().find(|f| f.key == "meta:conflicts").unwrap();
+        let c = out
+            .facts
+            .iter()
+            .find(|f| f.key == "meta:conflicts")
+            .unwrap();
         assert_eq!(c.value, "0");
     }
 

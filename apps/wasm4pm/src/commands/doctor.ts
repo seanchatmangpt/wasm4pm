@@ -1,4 +1,4 @@
-// Deprecated shim — logic moved to commands/doctor/index.ts (since v26.6.9)
+// Outdated adapter — logic moved to commands/doctor/index.ts (since v26.6.9)
 export {
   doctorCommand,
   doctor,

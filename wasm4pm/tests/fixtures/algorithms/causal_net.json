@@ -1,0 +1,12 @@
+{
+  "algorithm": "causal_net",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Chapter 6.",
+    "locus": "Chapter 6, causal dependencies and C-net construction via alpha-miner causal variant",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "edges_ge_1",
+    "rationale": "The running-example log has directly-follows relationships; the causal graph must contain at least 1 directed causal edge."
+  }
+}

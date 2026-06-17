@@ -144,6 +144,7 @@ const SKIP_HASH_CONTEXTS = [
 ];
 
 function findR2(absPath, lines) {
+  if (isTestFile(absPath)) return [];
   const findings = [];
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];

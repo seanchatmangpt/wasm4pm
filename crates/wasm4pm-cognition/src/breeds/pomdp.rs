@@ -105,7 +105,10 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
         .parse()
         .map_err(|_| "bad horizon".to_string())?;
     if horizon == 0 || horizon > MAX_HORIZON {
-        return Err(format!("horizon must be in 1..={}, got {}", MAX_HORIZON, horizon));
+        return Err(format!(
+            "horizon must be in 1..={}, got {}",
+            MAX_HORIZON, horizon
+        ));
     }
 
     let ns = states.len();
@@ -121,25 +124,39 @@ fn parse_model(input: &BreedInput) -> Result<Model, String> {
         let parts: Vec<&str> = f.key.split(':').collect();
         match parts.as_slice() {
             ["pomdp", "t", a, s, sp] => {
-                let p: f64 = f.value.parse().map_err(|_| format!("bad prob '{}'", f.value))?;
+                let p: f64 = f
+                    .value
+                    .parse()
+                    .map_err(|_| format!("bad prob '{}'", f.value))?;
                 t[idx_of(&actions, a, "action")?][idx_of(&states, s, "state")?]
                     [idx_of(&states, sp, "state")?] = p;
             }
             ["pomdp", "o", a, sp, ob] => {
-                let p: f64 = f.value.parse().map_err(|_| format!("bad prob '{}'", f.value))?;
+                let p: f64 = f
+                    .value
+                    .parse()
+                    .map_err(|_| format!("bad prob '{}'", f.value))?;
                 o[idx_of(&actions, a, "action")?][idx_of(&states, sp, "state")?]
                     [idx_of(&obs, ob, "observation")?] = p;
             }
             ["pomdp", "r", a, s] => {
-                let v: f64 = f.value.parse().map_err(|_| format!("bad reward '{}'", f.value))?;
+                let v: f64 = f
+                    .value
+                    .parse()
+                    .map_err(|_| format!("bad reward '{}'", f.value))?;
                 r[idx_of(&actions, a, "action")?][idx_of(&states, s, "state")?] = v;
             }
             ["pomdp", "b0", s] => {
-                let p: f64 = f.value.parse().map_err(|_| format!("bad prob '{}'", f.value))?;
+                let p: f64 = f
+                    .value
+                    .parse()
+                    .map_err(|_| format!("bad prob '{}'", f.value))?;
                 b0[idx_of(&states, s, "state")?] = p;
             }
             ["pomdp", "step", i] => {
-                let i: usize = i.parse().map_err(|_| format!("bad step index in '{}'", f.key))?;
+                let i: usize = i
+                    .parse()
+                    .map_err(|_| format!("bad step index in '{}'", f.key))?;
                 let (a, ob) = f
                     .value
                     .split_once('|')
@@ -288,7 +305,12 @@ impl BoundedBreed for Pomdp {
         let steps = input
             .facts
             .iter()
-            .filter(|f| matches!(f.key.split(':').collect::<Vec<_>>().as_slice(), ["pomdp", "step", _]))
+            .filter(|f| {
+                matches!(
+                    f.key.split(':').collect::<Vec<_>>().as_slice(),
+                    ["pomdp", "step", _]
+                )
+            })
             .count();
         if steps > 32 {
             return cap("observation history exceeds 32 steps".to_string());
@@ -352,7 +374,8 @@ impl CognitionBreed for Pomdp {
             },
             gamma: m.gamma,
         };
-        let vi = value_iteration(&mdp, 1e-6).map_err(|e| err(format!("underlying MDP invalid: {}", e)))?;
+        let vi = value_iteration(&mdp, 1e-6)
+            .map_err(|e| err(format!("underlying MDP invalid: {}", e)))?;
 
         let mut trace: Vec<TraceStep> = Vec::new();
         let mut push = |kind: &str, detail: String, trace: &mut Vec<TraceStep>| {
@@ -367,7 +390,10 @@ impl CognitionBreed for Pomdp {
 
         push(
             "parse-model",
-            format!("|S|={} |A|={} |O|={} gamma={:.6} horizon={}", ns, na, no, m.gamma, m.horizon),
+            format!(
+                "|S|={} |A|={} |O|={} gamma={:.6} horizon={}",
+                ns, na, no, m.gamma, m.horizon
+            ),
             &mut trace,
         );
 
@@ -395,9 +421,13 @@ impl CognitionBreed for Pomdp {
             if points.len() >= MAX_BELIEF_POINTS {
                 return;
             }
-            let dup = points
-                .iter()
-                .any(|p| p.iter().zip(b.iter()).map(|(x, y)| (x - y).abs()).sum::<f64>() < 1e-9);
+            let dup = points.iter().any(|p| {
+                p.iter()
+                    .zip(b.iter())
+                    .map(|(x, y)| (x - y).abs())
+                    .sum::<f64>()
+                    < 1e-9
+            });
             if !dup {
                 points.push(b.to_vec());
             }
@@ -439,7 +469,11 @@ impl CognitionBreed for Pomdp {
                                 })
                                 .collect();
                             let val = dot(b, &g);
-                            if best_g.as_ref().map(|(v, _)| val > v + 1e-12).unwrap_or(true) {
+                            if best_g
+                                .as_ref()
+                                .map(|(v, _)| val > v + 1e-12)
+                                .unwrap_or(true)
+                            {
                                 best_g = Some((val, g));
                             }
                         }
@@ -450,14 +484,20 @@ impl CognitionBreed for Pomdp {
                         }
                     }
                     let val = dot(b, &alpha_ab);
-                    if best.as_ref().map(|(_, _, v)| val > v + 1e-12).unwrap_or(true) {
+                    if best
+                        .as_ref()
+                        .map(|(_, _, v)| val > v + 1e-12)
+                        .unwrap_or(true)
+                    {
                         best = Some((a, alpha_ab, val));
                     }
                 }
                 if let Some((a, alpha, _)) = best {
                     let dup = next.iter().any(|(na2, v)| {
                         *na2 == a
-                            && v.iter().zip(alpha.iter()).all(|(x, y)| (x - y).abs() < 1e-12)
+                            && v.iter()
+                                .zip(alpha.iter())
+                                .all(|(x, y)| (x - y).abs() < 1e-12)
                     });
                     if !dup {
                         next.push((a, alpha));
@@ -486,7 +526,11 @@ impl CognitionBreed for Pomdp {
                 best_a = *a;
             }
         }
-        let qmdp: f64 = belief.iter().zip(vi.values.iter()).map(|(b, v)| b * v).sum();
+        let qmdp: f64 = belief
+            .iter()
+            .zip(vi.values.iter())
+            .map(|(b, v)| b * v)
+            .sum();
         push(
             "select-action",
             format!(

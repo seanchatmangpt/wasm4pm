@@ -1226,6 +1226,8 @@ impl RlOrchestrator {
             // OBS-GAP-1: per-cycle TD error and Q-value fields — filled via span.record() below
             td_error = tracing::field::Empty,
             q_value_max = tracing::field::Empty,
+            q_value_change = tracing::field::Empty,
+            linucb_weight_delta = tracing::field::Empty,
             convergence_signal = tracing::field::Empty,
             // Stability monitor: Q-value divergence signal — filled via span.record() below
             "rl.stability.diverging" = tracing::field::Empty,
@@ -1428,8 +1430,14 @@ impl RlOrchestrator {
                     .get_q_value_for_otel(state, &RlAction::Restart);
                 q_continue.abs().max(q_scale.abs()).max(q_restart.abs())
             };
+            let norms_after = self.linucb.weight_norms();
+            let active_norm_after = norms_after[self.active_agent as usize];
+            let weight_delta_final = (active_norm_after - active_norm_before).abs();
+
             tracing::Span::current().record("td_error", td_error_linucb);
             tracing::Span::current().record("q_value_max", q_max);
+            tracing::Span::current().record("q_value_change", weight_delta_final);
+            tracing::Span::current().record("linucb_weight_delta", weight_delta_final);
             tracing::Span::current().record("convergence_signal", conv_signal);
             tracing::Span::current().record(
                 "rl.stability.diverging",

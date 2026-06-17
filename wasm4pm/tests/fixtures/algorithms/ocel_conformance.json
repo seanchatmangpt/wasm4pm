@@ -1,0 +1,12 @@
+{
+  "algorithm": "ocel_conformance",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence in Process Execution. ICSOC 2019.",
+    "locus": "Section 5, object-centric conformance checking",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "conformance_nonnull",
+    "rationale": "OCEL conformance check on the minimal OCEL must return a non-null result with at least one object type checked."
+  }
+}

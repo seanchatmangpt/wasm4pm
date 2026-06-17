@@ -1,0 +1,1 @@
+{ "algorithm": "simulated_annealing", "fitness": 1.0, "admitted": true, "measured_by": "paper-grounded-fixture", "model_id": "simulated_annealing-fixture" }

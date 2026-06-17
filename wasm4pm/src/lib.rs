@@ -5,7 +5,6 @@
     unused_mut,
     clippy::all,
     unused_imports,
-    removed,
     unused_features
 )]
 #![feature(generic_const_exprs)]
@@ -3451,4 +3450,5 @@ pub fn evaluate_ocpq(ocel_json: &str, query_str: &str) -> Result<String, JsValue
     serde_json::to_string(&verdict)
         .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
 }
+#[cfg(feature = "feature-gall")]
 pub mod gall;

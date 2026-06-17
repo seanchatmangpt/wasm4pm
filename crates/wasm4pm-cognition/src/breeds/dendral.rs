@@ -20,11 +20,11 @@
 //!    survivor is selected.
 //! 4. Elimination is monotonic: once eliminated, never restored.
 
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// DENDRAL constraint-based candidate enumerator.
 pub struct Dendral;
@@ -306,5 +306,148 @@ mod tests {
         );
         let out = Dendral.run(&input).expect("forbid is well-formed");
         assert_eq!(out.selected.as_deref(), Some("bravo"));
+    }
+
+    #[test]
+    fn refuses_empty_candidates() {
+        let input = input_with(vec![], vec!["forbid:alpha"]);
+        assert!(Dendral.preconditions(&input).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_highest_scoring_survivor_selected() {
+        // alpha: 10, beta: 5, gamma: 20
+        // forbid gamma. alpha must be selected, not beta.
+        let input = input_with(
+            vec![cand("alpha", 10.0), cand("beta", 5.0), cand("gamma", 20.0)],
+            vec!["forbid:gamma"],
+        );
+        let out = Dendral.run(&input).unwrap();
+        assert_eq!(out.selected.as_deref(), Some("alpha"));
+    }
+
+    #[test]
+    fn falsification_fixture_ketone_elimination() {
+        // Feigenbaum-Buchanan-Lederberg 1971 (AIM-131) ketone family example.
+        // C5H10O / MW=86 / 3-pentanone alpha-cleavage at m/z 57 and 29.
+        // Four candidates are forbidden by constraint; four must survive.
+        // The highest-scoring survivor must be ketone-F1-C2H5-C2H5 (score=0.91).
+        // Verbatim from tests/fixtures/papers/dendral.json.
+        let input = BreedInput {
+            intent: "identify molecular structure from mass-spectrometry fragmentation constraints"
+                .into(),
+            candidates: vec![
+                cand("ketone-F1-C2H5-C2H5", 0.91),
+                cand("ketone-F2-CH3-C3H7", 0.84),
+                cand("ketone-F3-CH3-C3H7-branched", 0.78),
+                cand("ketone-F4-C4H9-CH3", 0.72),
+                cand("ether-F5-C2H5-O-C2H5", 0.45),
+                cand("amine-F6-C2H5-NH-C2H5", 0.38),
+                cand("ketone-F7-C4H9-CH3-iso", 0.66),
+                cand("ketone-F8-CH3-CH3-C2H4", 0.55),
+            ],
+            facts: vec![
+                Fact {
+                    key: "molecular-formula".into(),
+                    value: "C5H10O".into(),
+                },
+                Fact {
+                    key: "molecular-weight".into(),
+                    value: "86".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ether-F5-C2H5-O-C2H5".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:amine-F6-C2H5-NH-C2H5".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ketone-F7-C4H9-CH3-iso".into(),
+                },
+                Fact {
+                    key: "constraint".into(),
+                    value: "forbid:ketone-F8-CH3-CH3-C2H4".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "57".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "29".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "86".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "71".into(),
+                },
+                Fact {
+                    key: "spectral-line".into(),
+                    value: "43".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = Dendral.run(&input).expect("fixture run must succeed");
+
+        // Correct structure must be selected (highest-scoring survivor).
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("ketone-F1-C2H5-C2H5"),
+            "diethyl ketone (3-pentanone) must rank first (Feigenbaum 1971 Table 4)"
+        );
+
+        // All four forbidden candidates must be eliminated.
+        for forbidden in &[
+            "ether-F5-C2H5-O-C2H5",
+            "amine-F6-C2H5-NH-C2H5",
+            "ketone-F7-C4H9-CH3-iso",
+            "ketone-F8-CH3-CH3-C2H4",
+        ] {
+            let c = out
+                .candidates
+                .iter()
+                .find(|c| c.id == *forbidden)
+                .unwrap_or_else(|| panic!("candidate {} must be present", forbidden));
+            assert!(c.eliminated, "candidate {} must be eliminated", forbidden);
+        }
+
+        // All four ketone survivors must NOT be eliminated.
+        for survivor in &[
+            "ketone-F1-C2H5-C2H5",
+            "ketone-F2-CH3-C3H7",
+            "ketone-F3-CH3-C3H7-branched",
+            "ketone-F4-C4H9-CH3",
+        ] {
+            let c = out
+                .candidates
+                .iter()
+                .find(|c| c.id == *survivor)
+                .unwrap_or_else(|| panic!("candidate {} must be present", survivor));
+            assert!(!c.eliminated, "candidate {} must survive", survivor);
+        }
+    }
+
+    #[test]
+    fn invariant_monotonicity() {
+        let cands = vec![cand("A", 1.0), cand("B", 1.0), cand("C", 1.0)];
+        let in1 = input_with(cands.clone(), vec!["forbid:A"]);
+        let in2 = input_with(cands, vec!["forbid:A", "forbid:B"]);
+
+        let out1 = Dendral.run(&in1).unwrap();
+        let out2 = Dendral.run(&in2).unwrap();
+
+        let s1 = out1.candidates.iter().filter(|c| !c.eliminated).count();
+        let s2 = out2.candidates.iter().filter(|c| !c.eliminated).count();
+        assert!(s2 <= s1, "Adding constraints cannot increase survivors");
     }
 }

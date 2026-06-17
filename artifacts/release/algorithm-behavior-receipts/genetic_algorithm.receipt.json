@@ -9,15 +9,15 @@
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
-  "wasm_export_present": true,
+  "wasm_export_present": false,
   "positive_cases": [
     {
       "case_id": "genetic_algorithm.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "3bca6f7a986fde538f263cad00f7e766ef842ef472ee5af5d61b9a4ff31b25b1",
-      "duration_ms": 16.16337499999827,
-      "receipt_hash": "ebc57fe8b52b42b7e4646b66b55006f6fc29c03f2dfbbb462d9402f68cd60c6a"
+      "duration_ms": 18.97454199999993,
+      "receipt_hash": "8a54f298cd088ed8a24746ef90a3321b5aac8438c64dff3a68c99a4e17aeda49"
     }
   ],
   "negative_cases": [
@@ -52,5 +52,5 @@
       "second_result_hash": "2a766adf43303c56441a2461722b382e12d358c02584cef4f4d2ad0e3d41d318"
     }
   ],
-  "algorithm_evidence_hash": "2b21638a4d52969793a6b69d1e84131b518f6d481d4f4d02ff3d591d3c8073c1"
+  "algorithm_evidence_hash": "18c366248e192e017f1b8aff4bb3e739efb5c687f82b6be8a362be10763ee30a"
 }

@@ -64,7 +64,14 @@ impl MonotonicTrace {
 impl From<Vec<TraceStep>> for MonotonicTrace {
     /// Import a pre-existing trace, renumbering steps to enforce monotonicity.
     fn from(v: Vec<TraceStep>) -> Self {
-        let fixed = v.into_iter().enumerate().map(|(i, mut s)| { s.step = i; s }).collect();
+        let fixed = v
+            .into_iter()
+            .enumerate()
+            .map(|(i, mut s)| {
+                s.step = i;
+                s
+            })
+            .collect();
         Self(fixed)
     }
 }
@@ -74,7 +81,13 @@ mod tests {
     use super::*;
 
     fn ts(step: usize, kind: &str) -> TraceStep {
-        TraceStep { step, kind: kind.to_string(), detail: String::new(), depth: 0, objects: vec![] }
+        TraceStep {
+            step,
+            kind: kind.to_string(),
+            detail: String::new(),
+            depth: 0,
+            objects: vec![],
+        }
     }
 
     #[test]

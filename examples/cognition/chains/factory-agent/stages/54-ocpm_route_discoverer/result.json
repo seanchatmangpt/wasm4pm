@@ -1,0 +1,71 @@
+{
+  "command": "cognition run",
+  "status": "ok",
+  "message": "cognition run completed successfully",
+  "exit_code": 0,
+  "payload": {
+    "contract": "ocpm_route_discoverer",
+    "breed": "ocpm_route_discoverer",
+    "status": "ok",
+    "output": {
+      "breed": "OcpmRouteDiscoverer",
+      "candidates": [],
+      "facts": [
+        {
+          "key": "route:i1",
+          "value": "Create->Ship"
+        },
+        {
+          "key": "route:o1",
+          "value": "Create->Pay"
+        }
+      ],
+      "selected": "i1",
+      "explanation": "Discovered routes for 2 objects",
+      "inference_trace": [
+        {
+          "step": 0,
+          "kind": "process-event",
+          "detail": "Event processed for objects: [\"o1\", \"i1\"]",
+          "depth": 0
+        },
+        {
+          "step": 1,
+          "kind": "process-event",
+          "detail": "Event processed for objects: [\"o1\"]",
+          "depth": 0
+        },
+        {
+          "step": 2,
+          "kind": "process-event",
+          "detail": "Event processed for objects: [\"i1\"]",
+          "depth": 0
+        },
+        {
+          "step": 3,
+          "kind": "discover-route",
+          "detail": "Discovered route for i1: Create->Ship",
+          "depth": 0
+        },
+        {
+          "step": 4,
+          "kind": "discover-route",
+          "detail": "Discovered route for o1: Create->Pay",
+          "depth": 0
+        }
+      ]
+    },
+    "run_id": "472729253eb01ceb3b0e40faa6fdcf84a29f9c0b47fcec524cfb0cef31ef0a37",
+    "output_hash": "de1a1764ff8960dd6d7a5a3902fb343e79681a2dffbecdeba3fdb6c37eb9c73a",
+    "replay_pointer": "de1a1764ff8960dd",
+    "inference_step_count": 5,
+    "rules_evaluated": 0,
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/472729253eb01ceb3b0e40faa6fdcf84a29f9c0b47fcec524cfb0cef31ef0a37.json"
+  },
+  "meta": {
+    "run_id": "e72ba701-8304-4e89-92a1-0530d30b1758",
+    "timestamp": "2026-06-11T19:56:22.995Z",
+    "duration_ms": 21,
+    "version": "26.6.10"
+  }
+}

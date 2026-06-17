@@ -20,11 +20,23 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Abducibles — hypothesised root causes
-            Fact { key: "alp:abducible:disk_full".to_string(),       value: "true".to_string() },
-            Fact { key: "alp:abducible:network_failure".to_string(), value: "true".to_string() },
-            Fact { key: "alp:abducible:process_crash".to_string(),   value: "true".to_string() },
+            Fact {
+                key: "alp:abducible:disk_full".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "alp:abducible:network_failure".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "alp:abducible:process_crash".to_string(),
+                value: "true".to_string(),
+            },
             // Integrity constraint: disk_full and network_failure are mutually exclusive
-            Fact { key: "alp:ic:mutual_exclusion".to_string(), value: "disk_full,network_failure".to_string() },
+            Fact {
+                key: "alp:ic:mutual_exclusion".to_string(),
+                value: "disk_full,network_failure".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![
@@ -69,9 +81,17 @@ fn main() {
         Ok(output) => {
             let output_json = serde_json::to_string(&output).expect("serialize output");
             let output_hash = blake3::hash(output_json.as_bytes()).to_hex().to_string();
-            println!("abductive_lp ok — selected={:?}  hash={}", output.selected, &output_hash[..16]);
+            println!(
+                "abductive_lp ok — selected={:?}  hash={}",
+                output.selected,
+                &output_hash[..16]
+            );
             println!("  {}", output.explanation);
-            for f in output.facts.iter().filter(|f| f.key.starts_with("alp:explanation")) {
+            for f in output
+                .facts
+                .iter()
+                .filter(|f| f.key.starts_with("alp:explanation"))
+            {
                 println!("  {} = {}", f.key, f.value);
             }
         }

@@ -1,0 +1,12 @@
+{
+  "algorithm": "fitness_alignments",
+  "provenance": {
+    "paper": "Adriansyah, A., van Dongen, B.F., van der Aalst, W.M.P. (2011). Conformance Checking Using Cost-Based Fitness Analysis. EDOC 2011.",
+    "locus": "§4 Alignment fitness — running-example log against alpha++-discovered net yields fitness >= 0.5",
+    "extraction": "computed"
+  },
+  "expected": {
+    "value": "fitness_ge_0.5",
+    "rationale": "Alignment-based fitness on the perfectly-fitting running-example log must be >= 0.5."
+  }
+}

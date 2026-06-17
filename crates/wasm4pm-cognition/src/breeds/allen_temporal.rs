@@ -426,4 +426,100 @@ mod tests {
         }
         assert_eq!(m[0][3], p, "A should be before D");
     }
+
+    use crate::breeds::{BreedInput, Fact, StateAtom};
+
+    #[test]
+    fn refuses_inconsistent_network() {
+        let input = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "relation".into(),
+                    value: "A,B,p".into(),
+                },
+                Fact {
+                    key: "relation".into(),
+                    value: "B,A,p".into(),
+                }, // Contradiction
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let err = AllenTemporal.run(&input).unwrap_err();
+        assert!(
+            err.message.contains("empty relation set")
+                || err.message.contains("inconsistency detected")
+        );
+    }
+
+    #[test]
+    fn falsification_gate_path_consistency() {
+        // A before B, B meets C => A must be before C
+        let input = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact {
+                    key: "relation".into(),
+                    value: "A,B,p".into(),
+                },
+                Fact {
+                    key: "relation".into(),
+                    value: "B,C,m".into(),
+                },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = AllenTemporal.run(&input).unwrap();
+        let ac_rel = out.facts.iter().find(|f| f.key == "derived:A,C").unwrap();
+        assert_eq!(ac_rel.value, "p");
+    }
+
+    #[test]
+    fn invariant_order_independence() {
+        // The output of path consistency should be the same regardless of constraint declaration order.
+        let f1 = Fact {
+            key: "relation".into(),
+            value: "A,B,p".into(),
+        };
+        let f2 = Fact {
+            key: "relation".into(),
+            value: "B,C,m".into(),
+        };
+
+        let input1 = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![f1.clone(), f2.clone()],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+
+        let input2 = BreedInput {
+            intent: "allen".into(),
+            candidates: vec![],
+            facts: vec![f2, f1],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+
+        let mut out1 = AllenTemporal.run(&input1).unwrap();
+        let mut out2 = AllenTemporal.run(&input2).unwrap();
+
+        out1.facts.sort_by(|a, b| a.key.cmp(&b.key));
+        out2.facts.sort_by(|a, b| a.key.cmp(&b.key));
+
+        assert_eq!(out1.facts, out2.facts);
+    }
 }

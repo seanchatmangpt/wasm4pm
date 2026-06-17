@@ -121,7 +121,10 @@ pub fn collect_prefixed_split(
 
 /// First fact value with an exact key match.
 pub fn fact_value<'a>(facts: &'a [crate::breeds::Fact], key: &str) -> Option<&'a str> {
-    facts.iter().find(|f| f.key == key).map(|f| f.value.as_str())
+    facts
+        .iter()
+        .find(|f| f.key == key)
+        .map(|f| f.value.as_str())
 }
 
 #[cfg(test)]

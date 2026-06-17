@@ -19,6 +19,7 @@
 use crate::error::js_val;
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
+#[cfg(any(feature = "statrs", feature = "hand_rolled_stats"))]
 use crate::{Data, Median};
 use serde_json::json;
 use std::collections::{HashMap, HashSet};
@@ -179,10 +180,23 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
                 let sum: usize = lengths.iter().sum();
                 let avg = sum as f64 / lengths.len() as f64;
 
-                // Use statrs Data struct for proper median calculation
-                let lengths_f64: Vec<f64> = lengths.iter().map(|&x| x as f64).collect();
-                let data = Data::new(lengths_f64);
-                let median = data.median();
+                #[cfg(any(feature = "statrs", feature = "hand_rolled_stats"))]
+                let median = {
+                    let lengths_f64: Vec<f64> = lengths.iter().map(|&x| x as f64).collect();
+                    let data = Data::new(lengths_f64);
+                    data.median()
+                };
+                #[cfg(not(any(feature = "statrs", feature = "hand_rolled_stats")))]
+                let median = {
+                    let mut sorted = lengths.clone();
+                    sorted.sort_unstable();
+                    let mid = sorted.len() / 2;
+                    if sorted.len() % 2 == 0 {
+                        (sorted[mid - 1] + sorted[mid]) as f64 / 2.0
+                    } else {
+                        sorted[mid] as f64
+                    }
+                };
 
                 json!({
                     "min": min,

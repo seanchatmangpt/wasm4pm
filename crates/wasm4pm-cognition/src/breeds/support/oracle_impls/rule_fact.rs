@@ -164,8 +164,18 @@ fn fuzzy_input(crisp: &str) -> BreedInput {
         fact("fuzzy:input:uo_heat", crisp),
     ];
     input.rules = vec![
-        rule("uo_fr1", &["fuzzy:uo_heat:uo_low"], "fuzzy:uo_vent:uo_slow", 1.0),
-        rule("uo_fr2", &["fuzzy:uo_heat:uo_high"], "fuzzy:uo_vent:uo_fast", 1.0),
+        rule(
+            "uo_fr1",
+            &["fuzzy:uo_heat:uo_low"],
+            "fuzzy:uo_vent:uo_slow",
+            1.0,
+        ),
+        rule(
+            "uo_fr2",
+            &["fuzzy:uo_heat:uo_high"],
+            "fuzzy:uo_vent:uo_fast",
+            1.0,
+        ),
     ];
     input
 }
@@ -911,8 +921,13 @@ mod tests {
         let output = dispatch_breed_id(B::breed_id(), &B::novel_input())
             .unwrap_or_else(|e| panic!("{:?} novel_input run failed: {}", B::breed_id(), e));
         let tq = TraceQuery::new(&output.inference_trace);
-        B::assert_trace_values(&tq)
-            .unwrap_or_else(|e| panic!("{:?} assert_trace_values rejected real trace: {}", B::breed_id(), e));
+        B::assert_trace_values(&tq).unwrap_or_else(|e| {
+            panic!(
+                "{:?} assert_trace_values rejected real trace: {}",
+                B::breed_id(),
+                e
+            )
+        });
     }
 
     macro_rules! oracle_pair_test {
@@ -932,12 +947,32 @@ mod tests {
 
     oracle_pair_test!(mycin_values_and_adversary, Mycin, CheatMycin);
     oracle_pair_test!(prolog_values_and_adversary, Prolog, CheatProlog);
-    oracle_pair_test!(fuzzy_logic_values_and_adversary, FuzzyLogic, CheatFuzzyLogic);
-    oracle_pair_test!(dempster_shafer_values_and_adversary, DempsterShafer, CheatDempsterShafer);
+    oracle_pair_test!(
+        fuzzy_logic_values_and_adversary,
+        FuzzyLogic,
+        CheatFuzzyLogic
+    );
+    oracle_pair_test!(
+        dempster_shafer_values_and_adversary,
+        DempsterShafer,
+        CheatDempsterShafer
+    );
     oracle_pair_test!(csp_ac3_values_and_adversary, CspAc3, CheatCspAc3);
-    oracle_pair_test!(default_logic_values_and_adversary, DefaultLogic, CheatDefaultLogic);
-    oracle_pair_test!(frames_inheritance_values_and_adversary, FramesInheritance, CheatFramesInheritance);
+    oracle_pair_test!(
+        default_logic_values_and_adversary,
+        DefaultLogic,
+        CheatDefaultLogic
+    );
+    oracle_pair_test!(
+        frames_inheritance_values_and_adversary,
+        FramesInheritance,
+        CheatFramesInheritance
+    );
     oracle_pair_test!(asp_values_and_adversary, Asp, CheatAsp);
-    oracle_pair_test!(bayesian_network_values_and_adversary, BayesianNetwork, CheatBayesianNetwork);
+    oracle_pair_test!(
+        bayesian_network_values_and_adversary,
+        BayesianNetwork,
+        CheatBayesianNetwork
+    );
     oracle_pair_test!(mdp_values_and_adversary, Mdp, CheatMdp);
 }

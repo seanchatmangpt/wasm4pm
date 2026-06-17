@@ -9,10 +9,10 @@
 //!
 //! Run: cargo run --example ebl
 
+use wasm4pm_cognition::breeds::ebl::Ebl;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::ebl::Ebl;
 
 fn main() {
     // Ground facts about the training object "cup1".
@@ -22,10 +22,22 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // cup1 is a stable container with a liquid inside.
-            Fact { key: "is_container(cup1)".to_string(),  value: "true".to_string() },
-            Fact { key: "is_stable(cup1)".to_string(),     value: "true".to_string() },
-            Fact { key: "has_liquid(cup1)".to_string(),    value: "true".to_string() },
-            Fact { key: "liquid_is_potable(cup1)".to_string(), value: "true".to_string() },
+            Fact {
+                key: "is_container(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "is_stable(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "has_liquid(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "liquid_is_potable(cup1)".to_string(),
+                value: "true".to_string(),
+            },
         ],
         cases: vec![],
         // Domain theory: rules that encode how safe_to_drink is derived.
@@ -52,13 +64,11 @@ fn main() {
             },
         ],
         // Training goal: prove safe_to_drink for the specific object cup1.
-        goals: vec![
-            Goal {
-                id: "training-example".to_string(),
-                predicate: "safe_to_drink(cup1)".to_string(),
-                value: "true".to_string(),
-            },
-        ],
+        goals: vec![Goal {
+            id: "training-example".to_string(),
+            predicate: "safe_to_drink(cup1)".to_string(),
+            value: "true".to_string(),
+        }],
         state: vec![],
     };
 
@@ -72,10 +82,7 @@ fn main() {
             if let Some(ref rule) = output.selected {
                 println!("  learned rule: {}", rule);
             }
-            println!(
-                "  trace steps: {}",
-                output.inference_trace.len()
-            );
+            println!("  trace steps: {}", output.inference_trace.len());
         }
         Err(e) => {
             eprintln!("ebl error: {e}");

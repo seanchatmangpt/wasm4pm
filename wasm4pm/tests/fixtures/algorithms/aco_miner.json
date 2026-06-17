@@ -1,0 +1,16 @@
+{
+  "algorithm": "aco_miner",
+  "provenance": {
+    "paper": "van der Aalst, W.M.P. (2016). Process Mining: Data Science in Action. Springer. Ch 10.",
+    "locus": "Chapter 10 — Ant Colony Optimisation metaheuristic for process discovery",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "fitness_nonneg",
+    "min": 0.0,
+    "rationale": "ACO with fixed seed produces a non-negative fitness score; exact value is seed-dependent (metaheuristic)."
+  }
+}

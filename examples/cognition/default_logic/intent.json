@@ -1,40 +1,24 @@
 {
-  "intent": "does tweety fly",
+  "intent": "solve default rules",
+  "candidates": [],
   "facts": [
     {
-      "key": "obs:tweety",
-      "value": "penguin"
+      "key": "bird",
+      "value": "tweety"
     }
   ],
+  "cases": [],
   "rules": [
     {
-      "id": "r_isa",
+      "id": "r_default",
       "premise": [
-        "penguin"
-      ],
-      "conclusion": "bird",
-      "certainty": 1.0
-    },
-    {
-      "id": "r_penguin",
-      "premise": [
-        "penguin"
-      ],
-      "conclusion": "not_flies",
-      "certainty": 1.0
-    },
-    {
-      "id": "r_birds_fly",
-      "premise": [
-        "bird",
-        "unless:not_flies"
+        "tweety",
+        "unless:non_flying"
       ],
       "conclusion": "flies",
-      "certainty": 0.9
+      "certainty": 1.0
     }
   ],
-  "candidates": [],
-  "cases": [],
   "goals": [],
   "state": []
 }

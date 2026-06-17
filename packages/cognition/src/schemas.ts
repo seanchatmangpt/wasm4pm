@@ -7,6 +7,7 @@
 //! `crates/wasm4pm-cognition/src/wasm.rs`.
 
 import { z } from 'zod';
+import { PARTIAL_ALIVE_BREED_IDS } from './breed-ids.js';
 
 // =============================================================================
 // Foundational data

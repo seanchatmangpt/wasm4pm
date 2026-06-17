@@ -1,0 +1,72 @@
+// PI algorithm anti-cheat tests — generated from wasm4pm pi ontology.
+// Regenerate with: ggen sync
+//
+// Structural locks per algorithm (identical doctrine to cognition breed anti-cheat):
+//   decoy: plausible miscitation value must NOT appear as literal in production source
+//   true:  published value must NOT appear as literal — must be DERIVED, not hardcoded
+//          (only when pi:hardcodeLockable "true" on the pointer)
+
+use std::fs;
+
+fn algorithm_source(algorithm_id: &str) -> String {
+    let paths = vec![
+        format!("{}/src/{}.rs", env!("CARGO_MANIFEST_DIR"), algorithm_id),
+        format!("{}/src/algorithms/{}.rs", env!("CARGO_MANIFEST_DIR"), algorithm_id),
+        format!("{}/src/lib.rs", env!("CARGO_MANIFEST_DIR")),
+    ];
+    for path in &paths {
+        if let Ok(src) = fs::read_to_string(path) {
+            return src;
+        }
+    }
+    String::new()
+}
+
+fn production_half(src: &str) -> String {
+    let mut out = String::new();
+    let mut lines = src.lines();
+    while let Some(line) = lines.next() {
+        if line.trim_start().starts_with("#[cfg(test)]") {
+            let mut depth: i32 = 0;
+            let mut opened = false;
+            while let Some(cur) = lines.next() {
+                for ch in cur.chars() {
+                    if ch == '{' { depth += 1; opened = true; }
+                    else if ch == '}' { depth -= 1; }
+                }
+                if opened && depth <= 0 { break; }
+            }
+            continue;
+        }
+        out.push_str(line);
+        out.push('\n');
+    }
+    out
+}
+{% for row in sparql_results %}{% if row.pointer_kind == "decoy" %}
+#[test]
+fn anticheat_{{ row.algorithm_id }}_decoy_not_in_source() {
+    // Locus: {{ row.pointer_locus }}
+    // Why decoy: {{ row.decoy_reason | default(value="plausible miscitation") }}
+    let src = algorithm_source("{{ row.module_file }}");
+    assert!(
+        !production_half(&src).contains({{ row.pointer_value | json_encode }}),
+        "ANTI-CHEAT A8/A12: decoy value {:?} found as literal in {}.rs production source",
+        {{ row.pointer_value | json_encode }},
+        "{{ row.module_file }}"
+    );
+}
+{% endif %}{% if row.pointer_kind == "true" and row.hardcode_lockable == "true" %}
+#[test]
+fn anticheat_{{ row.algorithm_id }}_true_not_hardcoded() {
+    // Locus: {{ row.pointer_locus }}
+    // Derivation: {{ row.pointer_derivation | default(value="see paper") }}
+    let src = algorithm_source("{{ row.module_file }}");
+    assert!(
+        !production_half(&src).contains({{ row.pointer_value | json_encode }}),
+        "ANTI-CHEAT A8: published value {:?} hardcoded in {}.rs — must be DERIVED",
+        {{ row.pointer_value | json_encode }},
+        "{{ row.module_file }}"
+    );
+}
+{% endif %}{% endfor %}

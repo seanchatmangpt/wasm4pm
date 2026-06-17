@@ -9,10 +9,10 @@
 //!
 //! Run: cargo run --example asp
 
+use wasm4pm_cognition::breeds::asp::Asp;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::asp::Asp;
 
 fn r(id: &str, premise: Vec<&str>, conclusion: &str) -> Rule {
     Rule {
@@ -44,8 +44,16 @@ fn main() {
             r("r_urgent_a", vec!["task_a", "not deferred_a"], "urgent_a"),
             r("r_urgent_b", vec!["task_b", "not deferred_b"], "urgent_b"),
             // A task is scheduled if it is urgent and not blocked.
-            r("r_sched_a", vec!["urgent_a", "not blocked_a"], "scheduled_a"),
-            r("r_sched_b", vec!["urgent_b", "not blocked_b"], "scheduled_b"),
+            r(
+                "r_sched_a",
+                vec!["urgent_a", "not blocked_a"],
+                "scheduled_a",
+            ),
+            r(
+                "r_sched_b",
+                vec!["urgent_b", "not blocked_b"],
+                "scheduled_b",
+            ),
         ],
         goals: vec![],
         state: vec![],
@@ -67,7 +75,11 @@ fn main() {
             println!("asp ok — answer_sets={count}  hash={}", &output_hash[..16]);
             println!("  {}", output.explanation);
 
-            for f in output.facts.iter().filter(|f| f.key.starts_with("asp:answer_set:")) {
+            for f in output
+                .facts
+                .iter()
+                .filter(|f| f.key.starts_with("asp:answer_set:"))
+            {
                 println!("  stable model: {{{}}}", f.value);
             }
 

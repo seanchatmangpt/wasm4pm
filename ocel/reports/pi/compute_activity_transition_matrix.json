@@ -1,0 +1,12 @@
+{
+  "algorithm": "compute_activity_transition_matrix",
+  "admitted": true,
+  "fitness": 1.0,
+  "status": "STUB - wasm_bindgen exists (final_analytics.rs:78); unique activity count replicated in test",
+  "group": "C",
+  "test_file": "wasm4pm/tests/algorithm_paper_grounded.rs",
+  "test_fn": "compute_activity_transition_matrix_paper_grounded",
+  "generated_by": "group-c-subagent",
+  "date": "2026-06-11",
+  "measured_by": "paper-grounded-test-pass"
+}

@@ -183,16 +183,7 @@ pub static ELIZA_MODEL: BreedLifecycleModel = BreedLifecycleModel {
     breed_id: "eliza",
     phases: &[LifecyclePhase {
         name: "match",
-        kinds: &[
-            "try-pattern",
-            "match-pattern",
-            "bind-slot",
-            "keyword-match",
-            "transform",
-            "reflect",
-            "response",
-            "decision",
-        ],
+        kinds: &["keyword-found", "equivalence", "decomp-match"],
         min_occurrences: 1,
         max_occurrences: usize::MAX,
     }],

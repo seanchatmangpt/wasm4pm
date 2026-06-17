@@ -26,7 +26,10 @@ pub(crate) fn base(intent: &str) -> BreedInput {
 }
 
 pub(crate) fn fact(key: &str, value: &str) -> Fact {
-    Fact { key: key.to_string(), value: value.to_string() }
+    Fact {
+        key: key.to_string(),
+        value: value.to_string(),
+    }
 }
 
 pub(crate) fn rule(id: &str, premise: &[&str], conclusion: &str, certainty: f32) -> Rule {
@@ -39,18 +42,36 @@ pub(crate) fn rule(id: &str, premise: &[&str], conclusion: &str, certainty: f32)
 }
 
 pub(crate) fn goal(id: &str, predicate: &str, value: &str) -> Goal {
-    Goal { id: id.to_string(), predicate: predicate.to_string(), value: value.to_string() }
+    Goal {
+        id: id.to_string(),
+        predicate: predicate.to_string(),
+        value: value.to_string(),
+    }
 }
 
 pub(crate) fn state_atom(predicate: &str, value: &str) -> StateAtom {
-    StateAtom { predicate: predicate.to_string(), value: value.to_string() }
+    StateAtom {
+        predicate: predicate.to_string(),
+        value: value.to_string(),
+    }
 }
 
 pub(crate) fn candidate(id: &str, score: f32) -> Candidate {
-    Candidate { id: id.to_string(), score, eliminated: false, elimination_reason: None }
+    Candidate {
+        id: id.to_string(),
+        score,
+        eliminated: false,
+        elimination_reason: None,
+    }
 }
 
-pub(crate) fn case(id: &str, intent: &str, architecture: &str, outcome_score: f32, facts: Vec<Fact>) -> Case {
+pub(crate) fn case(
+    id: &str,
+    intent: &str,
+    architecture: &str,
+    outcome_score: f32,
+    facts: Vec<Fact>,
+) -> Case {
     Case {
         id: id.to_string(),
         intent: intent.to_string(),

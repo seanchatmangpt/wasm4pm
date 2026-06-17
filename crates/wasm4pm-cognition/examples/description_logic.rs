@@ -2,10 +2,10 @@
 //! Demonstrates: Animal → Mammal → Dog hierarchy, instance classification query.
 //! Run: cargo run --example description_logic
 
+use wasm4pm_cognition::breeds::description_logic::DescriptionLogic;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::description_logic::DescriptionLogic;
 
 fn main() {
     // ALC knowledge base: concept hierarchy + instance assertions
@@ -16,22 +16,53 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // TBox — concept hierarchy
-            Fact { key: "concept:Thing".to_string(),  value: "Thing".to_string() },
-            Fact { key: "concept:Animal".to_string(),  value: "Thing".to_string() },
-            Fact { key: "concept:Mammal".to_string(),  value: "Animal".to_string() },
-            Fact { key: "concept:Dog".to_string(),     value: "Mammal".to_string() },
-            Fact { key: "concept:Cat".to_string(),     value: "Mammal".to_string() },
-            Fact { key: "concept:Reptile".to_string(), value: "Animal".to_string() },
+            Fact {
+                key: "concept:Thing".to_string(),
+                value: "Thing".to_string(),
+            },
+            Fact {
+                key: "concept:Animal".to_string(),
+                value: "Thing".to_string(),
+            },
+            Fact {
+                key: "concept:Mammal".to_string(),
+                value: "Animal".to_string(),
+            },
+            Fact {
+                key: "concept:Dog".to_string(),
+                value: "Mammal".to_string(),
+            },
+            Fact {
+                key: "concept:Cat".to_string(),
+                value: "Mammal".to_string(),
+            },
+            Fact {
+                key: "concept:Reptile".to_string(),
+                value: "Animal".to_string(),
+            },
             // ABox — individual assertions
-            Fact { key: "instance:Rex".to_string(),    value: "Dog".to_string() },
-            Fact { key: "instance:Whiskers".to_string(), value: "Cat".to_string() },
-            Fact { key: "instance:Sly".to_string(),    value: "Reptile".to_string() },
+            Fact {
+                key: "instance:Rex".to_string(),
+                value: "Dog".to_string(),
+            },
+            Fact {
+                key: "instance:Whiskers".to_string(),
+                value: "Cat".to_string(),
+            },
+            Fact {
+                key: "instance:Sly".to_string(),
+                value: "Reptile".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
         goals: vec![
             // Ask: classify Rex — expect Dog ⊆ Mammal ⊆ Animal ⊆ Thing
-            Goal { id: "g1".to_string(), predicate: "classify".to_string(), value: "Rex".to_string() },
+            Goal {
+                id: "g1".to_string(),
+                predicate: "classify".to_string(),
+                value: "Rex".to_string(),
+            },
         ],
         state: vec![],
     };

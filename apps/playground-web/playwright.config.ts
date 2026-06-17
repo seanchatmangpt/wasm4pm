@@ -15,7 +15,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } }
   ],
   webServer: {
-    command: 'node_modules/.bin/nuxt dev',
+    command: 'NODE_OPTIONS="-r /Users/sac/wasm4pm/apps/playground-web/register-oxc-parser.cjs" npx nuxt dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

@@ -77,7 +77,14 @@ export function computePermutationImportance(
 
     // Fisher-Yates shuffle
     for (let i = n - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
+      let j;
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        crypto.getRandomValues(buf);
+        j = buf[0] % (i + 1);
+      } else {
+        throw new Error('Cryptographic randomness not available in this environment. Deterministic seeding required.');
+      }
       [shuffledIndices[i], shuffledIndices[j]] = [shuffledIndices[j], shuffledIndices[i]];
     }
 

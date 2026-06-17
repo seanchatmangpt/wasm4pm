@@ -8,8 +8,8 @@ else
   WPM="$REPO_ROOT/apps/wasm4pm/dist/bin/wpm.js"
 fi
 if [ "$WPM" = "wpm" ]; then
-  $WPM cognition run --contract allen_temporal --input intent.json --format json 2>&1 | tee result.json | tee last-output.log
+  $WPM cognition run --contract allen_temporal --input intent.json --format json > result.json 2> last-output.log
 else
-  node "$WPM" cognition run --contract allen_temporal --input intent.json --format json 2>&1 | tee result.json | tee last-output.log
+  node "$WPM" cognition run --contract allen_temporal --input intent.json --format json > result.json 2> last-output.log
 fi
 

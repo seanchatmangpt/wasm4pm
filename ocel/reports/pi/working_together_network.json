@@ -1,0 +1,9 @@
+{
+  "algorithm": "working_together_network",
+  "admitted": true,
+  "fitness": 1.0,
+  "evidence": "wasm4pm/tests/algorithm_paper_grounded.rs::working_together_network_paper_grounded",
+  "fixture": "wasm4pm/tests/fixtures/algorithms/working_together_network.json",
+  "reference_log": "wasm4pm/tests/fixtures/running-example.xes",
+  "generated": "2026-06-11"
+}

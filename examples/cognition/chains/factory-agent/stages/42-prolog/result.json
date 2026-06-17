@@ -29,7 +29,7 @@
         }
       ],
       "selected": "bob-ann",
-      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [9, 35, f7, 55])",
+      "explanation": "Prolog8 admitted query (proof nodes: 1, receipt: [fa, ea, 86, 2f])",
       "inference_trace": [
         {
           "step": 0,
@@ -69,17 +69,17 @@
         }
       ]
     },
-    "run_id": "fe3dadd4357d16e1aa01ee178bd04ba7404ebdce8476713fd995281412883e12",
-    "output_hash": "a0998fc27758ab9e6e3d3c868626543c35366ea96f7e24351356ba573e84f072",
-    "replay_pointer": "a0998fc27758ab9e",
+    "run_id": "67ba3ec6be675068425c8e4a3ff4cdfce9b56583cfe8b2fce7ade0411d88f8fa",
+    "output_hash": "1095c6ef717f0ad0fccdbfdcb7832dd78ae2300854ae5de07758c441e565532d",
+    "replay_pointer": "1095c6ef717f0ad0",
     "inference_step_count": 6,
     "rules_evaluated": 0,
-    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/fe3dadd4357d16e1aa01ee178bd04ba7404ebdce8476713fd995281412883e12.json"
+    "saved_path": "/Users/sac/wasm4pm/examples/cognition/chains/factory-agent/.wasm4pm/receipts/67ba3ec6be675068425c8e4a3ff4cdfce9b56583cfe8b2fce7ade0411d88f8fa.json"
   },
   "meta": {
-    "run_id": "bccdd655-9e47-464d-8320-a3d03c843c1b",
-    "timestamp": "2026-06-11T08:38:28.493Z",
-    "duration_ms": 20,
+    "run_id": "733df262-7692-4d7c-9894-85ff1eddc897",
+    "timestamp": "2026-06-11T19:56:18.108Z",
+    "duration_ms": 17,
     "version": "26.6.10"
   }
 }

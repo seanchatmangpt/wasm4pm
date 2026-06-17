@@ -13,12 +13,12 @@
 //! 6. `BreedOutput.candidates` = one `Candidate` per observed object, score 1.0, not eliminated.
 
 use crate::autoinstinct::vision::{Polyhedron, SymbolicVisionSystem};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep,
 };
 use std::collections::HashMap;
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctVision breed: symbolic Blocks World perception.
 pub struct AutoinstinctVision;

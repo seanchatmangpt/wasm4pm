@@ -20,12 +20,12 @@
 //! Plan tree serialization (fact `plan:tree`, replayable s-expression):
 //!   `(act <name> <sub>)` | `(sense <name> <atom> <then> <else>)` | `(done)`
 
+use crate::breeds::support::breed_class::PlannerBreed;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, Fact, TraceStep,
 };
 use std::collections::{BTreeMap, BTreeSet};
-use crate::breeds::support::breed_class::PlannerBreed;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// AND-OR contingent planner over belief states.
 pub struct ContingentPlan;
@@ -127,7 +127,12 @@ fn parse_problem(input: &BreedInput) -> Result<Problem, String> {
     }
     let actions: Vec<Action> = act_parts
         .into_iter()
-        .map(|(name, (pre, add, del))| Action { name, pre, add, del })
+        .map(|(name, (pre, add, del))| Action {
+            name,
+            pre,
+            add,
+            del,
+        })
         .collect();
     if actions.is_empty() && senses.is_empty() {
         return Err("no actions defined".to_string());
@@ -182,7 +187,12 @@ impl<'a> Search<'a> {
         });
     }
 
-    fn or_search(&mut self, belief: &Belief, depth: usize, path: &mut Vec<Belief>) -> Option<PlanNode> {
+    fn or_search(
+        &mut self,
+        belief: &Belief,
+        depth: usize,
+        path: &mut Vec<Belief>,
+    ) -> Option<PlanNode> {
         if goal_satisfied(belief, &self.p.goal) {
             self.push(
                 "goal-reached",
@@ -206,7 +216,11 @@ impl<'a> Search<'a> {
                 format!(
                     "action '{}': {}",
                     act.name,
-                    if applicable { "applicable in all worlds" } else { "not applicable in all worlds" }
+                    if applicable {
+                        "applicable in all worlds"
+                    } else {
+                        "not applicable in all worlds"
+                    }
                 ),
                 depth as u32,
             );
@@ -222,8 +236,16 @@ impl<'a> Search<'a> {
 
         // Sensing actions: split the belief on the sensed atom (AND node).
         for (name, atom) in &self.p.senses {
-            let b_true: Belief = belief.iter().filter(|w| holds(w, atom, true)).cloned().collect();
-            let b_false: Belief = belief.iter().filter(|w| holds(w, atom, false)).cloned().collect();
+            let b_true: Belief = belief
+                .iter()
+                .filter(|w| holds(w, atom, true))
+                .cloned()
+                .collect();
+            let b_false: Belief = belief
+                .iter()
+                .filter(|w| holds(w, atom, false))
+                .cloned()
+                .collect();
             if b_true.is_empty() || b_false.is_empty() {
                 continue; // sensing is uninformative here
             }
@@ -307,7 +329,10 @@ impl CognitionBreed for ContingentPlan {
             belief.insert(w);
         }
 
-        let mut search = Search { p: &p, trace: Vec::new() };
+        let mut search = Search {
+            p: &p,
+            trace: Vec::new(),
+        };
         search.push(
             "init-belief",
             format!("{} possible world(s), {} unknown atom(s)", belief.len(), u),
@@ -446,5 +471,37 @@ mod tests {
         let mut f = vacuum();
         f[0].value = "a,b,c,d,e".into();
         assert!(ContingentPlan.preconditions(&input(f)).is_err());
+    }
+
+    #[test]
+    fn refuses_malformed_action_part() {
+        let mut f = vacuum();
+        f.push(fact("cp:act:suck:invalid", "dirt"));
+        assert!(ContingentPlan.preconditions(&input(f)).is_err());
+    }
+
+    #[test]
+    fn falsification_gate_must_reach_goal_in_all_branches() {
+        let f = vec![
+            fact("cp:unknown", "A"),
+            fact("cp:goal:G", "true"),
+            fact("cp:sense:check-A", "A"),
+            fact("cp:act:do-T:pre", "A"),
+            fact("cp:act:do-T:add", "G"),
+        ];
+        let out = ContingentPlan.run(&input(f));
+        assert!(out.is_err(), "Must refuse if else branch cannot reach goal");
+    }
+
+    #[test]
+    fn invariant_already_at_goal_yields_done() {
+        let f = vec![
+            fact("cp:init:A", "true"),
+            fact("cp:goal:A", "true"),
+            fact("cp:act:dummy:add", "B"),
+        ];
+        let out = ContingentPlan.run(&input(f)).unwrap();
+        let tree = out.facts.iter().find(|f| f.key == "plan:tree").unwrap();
+        assert_eq!(tree.value, "(done)");
     }
 }

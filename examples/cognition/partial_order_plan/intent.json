@@ -1,42 +1,18 @@
 {
-  "intent": "solve the Sussman anomaly with SNLP causal-link planning",
+  "intent": "planning",
   "candidates": [],
   "facts": [
     {
-      "key": "pop:op:put_c_from_a_on_table:pre",
-      "value": "clear_c,on_c_a"
+      "key": "pop:op:pickup:pre",
+      "value": "at_depot"
     },
     {
-      "key": "pop:op:put_c_from_a_on_table:add",
-      "value": "clear_a,ontable_c"
+      "key": "pop:op:pickup:add",
+      "value": "holding"
     },
     {
-      "key": "pop:op:put_c_from_a_on_table:del",
-      "value": "on_c_a"
-    },
-    {
-      "key": "pop:op:put_a_on_b:pre",
-      "value": "clear_a,clear_b,ontable_a"
-    },
-    {
-      "key": "pop:op:put_a_on_b:add",
-      "value": "on_a_b"
-    },
-    {
-      "key": "pop:op:put_a_on_b:del",
-      "value": "clear_b,ontable_a"
-    },
-    {
-      "key": "pop:op:put_b_on_c:pre",
-      "value": "clear_b,clear_c,ontable_b"
-    },
-    {
-      "key": "pop:op:put_b_on_c:add",
-      "value": "on_b_c"
-    },
-    {
-      "key": "pop:op:put_b_on_c:del",
-      "value": "clear_c,ontable_b"
+      "key": "pop:op:pickup:del",
+      "value": "at_depot"
     }
   ],
   "cases": [],
@@ -44,34 +20,13 @@
   "goals": [
     {
       "id": "g1",
-      "predicate": "on_a_b",
-      "value": "true"
-    },
-    {
-      "id": "g2",
-      "predicate": "on_b_c",
+      "predicate": "holding",
       "value": "true"
     }
   ],
   "state": [
     {
-      "predicate": "on_c_a",
-      "value": "true"
-    },
-    {
-      "predicate": "clear_c",
-      "value": "true"
-    },
-    {
-      "predicate": "clear_b",
-      "value": "true"
-    },
-    {
-      "predicate": "ontable_a",
-      "value": "true"
-    },
-    {
-      "predicate": "ontable_b",
+      "predicate": "at_depot",
       "value": "true"
     }
   ]

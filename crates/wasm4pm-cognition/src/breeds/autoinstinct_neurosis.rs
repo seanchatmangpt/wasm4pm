@@ -12,11 +12,11 @@
 //!    affect state and whose `candidates` carry per-stimulus affect deltas.
 
 use crate::autoinstinct::neurosis::NeuroticState;
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
     BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, Fact, TraceStep,
 };
 use tracing;
-use crate::breeds::support::trace_query::TraceQuery;
 
 /// AutoinstinctNeurosis breed: simulates paranoid / affect-driven belief processing
 /// in the tradition of Colby's PARRY and Abelson's ideology machines.
@@ -377,7 +377,9 @@ mod tests {
             ocel_log: None,
             retained_cases: vec![],
         };
-        assert!(breed.postconditions(&make_input(vec![], vec![]), &output).is_err());
+        assert!(breed
+            .postconditions(&make_input(vec![], vec![]), &output)
+            .is_err());
     }
 
     #[test]

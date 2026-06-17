@@ -18,7 +18,10 @@ pub struct Lit {
 impl Lit {
     /// Positive literal of `var`.
     pub fn pos(var: u32) -> Self {
-        Lit { var, positive: true }
+        Lit {
+            var,
+            positive: true,
+        }
     }
 
     /// Negative literal of `var`.

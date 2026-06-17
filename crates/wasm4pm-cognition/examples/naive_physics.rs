@@ -5,10 +5,10 @@
 //!
 //! Run: cargo run --example naive_physics
 
+use wasm4pm_cognition::breeds::naive_physics::NaivePhysics;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::naive_physics::NaivePhysics;
 
 fn main() {
     // Scene:
@@ -22,14 +22,29 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // ground declaration
-            Fact { key: "np:ground:floor".to_string(),  value: "true".to_string() },
+            Fact {
+                key: "np:ground:floor".to_string(),
+                value: "true".to_string(),
+            },
             // support chain
-            Fact { key: "np:on:table".to_string(),      value: "floor".to_string() },
-            Fact { key: "np:on:vase".to_string(),       value: "table".to_string() },
+            Fact {
+                key: "np:on:table".to_string(),
+                value: "floor".to_string(),
+            },
+            Fact {
+                key: "np:on:vase".to_string(),
+                value: "table".to_string(),
+            },
             // liquid containment
-            Fact { key: "np:liquid:water".to_string(),  value: "vase".to_string() },
+            Fact {
+                key: "np:liquid:water".to_string(),
+                value: "vase".to_string(),
+            },
             // perturbation event: table is removed
-            Fact { key: "np:remove:table".to_string(),  value: "true".to_string() },
+            Fact {
+                key: "np:remove:table".to_string(),
+                value: "true".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],
@@ -42,7 +57,11 @@ fn main() {
         Ok(output) => {
             let output_json = serde_json::to_string(&output).expect("serialize output");
             let output_hash = blake3::hash(output_json.as_bytes()).to_hex().to_string();
-            println!("naive_physics ok — selected={:?}  hash={}", output.selected, &output_hash[..16]);
+            println!(
+                "naive_physics ok — selected={:?}  hash={}",
+                output.selected,
+                &output_hash[..16]
+            );
             println!("  {}", output.explanation);
             for f in &output.facts {
                 println!("  prediction: {} = {}", f.key, f.value);

@@ -1,0 +1,23 @@
+// Algorithm IDs — generated from wasm4pm pi ontology. Regenerate with: ggen sync
+
+export const ALGORITHM_IDS = [
+{% for row in sparql_results %}  "{{ row.algorithm_id }}",
+{% endfor %}] as const;
+
+export type AlgorithmId = typeof ALGORITHM_IDS[number];
+
+export const CERTIFIED_ALGORITHM_IDS = [
+{% for row in sparql_results %}{% if row.algorithm_status is defined and row.algorithm_status == "CERTIFIED" %}  "{{ row.algorithm_id }}",
+{% endif %}{% endfor %}] as const;
+
+export type CertifiedAlgorithmId = typeof CERTIFIED_ALGORITHM_IDS[number];
+
+// WASM export function names — generated from pi:wasmExport
+export const ALGORITHM_WASM_EXPORTS: Record<AlgorithmId, string> = {
+{% for row in sparql_results %}  "{{ row.algorithm_id }}": "{{ row.wasm_export }}",
+{% endfor %}};
+
+// CLI aliases — generated from pi:cliAlias
+export const ALGORITHM_CLI_ALIASES: Partial<Record<string, AlgorithmId>> = {
+{% for row in sparql_results %}{% if row.cli_alias is defined %}  "{{ row.cli_alias }}": "{{ row.algorithm_id }}",
+{% endif %}{% endfor %}};

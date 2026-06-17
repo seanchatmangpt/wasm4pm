@@ -1,0 +1,16 @@
+{
+  "algorithm": "alignments",
+  "provenance": {
+    "paper": "Replaying History on Process Models for Conformance Checking and Performance Analysis",
+    "citation": "van der Aalst, W.M.P., Adriansyah, A., van Dongen, B.F. (2012). Replaying History on Process Models for Conformance Checking and Performance Analysis. WIREs Data Mining and Knowledge Discovery 2(2).",
+    "locus": "Section 4, alignment cost computation",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "fitness=1.0",
+    "description": "Alpha model of running example perfectly replays all 6 traces — zero move-on-log and zero move-on-model costs"
+  }
+}

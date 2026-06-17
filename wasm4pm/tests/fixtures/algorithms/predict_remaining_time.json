@@ -1,0 +1,16 @@
+{
+  "algorithm": "predict_remaining_time",
+  "provenance": {
+    "paper": "Survey and Cross-Benchmark Comparison of Remaining Time Prediction Methods in Business Process Monitoring",
+    "citation": "Verenich, I., Dumas, M., La Rosa, M., Maggi, F.M., Teinemaa, I. (2019). Survey and Cross-Benchmark Comparison of Remaining Time Prediction Methods in Business Process Monitoring. ACM TKDD 13(1).",
+    "locus": "Section 2, remaining time formulation",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "predictions_produced",
+    "description": "Remaining time estimates produced for all open cases in running example"
+  }
+}

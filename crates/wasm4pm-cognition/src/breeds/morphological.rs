@@ -111,11 +111,7 @@ fn field_size(field: &BTreeMap<String, Vec<String>>) -> Option<u64> {
 /// Does the configuration (one value index per sorted parameter) violate the
 /// exclusion? Both conditions must hold for the configuration to be
 /// inconsistent.
-fn violates(
-    params: &[(&String, &Vec<String>)],
-    config: &[usize],
-    ex: &Exclusion,
-) -> bool {
+fn violates(params: &[(&String, &Vec<String>)], config: &[usize], ex: &Exclusion) -> bool {
     let mut hit_a = false;
     let mut hit_b = false;
     for (i, (name, values)) in params.iter().enumerate() {
@@ -204,11 +200,13 @@ impl CognitionBreed for Morphological {
         let mut trace = Tracer::new();
 
         for (name, values) in &field {
-            trace.push("define-parameter",
+            trace.push(
+                "define-parameter",
                 format!("{}: {} values [{}]", name, values.len(), values.join("|")),
             );
         }
-        trace.push("compute-field-size",
+        trace.push(
+            "compute-field-size",
             format!(
                 "{} = {}",
                 field
@@ -265,7 +263,8 @@ impl CognitionBreed for Morphological {
         }
 
         for (i, ex) in exclusions.iter().enumerate() {
-            trace.push("cca-assess",
+            trace.push(
+                "cca-assess",
                 format!(
                     "{}={} x {}={} -> excluded in {} configurations",
                     ex.param_a, ex.value_a, ex.param_b, ex.value_b, excluded_per[i]
@@ -279,7 +278,8 @@ impl CognitionBreed for Morphological {
         } else {
             0
         };
-        trace.push("synthesize-solution-space",
+        trace.push(
+            "synthesize-solution-space",
             format!(
                 "{} of {} configurations internally consistent ({} bp reduced)",
                 consistent, total, reduction_bp
@@ -383,7 +383,6 @@ impl CognitionBreed for Morphological {
 mod tests {
     use super::*;
 
-
     fn fact(key: &str, value: &str) -> Fact {
         Fact {
             key: key.to_string(),
@@ -422,14 +421,8 @@ mod tests {
                 "morph:param:thrust-augmentation-2",
                 "no-augmentation|internal-augmentation|external-augmentation",
             ),
-            fact(
-                "morph:param:propellant-state",
-                "gaseous|liquid|solid",
-            ),
-            fact(
-                "morph:param:operating-mode",
-                "continuous|intermittent",
-            ),
+            fact("morph:param:propellant-state", "gaseous|liquid|solid"),
+            fact("morph:param:operating-mode", "continuous|intermittent"),
             fact(
                 "morph:param:reactivity",
                 "self-igniting|artificial-ignition",
@@ -681,4 +674,3 @@ mod tests {
         assert_eq!(bp.value, "625");
     }
 }
-

@@ -1,0 +1,16 @@
+{
+  "algorithm": "performance_spectrum",
+  "provenance": {
+    "paper": "Unbiased, Fine-Grained Description of Processes Performance from Event Data",
+    "citation": "Denisov, V., Fahland, D., van der Aalst, W.M.P. (2018). Unbiased, Fine-Grained Description of Processes Performance from Event Data. BPM 2018.",
+    "locus": "Section 4, performance spectrum computation",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "activities=8",
+    "description": "The performance spectrum covers all 8 activities in the running example log"
+  }
+}

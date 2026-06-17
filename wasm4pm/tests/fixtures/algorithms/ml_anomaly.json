@@ -1,0 +1,16 @@
+{
+  "algorithm": "ml_anomaly",
+  "provenance": {
+    "paper": "Anomaly Detection Using Process Mining",
+    "citation": "Bezerra, F., Wainer, J., van der Aalst, W.M.P. (2009). Anomaly Detection Using Process Mining. EIS 2009.",
+    "locus": "Section 4, isolation forest application",
+    "extraction": "verbatim"
+  },
+  "input": {
+    "log": "wasm4pm/tests/fixtures/running-example.xes"
+  },
+  "expected": {
+    "value": "anomalies=0",
+    "description": "Clean running example log contains no anomalous traces under isolation forest detection"
+  }
+}

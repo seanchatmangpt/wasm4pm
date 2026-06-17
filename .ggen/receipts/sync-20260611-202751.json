@@ -1,0 +1,16 @@
+{
+  "operation_id": "50ecb93d-2a4f-4b0b-a751-a13052ac49cc",
+  "timestamp": "2026-06-11T20:27:51.966829Z",
+  "input_hashes": [
+    "ggen.toml:1a8de3632344cd8898626a49c48fd27f6f67f49c106499f0fea2f7825c1164b9"
+  ],
+  "output_hashes": [
+    "./crates/wasm4pm-cognition/src/breeds/registration.rs:4ef9d0e408b82532d168a0008788c789c73bf8cd7afb4698e230c8120b4d2fd5",
+    "./crates/wasm4pm-cognition/tests/paper_pointers_generated.rs:73a11cc198998e171bb2ae907531201869f41282acacfe81605b07efdba9508c",
+    "./crates/wasm4pm-cognition/tests/universal_anticheat_generated.rs:e94a7cccbc48e9cdc1f4017b64f4f00dc5b4b4cf76318e7acfbe73838ebfe227",
+    "./crates/wasm4pm-cognition/breeds/registry.json:df99e349ba2510c44d03aea1ee235d953fd9fb8d33b33d7da2c821dae69d6877",
+    "./packages/cognition/src/breed-ids.ts:d7f4e53ed82f1a48df258e49a7b7c8c98e74c891ae4eff2a6d490fa03dc418f8"
+  ],
+  "signature": "e8508258438b6050c076e68778ff8dd63f55c959e9e877cc9aee7fa728c5dd26df464ec5b0f359fec282b0c4247e36accb6ebe8a59d40b28d2b602dfaef24b04",
+  "previous_receipt_hash": "087c71c81c9438ac3a03f33113d7eb81c2ab29bbc5b5bccd348f8547e1a8e06c"
+}

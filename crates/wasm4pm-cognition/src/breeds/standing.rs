@@ -60,7 +60,10 @@ mod tests {
 
     #[test]
     fn partial_alive_minimum_is_dispatchable() {
-        assert_eq!(BreedStanding::PARTIAL_ALIVE_MINIMUM, BreedStanding::Dispatchable);
+        assert_eq!(
+            BreedStanding::PARTIAL_ALIVE_MINIMUM,
+            BreedStanding::Dispatchable
+        );
     }
 
     #[test]
@@ -78,8 +81,14 @@ mod tests {
 
     #[test]
     fn from_registry_str_roundtrip() {
-        assert_eq!(BreedStanding::from_registry_str("TRACEABLE"), Some(BreedStanding::Traceable));
-        assert_eq!(BreedStanding::from_registry_str("traceable"), Some(BreedStanding::Traceable));
+        assert_eq!(
+            BreedStanding::from_registry_str("TRACEABLE"),
+            Some(BreedStanding::Traceable)
+        );
+        assert_eq!(
+            BreedStanding::from_registry_str("traceable"),
+            Some(BreedStanding::Traceable)
+        );
         assert_eq!(BreedStanding::from_registry_str("UNKNOWN_RUNG"), None);
     }
 

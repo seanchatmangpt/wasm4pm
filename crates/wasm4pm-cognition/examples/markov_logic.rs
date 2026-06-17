@@ -2,10 +2,10 @@
 //! Demonstrates a simple disease-diagnosis MLN: Rain → Wet, Wet → Slippery.
 //! Run: cargo run --example markov_logic
 
+use wasm4pm_cognition::breeds::markov_logic::MarkovLogic;
 use wasm4pm_cognition::breeds::{
     dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
 };
-use wasm4pm_cognition::breeds::markov_logic::MarkovLogic;
 
 fn main() {
     // Weighted ground clauses encode a small MLN for a slippery-road scenario.
@@ -25,15 +25,30 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // Rain -> Wet  (i.e. !Rain v Wet)
-            Fact { key: "mln:clause:r1".to_string(), value: "3.0|!rain,wet".to_string() },
+            Fact {
+                key: "mln:clause:r1".to_string(),
+                value: "3.0|!rain,wet".to_string(),
+            },
             // Wet -> Slippery  (i.e. !Wet v Slippery)
-            Fact { key: "mln:clause:r2".to_string(), value: "2.5|!wet,slippery".to_string() },
+            Fact {
+                key: "mln:clause:r2".to_string(),
+                value: "2.5|!wet,slippery".to_string(),
+            },
             // Sprinkler -> Wet  (i.e. !Sprinkler v Wet)
-            Fact { key: "mln:clause:r3".to_string(), value: "2.0|!sprinkler,wet".to_string() },
+            Fact {
+                key: "mln:clause:r3".to_string(),
+                value: "2.0|!sprinkler,wet".to_string(),
+            },
             // Evidence: Rain is observed true
-            Fact { key: "evidence:rain".to_string(), value: "true".to_string() },
+            Fact {
+                key: "evidence:rain".to_string(),
+                value: "true".to_string(),
+            },
             // Evidence: Sprinkler is observed false
-            Fact { key: "evidence:sprinkler".to_string(), value: "false".to_string() },
+            Fact {
+                key: "evidence:sprinkler".to_string(),
+                value: "false".to_string(),
+            },
         ],
         cases: vec![],
         rules: vec![],

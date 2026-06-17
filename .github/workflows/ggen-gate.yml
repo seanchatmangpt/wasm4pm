@@ -1,0 +1,131 @@
+name: ggen Conformance Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # Verifies the latest ggen receipt without needing the ggen binary:
+  # every file listed in .ggen/receipts/latest.json output_hashes must
+  # hash (sha256) to the recorded value on disk.
+  receipt-check:
+    name: Receipt hash verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify output_hashes in .ggen/receipts/latest.json
+        run: |
+          set -euo pipefail
+          receipt=.ggen/receipts/latest.json
+          test -f "$receipt" || { echo "::error::$receipt missing"; exit 1; }
+          fail=0
+          while IFS= read -r entry; do
+            file="${entry%:*}"
+            expected="${entry##*:}"
+            if [ ! -f "$file" ]; then
+              echo "::error::receipt references missing file: $file"
+              fail=1
+              continue
+            fi
+            actual=$(shasum -a 256 "$file" | awk '{print $1}')
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::hash mismatch for $file (expected $expected, got $actual)"
+              fail=1
+            else
+              echo "ok: $file"
+            fi
+          done < <(jq -r '.output_hashes[]? // empty' "$receipt")
+          exit $fail
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Verify evidence.ttl is fresh vs ocel/reports/*.json
+        run: |
+          set -euo pipefail
+          python3 scripts/project_evidence.py
+          git diff --exit-code -- ocel/reports/evidence.ttl \
+            || { echo "::error::ocel/reports/evidence.ttl is stale — regenerate via 'python3 scripts/project_evidence.py'"; exit 1; }
+
+  # Full sync conformance: re-runs `ggen sync` against the wasm4pm-compat
+  # ontology pack (a SIBLING path dependency: ggen.toml references
+  # ../wasm4pm-compat/...) and asserts the rendered sources are unchanged.
+  #
+  # Limitations:
+  # - ggen is installed from crates.io via `cargo install ggen`; the version
+  #   published there may lag the local dev binary (local: 26.5.21). If sync
+  #   output differs purely due to ggen version drift, pin the version below.
+  # - ggen emits OTel export errors when no collector listens on :4317;
+  #   these are non-fatal noise.
+  ggen-sync:
+    name: ggen sync conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # wasm4pm must live in a subdirectory so ../wasm4pm-compat resolves.
+      - uses: actions/checkout@v4
+        with:
+          path: wasm4pm
+
+      - uses: actions/checkout@v4
+        with:
+          repository: seanchatmangpt/wasm4pm-compat
+          # Pinned to compat main HEAD for reproducible sync (G7). Bump
+          # deliberately when the ontology pack advances.
+          ref: 9bffd6625b7e55ea2b5e25d3370fc33b797e6745
+          path: wasm4pm-compat
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Cache cargo-installed binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/ggen
+          key: ggen-bin-${{ runner.os }}-git-555f857ac5dc
+
+      - name: Install ggen
+        run: |
+          # Pin ggen to a git rev until 26.6.x is published on crates.io.
+          # crates.io currently has NO ggen release, so `cargo install ggen`
+          # cannot resolve. The binary `ggen` lives in package `ggen-cli-lib`
+          # (path crates/ggen-cli) of seanchatmangpt/ggen (G4).
+          if ! command -v ggen >/dev/null; then
+            cargo install --git https://github.com/seanchatmangpt/ggen \
+              --rev 555f857ac5dcf236eba0121d0833bb764a782e3a \
+              --bin ggen ggen-cli-lib --locked
+          fi
+          ggen --version
+
+      - name: Run ggen sync
+        working-directory: wasm4pm
+        run: ggen sync
+
+      - name: Assert rendered sources unchanged
+        working-directory: wasm4pm
+        run: |
+          # Receipts legitimately change on every sync; only generated
+          # source surfaces must be byte-identical.
+          git diff --exit-code -- ':!.ggen/receipts' \
+            || { echo "::error::ggen sync produced drift — rendered sources do not conform to the ontology pack"; exit 1; }
+
+      # Cryptographic receipt verification (Ed25519 chain; ggen >= 26.6.9).
+      # The CLI exits 0 even on invalid receipts, so gate on the is_valid field.
+      # ggen is available here because the ggen-sync job installs it above.
+      - name: Verify Ed25519 receipt signature
+        working-directory: wasm4pm
+        run: |
+          ggen receipt verify --receipt-path .ggen/receipts/latest.json --public-key .ggen/keys/verifying.key 2>/dev/null \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['is_valid'], d['message']; print('receipt verified:', d['message'])"

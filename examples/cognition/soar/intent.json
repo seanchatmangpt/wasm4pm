@@ -1,145 +1,68 @@
 {
-  "intent": "select move operator for eight-puzzle tile via SOAR preference hierarchy",
+  "intent": "select optimal database query operator",
   "candidates": [
     {
-      "id": "op-move-blank-up",
-      "score": 0,
+      "id": "op-full-scan",
+      "score": 0.2,
       "eliminated": false
     },
     {
-      "id": "op-move-blank-down",
-      "score": 0,
+      "id": "op-index-scan",
+      "score": 0.95,
       "eliminated": false
     },
     {
-      "id": "op-move-blank-left",
-      "score": 0,
+      "id": "op-hash-join",
+      "score": 0.82,
       "eliminated": false
     },
     {
-      "id": "op-move-blank-right",
-      "score": 0,
+      "id": "op-nested-loop",
+      "score": 0.45,
+      "eliminated": false
+    },
+    {
+      "id": "op-merge-sort-join",
+      "score": 0.78,
       "eliminated": false
     }
   ],
   "facts": [
     {
       "key": "pref",
-      "value": "acceptable:op-move-blank-up"
+      "value": "best:op-index-scan"
     },
     {
       "key": "pref",
-      "value": "acceptable:op-move-blank-down"
+      "value": "prohibit:op-full-scan"
     },
     {
       "key": "pref",
-      "value": "acceptable:op-move-blank-left"
+      "value": "prohibit:op-nested-loop"
     },
     {
       "key": "pref",
-      "value": "acceptable:op-move-blank-right"
+      "value": "acceptable:op-hash-join"
     },
     {
       "key": "pref",
-      "value": "best:op-move-blank-up"
+      "value": "acceptable:op-merge-sort-join"
     },
     {
-      "key": "pref",
-      "value": "worse:op-move-blank-down"
+      "key": "table-size",
+      "value": "large"
     },
     {
-      "key": "tile-above-blank",
-      "value": "5"
+      "key": "index-available",
+      "value": "yes"
     },
     {
-      "key": "tile-below-blank",
-      "value": "8"
-    },
-    {
-      "key": "tile-left-of-blank",
-      "value": "4"
-    },
-    {
-      "key": "tile-right-of-blank",
-      "value": "none"
-    },
-    {
-      "key": "goal-position-5",
-      "value": "row1-col2"
-    },
-    {
-      "key": "current-position-5",
-      "value": "row2-col2"
+      "key": "join-type",
+      "value": "equi-join"
     }
   ],
   "cases": [],
-  "rules": [
-    {
-      "id": "pref-rule-acceptable-up",
-      "premise": [
-        "tile-above-blank"
-      ],
-      "conclusion": "pref:acceptable:op-move-blank-up",
-      "certainty": 1
-    },
-    {
-      "id": "pref-rule-acceptable-down",
-      "premise": [
-        "tile-below-blank"
-      ],
-      "conclusion": "pref:acceptable:op-move-blank-down",
-      "certainty": 1
-    },
-    {
-      "id": "pref-rule-acceptable-left",
-      "premise": [
-        "tile-left-of-blank"
-      ],
-      "conclusion": "pref:acceptable:op-move-blank-left",
-      "certainty": 1
-    },
-    {
-      "id": "pref-rule-best-if-moves-toward-goal",
-      "premise": [
-        "tile-above-blank",
-        "goal-position-5=row1-col2",
-        "current-position-5=row2-col2"
-      ],
-      "conclusion": "pref:best:op-move-blank-up",
-      "certainty": 1
-    },
-    {
-      "id": "pref-rule-worse-if-moves-away",
-      "premise": [
-        "tile-below-blank"
-      ],
-      "conclusion": "pref:worse:op-move-blank-down",
-      "certainty": 1
-    }
-  ],
-  "goals": [
-    {
-      "id": "g-select-operator",
-      "predicate": "selected-operator",
-      "value": "op-move-blank-up"
-    }
-  ],
-  "state": [
-    {
-      "predicate": "blank-position",
-      "value": "row2-col2"
-    },
-    {
-      "predicate": "tile-5-position",
-      "value": "row2-col2-above"
-    },
-    {
-      "predicate": "goal-tile-5-position",
-      "value": "row1-col2"
-    },
-    {
-      "predicate": "last-operator",
-      "value": "op-move-blank-down"
-    }
-  ]
+  "rules": [],
+  "goals": [],
+  "state": []
 }

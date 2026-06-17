@@ -1,0 +1,9 @@
+{
+  "algorithm": "hierarchical_dfg",
+  "admitted": true,
+  "fitness": 1.0,
+  "evidence": "wasm4pm/tests/algorithm_paper_grounded.rs::hierarchical_dfg_paper_grounded",
+  "fixture": "wasm4pm/tests/fixtures/algorithms/hierarchical_dfg.json",
+  "reference_log": "wasm4pm/tests/fixtures/running-example.xes",
+  "generated": "2026-06-11"
+}

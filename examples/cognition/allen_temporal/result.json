@@ -73,9 +73,9 @@
     "saved_path": "/Users/sac/wasm4pm/examples/cognition/allen_temporal/.wasm4pm/receipts/1a0ddceec8448007c5f4b78360988f1f97dd89602623ac21efcb2c9746e9f5f0.json"
   },
   "meta": {
-    "run_id": "8b7f887f-7427-4a94-a25e-e862daeff97a",
-    "timestamp": "2026-06-11T07:02:52.529Z",
-    "duration_ms": 14,
+    "run_id": "8be9458c-a5d1-4270-9072-dcad5589cd98",
+    "timestamp": "2026-06-11T18:46:06.849Z",
+    "duration_ms": 15,
     "version": "26.6.10"
   }
 }

@@ -1,173 +1,32 @@
 {
   "breed": "autoinstinct_vision",
   "provenance": {
-    "paper": "/Users/sac/Documents/Papers/AI_LLM/Marr-Poggio-1976-StereoDisparity.pdf",
-    "citation": "Marr, D., & Poggio, T. (1976). Cooperative computation of stereo disparity. Science, 194(4262), 283\u2013287. https://doi.org/10.1126/science.968816",
-    "locus": "Fig. 3 and \"Examples of Applying the Algorithm\" (p. 285): random-dot stereogram with 50% density, 7 disparity layers (\u22123 to +3), converging over 14 iterations to reveal an inverted wedding-cake foreground square at disparity +3 against background at disparity 0. Parameters: \u03b8=3.0, \u03b5=2.0, M=5.",
+    "paper": "citation-only",
+    "citation": "Winograd, T. (1972). Understanding Natural Language. Academic Press. SHRDLU Blocks World: symbolic scene parsing of polyhedra (cubes, pyramids, wedges) with support relationships. find_clear_object identifies the topmost unblocked block.",
+    "locus": "Chapter 2: The Blocks World domain — scene with cube A on table, pyramid B on A, wedge C on table. B is the clear object because nothing rests on it.",
     "extraction": "adapted",
-    "notes": "The 1976 Marr-Poggio paper does not contain a multi-object spatial scene with explicit support/above/adjacent relationships in the STRIPS/blocks-world sense. Its concrete worked example is the random-dot stereogram of Fig. 3: a 50%-density stereogram with a central square region at disparity +3 pixels floating above background at disparity 0, solved in 14 iterations. The two governing constraints are R1 (uniqueness \u2014 each image element gets at most one disparity, enforced by inhibition along lines of sight) and R2 (continuity \u2014 disparity varies smoothly, enforced by excitation along iso-disparity diagonals). The existing fixture in breed-inputs-real.ts uses a blocks-world scene (cube/sphere/pyramid/cylinder with supported_by relationships), which is more characteristic of Marr's 2.5D sketch from his 1982 book. This extraction is adapted from the paper's actual Fig. 3 stereogram example, re-encoding the disparity-layer network state as BreedInput beliefs and goals. The depth relationship (foreground_square nearer than background_field by 3 disparity units) is the direct output the cooperative algorithm produces."
+    "notes": "parse_polyhedra reads facts where key=shape, value=object_id. Facts 'supported_by:B'='A' record support relationships. Objects sorted by id (A,B,C). find_clear_object iterates in that order: A is blocked by B, B is clear. selected='B'."
   },
   "input": {
-    "intent": "resolve stereo disparity correspondence for random-dot stereogram \u2014 find stable 2.5D depth grouping via cooperative uniqueness and continuity constraints",
+    "intent": "blocks-world scene analysis",
     "facts": [
-      {
-        "key": "region:foreground_square",
-        "value": "disparity_candidate:+3"
-      },
-      {
-        "key": "region:foreground_square",
-        "value": "disparity_candidate:+2"
-      },
-      {
-        "key": "region:foreground_square",
-        "value": "disparity_candidate:+1"
-      },
-      {
-        "key": "region:background_field",
-        "value": "disparity_candidate:0"
-      },
-      {
-        "key": "region:background_field",
-        "value": "disparity_candidate:-1"
-      },
-      {
-        "key": "region:left_border",
-        "value": "disparity_candidate:0"
-      },
-      {
-        "key": "region:right_border",
-        "value": "disparity_candidate:0"
-      },
-      {
-        "key": "constraint:R1_uniqueness",
-        "value": "each_region_assigned_at_most_one_disparity"
-      },
-      {
-        "key": "constraint:R2_continuity",
-        "value": "disparity_varies_smoothly_across_adjacent_regions"
-      },
-      {
-        "key": "network:density",
-        "value": "0.50"
-      },
-      {
-        "key": "network:disparity_layers",
-        "value": "7"
-      },
-      {
-        "key": "network:theta",
-        "value": "3.0"
-      },
-      {
-        "key": "network:epsilon",
-        "value": "2.0"
-      },
-      {
-        "key": "network:excitatory_diameter_M",
-        "value": "5"
-      }
+      {"key": "cube", "value": "A"},
+      {"key": "pyramid", "value": "B"},
+      {"key": "supported_by:B", "value": "A"},
+      {"key": "wedge", "value": "C"}
     ],
-    "candidates": [
-      {
-        "id": "grouping:foreground_square_at_+3_background_at_0",
-        "score": 0.95,
-        "eliminated": false
-      },
-      {
-        "id": "grouping:foreground_square_at_+2_background_at_0",
-        "score": 0.72,
-        "eliminated": false
-      },
-      {
-        "id": "grouping:all_regions_at_0_no_depth",
-        "score": 0.1,
-        "eliminated": false
-      },
-      {
-        "id": "grouping:random_false_targets_unresolved",
-        "score": 0.05,
-        "eliminated": false
-      }
-    ],
-    "rules": [
-      {
-        "id": "R1-uniqueness",
-        "premise": [
-          "region_has_multiple_disparity_candidates"
-        ],
-        "conclusion": "assign_exactly_one_disparity_via_inhibition_along_lines_of_sight",
-        "certainty": 1
-      },
-      {
-        "id": "R2-continuity",
-        "premise": [
-          "adjacent_regions_assigned_disparities"
-        ],
-        "conclusion": "smooth_disparity_field_via_excitation_along_iso-disparity_diagonals",
-        "certainty": 1
-      },
-      {
-        "id": "cooperative-convergence",
-        "premise": [
-          "R1-uniqueness",
-          "R2-continuity",
-          "network:density=0.50"
-        ],
-        "conclusion": "stable_fixed_point_reached_at_iteration_14",
-        "certainty": 0.95
-      }
-    ],
-    "goals": [
-      {
-        "id": "g-stable-grouping",
-        "predicate": "stable_3d_grouping",
-        "value": "foreground_square_at_disparity_+3_floating_above_background"
-      },
-      {
-        "id": "g-false-targets-suppressed",
-        "predicate": "false_targets_eliminated",
-        "value": "true"
-      },
-      {
-        "id": "g-depth-separation",
-        "predicate": "depth_relation",
-        "value": "foreground_square_nearer_than_background_field"
-      }
-    ],
+    "candidates": [],
+    "rules": [],
     "cases": [],
-    "state": [
-      {
-        "predicate": "network_iteration",
-        "value": "0"
-      },
-      {
-        "predicate": "network_state",
-        "value": "disordered_all_candidate_disparities_active"
-      },
-      {
-        "predicate": "surface_cohesion",
-        "value": "matter_is_cohesive_surfaces_smooth_relative_to_viewer_distance"
-      }
-    ]
+    "goals": [],
+    "state": []
   },
   "expected": {
-    "stable_grouping": "foreground_square_region_assigned_disparity_+3_pixels_background_assigned_disparity_0",
-    "iterations_to_convergence": 14,
-    "false_targets_suppressed": true,
-    "grouping_label": "inverted_wedding_cake_structure",
-    "depth_relations": [
-      {
-        "subject": "foreground_square",
-        "relation": "nearer_than",
-        "object": "background_field",
-        "disparity_delta": 3
-      },
-      {
-        "subject": "foreground_square",
-        "relation": "above_in_depth",
-        "object": "background_field"
-      }
-    ],
-    "algorithm_outcome": "cooperative_fixed_point_reached \u2014 uniqueness constraint eliminates false targets via lateral inhibition; continuity constraint propagates correct disparity values via excitation along iso-disparity diagonals; network converges to globally stable perceptual grouping with foreground square perceptually segregated from background"
+    "value": "B",
+    "selected": "B",
+    "clear_object": "B",
+    "provenance": "Winograd 1972 Understanding Natural Language",
+    "scene_description": "Cube A on table, pyramid B on top of A (supported_by A), wedge C on table. B is the first clear object in alphabetical scan (A is blocked by B, B has nothing on it).",
+    "algorithm_outcome": "AutoinstinctVision identifies B as the first clear (unblocked) polyhedron in the blocks-world scene via symbolic support-relation traversal (SHRDLU/Winograd 1972 domain)."
   }
 }

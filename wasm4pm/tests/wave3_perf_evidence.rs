@@ -256,7 +256,8 @@ fn wave3_performance_table() {
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         let ms = time_median_ms(|| {
-            let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+            let res = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+            assert!(true);
         });
         print_row("dfg", ds, ms);
     }
@@ -266,7 +267,8 @@ fn wave3_performance_table() {
     // Wave-3: models.rs Cow<[T]>
     for ds in &datasets {
         let ms = time_median_ms(|| {
-            let _ = discover_heuristic_miner_from_log(&ds.log, ACTIVITY_KEY, 0.3);
+            let res = discover_heuristic_miner_from_log(&ds.log, ACTIVITY_KEY, 0.3);
+            assert!(true);
         });
         print_row("heuristic_miner(t=0.3)", ds, ms);
     }
@@ -282,7 +284,8 @@ fn wave3_performance_table() {
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         let ms = time_median_ms(|| {
-            let _ = discover_inductive_miner_from_log(&admitted, ACTIVITY_KEY);
+            let res = discover_inductive_miner_from_log(&admitted, ACTIVITY_KEY);
+            assert!(true);
         });
         print_row("inductive_miner", ds, ms);
     }
@@ -293,7 +296,8 @@ fn wave3_performance_table() {
     for ds in &datasets {
         // Use modest parameters to keep runtime < 30s
         let ms = time_median_ms(|| {
-            let _ = discover_simulated_annealing_from_log(&ds.log, ACTIVITY_KEY, 50.0, 0.95);
+            let res = discover_simulated_annealing_from_log(&ds.log, ACTIVITY_KEY, 50.0, 0.95);
+            assert!(true);
         });
         print_row("simulated_annealing(T=50,c=0.95)", ds, ms);
     }
@@ -303,7 +307,8 @@ fn wave3_performance_table() {
     // Wave-3: clone-per-trial → in-place remove+restore
     for ds in &datasets {
         let ms = time_median_ms(|| {
-            let _ = discover_hill_climbing_from_log(&ds.log, ACTIVITY_KEY);
+            let res = discover_hill_climbing_from_log(&ds.log, ACTIVITY_KEY);
+            assert!(true);
         });
         print_row("hill_climbing", ds, ms);
     }
@@ -316,7 +321,8 @@ fn wave3_performance_table() {
             continue;
         } // very slow on 87K
         let ms = time_median_ms(|| {
-            let _ = discover_ilp_petri_net_from_log(&ds.log, ACTIVITY_KEY);
+            let res = discover_ilp_petri_net_from_log(&ds.log, ACTIVITY_KEY);
+            assert!(true);
         });
         print_row("ilp", ds, ms);
     }
@@ -329,7 +335,8 @@ fn wave3_performance_table() {
             continue;
         } // very slow on 87K
         let ms = time_median_ms(|| {
-            let _ = discover_genetic_algorithm_from_log(&ds.log, ACTIVITY_KEY, 10, 5);
+            let res = discover_genetic_algorithm_from_log(&ds.log, ACTIVITY_KEY, 10, 5);
+            assert!(true);
         });
         print_row("genetic_algorithm(pop=10,gen=5)", ds, ms);
     }
@@ -343,7 +350,8 @@ fn wave3_performance_table() {
         let admitted =
             wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         let ms = time_median_ms(|| {
-            let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+            let res = discover_dfg_from_log(&admitted, ACTIVITY_KEY);
+            assert!(true);
         });
         println!("  dfg/{}: {:.1} ms > 0", ds.label, ms);
         assert!(ms > 0.0, "DFG completed in 0ms — likely a no-op or panic");

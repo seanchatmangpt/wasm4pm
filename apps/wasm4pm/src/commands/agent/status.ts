@@ -49,9 +49,9 @@ export const status = defineCommand({
   },
   args: {
     agent: {
-      type: 'string',
+      type: 'positional',
       description: 'Agent name to check (VdA agent name, or RL agent: QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE)',
-      alias: 'a',
+      required: false,
     },
     rl: {
       type: 'boolean',

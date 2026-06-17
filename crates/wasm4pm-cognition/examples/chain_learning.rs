@@ -8,12 +8,12 @@
 //! Between stages the blake3 output_hash[:16] of the previous stage is embedded
 //! as fact `prior_hash` in the next stage's input, creating an unforgeable chain.
 
-use wasm4pm_cognition::breeds::{
-    dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
-};
 use wasm4pm_cognition::breeds::ebl::Ebl;
 use wasm4pm_cognition::breeds::ilp::Ilp;
 use wasm4pm_cognition::breeds::version_space::VersionSpace;
+use wasm4pm_cognition::breeds::{
+    dispatch::run_breed, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
+};
 
 fn hash_output(output: &wasm4pm_cognition::breeds::BreedOutput) -> String {
     let json = serde_json::to_string(output).expect("BreedOutput serialization");
@@ -34,9 +34,18 @@ fn main() {
         }],
         facts: vec![
             // ground atoms for the training example
-            Fact { key: "has_handle(cup1)".to_string(), value: "true".to_string() },
-            Fact { key: "light_weight(cup1)".to_string(), value: "true".to_string() },
-            Fact { key: "stable(cup1)".to_string(), value: "true".to_string() },
+            Fact {
+                key: "has_handle(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "light_weight(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "stable(cup1)".to_string(),
+                value: "true".to_string(),
+            },
         ],
         rules: vec![
             // domain theory: liftable if has_handle AND light_weight AND stable
@@ -79,22 +88,61 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // chain: prior stage hash
-            Fact { key: "prior_hash".to_string(), value: ebl_prior },
+            Fact {
+                key: "prior_hash".to_string(),
+                value: ebl_prior,
+            },
             // positive examples
-            Fact { key: "pos:liftable(cup1)".to_string(), value: "true".to_string() },
-            Fact { key: "pos:liftable(mug1)".to_string(), value: "true".to_string() },
+            Fact {
+                key: "pos:liftable(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "pos:liftable(mug1)".to_string(),
+                value: "true".to_string(),
+            },
             // negative examples
-            Fact { key: "neg:liftable(boulder1)".to_string(), value: "true".to_string() },
-            Fact { key: "neg:liftable(anvil1)".to_string(), value: "true".to_string() },
+            Fact {
+                key: "neg:liftable(boulder1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "neg:liftable(anvil1)".to_string(),
+                value: "true".to_string(),
+            },
             // background knowledge
-            Fact { key: "bg:has_handle(cup1)".to_string(), value: "true".to_string() },
-            Fact { key: "bg:has_handle(mug1)".to_string(), value: "true".to_string() },
-            Fact { key: "bg:has_handle(boulder1)".to_string(), value: "false".to_string() },
-            Fact { key: "bg:has_handle(anvil1)".to_string(), value: "false".to_string() },
-            Fact { key: "bg:light_weight(cup1)".to_string(), value: "true".to_string() },
-            Fact { key: "bg:light_weight(mug1)".to_string(), value: "true".to_string() },
-            Fact { key: "bg:light_weight(boulder1)".to_string(), value: "false".to_string() },
-            Fact { key: "bg:light_weight(anvil1)".to_string(), value: "false".to_string() },
+            Fact {
+                key: "bg:has_handle(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "bg:has_handle(mug1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "bg:has_handle(boulder1)".to_string(),
+                value: "false".to_string(),
+            },
+            Fact {
+                key: "bg:has_handle(anvil1)".to_string(),
+                value: "false".to_string(),
+            },
+            Fact {
+                key: "bg:light_weight(cup1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "bg:light_weight(mug1)".to_string(),
+                value: "true".to_string(),
+            },
+            Fact {
+                key: "bg:light_weight(boulder1)".to_string(),
+                value: "false".to_string(),
+            },
+            Fact {
+                key: "bg:light_weight(anvil1)".to_string(),
+                value: "false".to_string(),
+            },
         ],
         rules: vec![],
         goals: vec![Goal {
@@ -125,15 +173,33 @@ fn main() {
         candidates: vec![],
         facts: vec![
             // chain: prior stage hash
-            Fact { key: "prior_hash".to_string(), value: ilp_prior },
+            Fact {
+                key: "prior_hash".to_string(),
+                value: ilp_prior,
+            },
             // attribute names
-            Fact { key: "vs:attrs".to_string(), value: "handle,weight".to_string() },
+            Fact {
+                key: "vs:attrs".to_string(),
+                value: "handle,weight".to_string(),
+            },
             // positive examples: has_handle=yes, weight=light
-            Fact { key: "vs:example:0".to_string(), value: "yes,light:+".to_string() },
-            Fact { key: "vs:example:1".to_string(), value: "yes,light:+".to_string() },
+            Fact {
+                key: "vs:example:0".to_string(),
+                value: "yes,light:+".to_string(),
+            },
+            Fact {
+                key: "vs:example:1".to_string(),
+                value: "yes,light:+".to_string(),
+            },
             // negative examples: no handle or heavy
-            Fact { key: "vs:example:2".to_string(), value: "no,heavy:-".to_string() },
-            Fact { key: "vs:example:3".to_string(), value: "yes,heavy:-".to_string() },
+            Fact {
+                key: "vs:example:2".to_string(),
+                value: "no,heavy:-".to_string(),
+            },
+            Fact {
+                key: "vs:example:3".to_string(),
+                value: "yes,heavy:-".to_string(),
+            },
         ],
         rules: vec![],
         goals: vec![Goal {

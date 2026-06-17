@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export NODE_OPTIONS="--experimental-wasm-modules"
+
+
 # ---------------------------------------------------------------------------
 # factory-agent breed chain
 # 52 stages: abductive_ibe → ... → version_space
@@ -80,6 +83,9 @@ STAGES=(
     "49-strips strips"
     "50-tableaux tableaux"
     "51-version_space version_space"
+    "52-morphological morphological"
+    "53-triz triz"
+    "54-ocpm_route_discoverer ocpm_route_discoverer"
 )
 
 TOTAL=${#STAGES[@]}
@@ -105,7 +111,7 @@ for entry in "${STAGES[@]}"; do
     fi
 
     # Run cognition
-    if ! $WPM cognition run --contract "$BREED" --input "$INTENT" --format json > "$RESULT" 2>/dev/null; then
+    if ! $WPM cognition run --contract "$BREED" --input "$INTENT" --format json > "$RESULT"; then
         echo "Stage $N [$BREED]: FAIL (wpm exited non-zero)" >&2
         exit 1
     fi

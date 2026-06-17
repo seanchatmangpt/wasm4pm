@@ -56,14 +56,14 @@ pub fn analyze_variant_complexity(
             let max_entropy = if variants.len() > 1 {
                 (variants.len() as f64).log2()
             } else {
-                1.0
+                0.0
             };
 
             to_js_str(&json!({
                 "total_variants": variants.len(),
                 "entropy": entropy,
                 "max_entropy": max_entropy,
-                "normalized_entropy": if max_entropy > 0.0 { entropy / max_entropy } else { 0.0 },
+                "normalized_entropy": if variants.len() <= 1 { 0.0 } else { entropy / max_entropy },
                 "top_10_coverage": coverage_top_10,
                 "predominant_variant_size": variant_counts.first().copied().unwrap_or(0),
             }))

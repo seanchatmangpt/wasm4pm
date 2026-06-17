@@ -10,9 +10,6 @@
 //! refusal at all).
 
 use super::{base, candidate, case, fact, goal, rule, state_atom};
-use crate::breeds::support::oracle::{BreedAdversary, BreedOracle};
-use crate::breeds::support::trace_query::TraceQuery;
-use crate::breeds::{BreedId, BreedInput, BreedOutput, TraceStep};
 use crate::breeds::act_r::ActR;
 use crate::breeds::contingent_plan::ContingentPlan;
 use crate::breeds::event_calculus::EventCalculus;
@@ -25,6 +22,9 @@ use crate::breeds::rl_symbolic::RlSymbolic;
 use crate::breeds::situation_calculus::SituationCalculus;
 use crate::breeds::soar::Soar;
 use crate::breeds::strips::Strips;
+use crate::breeds::support::oracle::{BreedAdversary, BreedOracle};
+use crate::breeds::support::trace_query::TraceQuery;
+use crate::breeds::{BreedId, BreedInput, BreedOutput, TraceStep};
 
 // ───────────────────────────── STRIPS ──────────────────────────────────────
 
@@ -75,7 +75,10 @@ impl BreedOracle for Strips {
             .detail_of("subgoal")
             .ok_or_else(|| "missing subgoal step".to_string())?;
         if sub != "uo_crate_at=uo_loft" {
-            return Err(format!("subgoal must be 'uo_crate_at=uo_loft', got '{}'", sub));
+            return Err(format!(
+                "subgoal must be 'uo_crate_at=uo_loft', got '{}'",
+                sub
+            ));
         }
         // Precondition check happened: the action was tried (applicability
         // gate passed) before being executed.
@@ -83,7 +86,10 @@ impl BreedOracle for Strips {
             .detail_of("try-action")
             .ok_or_else(|| "missing try-action step (precondition check)".to_string())?;
         if !tried.contains("uo_haul_dock_to_loft") {
-            return Err(format!("try-action must name uo_haul_dock_to_loft, got '{}'", tried));
+            return Err(format!(
+                "try-action must name uo_haul_dock_to_loft, got '{}'",
+                tried
+            ));
         }
         let detail = trace
             .detail_of("execute")
@@ -91,7 +97,10 @@ impl BreedOracle for Strips {
         if detail.contains("uo_haul_dock_to_loft") {
             Ok(())
         } else {
-            Err(format!("execute step must name the haul action, got '{}'", detail))
+            Err(format!(
+                "execute step must name the haul action, got '{}'",
+                detail
+            ))
         }
     }
 }
@@ -148,7 +157,10 @@ impl BreedOracle for Gps {
             .detail_of("reduce-gap")
             .ok_or_else(|| "missing reduce-gap step".to_string())?;
         if gap != "uo_ingot=uo_cast" {
-            return Err(format!("reduce-gap must target 'uo_ingot=uo_cast', got '{}'", gap));
+            return Err(format!(
+                "reduce-gap must target 'uo_ingot=uo_cast', got '{}'",
+                gap
+            ));
         }
         let detail = trace
             .detail_of("apply-operator")
@@ -156,7 +168,10 @@ impl BreedOracle for Gps {
         if detail.contains("uo_smelt_ore") {
             Ok(())
         } else {
-            Err(format!("apply-operator must name uo_smelt_ore, got '{}'", detail))
+            Err(format!(
+                "apply-operator must name uo_smelt_ore, got '{}'",
+                detail
+            ))
         }
     }
 }
@@ -230,7 +245,10 @@ impl BreedOracle for HtnPlanning {
             .detail_of("htn-apply")
             .ok_or_else(|| "missing htn-apply step".to_string())?;
         if applied != "op:uo_stride" {
-            return Err(format!("htn-apply must apply op:uo_stride, got '{}'", applied));
+            return Err(format!(
+                "htn-apply must apply op:uo_stride, got '{}'",
+                applied
+            ));
         }
         let plan = trace
             .detail_of("htn-plan")
@@ -238,7 +256,10 @@ impl BreedOracle for HtnPlanning {
         if plan.contains("op:uo_stride") {
             Ok(())
         } else {
-            Err(format!("htn-plan must contain op:uo_stride, got '{}'", plan))
+            Err(format!(
+                "htn-plan must contain op:uo_stride, got '{}'",
+                plan
+            ))
         }
     }
 }
@@ -297,7 +318,10 @@ impl BreedOracle for PartialOrderPlan {
             .detail_of("pop-init")
             .ok_or_else(|| "missing pop-init step".to_string())?;
         if !init.contains("uo_mast_up") {
-            return Err(format!("pop-init must list goal uo_mast_up, got '{}'", init));
+            return Err(format!(
+                "pop-init must list goal uo_mast_up, got '{}'",
+                init
+            ));
         }
         let detail = trace
             .detail_of("pop-plan")
@@ -663,7 +687,10 @@ impl BreedOracle for ActR {
             .detail_of("retrieval-request")
             .ok_or_else(|| "missing retrieval-request step".to_string())?;
         if !req.contains("uo_slot=uo_amber") {
-            return Err(format!("retrieval-request must carry uo_slot=uo_amber, got '{}'", req));
+            return Err(format!(
+                "retrieval-request must carry uo_slot=uo_amber, got '{}'",
+                req
+            ));
         }
         let got = trace
             .detail_of("retrieve-chunk")
@@ -856,7 +883,10 @@ impl BreedOracle for Pomdp {
         if detail.contains("uo_probe") || detail.contains("uo_commit") {
             Ok(())
         } else {
-            Err(format!("select-action must name a model action, got '{}'", detail))
+            Err(format!(
+                "select-action must name a model action, got '{}'",
+                detail
+            ))
         }
     }
 }
@@ -913,7 +943,10 @@ impl BreedOracle for MarkovLogic {
             .detail_of("clamp-evidence")
             .ok_or_else(|| "missing clamp-evidence step".to_string())?;
         if !detail.contains("uo_rainfall=true") {
-            return Err(format!("clamp-evidence must clamp uo_rainfall=true, got '{}'", detail));
+            return Err(format!(
+                "clamp-evidence must clamp uo_rainfall=true, got '{}'",
+                detail
+            ));
         }
         // The soft clause is violated by the all-false init (cost = weight
         // 1.5) and MAP search must drive the cost to exactly 0.
@@ -980,7 +1013,11 @@ impl BreedAdversary for CheatStrips {
     fn run_cheat(_input: &BreedInput) -> BreedOutput {
         uo_cheat_output(
             BreedId::Strips,
-            &[("subgoal", "uo_flat"), ("try-action", "uo_flat"), ("execute", "uo_flat")],
+            &[
+                ("subgoal", "uo_flat"),
+                ("try-action", "uo_flat"),
+                ("execute", "uo_flat"),
+            ],
         )
     }
     fn cheat_code() -> &'static str {
@@ -1157,7 +1194,10 @@ impl BreedAdversary for CheatPomdp {
             &[
                 ("init-belief", "uo_bull=0.500000, uo_bear=0.500000"),
                 ("pbvi-backup", "h=1 |Gamma|=1 V(b0)=0.000000"),
-                ("select-action", "action=uo_commit V(b)=0.000000 (QMDP upper bound 0.000000)"),
+                (
+                    "select-action",
+                    "action=uo_commit V(b)=0.000000 (QMDP upper bound 0.000000)",
+                ),
             ],
         )
     }
@@ -1177,7 +1217,10 @@ impl BreedAdversary for CheatMarkovLogic {
             &[
                 ("ground-clauses", "1 clauses over 2 atoms"),
                 ("clamp-evidence", "uo_rainfall=true"),
-                ("init-assignment", "evidence-clamped, others false; cost=1.500000"),
+                (
+                    "init-assignment",
+                    "evidence-clamped, others false; cost=1.500000",
+                ),
                 ("map-found", "cost=1.500000 after 0 flips"),
             ],
         )
@@ -1201,10 +1244,18 @@ mod tests {
             .unwrap_or_else(|e| panic!("{}: novel_input run failed: {}", name, e));
         let tq = TraceQuery::new(&output.inference_trace);
         if let Err(e) = <A::Target as BreedOracle>::assert_trace_values(&tq) {
-            panic!("{}: assert_trace_values rejected the REAL trace: {}", name, e);
+            panic!(
+                "{}: assert_trace_values rejected the REAL trace: {}",
+                name, e
+            );
         }
         let r = run_adversary_check::<A>();
-        assert!(r.is_pass(), "{}: U6 failed — oracle accepted {} cheat", name, A::cheat_code());
+        assert!(
+            r.is_pass(),
+            "{}: U6 failed — oracle accepted {} cheat",
+            name,
+            A::cheat_code()
+        );
     }
 
     #[test]

@@ -510,6 +510,26 @@ fn exactly_27_breed_pairs_covered() {
     assert_eq!(covered.len(), 27, "must cover exactly 27 breeds");
 }
 
+#[test]
+fn determinism_problog() {
+    assert_deterministic("problog", &p3_input("problog"));
+}
+
+#[test]
+fn determinism_rl_symbolic() {
+    assert_deterministic("rl_symbolic", &p3_input("rl_symbolic"));
+}
+
+#[test]
+fn determinism_sat_cdcl() {
+    assert_deterministic("sat_cdcl", &p3_input("sat_cdcl"));
+}
+
+#[test]
+fn naive_physics_deterministic() {
+    assert_deterministic("naive_physics", &p3_input("naive_physics"));
+}
+
 // ---------------------------------------------------------------------------
 // P4 tier determinism (bit-exact double run via serialized output compare)
 // ---------------------------------------------------------------------------
@@ -603,14 +623,8 @@ fn pomdp_deterministic() {
             facts.push(p4_fact(&format!("pomdp:t:commit:{}:{}", s, sp), "0.5"));
         }
         facts.push(p4_fact(&format!("pomdp:r:probe:{}", s), "-1.0"));
-        facts.push(p4_fact(
-            &format!("pomdp:o:commit:{}:hi", s),
-            "0.5",
-        ));
-        facts.push(p4_fact(
-            &format!("pomdp:o:commit:{}:lo", s),
-            "0.5",
-        ));
+        facts.push(p4_fact(&format!("pomdp:o:commit:{}:hi", s), "0.5"));
+        facts.push(p4_fact(&format!("pomdp:o:commit:{}:lo", s), "0.5"));
     }
     facts.push(p4_fact("pomdp:o:probe:up:hi", "0.9"));
     facts.push(p4_fact("pomdp:o:probe:up:lo", "0.1"));
@@ -618,7 +632,7 @@ fn pomdp_deterministic() {
     facts.push(p4_fact("pomdp:o:probe:down:lo", "0.9"));
     facts.push(p4_fact("pomdp:r:commit:up", "5.0"));
     facts.push(p4_fact("pomdp:r:commit:down", "-5.0"));
-    assert_p4_deterministic("pomdp", &p4_input(facts));
+    assert_deterministic("pomdp", &p4_input(facts));
 }
 
 #[test]
