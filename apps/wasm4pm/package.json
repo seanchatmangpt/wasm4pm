@@ -39,7 +39,7 @@
     "@wasm4pm/supabase": "workspace:*",
     "ajv": "^8.12.0",
     "chokidar": "^4.0.1",
-    "citty": "^0.1.6",
+    "citty": "^0.2.2",
     "consola": "^3.2.3",
     "zod": "^3.23.8"
   },
