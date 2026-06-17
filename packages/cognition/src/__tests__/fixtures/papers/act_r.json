@@ -1,0 +1,55 @@
+{
+  "breed": "act_r",
+  "provenance": {
+    "paper": "Anderson, J. R., & Lebiere, C. (1998). The Atomic Components of Thought.",
+    "citation": "Anderson, J. R., & Lebiere, C. (1998). Lawrence Erlbaum Associates. Chapter 3 (the activation equation A_i = B_i + Σ_j W_j·S_ji) and Chapter 9 (cognitive arithmetic: retrieval of addition facts).",
+    "locus": "Ch. 3 Eq. 3.1 activation equation; Ch. 9 addition-fact retrieval 3+4=7 with competing neighbour fact 3+5=8.",
+    "extraction": "instantiated",
+    "notes": "Retrieval of the addition fact 3+4. Chunk fact34 (sum 7) shares two context slots with the goal (addend1=3, addend2=4) and has higher base-level activation; neighbour fact35 shares only addend1=3. A(fact34) = 0.5 + 2/3 ≈ 1.1667 beats A(fact35) = 0.3 + 1/3 ≈ 0.6333."
+  },
+  "input": {
+    "intent": "retrieve the sum of 3 + 4",
+    "candidates": [],
+    "facts": [
+      {"key": "goal", "value": "add"},
+      {"key": "addend1", "value": "3"},
+      {"key": "addend2", "value": "4"}
+    ],
+    "cases": [
+      {
+        "id": "fact34",
+        "intent": "addition fact",
+        "architecture": "declarative-chunk",
+        "outcome_score": 0.5,
+        "facts": [
+          {"key": "addend1", "value": "3"},
+          {"key": "addend2", "value": "4"},
+          {"key": "sum", "value": "7"}
+        ]
+      },
+      {
+        "id": "fact35",
+        "intent": "addition fact",
+        "architecture": "declarative-chunk",
+        "outcome_score": 0.3,
+        "facts": [
+          {"key": "addend1", "value": "3"},
+          {"key": "addend2", "value": "5"},
+          {"key": "sum", "value": "8"}
+        ]
+      }
+    ],
+    "rules": [
+      {"id": "p-retrieve-sum", "premise": ["goal=add"], "conclusion": "retrieve:addend1=3", "certainty": 0.9}
+    ],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "retrieved": "fact34",
+    "sum_fact": {"key": "sum", "value": "7"},
+    "activation_fact34": 1.1667,
+    "activation_tolerance": 0.001,
+    "notes": "fact34 wins retrieval by the activation equation; its slots (including sum=7) enter working memory and the output facts."
+  }
+}

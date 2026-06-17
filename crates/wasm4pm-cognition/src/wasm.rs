@@ -16,13 +16,7 @@ use crate::autosystems::dimension::DimensionSpec;
 use crate::autosystems::dominance::{reject_dominated, DomainProfile};
 use crate::autosystems::findings::FindingRegistry;
 use crate::autosystems::receipt::ReceiptChain;
-use crate::breeds::{
-    autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
-    autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr, dendral::Dendral, frame::Eliza, gps::Gps, hearsay::Hearsay, production_rules::Mycin,
-    prolog::Prolog, soar::Soar, strips::Strips, BreedError, BreedInput, BreedOutput,
-    CognitionBreed,
-};
+use crate::breeds::{BreedError, BreedInput, BreedOutput};
 use crate::evidence::check_trace_laws;
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};

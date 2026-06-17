@@ -1,0 +1,35 @@
+{
+  "breed": "circumscription",
+  "provenance": {
+    "paper": "McCarthy, J. (1980). Circumscription — a form of non-monotonic reasoning.",
+    "citation": "McCarthy, J. (1980). Artificial Intelligence, 13(1-2), 27-39.",
+    "locus": "Section 4 (blocks/bird examples): minimizing ab; birds fly unless abnormal, penguins are abnormal with respect to flying.",
+    "extraction": "instantiated",
+    "notes": "Canonical bird/penguin instance of circumscribing the abnormality predicate. Tweety is a bird with no abnormality evidence (flies entailed in all ab-minimal models); Opus is a penguin (penguin forces ab_bird_opus, so flies_opus is NOT entailed even though naive monotone chaining ignoring not_-premises would derive it)."
+  },
+  "input": {
+    "intent": "circumscribe abnormality over the bird/penguin theory",
+    "candidates": [],
+    "facts": [
+      {"key": "bird_tweety", "value": "true"},
+      {"key": "bird_opus", "value": "true"},
+      {"key": "penguin_opus", "value": "true"}
+    ],
+    "cases": [],
+    "rules": [
+      {"id": "r-fly-tweety", "premise": ["bird_tweety", "not_ab_bird_tweety"], "conclusion": "flies_tweety", "certainty": 1.0},
+      {"id": "r-fly-opus", "premise": ["bird_opus", "not_ab_bird_opus"], "conclusion": "flies_opus", "certainty": 1.0},
+      {"id": "r-penguin-ab", "premise": ["penguin_opus"], "conclusion": "ab_bird_opus", "certainty": 1.0}
+    ],
+    "goals": [
+      {"id": "g1", "predicate": "entail", "value": "flies_tweety"},
+      {"id": "g2", "predicate": "entail", "value": "flies_opus"}
+    ],
+    "state": []
+  },
+  "expected": {
+    "entailed": {"flies_tweety": true, "flies_opus": false},
+    "minimal_ab_set": ["ab_bird_opus"],
+    "notes": "The unique ab-minimal model has exactly {ab_bird_opus}: penguin_opus forces it, while ab_bird_tweety stays false by minimization, so flies_tweety holds and flies_opus does not."
+  }
+}

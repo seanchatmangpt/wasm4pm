@@ -21,6 +21,20 @@
 | autoinstinct_semantics | 856 ns | — | — | MEASURED |
 | autoinstinct_neurosis | 2.802 µs | — | — | MEASURED |
 | autoinstinct_vision | 1.118 µs | — | — | MEASURED |
+| ltl_monitor | 4.359 µs | — | ≤ 100 µs | MEASURED |
+| allen_temporal | 4.964 µs | — | ≤ 100 µs | MEASURED |
+| fuzzy_logic | 3.485 µs | — | ≤ 100 µs | MEASURED |
+| bayesian_network | 7.017 µs | — | ≤ 100 µs | MEASURED |
+| csp_ac3 | 29.278 µs | — | ≤ 100 µs | MEASURED |
+| default_logic | 2.227 µs | — | ≤ 100 µs | MEASURED |
+| htn_planning | 3.063 µs | — | ≤ 100 µs | MEASURED |
+| dempster_shafer | 2.857 µs | — | ≤ 100 µs | MEASURED |
+| frames_inheritance | 2.037 µs | — | ≤ 100 µs | MEASURED |
+| ebl | 11.132 µs | — | ≤ 100 µs | MEASURED |
+
+### P1 tier note
+
+All 10 P1 breeds measured under the 100 µs global latency budget (Criterion medians, representative paper-grade inputs from `benches/breed_latency.rs::p1_input`). Slowest: csp_ac3 at 29.3 µs (K4-minus-edge with MAC).
 
 ## P4 Tier Results (group `breed_latency_p4`)
 

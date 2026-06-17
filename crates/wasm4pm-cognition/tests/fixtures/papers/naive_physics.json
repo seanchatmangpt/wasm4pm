@@ -1,0 +1,31 @@
+{
+  "breed": "naive_physics",
+  "provenance": {
+    "paper": "Hayes, P. J. (1979). The Naive Physics Manifesto; Hayes, P. J. (1985). Naive physics I: ontology for liquids.",
+    "citation": "Hayes, P. J. (1979). In D. Michie (Ed.), Expert Systems in the Micro-Electronic Age. Edinburgh University Press. Hayes, P. J. (1985). In J. R. Hobbs & R. C. Moore (Eds.), Formal Theories of the Commonsense World (pp. 71-107). Ablex.",
+    "locus": "Manifesto: clusters of axioms for support and containment; Liquids paper Sections 4-6: contained liquids and what happens when containment fails (spilling).",
+    "extraction": "instantiated",
+    "notes": "The cup-of-water scene: water (liquid) contained in a cup, cup supported by a table, table on the floor (ground). Removing the table breaks the support chain: the cup falls (support axiom) and the water spills (liquid axiom). The floor must NOT fall (ground objects are immobile)."
+  },
+  "input": {
+    "intent": "predict what happens when the table is removed",
+    "candidates": [],
+    "facts": [
+      {"key": "np:ground:floor", "value": "true"},
+      {"key": "np:on:table", "value": "floor"},
+      {"key": "np:on:cup", "value": "table"},
+      {"key": "np:liquid:water", "value": "cup"},
+      {"key": "np:remove:table", "value": "true"}
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "falls": ["cup"],
+    "spills": ["water"],
+    "not_falls": ["floor", "table"],
+    "notes": "Exactly the cup falls (its direct support was removed) and exactly the water spills (its container falls); over-derivation (floor falling) is a defect."
+  }
+}

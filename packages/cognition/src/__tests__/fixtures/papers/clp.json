@@ -1,0 +1,28 @@
+{
+  "breed": "clp",
+  "provenance": {
+    "citation": "Jaffar, J., & Lassez, J.-L. (1987). Constraint Logic Programming. In: Proceedings of the 14th ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages (POPL 1987), pp. 111–119.",
+    "locus": "Sections 1–2: the CLP scheme — computation is constraint solving over a structure's solver, not syntactic unification or generate-and-test enumeration; CLP(R) examples (e.g., resistive circuits) where posting constraints alone determines the answer.",
+    "extraction": "adapted",
+    "notes": "The paper's worked examples live in CLP(R) (real arithmetic); this breed instantiates the CLP scheme over finite integer domains (CLP(FD)), with reals documented out of scope. The fixture preserves the scheme's defining behaviour exhibited in the paper: arithmetic constraints (x = y + 3, y < 4 with x ∈ 6..9) are resolved entirely by the constraint solver — propagation alone yields the unique solution x=6, y=3 with zero search (zero labeling backtracks), demonstrating 'constraints as computation' rather than generate-and-test."
+  },
+  "input": {
+    "intent": "solve arithmetic constraints by propagation (CLP scheme, FD instantiation)",
+    "candidates": [],
+    "facts": [
+      { "key": "clp:var:x", "value": "6..9" },
+      { "key": "clp:var:y", "value": "0..9" },
+      { "key": "clp:constraint:c1", "value": "x=y+3" },
+      { "key": "clp:constraint:c2", "value": "y<4" }
+    ],
+    "cases": [],
+    "rules": [],
+    "goals": [],
+    "state": []
+  },
+  "expected": {
+    "solution": "x=6,y=3",
+    "backtracks": "0",
+    "notes": "Unique solution forced by arc consistency on x=y+3 ∧ y<4 ∧ x≥6 — the solver, not enumeration, does the work (Jaffar & Lassez 1987)."
+  }
+}

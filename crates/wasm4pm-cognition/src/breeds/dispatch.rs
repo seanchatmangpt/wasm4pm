@@ -1,4 +1,6 @@
 use crate::breeds::{
+    abductive_ibe::AbductiveIbe, abductive_lp::AbductiveLp, act_r::ActR,
+    allen_temporal::AllenTemporal, analogy_sme::AnalogySme, asp::Asp,
     autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
     autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
     cbr::Cbr, clp::Clp, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
