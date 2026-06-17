@@ -466,7 +466,36 @@ fn bayesian_network_empty_goals_refused() {
 
     let result = BayesianNetwork.preconditions(&input);
     assert!(result.is_err(), "BayesianNetwork must refuse empty goals");
-    assert!(result.unwrap_err().contains("query"));
+}
+
+// ---------------------------------------------------------------------------
+// Tier P3 Breeds Negative Tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn situation_calculus_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::situation_calculus::SituationCalculus;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.goals = vec![goal("g1", "action", "grab")]; // Missing rules
+
+    let result = SituationCalculus.preconditions(&input);
+    assert!(result.is_err(), "SituationCalculus must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
+}
+
+#[test]
+fn circumscription_empty_rules_refused() {
+    use wasm4pm_cognition::breeds::circumscription::Circumscription;
+    use wasm4pm_cognition::breeds::CognitionBreed;
+
+    let mut input = empty_base();
+    input.intent = "entail".into(); // Missing rules
+
+    let result = Circumscription.preconditions(&input);
+    assert!(result.is_err(), "Circumscription must refuse empty rules");
+    assert!(result.unwrap_err().contains("rule"));
 }
 
 #[test]

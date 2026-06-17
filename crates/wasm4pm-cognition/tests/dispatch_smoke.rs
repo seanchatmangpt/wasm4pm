@@ -377,6 +377,41 @@ fn dispatch_unknown_breed_rejects() {
 }
 
 #[test]
+fn dispatch_situation_calculus_routes() {
+    let mut input = minimal_input();
+    input.intent = "project".into();
+    input.rules = vec![
+        Rule { id: "action".into(), premise: vec![], conclusion: "".into(), certainty: 1.0 },
+    ];
+    let output = dispatch_breed_test("situation_calculus", &input)
+        .expect("situation_calculus dispatch failed");
+
+    assert_eq!(output.breed, BreedId::SituationCalculus, "breed mismatch");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "situation_calculus must produce non-empty trace"
+    );
+}
+
+#[test]
+fn dispatch_circumscription_routes() {
+    let mut input = minimal_input();
+    input.intent = "entail".into();
+    input.rules = vec![
+        Rule { id: "rule".into(), premise: vec![], conclusion: "".into(), certainty: 1.0 },
+    ];
+    let output = dispatch_breed_test("circumscription", &input)
+        .expect("circumscription dispatch failed");
+
+    assert_eq!(output.breed, BreedId::Circumscription, "breed mismatch");
+    assert!(
+        !output.inference_trace.is_empty(),
+        "circumscription must produce non-empty trace"
+    );
+}
+
+
+#[test]
 fn dispatch_empty_breed_rejects() {
     let input = minimal_input();
     let result = dispatch_breed_test("", &input);

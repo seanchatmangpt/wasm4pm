@@ -529,7 +529,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "circumscription",
@@ -543,7 +543,7 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "PARTIAL_ALIVE"
   },
   {
     "breed_id": "act_r",
