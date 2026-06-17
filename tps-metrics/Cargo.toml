@@ -10,7 +10,7 @@ documentation = "https://docs.rs/tps-metrics"
 readme = "README.md"
 
 [dependencies]
-git2 = "0.18"
+git2 = "0.21"
 chrono = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
