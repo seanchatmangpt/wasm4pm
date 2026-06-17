@@ -249,7 +249,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "ADMITTED",
+    "validation_level": "L1"
   },
   {
     "breed_id": "allen_temporal",
@@ -627,7 +628,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "ADMITTED",
+    "validation_level": "L1"
   },
   {
     "breed_id": "naive_physics",
@@ -641,7 +643,8 @@
     "ocel_model_id": "none",
     "receipt_schema_id": "none",
     "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "status": "ADMITTED",
+    "validation_level": "L1"
   },
   {
     "breed_id": "pomdp",
