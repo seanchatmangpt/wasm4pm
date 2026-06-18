@@ -78,8 +78,10 @@ pub mod models_p0;
 pub mod models_p1;
 /// Static per-breed lifecycle models (P2 tier).
 pub mod models_p2;
-/// `include_str!` sources for hand-authored OCPN model JSON files.
-pub mod model_sources;
+/// Static per-breed lifecycle models (P3 tier).
+pub mod models_p3;
+/// Static per-breed lifecycle models (P4 tier).
+pub mod models_p4;
 
 /// Get the lifecycle model for a breed by id.
 pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleModel> {
@@ -115,6 +117,23 @@ pub fn lifecycle_model_for(breed_id: &str) -> Option<&'static BreedLifecycleMode
         "event_calculus" => Some(&models_p2::EVENT_CALCULUS_MODEL),
         "mdp" => Some(&models_p2::MDP_MODEL),
         "version_space" => Some(&models_p2::VERSION_SPACE_MODEL),
+        "situation_calculus" => Some(&models_p3::SITUATION_CALCULUS_MODEL),
+        "circumscription" => Some(&models_p3::CIRCUMSCRIPTION_MODEL),
+        "analogy_sme" => Some(&models_p3::ANALOGY_SME_MODEL),
+        "act_r" => Some(&models_p3::ACT_R_MODEL),
+        "problog" => Some(&models_p3::PROBLOG_MODEL),
+        "sat_cdcl" => Some(&models_p3::SAT_CDCL_MODEL),
+        "episodic_memory" => Some(&models_p3::EPISODIC_MEMORY_MODEL),
+        "rl_symbolic" => Some(&models_p3::RL_SYMBOLIC_MODEL),
+        "ctl_check" => Some(&models_p3::CTL_CHECK_MODEL),
+        "ilp" => Some(&models_p3::ILP_MODEL),
+        "naive_physics" => Some(&models_p3::NAIVE_PHYSICS_MODEL),
+        "tableaux" => Some(&models_p4::TABLEAUX_MODEL),
+        "construction_grammar" => Some(&models_p4::CONSTRUCTION_GRAMMAR_MODEL),
+        "markov_logic" => Some(&models_p4::MARKOV_LOGIC_MODEL),
+        "pomdp" => Some(&models_p4::POMDP_MODEL),
+        "contingent_plan" => Some(&models_p4::CONTINGENT_PLAN_MODEL),
+        "meta_reasoning" => Some(&models_p4::META_REASONING_MODEL),
         _ => None,
     }
 }

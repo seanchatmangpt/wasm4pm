@@ -3,7 +3,8 @@
 
 use wasm4pm_cognition::breeds::CognitionBreed;
 use wasm4pm_cognition::breeds::{
-    dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom,
+    dispatch_breed, dispatch_breed_test, BreedId, BreedInput, Candidate, Case, Fact, Goal, Rule,
+    StateAtom,
 };
 
 /// Create a minimal valid BreedInput for testing.
@@ -402,9 +403,13 @@ fn dispatch_unknown_breed_rejects() {
 #[test]
 fn dispatch_situation_calculus_routes() {
     let mut input = minimal_input();
-    input.intent = "project".into();
-    input.rules = vec![
-        Rule { id: "action".into(), premise: vec![], conclusion: "".into(), certainty: 1.0 },
+    input.intent = "sitcalc".into();
+    input.rules = vec![];
+    // situation_calculus requires at least one `do:<n>` action step plus the
+    // action's effect axioms (`action:<name>:add`).
+    input.facts = vec![
+        Fact { key: "do:0".into(), value: "a1".into() },
+        Fact { key: "action:a1:add".into(), value: "f1".into() },
     ];
     let output = dispatch_breed_test("situation_calculus", &input)
         .expect("situation_calculus dispatch failed");
@@ -588,79 +593,41 @@ fn dispatch_output_receipt_consistency() {
 #[test]
 fn test_all_55_breeds_exhaustiveness() {
     let input = minimal_input();
-    let supported_breeds = [
-        BreedId::Eliza,
-        BreedId::Cbr,
-        BreedId::Dendral,
-        BreedId::Strips,
-        BreedId::Prolog,
-        BreedId::Mycin,
-        BreedId::Gps,
-        BreedId::Soar,
-        BreedId::Hearsay,
-        BreedId::AutoinstinctLearning,
-        BreedId::AutoinstinctSemantics,
-        BreedId::AutoinstinctNeurosis,
-        BreedId::AutoinstinctVision,
-        BreedId::LtlMonitor,
-        BreedId::AllenTemporal,
-        BreedId::FuzzyLogic,
-        BreedId::BayesianNetwork,
-        BreedId::CspAc3,
-        BreedId::DefaultLogic,
-        BreedId::HtnPlanning,
-        BreedId::Ebl,
-        BreedId::DempsterShafer,
-        BreedId::FramesInheritance,
-        BreedId::Asp,
-        BreedId::DescriptionLogic,
-        BreedId::AbductiveLp,
-        BreedId::AbductiveIbe,
-    ];
 
-    for &breed_id in BreedId::ALL {
+    // Every BreedId now routes to a real implementation via `breed_instance`
+    // (no stubs, no "unsupported" arms). Each breed must either succeed, or fail
+    // gracefully through its lifecycle gates (preconditions / postconditions /
+    // OCEL conformance) on minimal input — never panic, vanish, or report the
+    // wrong breed id.
+    for breed_id in BreedId::ALL {
         let breed_name = breed_id.to_string();
-        let is_supported = supported_breeds.contains(&breed_id);
-
         let res_dispatch = dispatch_breed(&breed_name, &input);
         let res_test = dispatch_breed_test(&breed_name, &input);
 
-        if is_supported {
-            match (res_dispatch, res_test) {
-                (Ok(out1), Ok(out2)) => {
-                    assert_eq!(out1.breed, breed_id);
-                    assert_eq!(out2.breed, breed_id);
-                }
-                (Err(err1), Ok(out2)) => {
-                    assert_eq!(out2.breed, breed_id);
-                    assert!(
-                        err1.contains("precondition failed") ||
-                        err1.contains("postcondition failed") ||
-                        err1.contains("OCEL conformance failure"),
-                        "Supported breed {} failed at dispatch with Err({:?}) but succeeded at test",
-                        breed_name, err1
-                    );
-                }
-                (Err(_), Err(_)) => {
-                    // Both failed, which is possible on minimal input
-                }
-                (Ok(out1), Err(err2)) => {
-                    panic!("Supported breed {}: dispatch succeeded ({:?}) but test failed ({:?})", breed_name, out1.breed, err2);
-                }
+        match (res_dispatch, res_test) {
+            (Ok(out1), Ok(out2)) => {
+                assert_eq!(out1.breed, breed_id);
+                assert_eq!(out2.breed, breed_id);
             }
-        } else {
-            match (res_dispatch, res_test) {
-                (Err(err1), Err(err2)) => {
-                    assert_eq!(err1, err2);
-                    assert!(
-                        err1.contains("unsupported breed"),
-                        "Unsupported breed {} did not return unsupported breed error: {:?}",
-                        breed_name, err1
-                    );
-                }
-                other => {
-                    panic!("Unsupported breed {} did not fail on both dispatch and test: {:?}", breed_name, other);
-                }
+            (Err(err1), Ok(out2)) => {
+                assert_eq!(out2.breed, breed_id);
+                assert!(
+                    err1.contains("precondition failed")
+                        || err1.contains("postcondition failed")
+                        || err1.contains("OCEL conformance failure"),
+                    "Breed {} failed at dispatch with Err({:?}) but succeeded at raw run",
+                    breed_name,
+                    err1
+                );
+            }
+            (Err(_), Err(_)) => {
+                // Both failed on minimal input — acceptable (breed needs richer input).
+            }
+            (Ok(out1), Err(err2)) => {
+                panic!(
+                    "Breed {}: dispatch succeeded ({:?}) but raw run failed ({:?})",
+                    breed_name, out1.breed, err2
+                );
             }
         }
     }
@@ -674,7 +641,7 @@ fn test_all_55_breeds_exhaustiveness() {
 fn model_source_matches_lifecycle_model_for_every_breed() {
     use wasm4pm_cognition::ocel::{lifecycle_model_for, model_sources::model_source};
 
-    for &breed_id in BreedId::ALL {
+    for breed_id in BreedId::ALL {
         let name = breed_id.to_string();
         let src = model_source(&name);
         let model = lifecycle_model_for(&name);
@@ -705,9 +672,9 @@ fn test_clp_smoke() {
         intent: "".to_string(),
         candidates: vec![], goals: vec![], rules: vec![], state: vec![], cases: vec![],
         facts: vec![
-            Fact { key: "domain:A".to_string(), value: "1".to_string() },
-            Fact { key: "domain:B".to_string(), value: "2".to_string() },
-            Fact { key: "constraint:A:!=:B".to_string(), value: "".to_string() }
+            Fact { key: "clp-var".to_string(), value: "x:1,2,3".to_string() },
+            Fact { key: "clp-var".to_string(), value: "y:1,2,3".to_string() },
+            Fact { key: "clp-constraint".to_string(), value: "x<y".to_string() },
         ]
     });
     if let Err(ref e) = out {

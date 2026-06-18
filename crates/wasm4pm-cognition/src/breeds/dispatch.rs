@@ -1,20 +1,4 @@
-use crate::breeds::{
-    abductive_ibe::AbductiveIbe, abductive_lp::AbductiveLp, act_r::ActR,
-    allen_temporal::AllenTemporal, analogy_sme::AnalogySme, asp::Asp,
-    autoinstinct_learning::AutoinstinctLearning, autoinstinct_neurosis::AutoinstinctNeurosis,
-    autoinstinct_semantics::AutoinstinctSemantics, autoinstinct_vision::AutoinstinctVision,
-    cbr::Cbr, clp::Clp, csp_ac3::CspAc3, dendral::Dendral, ebl::Ebl, frame::Eliza, gps::Gps, hearsay::Hearsay,
-    production_rules::Mycin, prolog::Prolog, soar::Soar, strips::Strips,
-    ltl_monitor::LtlMonitor, allen_temporal::AllenTemporal, fuzzy_logic::FuzzyLogic,
-    bayesian_network::BayesianNetwork, default_logic::DefaultLogic,
-    dempster_shafer::DempsterShafer, frames_inheritance::FramesInheritance,
-    htn_planning::HtnPlanning,
-    asp::Asp, description_logic::DescriptionLogic,
-    abductive_lp::AbductiveLp, abductive_ibe::AbductiveIbe,
-    partial_order_plan::PartialOrderPlan, event_calculus::EventCalculus,
-    mdp::Mdp, version_space::VersionSpace, qualitative_reason::QualitativeReason,
-    BreedInput, BreedOutput, CognitionBreed,
-};
+use crate::breeds::{breed_instance, BreedId, BreedInput, BreedOutput, CognitionBreed};
 
 /// Run a breed through its full lifecycle: preconditions → run → postconditions.
 ///
@@ -60,125 +44,37 @@ pub fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutp
 /// `breed_instance` — the macro-generated match is compiler-checked for
 /// exhaustiveness. Unknown/unsupported strings are caught before the match.
 pub fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => run_breed(&Eliza, input),
-        "cbr" => run_breed(&Cbr, input),
-        "dendral" => run_breed(&Dendral, input),
-        "strips" => run_breed(&Strips, input),
-        "prolog" => run_breed(&Prolog, input),
-        "mycin" => run_breed(&Mycin, input),
-        "gps" => run_breed(&Gps, input),
-        "soar" => run_breed(&Soar, input),
-        "hearsay" => run_breed(&Hearsay, input),
-        "autoinstinct_neurosis" => run_breed(&AutoinstinctNeurosis, input),
-        "autoinstinct_semantics" => run_breed(&AutoinstinctSemantics, input),
-        "autoinstinct_vision" => run_breed(&AutoinstinctVision, input),
-        "autoinstinct_learning" => run_breed(&AutoinstinctLearning, input),
-        "bayesian_network" => run_breed(&BayesianNetwork, input),
-        "fuzzy_logic" => run_breed(&FuzzyLogic, input),
-        "dempster_shafer" => run_breed(&DempsterShafer, input),
-        "abductive_lp" => run_breed(&AbductiveLp, input),
-        "ilp" => Err("unsupported breed: ilp".to_string()),
-        "allen_temporal" => run_breed(&AllenTemporal, input),
-        "description_logic" => run_breed(&DescriptionLogic, input),
-        "csp_ac3" => run_breed(&CspAc3, input),
-        "analogy_sme" => run_breed(&crate::breeds::analogy_sme::AnalogySme, input),
-        "ltl_monitor" => run_breed(&LtlMonitor, input),
-        "default_logic" => run_breed(&DefaultLogic, input),
-        "htn_planning" => run_breed(&HtnPlanning, input),
-        "frames_inheritance" => run_breed(&FramesInheritance, input),
-        "ebl" => run_breed(&Ebl, input),
-        "asp" => run_breed(&Asp, input),
-        "abductive_ibe" => run_breed(&AbductiveIbe, input),
-        "partial_order_plan" => run_breed(&PartialOrderPlan, input),
-        "event_calculus" => run_breed(&EventCalculus, input),
-        "mdp" => run_breed(&Mdp, input),
-        "version_space" => run_breed(&VersionSpace, input),
-        "belief_merging" => Err("unsupported breed: belief_merging".to_string()),
-        "qualitative_reason" => run_breed(&QualitativeReason, input),
-        "script_sam" => Err("unsupported breed: script_sam".to_string()),
-        "clp" => run_breed(&Clp, input),
-        "situation_calculus" => Err("unsupported breed: situation_calculus".to_string()),
-        "circumscription" => Err("unsupported breed: circumscription".to_string()),
-        "act_r" => run_breed(&crate::breeds::act_r::ActR, input),
-        "problog" => Err("unsupported breed: problog".to_string()),
-        "sat_cdcl" => Err("unsupported breed: sat_cdcl".to_string()),
-        "episodic_memory" => Err("unsupported breed: episodic_memory".to_string()),
-        "rl_symbolic" => Err("unsupported breed: rl_symbolic".to_string()),
-        "ctl_check" => run_breed(&CtlCheck, input),
-        "naive_physics" => run_breed(&NaivePhysicsBreed, input),
-        "pomdp" => Err("unsupported breed: pomdp".to_string()),
-        "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
-        "meta_reasoning" => run_breed(&MetaReasoning, input),
-        "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
-        "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),
-        "tableaux" => Err("unsupported breed: tableaux".to_string()),
-        "morphological" => Err("unsupported breed: morphological".to_string()),
-        "triz" => Err("unsupported breed: triz".to_string()),
-        "ocpm_route_discoverer" => Err("unsupported breed: ocpm_route_discoverer".to_string()),
-        other => Err(format!("unknown breed: {}", other)),
-    }
+    let id = BreedId::from_str_id(breed).ok_or_else(|| format!("unknown breed: {}", breed))?;
+    run_breed(breed_instance(id), input)
 }
 
 /// Test harness: dispatch to the correct breed's `run()` method without OCEL or pre/post checks.
 /// Usually used for unit tests of raw runs.
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
-    match breed {
-        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_neurosis" => AutoinstinctNeurosis.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_semantics" => AutoinstinctSemantics.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_vision" => AutoinstinctVision.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "autoinstinct_learning" => AutoinstinctLearning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "bayesian_network" => BayesianNetwork.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "fuzzy_logic" => FuzzyLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dempster_shafer" => DempsterShafer.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "abductive_lp" => AbductiveLp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ilp" => Err("unsupported breed: ilp".to_string()),
-        "allen_temporal" => AllenTemporal.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "description_logic" => DescriptionLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "csp_ac3" => CspAc3.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "analogy_sme" => Err("unsupported breed: analogy_sme".to_string()),
-        "ltl_monitor" => LtlMonitor.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "default_logic" => DefaultLogic.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "htn_planning" => HtnPlanning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "frames_inheritance" => FramesInheritance.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "ebl" => Ebl.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "asp" => Asp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "abductive_ibe" => AbductiveIbe.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "partial_order_plan" => PartialOrderPlan.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "event_calculus" => EventCalculus.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mdp" => Mdp.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "version_space" => VersionSpace.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "belief_merging" => Err("unsupported breed: belief_merging".to_string()),
-        "qualitative_reason" => Err("unsupported breed: qualitative_reason".to_string()),
-        "script_sam" => Err("unsupported breed: script_sam".to_string()),
-        "clp" => run_breed(&Clp, input),
-        "situation_calculus" => Err("unsupported breed: situation_calculus".to_string()),
-        "circumscription" => Err("unsupported breed: circumscription".to_string()),
-        "act_r" => run_breed(&crate::breeds::act_r::ActR, input),
-        "problog" => Err("unsupported breed: problog".to_string()),
-        "sat_cdcl" => Err("unsupported breed: sat_cdcl".to_string()),
-        "episodic_memory" => Err("unsupported breed: episodic_memory".to_string()),
-        "rl_symbolic" => Err("unsupported breed: rl_symbolic".to_string()),
-        "ctl_check" => run_breed(&CtlCheck, input),
-        "naive_physics" => run_breed(&NaivePhysicsBreed, input),
-        "pomdp" => Err("unsupported breed: pomdp".to_string()),
-        "markov_logic" => Err("unsupported breed: markov_logic".to_string()),
-        "meta_reasoning" => MetaReasoning.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "construction_grammar" => Err("unsupported breed: construction_grammar".to_string()),
-        "contingent_plan" => Err("unsupported breed: contingent_plan".to_string()),
-        "tableaux" => Err("unsupported breed: tableaux".to_string()),
-        "morphological" => Err("unsupported breed: morphological".to_string()),
-        "triz" => Err("unsupported breed: triz".to_string()),
-        "ocpm_route_discoverer" => Err("unsupported breed: ocpm_route_discoverer".to_string()),
-        other => Err(format!("unknown breed: {}", other)),
-    }
+    let id = BreedId::from_str_id(breed).ok_or_else(|| format!("unknown breed: {}", breed))?;
+    breed_instance(id)
+        .run(input)
+        .map_err(|e| format!("{}: {}", e.breed, e.message))
+}
+
+/// Dispatch by `BreedId` through the macro-generated `breed_instance` routing
+/// table — the single source of truth, compiler-checked for exhaustiveness.
+/// Used by the oracle/adversary harness to run a breed by enum id.
+pub fn dispatch_breed_id(
+    id: crate::breeds::BreedId,
+    input: &BreedInput,
+) -> Result<BreedOutput, String> {
+    run_breed(crate::breeds::breed_instance(id), input)
+}
+
+/// Test-harness dispatch by `BreedId`: routes through `breed_instance` and calls
+/// `run()` directly (no preconditions / postconditions / OCEL gate). Used by the
+/// oracle + ensemble harnesses for raw-run determinism and adversary checks.
+pub fn dispatch_breed_test_id(
+    id: crate::breeds::BreedId,
+    input: &BreedInput,
+) -> Result<BreedOutput, String> {
+    crate::breeds::breed_instance(id)
+        .run(input)
+        .map_err(|e| format!("{}: {}", e.breed, e.message))
 }

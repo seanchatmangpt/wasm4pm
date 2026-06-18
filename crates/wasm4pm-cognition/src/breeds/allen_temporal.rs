@@ -275,6 +275,24 @@ impl CognitionBreed for AllenTemporal {
             }
         }
 
+        // Direct contradiction check: an empty relation set (mask == 0) between any
+        // two distinct intervals means the conjunction of loaded constraints is
+        // unsatisfiable (e.g. "A before B" AND "B before A"). Path consistency only
+        // detects contradictions via a third interval, so catch the 2-node case here.
+        for i in 0..n {
+            for j in 0..n {
+                if i != j && matrix[i][j] == 0 {
+                    return Err(BreedError {
+                        breed: self.id(),
+                        message: format!(
+                            "empty relation set: inconsistency detected between {} and {}",
+                            node_names[i], node_names[j]
+                        ),
+                    });
+                }
+            }
+        }
+
         // Path consistency using a queue
         let mut q = VecDeque::new();
         for i in 0..n {
@@ -478,7 +496,7 @@ mod tests {
             state: vec![],
         };
         let out = AllenTemporal.run(&input).unwrap();
-        let ac_rel = out.facts.iter().find(|f| f.key == "derived:A,C").unwrap();
+        let ac_rel = out.facts.iter().find(|f| f.key == "relation:A:C").unwrap();
         assert_eq!(ac_rel.value, "p");
     }
 

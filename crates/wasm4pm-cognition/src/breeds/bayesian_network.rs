@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet, VecDeque};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, TraceStep, Fact,
+    BreedError, BreedId, BreedInput, BreedOutput, Candidate, CognitionBreed, CognitionError,
+    TraceStep, Fact,
 };
 
 /// Bayesian Network breed (Pearl 1988).
@@ -413,7 +415,7 @@ impl CognitionBreed for BayesianNetwork {
                 breed: self.id(),
                 candidates: input.candidates.clone(),
                 facts: out_facts,
-                selected: None,
+                selected: Some(explanation.clone()),
                 explanation,
                 inference_trace: trace,
                 ocel_log: None,

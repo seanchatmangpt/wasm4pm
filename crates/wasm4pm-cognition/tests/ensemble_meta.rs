@@ -72,7 +72,6 @@ fn test_full_ensemble_consistency() {
             key: "breed:dummy:confidence".to_string(),
             value: "1.0".to_string(),
         });
-        admitted_count += 1;
     }
 
     // Now run meta_reasoning

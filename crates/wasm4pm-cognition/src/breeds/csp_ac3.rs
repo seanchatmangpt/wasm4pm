@@ -3,9 +3,12 @@
 //! Rank-1 (mathematical theorem): Guaranteed exact lex-least assignment for 3-coloring
 //! K4-minus-edge, and unsat domain-wipeout for K3/2-colors.
 
+use crate::breeds::support::breed_class::VerifierBreed;
 use crate::breeds::support::csp::{CspSolver, TraceEvent};
+use crate::breeds::support::domain_bound::{BoundedBreed, DomainBound};
+use crate::breeds::support::trace_query::TraceQuery;
 use crate::breeds::{
-    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, TraceStep, Fact
+    BreedError, BreedId, BreedInput, BreedOutput, CognitionBreed, CognitionError, TraceStep, Fact
 };
 
 /// Constraint Satisfaction Problem breed
