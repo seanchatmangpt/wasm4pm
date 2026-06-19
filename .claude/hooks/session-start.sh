@@ -4,13 +4,11 @@
 # Runs `wpm doctor` and injects health summary into Claude's context.
 # CRITICAL: Must succeed. Fails loudly if doctor is unavailable.
 
-set -e
-
 DOCTOR_OUTPUT=""
 
 # Run wpm doctor via make target (builds CLI if needed).
 # Separate stderr so build/runtime diagnostics don't contaminate the JSON parsed below.
-cd "$CLAUDE_PROJECT_DIR"
+cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || { echo "WARN: Cannot cd to project dir — skipping doctor" >&2; exit 0; }
 DOCTOR_OUTPUT=$(make doctor 2>/tmp/wpm-doctor.err | awk '/^{/,/^}/ {print}') || {
   echo "WARN: make doctor failed — see /tmp/wpm-doctor.err for details" >&2
 }
