@@ -114,6 +114,15 @@ jobs:
         continue-on-error: true
         run: cargo run -q -p bench-tools -- regress
 
+      # Correctness × performance attestation: a benchmark must not vouch for a
+      # breed that is not provably correct. Runs the paper-grounded + falsification
+      # gates and FAILS on any FAST-BUT-WRONG breed. continue-on-error during
+      # adoption; flip to a required check once all breeds are benchmarked.
+      - name: Attestation gate (bench-tools)
+        id: attestation_gate
+        continue-on-error: true
+        run: cargo run -q -p bench-tools -- attest
+
       # Run regression detection (legacy bash gate, retained during adoption)
       - name: Detect regressions
         id: regression
