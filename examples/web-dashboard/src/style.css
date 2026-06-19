@@ -1,0 +1,71 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #30363d;
+  --fg: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --ok: #3fb950;
+  --pending: #d29922;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  line-height: 1.5;
+}
+header, main, footer { max-width: 980px; margin: 0 auto; padding: 1.25rem; }
+h1 { margin: 0 0 0.25rem; }
+.sub, .hint { color: var(--muted); }
+.status { display: inline-block; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 600; }
+.status.pending { background: rgba(210, 153, 34, 0.15); color: var(--pending); }
+.status.ready { background: rgba(63, 185, 80, 0.15); color: var(--ok); }
+.status.error { background: rgba(248, 81, 73, 0.15); color: #f85149; }
+section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin: 1rem auto;
+}
+.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; }
+.card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+  background: #0d1117;
+  font-size: 0.85rem;
+  transition: border-color 0.1s;
+}
+.card:hover { border-color: var(--accent); }
+.card.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.card.has-fixture::after { content: " · fixture"; color: var(--ok); font-size: 0.7rem; }
+.card.disabled { opacity: 0.45; cursor: not-allowed; }
+button {
+  background: var(--accent);
+  color: #0d1117;
+  border: 0;
+  border-radius: 6px;
+  padding: 0.55rem 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.receipt { margin-top: 1rem; }
+.receipt.hidden { display: none; }
+dl { display: grid; grid-template-columns: 140px 1fr; gap: 0.3rem 1rem; }
+dt { color: var(--muted); }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+.kpis { display: grid; gap: 0.5rem; }
+.kpi {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+}
+.kpi .val { font-size: 1.4rem; font-weight: 700; color: var(--ok); }
+.kpi .label { color: var(--muted); font-size: 0.85rem; }
+.kpi .trace { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+footer { color: var(--muted); font-size: 0.85rem; }

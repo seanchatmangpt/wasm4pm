@@ -1,0 +1,79 @@
+{
+  "breed": "bayesian_network",
+  "input": {
+    "intent": "Bayesian network exact query",
+    "candidates": [],
+    "facts": [
+      {
+        "key": "Alarm",
+        "value": "true"
+      }
+    ],
+    "cases": [],
+    "rules": [
+      {
+        "id": "r-burg",
+        "premise": [],
+        "conclusion": "Burglary=true",
+        "certainty": 0.001
+      },
+      {
+        "id": "r-eq",
+        "premise": [],
+        "conclusion": "Earthquake=true",
+        "certainty": 0.002
+      },
+      {
+        "id": "r-alarm1",
+        "premise": [
+          "Burglary=true",
+          "Earthquake=true"
+        ],
+        "conclusion": "Alarm=true",
+        "certainty": 0.95
+      },
+      {
+        "id": "r-alarm2",
+        "premise": [
+          "Burglary=true",
+          "Earthquake=false"
+        ],
+        "conclusion": "Alarm=true",
+        "certainty": 0.94
+      },
+      {
+        "id": "r-alarm3",
+        "premise": [
+          "Burglary=false",
+          "Earthquake=true"
+        ],
+        "conclusion": "Alarm=true",
+        "certainty": 0.29
+      },
+      {
+        "id": "r-alarm4",
+        "premise": [
+          "Burglary=false",
+          "Earthquake=false"
+        ],
+        "conclusion": "Alarm=true",
+        "certainty": 0.001
+      }
+    ],
+    "goals": [
+      {
+        "id": "g1",
+        "predicate": "query",
+        "value": "Burglary"
+      }
+    ],
+    "state": []
+  },
+  "expected": {
+    "query": "Burglary",
+    "value": 0.373551228281836,
+    "posterior_burglary_given_alarm": 0.373551228281836,
+    "tolerance": 0.0001
+  },
+  "citation": "J. Pearl (1988). Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference. Morgan Kaufmann."
+}

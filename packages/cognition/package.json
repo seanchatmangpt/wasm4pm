@@ -13,6 +13,10 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./browser": {
+      "import": "./dist/browser.js",
+      "types": "./dist/browser.d.ts"
+    },
     "./contract": {
       "import": "./dist/contract/run.js",
       "types": "./dist/contract/run.d.ts"
@@ -28,7 +32,9 @@
   },
   "files": [
     "dist",
-    "src"
+    "src",
+    "pkg",
+    "pkg-web"
   ],
   "scripts": {
     "build": "tsc",
@@ -42,6 +48,7 @@
     "@wasm4pm/contracts": "workspace:*",
     "blake3": "^2.1.4",
     "wasm4pm-cognition": "./pkg",
+    "wasm4pm-cognition-web": "./pkg-web",
     "zod": "^4.4.3"
   },
   "devDependencies": {
