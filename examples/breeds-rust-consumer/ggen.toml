@@ -1,0 +1,33 @@
+# Working example: generate Rust cognition-breed bindings from the
+# wasm4pm-breeds-rust pack. Run `ggen sync` here, then `cargo run`.
+[project]
+name        = "breeds-rust-consumer"
+version     = "0.1.0"
+description = "Working example consuming the wasm4pm-breeds-rust ggen pack."
+authors     = ["wasm4pm"]
+license     = "MIT"
+
+[ontology]
+source  = "../../packs/wasm4pm-breeds-rust/ggen/ontology/breed-vocabulary.ttl"
+imports = [ "../../packs/wasm4pm-breeds-rust/ggen/ontology/breeds.ttl" ]
+standard_only = false
+
+[inference]
+rules = [ { name = "mark-breeds", construct = "CONSTRUCT { ?b <https://wasm4pm.dev/ns#isBreed> true } WHERE { ?b a <https://wasm4pm.dev/ns#CognitionBreed> }" } ]
+
+[generation]
+output_dir = "."
+
+[[generation.rules]]
+name        = "breed-ids"
+query       = { file = "../../packs/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq" }
+template    = { file = "../../packs/wasm4pm-breeds-rust/ggen/templates/breed_ids.rs.tera" }
+output_file = "src/breed_ids.rs"
+mode        = "Overwrite"
+
+[[generation.rules]]
+name        = "breed-catalog"
+query       = { file = "../../packs/wasm4pm-breeds-rust/ggen/queries/extract-breeds.rq" }
+template    = { file = "../../packs/wasm4pm-breeds-rust/ggen/templates/breed_catalog.rs.tera" }
+output_file = "src/breed_catalog.rs"
+mode        = "Overwrite"

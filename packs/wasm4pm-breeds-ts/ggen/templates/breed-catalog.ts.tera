@@ -1,0 +1,20 @@
+// AUTO-RENDERED BY GGEN — edit ggen/ontology/breeds.ttl, then run `ggen sync`.
+// Source of truth: wasm4pm-breeds-ts pack (compat:CognitionBreed instances).
+
+import type { BreedId } from "./breed-ids";
+
+export interface BreedInfo {
+  id: BreedId;
+  label: string;
+  doc: string;
+  citation: string;
+}
+
+export const BREED_CATALOG: readonly BreedInfo[] = [
+{% for row in sparql_results %}  {
+    id: "{{ row.breed_id }}",
+    label: "{{ row.breed_label }}",
+    doc: `{{ row.breed_doc | replace(from="`", to="\`") | replace(from="${", to="\${") }}`,
+    citation: `{{ row.citation | replace(from="`", to="\`") | replace(from="${", to="\${") }}`,
+  },
+{% endfor %}];

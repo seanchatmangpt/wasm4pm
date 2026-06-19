@@ -1,0 +1,15 @@
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix compat: <https://wasm4pm.dev/ns#> .
+
+# Minimal standalone vocabulary so the bundled breed instances resolve without
+# the wasm4pm-compat sibling. Declares the CognitionBreed class + predicates.
+compat:CognitionBreed a rdfs:Class ;
+  rdfs:comment "A registered cognition algorithm breed in the wasm4pm platform." .
+
+compat:breedId    a rdf:Property ; rdfs:domain compat:CognitionBreed ; rdfs:range xsd:string .
+compat:breedLabel a rdf:Property ; rdfs:domain compat:CognitionBreed ; rdfs:range xsd:string .
+compat:breedDoc   a rdf:Property ; rdfs:domain compat:CognitionBreed ; rdfs:range xsd:string .
+compat:citation   a rdf:Property ; rdfs:domain compat:CognitionBreed ; rdfs:range xsd:string .
+compat:modulePath a rdf:Property ; rdfs:domain compat:CognitionBreed ; rdfs:range xsd:string .
