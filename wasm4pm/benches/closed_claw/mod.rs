@@ -5,6 +5,10 @@
 #[path = "../helpers.rs"]
 mod helpers;
 
+// `autonomic_loop` and `rl_algorithms` depend on the cloud-gated modules
+// (`guards`, `reinforcement`, `self_healing`, `spc`) and therefore only
+// compile when the `cloud` feature is enabled.
+#[cfg(feature = "cloud")]
 mod autonomic_loop;
 mod gates;
 mod golden;
@@ -17,6 +21,7 @@ mod pipeline_e_manufacturing;
 mod pipeline_f_ml;
 mod receipt;
 mod registry;
+#[cfg(feature = "cloud")]
 mod rl_algorithms;
 
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -25,7 +30,7 @@ use std::time::Duration;
 fn closed_claw_benchmarks(c: &mut Criterion) {
     pipeline_a_discovery::bench_discovery_core(c);
     pipeline_b_conformance::bench_conformance_core(c);
-    pipeline_c_ocel::bench_wasm4pm_compat::ocel(c);
+    pipeline_c_ocel::bench_ocel_main(c);
     pipeline_d_semantic::bench_semantic_proof(c);
     pipeline_e_manufacturing::bench_manufacturing_truth(c);
     pipeline_f_ml::bench_ml_augmented(c);
@@ -40,6 +45,7 @@ criterion_group! {
     targets = closed_claw_benchmarks
 }
 
+#[cfg(feature = "cloud")]
 criterion_group! {
     name = autonomic_loop;
     config = Criterion::default()
@@ -49,6 +55,7 @@ criterion_group! {
     targets = autonomic_loop::bench_autonomic_loop
 }
 
+#[cfg(feature = "cloud")]
 criterion_group! {
     name = rl_algorithms;
     config = Criterion::default()
@@ -58,4 +65,8 @@ criterion_group! {
     targets = rl_algorithms::bench_rl_algorithms
 }
 
+#[cfg(feature = "cloud")]
 criterion_main!(closed_claw, autonomic_loop, rl_algorithms);
+
+#[cfg(not(feature = "cloud"))]
+criterion_main!(closed_claw);

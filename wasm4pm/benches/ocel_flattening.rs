@@ -9,7 +9,7 @@
 /// so no `required-features` guard is needed.  If compiled without `ocel`, the
 /// `measure_flattening_loss` symbol will still exist (it is not cfg-gated at the
 /// function-signature level) but the body may be a no-op.
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
@@ -194,7 +194,7 @@ fn bench_ocel_one_to_one(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(total_events));
         group.bench_with_input(BenchmarkId::new("objects", num_objects), &ocel, |b, o| {
-            b.iter(|| measure_flattening_loss(o, "order"))
+            b.iter(|| black_box(measure_flattening_loss(black_box(o), black_box("order"))))
         });
     }
     group.finish();
@@ -224,7 +224,7 @@ fn bench_ocel_one_to_many(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(total_events));
         group.bench_with_input(BenchmarkId::new("events", num_events), &ocel, |b, o| {
-            b.iter(|| measure_flattening_loss(o, "item"))
+            b.iter(|| black_box(measure_flattening_loss(black_box(o), black_box("item"))))
         });
     }
     group.finish();
@@ -255,7 +255,54 @@ fn bench_ocel_many_to_many(c: &mut Criterion) {
 
         group.throughput(Throughput::Elements(total_events));
         group.bench_with_input(BenchmarkId::new("events", num_events), &ocel, |b, o| {
-            b.iter(|| measure_flattening_loss(o, "process"))
+            b.iter(|| black_box(measure_flattening_loss(black_box(o), black_box("process"))))
+        });
+    }
+    group.finish();
+}
+
+// ---------------------------------------------------------------------------
+// Group 4: Real OCEL 2.0 log (bench_data/ocel20_example.jsonocel)
+// ---------------------------------------------------------------------------
+
+/// Load the real OCEL 2.0 example log (procure-to-pay) shipped in `bench_data/`.
+///
+/// This is a published OCEL 2.0 standard example (objectTypes: Invoice, Payment,
+/// Purchase Order, Purchase Requisition). It is small (13 events / 9 objects),
+/// so no trace cap is needed; it grounds the flattening measurement on real
+/// many-to-many object-centric structure rather than only synthetic shapes.
+fn load_real_ocel() -> OCEL {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../bench_data/ocel20_example.jsonocel");
+    let content = std::fs::read_to_string(path)
+        .unwrap_or_else(|e| panic!("bench: failed to read real OCEL {}: {}", path, e));
+    serde_json::from_str(&content)
+        .unwrap_or_else(|e| panic!("bench: failed to parse real OCEL 2.0: {}", e))
+}
+
+fn bench_ocel_real_log(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ocel_flattening/real_ocel20");
+    group.measurement_time(Duration::from_secs(5));
+    group.warm_up_time(Duration::from_secs(2));
+    group.sample_size(50);
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
+
+    let ocel = load_real_ocel();
+    let total_events = ocel.events.len() as u64;
+    assert!(total_events > 0, "real OCEL log unexpectedly empty");
+
+    // Flatten the real log onto each of its real object types — the per-type
+    // flattening loss is what `measure_flattening_loss` reports.
+    let object_types = ocel.object_types.clone();
+    for object_type in &object_types {
+        group.throughput(Throughput::Elements(total_events));
+        group.bench_with_input(BenchmarkId::new("object_type", object_type), &ocel, |b, o| {
+            b.iter(|| {
+                black_box(measure_flattening_loss(black_box(o), black_box(object_type.as_str())))
+            })
         });
     }
     group.finish();
@@ -266,5 +313,6 @@ criterion_group!(
     bench_ocel_one_to_one,
     bench_ocel_one_to_many,
     bench_ocel_many_to_many,
+    bench_ocel_real_log,
 );
 criterion_main!(ocel_flattening_benches);

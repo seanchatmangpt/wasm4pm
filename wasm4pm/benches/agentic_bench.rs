@@ -11,7 +11,7 @@
 //! - CounterfactualEvaluator: reward estimation
 //! - JtbdRunner: full JTBD case execution
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use std::collections::BTreeSet;
 use std::time::Duration;
 use wasm4pm::agentic::prelude::*;
@@ -74,7 +74,9 @@ fn bench_role_selector(c: &mut Criterion) {
         DriftStatus::Stable,
     );
 
-    group.bench_function("select_role", |b| b.iter(|| selector.select_role(&task)));
+    group.bench_function("select_role", |b| {
+        b.iter(|| black_box(selector.select_role(black_box(&task))))
+    });
     group.finish();
 }
 
@@ -98,7 +100,7 @@ fn bench_task_decomposer(c: &mut Criterion) {
     );
 
     group.bench_function("choose_topology", |b| {
-        b.iter(|| decomposer.choose_topology(&task))
+        b.iter(|| black_box(decomposer.choose_topology(black_box(&task))))
     });
     group.finish();
 }
@@ -122,10 +124,12 @@ fn bench_evidence_sufficiency(c: &mut Criterion) {
         DriftStatus::Stable,
     );
 
-    group.bench_function("is_sufficient", |b| b.iter(|| checker.is_sufficient(&task)));
+    group.bench_function("is_sufficient", |b| {
+        b.iter(|| black_box(checker.is_sufficient(black_box(&task))))
+    });
 
     group.bench_function("summarize_gaps", |b| {
-        b.iter(|| checker.summarize_gaps(&task))
+        b.iter(|| black_box(checker.summarize_gaps(black_box(&task))))
     });
     group.finish();
 }
@@ -150,7 +154,7 @@ fn bench_escalation_engine(c: &mut Criterion) {
     );
 
     group.bench_function("evaluate_escalation", |b| {
-        b.iter(|| engine.evaluate_escalation(&task))
+        b.iter(|| black_box(engine.evaluate_escalation(black_box(&task))))
     });
     group.finish();
 }
@@ -180,7 +184,7 @@ fn bench_artifact_dispatcher(c: &mut Criterion) {
     };
 
     group.bench_function("plan_artifacts", |b| {
-        b.iter(|| dispatcher.plan_artifacts(&request))
+        b.iter(|| black_box(dispatcher.plan_artifacts(black_box(&request))))
     });
     group.finish();
 }
@@ -218,7 +222,7 @@ fn bench_handoff_validator(c: &mut Criterion) {
     };
 
     group.bench_function("validate_handoff", |b| {
-        b.iter(|| validator.validate_handoff(&req))
+        b.iter(|| black_box(validator.validate_handoff(black_box(&req))))
     });
     group.finish();
 }
@@ -243,7 +247,7 @@ fn bench_prompt_binding_compiler(c: &mut Criterion) {
     );
 
     group.bench_function("compile_bindings", |b| {
-        b.iter(|| compiler.compile_bindings(&task))
+        b.iter(|| black_box(compiler.compile_bindings(black_box(&task))))
     });
     group.finish();
 }
@@ -268,7 +272,7 @@ fn bench_counterfactual_evaluator(c: &mut Criterion) {
     );
 
     group.bench_function("evaluate_options", |b| {
-        b.iter(|| evaluator.evaluate_options(&task))
+        b.iter(|| black_box(evaluator.evaluate_options(black_box(&task))))
     });
     group.finish();
 }
@@ -301,7 +305,9 @@ fn bench_jtbd_runner(c: &mut Criterion) {
         notes: vec![],
     };
 
-    group.bench_function("run_case", |b| b.iter(|| runner.run_case(&case)));
+    group.bench_function("run_case", |b| {
+        b.iter(|| black_box(runner.run_case(black_box(&case))))
+    });
     group.finish();
 }
 

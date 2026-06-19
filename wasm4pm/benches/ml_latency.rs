@@ -6,7 +6,7 @@
 //! 3. Classification (k-NN)
 //! 4. PCA (Eigenvalue Decomposition)
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 use wasm4pm::ml_algorithms::*;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -48,56 +48,83 @@ fn setup_mock_log(num_traces: usize, events_per_trace: usize) -> String {
     handle
 }
 
-fn bench_ml_regression(c: &mut Criterion) {
-    let handle = setup_mock_log(100, 10);
-    let mut group = c.benchmark_group("ml/regression");
+/// Representative log sizes (trace count) the ML families are exercised over.
+/// Each trace carries 10 events, so total events = traces * 10.
+const TRACE_SIZES: &[usize] = &[10, 100, 500];
+const EVENTS_PER_TRACE: usize = 10;
 
-    group.bench_function("discover_ml_regress_100_traces", |b| {
-        b.iter(|| discover_ml_regress(black_box(&handle), black_box("concept:name")))
-    });
+fn bench_ml_regression(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ml/regression");
+    for &traces in TRACE_SIZES {
+        let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
+        group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
+            b.iter(|| black_box(discover_ml_regress(black_box(h), black_box("concept:name"))))
+        });
+    }
     group.finish();
 }
 
 fn bench_ml_forecasting(c: &mut Criterion) {
-    let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/forecasting");
-
-    group.bench_function("discover_ml_forecast_100_traces", |b| {
-        b.iter(|| discover_ml_forecast(black_box(&handle), black_box("concept:name")))
-    });
+    for &traces in TRACE_SIZES {
+        let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
+        group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
+            b.iter(|| black_box(discover_ml_forecast(black_box(h), black_box("concept:name"))))
+        });
+    }
     group.finish();
 }
 
 fn bench_ml_classification(c: &mut Criterion) {
-    let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/classification");
-
-    group.bench_function("discover_ml_classify_100_traces", |b| {
-        b.iter(|| discover_ml_classify(black_box(&handle), black_box("concept:name")))
-    });
+    for &traces in TRACE_SIZES {
+        let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
+        group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
+            b.iter(|| black_box(discover_ml_classify(black_box(h), black_box("concept:name"))))
+        });
+    }
     group.finish();
 }
 
 fn bench_ml_pca(c: &mut Criterion) {
-    let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/pca");
-
-    group.bench_function("discover_ml_pca_100_traces", |b| {
-        b.iter(|| discover_ml_pca(black_box(&handle), black_box("concept:name")))
-    });
+    for &traces in TRACE_SIZES {
+        let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
+        group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
+        group.bench_with_input(BenchmarkId::from_parameter(traces), &handle, |b, h| {
+            b.iter(|| black_box(discover_ml_pca(black_box(h), black_box("concept:name"))))
+        });
+    }
     group.finish();
 }
 
 fn bench_ml_automl(c: &mut Criterion) {
-    let handle = setup_mock_log(100, 10);
     let mut group = c.benchmark_group("ml/automl");
-
-    group.bench_function("discover_automl_forecast_100_traces", |b| {
-        b.iter(|| discover_automl_forecast(black_box(&handle), black_box("concept:name")))
-    });
-    group.bench_function("discover_automl_classify_100_traces", |b| {
-        b.iter(|| discover_automl_classify(black_box(&handle), black_box("concept:name")))
-    });
+    for &traces in TRACE_SIZES {
+        let handle = setup_mock_log(traces, EVENTS_PER_TRACE);
+        group.throughput(Throughput::Elements((traces * EVENTS_PER_TRACE) as u64));
+        group.bench_with_input(
+            BenchmarkId::new("forecast", traces),
+            &handle,
+            |b, h| {
+                b.iter(|| {
+                    black_box(discover_automl_forecast(black_box(h), black_box("concept:name")))
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("classify", traces),
+            &handle,
+            |b, h| {
+                b.iter(|| {
+                    black_box(discover_automl_classify(black_box(h), black_box("concept:name")))
+                })
+            },
+        );
+    }
     group.finish();
 }
 
@@ -106,7 +133,7 @@ criterion_group!(
     config = Criterion::default()
         .warm_up_time(Duration::from_secs(1))
         .measurement_time(Duration::from_secs(3))
-        .sample_size(1000);
+        .sample_size(200);
     targets =
         bench_ml_regression,
         bench_ml_forecasting,

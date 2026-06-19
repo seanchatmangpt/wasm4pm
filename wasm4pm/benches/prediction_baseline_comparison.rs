@@ -13,14 +13,68 @@
 ///   - `prediction_baseline/ngram_predict_unigram`  — predict_next (n=1) per unique prefix
 ///   - `prediction_baseline/ngram_predict_bigram`   — predict_next (n=2) per unique prefix
 ///   - `prediction_baseline/uniform_random_baseline` — baseline: pick uniformly at random
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::models::{AttributeValue, EventLog, NGramPredictor};
+use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
 use helpers::{generate_event_log, Lcg, LogShape, ACTIVITY_KEY};
+
+// ---------------------------------------------------------------------------
+// Real-data grounding
+//
+// Prediction is a per-event task, so we ground the benchmark on a real event
+// log when one is available (RoadTraffic100Traces — small enough to keep bench
+// runtime bounded). If the dataset is absent (e.g. in a worktree without
+// `bench_data/`), we fall back to a deterministic synthetic 1K-trace log so the
+// benchmark still runs reproducibly. The activity key in the real logs is the
+// standard XES `concept:name`, which equals `ACTIVITY_KEY`.
+// ---------------------------------------------------------------------------
+
+/// Load the benchmark event log: real RoadTraffic XES if present, else synthetic.
+fn bench_log() -> EventLog {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let candidates = [
+        "bench_data/roadtraffic100traces.xes",
+        "../bench_data/roadtraffic100traces.xes",
+        "../../bench_data/roadtraffic100traces.xes",
+        "bench_data/sepsis.xes",
+        "../../bench_data/sepsis.xes",
+    ];
+    let real = candidates
+        .iter()
+        .filter_map(|p| {
+            let resolved = p.replace('~', &home);
+            let content = std::fs::read_to_string(&resolved).ok()?;
+            if content.len() < 200 {
+                return None;
+            }
+            let log = validate_and_parse_xes(&content).ok()?;
+            if log.traces.is_empty() {
+                return None;
+            }
+            Some(log)
+        })
+        .next();
+
+    match real {
+        Some(log) => log,
+        None => {
+            // Deterministic synthetic fallback (1K traces) — keeps the bench
+            // reproducible when real data is unavailable.
+            let shape = LogShape {
+                num_cases: 1_000,
+                avg_events_per_case: 15,
+                num_activities: 12,
+                noise_factor: 0.10,
+            };
+            generate_event_log(&shape)
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Helper: build NGramPredictor from an EventLog (pure-Rust path, no wasm_bindgen)
@@ -116,20 +170,19 @@ fn bench_ngram_build_unigram(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    // Fixed: 1K-trace log (as specified in the task description)
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    };
-    let log = generate_event_log(&shape);
+    let log = bench_log();
     let events = log.event_count();
 
     group.throughput(Throughput::Elements(events as u64));
-    group.bench_function("1k_traces", |b| {
+    group.bench_function("real_or_synth", |b| {
         // n=1 is clamped to 2 inside build_ngram; this exercises the minimum-order path
-        b.iter(|| build_ngram(&log, ACTIVITY_KEY, 1))
+        b.iter(|| {
+            build_ngram(
+                black_box(&log),
+                black_box(ACTIVITY_KEY),
+                black_box(1),
+            )
+        })
     });
     group.finish();
 }
@@ -149,18 +202,18 @@ fn bench_ngram_build_bigram(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    };
-    let log = generate_event_log(&shape);
+    let log = bench_log();
     let events = log.event_count();
 
     group.throughput(Throughput::Elements(events as u64));
-    group.bench_function("1k_traces", |b| {
-        b.iter(|| build_ngram(&log, ACTIVITY_KEY, 2))
+    group.bench_function("real_or_synth", |b| {
+        b.iter(|| {
+            build_ngram(
+                black_box(&log),
+                black_box(ACTIVITY_KEY),
+                black_box(2),
+            )
+        })
     });
     group.finish();
 }
@@ -180,13 +233,7 @@ fn bench_ngram_predict_unigram(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    };
-    let log = generate_event_log(&shape);
+    let log = bench_log();
     let predictor = build_ngram(&log, ACTIVITY_KEY, 2); // n=1 clamped to 2
     let prefixes = extract_unigram_prefixes(&log, ACTIVITY_KEY);
     let events = log.event_count();
@@ -199,9 +246,9 @@ fn bench_ngram_predict_unigram(c: &mut Criterion) {
             b.iter(|| {
                 let mut count = 0usize;
                 for prefix in ps {
-                    count += predictor.predict(prefix).len();
+                    count += black_box(predictor.predict(black_box(prefix))).len();
                 }
-                count
+                black_box(count)
             })
         },
     );
@@ -223,13 +270,7 @@ fn bench_ngram_predict_bigram(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    };
-    let log = generate_event_log(&shape);
+    let log = bench_log();
     let predictor = build_ngram(&log, ACTIVITY_KEY, 3); // n=3: context is 2 (bigram)
     let prefixes = extract_bigram_prefixes(&log, ACTIVITY_KEY);
     let events = log.event_count();
@@ -242,9 +283,9 @@ fn bench_ngram_predict_bigram(c: &mut Criterion) {
             b.iter(|| {
                 let mut count = 0usize;
                 for prefix in ps {
-                    count += predictor.predict(prefix).len();
+                    count += black_box(predictor.predict(black_box(prefix))).len();
                 }
-                count
+                black_box(count)
             })
         },
     );
@@ -270,13 +311,7 @@ fn bench_uniform_random_baseline(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shape = LogShape {
-        num_cases: 1_000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    };
-    let log = generate_event_log(&shape);
+    let log = bench_log();
     let vocabulary = vocab(&log, ACTIVITY_KEY);
     let events = log.event_count();
     let num_prefixes = extract_unigram_prefixes(&log, ACTIVITY_KEY).len();
@@ -292,10 +327,10 @@ fn bench_uniform_random_baseline(c: &mut Criterion) {
                 // Simulate predicting for `num_prefixes` queries
                 let mut result = String::new();
                 for _ in 0..num_prefixes {
-                    let idx = rng.next_usize_mod(vocab.len());
+                    let idx = rng.next_usize_mod(black_box(vocab.len()));
                     result = vocab[idx].clone();
                 }
-                result
+                black_box(result)
             })
         },
     );

@@ -1,10 +1,24 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::time::Duration;
 use wasm4pm::hot_kernels::*;
 
-// Prevent compiler from optimizing away results
-#[inline(never)]
+// Canonical Criterion sink: black_box forces the optimizer to materialize the
+// measured result without eliding the work, and (unlike std::mem::forget) does
+// not leak — the value is dropped normally after the barrier.
+#[inline(always)]
 fn consume<T>(val: T) {
-    std::mem::forget(val);
+    let _ = black_box(val);
+}
+
+// These kernels are nanosecond-scale scalar/bit primitives. Pin a stable,
+// high sample size and a fixed measurement window so results are reproducible
+// across runs and machines (no real event-log domain applies here — inputs are
+// intrinsic scalars, not process traces).
+fn configured() -> Criterion {
+    Criterion::default()
+        .sample_size(200)
+        .measurement_time(Duration::from_secs(5))
+        .warm_up_time(Duration::from_secs(1))
 }
 
 // ============================================================
@@ -555,7 +569,9 @@ fn bench_declare(c: &mut Criterion) {
 }
 
 criterion_group!(
-    benches,
+    name = benches;
+    config = configured();
+    targets =
     bench_ingress_decide_4,
     bench_ingress_decide_8,
     bench_construct8,

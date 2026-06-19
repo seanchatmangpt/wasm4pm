@@ -435,6 +435,82 @@ fn bench_ocel_pipeline_e2e(c: &mut Criterion) {
 }
 
 // ---------------------------------------------------------------------------
+// Benchmark: real OCEL 2.0 log (bench_data/ocel20_example.jsonocel)
+//
+// Grounds the OCEL pipeline on a published OCEL 2.0 procure-to-pay log
+// (object types: Purchase Requisition, Purchase Order, Invoice, Payment)
+// rather than only synthetic input. Parses via the same `OCEL` Deserialize
+// used by `ocel_io::load_ocel2_from_json`, then validates, flattens, and
+// serializes the real log through the receipt chain.
+// ---------------------------------------------------------------------------
+
+/// Load the real OCEL fixture relative to the crate manifest dir (`wasm4pm/`).
+fn load_real_ocel() -> Option<OCEL> {
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../bench_data/ocel20_example.jsonocel"
+    );
+    let content = std::fs::read_to_string(path).ok()?;
+    serde_json::from_str::<OCEL>(&content).ok()
+}
+
+fn bench_ocel_real_log(c: &mut Criterion) {
+    let ocel = match load_real_ocel() {
+        Some(o) => o,
+        None => return, // fixture absent in this checkout; skip gracefully
+    };
+
+    let mut group = c.benchmark_group("closed_claw/C_ocel/real_log");
+    group.measurement_time(Duration::from_secs(10));
+    group.warm_up_time(Duration::from_secs(2));
+
+    let total_events = ocel.events.len() as u64;
+
+    // Validation over the real referential graph.
+    group.throughput(Throughput::Elements(total_events));
+    group.bench_function("validate", |b| {
+        b.iter(|| {
+            let (valid, errors) = validate_ocel_native(black_box(&ocel));
+            black_box((valid, errors))
+        })
+    });
+
+    // Flatten onto each real object type.
+    for object_type in &ocel.object_types {
+        group.throughput(Throughput::Elements(total_events));
+        group.bench_with_input(
+            BenchmarkId::new("flatten", object_type),
+            object_type,
+            |b, ot| {
+                b.iter(|| {
+                    let log = flatten_ocel_native(black_box(&ocel), black_box(ot.as_str()));
+                    black_box(log)
+                })
+            },
+        );
+    }
+
+    // Full receipt-chain pipeline over the real log.
+    group.throughput(Throughput::Elements(total_events));
+    group.bench_function("pipeline_e2e", |b| {
+        b.iter(|| {
+            let input_json = serde_json::to_string(black_box(&ocel)).unwrap_or_default();
+            let input_hash = blake3::hash(input_json.as_bytes());
+            let (valid, errors) = validate_ocel_native(&ocel);
+            let mut out_hashes = Vec::with_capacity(ocel.object_types.len());
+            for ot in &ocel.object_types {
+                let log = flatten_ocel_native(&ocel, ot.as_str());
+                let json = serde_json::to_string(&log).unwrap_or_default();
+                out_hashes.push(blake3::hash(json.as_bytes()));
+            }
+            black_box((input_hash, valid, errors, out_hashes))
+        })
+    });
+
+    group.finish();
+}
+
+// ---------------------------------------------------------------------------
 // Public entry point (called from mod.rs)
 // ---------------------------------------------------------------------------
 
@@ -444,4 +520,5 @@ pub fn bench_ocel_main(c: &mut Criterion) {
     bench_ocel_flatten(c);
     bench_ocel_serialization(c);
     bench_ocel_pipeline_e2e(c);
+    bench_ocel_real_log(c);
 }

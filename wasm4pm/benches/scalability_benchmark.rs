@@ -7,7 +7,7 @@
 /// the inflection point where marginal throughput growth drops below 10%.
 ///
 /// Run: cargo bench --bench scalability_benchmark
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 mod helpers;
 use std::collections::HashMap;
 use std::time::Duration;
@@ -15,6 +15,7 @@ use wasm4pm::discovery::discover_dfg;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::more_discovery::discover_inductive_miner;
 use wasm4pm::state::{get_or_init_state, StoredObject};
+use wasm4pm::xes_format::validate_and_parse_xes;
 
 const ACTIVITY_KEY: &str = "concept:name";
 const TIMESTAMP_KEY: &str = "time:timestamp";
@@ -222,7 +223,7 @@ fn bench_uniform_dfg(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_dfg(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| black_box(discover_dfg(black_box(h), black_box(ACTIVITY_KEY)).unwrap()))
         });
     }
     group.finish();
@@ -243,7 +244,7 @@ fn bench_skewed_dfg(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_dfg(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| black_box(discover_dfg(black_box(h), black_box(ACTIVITY_KEY)).unwrap()))
         });
     }
     group.finish();
@@ -264,7 +265,7 @@ fn bench_adversarial_dfg(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_dfg(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| black_box(discover_dfg(black_box(h), black_box(ACTIVITY_KEY)).unwrap()))
         });
     }
     group.finish();
@@ -287,7 +288,9 @@ fn bench_uniform_inductive(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_inductive_miner(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| {
+                black_box(discover_inductive_miner(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+            })
         });
     }
     group.finish();
@@ -308,7 +311,9 @@ fn bench_skewed_inductive(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_inductive_miner(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| {
+                black_box(discover_inductive_miner(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+            })
         });
     }
     group.finish();
@@ -329,12 +334,118 @@ fn bench_adversarial_inductive(c: &mut Criterion) {
         let (handle, events) = store_log(log);
         group.throughput(Throughput::Elements(events as u64));
         group.bench_with_input(BenchmarkId::new("batch", batch), &handle, |b, h| {
-            b.iter(|| discover_inductive_miner(h, ACTIVITY_KEY).unwrap())
+            b.iter(|| {
+                black_box(discover_inductive_miner(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+            })
         });
     }
     group.finish();
 }
 
+// ── Real-data sweep — grounds scalability on the Sepsis Cases log ─────────────
+//
+// Loads a real XES event log once (Sepsis Cases — Event Log, ~1050 traces /
+// ~15000 events) via the production parser, then sub-samples it to a sweep of
+// representative trace counts so the size-parameterized throughput structure
+// still holds while exercising real activity vocabularies, trace lengths, and
+// timestamp distributions instead of only synthetic input.
+
+/// Candidate paths, resolved relative to the workspace and the crate dir.
+const REAL_LOG_CANDIDATES: &[&str] = &[
+    "bench_data/sepsis.xes",
+    "../bench_data/sepsis.xes",
+    "data/Sepsis Cases - Event Log.xes",
+    "../data/Sepsis Cases - Event Log.xes",
+];
+
+/// Trace-count sub-samples for the real-data sweep (capped to the loaded size).
+const REAL_BATCH_SIZES: &[usize] = &[128, 256, 512, 1024];
+
+/// Load the real Sepsis log via the production XES parser. Panics (no silent
+/// skip) if no candidate path yields a non-empty log.
+fn load_real_log() -> EventLog {
+    let log = REAL_LOG_CANDIDATES
+        .iter()
+        .filter_map(|p| {
+            let content = std::fs::read_to_string(p).ok()?;
+            if content.len() < 200 {
+                return None;
+            }
+            let l = validate_and_parse_xes(&content).ok()?;
+            if l.traces.is_empty() {
+                None
+            } else {
+                Some(l)
+            }
+        })
+        .next();
+    log.unwrap_or_else(|| {
+        panic!(
+            "scalability_benchmark: required real log not found at any of {:?}\n\
+             Provide bench_data/sepsis.xes (Sepsis Cases — Event Log, https://data.4tu.nl/).",
+            REAL_LOG_CANDIDATES
+        )
+    })
+}
+
+/// Take the first `n` traces of `src` (deterministic, in file order).
+fn subsample(src: &EventLog, n: usize) -> EventLog {
+    let mut log = EventLog::new();
+    for trace in src.traces.iter().take(n) {
+        log.traces.push(trace.clone());
+    }
+    log
+}
+
+fn bench_real_dfg(c: &mut Criterion) {
+    let real = load_real_log();
+    let available = real.traces.len();
+    let mut group = c.benchmark_group("scalability/real_sepsis/dfg");
+    group.measurement_time(Duration::from_secs(4));
+    group.warm_up_time(Duration::from_secs(1));
+    group.sample_size(20);
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
+    for &batch in REAL_BATCH_SIZES.iter().filter(|&&b| b <= available) {
+        let log = subsample(&real, batch);
+        let (handle, events) = store_log(log);
+        group.throughput(Throughput::Elements(events as u64));
+        group.bench_with_input(BenchmarkId::new("traces", batch), &handle, |b, h| {
+            b.iter(|| black_box(discover_dfg(black_box(h), black_box(ACTIVITY_KEY)).unwrap()))
+        });
+    }
+    group.finish();
+}
+
+fn bench_real_inductive(c: &mut Criterion) {
+    let real = load_real_log();
+    let available = real.traces.len();
+    let mut group = c.benchmark_group("scalability/real_sepsis/inductive_miner");
+    group.measurement_time(Duration::from_secs(5));
+    group.warm_up_time(Duration::from_secs(1));
+    group.sample_size(15);
+    if helpers::is_fast_mode() {
+        helpers::fast_group(&mut group);
+    } else {
+        helpers::full_group(&mut group);
+    }
+    for &batch in REAL_BATCH_SIZES.iter().filter(|&&b| b <= available) {
+        let log = subsample(&real, batch);
+        let (handle, events) = store_log(log);
+        group.throughput(Throughput::Elements(events as u64));
+        group.bench_with_input(BenchmarkId::new("traces", batch), &handle, |b, h| {
+            b.iter(|| {
+                black_box(discover_inductive_miner(black_box(h), black_box(ACTIVITY_KEY)).unwrap())
+            })
+        });
+    }
+    group.finish();
+}
+
+criterion_group!(bench_real, bench_real_dfg, bench_real_inductive);
 criterion_group!(bench_uniform, bench_uniform_dfg, bench_uniform_inductive);
 criterion_group!(bench_skewed, bench_skewed_dfg, bench_skewed_inductive);
 criterion_group!(
@@ -342,4 +453,4 @@ criterion_group!(
     bench_adversarial_dfg,
     bench_adversarial_inductive
 );
-criterion_main!(bench_uniform, bench_skewed, bench_adversarial);
+criterion_main!(bench_real, bench_uniform, bench_skewed, bench_adversarial);

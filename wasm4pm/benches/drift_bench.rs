@@ -6,14 +6,47 @@
 //! * `jaccard_distance` over activity-vocabulary sets of varying size.
 //! * `detect_drift` over synthetic event logs of varying scale.
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::collections::HashSet;
+use std::fs;
 use std::time::Duration;
 use wasm4pm::prediction_drift::{ewma_series, jaccard_distance};
+use wasm4pm::xes_format::validate_and_parse_xes;
 
 #[path = "helpers.rs"]
 mod helpers;
-use helpers::{make_handle, LogShape, ACTIVITY_KEY};
+use helpers::{store_log, ACTIVITY_KEY};
+
+/// Load a real XES dataset, store it in global state, and return
+/// `(handle, total_events)`. Panics if the dataset cannot be found —
+/// synthetic data is prohibited (see helpers.rs TPS rule).
+fn load_real_log(candidates: &[&str], label: &str) -> (String, usize) {
+    let home = std::env::var("HOME").unwrap_or_default();
+    let log = candidates
+        .iter()
+        .filter_map(|p| {
+            let resolved = p.replace('~', &home);
+            let content = fs::read_to_string(&resolved).ok()?;
+            if content.len() < 200 {
+                return None;
+            }
+            let l = validate_and_parse_xes(&content).ok()?;
+            if l.traces.is_empty() {
+                None
+            } else {
+                Some(l)
+            }
+        })
+        .next()
+        .unwrap_or_else(|| {
+            panic!(
+                "Required dataset '{}' not found at any of: {:?}",
+                label, candidates
+            )
+        });
+    let total_events = log.traces.iter().map(|t| t.events.len()).sum::<usize>();
+    (store_log(log), total_events)
+}
 
 // ---------------------------------------------------------------------------
 // EWMA
@@ -33,7 +66,7 @@ fn bench_ewma(c: &mut Criterion) {
         let series: Vec<f64> = (0..n).map(|i| (i as f64 * 0.01).sin()).collect();
         group.throughput(Throughput::Elements(n as u64));
         group.bench_with_input(BenchmarkId::new("len", n), &series, |b, s| {
-            b.iter(|| ewma_series(s, 0.3));
+            b.iter(|| black_box(ewma_series(black_box(s), black_box(0.3))));
         });
     }
     group.finish();
@@ -66,7 +99,7 @@ fn bench_jaccard(c: &mut Criterion) {
         }
         group.throughput(Throughput::Elements(n as u64));
         group.bench_with_input(BenchmarkId::new("set_size", n), &(a, b), |bench, (a, b)| {
-            bench.iter(|| jaccard_distance(a, b));
+            bench.iter(|| black_box(jaccard_distance(black_box(a), black_box(b))));
         });
     }
     group.finish();
@@ -89,40 +122,33 @@ fn bench_detect_drift(c: &mut Criterion) {
         helpers::full_group(&mut group);
     }
 
-    let shapes = [
-        LogShape {
-            num_cases: 100,
-            avg_events_per_case: 10,
-            num_activities: 8,
-            noise_factor: 0.05,
-        },
-        LogShape {
-            num_cases: 1_000,
-            avg_events_per_case: 15,
-            num_activities: 12,
-            noise_factor: 0.10,
-        },
-        LogShape {
-            num_cases: 10_000,
-            avg_events_per_case: 15,
-            num_activities: 15,
-            noise_factor: 0.10,
-        },
+    // Real process-mining logs. detect_drift walks trace windows comparing
+    // activity vocabularies, so exercising it on genuine logs (varied trace
+    // counts and activity alphabets) is the meaningful workload.
+    let datasets: &[(&str, &[&str])] = &[
+        ("sepsis", &["bench_data/sepsis.xes", "../../bench_data/sepsis.xes"]),
+        (
+            "roadtraffic",
+            &[
+                "bench_data/roadtraffic100traces.xes",
+                "../../bench_data/roadtraffic100traces.xes",
+            ],
+        ),
+        (
+            "bpi2020",
+            &["bench_data/bpi2020_travel.xes", "../../bench_data/bpi2020_travel.xes"],
+        ),
     ];
 
-    for shape in shapes {
-        let (handle, events) = make_handle(&shape);
+    for (label, candidates) in datasets {
+        let (handle, events) = load_real_log(candidates, label);
         group.throughput(Throughput::Elements(events as u64));
-        group.bench_with_input(
-            BenchmarkId::new("cases", shape.num_cases),
-            &handle,
-            |b, h| {
-                b.iter(|| {
-                    // Discard the JsValue result; only the work matters for timing.
-                    let _ = detect_drift(h, ACTIVITY_KEY, 5);
-                });
-            },
-        );
+        group.bench_with_input(BenchmarkId::new("dataset", label), &handle, |b, h| {
+            b.iter(|| {
+                let result = detect_drift(black_box(h), black_box(ACTIVITY_KEY), black_box(5));
+                black_box(result.is_ok())
+            });
+        });
     }
     group.finish();
 }

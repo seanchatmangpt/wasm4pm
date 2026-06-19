@@ -151,6 +151,7 @@ harness = false
 [[bench]]
 name = "jtbd_benchmark"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "autonomy_jtbd_validation"
@@ -203,6 +204,7 @@ harness = false
 [[bench]]
 name = "rl_convergence"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "prediction_accuracy"
@@ -243,6 +245,7 @@ harness = false
 [[bench]]
 name = "autonomic_real_data_bench"
 harness = false
+required-features = ["cloud"]
 
 [[bench]]
 name = "anti_fake"

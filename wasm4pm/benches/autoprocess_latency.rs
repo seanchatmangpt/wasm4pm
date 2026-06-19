@@ -9,7 +9,7 @@
 //!
 //! Budget: 34 nanoseconds per cycle (target: 30.6ns with 10% margin)
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::RlState;
@@ -46,7 +46,7 @@ fn bench_perception_encode_state(c: &mut Criterion) {
     };
 
     group.bench_function("encode_state_branchless", |b| {
-        b.iter(|| agent.encode_state(black_box(&state)))
+        b.iter(|| black_box(agent.encode_state(black_box(&state))))
     });
 
     group.finish();
@@ -72,7 +72,7 @@ fn bench_decision_select_action(c: &mut Criterion) {
     group.bench_function("select_action_epsilon_greedy", |b| {
         b.iter(|| {
             let state_id = 12345u32;
-            agent.select_action_epsilon_greedy(black_box(state_id), black_box(None))
+            black_box(agent.select_action_epsilon_greedy(black_box(state_id), black_box(None)))
         })
     });
 
@@ -95,7 +95,7 @@ fn bench_decision_linucb_estimate(c: &mut Criterion) {
     let q_value = 0.5;
 
     group.bench_function("linucb_ucb_estimate", |b| {
-        b.iter(|| agent.linucb_ucb_estimate(black_box(q_value), black_box(&features)))
+        b.iter(|| black_box(agent.linucb_ucb_estimate(black_box(q_value), black_box(&features))))
     });
 
     group.finish();
@@ -132,7 +132,7 @@ fn bench_protection_guard_eval(c: &mut Criterion) {
     let action = wasm4pm::RlAction::Continue;
 
     group.bench_function("evaluate_guard_branchless", |b| {
-        b.iter(|| agent.evaluate_guard(black_box(&state), black_box(action), black_box(2u8)))
+        b.iter(|| black_box(agent.evaluate_guard(black_box(&state), black_box(action), black_box(2u8))))
     });
 
     group.finish();
@@ -176,7 +176,7 @@ fn bench_protection_circuit_check(c: &mut Criterion) {
     let agent = AutoProcessAgent::new();
 
     group.bench_function("circuit_allows_request", |b| {
-        b.iter(|| agent.circuit_allows_request())
+        b.iter(|| black_box(agent.circuit_allows_request()))
     });
 
     group.finish();
@@ -448,15 +448,23 @@ fn bench_perception_batch(c: &mut Criterion) {
         },
     ];
 
-    group.bench_function("encode_8_states", |b| {
-        b.iter(|| {
-            let mut ids = vec![];
-            for state in &states {
-                ids.push(agent.encode_state(black_box(state)));
-            }
-            ids
-        })
-    });
+    // Throughput is the number of states encoded per iteration so Criterion
+    // reports per-element (per-state) encode latency directly.
+    group.throughput(Throughput::Elements(states.len() as u64));
+
+    group.bench_with_input(
+        BenchmarkId::new("encode_states", states.len()),
+        &states,
+        |b, states| {
+            b.iter(|| {
+                let mut ids = Vec::with_capacity(states.len());
+                for state in states {
+                    ids.push(agent.encode_state(black_box(state)));
+                }
+                black_box(ids)
+            })
+        },
+    );
 
     group.finish();
 }

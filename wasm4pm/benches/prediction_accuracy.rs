@@ -11,7 +11,7 @@
 //! Uses realistic process logs (BPI2020, synthetic) to measure practical accuracy.
 //! Evaluates on hold-out test set (70-30 split) for unbiased estimates.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion, Throughput};
 use std::collections::{HashMap, HashSet};
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
 use wasm4pm::state::{get_or_init_state, StoredObject};
@@ -24,7 +24,6 @@ use helpers::*;
 // ============================================================================
 
 /// Load a real-world process log from XES file.
-#[allow(dead_code)]
 fn load_xes_log(path: &str) -> Result<EventLog, String> {
     let content =
         std::fs::read_to_string(path).map_err(|e| format!("Failed to read XES file: {}", e))?;
@@ -104,6 +103,44 @@ fn load_xes_log(path: &str) -> Result<EventLog, String> {
     }
 
     Ok(log)
+}
+
+/// Load a real-world process log for grounding, capped at `max_traces`.
+/// Tries the road-traffic fine-management log (real activities + timestamps);
+/// falls back to a synthetic log if the file is absent so benches stay runnable.
+fn load_real_log(max_traces: usize) -> EventLog {
+    // Candidate real datasets, smallest/fastest first.
+    let candidates = [
+        "bench_data/roadtraffic100traces.xes",
+        "data/Sepsis Cases - Event Log.xes",
+        "data/RepairExample.xes",
+        "bench_data/bpi2020_travel.xes",
+    ];
+    for path in candidates {
+        if let Ok(mut log) = load_xes_log(path) {
+            if !log.traces.is_empty() {
+                if log.traces.len() > max_traces {
+                    log.traces.truncate(max_traces); // cap for bounded runtime
+                }
+                return log;
+            }
+        }
+    }
+    // Fallback: synthetic so the bench never silently breaks if data is missing.
+    generate_event_log(&LogShape {
+        num_cases: max_traces.min(1000),
+        avg_events_per_case: 15,
+        num_activities: 12,
+        noise_factor: 0.10,
+    })
+}
+
+/// Count predictable transitions in a log (the unit of measured work).
+fn transition_count(log: &EventLog) -> u64 {
+    log.traces
+        .iter()
+        .map(|t| t.events.len().saturating_sub(1) as u64)
+        .sum()
 }
 
 // ============================================================================
@@ -869,106 +906,139 @@ fn evaluate_resource(log: &EventLog) -> ResourceAccuracy {
 // BENCHMARK FUNCTIONS
 // ============================================================================
 
-fn bench_next_activity(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
+/// Build the (label, log) workloads each prediction perspective runs over.
+/// `real` is grounded on a real XES log (road-traffic fine management, capped);
+/// `synthetic` is the reproducible baseline. Synthetic logs carry parseable
+/// timestamps for the time-based perspectives.
+fn workloads() -> Vec<(&'static str, EventLog)> {
+    let real = load_real_log(if is_fast_mode() { 300 } else { 1000 });
+    let synthetic = generate_event_log(&LogShape {
+        num_cases: if is_fast_mode() { 300 } else { 1000 },
         avg_events_per_case: 15,
         num_activities: 12,
         noise_factor: 0.10,
     });
+    vec![("real_roadtraffic", real), ("synthetic", synthetic)]
+}
 
-    c.bench_function("prediction/next_activity/accuracy", |b| {
-        b.iter(|| {
-            let acc = evaluate_next_activity(black_box(&log));
-            (
-                acc.top1_acc(),
-                acc.top5_acc(),
-                acc.top10_acc(),
-                acc.avg_confidence(),
-                acc.avg_entropy(),
-            )
-        })
-    });
+fn bench_next_activity(c: &mut Criterion) {
+    let mut group = c.benchmark_group("prediction/next_activity");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(transition_count(&log)));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let acc = evaluate_next_activity(black_box(log));
+                black_box((
+                    acc.top1_acc(),
+                    acc.top5_acc(),
+                    acc.top10_acc(),
+                    acc.avg_confidence(),
+                    acc.avg_entropy(),
+                ))
+            })
+        });
+    }
+    group.finish();
 }
 
 fn bench_remaining_time(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-
-    c.bench_function("prediction/remaining_time/accuracy", |b| {
-        b.iter(|| {
-            let acc = evaluate_remaining_time(black_box(&log));
-            (acc.mae(), acc.rmse(), acc.mape(), acc.bias())
-        })
-    });
+    let mut group = c.benchmark_group("prediction/remaining_time");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(transition_count(&log)));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let acc = evaluate_remaining_time(black_box(log));
+                black_box((acc.mae(), acc.rmse(), acc.mape(), acc.bias()))
+            })
+        });
+    }
+    group.finish();
 }
 
 fn bench_outcome(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-
-    c.bench_function("prediction/outcome/accuracy", |b| {
-        b.iter(|| {
-            let acc = evaluate_outcome(black_box(&log));
-            (acc.accuracy(), acc.precision(), acc.recall(), acc.f1())
-        })
-    });
+    let mut group = c.benchmark_group("prediction/outcome");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(log.traces.len() as u64));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let acc = evaluate_outcome(black_box(log));
+                black_box((acc.accuracy(), acc.precision(), acc.recall(), acc.f1()))
+            })
+        });
+    }
+    group.finish();
 }
 
 fn bench_drift(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-
-    c.bench_function("prediction/drift/accuracy", |b| {
-        b.iter(|| {
-            let acc = evaluate_drift(black_box(&log));
-            (acc.precision(), acc.recall(), acc.fpr())
-        })
-    });
+    let mut group = c.benchmark_group("prediction/drift");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(log.traces.len() as u64));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let acc = evaluate_drift(black_box(log));
+                black_box((acc.precision(), acc.recall(), acc.fpr()))
+            })
+        });
+    }
+    group.finish();
 }
 
 fn bench_features(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-
-    c.bench_function("prediction/features/importance", |b| {
-        b.iter(|| {
-            let imp = evaluate_features(black_box(&log));
-            (imp.top1_variance(), imp.top_features(3))
-        })
-    });
+    let mut group = c.benchmark_group("prediction/features");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(log.traces.len() as u64));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let imp = evaluate_features(black_box(log));
+                black_box((imp.top1_variance(), imp.top_features(3)))
+            })
+        });
+    }
+    group.finish();
 }
 
 fn bench_resource(c: &mut Criterion) {
-    let log = generate_event_log(&LogShape {
-        num_cases: 1000,
-        avg_events_per_case: 15,
-        num_activities: 12,
-        noise_factor: 0.10,
-    });
-
-    c.bench_function("prediction/resource/accuracy", |b| {
-        b.iter(|| {
-            let acc = evaluate_resource(black_box(&log));
-            acc.mae()
-        })
-    });
+    let mut group = c.benchmark_group("prediction/resource");
+    if is_fast_mode() {
+        fast_group(&mut group);
+    } else {
+        full_group(&mut group);
+    }
+    for (label, log) in workloads() {
+        group.throughput(Throughput::Elements(log.traces.len() as u64));
+        group.bench_with_input(label, &log, |b, log| {
+            b.iter(|| {
+                let acc = evaluate_resource(black_box(log));
+                black_box(acc.mae())
+            })
+        });
+    }
+    group.finish();
 }
 
 criterion_group!(

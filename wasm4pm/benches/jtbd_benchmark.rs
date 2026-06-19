@@ -224,6 +224,7 @@ fn bench_pattern_dispatch_validation(c: &mut Criterion) {
     let dispatcher = PatternDispatcher::new();
 
     let mut group = c.benchmark_group("pattern_dispatch/validation");
+    group.throughput(Throughput::Elements(43));
     group.bench_function("validate_pattern", |b| {
         b.iter(|| {
             for pt_val in 1u8..=43 {
