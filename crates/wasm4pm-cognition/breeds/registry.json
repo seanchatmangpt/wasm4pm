@@ -7,6 +7,13 @@
     "standing": "DISPATCHABLE"
   },
   {
+    "breed_id": "abductive_ibe",
+    "breed_name": "AbductiveIbe",
+    "historical_ancestor": "Harman, G. H. (1965). The Inference to the Best Explanation. The Philosophical Review, 74(1), 88–95. Thagard, P. R. (1978). The Best Explanation: Criteria for Theory Choice. The Journal of Philosophy, 75(2), 76–92.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
     "breed_id": "abductive_lp",
     "breed_name": "AbductiveLp",
     "historical_ancestor": "Kakas, A. C., Kowalski, R. A., & Toni, F. (1992). Abductive Logic Programming. Journal of Logic and Computation, 2(6), 719–770.",
@@ -14,19 +21,32 @@
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "ilp",
-    "breed_name": "Inductive Logic Programming",
-    "historical_ancestor": "ILP (Muggleton, 1991) (inductive)",
-    "generalized_family": "R_generalized_inductive",
-    "input_schema": "inductive_input_v1",
-    "output_schema": "inductive_output_v1",
-    "specification_relation": "example_driven_rule_induction",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
+    "breed_id": "abductive_lp",
+    "breed_name": "AbductiveLp",
+    "historical_ancestor": "Kakas, A. C., Kowalski, R. A., & Toni, F. (1992). Abductive Logic Programming. Journal of Logic and Computation, 2(6), 719–770.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "act_r",
+    "breed_name": "ActR",
+    "historical_ancestor": "Anderson, J. R., & Lebiere, C. (1998). Lawrence Erlbaum Associates. Chapter 3 (the activation equation A_i = B_i + Σ_j W_j·S_ji) and Chapter 9 (cognitive arithmetic: retrieval of addition facts).",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "act_r",
+    "breed_name": "ActR",
+    "historical_ancestor": "Anderson, J. R., & Lebiere, C. (1998). Lawrence Erlbaum Associates. Chapter 3 (the activation equation A_i = B_i + Σ_j W_j·S_ji) and Chapter 9 (cognitive arithmetic: retrieval of addition facts).",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "allen_temporal",
+    "breed_name": "AllenTemporal",
+    "historical_ancestor": "Allen, J. F. (1983). Maintaining Knowledge about Temporal Intervals. Communications of the ACM, 26(11), 832-843.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "allen_temporal",
@@ -43,53 +63,23 @@
     "standing": "DISPATCHABLE"
   },
   {
+    "breed_id": "analogy_sme",
+    "breed_name": "AnalogySme",
+    "historical_ancestor": "Falkenhainer, B., Forbus, K. D., & Gentner, D. (1989). Artificial Intelligence, 41(1), 1-63.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
     "breed_id": "asp",
     "breed_name": "Asp",
-    "historical_ancestor": "Answer Set Programming (Gelfond & Lifschitz, 1988)",
-    "generalized_family": "logic_programming",
-    "input_schema": "asp_input_v1",
-    "output_schema": "asp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "historical_ancestor": "Gelfond, M., & Lifschitz, V. (1988). The Stable Model Semantics for Logic Programming. In: Proceedings of the Fifth International Conference and Symposium on Logic Programming (ICLP/SLP 1988), MIT Press, pp. 1070–1080.",
     "status": "PARTIAL_ALIVE",
-    "standing": "TRACEABLE",
-    "complexity_caps": {
-      "max_atoms": 12
-    }
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "abductive_ibe",
-    "breed_name": "Abductive Ibe",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "abductive_ibe_input_v1",
-    "output_schema": "abductive_ibe_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "PARTIAL_ALIVE",
-    "standing": "TRACEABLE",
-    "complexity_caps": {
-      "max_hypotheses": 10
-    }
-  },
-  {
-    "breed_id": "partial_order_plan",
-    "breed_name": "Partial Order Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "partial_order_plan_input_v1",
-    "output_schema": "partial_order_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "breed_id": "asp",
+    "breed_name": "Asp",
+    "historical_ancestor": "Gelfond, M., & Lifschitz, V. (1988). The Stable Model Semantics for Logic Programming. In: Proceedings of the Fifth International Conference and Symposium on Logic Programming (ICLP/SLP 1988), MIT Press, pp. 1070–1080.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -97,6 +87,48 @@
     "breed_id": "autoinstinct_learning",
     "breed_name": "AutoinstinctLearning",
     "historical_ancestor": "Sussman, Gerald Jay. \\\\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_learning",
+    "breed_name": "AutoinstinctLearning",
+    "historical_ancestor": "Sussman, Gerald Jay. \\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_learning",
+    "breed_name": "AutoinstinctLearning",
+    "historical_ancestor": "Sussman, Gerald Jay. \\\\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_learning",
+    "breed_name": "AutoinstinctLearning",
+    "historical_ancestor": "Sussman, Gerald Jay. \\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_neurosis",
+    "breed_name": "AutoinstinctNeurosis",
+    "historical_ancestor": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_neurosis",
+    "breed_name": "AutoinstinctNeurosis",
+    "historical_ancestor": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \\\\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_neurosis",
+    "breed_name": "AutoinstinctNeurosis",
+    "historical_ancestor": "Boden, M. A. (1977). Artificial Intelligence and Natural Man. New York: Basic Books. Chapter 6: \\",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -115,9 +147,30 @@
     "standing": "DISPATCHABLE"
   },
   {
+    "breed_id": "autoinstinct_semantics",
+    "breed_name": "AutoinstinctSemantics",
+    "historical_ancestor": "Schank, R. C. (1972). Conceptual dependency: A theory of natural language understanding. Cognitive Psychology, 3(4), 552–631. https://doi.org/10.1016/0010-0285(72)90022-9",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
     "breed_id": "autoinstinct_vision",
     "breed_name": "AutoinstinctVision",
     "historical_ancestor": "Marr, D., & Poggio, T. (1976). Cooperative computation of stereo disparity. Science, 194(4262), 283–287. https://doi.org/10.1126/science.968816",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "autoinstinct_vision",
+    "breed_name": "AutoinstinctVision",
+    "historical_ancestor": "Marr, D., & Poggio, T. (1976). Cooperative computation of stereo disparity. Science, 194(4262), 283–287. https://doi.org/10.1126/science.968816",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "bayesian_network",
+    "breed_name": "BayesianNetwork",
+    "historical_ancestor": "Pearl, J. (1988). Probabilistic Reasoning in Intelligent Systems: Networks of Plausible Inference. Morgan Kaufmann.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -136,51 +189,23 @@
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "script_sam",
-    "breed_name": "Script Sam",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "script_sam_input_v1",
-    "output_schema": "script_sam_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "breed_id": "belief_merging",
+    "breed_name": "BeliefMerging",
+    "historical_ancestor": "Konieczny, S., & Pino Pérez, R. (2002). Merging Information Under Constraints: A Logical Framework. Journal of Logic and Computation, 12(5), 773–808.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "clp",
-    "breed_name": "Clp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "clp_input_v1",
-    "output_schema": "clp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "ocel_clp_v1",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "breed_id": "cbr",
+    "breed_name": "Cbr",
+    "historical_ancestor": "A. Aamodt, E. Plaza (1994). Case-Based Reasoning: Foundational Issues, Methodological Variations, and System Approaches. AI Communications, IOS Press, Vol. 7, No. 1, pp. 39–59.",
     "status": "PARTIAL_ALIVE",
-    "standing": "TRACEABLE",
-    "complexity_caps": {
-      "max_vars": 24,
-      "max_domain": 16
-    }
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "situation_calculus",
-    "breed_name": "Situation Calculus",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "situation_calculus_input_v1",
-    "output_schema": "situation_calculus_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
+    "breed_id": "cbr",
+    "breed_name": "Cbr",
+    "historical_ancestor": "A. Aamodt, E. Plaza (1994). Case-Based Reasoning: Foundational Issues, Methodological Variations, and System Approaches. AI Communications, IOS Press, Vol. 7, No. 1, pp. 39–59.",
     "status": "PARTIAL_ALIVE",
     "standing": "DISPATCHABLE"
   },
@@ -192,159 +217,598 @@
     "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "ctl_check",
-    "breed_name": "Ctl Check",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ctl_check_input_v1",
-    "output_schema": "ctl_check_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
+    "breed_id": "circumscription",
+    "breed_name": "Circumscription",
+    "historical_ancestor": "McCarthy, J. (1980). Artificial Intelligence, 13(1-2), 27-39.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "naive_physics",
-    "breed_name": "Naive Physics",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "naive_physics_input_v1",
-    "output_schema": "naive_physics_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED",
-    "validation_level": "L1"
+    "breed_id": "clp",
+    "breed_name": "Clp",
+    "historical_ancestor": "Jaffar, J., & Lassez, J.-L. (1987). Constraint Logic Programming. In: Proceedings of the 14th ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages (POPL 1987), pp. 111–119.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "pomdp",
-    "breed_name": "Pomdp",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "pomdp_input_v1",
-    "output_schema": "pomdp_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "markov_logic",
-    "breed_name": "Markov Logic",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "markov_logic_input_v1",
-    "output_schema": "markov_logic_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
-  },
-  {
-    "breed_id": "meta_reasoning",
-    "breed_name": "Meta Reasoning",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "meta_reasoning_input_v1",
-    "output_schema": "meta_reasoning_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "ADMITTED"
+    "breed_id": "clp",
+    "breed_name": "Clp",
+    "historical_ancestor": "Jaffar, J., & Lassez, J.-L. (1987). Constraint Logic Programming. In: Proceedings of the 14th ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages (POPL 1987), pp. 111–119.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "construction_grammar",
-    "breed_name": "Construction Grammar",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "construction_grammar_input_v1",
-    "output_schema": "construction_grammar_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_name": "ConstructionGrammar",
+    "historical_ancestor": "Adele E. Goldberg (1995). Constructions: A Construction Grammar Approach to Argument Structure. University of Chicago Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "construction_grammar",
+    "breed_name": "ConstructionGrammar",
+    "historical_ancestor": "Adele E. Goldberg (1995). Constructions: A Construction Grammar Approach to Argument Structure. University of Chicago Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "contingent_plan",
-    "breed_name": "Contingent Plan",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "contingent_plan_input_v1",
-    "output_schema": "contingent_plan_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_name": "ContingentPlan",
+    "historical_ancestor": "Stuart Russell and Peter Norvig (2010). Artificial Intelligence: A Modern Approach (3rd ed.). Pearson.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "tableaux",
-    "breed_name": "Tableaux",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "tableaux_input_v1",
-    "output_schema": "tableaux_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_id": "contingent_plan",
+    "breed_name": "ContingentPlan",
+    "historical_ancestor": "Stuart Russell and Peter Norvig (2010). Artificial Intelligence: A Modern Approach (3rd ed.). Pearson.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "csp_ac3",
+    "breed_name": "CspAc3",
+    "historical_ancestor": "Mackworth, A. K. (1977). Consistency in Networks of Relations. Artificial Intelligence, 8(1), 99-118.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "csp_ac3",
+    "breed_name": "CspAc3",
+    "historical_ancestor": "Mackworth, A. K. (1977). Consistency in Networks of Relations. Artificial Intelligence, 8(1), 99-118.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ctl_check",
+    "breed_name": "CtlCheck",
+    "historical_ancestor": "Clarke, E. M., Emerson, E. A., & Sistla, A. P. (1986). ACM Transactions on Programming Languages and Systems, 8(2), 244-263.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ctl_check",
+    "breed_name": "CtlCheck",
+    "historical_ancestor": "Clarke, E. M., Emerson, E. A., & Sistla, A. P. (1986). ACM Transactions on Programming Languages and Systems, 8(2), 244-263.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "default_logic",
+    "breed_name": "DefaultLogic",
+    "historical_ancestor": "Reiter, R. (1980). A Logic for Default Reasoning. Artificial Intelligence, 13(1-2), 81-132.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "default_logic",
+    "breed_name": "DefaultLogic",
+    "historical_ancestor": "Reiter, R. (1980). A Logic for Default Reasoning. Artificial Intelligence, 13(1-2), 81-132.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "dempster_shafer",
+    "breed_name": "DempsterShafer",
+    "historical_ancestor": "Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "dempster_shafer",
+    "breed_name": "DempsterShafer",
+    "historical_ancestor": "Shafer, G. (1976). A Mathematical Theory of Evidence. Princeton University Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "dendral",
+    "breed_name": "Dendral",
+    "historical_ancestor": "Feigenbaum, E. A., Buchanan, B. G., & Lederberg, J. (1971). On generality and problem solving: A case study using the DENDRAL program. Stanford Artificial Intelligence Project Memo AIM-131, Computer Science Department Report CS176. Stanford University.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "dendral",
+    "breed_name": "Dendral",
+    "historical_ancestor": "Feigenbaum, E. A., Buchanan, B. G., & Lederberg, J. (1971). On generality and problem solving: A case study using the DENDRAL program. Stanford Artificial Intelligence Project Memo AIM-131, Computer Science Department Report CS176. Stanford University.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "description_logic",
+    "breed_name": "DescriptionLogic",
+    "historical_ancestor": "Baader, F., Brandt, S., & Lutz, C. (2005). Pushing the EL Envelope. In: Proceedings of the 19th International Joint Conference on Artificial Intelligence (IJCAI 2005), pp. 364–369.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "description_logic",
+    "breed_name": "DescriptionLogic",
+    "historical_ancestor": "Baader, F., Brandt, S., & Lutz, C. (2005). Pushing the EL Envelope. In: Proceedings of the 19th International Joint Conference on Artificial Intelligence (IJCAI 2005), pp. 364–369.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ebl",
+    "breed_name": "Ebl",
+    "historical_ancestor": "Mitchell, T. M., Keller, R. M., & Kedar-Cabelli, S. T. (1986). Explanation-Based Generalization: A Unifying View. Machine Learning, 1(1), 47-80.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ebl",
+    "breed_name": "Ebl",
+    "historical_ancestor": "Mitchell, T. M., Keller, R. M., & Kedar-Cabelli, S. T. (1986). Explanation-Based Generalization: A Unifying View. Machine Learning, 1(1), 47-80.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "eliza",
+    "breed_name": "Eliza",
+    "historical_ancestor": "Weizenbaum, J. (1966). ELIZA—A computer program for the study of natural language communication between man and machine. Communications of the ACM, 9(1), 36–45. https://doi.org/10.1145/365153.365168",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "eliza",
+    "breed_name": "Eliza",
+    "historical_ancestor": "Weizenbaum, J. (1966). ELIZA—A computer program for the study of natural language communication between man and machine. Communications of the ACM, 9(1), 36–45. https://doi.org/10.1145/365153.365168",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "episodic_memory",
+    "breed_name": "EpisodicMemory",
+    "historical_ancestor": "Tulving, E. (1983). Oxford University Press (Ch. 7: encoding specificity and temporal organisation). Nuxoll, A. M., & Laird, J. E. (2007). Proceedings of AAAI 2007, 1560-1565 (cue-based retrieval of the best partially-matching episode).",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "episodic_memory",
+    "breed_name": "EpisodicMemory",
+    "historical_ancestor": "Tulving, E. (1983). Oxford University Press (Ch. 7: encoding specificity and temporal organisation). Nuxoll, A. M., & Laird, J. E. (2007). Proceedings of AAAI 2007, 1560-1565 (cue-based retrieval of the best partially-matching episode).",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "event_calculus",
+    "breed_name": "EventCalculus",
+    "historical_ancestor": "Kowalski, R., & Sergot, M. (1986). A Logic-based Calculus of Events. New Generation Computing, 4(1), 67–95.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "event_calculus",
+    "breed_name": "EventCalculus",
+    "historical_ancestor": "Kowalski, R., & Sergot, M. (1986). A Logic-based Calculus of Events. New Generation Computing, 4(1), 67–95.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "frames_inheritance",
+    "breed_name": "FramesInheritance",
+    "historical_ancestor": "Minsky, M. (1974). A Framework for Representing Knowledge. MIT AI Laboratory Memo 306. Reprinted in Winston (Ed.), The Psychology of Computer Vision, 1975.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "frames_inheritance",
+    "breed_name": "FramesInheritance",
+    "historical_ancestor": "Minsky, M. (1974). A Framework for Representing Knowledge. MIT AI Laboratory Memo 306. Reprinted in Winston (Ed.), The Psychology of Computer Vision, 1975.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "fuzzy_logic",
+    "breed_name": "FuzzyLogic",
+    "historical_ancestor": "Mamdani, E. H., & Assilian, S. (1975). An Experiment in Linguistic Synthesis with a Fuzzy Logic Controller. International Journal of Man-Machine Studies, 7(1), 1-13.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "fuzzy_logic",
+    "breed_name": "FuzzyLogic",
+    "historical_ancestor": "Mamdani, E. H., & Assilian, S. (1975). An Experiment in Linguistic Synthesis with a Fuzzy Logic Controller. International Journal of Man-Machine Studies, 7(1), 1-13.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "gps",
+    "breed_name": "Gps",
+    "historical_ancestor": "A. Newell and H. A. Simon, \\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "gps",
+    "breed_name": "Gps",
+    "historical_ancestor": "A. Newell and H. A. Simon, \\\\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "gps",
+    "breed_name": "Gps",
+    "historical_ancestor": "A. Newell and H. A. Simon, \\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "gps",
+    "breed_name": "Gps",
+    "historical_ancestor": "A. Newell and H. A. Simon, \\\\",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "hearsay",
+    "breed_name": "Hearsay",
+    "historical_ancestor": "Erman, L. D., Hayes-Roth, F., Lesser, V. R., and Reddy, D. R. (1980). The Hearsay-II speech-understanding system: Integrating knowledge to resolve uncertainty. ACM Computing Surveys, 12(2), 213–253.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "hearsay",
+    "breed_name": "Hearsay",
+    "historical_ancestor": "Erman, L. D., Hayes-Roth, F., Lesser, V. R., and Reddy, D. R. (1980). The Hearsay-II speech-understanding system: Integrating knowledge to resolve uncertainty. ACM Computing Surveys, 12(2), 213–253.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "htn_planning",
+    "breed_name": "HtnPlanning",
+    "historical_ancestor": "Nau, D., Au, T.-C., Ilghami, O., Kuter, U., Murdock, J. W., Wu, D., & Yaman, F. (2003). SHOP2: An HTN Planning System. Journal of Artificial Intelligence Research, 20, 379-404.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "htn_planning",
+    "breed_name": "HtnPlanning",
+    "historical_ancestor": "Nau, D., Au, T.-C., Ilghami, O., Kuter, U., Murdock, J. W., Wu, D., & Yaman, F. (2003). SHOP2: An HTN Planning System. Journal of Artificial Intelligence Research, 20, 379-404.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ilp",
+    "breed_name": "Ilp",
+    "historical_ancestor": "Quinlan, J. R. (1990). Machine Learning, 5(3), 239-266.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ilp",
+    "breed_name": "Ilp",
+    "historical_ancestor": "Quinlan, J. R. (1990). Machine Learning, 5(3), 239-266.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ltl_monitor",
+    "breed_name": "LtlMonitor",
+    "historical_ancestor": "Havelund, K., & Rosu, G. (2001). Monitoring Programs Using Rewriting. Proceedings of ASE 2001 (16th IEEE International Conference on Automated Software Engineering), 135-143.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ltl_monitor",
+    "breed_name": "LtlMonitor",
+    "historical_ancestor": "Havelund, K., & Rosu, G. (2001). Monitoring Programs Using Rewriting. Proceedings of ASE 2001 (16th IEEE International Conference on Automated Software Engineering), 135-143.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "markov_logic",
+    "breed_name": "MarkovLogic",
+    "historical_ancestor": "Matthew Richardson and Pedro Domingos (2006). Markov logic networks. Machine Learning 62(1-2):107-136.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "markov_logic",
+    "breed_name": "MarkovLogic",
+    "historical_ancestor": "Matthew Richardson and Pedro Domingos (2006). Markov logic networks. Machine Learning 62(1-2):107-136.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "mdp",
+    "breed_name": "Mdp",
+    "historical_ancestor": "Bellman, R. (1957). Dynamic Programming. Princeton University Press. (Functional equation / principle of optimality, Chapter III; successive-approximation solution, Chapter IV.)",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "mdp",
+    "breed_name": "Mdp",
+    "historical_ancestor": "Bellman, R. (1957). Dynamic Programming. Princeton University Press. (Functional equation / principle of optimality, Chapter III; successive-approximation solution, Chapter IV.)",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "meta_reasoning",
+    "breed_name": "MetaReasoning",
+    "historical_ancestor": "Michael T. Cox and Anita Raja (eds.) (2011). Metareasoning: Thinking about Thinking. MIT Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "meta_reasoning",
+    "breed_name": "MetaReasoning",
+    "historical_ancestor": "Michael T. Cox and Anita Raja (eds.) (2011). Metareasoning: Thinking about Thinking. MIT Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "morphological",
     "breed_name": "Morphological",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "morphological_input_v1",
-    "output_schema": "morphological_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "historical_ancestor": "Zwicky, F. (1969). Discovery, Invention, Research Through the Morphological Approach. Macmillan.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "morphological",
+    "breed_name": "Morphological",
+    "historical_ancestor": "Zwicky, F. (1969). Discovery, Invention, Research Through the Morphological Approach. Macmillan.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "mycin",
+    "breed_name": "Mycin",
+    "historical_ancestor": "Shortliffe, E. H., & Buchanan, B. G. (1975). A model of inexact reasoning in medicine. Mathematical Biosciences, 23(3–4), 351–379. Reprinted as Chapter 11 in: Buchanan, B. G., & Shortliffe, E. H. (Eds.), Rule-Based Expert Systems. Addison-Wesley, 1984.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "mycin",
+    "breed_name": "Mycin",
+    "historical_ancestor": "Shortliffe, E. H., & Buchanan, B. G. (1975). A model of inexact reasoning in medicine. Mathematical Biosciences, 23(3–4), 351–379. Reprinted as Chapter 11 in: Buchanan, B. G., & Shortliffe, E. H. (Eds.), Rule-Based Expert Systems. Addison-Wesley, 1984.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "naive_physics",
+    "breed_name": "NaivePhysics",
+    "historical_ancestor": "Hayes, P. J. (1979). In D. Michie (Ed.), Expert Systems in the Micro-Electronic Age. Edinburgh University Press. Hayes, P. J. (1985). In J. R. Hobbs & R. C. Moore (Eds.), Formal Theories of the Commonsense World (pp. 71-107). Ablex.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "naive_physics",
+    "breed_name": "NaivePhysics",
+    "historical_ancestor": "Hayes, P. J. (1979). In D. Michie (Ed.), Expert Systems in the Micro-Electronic Age. Edinburgh University Press. Hayes, P. J. (1985). In J. R. Hobbs & R. C. Moore (Eds.), Formal Theories of the Commonsense World (pp. 71-107). Ablex.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ocpm_route_discoverer",
+    "breed_name": "OcpmRouteDiscoverer",
+    "historical_ancestor": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "ocpm_route_discoverer",
+    "breed_name": "OcpmRouteDiscoverer",
+    "historical_ancestor": "van der Aalst, W.M.P. (2019). Object-Centric Process Mining: Dealing with Divergence and Convergence.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "partial_order_plan",
+    "breed_name": "PartialOrderPlan",
+    "historical_ancestor": "McAllester, D., & Rosenblitt, D. (1991). Systematic Nonlinear Planning. In: Proceedings of the Ninth National Conference on Artificial Intelligence (AAAI-91), pp. 634–639.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "partial_order_plan",
+    "breed_name": "PartialOrderPlan",
+    "historical_ancestor": "McAllester, D., & Rosenblitt, D. (1991). Systematic Nonlinear Planning. In: Proceedings of the Ninth National Conference on Artificial Intelligence (AAAI-91), pp. 634–639.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "pomdp",
+    "breed_name": "Pomdp",
+    "historical_ancestor": "Leslie Pack Kaelbling, Michael L. Littman and Anthony R. Cassandra (1998). Planning and acting in partially observable stochastic domains. Artificial Intelligence 101(1-2):99-134.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "pomdp",
+    "breed_name": "Pomdp",
+    "historical_ancestor": "Leslie Pack Kaelbling, Michael L. Littman and Anthony R. Cassandra (1998). Planning and acting in partially observable stochastic domains. Artificial Intelligence 101(1-2):99-134.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "problog",
+    "breed_name": "Problog",
+    "historical_ancestor": "De Raedt, L., Kimmig, A., & Toivonen, H. (2007). Proceedings of IJCAI 2007, 2468-2473.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "problog",
+    "breed_name": "Problog",
+    "historical_ancestor": "De Raedt, L., Kimmig, A., & Toivonen, H. (2007). Proceedings of IJCAI 2007, 2468-2473.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "prolog",
+    "breed_name": "Prolog",
+    "historical_ancestor": "Kowalski, R. A. (1974). Predicate logic as programming language. IFIP Congress 74, Stockholm, pp. 569–574.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "prolog",
+    "breed_name": "Prolog",
+    "historical_ancestor": "Kowalski, R. A. (1974). Predicate logic as programming language. IFIP Congress 74, Stockholm, pp. 569–574.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "qualitative_reason",
+    "breed_name": "QualitativeReason",
+    "historical_ancestor": "de Kleer, J., & Brown, J. S. (1984). A Qualitative Physics Based on Confluences. Artificial Intelligence, 24(1–3), 7–83.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "qualitative_reason",
+    "breed_name": "QualitativeReason",
+    "historical_ancestor": "de Kleer, J., & Brown, J. S. (1984). A Qualitative Physics Based on Confluences. Artificial Intelligence, 24(1–3), 7–83.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "rl_symbolic",
+    "breed_name": "RlSymbolic",
+    "historical_ancestor": "Watkins, C. J. C. H., & Dayan, P. (1992). Machine Learning, 8(3-4), 279-292.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "rl_symbolic",
+    "breed_name": "RlSymbolic",
+    "historical_ancestor": "Watkins, C. J. C. H., & Dayan, P. (1992). Machine Learning, 8(3-4), 279-292.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "sat_cdcl",
+    "breed_name": "SatCdcl",
+    "historical_ancestor": "Marques-Silva, J. P., & Sakallah, K. A. (1999). IEEE Transactions on Computers, 48(5), 506-521.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "sat_cdcl",
+    "breed_name": "SatCdcl",
+    "historical_ancestor": "Marques-Silva, J. P., & Sakallah, K. A. (1999). IEEE Transactions on Computers, 48(5), 506-521.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "script_sam",
+    "breed_name": "ScriptSam",
+    "historical_ancestor": "Schank, R. C., & Abelson, R. P. (1977). Scripts, Plans, Goals and Understanding: An Inquiry into Human Knowledge Structures. Lawrence Erlbaum Associates.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "script_sam",
+    "breed_name": "ScriptSam",
+    "historical_ancestor": "Schank, R. C., & Abelson, R. P. (1977). Scripts, Plans, Goals and Understanding: An Inquiry into Human Knowledge Structures. Lawrence Erlbaum Associates.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "situation_calculus",
+    "breed_name": "SituationCalculus",
+    "historical_ancestor": "Reiter, R. (1991). In V. Lifschitz (Ed.), Artificial Intelligence and Mathematical Theory of Computation: Papers in Honor of John McCarthy (pp. 359-380). Academic Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "situation_calculus",
+    "breed_name": "SituationCalculus",
+    "historical_ancestor": "Reiter, R. (1991). In V. Lifschitz (Ed.), Artificial Intelligence and Mathematical Theory of Computation: Papers in Honor of John McCarthy (pp. 359-380). Academic Press.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "soar",
+    "breed_name": "Soar",
+    "historical_ancestor": "Laird, J. E., Newell, A., & Rosenbloom, P. S. (1987). Soar: An architecture for general intelligence. Artificial Intelligence, 33(1), 1–64. https://doi.org/10.1016/0004-3702(87)90050-6",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "soar",
+    "breed_name": "Soar",
+    "historical_ancestor": "Laird, J. E., Newell, A., & Rosenbloom, P. S. (1987). Soar: An architecture for general intelligence. Artificial Intelligence, 33(1), 1–64. https://doi.org/10.1016/0004-3702(87)90050-6",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "strips",
+    "breed_name": "Strips",
+    "historical_ancestor": "Fikes, R. E., & Nilsson, N. J. (1971). STRIPS: A new approach to the application of theorem proving to problem solving. Artificial Intelligence, 2(3–4), 189–208.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "strips",
+    "breed_name": "Strips",
+    "historical_ancestor": "Fikes, R. E., & Nilsson, N. J. (1971). STRIPS: A new approach to the application of theorem proving to problem solving. Artificial Intelligence, 2(3–4), 189–208.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "tableaux",
+    "breed_name": "Tableaux",
+    "historical_ancestor": "Raymond M. Smullyan (1968). First-Order Logic. Springer-Verlag, Ergebnisse der Mathematik und ihrer Grenzgebiete 43.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "tableaux",
+    "breed_name": "Tableaux",
+    "historical_ancestor": "Raymond M. Smullyan (1968). First-Order Logic. Springer-Verlag, Ergebnisse der Mathematik und ihrer Grenzgebiete 43.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
     "breed_id": "triz",
     "breed_name": "Triz",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "triz_input_v1",
-    "output_schema": "triz_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "historical_ancestor": "Altshuller, G. (1984). Creativity as an Exact Science. Gordon and Breach Science Publishers.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   },
   {
-    "breed_id": "ocpm_route_discoverer",
-    "breed_name": "Ocpm Route Discoverer",
-    "historical_ancestor": "TBD",
-    "generalized_family": "TBD",
-    "input_schema": "ocpm_route_discoverer_input_v1",
-    "output_schema": "ocpm_route_discoverer_output_v1",
-    "specification_relation": "TBD",
-    "oracle_suite_id": "none",
-    "ocel_model_id": "none",
-    "receipt_schema_id": "none",
-    "wasm_export_name": "none",
-    "status": "UNSUPPORTED"
+    "breed_id": "triz",
+    "breed_name": "Triz",
+    "historical_ancestor": "Altshuller, G. (1984). Creativity as an Exact Science. Gordon and Breach Science Publishers.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "version_space",
+    "breed_name": "VersionSpace",
+    "historical_ancestor": "Mitchell, T. M. (1982). Generalization as Search. Artificial Intelligence, 18(2), 203–226.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
+  },
+  {
+    "breed_id": "version_space",
+    "breed_name": "VersionSpace",
+    "historical_ancestor": "Mitchell, T. M. (1982). Generalization as Search. Artificial Intelligence, 18(2), 203–226.",
+    "status": "PARTIAL_ALIVE",
+    "standing": "DISPATCHABLE"
   }
 ]
