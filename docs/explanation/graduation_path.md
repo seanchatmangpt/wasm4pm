@@ -28,24 +28,41 @@ most common wrong turn.
 
 ---
 
-## The compat misconception
+## The compat nuance: you consume its projection, not its crate
 
-`wasm4pm-compat` is **rlib-only Rust**. It is the crate that carries the typestate
-`Evidence<>` system — the compile-time machinery that makes an unproven claim
-*unrepresentable* in Rust's type system, so that an evidence object can only be
-constructed by passing through the lawful stages that earn it. That is a Rust
-library feature, expressed in Rust generics and phantom types, and it **does not
-cross the WASM boundary**. It is not published as a TypeScript package, it has no
-generated `.d.ts` surface, and there is no path to consume its typestate guarantees
-from JavaScript or TypeScript. (It is also crates.io-only — never add a path
-dependency on it from this repo.)
+`wasm4pm-compat` is **rlib-only Rust**. It carries the typestate `Evidence<>`
+system — the compile-time machinery that makes an unproven claim *unrepresentable*
+in Rust's type system, so that an evidence object can only be constructed by passing
+through the lawful stages that earn it. That is a Rust generics-and-phantom-types
+feature, and it **does not cross the WASM boundary**. You never depend on the compat
+*Rust crate* from TypeScript, and it is crates.io-only — never add a path dependency
+on it from this repo.
 
-The practical consequence: **a TypeScript application does not start from compat.**
-It starts from the TypeScript packages under `packages/` and the generated breed
-pack under `packs/wasm4pm-breeds-ts/`. Everything below describes that TypeScript
+But compat is more than that crate. It is the **post-handcoding substrate** — an
+ontology from which "type law renders everything": Rust, Zod/TypeScript, WIT, and
+docs are all projected from one source of truth. So while you do not consume compat's
+*crate*, you do consume its **generated Zod projection** — 49 domain schemas (BPMN,
+Petri nets, conformance results and verdicts, diagnostics, …) rendered from compat's
+ontology via `ggen/{queries/extract-zod-schemas.rq, templates/zod-schemas.ts.tera,
+ggen_zod.toml}`. That projection is typed *and runtime-validatable* TypeScript, and
+it sits alongside the breed pack at rung 1 (below).
+
+The practical consequence: **a TypeScript application starts from the generated
+projections, not the Rust crates.** It starts from the packages under `packages/`,
+the generated breed pack under `packs/wasm4pm-breeds-ts/`, and the generated compat
+domain schemas (`@wasm4pm/compat-ts`). Everything below describes that TypeScript
 entry, which is where the overwhelming majority of consumers live. The typestate
-evidence story is real and valuable, but it is a Rust-internal correctness
-mechanism, not a rung on the consumer ladder.
+evidence story is real and valuable, but it is a Rust-internal correctness mechanism
+that does not itself appear as a rung — its *shapes*, however, do.
+
+**Forward pointer (in progress).** Today the compat projection you consume from TS
+is *static shape* — Zod schemas that validate data, not compat's conformance and law
+*logic*. A **WIT → WASM-component** path is in progress: compiling compat through a
+WIT interface into a WASM component would make its actual conformance/law logic
+callable from TypeScript at runtime, beyond the static Zod shapes — closing the last
+gap between "I can validate a compat-shaped value" and "I can run compat's lawful
+reasoning over it." That is a fourth projection (Rust, Zod/TS, WIT, docs) from the
+one ontology, and it is not yet shipped.
 
 With that out of the way, the ladder.
 
@@ -60,18 +77,30 @@ a compiler-checked identifier rather than a string literal, and you want to
 confirm that a receipt you were handed is internally consistent — that its hashes
 match its payload and it has not been tampered with.
 
-**What you install.** `@wasm4pm/contracts` plus the `wasm4pm-breeds-ts` pack. The
-contracts package exports the receipt machinery — `ReceiptBuilder`, the receipt
-emit/verify functions, `verifyReceipt`, `verifyReceiptHashes`,
-`detectTampering` — and the hashing primitives (`hashData`, `hashJsonString`,
-`verifyHash`). The breeds pack, generated from the same `breeds.ttl` ontology that
-admits the breeds in the Rust core, gives you the `BreedId` union and a catalog of
-every breed with its paper citation. Both are pure TypeScript.
+**What you install.** `@wasm4pm/contracts`, the `wasm4pm-breeds-ts` pack, and
+`@wasm4pm/compat-ts`. The contracts package exports the receipt machinery —
+`ReceiptBuilder`, the receipt emit/verify functions, `verifyReceipt`,
+`verifyReceiptHashes`, `detectTampering` — and the hashing primitives (`hashData`,
+`hashJsonString`, `verifyHash`). The breeds pack, generated from the same
+`breeds.ttl` ontology that admits the breeds in the Rust core, gives you the
+`BreedId` union and a catalog of every breed with its paper citation.
 
-**WASM needed?** No. This rung is shapes and verification only. Nothing here
-computes a discovery model or runs an inference; it describes and checks. That is
-exactly why it is the floor — the lowest-commitment way to make your application
-*speak wasm4pm's vocabulary* and *trust a receipt* without pulling in a binary.
+`@wasm4pm/compat-ts` is the **typed and runtime-validatable domain layer**, sitting
+alongside the breeds pack — both generated from `wasm4pm-compat`'s ontology as the
+single source of truth. It carries the 49 domain **Zod** schemas projected from
+compat: `BpmnProcessSchema`, `PetriNet`/`ArcSchema`, `ConformanceResultSchema`,
+`ConformanceVerdictSchema`, `CompatDiagnosticSchema`, and the rest. Because they are
+Zod, not bare `.d.ts`, they do not merely *type* a value at compile time — they
+*validate it at runtime*: a conformance result or a diagnostic crossing your I/O
+boundary can be `.parse()`d and rejected if it does not conform. This is the same
+projection pattern as the breed pack — generated TypeScript, not a Rust dependency.
+All pure TypeScript.
+
+**WASM needed?** No. This rung is shapes, verification, and runtime schema
+validation only. Nothing here computes a discovery model or runs an inference; it
+describes, checks, and validates. That is exactly why it is the floor — the
+lowest-commitment way to make your application *speak wasm4pm's vocabulary*, *trust a
+receipt*, and *validate domain payloads* without pulling in a binary.
 
 **Trigger to climb.** You stop wanting to merely *name* a breed and *check* a
 receipt, and start wanting to **run** a breed — to get a conclusion out of facts,
@@ -251,10 +280,16 @@ Honest accounting matters more here than anywhere, because the ladder describes 
 platform that is partly shipped and partly converging.
 
 **Real today.**
-- Rung 1 is fully real: `@wasm4pm/contracts` exports `ReceiptBuilder`, the
-  receipt emit/verify functions, `verifyReceipt`, `verifyReceiptHashes`,
+- Rung 1 is fully real for contracts: `@wasm4pm/contracts` exports `ReceiptBuilder`,
+  the receipt emit/verify functions, `verifyReceipt`, `verifyReceiptHashes`,
   `detectTampering`, and the hash primitives; the `wasm4pm-breeds-ts` pack carries
-  the generated `BreedId` surface and breed catalog.
+  the generated `BreedId` surface and breed catalog. The compat Zod projection is
+  **generated but not yet packaged**: the 49 schemas exist at
+  `wasm4pm-compat/wasm4pm-compat-ts/bindings/zod_schemas.ts`, but that directory has
+  no `package.json` — it is an orphan today, exactly as the breed bindings were
+  before they were packaged as `packs/wasm4pm-breeds-ts`. Packaging it as
+  `@wasm4pm/compat-ts` (mirroring that pattern) is the work that makes this part of
+  rung 1 consumable.
 - Rung 2 is real: `@wasm4pm/cognition` (and `/browser`) runs breeds against the
   cognition WASM and returns `ContractResult` with receipts; the field contract is
   pinned in `.claude/rules/cognition-contracts.md`.
@@ -269,6 +304,10 @@ platform that is partly shipped and partly converging.
   `cli > toml > env > default` precedence; the receipt ledger records runs.
 
 **In progress.**
+- Packaging the compat Zod projection as `@wasm4pm/compat-ts` so rung 1's domain
+  layer is installable, not an orphan file (see above).
+- The compat WIT → WASM-component path that would make compat's conformance/law
+  *logic* callable from TS at runtime, beyond the static Zod shapes.
 - AutoPM's config-as-artifact inversion (the rung-4→5 loop described above) is the
   active frontier. The engine exists; the path that makes its evolutionary winner
   *emit a governed `wasm4pm.toml`* is being implemented under `packages/autopm`.
@@ -278,7 +317,12 @@ platform that is partly shipped and partly converging.
 ---
 
 *Grounding note.* The package boundaries described here are checkable against the
-repository. Rung 1: `packages/contracts/src/` and `packs/wasm4pm-breeds-ts/`. Rung
+repository. Rung 1: `packages/contracts/src/`, `packs/wasm4pm-breeds-ts/`, and the
+compat Zod projection at `wasm4pm-compat/wasm4pm-compat-ts/bindings/zod_schemas.ts`
+(891 lines, 49 schemas), rendered from compat's ontology via
+`wasm4pm-compat/ggen/{queries/extract-zod-schemas.rq, templates/zod-schemas.ts.tera,
+ggen_zod.toml}` — generated today, awaiting a `package.json` to become
+`@wasm4pm/compat-ts`. Rung
 2: `packages/cognition/` (the `./browser` export is declared in its
 `package.json`); the field contract is `.claude/rules/cognition-contracts.md`. Rung
 3: the wasm4pm WASM core under `wasm4pm/` and the `wpm` CLI at `apps/wasm4pm/`. Rung
@@ -287,7 +331,8 @@ repository. Rung 1: `packages/contracts/src/` and `packs/wasm4pm-breeds-ts/`. Ru
 `packages/planner/src/benchmark-costs.ts`, `packages/ml/`, and `packages/autopm/`.
 Rung 5: `packages/config/src/schema.ts` (`configSchema`, `sourceConfigSchema`,
 `ALGORITHM_IDS`), `packages/config/src/resolver.ts` for precedence, and the
-`wasm4pm.toml` it validates. The compat correction is checkable too:
-`wasm4pm-compat` is an rlib Rust crate with no TypeScript package and no path
-dependency permitted from this repo. As elsewhere in wasm4pm, the claims in this
+`wasm4pm.toml` it validates. The compat nuance is checkable too: the
+`wasm4pm-compat` *crate* is rlib-only with no path dependency permitted from this
+repo, while its *generated Zod projection* exists at the path above — you consume the
+projection, never the crate. As elsewhere in wasm4pm, the claims in this
 document are meant to be verified against that evidence, not taken on trust.
