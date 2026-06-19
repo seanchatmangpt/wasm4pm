@@ -1,0 +1,43 @@
+# Working ggen.toml for a consumer of the wasm4pm-compat-ts pack.
+#
+# Copy this into your project root, replace the /ABS/PATH/TO/wasm4pm-compat-ts
+# placeholders below with the path where you vendored the pack
+# (e.g. "/abs/path/vendor/wasm4pm-compat-ts"), then:
+#
+#   ggen sync --manifest ./ggen.toml
+#
+# IMPORTANT: always pass --manifest explicitly. If you omit it, ggen searches
+# parent directories and may pick up an unrelated ggen.toml.
+#
+# This pack is self-contained: the ontology below (zod-types.ttl) bundles its
+# own zod vocabulary plus all domain type instances. You do NOT need the
+# wasm4pm-compat sibling repo.
+
+[project]
+name        = "my-compat-consumer"
+version     = "0.0.1"
+description = "Consumes wasm4pm-compat-ts to generate domain Zod schemas"
+authors     = ["you"]
+license     = "MIT"
+
+[ontology]
+source        = "/ABS/PATH/TO/wasm4pm-compat-ts/ggen/ontology/zod-types.ttl"
+standard_only = false
+
+[generation]
+output_dir = "."
+
+# zod_schemas.ts → ~41 exported *Schema consts + z.infer<> types
+[[generation.rules]]
+name        = "zod-schemas"
+query       = { file = "/ABS/PATH/TO/wasm4pm-compat-ts/ggen/queries/extract-zod-schemas.rq" }
+template    = { file = "/ABS/PATH/TO/wasm4pm-compat-ts/ggen/templates/zod-schemas.ts.tera" }
+output_file = "src/zod_schemas.ts"
+mode        = "Overwrite"
+
+# ggen requires at least one inference rule (DMAIC "Measure" gate).
+# This identity CONSTRUCT is a no-op that satisfies the gate.
+[inference]
+rules = [
+  { name = "identity", construct = "CONSTRUCT { ?s ?p ?o } WHERE { ?s ?p ?o } LIMIT 1" }
+]
